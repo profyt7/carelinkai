@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CareLink AI - PWA Icon Generator</title>
+    <style>
+        :root {
+            --primary: #0099e6;
+            --primary-dark: #007bb8;
+            --primary-light: #b3e6ff;
+            --neutral-50: #f8fafc;
+            --neutral-100: #f1f5f9;
+            --neutral-200: #e2e8f0;
+            --neutral-300: #cbd5e1;
+            --neutral-600: #475569;
+            --neutral-700: #334155;
+            --neutral-800: #1e293b;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--neutral-50);
+            color: var(--neutral-700);
+            line-height: 1.5;
+            padding: 2rem;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--neutral-200);
+        }
+        
+        h1 {
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .description {
+            color: var(--neutral-600);
+            max-width: 600px;
+            margin: 0 auto 1.5rem;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.375rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .btn:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        .btn-outline {
+            background-color: transparent;
+            color: var(--primary);
+            border: 1px solid var(--primary);
+        }
+        
+        .btn-outline:hover {
+            background-color: var(--primary-light);
+            color: var(--primary-dark);
+        }
+        
+        .icon-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .icon-card {
+            background-color: white;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .icon-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .icon-preview {
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+        }
+        
+        .icon-preview canvas {
+            border: 1px solid var(--neutral-200);
+            border-radius: 0.25rem;
+        }
+        
+        .icon-info {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        
+        .icon-size {
+            font-weight: 600;
+            color: var(--neutral-800);
+        }
+        
+        .icon-type {
+            font-size: 0.875rem;
+            color: var(--neutral-600);
+            margin-top: 0.25rem;
+        }
+        
+        .download-btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+        
+        .download-btn:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        .download-icon {
+            margin-right: 0.5rem;
+        }
+        
+        .section-title {
+            margin: 2rem 0 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--neutral-200);
+            color: var(--neutral-800);
+        }
+        
+        .zip-download {
+            margin: 2rem 0;
+            text-align: center;
+        }
+        
+        footer {
+            margin-top: 3rem;
+            text-align: center;
+            color: var(--neutral-600);
+            font-size: 0.875rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--neutral-200);
+        }
+        
+        /* Canvas container for offscreen rendering */
+        #canvas-container {
+            display: none;
+        }
+        
+        /* Loading indicator */
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            visibility: hidden;
+            opacity: 0;
+            transition: visibility 0s, opacity 0.3s;
+        }
+        
+        .loading.active {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(0, 153, 230, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+            
+            .icon-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                gap: 1rem;
+            }
+            
+            .icon-card {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>CareLink AI - PWA Icon Generator</h1>
+            <p class="description">
+                Generate all required icons for Progressive Web App (PWA) implementation with CareLink AI branding.
+                Both standard and maskable icons are created for optimal display across all devices.
+            </p>
+        </header>
+        
+        <div class="controls">
+            <button id="generate-all" class="btn">Generate All Icons</button>
+            <button id="download-zip" class="btn btn-outline">Download All as ZIP</button>
+            <button id="customize" class="btn btn-outline">Customize Icons</button>
+        </div>
+        
+        <h2 class="section-title">Standard Icons</h2>
+        <div id="standard-icons" class="icon-grid">
+            <!-- Icons will be generated here -->
+        </div>
+        
+        <h2 class="section-title">Maskable Icons</h2>
+        <div id="maskable-icons" class="icon-grid">
+            <!-- Icons will be generated here -->
+        </div>
+        
+        <div class="zip-download">
+            <p>Need all icons at once? Download the complete set:</p>
+            <button id="download-zip-bottom" class="btn">Download All Icons as ZIP</button>
+        </div>
+        
+        <footer>
+            <p>CareLink AI PWA Icon Generator &copy; 2025</p>
+        </footer>
+    </div>
+    
+    <!-- Hidden canvas container for rendering -->
+    <div id="canvas-container"></div>
+    
+    <!-- Loading indicator -->
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+    </div>
+    
+    <!-- JSZip library for creating ZIP files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    
+    <script>
+        // Configuration
+        const ICON_SIZES = [72, 96, 128, 144, 152, 192, 384, 512];
+        const PRIMARY_COLOR = '#0099e6';
+        const BACKGROUND_COLOR = '#ffffff';
+        const MASKABLE_BACKGROUND_COLOR = '#0099e6';
+        const MASKABLE_FOREGROUND_COLOR = '#ffffff';
+        
+        // DOM Elements
+        const standardIconsContainer = document.getElementById('standard-icons');
+        const maskableIconsContainer = document.getElementById('maskable-icons');
+        const canvasContainer = document.getElementById('canvas-container');
+        const generateAllBtn = document.getElementById('generate-all');
+        const downloadZipBtn = document.getElementById('download-zip');
+        const downloadZipBottomBtn = document.getElementById('download-zip-bottom');
+        const customizeBtn = document.getElementById('customize');
+        const loadingIndicator = document.getElementById('loading');
+        
+        // Store generated canvases for later download
+        const generatedIcons = {
+            standard: {},
+            maskable: {}
+        };
+        
+        /**
+         * Draw standard icon on canvas
+         */
+        function drawStandardIcon(canvas, size) {
+            const ctx = canvas.getContext('2d');
+            const padding = size * 0.1; // 10% padding
+            const borderRadius = size * 0.2; // 20% border radius
+            const fontSize = Math.floor(size * 0.6); // 60% of icon size
+            
+            // Set canvas size
+            canvas.width = size;
+            canvas.height = size;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, size, size);
+            
+            // Draw rounded rectangle background
+            ctx.fillStyle = BACKGROUND_COLOR;
+            roundedRect(ctx, 0, 0, size, size, borderRadius);
+            ctx.fill();
+            
+            // Draw rounded rectangle with primary color
+            ctx.fillStyle = PRIMARY_COLOR;
+            roundedRect(ctx, padding, padding, size - padding * 2, size - padding * 2, borderRadius * 0.75);
+            ctx.fill();
+            
+            // Draw "C" letter
+            ctx.fillStyle = BACKGROUND_COLOR;
+            ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('C', size / 2, size / 2);
+            
+            return canvas;
+        }
+        
+        /**
+         * Draw maskable icon on canvas
+         */
+        function drawMaskableIcon(canvas, size) {
+            const ctx = canvas.getContext('2d');
+            const fontSize = Math.floor(size * 0.5); // 50% of icon size
+            
+            // Set canvas size
+            canvas.width = size;
+            canvas.height = size;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, size, size);
+            
+            // Draw full background
+            ctx.fillStyle = MASKABLE_BACKGROUND_COLOR;
+            ctx.fillRect(0, 0, size, size);
+            
+            // Draw "C" letter
+            ctx.fillStyle = MASKABLE_FOREGROUND_COLOR;
+            ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('C', size / 2, size / 2);
+            
+            return canvas;
+        }
+        
+        /**
+         * Helper function to draw rounded rectangle
+         */
+        function roundedRect(ctx, x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+        }
+        
+        /**
+         * Generate icon card with preview and download button
+         */
+        function generateIconCard(size, type) {
+            // Create canvas
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            
+            // Draw icon based on type
+            if (type === 'standard') {
+                drawStandardIcon(canvas, size);
+            } else {
+                drawMaskableIcon(canvas, size);
+            }
+            
+            // Store canvas for later download
+            generatedIcons[type][size] = canvas;
+            
+            // Create card element
+            const card = document.createElement('div');
+            card.className = 'icon-card';
+            
+            // Create preview container
+            const previewContainer = document.createElement('div');
+            previewContainer.className = 'icon-preview';
+            
+            // Create preview canvas (scaled down version)
+            const previewCanvas = document.createElement('canvas');
+            const previewSize = Math.min(size, 128); // Max preview size of 128px
+            const scale = previewSize / size;
+            previewCanvas.width = previewSize;
+            previewCanvas.height = previewSize;
+            
+            // Draw scaled version
+            const previewCtx = previewCanvas.getContext('2d');
+            previewCtx.drawImage(canvas, 0, 0, previewSize, previewSize);
+            
+            // Add preview canvas to container
+            previewContainer.appendChild(previewCanvas);
+            card.appendChild(previewContainer);
+            
+            // Create info section
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'icon-info';
+            
+            const sizeText = document.createElement('div');
+            sizeText.className = 'icon-size';
+            sizeText.textContent = `${size}×${size}`;
+            infoDiv.appendChild(sizeText);
+            
+            const typeText = document.createElement('div');
+            typeText.className = 'icon-type';
+            typeText.textContent = type === 'standard' ? 'Standard Icon' : 'Maskable Icon';
+            infoDiv.appendChild(typeText);
+            
+            card.appendChild(infoDiv);
+            
+            // Create download button
+            const downloadBtn = document.createElement('button');
+            downloadBtn.className = 'download-btn';
+            downloadBtn.innerHTML = '<svg class="download-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Download';
+            
+            // Add download functionality
+            downloadBtn.addEventListener('click', () => {
+                const filename = `icon-${type === 'standard' ? '' : 'maskable-'}${size}x${size}.png`;
+                downloadCanvas(canvas, filename);
+            });
+            
+            card.appendChild(downloadBtn);
+            
+            return card;
+        }
+        
+        /**
+         * Download canvas as PNG
+         */
+        function downloadCanvas(canvas, filename) {
+            // Convert canvas to blob
+            canvas.toBlob((blob) => {
+                // Create download link
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                
+                // Clean up
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 0);
+            });
+        }
+        
+        /**
+         * Generate all icons
+         */
+        function generateAllIcons() {
+            // Show loading indicator
+            loadingIndicator.classList.add('active');
+            
+            // Clear containers
+            standardIconsContainer.innerHTML = '';
+            maskableIconsContainer.innerHTML = '';
+            
+            // Use setTimeout to allow the UI to update before heavy processing
+            setTimeout(() => {
+                // Generate standard icons
+                ICON_SIZES.forEach(size => {
+                    const card = generateIconCard(size, 'standard');
+                    standardIconsContainer.appendChild(card);
+                });
+                
+                // Generate maskable icons
+                ICON_SIZES.forEach(size => {
+                    const card = generateIconCard(size, 'maskable');
+                    maskableIconsContainer.appendChild(card);
+                });
+                
+                // Generate special icons
+                generateSpecialIcons();
+                
+                // Hide loading indicator
+                loadingIndicator.classList.remove('active');
+            }, 100);
+        }
+        
+        /**
+         * Generate special icons (favicon, apple-touch-icon)
+         */
+        function generateSpecialIcons() {
+            // Apple Touch Icon (180x180)
+            const appleTouchIconCanvas = document.createElement('canvas');
+            drawStandardIcon(appleTouchIconCanvas, 180);
+            generatedIcons.special = generatedIcons.special || {};
+            generatedIcons.special.appleTouchIcon = appleTouchIconCanvas;
+            
+            // Favicon (32x32)
+            const faviconCanvas = document.createElement('canvas');
+            drawStandardIcon(faviconCanvas, 32);
+            generatedIcons.special.favicon = faviconCanvas;
+        }
+        
+        /**
+         * Download all icons as ZIP
+         */
+        async function downloadAllAsZip() {
+            // Show loading indicator
+            loadingIndicator.classList.add('active');
+            
+            try {
+                // Create new JSZip instance
+                const zip = new JSZip();
+                
+                // Add standard icons to zip
+                const promises = [];
+                
+                // Add standard icons
+                for (const size of ICON_SIZES) {
+                    const canvas = generatedIcons.standard[size];
+                    if (canvas) {
+                        const promise = new Promise(resolve => {
+                            canvas.toBlob(blob => {
+                                zip.file(`icons/icon-${size}x${size}.png`, blob);
+                                resolve();
+                            });
+                        });
+                        promises.push(promise);
+                    }
+                }
+                
+                // Add maskable icons
+                for (const size of ICON_SIZES) {
+                    const canvas = generatedIcons.maskable[size];
+                    if (canvas) {
+                        const promise = new Promise(resolve => {
+                            canvas.toBlob(blob => {
+                                zip.file(`icons/maskable-icon-${size}x${size}.png`, blob);
+                                resolve();
+                            });
+                        });
+                        promises.push(promise);
+                    }
+                }
+                
+                // Add special icons
+                if (generatedIcons.special?.appleTouchIcon) {
+                    const promise = new Promise(resolve => {
+                        generatedIcons.special.appleTouchIcon.toBlob(blob => {
+                            zip.file('icons/apple-touch-icon.png', blob);
+                            resolve();
+                        });
+                    });
+                    promises.push(promise);
+                }
+                
+                if (generatedIcons.special?.favicon) {
+                    const promise = new Promise(resolve => {
+                        generatedIcons.special.favicon.toBlob(blob => {
+                            zip.file('icons/favicon.png', blob);
+                            resolve();
+                        });
+                    });
+                    promises.push(promise);
+                }
+                
+                // Wait for all blobs to be added to zip
+                await Promise.all(promises);
+                
+                // Generate zip file
+                const zipBlob = await zip.generateAsync({ type: 'blob' });
+                
+                // Create download link
+                const url = URL.createObjectURL(zipBlob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'carelinkai-pwa-icons.zip';
+                document.body.appendChild(a);
+                a.click();
+                
+                // Clean up
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 0);
+            } catch (error) {
+                console.error('Error creating ZIP file:', error);
+                alert('Error creating ZIP file. Please try again.');
+            } finally {
+                // Hide loading indicator
+                loadingIndicator.classList.remove('active');
+            }
+        }
+        
+        /**
+         * Show customization options
+         */
+        function showCustomizeOptions() {
+            alert('Customization options will be available in a future version. Currently using default CareLink AI branding.');
+        }
+        
+        // Event listeners
+        generateAllBtn.addEventListener('click', generateAllIcons);
+        downloadZipBtn.addEventListener('click', downloadAllAsZip);
+        downloadZipBottomBtn.addEventListener('click', downloadAllAsZip);
+        customizeBtn.addEventListener('click', showCustomizeOptions);
+        
+        // Generate icons on page load
+        window.addEventListener('load', generateAllIcons);
+    </script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+[
+  {
+    "id": "1",
+    "email": "family1@example.com",
+    "passwordHash": "$2a$10$6ZN4dapC9krB65Q7sejsPu1n4LgGDLDORGoGVoioM1jf4N6jydjKO",
+    "firstName": "Family",
+    "lastName": "User",
+    "role": "FAMILY",
+    "status": "ACTIVE",
+    "profileImageUrl": null,
+    "lastLoginAt": "2025-07-27T21:57:51.267Z",
+    "createdAt": "2025-07-26T23:20:00.000Z",
+    "updatedAt": "2025-07-27T21:57:51.268Z"
+  },
+  {
+    "id": "2",
+    "email": "operator1@example.com",
+    "passwordHash": "$2a$10$JwZpdrCLPsHgzXQU8cw3G.vdYjDTJqrWg5rYnC6pAR38xXmBqEKme",
+    "firstName": "Operator",
+    "lastName": "User",
+    "role": "OPERATOR",
+    "status": "ACTIVE",
+    "profileImageUrl": null,
+    "lastLoginAt": null,
+    "createdAt": "2025-07-26T23:20:00.000Z",
+    "updatedAt": "2025-07-26T23:20:00.000Z"
+  },
+  {
+    "id": "3",
+    "email": "caregiver1@example.com",
+    "passwordHash": "$2a$10$JwZpdrCLPsHgzXQU8cw3G.vdYjDTJqrWg5rYnC6pAR38xXmBqEKme",
+    "firstName": "Caregiver",
+    "lastName": "User",
+    "role": "CAREGIVER",
+    "status": "ACTIVE",
+    "profileImageUrl": null,
+    "lastLoginAt": null,
+    "createdAt": "2025-07-26T23:20:00.000Z",
+    "updatedAt": "2025-07-26T23:20:00.000Z"
+  },
+  {
+    "id": "4",
+    "email": "admin@example.com",
+    "passwordHash": "$2a$10$JwZpdrCLPsHgzXQU8cw3G.vdYjDTJqrWg5rYnC6pAR38xXmBqEKme",
+    "firstName": "Admin",
+    "lastName": "User",
+    "role": "ADMIN",
+    "status": "ACTIVE",
+    "profileImageUrl": null,
+    "lastLoginAt": null,
+    "createdAt": "2025-07-26T23:20:00.000Z",
+    "updatedAt": "2025-07-26T23:20:00.000Z"
+  }
+]
