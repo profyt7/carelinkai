@@ -7,7 +7,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { useEmail, EmailResponse } from '@/hooks/useEmail';
+import { useEmail } from '@/hooks/useEmail';
+import type { EmailResponse } from '@/hooks/useEmail';
 import { Tab } from '@headlessui/react';
 import { FiMail, FiSend, FiAlertCircle, FiCalendar, FiFile, FiCode, FiClock } from 'react-icons/fi';
 import { format } from 'date-fns';
