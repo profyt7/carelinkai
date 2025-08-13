@@ -245,12 +245,13 @@ export async function GET(request: NextRequest) {
         };
       }
       
-      // Add search filter
-      if (filters.search) {
+      // Add search filter (support both `search` and `searchQuery`)
+      const searchValue = (filters as any).search ?? filters.searchQuery;
+      if (searchValue) {
         whereClause.OR = [
-          { title: { contains: filters.search, mode: 'insensitive' } },
-          { description: { contains: filters.search, mode: 'insensitive' } },
-          { fileName: { contains: filters.search, mode: 'insensitive' } }
+          { title: { contains: searchValue, mode: 'insensitive' } },
+          { description: { contains: searchValue, mode: 'insensitive' } },
+          { fileName: { contains: searchValue, mode: 'insensitive' } }
         ];
       }
       
