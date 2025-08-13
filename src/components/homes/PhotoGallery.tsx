@@ -107,11 +107,13 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
 
   // Touch event handlers for swipe navigation
   const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStart(e.targetTouches[0].clientX);
+    const t0 = e.targetTouches.item(0);
+    if (t0) setTouchStart(t0.clientX);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX);
+    const t0 = e.targetTouches.item(0);
+    if (t0) setTouchEnd(t0.clientX);
   };
 
   const handleTouchEnd = () => {
