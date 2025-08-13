@@ -59,29 +59,26 @@ export default function CalendarPage() {
   // Handle filter changes
   const handleSearchChange = useCallback((query: string) => {
     setSearchQuery(query);
-    setFilter(prev => ({
-      ...prev,
+    setFilter({
       searchText: query || undefined
-    }));
+    });
     // Immediately refetch with the updated filter
     fetchAppointments();
   }, [setFilter, fetchAppointments]);
 
   const handleTypeFilterChange = useCallback((types: AppointmentType[]) => {
     setTypeFilters(types);
-    setFilter(prev => ({
-      ...prev,
+    setFilter({
       appointmentTypes: types.length > 0 ? types : undefined
-    }));
+    });
     fetchAppointments();
   }, [setFilter, fetchAppointments]);
 
   const handleStatusFilterChange = useCallback((statuses: AppointmentStatus[]) => {
     setStatusFilters(statuses);
-    setFilter(prev => ({
-      ...prev,
+    setFilter({
       status: statuses.length > 0 ? statuses : undefined
-    }));
+    });
     fetchAppointments();
   }, [setFilter, fetchAppointments]);
 
