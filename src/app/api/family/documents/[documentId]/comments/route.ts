@@ -9,7 +9,7 @@ import {
   hasPermissionToViewDocuments 
 } from "@/lib/services/family";
 import { publish } from "@/lib/server/sse";
-import { 
+import type { 
   DocumentCommentWithAuthor, 
   CreateDocumentCommentRequest 
 } from "@/lib/types/family";
