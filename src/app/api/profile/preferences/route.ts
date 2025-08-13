@@ -17,7 +17,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient, UserRole, AuditAction } from "@prisma/client";
+import { PrismaClient, UserRole, AuditAction, Prisma } from "@prisma/client";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth-db-simple";
 import { z } from "zod";
@@ -286,7 +286,7 @@ export async function PUT(request: NextRequest) {
       where: { id: userId },
       data: {
         preferences: updatedPreferences,
-        notificationPrefs: notifications || user.notificationPrefs,
+        notificationPrefs: (notifications ?? user.notificationPrefs) ?? Prisma.JsonNull,
         timezone: display?.timezone || undefined
       }
     });
