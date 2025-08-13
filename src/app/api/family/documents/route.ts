@@ -260,7 +260,7 @@ export async function GET(request: NextRequest) {
       // Query documents with pagination
       // Build orderBy clause with explicit, type-safe object
       const orderByClause: Record<string, "asc" | "desc"> = {
-        [filters.sortBy]: filters.sortOrder
+        [filters.sortBy as string]: filters.sortOrder
       };
 
       const [documents, totalCount] = await Promise.all([
