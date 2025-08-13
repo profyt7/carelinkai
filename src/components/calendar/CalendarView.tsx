@@ -658,10 +658,10 @@ export default function CalendarView({
     } as const,
     views: {
       dayGridMonth: {
-        titleFormat: { year: 'numeric', month: 'long' }
+        titleFormat: { year: 'numeric', month: 'long' } as const
       },
       timeGridWeek: {
-        titleFormat: { year: 'numeric', month: 'short', day: 'numeric' },
+        titleFormat: { year: 'numeric', month: 'short', day: 'numeric' } as const,
         slotLabelFormat: {
           hour: 'numeric',
           minute: '2-digit',
@@ -669,7 +669,7 @@ export default function CalendarView({
         } as const
       },
       timeGridDay: {
-        titleFormat: { year: 'numeric', month: 'long', day: 'numeric' },
+        titleFormat: { year: 'numeric', month: 'long', day: 'numeric' } as const,
         slotLabelFormat: {
           hour: 'numeric',
           minute: '2-digit',
@@ -677,7 +677,7 @@ export default function CalendarView({
         } as const
       },
       listWeek: {
-        titleFormat: { year: 'numeric', month: 'long' }
+        titleFormat: { year: 'numeric', month: 'long' } as const
       }
     }
   }), [
