@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     
     // Apply rate limiting
     try {
-      await limiter.check(`${clientIp}_password_change`, MAX_ATTEMPTS);
+      await limiter.check(MAX_ATTEMPTS, `${clientIp}_password_change`);
     } catch (error) {
       // Create audit log entry for rate limit exceeded
       await prisma.auditLog.create({
