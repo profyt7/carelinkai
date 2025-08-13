@@ -588,8 +588,58 @@ export async function PUT(request: NextRequest) {
         );
       }
 
-      // Otherwise perform normal single-instance update
-      const updatedAppointment = await updateAppointment(id, updateData);
+      // ------------------------------------------------------------------
+      // Sanitize and type-safe construction of the update payload
+      // ------------------------------------------------------------------
+      let updateLocation: Appointment['location'] = undefined;
+      if (updateData.location) {
+        const { address, room, coordinates } = updateData.location as any;
+        if (
+          coordinates &&
+          typeof coordinates.latitude === 'number' &&
+          typeof coordinates.longitude === 'number'
+        ) {
+          updateLocation = {
+            address,
+            room,
+            coordinates: {
+              latitude: coordinates.latitude,
+              longitude: coordinates.longitude,
+            },
+          };
+        } else {
+          updateLocation = { address, room };
+        }
+      }
+
+      const updatePayload: Partial<Appointment> = {
+        type: updateData.type,
+        title: updateData.title,
+        description: updateData.description,
+        startTime: updateData.startTime,
+        endTime: updateData.endTime,
+        location: updateLocation,
+        homeId: updateData.homeId,
+        residentId: updateData.residentId,
+        participants: updateData.participants?.map(p => ({
+          userId: p.userId,
+          name: p.name ?? 'Participant',
+          role: p.role ?? UserRole.FAMILY,
+          status: p.status ?? 'PENDING',
+          notes: p.notes,
+        })),
+        recurrence: updateData.recurrence,
+        reminders: updateData.reminders?.map(r => ({
+          minutesBefore: r.minutesBefore,
+          method: r.method,
+          sent: false,
+        })),
+        notes: updateData.notes,
+        customFields: updateData.customFields,
+      };
+
+      // Perform normal single-instance update with sanitized payload
+      const updatedAppointment = await updateAppointment(id, updatePayload);
 
       return NextResponse.json({ success: true, data: updatedAppointment });
     }
