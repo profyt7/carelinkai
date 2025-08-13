@@ -580,7 +580,8 @@ export default function CalendarView({
       onTypeFiltersChange([]);
     } else {
       setInternalTypeFilters([]);
-      setFilter(prev => ({ ...prev, appointmentTypes: undefined }));
+      // use direct object update to satisfy strict setter signature
+      setFilter({ ...filter, appointmentTypes: undefined });
     }
     
     if (onStatusFiltersChange) {
