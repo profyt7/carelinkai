@@ -342,7 +342,8 @@ const RealTimeInquiryUpdates: React.FC<RealTimeInquiryUpdatesProps> = ({
         const updateTypes: UpdateType[] = ['STATUS_CHANGE', 'NEW_MESSAGE', 'TOUR_REMINDER', 'DOCUMENT_SHARED', 'NOTE_ADDED'];
         const randomType = updateTypes[Math.floor(Math.random() * updateTypes.length)];
         
-        const mockInquiryIds = inquiryId ? [inquiryId] : ['inq-001', 'inq-002', 'inq-003'];
+        // Ensure the array items are treated as strings for downstream typing
+        const mockInquiryIds = inquiryId ? [inquiryId as string] : ['inq-001', 'inq-002', 'inq-003'];
         const randomInquiryId = mockInquiryIds[Math.floor(Math.random() * mockInquiryIds.length)];
         
         const homeNames: Record<string, string> = {
