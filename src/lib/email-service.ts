@@ -238,7 +238,7 @@ class SendGridEmailProvider implements EmailProvider {
   constructor() {
     try {
       // Dynamic import to avoid requiring the package if not used
-      const sgMail = require('@sendgrid/mail');
+      const sgMail = eval('require')('@sendgrid/mail');
       sgMail.setApiKey(process.env.SENDGRID_API_KEY);
       this.client = sgMail;
     } catch (error) {
@@ -313,7 +313,7 @@ class AwsSesEmailProvider implements EmailProvider {
   constructor() {
     try {
       // Dynamic import to avoid requiring the package if not used
-      const AWS = require('aws-sdk');
+      const AWS = eval('require')('aws-sdk');
       
       // Configure AWS SDK
       AWS.config.update({
@@ -393,7 +393,7 @@ class NodemailerEmailProvider implements EmailProvider {
   constructor() {
     try {
       // Dynamic import to avoid requiring the package if not used
-      const nodemailer = require('nodemailer');
+      const nodemailer = eval('require')('nodemailer');
       
       // Create transporter
       this.transporter = nodemailer.createTransport({

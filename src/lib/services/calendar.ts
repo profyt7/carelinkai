@@ -26,6 +26,9 @@ import {
   DayOfWeek, AvailabilityCheck
 } from '@/lib/types/calendar';
 
+// Needed for AvailabilitySlot.userRole until real role lookup is added
+import { UserRole } from '@prisma/client';
+
 // Default timezone placeholder
 const DEFAULT_TIMEZONE = 'UTC';
 
@@ -90,6 +93,110 @@ export function getSlotDuration(slot: TimeSlot): number {
   const start = parseISO(slot.startTime);
   const end = parseISO(slot.endTime);
   return differenceInMinutes(end, start);
+}
+
+// ========================================================================
+// AVAILABILITY UTILITIES
+// ========================================================================
+
+/**
+ * Check if a user is available for a requested slot.
+ *
+ * Very light-weight mock implementation that consults getAppointments()
+ * and uses doSlotsOverlap to detect conflicts.
+ */
+export async function checkUserAvailability(
+  userId: string,
+  requestedSlot: TimeSlot,
+  appointmentType: AppointmentType,
+  homeId?: string
+): Promise<AvailabilityCheck> {
+  // Build a filter covering the requested slot
+  const filter: CalendarFilter = {
+    participantIds: [userId],
+    dateRange: {
+      start: requestedSlot.startTime,
+      end: requestedSlot.endTime
+    }
+  };
+
+  // Fetch appointments that may conflict
+  const existing = await getAppointments(filter);
+
+  const conflicts = existing.filter(appt =>
+    doSlotsOverlap(
+      { startTime: appt.startTime, endTime: appt.endTime },
+      requestedSlot
+    )
+  );
+
+  return {
+    userId,
+    requestedSlot,
+    appointmentType,
+    homeId,
+    isAvailable: conflicts.length === 0,
+    conflicts
+  };
+}
+
+/**
+ * Find available slots inside a range, stepping every 30 minutes.
+ * Simplistic implementation suitable for initial build pass.
+ */
+export async function findAvailableSlots(
+  userId: string,
+  range: { start: Date; end: Date },
+  appointmentType: AppointmentType,
+  durationMinutes: number = 60,
+  homeId?: string
+): Promise<AvailabilitySlot[]> {
+  // Pull existing appointments for the user in the range once
+  const existing = await getAppointments({
+    participantIds: [userId],
+    dateRange: {
+      start: range.start.toISOString(),
+      end: range.end.toISOString()
+    }
+  });
+
+  // Convert to simple slots for overlap checks
+  const existingSlots = existing.map(appt => ({
+    startTime: appt.startTime,
+    endTime: appt.endTime
+  }));
+
+  const candidateSlots: AvailabilitySlot[] = [];
+  let cursor = new Date(range.start);
+
+  const stepMinutes = 30;
+
+  while (cursor.getTime() + durationMinutes * 60000 <= range.end.getTime()) {
+    const startISO = cursor.toISOString();
+    const endISO = new Date(cursor.getTime() + durationMinutes * 60000).toISOString();
+
+    const overlaps = existingSlots.some(slot =>
+      doSlotsOverlap(slot, { startTime: startISO, endTime: endISO })
+    );
+
+    if (!overlaps) {
+      candidateSlots.push({
+        id: `avail-${candidateSlots.length}`,
+        userId,
+        userRole: UserRole.STAFF,
+        startTime: startISO,
+        endTime: endISO,
+        isAvailable: true,
+        homeId,
+        availableFor: [appointmentType]
+      });
+    }
+
+    // advance cursor
+    cursor = addMinutes(cursor, stepMinutes);
+  }
+
+  return candidateSlots;
 }
 
 // ========================================================================

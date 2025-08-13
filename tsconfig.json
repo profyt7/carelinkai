@@ -85,5 +85,10 @@
     "**/*.test.tsx",
     "**/*.spec.ts",
     "**/*.spec.tsx"
+    ,
+    "prisma/**/*.ts",
+    "prisma/**/*.tsx",
+    "scripts/**/*.ts",
+    "scripts/**/*.tsx"
   ]
 }
