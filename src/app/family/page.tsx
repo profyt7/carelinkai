@@ -15,8 +15,8 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useSearchParams } from 'next/navigation';
 import { useDocuments } from '@/hooks/useDocuments';
 import dynamic from 'next/dynamic';
-import { DOCUMENT_TYPE_LABELS, DocumentType } from '@/lib/types/family';
-import { FiPlus, FiSearch, FiTrash2, FiDownload } from 'react-icons/fi';
+import { DOCUMENT_TYPE_LABELS, DocumentType, formatFileSize } from '@/lib/types/family';
+import { FiPlus, FiSearch, FiTrash2, FiDownload, FiTag } from 'react-icons/fi';
 
 // Lazy load modal to avoid big bundle
 const DocumentUploadModal = dynamic(
@@ -176,9 +176,21 @@ export default function FamilyPage() {
                   ) : (
                     documents.map((doc) => (
                       <tr key={doc.id}>
-                        <td className="px-3 py-2">{doc.title}</td>
+                        <td className="px-3 py-2">
+                          <div>{doc.title}</div>
+                          {doc.tags && doc.tags.length > 0 && (
+                            <div className="mt-1 flex flex-wrap gap-1">
+                              {doc.tags.map((tag) => (
+                                <span key={tag} className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+                                  <FiTag className="mr-1 h-3 w-3" />
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </td>
                         <td className="px-3 py-2">{DOCUMENT_TYPE_LABELS[doc.type]}</td>
-                        <td className="px-3 py-2">{(doc.fileSize / 1024 / 1024).toFixed(1)} MB</td>
+                        <td className="px-3 py-2">{formatFileSize(doc.fileSize)}</td>
                         <td className="px-3 py-2">
                           {doc.uploader.firstName} {doc.uploader.lastName}
                         </td>

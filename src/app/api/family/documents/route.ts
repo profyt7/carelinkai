@@ -451,7 +451,8 @@ export async function POST(request: NextRequest) {
         fileUrl,
         fileName: file.name,
         fileType: file.type,
-        fileSize: file.size,
+        // Use the actual buffer length in case the File.size is unreliable
+        fileSize: fileBuffer.length,
         type: metadata.type,
         version: 1,
         isEncrypted: metadata.isEncrypted,
