@@ -339,8 +339,17 @@ const RealTimeInquiryUpdates: React.FC<RealTimeInquiryUpdatesProps> = ({
     const interval = setInterval(() => {
       // 15% chance of receiving a new update every 45 seconds
       if (Math.random() < 0.15) {
-        const updateTypes: UpdateType[] = ['STATUS_CHANGE', 'NEW_MESSAGE', 'TOUR_REMINDER', 'DOCUMENT_SHARED', 'NOTE_ADDED'];
-        const randomType = updateTypes[Math.floor(Math.random() * updateTypes.length)];
+        const updateTypes: UpdateType[] = [
+          'STATUS_CHANGE',
+          'NEW_MESSAGE',
+          'TOUR_REMINDER',
+          'DOCUMENT_SHARED',
+          'NOTE_ADDED'
+        ];
+        // Non-undefined assertion for the randomly selected type
+        const randomType = updateTypes[
+          Math.floor(Math.random() * updateTypes.length)
+        ] as UpdateType;
         
         // Ensure the array items are treated as strings for downstream typing
         const mockInquiryIds = inquiryId ? [inquiryId as string] : ['inq-001', 'inq-002', 'inq-003'];
