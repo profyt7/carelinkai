@@ -599,8 +599,20 @@ export default function InquiryDetailPage() {
     
     const eventTitle = `Tour at ${inquiry.home.name}`;
     const eventDate = new Date(inquiry.tourDate);
-    const [hours, minutes] = inquiry.tourTime.split(':');
-    eventDate.setHours(parseInt(hours), parseInt(minutes));
+    /* 
+     * Parse time safely: supports formats like "10:00", "10:00 AM", "1:30 pm", etc.
+     * Falls back silently if parsing fails, avoiding undefined errors flagged by TS.
+     */
+    const timeStr = inquiry.tourTime;
+    const match = timeStr.match(/^(\d{1,2}):(\d{2})(?:\s*(AM|PM))?$/i);
+    if (match) {
+      let h = parseInt(match[1], 10);
+      const m = parseInt(match[2], 10);
+      const ampm = match[3]?.toUpperCase();
+      if (ampm === 'PM' && h < 12) h += 12;
+      if (ampm === 'AM' && h === 12) h = 0;
+      eventDate.setHours(h, m, 0, 0);
+    }
     
     const endDate = new Date(eventDate);
     endDate.setHours(endDate.getHours() + 1); // Assume 1 hour tour
