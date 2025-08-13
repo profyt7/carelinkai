@@ -236,7 +236,7 @@ function SocketProvider({ children }: { children: React.ReactNode }) {
       const token = localStorage.getItem("token");
       
       if (token) {
-        const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || "", {
+        const socket = io(process.env['NEXT_PUBLIC_SOCKET_URL'] || "", {
           auth: {
             token,
           },
