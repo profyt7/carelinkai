@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef, TouchEvent } from "react";
+import { useState, useEffect, useRef } from "react";
+import type { TouchEvent } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
