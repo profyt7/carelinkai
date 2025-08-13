@@ -74,7 +74,7 @@ export async function GET(req: NextRequest) {
     
     // Parse URL and query parameters
     const url = new URL(req.url);
-    const rawParams: Record<string, string> = {};
+    const rawParams: Record<string, string | string[]> = {};
     
     // Extract all query parameters
     url.searchParams.forEach((value, key) => {
