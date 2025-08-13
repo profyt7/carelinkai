@@ -34,6 +34,7 @@ export type FamilyMemberStatus = PrismaFamilyMemberStatus;
 
 export const FamilyDocumentType = PrismaFamilyDocumentType;
 export type FamilyDocumentType = PrismaFamilyDocumentType;
+export type DocumentType = FamilyDocumentType;
 
 export const ActivityType = PrismaActivityType;
 export type ActivityType = PrismaActivityType;
@@ -501,6 +502,18 @@ export interface UpdateGalleryPhotoRequest {
 // ======================================================
 
 /**
+ * Pagination data for API responses
+ */
+export interface PaginationData {
+  page: number;
+  limit: number;
+  totalCount: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
+/**
  * Paginated response wrapper
  */
 export interface PaginatedResponse<T> {
@@ -711,6 +724,22 @@ export enum SupportedFileType {
 }
 
 /**
+ * Family document upload interface for the upload process
+ */
+export interface FamilyDocumentUpload {
+  familyId: string;
+  title: string;
+  description?: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  file: File;
+  type: DocumentType;
+  isEncrypted: boolean;
+  tags?: string[];
+}
+
+/**
  * File upload metadata
  */
 export interface FileUploadMetadata {
@@ -777,6 +806,23 @@ export interface RichTextContent {
 // ======================================================
 // ================= FILTER & SEARCH TYPES ==============
 // ======================================================
+
+/**
+ * Document filter parameters for API requests
+ */
+export interface DocumentFilterParams {
+  familyId: string;
+  page: number;
+  limit: number;
+  sortBy?: 'createdAt' | 'updatedAt' | 'title' | 'fileSize';
+  sortOrder?: 'asc' | 'desc';
+  type?: DocumentType | DocumentType[];
+  status?: string;
+  searchQuery?: string;
+  tags?: string[];
+  residentId?: string;
+  uploaderId?: string;
+}
 
 /**
  * Document filter options
