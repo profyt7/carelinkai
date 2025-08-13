@@ -1,16 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth-db-simple';
-import { PrismaClient } from '@prisma/client';
 import webpush from 'web-push';
-
-const prisma = new PrismaClient();
 
 // Configure web-push with VAPID keys
 webpush.setVapidDetails(
-  process.env.VAPID_SUBJECT || 'mailto:support@carelinkai.com',
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '',
-  process.env.VAPID_PRIVATE_KEY || ''
+  process.env['VAPID_SUBJECT'] || 'mailto:support@carelinkai.com',
+  process.env['NEXT_PUBLIC_VAPID_PUBLIC_KEY'] || '',
+  process.env['VAPID_PRIVATE_KEY'] || ''
 );
 
 /**
@@ -40,41 +37,10 @@ export async function POST(req: NextRequest) {
     }
     
     // Check if this subscription already exists
-    const existingSubscription = await prisma.pushSubscription.findFirst({
-      where: {
-        endpoint: subscription.endpoint,
-        userId: session.user.id
-      }
-    });
+    // TODO: re-enable when PushSubscription model is added to Prisma
+    const existingSubscription = null;
     
-    if (existingSubscription) {
-      // Update the existing subscription
-      await prisma.pushSubscription.update({
-        where: { id: existingSubscription.id },
-        data: {
-          p256dh: subscription.keys.p256dh,
-          auth: subscription.keys.auth,
-          updatedAt: new Date()
-        }
-      });
-      
-      return NextResponse.json({ 
-        success: true, 
-        message: 'Subscription updated successfully' 
-      });
-    }
-    
-    // Create a new subscription
-    await prisma.pushSubscription.create({
-      data: {
-        endpoint: subscription.endpoint,
-        p256dh: subscription.keys.p256dh,
-        auth: subscription.keys.auth,
-        userId: session.user.id,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }
-    });
+    // Skip DB persistence in stub mode
     
     // Send a test notification if requested
     if (data.sendTestNotification) {
@@ -97,9 +63,11 @@ export async function POST(req: NextRequest) {
       }
     }
     
-    return NextResponse.json({ 
-      success: true, 
-      message: 'Subscription stored successfully' 
+    return NextResponse.json({
+      success: true,
+      message: existingSubscription
+        ? 'Subscription updated successfully (stubbed)'
+        : 'Subscription stored successfully (stubbed)'
     });
   } catch (error) {
     console.error('Error storing push subscription:', error);
@@ -136,17 +104,9 @@ export async function DELETE(req: NextRequest) {
       );
     }
     
-    // Delete the subscription
-    await prisma.pushSubscription.deleteMany({
-      where: {
-        endpoint: endpoint,
-        userId: session.user.id
-      }
-    });
-    
     return NextResponse.json({ 
       success: true, 
-      message: 'Subscription removed successfully' 
+      message: 'Subscription removed successfully (stubbed)' 
     });
   } catch (error) {
     console.error('Error removing push subscription:', error);
