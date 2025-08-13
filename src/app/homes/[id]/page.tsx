@@ -847,7 +847,7 @@ export default function HomeDetailPage() {
                     <FiStar className="fill-current" />
                     <span className="ml-1 font-medium text-neutral-800">{home.rating}</span>
                   </div>
-                  <span className="ml-1 text-sm text-neutral-500">({home.reviews} reviews)</span>
+                  <span className="ml-1 text-sm text-neutral-500">({home.reviewsCount} reviews)</span>
                 </div>
               </div>
               
