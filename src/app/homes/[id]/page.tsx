@@ -305,8 +305,9 @@ export default function HomeDetailPage() {
   useEffect(() => {
     if (home.activities && home.activities.length > 0) {
       const uniqueDates = [...new Set(home.activities.map(activity => activity.date))];
-      if (uniqueDates.length > 0) {
-        setSelectedDate(uniqueDates[0]);
+      const first = uniqueDates.at(0);
+      if (first) {
+        setSelectedDate(first);
       }
     }
   }, [home.activities]);
