@@ -264,7 +264,15 @@ function SocketProvider({ children }: { children: React.ReactNode }) {
           socket.disconnect();
         };
       }
+
+      // When running in the browser but no token is found, explicitly return
+      // undefined so that all code paths of this effect callback have a
+      // consistent return type.
+      return undefined;
     }
+
+    // If executed during SSR, return undefined as well.
+    return undefined;
   }, []);
 
   return (
