@@ -47,9 +47,9 @@ const DOCUMENT_TYPES = [
   { id: "MEDICAL_RECORD", name: "Medical Record" },
   { id: "INSURANCE_DOCUMENT", name: "Insurance Document" },
   { id: "LEGAL_DOCUMENT", name: "Legal Document" },
-  { id: "FINANCIAL_DOCUMENT", name: "Financial Document" },
-  { id: "MEDICATION_LIST", name: "Medication List" },
-  { id: "CONTACT_INFO", name: "Contact Information" },
+  { id: "PERSONAL_DOCUMENT", name: "Personal Document" },
+  { id: "PHOTO", name: "Photo" },
+  { id: "VIDEO", name: "Video" },
   { id: "OTHER", name: "Other" }
 ];
 
