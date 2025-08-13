@@ -8,9 +8,9 @@ const prisma = new PrismaClient();
 
 // Configure web-push with VAPID keys
 webpush.setVapidDetails(
-  process.env.VAPID_SUBJECT || 'mailto:support@carelinkai.com',
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '',
-  process.env.VAPID_PRIVATE_KEY || ''
+  process.env['VAPID_SUBJECT'] || 'mailto:support@carelinkai.com',
+  process.env['NEXT_PUBLIC_VAPID_PUBLIC_KEY'] || '',
+  process.env['VAPID_PRIVATE_KEY'] || ''
 );
 
 /**
@@ -218,7 +218,7 @@ export async function GET(req: NextRequest) {
     
     return NextResponse.json({
       supported: true,
-      vapidPublicKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+      vapidPublicKey: process.env['NEXT_PUBLIC_VAPID_PUBLIC_KEY'],
       hasSubscriptions: subscriptionCount > 0,
       subscriptionCount
     });
