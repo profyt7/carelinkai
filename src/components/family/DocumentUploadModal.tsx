@@ -15,7 +15,7 @@ import {
   FiPlus,
   FiTag
 } from "react-icons/fi";
-import { DocumentType, FamilyDocumentUpload } from "@/lib/types/family";
+import type { DocumentType, FamilyDocumentUpload } from "@/lib/types/family";
 
 // Maximum file size in bytes (10MB)
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
