@@ -151,6 +151,14 @@ export async function POST(request: NextRequest) {
         { status: 404 }
       );
     }
+
+    // Guard: ensure user has a passwordHash to validate against
+    if (!user.passwordHash) {
+      return NextResponse.json(
+        { success: false, message: "Password change not available for this account" },
+        { status: 400 }
+      );
+    }
     
     // Verify current password
     const isPasswordValid = await compare(currentPassword, user.passwordHash);
