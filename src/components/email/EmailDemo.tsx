@@ -204,15 +204,21 @@ export default function EmailDemo() {
     setEmailHistory([]);
   };
 
-  // Tabs configuration
-  const tabs = [
+  // Tabs configuration (memoized to maintain stable reference)
+  const tabs = React.useMemo(() => ([
     { key: 'welcome', label: 'Welcome Email', icon: <FiMail /> },
     { key: 'notification', label: 'Notification', icon: <FiAlertCircle /> },
     { key: 'appointment', label: 'Appointment', icon: <FiCalendar /> },
     { key: 'document', label: 'Document Sharing', icon: <FiFile /> },
     { key: 'custom', label: 'Custom HTML', icon: <FiCode /> },
     { key: 'history', label: 'Email History', icon: <FiClock /> },
-  ];
+  ]), []);
+
+  // Safely compute currently selected tab index
+  const selectedTabIndex = React.useMemo(() => {
+    const i = tabs.findIndex(t => t.key === selectedTab);
+    return i >= 0 ? i : 0;
+  }, [tabs, selectedTab]);
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
@@ -227,7 +233,12 @@ export default function EmailDemo() {
         </div>
       ) : null}
 
-      <Tab.Group selectedIndex={tabs.findIndex(t => t.key === selectedTab)} onChange={(index) => setSelectedTab(tabs[index].key as EmailTab)}>
+      <Tab.Group
+        selectedIndex={selectedTabIndex}
+        onChange={(index) =>
+          setSelectedTab((tabs[index]?.key as EmailTab) || 'welcome')
+        }
+      >
         <Tab.List className="flex space-x-1 rounded-xl bg-blue-50 p-1 mb-6">
           {tabs.map((tab) => (
             <Tab
