@@ -186,7 +186,7 @@ export async function POST(
       familyId,
       documentId,
       session.user.id,
-      { content, parentCommentId }
+      { content, parentCommentId, documentId }
     );
 
     /* ------------------------------------------------------------------
