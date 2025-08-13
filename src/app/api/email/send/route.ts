@@ -285,7 +285,13 @@ async function processEmail(emailData: any, session: any) {
     };
   }
 
-  return await sendForRecipient(recipients[0]);
+  // Guard against empty recipient list (should not happen after validation)
+  if (recipients.length === 0) {
+    return { success: false, error: 'No recipients provided' };
+  }
+
+  // Non-null assertion because we just checked length
+  return await sendForRecipient(recipients[0]!);
 }
 
 // Define allowed HTTP methods
