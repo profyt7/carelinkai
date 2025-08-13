@@ -177,11 +177,11 @@ export async function GET(request: NextRequest) {
       
       // Handle array parameters
       if (searchParams.has("type") && searchParams.getAll("type").length > 1) {
-        filterParams.type = searchParams.getAll("type");
+        filterParams['type'] = searchParams.getAll("type");
       }
       
       if (searchParams.has("tags") && searchParams.getAll("tags").length > 1) {
-        filterParams.tags = searchParams.getAll("tags");
+        filterParams['tags'] = searchParams.getAll("tags");
       }
       
       // Clean up undefined values
