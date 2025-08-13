@@ -49,14 +49,17 @@ export async function GET() {
   try {
     // Simple query to check database connection
     await prisma.$queryRaw`SELECT 1 as health_check`;
-    checks.database = { status: "healthy", message: "Connected successfully" };
+    checks.database = {
+      status: "healthy",
+      message: "Connected successfully",
+    } as ServiceCheck;
   } catch (error) {
-    checks.database = { 
+    checks.database = {
       status: "unhealthy", 
       message: process.env.NODE_ENV === "production" 
         ? "Database connection failed" 
-        : `Database error: ${(error as Error).message}` 
-    };
+        : `Database error: ${(error as Error).message}`,
+    } as ServiceCheck;
     checks.status = "unhealthy";
   }
 
@@ -77,7 +80,7 @@ export async function GET() {
           pingResult === 'PONG'
             ? 'Connected successfully'
             : `Unexpected response: ${pingResult}`,
-      };
+      } as ServiceCheck;
 
       if (checks.redis.status === 'unhealthy') {
         checks.status = 'unhealthy';
@@ -89,11 +92,14 @@ export async function GET() {
           process.env.NODE_ENV === 'production'
             ? 'Redis connection failed'
             : `Redis error: ${(error as Error).message}`,
-      };
+      } as ServiceCheck;
       checks.status = 'unhealthy';
     }
   } else {
-    checks.redis = { status: 'skipped', message: 'Redis not configured' };
+    checks.redis = {
+      status: 'skipped',
+      message: 'Redis not configured',
+    } as ServiceCheck;
   }
 
   // Check S3/MinIO storage if configured
@@ -118,7 +124,10 @@ export async function GET() {
       });
 
       await s3Client.send(command);
-      checks.storage = { status: 'healthy', message: 'Connected successfully' };
+      checks.storage = {
+        status: 'healthy',
+        message: 'Connected successfully',
+      } as ServiceCheck;
     } catch (error) {
       checks.storage = {
         status: 'unhealthy',
@@ -126,11 +135,14 @@ export async function GET() {
           process.env.NODE_ENV === 'production'
             ? 'Storage connection failed'
             : `Storage error: ${(error as Error).message}`,
-      };
+      } as ServiceCheck;
       checks.status = 'unhealthy';
     }
   } else {
-    checks.storage = { status: 'skipped', message: 'S3/MinIO not configured' };
+    checks.storage = {
+      status: 'skipped',
+      message: 'S3/MinIO not configured',
+    } as ServiceCheck;
   }
 
   // Add response time
