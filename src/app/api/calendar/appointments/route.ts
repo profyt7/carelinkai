@@ -310,11 +310,11 @@ export async function GET(request: NextRequest) {
     
     // Special handling for type and status which can be arrays
     if (url.searchParams.getAll('type').length > 1) {
-      params.type = url.searchParams.getAll('type');
+      params['type'] = url.searchParams.getAll('type');
     }
     
     if (url.searchParams.getAll('status').length > 1) {
-      params.status = url.searchParams.getAll('status');
+      params['status'] = url.searchParams.getAll('status');
     }
     
     // 3. Build filter criteria directly without strict validation
