@@ -258,9 +258,12 @@ export async function GET(request: NextRequest) {
       console.log(`[Documents API] Starting Prisma queries, elapsed: ${Date.now() - startedAt}ms`, { whereClause });
       
       // Query documents with pagination
-      // Build orderBy clause with explicit, type-safe object
+      // ------------------------------------------------------------------
+      // Build orderBy clause – ensure sortOrder is always defined
+      // ------------------------------------------------------------------
+      const sortOrder: "asc" | "desc" = (filters.sortOrder ?? "desc") as "asc" | "desc";
       const orderByClause: Record<string, "asc" | "desc"> = {
-        [filters.sortBy as string]: filters.sortOrder
+        [filters.sortBy as string]: sortOrder
       };
 
       const [documents, totalCount] = await Promise.all([
