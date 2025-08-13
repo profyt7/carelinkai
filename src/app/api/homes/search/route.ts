@@ -390,8 +390,8 @@ export async function GET(req: NextRequest) {
       gender: home.genderRestriction,
       rating: home.averageRating,
       reviewCount: home.reviewCount,
-      aiMatchScore: home.aiMatchScore,
-      distance: home.distance,
+      aiMatchScore: (home as any).aiMatchScore ?? null,
+      distance: (home as any).distance ?? null,
       primaryPhoto: home.photos[0]?.url || null,
       amenities: [],
       operator: {
