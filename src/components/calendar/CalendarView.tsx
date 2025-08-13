@@ -512,10 +512,11 @@ export default function CalendarView({
       onSearchChange(newValue);
     } else {
       setInternalSearchQuery(newValue);
-      setFilter(prev => ({
-        ...prev,
-        searchText: newValue || undefined
-      }));
+      // Directly update based on current `filter`
+      setFilter({
+        ...filter,
+        searchText: newValue || undefined,
+      });
       fetchAppointments();
     }
   }, [onSearchChange, setFilter, fetchAppointments]);
@@ -534,11 +535,12 @@ export default function CalendarView({
         const newFilters = prev.includes(type)
           ? prev.filter(t => t !== type)
           : [...prev, type];
-        
-        setFilter(prevFilter => ({
-          ...prevFilter,
-          appointmentTypes: newFilters.length > 0 ? newFilters : undefined
-        }));
+
+        // Update using current `filter`
+        setFilter({
+          ...filter,
+          appointmentTypes: newFilters.length > 0 ? newFilters : undefined,
+        });
         
         fetchAppointments();
         return newFilters;
@@ -560,11 +562,11 @@ export default function CalendarView({
         const newFilters = prev.includes(status)
           ? prev.filter(s => s !== status)
           : [...prev, status];
-        
-        setFilter(prevFilter => ({
-          ...prevFilter,
-          status: newFilters.length > 0 ? newFilters : undefined
-        }));
+
+        setFilter({
+          ...filter,
+          status: newFilters.length > 0 ? newFilters : undefined,
+        });
         
         fetchAppointments();
         return newFilters;
@@ -585,14 +587,14 @@ export default function CalendarView({
       onStatusFiltersChange([]);
     } else {
       setInternalStatusFilters([]);
-      setFilter(prev => ({ ...prev, status: undefined }));
+      setFilter({ ...filter, status: undefined });
     }
     
     if (onSearchChange) {
       onSearchChange('');
     } else {
       setInternalSearchQuery('');
-      setFilter(prev => ({ ...prev, searchText: undefined }));
+      setFilter({ ...filter, searchText: undefined });
     }
     
     // Fetch updated appointments if using internal state
