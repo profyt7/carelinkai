@@ -472,7 +472,12 @@ export async function POST(request: NextRequest) {
           notes: p.notes,
         })),
         recurrence: appointmentData.recurrence,
-        reminders: appointmentData.reminders,
+        // Ensure each reminder includes the required `sent` flag
+        reminders: appointmentData.reminders?.map(r => ({
+          minutesBefore: r.minutesBefore,
+          method: r.method,
+          sent: false
+        })),
         notes: appointmentData.notes,
         customFields: appointmentData.customFields,
       };
