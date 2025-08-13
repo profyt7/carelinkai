@@ -61,67 +61,76 @@ export async function GET() {
   }
 
   // Check Redis if configured
-  if (process.env.REDIS_URL) {
+  if (process.env['REDIS_URL']) {
     try {
-      const redis = new Redis(process.env.REDIS_URL, {
+      const redis = new Redis(process.env['REDIS_URL'] as string, {
         connectTimeout: 3000,
         commandTimeout: 3000,
       });
-      
+
       const pingResult = await redis.ping();
       await redis.quit();
-      
-      checks.redis = { 
-        status: pingResult === "PONG" ? "healthy" : "unhealthy", 
-        message: pingResult === "PONG" ? "Connected successfully" : `Unexpected response: ${pingResult}` 
+
+      checks.redis = {
+        status: pingResult === 'PONG' ? 'healthy' : 'unhealthy',
+        message:
+          pingResult === 'PONG'
+            ? 'Connected successfully'
+            : `Unexpected response: ${pingResult}`,
       };
-      
-      if (checks.redis.status === "unhealthy") {
-        checks.status = "unhealthy";
+
+      if (checks.redis.status === 'unhealthy') {
+        checks.status = 'unhealthy';
       }
     } catch (error) {
-      checks.redis = { 
-        status: "unhealthy", 
-        message: process.env.NODE_ENV === "production" 
-          ? "Redis connection failed" 
-          : `Redis error: ${(error as Error).message}` 
+      checks.redis = {
+        status: 'unhealthy',
+        message:
+          process.env.NODE_ENV === 'production'
+            ? 'Redis connection failed'
+            : `Redis error: ${(error as Error).message}`,
       };
-      checks.status = "unhealthy";
+      checks.status = 'unhealthy';
     }
   } else {
-    checks.redis = { status: "skipped", message: "Redis not configured" };
+    checks.redis = { status: 'skipped', message: 'Redis not configured' };
   }
 
   // Check S3/MinIO storage if configured
-  if (process.env.S3_ENDPOINT && process.env.S3_ACCESS_KEY && process.env.S3_SECRET_KEY) {
+  if (
+    process.env['S3_ENDPOINT'] &&
+    process.env['S3_ACCESS_KEY'] &&
+    process.env['S3_SECRET_KEY']
+  ) {
     try {
       const s3Client = new S3Client({
-        endpoint: process.env.S3_ENDPOINT,
-        region: process.env.S3_REGION || "us-east-1",
+        endpoint: process.env['S3_ENDPOINT'],
+        region: process.env['S3_REGION'] || 'us-east-1',
         credentials: {
-          accessKeyId: process.env.S3_ACCESS_KEY,
-          secretAccessKey: process.env.S3_SECRET_KEY,
+          accessKeyId: process.env['S3_ACCESS_KEY'] as string,
+          secretAccessKey: process.env['S3_SECRET_KEY'] as string,
         },
         forcePathStyle: true,
       });
 
       const command = new HeadBucketCommand({
-        Bucket: process.env.S3_BUCKET || "carelinkai-storage",
+        Bucket: process.env['S3_BUCKET'] || 'carelinkai-storage',
       });
 
       await s3Client.send(command);
-      checks.storage = { status: "healthy", message: "Connected successfully" };
+      checks.storage = { status: 'healthy', message: 'Connected successfully' };
     } catch (error) {
-      checks.storage = { 
-        status: "unhealthy", 
-        message: process.env.NODE_ENV === "production" 
-          ? "Storage connection failed" 
-          : `Storage error: ${(error as Error).message}` 
+      checks.storage = {
+        status: 'unhealthy',
+        message:
+          process.env.NODE_ENV === 'production'
+            ? 'Storage connection failed'
+            : `Storage error: ${(error as Error).message}`,
       };
-      checks.status = "unhealthy";
+      checks.status = 'unhealthy';
     }
   } else {
-    checks.storage = { status: "skipped", message: "S3/MinIO not configured" };
+    checks.storage = { status: 'skipped', message: 'S3/MinIO not configured' };
   }
 
   // Add response time
