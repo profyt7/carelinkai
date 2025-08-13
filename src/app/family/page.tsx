@@ -15,7 +15,8 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useSearchParams } from 'next/navigation';
 import { useDocuments } from '@/hooks/useDocuments';
 import dynamic from 'next/dynamic';
-import { DOCUMENT_TYPE_LABELS, DocumentType, formatFileSize } from '@/lib/types/family';
+import { DOCUMENT_TYPE_LABELS, formatFileSize } from '@/lib/types/family';
+import type { DocumentType } from '@/lib/types/family';
 import { FiPlus, FiSearch, FiTrash2, FiDownload, FiTag } from 'react-icons/fi';
 
 // Lazy load modal to avoid big bundle
