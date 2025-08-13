@@ -639,13 +639,13 @@ export async function GET(request: NextRequest) {
       results: filteredResults
     }, { status: 200 });
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('Search API error:', error);
     
     return NextResponse.json({
       success: false,
       error: 'An error occurred while processing your search',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      details: process.env['NODE_ENV'] === 'development' ? error?.message : undefined
     }, { status: 500 });
   } finally {
     // Always disconnect from the database
