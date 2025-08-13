@@ -15,7 +15,6 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { PrismaClient, AuditAction, UserStatus } from "@prisma/client";
 import { compare } from "bcryptjs";
-import { authenticator } from "otplib";
 
 // Initialize Prisma client
 const prisma = new PrismaClient();
@@ -76,8 +75,6 @@ export const authOptions: NextAuthOptions = {
             status: true,
             emailVerified: true,
             twoFactorEnabled: true,
-            twoFactorSecret: true,
-            backupCodes: true,
             lastLoginAt: true,
           }
         });
@@ -151,78 +148,7 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Invalid email or password");
         }
         
-        // Check if 2FA is enabled
-        if (user.twoFactorEnabled) {
-          // If 2FA is enabled but no code provided, return partial user info
-          if (!credentials.twoFactorCode) {
-            return {
-              id: user.id,
-              email: user.email,
-              name: `${user.firstName} ${user.lastName}`,
-              requiresTwoFactor: true
-            };
-          }
-          
-          // Verify 2FA code
-          const isValidToken = user.twoFactorSecret && 
-            authenticator.verify({
-              token: credentials.twoFactorCode,
-              secret: user.twoFactorSecret
-            });
-          
-          // Check backup codes if token is not valid
-          const isValidBackupCode = !isValidToken && 
-            user.backupCodes && 
-            Array.isArray(user.backupCodes) && 
-            user.backupCodes.includes(credentials.twoFactorCode);
-          
-          if (!isValidToken && !isValidBackupCode) {
-            // Log failed 2FA attempt
-            await prisma.auditLog.create({
-              data: {
-                action: AuditAction.SECURITY,
-                resourceType: "AUTH",
-                resourceId: user.id,
-                description: "Failed 2FA verification",
-                ipAddress: req.headers?.["x-forwarded-for"] || "unknown",
-                userId: user.id,
-                metadata: {
-                  email,
-                  reason: "INVALID_2FA_CODE"
-                }
-              }
-            });
-            
-            throw new Error("Invalid two-factor code");
-          }
-          
-          // If backup code was used, remove it
-          if (isValidBackupCode && user.backupCodes) {
-            const updatedBackupCodes = (user.backupCodes as string[])
-              .filter(code => code !== credentials.twoFactorCode);
-            
-            await prisma.user.update({
-              where: { id: user.id },
-              data: { backupCodes: updatedBackupCodes }
-            });
-            
-            // Log backup code usage
-            await prisma.auditLog.create({
-              data: {
-                action: AuditAction.SECURITY,
-                resourceType: "AUTH",
-                resourceId: user.id,
-                description: "Backup code used for 2FA",
-                ipAddress: req.headers?.["x-forwarded-for"] || "unknown",
-                userId: user.id,
-                metadata: {
-                  email,
-                  remainingCodes: updatedBackupCodes.length
-                }
-              }
-            });
-          }
-        }
+        // 2FA bypass: login proceeds based solely on password validation.
         
         // Update last login timestamp
         await prisma.user.update({

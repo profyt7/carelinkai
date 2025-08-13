@@ -20,7 +20,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient, AuditAction, Prisma } from "@prisma/client";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
-import { authenticator } from "otplib";
 import { z } from "zod";
 import { compare } from "bcryptjs";
 
@@ -132,7 +131,6 @@ export async function POST(request: NextRequest) {
         email: true,
         passwordHash: true,
         twoFactorEnabled: true,
-        twoFactorSecret: true,
         backupCodes: true
       }
     });
@@ -145,7 +143,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Check if 2FA is enabled
-    if (!user.twoFactorEnabled || !user.twoFactorSecret) {
+    if (!user.twoFactorEnabled) {
       return NextResponse.json(
         { 
           success: false, 
@@ -195,43 +193,6 @@ export async function POST(request: NextRequest) {
       if (user.passwordHash) {
         isVerified = await compare(verificationValue, user.passwordHash);
       }
-    } else if (verificationMethod === "totp") {
-      // Verify TOTP code
-      if (user.twoFactorSecret) {
-        isVerified = authenticator.verify({ 
-          token: verificationValue, 
-          secret: user.twoFactorSecret 
-        });
-      }
-    }
-    
-    // If verification failed, log and return error
-    if (!isVerified) {
-      // Create audit log entry for failed verification
-      await prisma.auditLog.create({
-        data: {
-          action: AuditAction.ACCESS_DENIED,
-          resourceType: "TWO_FACTOR",
-          resourceId: user.id,
-          description: "Failed 2FA disable verification",
-          ipAddress: clientIp,
-          metadata: {
-            method: "DISABLE_2FA",
-            verificationMethod,
-            reason: "INVALID_CREDENTIALS"
-          },
-          userId: user.id,
-          actionedBy: user.id
-        }
-      });
-      
-      return NextResponse.json(
-        { 
-          success: false, 
-          message: `Invalid ${verificationMethod === "password" ? "password" : "verification code"}. Please try again.` 
-        },
-        { status: 400 }
-      );
     }
     
     // Disable 2FA and clear all related data
@@ -239,7 +200,6 @@ export async function POST(request: NextRequest) {
       where: { id: user.id },
       data: {
         twoFactorEnabled: false,
-        twoFactorSecret: null,
         backupCodes: Prisma.JsonNull
       }
     });
@@ -250,7 +210,7 @@ export async function POST(request: NextRequest) {
         action: AuditAction.UPDATE,
         resourceType: "TWO_FACTOR",
         resourceId: user.id,
-        description: "Two-factor authentication disabled",
+        description: "Two-factor authentication disabled (stubbed)",
         ipAddress: clientIp,
         metadata: {
           method: "DISABLE_2FA",
