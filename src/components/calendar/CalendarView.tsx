@@ -29,14 +29,16 @@ import interactionPlugin from '@fullcalendar/interaction';
 import listPlugin from '@fullcalendar/list';
 
 // Import types
-import { 
-  AppointmentType, 
-  AppointmentStatus, 
+import {
+  AppointmentType,
+  AppointmentStatus,
+  RecurrenceFrequency,
+} from '@/lib/types/calendar';
+import type {
   Appointment,
   CalendarEvent,
   BookingRequest,
-  RecurrenceFrequency,
-  RecurrencePattern
+  RecurrencePattern,
 } from '@/lib/types/calendar';
 import { UserRole } from '@prisma/client';
 
