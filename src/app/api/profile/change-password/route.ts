@@ -43,6 +43,7 @@ const passwordChangeSchema = z.object({
 const limiter = rateLimit({
   interval: WINDOW_MS,
   uniqueTokenPerInterval: 500,
+  limit: MAX_ATTEMPTS,
 });
 
 /**
