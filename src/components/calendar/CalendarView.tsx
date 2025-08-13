@@ -41,6 +41,8 @@ import type {
   RecurrencePattern,
 } from '@/lib/types/calendar';
 import { UserRole } from '@prisma/client';
+// FullCalendar option typings (type-only to satisfy `verbatimModuleSyntax`)
+import type { CalendarOptions } from '@fullcalendar/core';
 
 // Calendar view options
 type CalendarViewOption = 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay' | 'listWeek';
@@ -605,7 +607,7 @@ export default function CalendarView({
   }, [onTypeFiltersChange, onStatusFiltersChange, onSearchChange, setFilter, fetchAppointments]);
   
   // Calendar options
-  const calendarOptions = useMemo(() => ({
+  const calendarOptions = useMemo<CalendarOptions>(() => ({
     plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin],
     initialView: currentView,
     headerToolbar: false, // We'll create our own toolbar
