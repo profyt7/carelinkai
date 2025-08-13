@@ -235,94 +235,57 @@ async function processEmail(emailData: any, session: any) {
   // Log email attempt
   logger.info(`Email request: type=${type}, to=${Array.isArray(formattedTo) ? formattedTo.join(',') : formattedTo}`);
   
-  // Process based on email type
-  switch (type) {
-    case 'welcome': {
-      const { firstName, lastName, verificationUrl } = emailData.templateData;
-      return await emailService.sendWelcomeEmail(formattedTo, {
-        firstName,
-        lastName,
-        verificationUrl,
-      });
+  // ------------------------------------------------------------------
+  // Support multiple recipients by sending individually, then aggregate
+  // ------------------------------------------------------------------
+  const recipients = Array.isArray(formattedTo) ? formattedTo : [formattedTo];
+
+  async function sendForRecipient(toAddr: string) {
+    switch (type) {
+      case 'welcome': {
+        const { firstName, lastName, verificationUrl } = emailData.templateData;
+        return emailService.sendWelcomeEmail(toAddr, { firstName, lastName, verificationUrl });
+      }
+
+      case 'password-reset': {
+        const { firstName, resetUrl, expiresInMinutes } = emailData.templateData;
+        return emailService.sendPasswordResetEmail(toAddr, { firstName, resetUrl, expiresInMinutes });
+      }
+
+      case 'notification': {
+        const { firstName, message, actionUrl, actionText, category } = emailData.templateData;
+        return emailService.sendNotificationEmail(toAddr, subject, { firstName, message, actionUrl, actionText, category });
+      }
+
+      case 'appointment': {
+        const { firstName, appointmentType, dateTime, location, virtualMeetingUrl, notes, calendarLink } = emailData.templateData;
+        return emailService.sendAppointmentEmail(toAddr, { firstName, appointmentType, dateTime, location, virtualMeetingUrl, notes, calendarLink });
+      }
+
+      case 'document-shared': {
+        const { firstName, sharedBy, documentName, documentUrl, message } = emailData.templateData;
+        return emailService.sendDocumentSharedEmail(toAddr, { firstName, sharedBy, documentName, documentUrl, message });
+      }
+
+      case 'custom': {
+        const { html, text } = emailData;
+        return emailService.sendCustomEmail(toAddr, subject, html, text);
+      }
+
+      default:
+        throw new Error(`Unsupported email type: ${type}`);
     }
-    
-    case 'password-reset': {
-      const { firstName, resetUrl, expiresInMinutes } = emailData.templateData;
-      return await emailService.sendPasswordResetEmail(formattedTo, {
-        firstName,
-        resetUrl,
-        expiresInMinutes,
-      });
-    }
-    
-    case 'notification': {
-      const { firstName, message, actionUrl, actionText, category } = emailData.templateData;
-      return await emailService.sendNotificationEmail(
-        formattedTo,
-        subject,
-        {
-          firstName,
-          message,
-          actionUrl,
-          actionText,
-          category,
-        }
-      );
-    }
-    
-    case 'appointment': {
-      const {
-        firstName,
-        appointmentType,
-        dateTime,
-        location,
-        virtualMeetingUrl,
-        notes,
-        calendarLink,
-      } = emailData.templateData;
-      
-      return await emailService.sendAppointmentEmail(formattedTo, {
-        firstName,
-        appointmentType,
-        dateTime,
-        location,
-        virtualMeetingUrl,
-        notes,
-        calendarLink,
-      });
-    }
-    
-    case 'document-shared': {
-      const {
-        firstName,
-        sharedBy,
-        documentName,
-        documentUrl,
-        message,
-      } = emailData.templateData;
-      
-      return await emailService.sendDocumentSharedEmail(formattedTo, {
-        firstName,
-        sharedBy,
-        documentName,
-        documentUrl,
-        message,
-      });
-    }
-    
-    case 'custom': {
-      const { html, text } = emailData;
-      return await emailService.sendCustomEmail(
-        formattedTo,
-        subject,
-        html,
-        text
-      );
-    }
-    
-    default:
-      throw new Error(`Unsupported email type: ${type}`);
   }
+
+  if (recipients.length > 1) {
+    const results = await Promise.all(recipients.map(sendForRecipient));
+    return {
+      success: results.every(r => r.success),
+      results,
+    };
+  }
+
+  return await sendForRecipient(recipients[0]);
 }
 
 // Define allowed HTTP methods
