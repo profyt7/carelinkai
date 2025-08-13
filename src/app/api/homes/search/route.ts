@@ -272,7 +272,6 @@ export async function GET(req: NextRequest) {
               rating: true,
             },
           },
-          amenities: true,
           operator: {
             select: {
               id: true,
@@ -394,7 +393,7 @@ export async function GET(req: NextRequest) {
       aiMatchScore: home.aiMatchScore,
       distance: home.distance,
       primaryPhoto: home.photos[0]?.url || null,
-      amenities: home.amenities.map(a => a.name),
+      amenities: [],
       operator: {
         id: home.operator.id,
         name: home.operator.companyName,
