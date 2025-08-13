@@ -156,12 +156,19 @@ export async function GET(request: NextRequest) {
     
     // Get role-specific preferences based on user role
     // Combine all preferences held on the user record
+    const basePrefs =
+      (user.preferences &&
+        typeof user.preferences === "object" &&
+        !Array.isArray(user.preferences))
+        ? (user.preferences as Record<string, any>)
+        : {};
+
     const combinedPreferences = {
       notifications: user.notificationPrefs || {},
       display: {
         timezone: user.timezone || "UTC"
       },
-      ...(user.preferences || {})
+      ...basePrefs
     };
     
     // Create audit log entry for preferences view
@@ -259,7 +266,12 @@ export async function PUT(request: NextRequest) {
     const { notifications, privacy, accessibility, display, roleSpecific } = validatedData;
     
     // Update base user preferences
-    const existingPreferences = user.preferences || {};
+    const existingPreferences: Record<string, any> =
+      (user.preferences &&
+        typeof user.preferences === "object" &&
+        !Array.isArray(user.preferences))
+        ? (user.preferences as Record<string, any>)
+        : {};
     const updatedPreferences = {
       ...existingPreferences,
       privacy: privacy || existingPreferences.privacy,
