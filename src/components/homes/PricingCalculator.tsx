@@ -222,7 +222,7 @@ const PricingCalculator: React.FC<PricingCalculatorProps> = ({
       <div className="border-b border-neutral-100 p-4">
         <h4 className="mb-3 font-medium text-neutral-800">Additional Care Services</h4>
         <div className="grid gap-2 md:grid-cols-2">
-          {pricing[selectedRoomIndex].additional.map((service, index) => (
+          {pricing[selectedRoomIndex]!.additional.map((service, index) => (
             <div 
               key={`service-${index}`}
               onClick={() => toggleService(service.service)}
@@ -253,7 +253,7 @@ const PricingCalculator: React.FC<PricingCalculatorProps> = ({
             </div>
           ))}
           
-          {pricing[selectedRoomIndex].additional.length === 0 && (
+          {pricing[selectedRoomIndex]!.additional.length === 0 && (
             <p className="col-span-2 text-sm text-neutral-600">
               No additional services available for this room type.
             </p>
