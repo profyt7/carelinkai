@@ -606,12 +606,16 @@ export default function InquiryDetailPage() {
     const timeStr = inquiry.tourTime;
     const match = timeStr.match(/^(\d{1,2}):(\d{2})(?:\s*(AM|PM))?$/i);
     if (match) {
-      let h = parseInt(match[1], 10);
-      const m = parseInt(match[2], 10);
-      const ampm = match[3]?.toUpperCase();
-      if (ampm === 'PM' && h < 12) h += 12;
-      if (ampm === 'AM' && h === 12) h = 0;
-      eventDate.setHours(h, m, 0, 0);
+      // Destructure groups with explicit names to satisfy strict typing
+      const [, hh, mm, ampmRaw] = match;
+      if (hh && mm) {
+        let h = parseInt(hh, 10);
+        const m = parseInt(mm, 10);
+        const ampm = ampmRaw?.toUpperCase();
+        if (ampm === 'PM' && h < 12) h += 12;
+        if (ampm === 'AM' && h === 12) h = 0;
+        eventDate.setHours(h, m, 0, 0);
+      }
     }
     
     const endDate = new Date(eventDate);
