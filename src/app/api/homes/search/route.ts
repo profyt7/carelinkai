@@ -83,11 +83,15 @@ export async function GET(req: NextRequest) {
     
     // Handle array parameters (they come as comma-separated values)
     if (rawParams['careLevel']) {
-      rawParams['careLevel'] = rawParams['careLevel'].split(',');
+      if (typeof rawParams['careLevel'] === 'string') {
+        rawParams['careLevel'] = (rawParams['careLevel'] as string).split(',');
+      }
     }
     
     if (rawParams['amenities']) {
-      rawParams['amenities'] = rawParams['amenities'].split(',');
+      if (typeof rawParams['amenities'] === 'string') {
+        rawParams['amenities'] = (rawParams['amenities'] as string).split(',');
+      }
     }
     
     // Validate query parameters
