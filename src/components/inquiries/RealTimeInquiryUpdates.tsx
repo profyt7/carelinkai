@@ -344,7 +344,7 @@ const RealTimeInquiryUpdates: React.FC<RealTimeInquiryUpdatesProps> = ({
         
         // Ensure the array items are treated as strings for downstream typing
         const mockInquiryIds = inquiryId ? [inquiryId as string] : ['inq-001', 'inq-002', 'inq-003'];
-        const randomInquiryId = mockInquiryIds[Math.floor(Math.random() * mockInquiryIds.length)];
+        const randomInquiryId = mockInquiryIds[Math.floor(Math.random() * mockInquiryIds.length)]!;
         
         const homeNames: Record<string, string> = {
           'inq-001': 'Sunshine Care Home',
