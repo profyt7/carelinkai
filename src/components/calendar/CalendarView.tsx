@@ -655,7 +655,7 @@ export default function CalendarView({
       hour: 'numeric',
       minute: '2-digit',
       meridiem: true
-    },
+    } as const,
     views: {
       dayGridMonth: {
         titleFormat: { year: 'numeric', month: 'long' }
@@ -666,7 +666,7 @@ export default function CalendarView({
           hour: 'numeric',
           minute: '2-digit',
           meridiem: true
-        }
+        } as const
       },
       timeGridDay: {
         titleFormat: { year: 'numeric', month: 'long', day: 'numeric' },
@@ -674,7 +674,7 @@ export default function CalendarView({
           hour: 'numeric',
           minute: '2-digit',
           meridiem: true
-        }
+        } as const
       },
       listWeek: {
         titleFormat: { year: 'numeric', month: 'long' }
