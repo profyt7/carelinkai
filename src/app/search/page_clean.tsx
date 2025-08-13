@@ -8,6 +8,7 @@ import {
   FiSearch, 
   FiMapPin, 
   FiList, 
+  FiGrid,
   FiFilter, 
   FiX, 
   FiStar, 
