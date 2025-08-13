@@ -298,7 +298,8 @@ export async function POST(request: NextRequest) {
     
     filteredSlots.forEach(slot => {
       const date = new Date(slot.startTime);
-      const dayKey = date.toISOString().split('T')[0]; // YYYY-MM-DD
+      // Use slice to avoid potential undefined from split indexing
+      const dayKey = date.toISOString().slice(0, 10); // YYYY-MM-DD
       
       if (!slotsByDay[dayKey]) {
         slotsByDay[dayKey] = [];
