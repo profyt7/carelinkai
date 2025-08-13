@@ -14,7 +14,7 @@ import {
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import CalendarView from "@/components/calendar/CalendarView";
 import { useCalendar } from "@/hooks/useCalendar";
-import { AppointmentStatus, AppointmentType, Appointment } from "@/lib/types/calendar";
+import type { AppointmentStatus, AppointmentType, Appointment } from "@/lib/types/calendar";
 import { UserRole } from "@prisma/client";
 
 // Calendar page with comprehensive features
