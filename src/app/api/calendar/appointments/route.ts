@@ -427,12 +427,23 @@ export async function POST(request: NextRequest) {
       // ------------------------------------------------------------------
       // Sanitize location.coordinates so both latitude & longitude exist
       // ------------------------------------------------------------------
-      let sanitizedLocation = appointmentData.location;
-      if (sanitizedLocation?.coordinates) {
-        const { latitude, longitude } = sanitizedLocation.coordinates as any;
-        if (typeof latitude !== 'number' || typeof longitude !== 'number') {
-          // Omit coordinates if either value is missing/invalid
-          const { address, room } = sanitizedLocation;
+      let sanitizedLocation: Appointment['location'] = undefined;
+      if (appointmentData.location) {
+        const { address, room, coordinates } = appointmentData.location as any;
+        if (
+          coordinates &&
+          typeof coordinates.latitude === 'number' &&
+          typeof coordinates.longitude === 'number'
+        ) {
+          sanitizedLocation = {
+            address,
+            room,
+            coordinates: {
+              latitude: coordinates.latitude,
+              longitude: coordinates.longitude,
+            },
+          };
+        } else {
           sanitizedLocation = { address, room };
         }
       }
