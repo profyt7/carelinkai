@@ -785,14 +785,23 @@ export function useDocuments({
       
       // Update documents list with new uploads
       if (successfulUploads.length > 0) {
-        setState(prev => ({
-          ...prev,
-          documents: [...successfulUploads, ...prev.documents],
-          pagination: {
-            ...prev.pagination,
-            totalCount: prev.pagination.totalCount + successfulUploads.length
-          }
-        }));
+        setState(prev => {
+          // Deduplicate by ID in case SSE already inserted the same docs
+          const existingIds = new Set(prev.documents.map(d => d.id));
+          const newDocs = successfulUploads.filter(doc => !existingIds.has(doc.id));
+
+          // If nothing new, return previous state unchanged
+          if (newDocs.length === 0) return prev;
+
+          return {
+            ...prev,
+            documents: [...newDocs, ...prev.documents],
+            pagination: {
+              ...prev.pagination,
+              totalCount: prev.pagination.totalCount + newDocs.length
+            }
+          };
+        });
         
         // Show success message
         /* eslint-disable no-console */
