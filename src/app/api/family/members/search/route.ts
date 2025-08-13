@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { checkFamilyMembership } from "@/lib/services/family";
+import type { Prisma } from '@prisma/client';
 
 export async function GET(request: NextRequest) {
   try {
@@ -63,7 +64,7 @@ export async function GET(request: NextRequest) {
     const lastToken = tokens.length > 1 ? tokens[tokens.length - 1] : "";
     
     // Build the search query
-    const whereConditions = tokens.map(token => ({
+    const whereConditions: Prisma.UserWhereInput[] = tokens.map(token => ({
       OR: [
         { firstName: { contains: token, mode: 'insensitive' } },
         { lastName: { contains: token, mode: 'insensitive' } }
