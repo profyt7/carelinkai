@@ -371,8 +371,8 @@ export async function PATCH(request: NextRequest) {
             roleSpecificUpdate = await prisma.family.update({
               where: { userId },
               data: {
-                emergencyContact: roleSpecificFields.emergencyContact,
-                emergencyPhone: roleSpecificFields.emergencyPhone
+                emergencyContact: (roleSpecificFields as any)['emergencyContact'],
+                emergencyPhone: (roleSpecificFields as any)['emergencyPhone']
               }
             });
           }
@@ -383,9 +383,9 @@ export async function PATCH(request: NextRequest) {
             roleSpecificUpdate = await prisma.operator.update({
               where: { userId },
               data: {
-                companyName: roleSpecificFields.companyName,
-                taxId: roleSpecificFields.taxId,
-                businessLicense: roleSpecificFields.businessLicense
+                companyName: (roleSpecificFields as any)['companyName'],
+                taxId: (roleSpecificFields as any)['taxId'],
+                businessLicense: (roleSpecificFields as any)['businessLicense']
               }
             });
           }
@@ -397,10 +397,10 @@ export async function PATCH(request: NextRequest) {
             roleSpecificUpdate = await prisma.caregiver.update({
               where: { userId },
               data: {
-                bio: roleSpecificFields.bio,
-                yearsExperience: roleSpecificFields.yearsExperience,
-                hourlyRate: roleSpecificFields.hourlyRate,
-                availability: roleSpecificFields.availability
+                bio: (roleSpecificFields as any)['bio'],
+                yearsExperience: (roleSpecificFields as any)['yearsExperience'],
+                hourlyRate: (roleSpecificFields as any)['hourlyRate'],
+                availability: (roleSpecificFields as any)['availability']
               }
             });
           }
@@ -412,9 +412,9 @@ export async function PATCH(request: NextRequest) {
             roleSpecificUpdate = await prisma.affiliate.update({
               where: { userId },
               data: {
-                organization: roleSpecificFields.organization,
-                commissionRate: roleSpecificFields.commissionRate,
-                paymentDetails: roleSpecificFields.paymentDetails
+                organization: (roleSpecificFields as any)['organization'],
+                commissionRate: (roleSpecificFields as any)['commissionRate'],
+                paymentDetails: (roleSpecificFields as any)['paymentDetails']
               }
             });
           }
