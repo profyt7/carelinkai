@@ -249,7 +249,7 @@ export async function POST(request: NextRequest) {
     try {
       await prisma.auditLog.create({
         data: {
-          action: AuditAction.ERROR,
+          action: AuditAction.OTHER,
           resourceType: "USER_PASSWORD",
           resourceId: userId,
           description: "Password change error",
