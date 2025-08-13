@@ -576,7 +576,7 @@ export async function GET(request: NextRequest) {
         gender: home.genderRestriction || 'ALL',
         amenities: home.amenities,
         // Filter out placeholder images that point to unconfigured hosts
-        imageUrl: sanitizeImageUrl(home.photos.length > 0 ? home.photos[0].url : null),
+        imageUrl: sanitizeImageUrl(home.photos?.[0]?.url ?? null),
         operator: home.operator ? {
           name: `${home.operator.user.firstName} ${home.operator.user.lastName}`,
           email: home.operator.user.email
