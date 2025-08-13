@@ -32,6 +32,8 @@ export default function VerifyEmailPage() {
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
       return () => clearTimeout(timer);
     }
+    // Explicitly return undefined so all code paths have a return statement
+    return undefined;
   }, [countdown]);
 
   // Function to verify the token
