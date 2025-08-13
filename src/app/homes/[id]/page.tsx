@@ -269,7 +269,8 @@ export default function HomeDetailPage() {
     phone: "",
     residentName: "",
     moveInTimeframe: "1-3 months",
-    careNeeded: [],
+    // Explicitly assert to string[] so TypeScript infers correct element type
+    careNeeded: [] as string[],
     message: "",
     tourDate: "",
     tourTime: ""
