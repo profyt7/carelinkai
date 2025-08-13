@@ -274,11 +274,11 @@ export async function PUT(request: NextRequest) {
         : {};
     const updatedPreferences = {
       ...existingPreferences,
-      privacy: privacy || existingPreferences.privacy,
-      accessibility: accessibility || existingPreferences.accessibility,
-      display: display || existingPreferences.display,
+      privacy: privacy || existingPreferences["privacy"],
+      accessibility: accessibility || existingPreferences["accessibility"],
+      display: display || existingPreferences["display"],
       // Persist any roleSpecific section inside the main preferences JSON
-      roleSpecific: roleSpecific || existingPreferences.roleSpecific
+      roleSpecific: roleSpecific || existingPreferences["roleSpecific"]
     };
     
     // Update user record with preferences
