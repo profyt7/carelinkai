@@ -6,6 +6,15 @@ import { S3Client, HeadBucketCommand } from "@aws-sdk/client-s3";
 // Initialize Prisma client
 const prisma = new PrismaClient();
 
+// ------------------------------------------------------
+// Typed helpers for service health checks
+// ------------------------------------------------------
+type HealthStatus = "unknown" | "healthy" | "unhealthy" | "skipped";
+interface ServiceCheck {
+  status: HealthStatus;
+  message: string | null;
+}
+
 /**
  * Health check endpoint for CareLinkAI
  * Used by Docker health checks and monitoring systems
@@ -18,7 +27,15 @@ const prisma = new PrismaClient();
  */
 export async function GET() {
   const startTime = Date.now();
-  const checks = {
+  const checks: {
+    status: "healthy" | "unhealthy";
+    database: ServiceCheck;
+    redis: ServiceCheck;
+    storage: ServiceCheck;
+    uptime: number;
+    timestamp: string;
+    environment: string;
+  } = {
     status: "healthy",
     database: { status: "unknown", message: null },
     redis: { status: "unknown", message: null },
@@ -115,10 +132,11 @@ export async function GET() {
 
   // HIPAA compliance: Don't expose sensitive information in production
   if (process.env.NODE_ENV === "production") {
-    // Remove potentially sensitive error messages in production
-    Object.keys(checks).forEach((key) => {
-      if (typeof checks[key] === "object" && checks[key].message && checks[key].status === "unhealthy") {
-        checks[key].message = `${key} check failed`;
+    // Redact messages only for known service checks
+    (["database", "redis", "storage"] as const).forEach((key) => {
+      const svc = checks[key];
+      if (svc.status === "unhealthy" && svc.message) {
+        svc.message = `${key} check failed`;
       }
     });
   }
