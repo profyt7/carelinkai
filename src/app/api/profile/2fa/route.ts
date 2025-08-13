@@ -61,7 +61,6 @@ export async function POST(req: NextRequest) {
         twoFactorEnabled: enabled,
         // If implementing full TOTP, you would also set twoFactorSecret here
         // when enabling 2FA, and clear it when disabling
-        twoFactorSecret: enabled ? user.twoFactorSecret : null,
         updatedAt: new Date(),
       },
     });
