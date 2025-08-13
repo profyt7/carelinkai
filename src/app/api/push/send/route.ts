@@ -113,7 +113,14 @@ export async function POST(req: NextRequest) {
     }
     
     // Get subscriptions from database
-    const subscriptions = await prisma.pushSubscription.findMany(subscriptionQuery);
+    // TODO: Replace stub when PushSubscription model is available in Prisma schema
+    const subscriptions: Array<{
+      id?: string;
+      endpoint: string;
+      p256dh: string;
+      auth: string;
+      userId: string;
+    }> = [];
     
     if (subscriptions.length === 0) {
       return NextResponse.json(
@@ -169,16 +176,17 @@ export async function POST(req: NextRequest) {
         
         // If subscription is invalid (gone), remove it
         if (error.statusCode === 410) {
-          try {
-            await prisma.pushSubscription.delete({
-              where: { id: subscription.id }
-            });
-            results.errors.push(`Subscription expired and removed: ${subscription.endpoint.substring(0, 50)}...`);
-          } catch (deleteError) {
-            console.error('Error removing expired subscription:', deleteError);
-          }
+          // Stubbed: would normally remove invalid subscription from DB
+          results.errors.push(
+            `Subscription expired (stubbed removal): ${subscription.endpoint.substring(
+              0,
+              50
+            )}...`
+          );
         } else {
-          results.errors.push(`Failed to send to ${subscription.endpoint.substring(0, 50)}...: ${error.message}`);
+          results.errors.push(
+            `Failed to send to ${subscription.endpoint.substring(0, 50)}...: ${error.message}`
+          );
         }
       }
     }
@@ -212,9 +220,8 @@ export async function GET(req: NextRequest) {
     }
     
     // Check if the user has any subscriptions
-    const subscriptionCount = await prisma.pushSubscription.count({
-      where: { userId: session.user.id }
-    });
+    // TODO: Replace stub when PushSubscription model is available
+    const subscriptionCount = 0;
     
     return NextResponse.json({
       supported: true,
