@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
       // Create audit log entry for rate limit exceeded
       await prisma.auditLog.create({
         data: {
-          action: AuditAction.SECURITY,
+          action: AuditAction.ACCESS_DENIED,
           resourceType: "USER",
           resourceId: userId,
           description: "Password change rate limit exceeded",
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
       // Create audit log entry for validation failure
       await prisma.auditLog.create({
         data: {
-          action: AuditAction.SECURITY,
+          action: AuditAction.ACCESS_DENIED,
           resourceType: "USER",
           resourceId: userId,
           description: "Password change validation failed",
@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
       // Create audit log entry for incorrect password
       await prisma.auditLog.create({
         data: {
-          action: AuditAction.SECURITY,
+          action: AuditAction.ACCESS_DENIED,
           resourceType: "USER",
           resourceId: userId,
           description: "Password change failed - incorrect current password",
