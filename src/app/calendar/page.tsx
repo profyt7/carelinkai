@@ -113,14 +113,14 @@ export default function CalendarPage() {
     upcoming: appointments.filter((apt) => {
       const future = isAfter(new Date(apt.startTime), new Date());
       const allowedStatuses = [
-        AppointmentStatus.CONFIRMED,
-        AppointmentStatus.PENDING,
-        AppointmentStatus.RESCHEDULED,
+        "CONFIRMED",
+        "PENDING",
+        "RESCHEDULED",
       ];
       return future && allowedStatuses.includes(apt.status);
     }).length,
-    completed: appointments.filter((apt) => apt.status === AppointmentStatus.COMPLETED).length,
-    cancelled: appointments.filter((apt) => apt.status === AppointmentStatus.CANCELLED).length,
+    completed: appointments.filter((apt) => apt.status === "COMPLETED").length,
+    cancelled: appointments.filter((apt) => apt.status === "CANCELLED").length,
   };
 
   // Get upcoming appointments for the next 7 days
@@ -130,9 +130,9 @@ export default function CalendarPage() {
         const future = isAfter(new Date(apt.startTime), new Date());
         const withinWeek = isBefore(new Date(apt.startTime), addDays(new Date(), 7));
         const allowedStatuses = [
-          AppointmentStatus.CONFIRMED,
-          AppointmentStatus.PENDING,
-          AppointmentStatus.RESCHEDULED,
+          "CONFIRMED",
+          "PENDING",
+          "RESCHEDULED",
         ];
         return future && withinWeek && allowedStatuses.includes(apt.status);
       }
@@ -566,8 +566,8 @@ function getAppointmentTypeTextColor(type: AppointmentType): string {
   return colorMap[type] || "#212121";
 }
 
-function getAppointmentStatusColor(status: AppointmentStatus): string {
-  const colorMap: Record<AppointmentStatus, string> = {
+function getAppointmentStatusColor(status: string): string {
+  const colorMap: Record<string, string> = {
     PENDING: "#fff8e1",
     CONFIRMED: "#e8f5e9",
     CANCELLED: "#ffebee",
@@ -578,8 +578,8 @@ function getAppointmentStatusColor(status: AppointmentStatus): string {
   return colorMap[status] || "#f5f5f5";
 }
 
-function getAppointmentStatusTextColor(status: AppointmentStatus): string {
-  const colorMap: Record<AppointmentStatus, string> = {
+function getAppointmentStatusTextColor(status: string): string {
+  const colorMap: Record<string, string> = {
     PENDING: "#ff6f00",
     CONFIRMED: "#1b5e20",
     CANCELLED: "#b71c1c",
@@ -590,19 +590,19 @@ function getAppointmentStatusTextColor(status: AppointmentStatus): string {
   return colorMap[status] || "#212121";
 }
 
-function getAppointmentStatusIcon(status: AppointmentStatus) {
+function getAppointmentStatusIcon(status: string) {
   switch (status) {
-    case AppointmentStatus.CONFIRMED:
+    case "CONFIRMED":
       return <FiCheckCircle className="mr-1" size={12} />;
-    case AppointmentStatus.CANCELLED:
+    case "CANCELLED":
       return <FiXCircle className="mr-1" size={12} />;
-    case AppointmentStatus.PENDING:
+    case "PENDING":
       return <FiClock className="mr-1" size={12} />;
-    case AppointmentStatus.COMPLETED:
+    case "COMPLETED":
       return <FiCheckCircle className="mr-1" size={12} />;
-    case AppointmentStatus.NO_SHOW:
+    case "NO_SHOW":
       return <FiAlertCircle className="mr-1" size={12} />;
-    case AppointmentStatus.RESCHEDULED:
+    case "RESCHEDULED":
       return <FiCalendar className="mr-1" size={12} />;
     default:
       return null;
