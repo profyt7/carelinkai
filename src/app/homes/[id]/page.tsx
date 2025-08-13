@@ -903,14 +903,24 @@ export default function HomeDetailPage() {
                 <div className="h-80 w-full">
                   {home.coordinates && (
                     <SimpleMap
-                      /* SimpleMap expects each home to include an `imageUrl`
-                         property for its marker/ popup.  We derive this from
-                         the first photo in the gallery so we don’t need to
-                         modify the overall Home type across the code-base. */
-                      homes={[{ ...home, imageUrl: home.photos[0]?.url ?? "" }]}
-                      center={home.coordinates}
-                      zoom={15}
-                      showPopup={true}
+                      homes={[{
+                        id: home.id,
+                        name: home.name,
+                        description: home.description,
+                        address: {
+                          street: home.address,
+                          city: "",
+                          state: "",
+                          zipCode: "",
+                          coordinates: home.coordinates,
+                        },
+                        careLevel: home.careLevel,
+                        priceRange: { min: home.priceRange.min, max: home.priceRange.max },
+                        capacity: home.capacity,
+                        availability: home.availability,
+                        amenities: home.amenities.flatMap(a => a.items).slice(0, 6),
+                        imageUrl: home.photos[0]?.url ?? null,
+                      }]}
                     />
                   )}
                 </div>
