@@ -258,6 +258,11 @@ export async function GET(request: NextRequest) {
       console.log(`[Documents API] Starting Prisma queries, elapsed: ${Date.now() - startedAt}ms`, { whereClause });
       
       // Query documents with pagination
+      // Build orderBy clause with explicit, type-safe object
+      const orderByClause: Record<string, "asc" | "desc"> = {
+        [filters.sortBy]: filters.sortOrder
+      };
+
       const [documents, totalCount] = await Promise.all([
         prisma.familyDocument.findMany({
           where: whereClause,
@@ -276,9 +281,7 @@ export async function GET(request: NextRequest) {
               }
             }
           },
-          orderBy: {
-            [filters.sortBy]: filters.sortOrder
-          },
+          orderBy: orderByClause,
           skip,
           take: filters.limit
         }),
