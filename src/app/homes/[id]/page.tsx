@@ -903,7 +903,11 @@ export default function HomeDetailPage() {
                 <div className="h-80 w-full">
                   {home.coordinates && (
                     <SimpleMap
-                      homes={[home]}
+                      /* SimpleMap expects each home to include an `imageUrl`
+                         property for its marker/ popup.  We derive this from
+                         the first photo in the gallery so we don’t need to
+                         modify the overall Home type across the code-base. */
+                      homes={[{ ...home, imageUrl: home.photos[0]?.url ?? "" }]}
                       center={home.coordinates}
                       zoom={15}
                       showPopup={true}
