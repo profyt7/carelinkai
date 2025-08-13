@@ -456,7 +456,25 @@ export async function POST(request: NextRequest) {
         description: appointmentData.description,
         startTime: appointmentData.startTime,
         endTime: appointmentData.endTime,
-        location: sanitizedLocation,
+        // Build location object inline so that coordinates field is included
+        // only when BOTH latitude and longitude are valid numbers.
+        location: appointmentData.location &&
+          typeof (appointmentData.location as any).coordinates?.latitude === 'number' &&
+          typeof (appointmentData.location as any).coordinates?.longitude === 'number'
+          ? {
+              address: (appointmentData.location as any).address,
+              room: (appointmentData.location as any).room,
+              coordinates: {
+                latitude: (appointmentData.location as any).coordinates.latitude as number,
+                longitude: (appointmentData.location as any).coordinates.longitude as number,
+              },
+            }
+          : appointmentData.location
+          ? {
+              address: (appointmentData.location as any).address,
+              room: (appointmentData.location as any).room,
+            }
+          : undefined,
         homeId: appointmentData.homeId,
         residentId: appointmentData.residentId,
         createdBy: {
