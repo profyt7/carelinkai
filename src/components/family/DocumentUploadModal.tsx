@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useCallback, Fragment, ChangeEvent, DragEvent } from "react";
+import { useState, useRef, useCallback, Fragment } from "react";
+import type { ChangeEvent, DragEvent } from "react";
 import { Dialog, Transition, Listbox } from "@headlessui/react";
 import { 
   FiX, 
