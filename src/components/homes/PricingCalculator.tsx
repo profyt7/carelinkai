@@ -83,7 +83,8 @@ const PricingCalculator: React.FC<PricingCalculatorProps> = ({
 
   // Calculate totals
   const calculateTotals = (): PricingEstimate => {
-    const selectedRoom = pricing[selectedRoomIndex];
+    // Non-null assertion since selectedRoomIndex always refers to an existing item
+    const selectedRoom = pricing[selectedRoomIndex]!;
     
     // Calculate monthly services
     const selectedServicesList = selectedRoom.additional.filter(
