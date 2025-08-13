@@ -30,6 +30,7 @@ import {
   RecurrenceFrequency,
   DayOfWeek
 } from '@/lib/types/calendar';
+import type { Appointment } from '@/lib/types/calendar';
 import { UserRole } from '@prisma/client';
 
 // Rate limiting constants
@@ -423,15 +424,40 @@ export async function POST(request: NextRequest) {
       
       const appointmentData = parseResult.data;
       
-      // Add creator information
-      const appointment = {
-        ...appointmentData,
+      // ------------------------------------------------------------------
+      // Sanitize location.coordinates so both latitude & longitude exist
+      // ------------------------------------------------------------------
+      let sanitizedLocation = appointmentData.location;
+      if (sanitizedLocation?.coordinates) {
+        const { latitude, longitude } = sanitizedLocation.coordinates as any;
+        if (typeof latitude !== 'number' || typeof longitude !== 'number') {
+          // Omit coordinates if either value is missing/invalid
+          const { address, room } = sanitizedLocation;
+          sanitizedLocation = { address, room };
+        }
+      }
+
+      // Construct appointment with explicit typing to satisfy calendar service
+      const appointment: Omit<Appointment, 'id' | 'metadata'> = {
+        type: appointmentData.type,
         status: AppointmentStatus.CONFIRMED,
+        title: appointmentData.title,
+        description: appointmentData.description,
+        startTime: appointmentData.startTime,
+        endTime: appointmentData.endTime,
+        location: sanitizedLocation,
+        homeId: appointmentData.homeId,
+        residentId: appointmentData.residentId,
         createdBy: {
           id: session.user.id,
           name: `${session.user.firstName} ${session.user.lastName}`,
-          role: session.user.role
-        }
+          role: session.user.role,
+        },
+        participants: appointmentData.participants ?? [],
+        recurrence: appointmentData.recurrence,
+        reminders: appointmentData.reminders,
+        notes: appointmentData.notes,
+        customFields: appointmentData.customFields,
       };
       
       // Create appointment
