@@ -42,18 +42,11 @@ export const authOptions: NextAuthOptions = {
      * Apple OAuth (enabled only if env vars exist)
      * ------------------------------------------ */
     ...(process.env['APPLE_ID'] &&
-    process.env['APPLE_TEAM_ID'] &&
-    process.env['APPLE_PRIVATE_KEY'] &&
-    process.env['APPLE_KEY_ID']
+    process.env['APPLE_CLIENT_SECRET']
       ? [
           AppleProvider({
             clientId: process.env['APPLE_ID']!,
-            clientSecret: {
-              appleId: process.env['APPLE_ID']!,
-              teamId: process.env['APPLE_TEAM_ID']!,
-              privateKey: process.env['APPLE_PRIVATE_KEY']!.replace(/\\n/g, "\n"),
-              keyId: process.env['APPLE_KEY_ID']!,
-            },
+            clientSecret: process.env['APPLE_CLIENT_SECRET']!,
           }),
         ]
       : []),
