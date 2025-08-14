@@ -5,7 +5,7 @@
  * for testing the login UI without requiring a database connection.
  */
 
-import { NextAuthOptions } from "next-auth";
+import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
 import { UserRole, UserStatus } from "@prisma/client";
@@ -43,8 +43,8 @@ const mockUsers = [
 ];
 
 // Constants for security settings
-const JWT_MAX_AGE = parseInt(process.env.JWT_EXPIRATION || "86400"); // 24 hours in seconds
-const SESSION_MAX_AGE = parseInt(process.env.SESSION_EXPIRY || "86400"); // 24 hours in seconds
+const JWT_MAX_AGE = parseInt(process.env['JWT_EXPIRATION'] || '86400'); // 24 hours in seconds
+const SESSION_MAX_AGE = parseInt(process.env['SESSION_EXPIRY'] || '86400'); // 24 hours in seconds
 
 /**
  * NextAuth configuration options
@@ -59,7 +59,7 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, _req) {
         if (!credentials?.email || !credentials?.password) {
           throw new Error("Email and password are required");
         }
@@ -92,7 +92,7 @@ export const authOptions: NextAuthOptions = {
         console.log("Login successful for:", email);
         
         // Return user object without sensitive data
-        return {
+        return ({
           id: user.id,
           email: user.email,
           name: `${user.firstName} ${user.lastName}`,
@@ -100,7 +100,7 @@ export const authOptions: NextAuthOptions = {
           lastName: user.lastName,
           role: user.role,
           status: user.status,
-        };
+        } as any);
       },
     }),
   ],
@@ -187,5 +187,5 @@ export const authOptions: NextAuthOptions = {
   },
   
   // Debug mode (enable for development)
-  debug: process.env.NODE_ENV === "development",
+  debug: process.env['NODE_ENV'] === 'development',
 };
