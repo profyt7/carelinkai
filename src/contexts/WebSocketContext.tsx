@@ -376,6 +376,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     if (otherParticipants.length === 0) return;
     
     const respondingParticipant = otherParticipants[Math.floor(Math.random() * otherParticipants.length)];
+    if (!respondingParticipant) return;
     
     // Simulate typing indicator
     startTyping(conversationId, respondingParticipant.id);
