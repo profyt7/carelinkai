@@ -679,7 +679,8 @@ export function useDocuments({
         // `documents[i]` is guaranteed to exist inside the loop bounds,
         // but TypeScript cannot infer this. Use non-null assertion.
         const document: FamilyDocumentUpload = documents[i]!;
-        const documentId = documentIds[i];
+        // `documentIds[i]` always exists for the current index; assert non-null and annotate.
+        const documentId: string = documentIds[i]!;
         
         // Create form data for this document
         const formData = new FormData();
