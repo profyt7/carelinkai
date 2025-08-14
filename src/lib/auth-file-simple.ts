@@ -185,11 +185,11 @@ const updateUser = (id: string, data: Partial<FileUser>): FileUser | undefined =
   }
   
   // Update user data
-  users[userIndex] = {
+  users[userIndex] = ({
     ...users[userIndex],
     ...data,
     updatedAt: new Date().toISOString()
-  };
+  } as FileUser);
   
   // Save updated users
   saveUsers(users);
