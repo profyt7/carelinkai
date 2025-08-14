@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "react-hot-toast";
 import { useSession } from "next-auth/react";
-import {
+import type {
   DocumentFilterParams,
   FamilyDocumentWithDetails,
   FamilyDocumentUpload,
