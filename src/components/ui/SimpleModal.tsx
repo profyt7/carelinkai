@@ -9,11 +9,17 @@ interface SimpleModalProps {
   className?: string;
 }
 
+// Composite type including static sub-components
+type SimpleModalComponent = React.FC<SimpleModalProps> & {
+  Title: React.FC<React.HTMLAttributes<HTMLHeadingElement>>;
+  Overlay: React.FC<React.HTMLAttributes<HTMLDivElement>>;
+};
+
 /**
  * A simple modal component that doesn't depend on @headlessui/react
  * Can be used as a drop-in replacement for Dialog components
  */
-export const SimpleModal: React.FC<SimpleModalProps> = ({
+const SimpleModal: SimpleModalComponent = (({
   isOpen,
   onClose,
   title,
@@ -155,6 +161,7 @@ export const SimpleModal: React.FC<SimpleModalProps> = ({
     </div>,
     document.body
   );
+}) as SimpleModalComponent;
 };
 
 /**
@@ -188,3 +195,6 @@ SimpleModal.Overlay = function SimpleModalOverlay({
 };
 
 export default SimpleModal;
+
+// Named export for convenience
+export { SimpleModal };
