@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CareLevel } from '@prisma/client';
+import type { SearchParams } from '@/lib/searchService';
 import { 
-  SearchParams, 
   validateSearchParams,
   getCareLevelName
 } from '@/lib/searchService';
