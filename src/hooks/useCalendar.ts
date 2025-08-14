@@ -13,10 +13,8 @@ import { useSession } from 'next-auth/react';
 import { toast } from 'react-hot-toast';
 import { format, parseISO, isAfter, isBefore } from 'date-fns';
 
-import {
+import type {
   Appointment,
-  AppointmentType,
-  AppointmentStatus,
   CalendarEvent,
   CalendarFilter,
   TimeSlot,
@@ -25,6 +23,7 @@ import {
   BookingResponse,
   RecurrencePattern
 } from '@/lib/types/calendar';
+import { AppointmentType, AppointmentStatus } from '@/lib/types/calendar';
 
 /**
  * Interface for calendar hook state
