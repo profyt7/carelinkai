@@ -676,7 +676,9 @@ export function useDocuments({
     try {
       // Upload each document sequentially
       for (let i = 0; i < documents.length; i++) {
-        const document = documents[i];
+        // `documents[i]` is guaranteed to exist inside the loop bounds,
+        // but TypeScript cannot infer this. Use non-null assertion.
+        const document: FamilyDocumentUpload = documents[i]!;
         const documentId = documentIds[i];
         
         // Create form data for this document
