@@ -472,7 +472,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     if (typingParticipants.length === 0) return null;
     
     const typingText = typingParticipants.length === 1
-      ? `${typingParticipants[0].name} is typing...`
+      // Non-null assertion is safe here because we just checked length === 1
+      ? `${typingParticipants[0]!.name} is typing...`
       : 'Multiple people are typing...';
     
     return (
