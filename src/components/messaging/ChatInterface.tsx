@@ -553,7 +553,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     const sender = getParticipant(msg.senderId);
                     const isCurrentUser = msg.senderId === currentUserId;
                     const style = getMessageStyle(msg.senderId);
-                    const showSender = msgIndex === 0 || group.messages[msgIndex - 1].senderId !== msg.senderId;
+                    const prevMsg = group.messages[msgIndex - 1];
+                    const showSender =
+                      msgIndex === 0 ||
+                      (prevMsg ? prevMsg.senderId !== msg.senderId : true);
                     const replyMessage = msg.replyTo ? getReplyToMessage(msg.replyTo) : undefined;
                     const replyToSender = replyMessage ? getParticipant(replyMessage.senderId) : undefined;
                     
