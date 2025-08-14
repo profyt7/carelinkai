@@ -184,7 +184,9 @@ export const authOptions: NextAuthOptions = {
           });
 
           if (freshUser) {
-            token.profileImageUrl = freshUser.profileImageUrl ?? null;
+            // Cast to suppress structural mismatch between JSON type and union
+            (token as any).profileImageUrl =
+              (freshUser.profileImageUrl as any) ?? null;
             token.role = freshUser.role;
             token.status = freshUser.status;
             token.firstName = freshUser.firstName;
