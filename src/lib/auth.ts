@@ -84,7 +84,7 @@ export const authOptions: NextAuthOptions = {
           // Log failed login attempt for non-existent user
           await prisma.auditLog.create({
             data: ({
-              action: AuditAction.SECURITY,
+              action: AuditAction.ACCESS_DENIED,
               resourceType: "AUTH",
               resourceId: "unknown",
               description: "Failed login attempt for non-existent user",
@@ -104,7 +104,7 @@ export const authOptions: NextAuthOptions = {
           // Log failed login attempt for inactive account
           await prisma.auditLog.create({
             data: ({
-              action: AuditAction.SECURITY,
+              action: AuditAction.ACCESS_DENIED,
               resourceType: "AUTH",
               resourceId: user.id,
               description: "Login attempt on inactive account",
@@ -135,7 +135,7 @@ export const authOptions: NextAuthOptions = {
           // Log failed login attempt due to invalid password
           await prisma.auditLog.create({
             data: ({
-              action: AuditAction.SECURITY,
+              action: AuditAction.ACCESS_DENIED,
               resourceType: "AUTH",
               resourceId: user.id,
               description: "Failed login attempt - invalid password",
@@ -162,7 +162,7 @@ export const authOptions: NextAuthOptions = {
         // Log successful login
         await prisma.auditLog.create({
           data: ({
-            action: AuditAction.SECURITY,
+            action: AuditAction.LOGIN,
             resourceType: "AUTH",
             resourceId: user.id,
             description: "Successful login",
