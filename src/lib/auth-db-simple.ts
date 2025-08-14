@@ -29,11 +29,11 @@ export const authOptions: NextAuthOptions = {
     /* --------------------------------------------
      * Google OAuth (enabled only if env vars exist)
      * ------------------------------------------ */
-    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+    ...(process.env['GOOGLE_CLIENT_ID'] && process.env['GOOGLE_CLIENT_SECRET']
       ? [
           GoogleProvider({
-            clientId: process.env.GOOGLE_CLIENT_ID!,
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+            clientId: process.env['GOOGLE_CLIENT_ID']!,
+            clientSecret: process.env['GOOGLE_CLIENT_SECRET']!,
           }),
         ]
       : []),
@@ -41,18 +41,18 @@ export const authOptions: NextAuthOptions = {
     /* --------------------------------------------
      * Apple OAuth (enabled only if env vars exist)
      * ------------------------------------------ */
-    ...(process.env.APPLE_ID &&
-    process.env.APPLE_TEAM_ID &&
-    process.env.APPLE_PRIVATE_KEY &&
-    process.env.APPLE_KEY_ID
+    ...(process.env['APPLE_ID'] &&
+    process.env['APPLE_TEAM_ID'] &&
+    process.env['APPLE_PRIVATE_KEY'] &&
+    process.env['APPLE_KEY_ID']
       ? [
           AppleProvider({
-            clientId: process.env.APPLE_ID!,
+            clientId: process.env['APPLE_ID']!,
             clientSecret: {
-              appleId: process.env.APPLE_ID!,
-              teamId: process.env.APPLE_TEAM_ID!,
-              privateKey: process.env.APPLE_PRIVATE_KEY!.replace(/\\n/g, "\n"),
-              keyId: process.env.APPLE_KEY_ID!,
+              appleId: process.env['APPLE_ID']!,
+              teamId: process.env['APPLE_TEAM_ID']!,
+              privateKey: process.env['APPLE_PRIVATE_KEY']!.replace(/\\n/g, "\n"),
+              keyId: process.env['APPLE_KEY_ID']!,
             },
           }),
         ]
