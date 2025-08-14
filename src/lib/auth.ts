@@ -225,8 +225,9 @@ export const authOptions: NextAuthOptions = {
         session.user.lastName = token.lastName as string;
         // Cast role to the correct Prisma enum type
         session.user.role = token.role as UserRole;
-        session.user.emailVerified = token.emailVerified as Date;
-        session.user.twoFactorEnabled = token.twoFactorEnabled as boolean;
+        // Properties not declared in the augmented User type need casting
+        (session.user as any).emailVerified = token.emailVerified as Date;
+        (session.user as any).twoFactorEnabled = token.twoFactorEnabled as boolean;
       }
       return session;
     }
