@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useContext, createContext, ReactNode } from "react";
+import { useState, useEffect, useContext, createContext } from "react";
+import type { ReactNode } from "react";
 import { toast } from "react-hot-toast";
 import { FiWifi, FiWifiOff, FiDownload, FiRefreshCw, FiBell } from "react-icons/fi";
 
