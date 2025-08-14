@@ -209,7 +209,15 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
   // Initialize map when DOM is ready
   useEffect(() => {
     if (!mounted || !domReady) return;
-    
+    // single resize handler shared by map lifecycle
+    const handleResize = () => {
+      const map = mapInstanceRef.current;
+      if (map) {
+        console.log("[SimpleMap] Window resized, invalidating map size");
+        map.invalidateSize(true);
+      }
+    };
+
     const initializeMap = () => {
       console.log("[SimpleMap] Initializing map attempt:", initAttemptRef.current + 1);
       
@@ -342,19 +350,8 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
         mapInstanceRef.current = map;
         console.log("[SimpleMap] Map initialization complete");
         
-        // Add a window resize handler
-        const handleResize = () => {
-          if (map) {
-            console.log("[SimpleMap] Window resized, invalidating map size");
-            map.invalidateSize(true);
-          }
-        };
-        
+        // Add a window resize listener (removed in effect cleanup)
         window.addEventListener('resize', handleResize);
-        
-        return () => {
-          window.removeEventListener('resize', handleResize);
-        };
       } catch (error) {
         console.error("[SimpleMap] Error initializing map:", error);
         setMapError(`Failed to initialize map: ${error instanceof Error ? error.message : String(error)}`);
@@ -367,6 +364,7 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
     // Cleanup function
     return () => {
       console.log("[SimpleMap] Cleaning up map...");
+      window.removeEventListener('resize', handleResize);
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
