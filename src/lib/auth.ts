@@ -200,14 +200,15 @@ export const authOptions: NextAuthOptions = {
         // Cast token to any to avoid index-signature errors when assigning
         // custom claims that aren't part of the default JWT interface.
         const t = token as any;
-        t.id = user.id;
-        t.email = user.email;
-        t.name = user.name;
-        t.firstName = user.firstName;
-        t.lastName = user.lastName;
-        t.role = user.role;
-        t.emailVerified = user.emailVerified;
-        t.twoFactorEnabled = user.twoFactorEnabled;
+        const u = user as any;
+        t.id = u.id;
+        t.email = u.email;
+        t.name = u.name;
+        t.firstName = u.firstName;
+        t.lastName = u.lastName;
+        t.role = u.role;
+        t.emailVerified = u.emailVerified;
+        t.twoFactorEnabled = u.twoFactorEnabled;
       }
       return token;
     },
