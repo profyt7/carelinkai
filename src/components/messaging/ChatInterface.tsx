@@ -102,7 +102,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   showReadReceipts = true,
   className = '',
   height = '500px'
-}) {
+}) => {
   // State
   const [message, setMessage] = useState('');
   const [attachments, setAttachments] = useState<File[]>([]);
