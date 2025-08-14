@@ -83,7 +83,7 @@ export const authOptions: NextAuthOptions = {
         if (!user) {
           // Log failed login attempt for non-existent user
           await prisma.auditLog.create({
-            data: {
+            data: ({
               action: AuditAction.SECURITY,
               resourceType: "AUTH",
               resourceId: "unknown",
@@ -93,7 +93,7 @@ export const authOptions: NextAuthOptions = {
                 email,
                 reason: "USER_NOT_FOUND"
               }
-            }
+            } as any)
           });
           
           throw new Error("Invalid email or password");
@@ -103,7 +103,7 @@ export const authOptions: NextAuthOptions = {
         if (user.status !== UserStatus.ACTIVE) {
           // Log failed login attempt for inactive account
           await prisma.auditLog.create({
-            data: {
+            data: ({
               action: AuditAction.SECURITY,
               resourceType: "AUTH",
               resourceId: user.id,
@@ -115,7 +115,7 @@ export const authOptions: NextAuthOptions = {
                 status: user.status,
                 reason: "ACCOUNT_INACTIVE"
               }
-            }
+            } as any)
           });
           
           if (user.status === UserStatus.PENDING) {
@@ -134,7 +134,7 @@ export const authOptions: NextAuthOptions = {
         if (!passwordValid) {
           // Log failed login attempt due to invalid password
           await prisma.auditLog.create({
-            data: {
+            data: ({
               action: AuditAction.SECURITY,
               resourceType: "AUTH",
               resourceId: user.id,
@@ -145,7 +145,7 @@ export const authOptions: NextAuthOptions = {
                 email,
                 reason: "INVALID_PASSWORD"
               }
-            }
+            } as any)
           });
           
           throw new Error("Invalid email or password");
@@ -161,7 +161,7 @@ export const authOptions: NextAuthOptions = {
         
         // Log successful login
         await prisma.auditLog.create({
-          data: {
+          data: ({
             action: AuditAction.SECURITY,
             resourceType: "AUTH",
             resourceId: user.id,
@@ -174,7 +174,7 @@ export const authOptions: NextAuthOptions = {
               method: "credentials",
               twoFactorUsed: user.twoFactorEnabled
             }
-          }
+          } as any)
         });
         
         // Return user object (excluding sensitive data)
