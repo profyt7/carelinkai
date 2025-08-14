@@ -224,8 +224,8 @@ export default function PWAManager({ children }: PWAManagerProps) {
       // Trigger background sync when back online
       if (registration && 'sync' in registration) {
         try {
-          registration.sync.register('sync-inquiries');
-          registration.sync.register('sync-messages');
+          (registration as any).sync.register('sync-inquiries');
+          (registration as any).sync.register('sync-messages');
         } catch (error) {
           console.error('Background sync registration failed:', error);
         }
@@ -410,7 +410,7 @@ export default function PWAManager({ children }: PWAManagerProps) {
         
         // Register sync if supported
         if (registration && 'sync' in registration) {
-          await registration.sync.register(tag);
+          await (registration as any).sync.register(tag);
           console.log('Your data will be sent when you\'re back online');
           toast.success('Your data will be sent when you\'re back online');
           return true;
