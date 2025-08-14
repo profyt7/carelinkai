@@ -162,7 +162,6 @@ const SimpleModal: SimpleModalComponent = (({
     document.body
   );
 }) as SimpleModalComponent;
-};
 
 /**
  * Child component to match Dialog.Title API
