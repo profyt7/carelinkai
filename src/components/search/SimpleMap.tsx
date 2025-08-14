@@ -331,7 +331,7 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
         map.on('popupopen', (e) => {
           const popup = e.popup;
           const homeId = Object.keys(markersRef.current).find(id => 
-            markersRef.current[id].getPopup() === popup
+            markersRef.current[id]?.getPopup() === popup
           );
           
           if (homeId) {
