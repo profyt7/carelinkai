@@ -657,7 +657,7 @@ export function useDocuments({
     setErrors(prev => ({ ...prev, uploadError: null }));
     
     // Initialize progress tracking
-    const progressMap: Record<string, number> = {
+    const progressMap: UploadProgress = {
       overall: 0
     };
     
