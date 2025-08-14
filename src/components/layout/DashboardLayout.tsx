@@ -223,16 +223,21 @@ export default function DashboardLayout({
   
   // Touch event handlers for swipe gestures
   const handleTouchStart = (e: TouchEvent<HTMLDivElement>) => {
-    setTouchStartX(e.touches[0].clientX);
-    setTouchStartY(e.touches[0].clientY);
+    const t0 = e.touches.item(0);
+    if (t0) {
+      setTouchStartX(t0.clientX);
+      setTouchStartY(t0.clientY);
+    }
     setIsSwiping(true);
   };
   
   const handleTouchMove = (e: TouchEvent<HTMLDivElement>) => {
     if (!isSwiping) return;
-    
-    const currentX = e.touches[0].clientX;
-    const currentY = e.touches[0].clientY;
+
+    const t0 = e.touches.item(0);
+    if (!t0) return;
+    const currentX = t0.clientX;
+    const currentY = t0.clientY;
     const deltaX = currentX - touchStartX;
     const deltaY = currentY - touchStartY;
     
