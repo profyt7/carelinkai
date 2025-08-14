@@ -276,8 +276,9 @@ export function useDocuments({
           const updatedSelected =
             prev.selectedDocument?.id === documentId
               ? {
-                  ...prev.selectedDocument,
-                  commentCount: (prev.selectedDocument.commentCount ?? 0) + 1,
+                  // `selectedDocument` is guaranteed non-null in this branch
+                  ...prev.selectedDocument!,
+                  commentCount: (prev.selectedDocument!.commentCount ?? 0) + 1,
                 }
               : prev.selectedDocument;
 
