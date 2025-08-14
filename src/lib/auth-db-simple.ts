@@ -58,7 +58,10 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
+      // NextAuth v4 expects `(credentials, req)` signature. Adding `req` (unused)
+      // and casting the return value to `any` satisfies the library types while
+      // preserving our enriched user object.
+      async authorize(credentials, _req) {
         if (!credentials?.email || !credentials?.password) {
           throw new Error("Email and password are required");
         }
@@ -100,7 +103,7 @@ export const authOptions: NextAuthOptions = {
           console.log("Login successful for:", email);
           
           // Return user object without sensitive data
-          return {
+          return ({
             id: user.id,
             profileImageUrl: user.profileImageUrl ?? null,
             email: user.email,
@@ -109,7 +112,7 @@ export const authOptions: NextAuthOptions = {
             lastName: user.lastName,
             role: user.role,
             status: user.status,
-          };
+          } as any);
         } catch (error) {
           console.error("Auth error:", error);
           throw new Error(error instanceof Error ? error.message : "Authentication failed");
