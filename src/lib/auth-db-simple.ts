@@ -88,7 +88,11 @@ export const authOptions: NextAuthOptions = {
           }
 
           // Verify password
-          const passwordValid = await compare(credentials.password, user.passwordHash);
+          // Guard against nullable passwordHash – treat null/empty as invalid
+          const passwordHash = user.passwordHash ?? "";
+          const passwordValid = passwordHash
+            ? await compare(credentials.password, passwordHash)
+            : false;
           if (!passwordValid) {
             console.log("Invalid password for:", email);
             throw new Error("Invalid email or password");
