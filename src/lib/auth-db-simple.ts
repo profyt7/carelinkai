@@ -17,8 +17,8 @@ import { compare } from "bcryptjs";
 const prisma = new PrismaClient();
 
 // Constants for security settings
-const JWT_MAX_AGE = parseInt(process.env.JWT_EXPIRATION || "86400"); // 24 hours in seconds
-const SESSION_MAX_AGE = parseInt(process.env.SESSION_EXPIRY || "86400"); // 24 hours in seconds
+const JWT_MAX_AGE = parseInt(process.env["JWT_EXPIRATION"] || "86400"); // 24 hours in seconds
+const SESSION_MAX_AGE = parseInt(process.env["SESSION_EXPIRY"] || "86400"); // 24 hours in seconds
 
 /**
  * NextAuth configuration options - simplified for reliable database auth
