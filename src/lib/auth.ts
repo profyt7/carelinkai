@@ -10,7 +10,7 @@
  * - Integration with Prisma for database access
  */
 
-import { NextAuthOptions } from "next-auth";
+import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { PrismaClient, AuditAction, UserStatus } from "@prisma/client";
@@ -125,8 +125,11 @@ export const authOptions: NextAuthOptions = {
           }
         }
         
-        // Verify password
-        const passwordValid = await compare(credentials.password, user.passwordHash);
+        // Verify password with nullable guard
+        const passwordHash = user.passwordHash ?? "";
+        const passwordValid = passwordHash
+          ? await compare(credentials.password, passwordHash)
+          : false;
         
         if (!passwordValid) {
           // Log failed login attempt due to invalid password
@@ -175,7 +178,7 @@ export const authOptions: NextAuthOptions = {
         });
         
         // Return user object (excluding sensitive data)
-        return {
+        return ({
           id: user.id,
           email: user.email,
           name: `${user.firstName} ${user.lastName}`,
@@ -184,7 +187,7 @@ export const authOptions: NextAuthOptions = {
           role: user.role,
           emailVerified: user.emailVerified,
           twoFactorEnabled: user.twoFactorEnabled
-        };
+        } as any);
       }
     })
   ],
@@ -223,7 +226,7 @@ export const authOptions: NextAuthOptions = {
   },
   
   // Enable debug in development
-  debug: process.env.NODE_ENV === "development",
+  debug: process.env['NODE_ENV'] === 'development',
 };
 
 export default authOptions;
