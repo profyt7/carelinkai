@@ -383,12 +383,15 @@ function extractHomeAmenities(home: any): string[] {
     if (typeof home.amenities[0] === 'object') {
       // Handle category-based amenities
       if (home.amenities[0].items) {
-        return home.amenities.flatMap(category => category.items);
+        // Cast `category` to any to avoid implicit-any error and
+        // assert the returned array is string[] for downstream usage
+        return home.amenities.flatMap((category: any) => category.items as string[]);
       }
       
       // Handle object-based amenities
       if (home.amenities[0].name) {
-        return home.amenities.map(amenity => amenity.name);
+        // Cast `amenity` to any and assert its `name` is a string
+        return home.amenities.map((amenity: any) => amenity.name as string);
       }
     }
   }
