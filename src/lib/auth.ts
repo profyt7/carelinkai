@@ -14,6 +14,8 @@ import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { PrismaClient, AuditAction, UserStatus } from "@prisma/client";
+// Type-only import required for proper casting below
+import type { UserRole } from "@prisma/client";
 import { compare } from "bcryptjs";
 
 // Initialize Prisma client
@@ -221,7 +223,8 @@ export const authOptions: NextAuthOptions = {
         session.user.name = token.name as string;
         session.user.firstName = token.firstName as string;
         session.user.lastName = token.lastName as string;
-        session.user.role = token.role as string;
+        // Cast role to the correct Prisma enum type
+        session.user.role = token.role as UserRole;
         session.user.emailVerified = token.emailVerified as Date;
         session.user.twoFactorEnabled = token.twoFactorEnabled as boolean;
       }
