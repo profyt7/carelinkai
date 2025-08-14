@@ -391,7 +391,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
       // 10% chance of receiving a new notification every 30 seconds
       if (Math.random() < 0.1 && connectionState === 'CONNECTED') {
         const types: NotificationType[] = ['MESSAGE', 'INQUIRY_UPDATE', 'TOUR_REMINDER', 'DOCUMENT_SHARED', 'STATUS_CHANGE'];
-        const randomType = types[Math.floor(Math.random() * types.length)];
+        const randomType = types[Math.floor(Math.random() * types.length)] as NotificationType;
         
         const newNotification: Notification = {
           id: `notif-${Date.now()}`,
