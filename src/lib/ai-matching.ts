@@ -784,8 +784,6 @@ export async function getTopMatchingHomes(
         },
         take: 1,
       },
-      amenities: true,
-      careServices: true,
     },
     take: limit * 3, // Get more than needed to filter by score
   });
