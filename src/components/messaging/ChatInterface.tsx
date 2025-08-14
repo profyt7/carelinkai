@@ -14,6 +14,7 @@ import {
   FiDownload,
   FiMoreVertical,
   FiCornerDownRight,
+  FiMessageSquare,
   FiSmile,
   FiMic,
   FiVideo
