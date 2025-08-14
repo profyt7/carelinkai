@@ -12,7 +12,7 @@ interface OfflineFormData {
   timestamp: number;
 }
 
-interface NotificationOptions {
+interface AppNotificationOptions {
   title: string;
   body: string;
   icon?: string;
@@ -64,7 +64,7 @@ interface UsePWAFeaturesReturn {
   
   // Notifications
   requestNotificationPermission: () => Promise<NotificationPermission>;
-  showNotification: (options: NotificationOptions) => Promise<boolean>;
+  showNotification: (options: AppNotificationOptions) => Promise<boolean>;
   getNotificationPermission: () => NotificationPermission | null;
   
   // Installation
@@ -272,7 +272,7 @@ export function usePWAFeatures(): UsePWAFeaturesReturn {
   /**
    * Show a notification
    */
-  const showNotification = async (options: NotificationOptions): Promise<boolean> => {
+  const showNotification = async (options: AppNotificationOptions): Promise<boolean> => {
     try {
       // Check if notifications are supported
       if (typeof Notification === 'undefined') {
@@ -288,18 +288,24 @@ export function usePWAFeatures(): UsePWAFeaturesReturn {
         return false;
       }
 
-      // Show notification
-      const notification = new Notification(options.title, {
+      // Build DOM-compatible NotificationOptions
+      const notifOptions: NotificationOptions = {
         body: options.body,
         icon: options.icon || '/icons/icon-192x192.png',
         badge: options.badge || '/icons/badge-96x96.png',
-        image: options.image,
         tag: options.tag,
         data: options.data,
         requireInteraction: options.requireInteraction,
         silent: options.silent,
-        actions: options.actions,
-      });
+      };
+
+      // `image` is not yet part of the TS lib definition in some environments.
+      if (options.image) {
+        (notifOptions as any).image = options.image;
+      }
+
+      // Show notification
+      const notification = new Notification(options.title, notifOptions);
 
       // Handle notification click
       notification.onclick = (event) => {
