@@ -197,14 +197,17 @@ export const authOptions: NextAuthOptions = {
     // Add custom claims to JWT
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
-        token.email = user.email;
-        token.name = user.name;
-        token.firstName = user.firstName;
-        token.lastName = user.lastName;
-        token.role = user.role;
-        token.emailVerified = user.emailVerified;
-        token.twoFactorEnabled = user.twoFactorEnabled;
+        // Cast token to any to avoid index-signature errors when assigning
+        // custom claims that aren't part of the default JWT interface.
+        const t = token as any;
+        t.id = user.id;
+        t.email = user.email;
+        t.name = user.name;
+        t.firstName = user.firstName;
+        t.lastName = user.lastName;
+        t.role = user.role;
+        t.emailVerified = user.emailVerified;
+        t.twoFactorEnabled = user.twoFactorEnabled;
       }
       return token;
     },
