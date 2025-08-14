@@ -416,7 +416,7 @@ export default function PWAManager({ children }: PWAManagerProps) {
           return true;
         } else {
           console.warn('Background sync not supported, please try again when online');
-          toast.warning('Background sync not supported, please try again when online');
+          toast.error('Background sync not supported, please try again when online');
           return false;
         }
       } catch (error) {
