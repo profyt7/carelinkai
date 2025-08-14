@@ -715,7 +715,14 @@ export function useDocuments({
               // Calculate overall progress as average of all files
               overall: Object.keys(prev)
                 .filter(key => key !== 'overall')
-                .reduce((sum, key) => sum + (key === documentId ? percentComplete : prev[key]), 0) / documents.length
+                .reduce(
+                  (sum, key) =>
+                    sum +
+                    (key === documentId
+                      ? percentComplete
+                      : (prev[key] ?? 0)),
+                  0
+                ) / documents.length
             }));
           }
         });
