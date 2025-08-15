@@ -488,7 +488,7 @@ export function getWelcomeTemplate(
   name: string,
   role: string = 'user',
   verificationUrl?: string
-): EmailTemplate {
+): EmailTemplate | undefined {
   const roleSpecificContent: Record<string, { greeting: string, nextSteps: string[] }> = {
     FAMILY: {
       greeting: 'Welcome to CareLinkAI! We're here to help you find the perfect care solution for your loved one.',
