@@ -6,12 +6,36 @@ import webpush from 'web-push';
 
 const prisma = new PrismaClient();
 
-// Configure web-push with VAPID keys
-webpush.setVapidDetails(
-  process.env['VAPID_SUBJECT'] || 'mailto:support@carelinkai.com',
-  process.env['NEXT_PUBLIC_VAPID_PUBLIC_KEY'] || '',
-  process.env['VAPID_PRIVATE_KEY'] || ''
-);
+// ------------------------------------------------------------------
+// Configure web-push VAPID details (skip if keys are missing/invalid)
+// ------------------------------------------------------------------
+const VAPID_SUBJECT =
+  process.env['VAPID_SUBJECT'] || 'mailto:support@carelinkai.com';
+const VAPID_PUBLIC = process.env['NEXT_PUBLIC_VAPID_PUBLIC_KEY'] || '';
+const VAPID_PRIVATE = process.env['VAPID_PRIVATE_KEY'] || '';
+
+if (VAPID_PUBLIC.length > 0 && VAPID_PRIVATE.length > 0) {
+  try {
+    webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
+  } catch (err) {
+    // During build / development an invalid key length will throw.
+    // Suppress this outside of production so the build succeeds.
+    if (process.env['NODE_ENV'] !== 'production') {
+      console.warn(
+        '[push] Skipping VAPID configuration due to invalid key length:',
+        (err as Error).message
+      );
+    } else {
+      // In production, re-throw so we are aware of mis-configuration
+      throw err;
+    }
+  }
+} else {
+  // Keys not present – push notifications will be disabled gracefully.
+  if (process.env['NODE_ENV'] !== 'production') {
+    console.warn('[push] VAPID keys not found – web-push disabled.');
+  }
+}
 
 /**
  * POST handler for sending push notifications
