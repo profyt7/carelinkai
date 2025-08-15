@@ -18,7 +18,7 @@ import { logger } from '@/lib/logger';
 import { sendEmail } from '@/lib/email/sendgrid';
 import { prisma } from '@/lib/prisma';
 
-import { 
+import type { 
   Appointment, AppointmentStatus, AppointmentType,
   AvailabilitySlot, BookingRequest, BookingResponse,
   CalendarEvent, CalendarFilter, DateRange,

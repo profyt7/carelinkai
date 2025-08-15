@@ -171,9 +171,9 @@ export async function addFavorite(homeId: string, notes?: string): Promise<Favor
       const errorData: ApiResponse<any> = await response.json();
       
       // Special case: if home is already favorited, return the existing favorite
-      if (response.status === 409 && errorData.favoriteId) {
+      if (response.status === 409 && errorData['favoriteId']) {
         return {
-          id: errorData.favoriteId,
+          id: errorData['favoriteId'],
           homeId,
           notes: notes || null,
           createdAt: new Date(),

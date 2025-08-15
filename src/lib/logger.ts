@@ -70,7 +70,7 @@ function log(level: LogLevel, ...args: any[]): void {
 
   if (isBrowser) {
     // Browser logging with console styling
-    const styles = {
+    const styles: Record<LogLevel | 'timestamp', string> = {
       debug: 'color: #00b3e6',
       info: 'color: #00cc66',
       warn: 'color: #ffcc00',

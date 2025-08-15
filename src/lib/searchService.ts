@@ -26,7 +26,12 @@ export interface SearchParams {
   /* ---- Phase-1 enhancements ---- */
   radius?: number;             // Search radius in miles
   sortBy?: 'relevance' | 'price_low' | 'price_high' | 'distance' | 'rating';
-  availability?: number;       // Minimum availability required
+  /**
+   * Minimum availability required.
+   * Renamed from the previous duplicate `availability` numeric field
+   * to `minAvailability` to avoid collision with the boolean version.
+   */
+  minAvailability?: number;
   verified?: boolean;          // Only show verified homes
 }
 
@@ -148,6 +153,10 @@ function formatSearchParams(params: SearchParams): URLSearchParams {
   if (params.radius) searchParams.set('radius', params.radius.toString());
   if (params.sortBy) searchParams.set('sortBy', params.sortBy);
   if (params.verified !== undefined) searchParams.set('verified', params.verified.toString());
+  // Minimum availability
+  if (params.minAvailability !== undefined) {
+    searchParams.set('availabilityMin', params.minAvailability.toString());
+  }
   
   // Add amenities (comma-separated)
   if (params.amenities && params.amenities.length > 0) {
@@ -208,7 +217,7 @@ export function validateSearchParams(params: SearchParams): string[] {
     errors.push('Radius must be greater than zero.');
   }
 
-  if (params.availability !== undefined && params.availability < 0) {
+  if (params.minAvailability !== undefined && params.minAvailability < 0) {
     errors.push('Availability must be zero or a positive number.');
   }
 
@@ -259,7 +268,10 @@ export async function searchHomes(params: SearchParams): Promise<SearchResponse>
           ? { min: params.priceMin?.toString() || null, max: params.priceMax?.toString() || null } 
           : null,
         gender: params.gender || 'ALL',
-        availability: params.availability || false,
+        availability: Boolean(
+          params.availability ??
+          (params.minAvailability && params.minAvailability > 0)
+        ),
         amenities: params.amenities || null
       },
       pagination: {
@@ -377,9 +389,9 @@ export function parseNaturalLanguageQuery(query: string): Partial<SearchParams> 
   // Extract availability requirement
   const availMatch = q.match(/(at least|min(?:imum)?)[^\\d]*(\\d+)/);
   if (availMatch) {
-    params.availability = parseInt(availMatch[2], 10);
+    params.minAvailability = parseInt(availMatch[2], 10);
   } else if (q.includes('available') || q.includes('vacancy') || q.includes('open spot') || q.includes('openings')) {
-    params.availability = 1; // default minimum 1 slot
+    params.minAvailability = 1; // default minimum 1 slot
   }
 
   // Extract radius (e.g., "within 10 miles", "inside 25 mi")

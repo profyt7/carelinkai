@@ -11,16 +11,16 @@ import sgMail from '@sendgrid/mail';
 import { logger } from '../logger';
 
 // Initialize SendGrid with API key from environment
-if (!process.env.SENDGRID_API_KEY) {
+if (!process.env['SENDGRID_API_KEY']) {
   logger.warn('SENDGRID_API_KEY is not defined. Email functionality will not work.');
 } else {
-  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+  sgMail.setApiKey(process.env['SENDGRID_API_KEY']!);
 }
 
 // Email configuration from environment
-const EMAIL_FROM = process.env.EMAIL_FROM || 'noreply@carelinkai.com';
-const EMAIL_FROM_NAME = process.env.EMAIL_FROM_NAME || 'CareLinkAI';
-const EMAIL_REPLY_TO = process.env.EMAIL_REPLY_TO || 'support@carelinkai.com';
+const EMAIL_FROM = process.env['EMAIL_FROM'] || 'noreply@carelinkai.com';
+const EMAIL_FROM_NAME = process.env['EMAIL_FROM_NAME'] || 'CareLinkAI';
+const EMAIL_REPLY_TO = process.env['EMAIL_REPLY_TO'] || 'support@carelinkai.com';
 
 // Types for email templates and options
 export interface EmailData {
@@ -162,7 +162,7 @@ export async function sendEmail(emailData: EmailData): Promise<EmailResult> {
     };
 
     // Send the email
-    const [response] = await sgMail.send(msg);
+    const [response] = await sgMail.send(msg as any);
     
     logger.info(`Email sent successfully to ${Array.isArray(emailData.to) ? emailData.to.join(', ') : emailData.to}`);
     
