@@ -6,37 +6,6 @@ import webpush from 'web-push';
 
 const prisma = new PrismaClient();
 
-// ------------------------------------------------------------------
-// Configure web-push VAPID details (skip if keys are missing/invalid)
-// ------------------------------------------------------------------
-const VAPID_SUBJECT =
-  process.env['VAPID_SUBJECT'] || 'mailto:support@carelinkai.com';
-const VAPID_PUBLIC = process.env['NEXT_PUBLIC_VAPID_PUBLIC_KEY'] || '';
-const VAPID_PRIVATE = process.env['VAPID_PRIVATE_KEY'] || '';
-
-if (VAPID_PUBLIC.length > 0 && VAPID_PRIVATE.length > 0) {
-  try {
-    webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
-  } catch (err) {
-    // During build / development an invalid key length will throw.
-    // Suppress this outside of production so the build succeeds.
-    if (process.env['NODE_ENV'] !== 'production') {
-      console.warn(
-        '[push] Skipping VAPID configuration due to invalid key length:',
-        (err as Error).message
-      );
-    } else {
-      // In production, re-throw so we are aware of mis-configuration
-      throw err;
-    }
-  }
-} else {
-  // Keys not present – push notifications will be disabled gracefully.
-  if (process.env['NODE_ENV'] !== 'production') {
-    console.warn('[push] VAPID keys not found – web-push disabled.');
-  }
-}
-
 /**
  * POST handler for sending push notifications
  */
@@ -74,6 +43,32 @@ export async function POST(req: NextRequest) {
       isTest = false // Test notification flag
     } = data;
     
+    //-------------------------------------------------------------------
+    // Configure web-push VAPID **at request time** (safe for build phase)
+    //-------------------------------------------------------------------
+    {
+      const VAPID_SUBJECT =
+        process.env['VAPID_SUBJECT'] ?? 'mailto:support@carelinkai.com';
+      const VAPID_PUBLIC = process.env['NEXT_PUBLIC_VAPID_PUBLIC_KEY'] ?? '';
+      const VAPID_PRIVATE = process.env['VAPID_PRIVATE_KEY'] ?? '';
+
+      if (VAPID_PUBLIC && VAPID_PRIVATE) {
+        try {
+          webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
+        } catch (err) {
+          console.warn(
+            '[push] Invalid VAPID keys – push disabled for this request:',
+            (err as Error).message
+          );
+        }
+      } else {
+        // Silently skip if keys not provided; caller will still get 200 with no sends
+        if (process.env['NODE_ENV'] !== 'production') {
+          console.warn('[push] VAPID keys missing – notifications not sent.');
+        }
+      }
+    }
+
     // Validate required fields
     if (!title || !body) {
       return NextResponse.json(
