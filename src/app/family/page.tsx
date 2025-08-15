@@ -81,6 +81,20 @@ export default function FamilyPage() {
   /* --------------------- Memo helpers ------------------------ */
   const docTypes = useMemo(() => Object.keys(DOCUMENT_TYPE_LABELS) as DocumentType[], []);
 
+  /* --------------------- Stats helpers ----------------------- */
+  const { totalDocs, totalSize, uploads30d } = useMemo(() => {
+    const now = Date.now();
+    const THIRTY_DAYS = 1000 * 60 * 60 * 24 * 30;
+
+    const totalDocs = documents.length;
+    const totalSize = documents.reduce((sum, d) => sum + (d.fileSize || 0), 0);
+    const uploads30d = documents.filter(
+      (d) => now - new Date(d.createdAt).getTime() <= THIRTY_DAYS
+    ).length;
+
+    return { totalDocs, totalSize, uploads30d };
+  }, [documents]);
+
   return (
     <DashboardLayout title="Family Collaboration">
       <div className="space-y-6">
@@ -148,79 +162,87 @@ export default function FamilyPage() {
               </button>
             </div>
 
-            {/* Documents Table */}
-            <div className="mt-6 overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 text-sm">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-3 py-2 text-left font-semibold text-gray-700">Title</th>
-                    <th className="px-3 py-2 text-left font-semibold text-gray-700">Type</th>
-                    <th className="px-3 py-2 text-left font-semibold text-gray-700">Size</th>
-                    <th className="px-3 py-2 text-left font-semibold text-gray-700">Uploader</th>
-                    <th className="px-3 py-2 text-left font-semibold text-gray-700">Created</th>
-                    <th className="px-3 py-2 text-right font-semibold text-gray-700">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {loading.isFetching ? (
-                    <tr>
-                      <td colSpan={6} className="px-3 py-4 text-center">
-                        Loading…
-                      </td>
-                    </tr>
-                  ) : documents.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="px-3 py-4 text-center text-gray-500">
-                        No documents found.
-                      </td>
-                    </tr>
-                  ) : (
-                    documents.map((doc) => (
-                      <tr key={doc.id}>
-                        <td className="px-3 py-2">
-                          <div>{doc.title}</div>
-                          {doc.tags && doc.tags.length > 0 && (
-                            <div className="mt-1 flex flex-wrap gap-1">
-                              {doc.tags.map((tag) => (
-                                <span key={tag} className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
-                                  <FiTag className="mr-1 h-3 w-3" />
-                                  {tag}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-3 py-2">{DOCUMENT_TYPE_LABELS[doc.type]}</td>
-                        <td className="px-3 py-2">{formatFileSize(doc.fileSize)}</td>
-                        <td className="px-3 py-2">
-                          {doc.uploader.firstName} {doc.uploader.lastName}
-                        </td>
-                        <td className="px-3 py-2">
-                          {new Date(doc.createdAt).toLocaleDateString()}
-                        </td>
-                        <td className="px-3 py-2 text-right">
-                          <a
-                            href={doc.fileUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="mr-2 inline-flex items-center text-primary-600 hover:underline"
-                          >
-                            <FiDownload className="mr-1" /> View
-                          </a>
-                          <button
-                            onClick={() => deleteDocument(doc.id)}
-                            className="inline-flex items-center text-red-600 hover:underline"
-                            title="Delete"
-                          >
-                            <FiTrash2 className="mr-1" />
-                            Delete
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+            {/* Stats */}
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="rounded-lg bg-gray-50 p-4 shadow-sm">
+                <p className="text-sm text-gray-500">Total Documents</p>
+                <p className="mt-1 text-2xl font-semibold text-gray-800">{totalDocs}</p>
+              </div>
+              <div className="rounded-lg bg-gray-50 p-4 shadow-sm">
+                <p className="text-sm text-gray-500">Storage Used</p>
+                <p className="mt-1 text-2xl font-semibold text-gray-800">
+                  {formatFileSize(totalSize)}
+                </p>
+              </div>
+              <div className="rounded-lg bg-gray-50 p-4 shadow-sm">
+                <p className="text-sm text-gray-500">Uploaded (30&nbsp;days)</p>
+                <p className="mt-1 text-2xl font-semibold text-gray-800">{uploads30d}</p>
+              </div>
+            </div>
+
+            {/* Documents Grid */}
+            <div className="mt-8">
+              {loading.isFetching ? (
+                <p className="text-center text-sm text-gray-600">Loading…</p>
+              ) : documents.length === 0 ? (
+                <p className="text-center text-sm text-gray-500">No documents found.</p>
+              ) : (
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {documents.map((doc) => (
+                    <div
+                      key={doc.id}
+                      className="flex h-full flex-col justify-between rounded-lg border bg-white p-4 shadow-sm"
+                    >
+                      <div>
+                        <h3 className="text-base font-semibold text-gray-800">{doc.title}</h3>
+                        <p className="mt-1 text-xs text-gray-500">{DOCUMENT_TYPE_LABELS[doc.type]}</p>
+
+                        {doc.tags && doc.tags.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {doc.tags.map((tag) => (
+                              <span
+                                key={tag}
+                                className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600"
+                              >
+                                <FiTag className="mr-1 h-3 w-3" />
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="mt-4 text-xs text-gray-500">
+                        <div>{formatFileSize(doc.fileSize)}</div>
+                        <div>
+                          {new Date(doc.createdAt).toLocaleDateString()} · {doc.uploader.firstName}{' '}
+                          {doc.uploader.lastName}
+                        </div>
+                      </div>
+
+                      <div className="mt-4 flex justify-end gap-2">
+                        <a
+                          href={doc.fileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center text-primary-600 hover:underline"
+                        >
+                          <FiDownload className="mr-1" />
+                          View
+                        </a>
+                        <button
+                          onClick={() => deleteDocument(doc.id)}
+                          className="inline-flex items-center text-red-600 hover:underline"
+                          title="Delete"
+                        >
+                          <FiTrash2 className="mr-1" />
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
