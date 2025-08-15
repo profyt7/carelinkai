@@ -675,7 +675,9 @@ export class EmailService {
         ...(result ? {
           success: result.success,
           providerMessageId: result.messageId,
-          errorCode: result.error?.code || result.error?.name,
+          // Cast `result.error` to `any` to avoid index-signature complaints
+          errorCode:
+            (result.error as any)?.code || (result.error as any)?.name,
           errorMessage: result.error ? this.sanitizeErrorMessage(result.error.message) : undefined
         } : {})
       };
