@@ -9,15 +9,14 @@
  * - Permission management
  */
 
-import { 
+import {
   FamilyMemberRole as PrismaFamilyMemberRole,
   FamilyMemberStatus as PrismaFamilyMemberStatus,
   FamilyDocumentType as PrismaFamilyDocumentType,
   ActivityType as PrismaActivityType,
-  User,
-  Family,
-  Resident
 } from '@prisma/client';
+
+import type { User, Family, Resident } from '@prisma/client';
 
 // ======================================================
 // ================= CORE ENUMS & TYPES =================

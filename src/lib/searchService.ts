@@ -389,7 +389,7 @@ export function parseNaturalLanguageQuery(query: string): Partial<SearchParams> 
   // Extract availability requirement
   const availMatch = q.match(/(at least|min(?:imum)?)[^\\d]*(\\d+)/);
   if (availMatch) {
-    params.minAvailability = parseInt(availMatch[2], 10);
+    params.minAvailability = parseInt(availMatch[2]!, 10);
   } else if (q.includes('available') || q.includes('vacancy') || q.includes('open spot') || q.includes('openings')) {
     params.minAvailability = 1; // default minimum 1 slot
   }
@@ -397,7 +397,7 @@ export function parseNaturalLanguageQuery(query: string): Partial<SearchParams> 
   // Extract radius (e.g., "within 10 miles", "inside 25 mi")
   const radiusMatch = q.match(/(?:within|inside)\\s+(\\d+)\\s*(?:miles?|mi)/);
   if (radiusMatch) {
-    params.radius = parseInt(radiusMatch[1], 10);
+    params.radius = parseInt(radiusMatch[1]!, 10);
   }
 
   // Extract verified requirement
