@@ -37,7 +37,7 @@
  */
 
 import { PrismaClient, AuditAction } from '@prisma/client';
-import { EmailTemplate } from './email-templates';
+import type { EmailTemplate } from './email-templates';
 import { v4 as uuidv4 } from 'uuid';
 
 // Initialize Prisma client for logging
