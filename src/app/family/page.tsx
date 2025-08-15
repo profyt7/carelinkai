@@ -30,6 +30,10 @@ export default function FamilyPage() {
   const queryFamilyId = searchParams?.get('familyId') || '';
   const [familyId, setFamilyId] = useState<string>(queryFamilyId);
   const [modalOpen, setModalOpen] = useState(false);
+  /* ------------------- new UI state ------------------------- */
+  const [activeTab, setActiveTab] = useState<
+    'documents' | 'notes' | 'photos' | 'members' | 'activity'
+  >('documents');
 
   // Fetch fallback familyId if not provided
   useEffect(() => {
@@ -100,10 +104,61 @@ export default function FamilyPage() {
       <div className="space-y-6">
         {/* Hero */}
         <div className="mb-8 rounded-lg bg-gradient-to-r from-primary-500 to-primary-700 p-6 text-white shadow-md">
-          <h1 className="text-2xl font-bold md:text-3xl">Family Documents</h1>
-          <p className="mt-1 text-primary-100">
-            Securely share and manage important family documents.
-          </p>
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h1 className="text-2xl font-bold md:text-3xl">Family Portal</h1>
+              <p className="mt-1 text-primary-100">
+                Securely share and collaborate with your family.
+              </p>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setModalOpen(true)}
+                className="flex items-center rounded-md bg-white/90 px-3 py-2 text-sm font-medium text-primary-700 shadow hover:bg-white"
+              >
+                <FiPlus className="mr-2" /> Upload Document
+              </button>
+              <button
+                onClick={() => {/* placeholder */}}
+                className="flex items-center rounded-md bg-white/90 px-3 py-2 text-sm font-medium text-primary-700 shadow hover:bg-white"
+              >
+                <FiPlus className="mr-2" /> Create Note
+              </button>
+              <button
+                onClick={() => {/* placeholder */}}
+                className="flex items-center rounded-md bg-white/90 px-3 py-2 text-sm font-medium text-primary-700 shadow hover:bg-white"
+              >
+                <FiPlus className="mr-2" /> Add Photos
+              </button>
+              <button
+                onClick={() => {/* placeholder */}}
+                className="flex items-center rounded-md bg-white/90 px-3 py-2 text-sm font-medium text-primary-700 shadow hover:bg-white"
+              >
+                <FiPlus className="mr-2" /> Invite Member
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="mb-6 border-b border-gray-200">
+          <nav className="-mb-px flex flex-wrap space-x-6 text-sm font-medium">
+            {(['documents', 'notes', 'photos', 'members', 'activity'] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`pb-3 ${
+                  activeTab === tab
+                    ? 'border-b-2 border-primary-600 text-primary-600'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              </button>
+            ))}
+          </nav>
         </div>
 
         {/* Missing family notice */}
@@ -116,6 +171,9 @@ export default function FamilyPage() {
 
         {familyId && (
           <div className="rounded-md border bg-white p-4 shadow-sm">
+            {/* ---------------------- DOCUMENTS TAB -------------------- */}
+            {activeTab === 'documents' && (
+            <>
             {/* Toolbar */}
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="flex flex-1 items-center gap-2">
@@ -244,6 +302,18 @@ export default function FamilyPage() {
                 </div>
               )}
             </div>
+          </div>
+            </>
+            )}
+
+            {/* --------------------- PLACEHOLDERS ---------------------- */}
+            {activeTab !== 'documents' && (
+              <div className="rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-10 text-center">
+                <p className="text-gray-500">
+                  {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} section coming soon.
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>
