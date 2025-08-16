@@ -96,8 +96,14 @@ export default function NoteCreateModal({
       });
       
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create note');
+        const errorData = await response.json().catch(() => ({}));
+        if (process.env.NODE_ENV !== 'production') {
+          // eslint-disable-next-line no-console
+          console.error('[NoteCreateModal] create note failed:', errorData);
+        }
+        throw new Error(
+          errorData.details || errorData.error || 'Failed to create note'
+        );
       }
       
       const result = await response.json();

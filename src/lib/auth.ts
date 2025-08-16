@@ -77,6 +77,7 @@ export const authOptions: NextAuthOptions = {
             status: true,
             emailVerified: true,
             twoFactorEnabled: true,
+            profileImageUrl: true,
             lastLoginAt: true,
           }
         });
@@ -188,7 +189,8 @@ export const authOptions: NextAuthOptions = {
           lastName: user.lastName,
           role: user.role,
           emailVerified: user.emailVerified,
-          twoFactorEnabled: user.twoFactorEnabled
+          twoFactorEnabled: user.twoFactorEnabled,
+          profileImageUrl: user.profileImageUrl
         } as any);
       }
     })
@@ -211,6 +213,7 @@ export const authOptions: NextAuthOptions = {
         t.role = u.role;
         t.emailVerified = u.emailVerified;
         t.twoFactorEnabled = u.twoFactorEnabled;
+        t.profileImageUrl = u.profileImageUrl;
       }
       return token;
     },
@@ -228,6 +231,7 @@ export const authOptions: NextAuthOptions = {
         // Properties not declared in the augmented User type need casting
         (session.user as any).emailVerified = (token as any)['emailVerified'] as Date;
         (session.user as any).twoFactorEnabled = (token as any)['twoFactorEnabled'] as boolean;
+        (session.user as any).profileImageUrl = (token as any)['profileImageUrl'];
       }
       return session;
     }
