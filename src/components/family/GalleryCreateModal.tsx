@@ -17,7 +17,8 @@ export default function GalleryCreateModal({
   // Form state
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [tagsInput, setTagsInput] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
+  const [pendingTag, setPendingTag] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,10 +27,35 @@ export default function GalleryCreateModal({
     if (isOpen) {
       setTitle('');
       setDescription('');
-      setTagsInput('');
+      setTags([]);
+      setPendingTag('');
       setError(null);
     }
   }, [isOpen]);
+
+  // Helpers ---------------------------------------------------------
+  const addTag = (raw?: string) => {
+    const input = raw ?? pendingTag;
+    if (!input.trim()) return;
+
+    // Support user typing multiple comma-separated tags at once
+    const newTags = input
+      .split(',')
+      .map((t) => t.trim())
+      .filter((t) => t.length > 0);
+
+    setTags((prev) => {
+      const merged = [...prev];
+      newTags.forEach((t) => {
+        if (!merged.includes(t)) merged.push(t);
+      });
+      return merged;
+    });
+    setPendingTag('');
+  };
+
+  const removeTag = (idx: number) =>
+    setTags((prev) => prev.filter((_, i) => i !== idx));
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
@@ -45,18 +71,22 @@ export default function GalleryCreateModal({
     setError(null);
     
     try {
-      // Parse tags from comma-separated string
-      const tags = tagsInput
-        .split(',')
-        .map(tag => tag.trim())
-        .filter(tag => tag.length > 0);
+      // Combine existing chips with any residual input
+      const finalTags: string[] = [...tags];
+      if (pendingTag.trim()) {
+        pendingTag
+          .split(',')
+          .map((t) => t.trim())
+          .filter((t) => t.length > 0 && !finalTags.includes(t))
+          .forEach((t) => finalTags.push(t));
+      }
       
       // Prepare gallery data
       const galleryData = {
         familyId,
         title: title.trim(),
         description: description.trim(),
-        tags
+        tags: finalTags
       };
       
       // Send API request
@@ -161,23 +191,60 @@ export default function GalleryCreateModal({
             {/* Tags input */}
             <div className="mb-6">
               <label htmlFor="gallery-tags" className="block text-sm font-medium text-gray-700">
-                Tags <span className="text-xs text-gray-500">(optional, comma-separated)</span>
+                Tags <span className="text-xs text-gray-500">(optional)</span>
               </label>
-              <div className="mt-1 flex rounded-md shadow-sm">
-                <div className="relative flex flex-grow items-stretch focus-within:z-10">
+              {/* Chips */}
+              {tags.length > 0 && (
+                <ul className="mt-1 mb-2 flex flex-wrap gap-1">
+                  {tags.map((tag, idx) => (
+                    <li
+                      key={tag}
+                      className="flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700"
+                    >
+                      <FiTag className="mr-1 h-3 w-3 text-gray-400" />
+                      {tag}
+                      <button
+                        type="button"
+                        onClick={() => removeTag(idx)}
+                        className="ml-1 text-gray-400 hover:text-gray-600 focus:outline-none"
+                      >
+                        <FiX className="h-3 w-3" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {/* Input + Add */}
+              <div className="mt-1 flex gap-2">
+                <div className="relative flex-grow">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                     <FiTag className="h-5 w-5 text-gray-400" />
                   </div>
                   <input
                     type="text"
                     id="gallery-tags"
-                    value={tagsInput}
-                    onChange={(e) => setTagsInput(e.target.value)}
-                    className="block w-full rounded-md border border-gray-300 pl-10 px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-primary-500 sm:text-sm"
-                    placeholder="vacation, family, summer"
+                    value={pendingTag}
+                    onChange={(e) => setPendingTag(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ',') {
+                        e.preventDefault();
+                        addTag();
+                      }
+                    }}
+                    className="block w-full rounded-md border border-gray-300 pl-10 pr-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-primary-500 sm:text-sm"
+                    placeholder="Add a tag and press Enter"
                     disabled={isSubmitting}
                   />
                 </div>
+                <button
+                  type="button"
+                  onClick={() => addTag()}
+                  disabled={isSubmitting || !pendingTag.trim()}
+                  className="rounded-md bg-primary-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 disabled:opacity-50"
+                >
+                  Add
+                </button>
               </div>
             </div>
             

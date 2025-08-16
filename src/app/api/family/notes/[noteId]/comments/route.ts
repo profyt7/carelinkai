@@ -111,7 +111,7 @@ export async function GET(
 
     // Query comments with pagination
     const [comments, totalCount] = await Promise.all([
-      prisma.familyNoteComment.findMany({
+      prisma.noteComment.findMany({
         where: { noteId },
         include: {
           author: {
@@ -129,7 +129,7 @@ export async function GET(
         skip,
         take: filters.limit
       }),
-      prisma.familyNoteComment.count({
+      prisma.noteComment.count({
         where: { noteId }
       })
     ]);
@@ -221,7 +221,7 @@ export async function POST(
     }
 
     // Create comment
-    const comment = await prisma.familyNoteComment.create({
+    const comment = await prisma.noteComment.create({
       data: {
         noteId,
         authorId: session.user.id,
@@ -240,7 +240,7 @@ export async function POST(
     });
 
     // Get updated comment count
-    const commentCount = await prisma.familyNoteComment.count({
+    const commentCount = await prisma.noteComment.count({
       where: { noteId }
     });
 
