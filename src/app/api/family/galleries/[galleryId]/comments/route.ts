@@ -3,11 +3,7 @@ import { z } from "zod";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { 
-  canAccessFamily, 
-  FamilyMemberRole, 
-  FamilyMemberStatus 
-} from "@/lib/services/family";
+import { checkFamilyMembership } from "@/lib/services/family";
 import { publish } from "@/lib/server/sse";
 import { ActivityType } from "@prisma/client";
 
@@ -64,8 +60,8 @@ export async function GET(
     }
     
     // Check if user is an active member of the family
-    const canAccess = await canAccessFamily(session.user.id, gallery.familyId);
-    if (!canAccess) {
+    const isMember = await checkFamilyMembership(session.user.id, gallery.familyId);
+    if (!isMember) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     
@@ -163,8 +159,8 @@ export async function POST(
     }
     
     // Check if user is an active member of the family
-    const canAccess = await canAccessFamily(session.user.id, gallery.familyId);
-    if (!canAccess) {
+    const isMember = await checkFamilyMembership(session.user.id, gallery.familyId);
+    if (!isMember) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     

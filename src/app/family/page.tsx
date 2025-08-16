@@ -276,6 +276,64 @@ export default function FamilyPage() {
       [galleryId]: { ...prev[galleryId], newContent: value },
     }));
     
+  /* ---------------- Gallery photo viewer state ------------- */
+  const [galleryPhotosState, setGalleryPhotosState] = useState<
+    Record<
+      string,
+      { open: boolean; loading: boolean; items: any[]; nextCursor?: string | null }
+    >
+  >({});
+
+  const toggleGalleryPhotos = async (galleryId: string) => {
+    // init if missing
+    if (!galleryPhotosState[galleryId]) {
+      setGalleryPhotosState(prev => ({
+        ...prev,
+        [galleryId]: { open: false, loading: false, items: [] },
+      }));
+    }
+
+    // toggle
+    setGalleryPhotosState(prev => ({
+      ...prev,
+      [galleryId]: { ...prev[galleryId], open: !prev[galleryId]?.open },
+    }));
+
+    // fetch on first open
+    if (
+      !galleryPhotosState[galleryId]?.open &&
+      (galleryPhotosState[galleryId]?.items.length || 0) === 0
+    ) {
+      setGalleryPhotosState(prev => ({
+        ...prev,
+        [galleryId]: { ...prev[galleryId], loading: true },
+      }));
+      try {
+        const res = await fetch(
+          `/api/family/galleries/${galleryId}/photos?limit=50`
+        );
+        if (res.ok) {
+          const json = await res.json();
+          setGalleryPhotosState(prev => ({
+            ...prev,
+            [galleryId]: {
+              ...prev[galleryId],
+              items: json.photos || [],
+              nextCursor: json.nextCursor ?? null,
+              loading: false,
+            },
+          }));
+        } else throw new Error();
+      } catch (e) {
+        console.error('Failed to fetch gallery photos', e);
+        setGalleryPhotosState(prev => ({
+          ...prev,
+          [galleryId]: { ...prev[galleryId], loading: false },
+        }));
+      }
+    }
+  };
+
   /* ---------------- Photo upload function ---------------- */
   const uploadPhotos = async (galleryId: string, files: FileList) => {
     if (!files.length) return;
@@ -322,6 +380,17 @@ export default function FamilyPage() {
         }
         return g;
       }));
+
+      // Append to photo list if viewer open
+      if (galleryPhotosState[galleryId]?.open) {
+        setGalleryPhotosState(prev => ({
+          ...prev,
+          [galleryId]: {
+            ...prev[galleryId],
+            items: [...(prev[galleryId]?.items || []), ...(data.photos || [])],
+          },
+        }));
+      }
       
     } catch (error) {
       console.error('Failed to upload photos:', error);
@@ -1033,6 +1102,16 @@ export default function FamilyPage() {
                                 </div>
                               )}
                               
+                              {/* Photo viewer toggle */}
+                              <button
+                                onClick={() => toggleGalleryPhotos(g.id)}
+                                className="mt-2 flex items-center text-xs text-primary-600 hover:text-primary-700"
+                              >
+                                <FiEye className="mr-1" />
+                                {galleryPhotosState[g.id]?.open ? 'Hide Photos' : 'View Photos'}
+                                {` (${g.photoCount})`}
+                              </button>
+
                               {/* Photo upload section */}
                               <div className="mt-3 border-t pt-3">
                                 <input
@@ -1057,6 +1136,33 @@ export default function FamilyPage() {
                                   {uploadingGalleryIds[g.id] ? 'Uploading...' : 'Upload Photos'}
                                 </button>
                               </div>
+
+                            {/* Photos grid */}
+                            {galleryPhotosState[g.id]?.open && (
+                              <div className="mt-3">
+                                {galleryPhotosState[g.id]?.loading ? (
+                                  <p className="text-xs text-gray-500">Loading photos…</p>
+                                ) : galleryPhotosState[g.id]?.items.length === 0 ? (
+                                  <p className="text-xs text-gray-500">No photos uploaded yet.</p>
+                                ) : (
+                                  <div className="grid grid-cols-3 gap-2">
+                                    {galleryPhotosState[g.id]?.items.map((p: any) => (
+                                      <div key={p.id} className="border">
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img
+                                          src={p.thumbnailUrl || p.fileUrl}
+                                          alt={p.caption || p.fileUrl}
+                                          className="h-24 w-full object-cover"
+                                        />
+                                        <p className="truncate px-1 py-0.5 text-[10px] text-gray-600">
+                                          {p.uploader.firstName}
+                                        </p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
 
                               {/* Comments toggle */}
                               <button

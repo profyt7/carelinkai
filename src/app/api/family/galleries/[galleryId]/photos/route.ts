@@ -58,6 +58,102 @@ async function ensureDirectoryExists(dirPath: string): Promise<void> {
 }
 
 /**
+ * Validate query parameters for listing photos
+ */
+const listQuerySchema = z.object({
+  cursor: z.string().optional(),
+  limit: z.coerce.number().int().positive().max(100).default(50),
+});
+
+/**
+ * GET handler – list photos in a gallery (paginated)
+ */
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { galleryId: string } }
+) {
+  try {
+    // Session check
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Validate params
+    const paramRes = paramsSchema.safeParse(params);
+    if (!paramRes.success) {
+      return NextResponse.json(
+        { error: 'Invalid gallery ID', details: paramRes.error.format() },
+        { status: 400 },
+      );
+    }
+    const { galleryId } = paramRes.data;
+
+    // Parse query
+    const url = new URL(request.url);
+    const queryRes = listQuerySchema.safeParse({
+      cursor: url.searchParams.get('cursor') ?? undefined,
+      limit: url.searchParams.get('limit') ?? undefined,
+    });
+    if (!queryRes.success) {
+      return NextResponse.json(
+        { error: 'Invalid query', details: queryRes.error.format() },
+        { status: 400 },
+      );
+    }
+    const { cursor, limit } = queryRes.data;
+
+    // Fetch gallery & family
+    const gallery = await prisma.sharedGallery.findUnique({
+      where: { id: galleryId },
+      select: { familyId: true },
+    });
+    if (!gallery) {
+      return NextResponse.json({ error: 'Gallery not found' }, { status: 404 });
+    }
+
+    // Membership check
+    const isMember = await checkFamilyMembership(
+      session.user.id,
+      gallery.familyId,
+    );
+    if (!isMember) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    // Query photos
+    const photos = await prisma.galleryPhoto.findMany({
+      where: { galleryId },
+      orderBy: { createdAt: 'asc' },
+      take: limit,
+      skip: cursor ? 1 : 0,
+      cursor: cursor ? { id: cursor } : undefined,
+      include: {
+        uploader: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profileImageUrl: true,
+          },
+        },
+      },
+    });
+
+    const nextCursor =
+      photos.length === limit ? photos[photos.length - 1].id : null;
+
+    return NextResponse.json({ photos, nextCursor });
+  } catch (err) {
+    console.error('Error listing gallery photos:', err);
+    return NextResponse.json(
+      { error: 'Failed to fetch photos' },
+      { status: 500 },
+    );
+  }
+}
+
+/**
  * POST handler for uploading photos
  */
 export async function POST(
