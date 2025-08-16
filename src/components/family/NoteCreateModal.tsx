@@ -18,6 +18,7 @@ export default function NoteCreateModal({
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [tagsInput, setTagsInput] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,9 +28,23 @@ export default function NoteCreateModal({
       setTitle('');
       setContent('');
       setTagsInput('');
+      setTags([]);
       setError(null);
     }
   }, [isOpen]);
+
+  /* -------------------- tag helpers -------------------- */
+  const addTag = (raw?: string) => {
+    const val = (raw ?? tagsInput).trim();
+    if (!val) return;
+    if (!tags.includes(val)) {
+      setTags((prev) => [...prev, val]);
+    }
+    setTagsInput('');
+  };
+
+  const removeTag = (tag: string) =>
+    setTags((prev) => prev.filter((t) => t !== tag));
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
@@ -50,11 +65,14 @@ export default function NoteCreateModal({
     setError(null);
     
     try {
-      // Parse tags from comma-separated string
-      const tags = tagsInput
-        .split(',')
-        .map(tag => tag.trim())
-        .filter(tag => tag.length > 0);
+      // Merge explicit chips + any trailing comma-separated input
+      const mergedTags = [
+        ...tags,
+        ...tagsInput
+          .split(',')
+          .map((t) => t.trim())
+          .filter(Boolean),
+      ].filter((t, i, a) => a.indexOf(t) === i);
       
       // Prepare note data
       const noteData = {
@@ -65,7 +83,7 @@ export default function NoteCreateModal({
           content: content.trim(),
           plainText: content.trim()
         },
-        tags
+        tags: mergedTags
       };
       
       // Send API request
@@ -171,7 +189,10 @@ export default function NoteCreateModal({
             {/* Tags input */}
             <div className="mb-6">
               <label htmlFor="note-tags" className="block text-sm font-medium text-gray-700">
-                Tags <span className="text-xs text-gray-500">(optional, comma-separated)</span>
+                Tags{' '}
+                <span className="text-xs text-gray-500">
+                  (type a tag and press&nbsp;Enter or click&nbsp;Add)
+                </span>
               </label>
               <div className="mt-1 flex rounded-md shadow-sm">
                 <div className="relative flex flex-grow items-stretch focus-within:z-10">
@@ -183,12 +204,51 @@ export default function NoteCreateModal({
                     id="note-tags"
                     value={tagsInput}
                     onChange={(e) => setTagsInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (
+                        (e.key === 'Enter' || e.key === ',') &&
+                        tagsInput.trim().length > 0
+                      ) {
+                        e.preventDefault();
+                        addTag();
+                      }
+                    }}
                     className="block w-full rounded-md border border-gray-300 pl-10 px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-primary-500 sm:text-sm"
                     placeholder="family, important, follow-up"
                     disabled={isSubmitting}
                   />
                 </div>
+                <button
+                  type="button"
+                  onClick={() => addTag()}
+                  disabled={isSubmitting || !tagsInput.trim()}
+                  className="relative -ml-px inline-flex items-center gap-1 rounded-r-md border border-gray-300 bg-gray-50 px-3 text-sm text-gray-700 hover:bg-gray-100 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:opacity-50"
+                >
+                  Add
+                </button>
               </div>
+
+              {/* tag chips */}
+              {tags.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs"
+                    >
+                      <FiTag className="mr-1 h-3 w-3 text-gray-500" />
+                      {tag}
+                      <button
+                        type="button"
+                        onClick={() => removeTag(tag)}
+                        className="ml-1 text-gray-400 hover:text-gray-600"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
             
             {/* Error message */}

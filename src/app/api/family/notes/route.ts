@@ -272,27 +272,35 @@ export async function POST(request: NextRequest) {
     });
     
     // Log activity
-    await createActivityRecord({
-      familyId: data.familyId,
-      actorId: session.user.id,
-      type: ActivityType.NOTE_CREATED,
-      resourceType: 'note',
-      resourceId: note.id,
-      description: `${session.user.firstName || session.user.name} created a new note: ${note.title}`,
-      metadata: {
-        noteTitle: note.title,
-        tags: note.tags
-      }
-    });
+    try {
+      await createActivityRecord({
+        familyId: data.familyId,
+        actorId: session.user.id,
+        type: ActivityType.NOTE_CREATED,
+        resourceType: 'note',
+        resourceId: note.id,
+        description: `${session.user.firstName || session.user.name} created a new note: ${note.title}`,
+        metadata: {
+          noteTitle: note.title,
+          tags: note.tags
+        }
+      });
+    } catch (err) {
+      console.error('Failed to log activity for note create', err);
+    }
     
     // Publish SSE event
-    publish(`family:${data.familyId}`, "note:created", {
-      familyId: data.familyId,
-      note: {
-        ...note,
-        commentCount: 0
-      }
-    });
+    try {
+      publish(`family:${data.familyId}`, "note:created", {
+        familyId: data.familyId,
+        note: {
+          ...note,
+          commentCount: 0
+        }
+      });
+    } catch (err) {
+      console.error('Failed to publish SSE note:created', err);
+    }
     
     // Return success response
     return NextResponse.json({
@@ -306,7 +314,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Error creating note:", error);
     return NextResponse.json(
-      { error: "Failed to create note" },
+      { 
+        error: "Failed to create note",
+        details: process.env.NODE_ENV !== 'production' ? String((error as any)?.message || error) : undefined
+      },
       { status: 500 }
     );
   }
@@ -425,28 +436,36 @@ export async function PUT(request: NextRequest) {
     });
     
     // Log activity
-    await createActivityRecord({
-      familyId: note.familyId,
-      actorId: session.user.id,
-      type: ActivityType.NOTE_UPDATED,
-      resourceType: 'note',
-      resourceId: note.id,
-      description: `${session.user.firstName || session.user.name} updated note: ${note.title}`,
-      metadata: {
-        noteTitle: note.title,
-        previousTitle: data.title !== note.title ? note.title : undefined
-      }
-    });
+    try {
+      await createActivityRecord({
+        familyId: note.familyId,
+        actorId: session.user.id,
+        type: ActivityType.NOTE_UPDATED,
+        resourceType: 'note',
+        resourceId: note.id,
+        description: `${session.user.firstName || session.user.name} updated note: ${note.title}`,
+        metadata: {
+          noteTitle: note.title,
+          previousTitle: data.title !== note.title ? note.title : undefined
+        }
+      });
+    } catch (err) {
+      console.error('Failed to log activity for note update', err);
+    }
     
     // Publish SSE event
-    publish(`family:${note.familyId}`, "note:updated", {
-      familyId: note.familyId,
-      note: {
-        ...updatedNote,
-        commentCount: updatedNote._count.comments,
-        _count: undefined
-      }
-    });
+    try {
+      publish(`family:${note.familyId}`, "note:updated", {
+        familyId: note.familyId,
+        note: {
+          ...updatedNote,
+          commentCount: updatedNote._count.comments,
+          _count: undefined
+        }
+      });
+    } catch (err) {
+      console.error('Failed to publish SSE note:updated', err);
+    }
     
     // Return success response
     return NextResponse.json({
@@ -461,7 +480,10 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     console.error("Error updating note:", error);
     return NextResponse.json(
-      { error: "Failed to update note" },
+      { 
+        error: "Failed to update note",
+        details: process.env.NODE_ENV !== 'production' ? String((error as any)?.message || error) : undefined
+      },
       { status: 500 }
     );
   }
@@ -539,23 +561,31 @@ export async function DELETE(request: NextRequest) {
     });
     
     // Log activity
-    await createActivityRecord({
-      familyId: note.familyId,
-      actorId: session.user.id,
-      type: ActivityType.NOTE_DELETED,
-      resourceType: 'note',
-      resourceId: null, // Note no longer exists
-      description: `${session.user.firstName || session.user.name} deleted note: ${note.title}`,
-      metadata: {
-        noteTitle: note.title
-      }
-    });
+    try {
+      await createActivityRecord({
+        familyId: note.familyId,
+        actorId: session.user.id,
+        type: ActivityType.NOTE_DELETED,
+        resourceType: 'note',
+        resourceId: null, // Note no longer exists
+        description: `${session.user.firstName || session.user.name} deleted note: ${note.title}`,
+        metadata: {
+          noteTitle: note.title
+        }
+      });
+    } catch (err) {
+      console.error('Failed to log activity for note delete', err);
+    }
     
     // Publish SSE event
-    publish(`family:${note.familyId}`, "note:deleted", {
-      familyId: note.familyId,
-      noteId: note.id
-    });
+    try {
+      publish(`family:${note.familyId}`, "note:deleted", {
+        familyId: note.familyId,
+        noteId: note.id
+      });
+    } catch (err) {
+      console.error('Failed to publish SSE note:deleted', err);
+    }
     
     // Return success response
     return NextResponse.json({
@@ -566,7 +596,10 @@ export async function DELETE(request: NextRequest) {
   } catch (error) {
     console.error("Error deleting note:", error);
     return NextResponse.json(
-      { error: "Failed to delete note" },
+      { 
+        error: "Failed to delete note",
+        details: process.env.NODE_ENV !== 'production' ? String((error as any)?.message || error) : undefined
+      },
       { status: 500 }
     );
   }

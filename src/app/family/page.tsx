@@ -690,19 +690,28 @@ export default function FamilyPage() {
                           >
                             <div className="flex items-center gap-3">
                               {/* avatar */}
-                              {m.user.profileImageUrl ? (
+                              {(() => {
+                                // Determine avatar URL (string or JSON object with thumbnail)
+                                const rawImg = (m.user as any).profileImageUrl;
+                                const avatarUrl =
+                                  typeof rawImg === 'string'
+                                    ? rawImg
+                                    : rawImg?.thumbnail;
+
+                                return avatarUrl ? (
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img
-                                  src={m.user.profileImageUrl}
+                                  src={avatarUrl}
                                   alt={`${m.user.firstName} ${m.user.lastName}`}
                                   className="h-10 w-10 rounded-full object-cover"
                                 />
-                              ) : (
+                                ) : (
                                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-600 text-sm font-medium text-white">
                                   {m.user.firstName.charAt(0)}
                                   {m.user.lastName.charAt(0)}
                                 </div>
-                              )}
+                                );
+                              })()}
                               <div>
                                 <p className="text-sm font-medium text-gray-900">
                                   {m.user.firstName} {m.user.lastName}
