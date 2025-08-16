@@ -545,7 +545,6 @@ export default function FamilyPage() {
                 </div>
               )}
             </div>
-          </div>
             </>
             )}
 
