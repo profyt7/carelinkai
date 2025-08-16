@@ -8,7 +8,7 @@ import {
   FamilyMemberRole, 
   FamilyMemberStatus 
 } from "@/lib/services/family";
-import { publishEvent } from "@/lib/sse";
+import { publish } from "@/lib/server/sse";
 import { ActivityType } from "@prisma/client";
 
 // GET query params schema
@@ -224,7 +224,7 @@ export async function POST(
     
     // Publish SSE event for real-time updates
     try {
-      await publishEvent(`family:${gallery.familyId}`, "comment:created", {
+      publish(`family:${gallery.familyId}`, "comment:created", {
         comment,
         resourceType: "gallery",
         resourceId: galleryId,

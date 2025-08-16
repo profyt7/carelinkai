@@ -17,7 +17,7 @@ import { useDocuments } from '@/hooks/useDocuments';
 import dynamic from 'next/dynamic';
 import { DOCUMENT_TYPE_LABELS, formatFileSize } from '@/lib/types/family';
 import type { DocumentType } from '@/lib/types/family';
-import { FiPlus, FiSearch, FiTrash2, FiDownload, FiTag, FiMessageCircle, FiSend, FiEye, FiEyeOff } from 'react-icons/fi';
+import { FiPlus, FiSearch, FiTrash2, FiDownload, FiTag, FiMessageCircle, FiSend, FiEye, FiEyeOff, FiUpload } from 'react-icons/fi';
 import type { FamilyMember } from '@prisma/client';
 
 // Lazy load modal to avoid big bundle
@@ -65,6 +65,9 @@ export default function FamilyPage() {
   
   /* ------------------- comments state ----------------------- */
   const [commentsState, setCommentsState] = useState<Record<string, { open: boolean; items: any[]; loading: boolean; newContent: string }>>({});
+
+  /* ------------------- photo upload state ------------------ */
+  const [uploadingGalleryIds, setUploadingGalleryIds] = useState<Record<string, boolean>>({});
 
   /* ------------------------------------------------------------------
    * New state/helpers for note expand / delete and DOC-comment handling
@@ -272,6 +275,61 @@ export default function FamilyPage() {
       ...prev,
       [galleryId]: { ...prev[galleryId], newContent: value },
     }));
+    
+  /* ---------------- Photo upload function ---------------- */
+  const uploadPhotos = async (galleryId: string, files: FileList) => {
+    if (!files.length) return;
+    
+    // Set loading state
+    setUploadingGalleryIds(prev => ({ ...prev, [galleryId]: true }));
+    
+    try {
+      // Find the gallery
+      const gallery = galleries.find(g => g.id === galleryId);
+      if (!gallery) throw new Error('Gallery not found');
+      
+      // Create form data
+      const formData = new FormData();
+      formData.append('familyId', familyId);
+      formData.append('setAsCover', gallery.coverPhotoUrl ? 'false' : 'true');
+      
+      // Append all files
+      Array.from(files).forEach(file => {
+        formData.append('photos', file);
+      });
+      
+      // Send request
+      const res = await fetch(`/api/family/galleries/${galleryId}/photos`, {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to upload photos');
+      }
+      
+      const data = await res.json();
+      
+      // Update gallery in state
+      setGalleries(prev => prev.map(g => {
+        if (g.id === galleryId) {
+          return {
+            ...g,
+            photoCount: g.photoCount + files.length,
+            coverPhotoUrl: g.coverPhotoUrl || (data.photos?.[0]?.thumbnailUrl || data.photos?.[0]?.fileUrl)
+          };
+        }
+        return g;
+      }));
+      
+    } catch (error) {
+      console.error('Failed to upload photos:', error);
+    } finally {
+      // Clear loading state
+      setUploadingGalleryIds(prev => ({ ...prev, [galleryId]: false }));
+    }
+  };
 
   // Fetch fallback familyId if not provided
   useEffect(() => {
@@ -974,6 +1032,31 @@ export default function FamilyPage() {
                                   ))}
                                 </div>
                               )}
+                              
+                              {/* Photo upload section */}
+                              <div className="mt-3 border-t pt-3">
+                                <input
+                                  type="file"
+                                  id={`file-input-${g.id}`}
+                                  multiple
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    if (e.target.files && e.target.files.length > 0) {
+                                      uploadPhotos(g.id, e.target.files);
+                                      e.target.value = ''; // Reset input
+                                    }
+                                  }}
+                                />
+                                <button
+                                  onClick={() => document.getElementById(`file-input-${g.id}`)?.click()}
+                                  disabled={uploadingGalleryIds[g.id]}
+                                  className="flex w-full items-center justify-center rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 disabled:opacity-50"
+                                >
+                                  <FiUpload className="mr-1.5 h-3 w-3" />
+                                  {uploadingGalleryIds[g.id] ? 'Uploading...' : 'Upload Photos'}
+                                </button>
+                              </div>
 
                               {/* Comments toggle */}
                               <button

@@ -135,7 +135,8 @@ export async function GET(request: NextRequest) {
           },
           _count: {
             select: {
-              photos: true
+              photos: true,
+              comments: true
             }
           }
         },
@@ -157,6 +158,7 @@ export async function GET(request: NextRequest) {
     const galleriesWithDetails = galleries.map(gallery => ({
       ...gallery,
       photoCount: gallery._count.photos,
+      commentCount: gallery._count.comments,
       _count: undefined // Remove _count field
     }));
     
