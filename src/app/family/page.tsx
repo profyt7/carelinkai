@@ -18,10 +18,23 @@ import dynamic from 'next/dynamic';
 import { DOCUMENT_TYPE_LABELS, formatFileSize } from '@/lib/types/family';
 import type { DocumentType } from '@/lib/types/family';
 import { FiPlus, FiSearch, FiTrash2, FiDownload, FiTag } from 'react-icons/fi';
+import type { FamilyMember } from '@prisma/client';
 
 // Lazy load modal to avoid big bundle
 const DocumentUploadModal = dynamic(
   () => import('@/components/family/DocumentUploadModal'),
+  { ssr: false }
+);
+const NoteCreateModal = dynamic(
+  () => import('@/components/family/NoteCreateModal'),
+  { ssr: false }
+);
+const GalleryCreateModal = dynamic(
+  () => import('@/components/family/GalleryCreateModal'),
+  { ssr: false }
+);
+const InviteMemberModal = dynamic(
+  () => import('@/components/family/InviteMemberModal'),
   { ssr: false }
 );
 
@@ -30,10 +43,25 @@ export default function FamilyPage() {
   const queryFamilyId = searchParams?.get('familyId') || '';
   const [familyId, setFamilyId] = useState<string>(queryFamilyId);
   const [modalOpen, setModalOpen] = useState(false);
+  const [noteModalOpen, setNoteModalOpen] = useState(false);
+  const [galleryModalOpen, setGalleryModalOpen] = useState(false);
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
   /* ------------------- new UI state ------------------------- */
   const [activeTab, setActiveTab] = useState<
     'documents' | 'notes' | 'photos' | 'members' | 'activity'
   >('documents');
+
+  /* ------------------- new data state ----------------------- */
+  const [notes, setNotes] = useState<any[]>([]);
+  const [notesLoading, setNotesLoading] = useState(false);
+
+  const [galleries, setGalleries] = useState<any[]>([]);
+  const [galleriesLoading, setGalleriesLoading] = useState(false);
+
+  const [members, setMembers] = useState<FamilyMember[]>([]);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [activity, setActivity] = useState<any[]>([]);
+  const [activityLoading, setActivityLoading] = useState(false);
 
   // Fetch fallback familyId if not provided
   useEffect(() => {
@@ -50,6 +78,92 @@ export default function FamilyPage() {
       }
     })();
   }, [familyId]);
+
+  /* ------------------- Helpers / loaders -------------------- */
+  const reloadNotes = async () => {
+    if (!familyId) return;
+    setNotesLoading(true);
+    try {
+      const res = await fetch(`/api/family/notes?familyId=${familyId}`);
+      if (res.ok) {
+        const json = await res.json();
+        setNotes(json.items ?? []);
+      }
+    } catch (_) {
+      /* noop */
+    } finally {
+      setNotesLoading(false);
+    }
+  };
+
+  const reloadGalleries = async () => {
+    if (!familyId) return;
+    setGalleriesLoading(true);
+    try {
+      const res = await fetch(`/api/family/galleries?familyId=${familyId}`);
+      if (res.ok) {
+        const json = await res.json();
+        setGalleries(json.items ?? []);
+      }
+    } catch (_) {
+      /* noop */
+    } finally {
+      setGalleriesLoading(false);
+    }
+  };
+
+  const reloadMembers = async () => {
+    if (!familyId) return;
+    setMembersLoading(true);
+    try {
+      const res = await fetch(
+        `/api/family/members?familyId=${familyId}&status=ACTIVE`
+      );
+      if (res.ok) {
+        const json = await res.json();
+        setMembers(json.items ?? []);
+      }
+    } catch (_) {
+      /* noop */
+    } finally {
+      setMembersLoading(false);
+    }
+  };
+
+  const reloadActivity = async () => {
+    if (!familyId) return;
+    setActivityLoading(true);
+    try {
+      const res = await fetch(`/api/family/activity?familyId=${familyId}`);
+      if (res.ok) {
+        const json = await res.json();
+        setActivity(json.items ?? []);
+      }
+    } catch (_) {
+      /* noop */
+    } finally {
+      setActivityLoading(false);
+    }
+  };
+
+  /* Fetch once familyId resolves */
+  useEffect(() => {
+    if (!familyId) return;
+    reloadNotes();
+    reloadGalleries();
+  }, [familyId]);
+
+  /* Load data when user switches tabs (lazy) */
+  useEffect(() => {
+    if (!familyId) return;
+    if (activeTab === 'members' && members.length === 0 && !membersLoading) {
+      reloadMembers();
+    }
+    if (activeTab === 'activity' && activity.length === 0 && !activityLoading) {
+      reloadActivity();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, familyId]);
 
   /* --------------------- Documents Hook ---------------------- */
   const {
@@ -121,19 +235,19 @@ export default function FamilyPage() {
                 <FiPlus className="mr-2" /> Upload Document
               </button>
               <button
-                onClick={() => {/* placeholder */}}
+                onClick={() => setNoteModalOpen(true)}
                 className="flex items-center rounded-md bg-white/90 px-3 py-2 text-sm font-medium text-primary-700 shadow hover:bg-white"
               >
                 <FiPlus className="mr-2" /> Create Note
               </button>
               <button
-                onClick={() => {/* placeholder */}}
+                onClick={() => setGalleryModalOpen(true)}
                 className="flex items-center rounded-md bg-white/90 px-3 py-2 text-sm font-medium text-primary-700 shadow hover:bg-white"
               >
                 <FiPlus className="mr-2" /> Add Photos
               </button>
               <button
-                onClick={() => {/* placeholder */}}
+                onClick={() => setInviteModalOpen(true)}
                 className="flex items-center rounded-md bg-white/90 px-3 py-2 text-sm font-medium text-primary-700 shadow hover:bg-white"
               >
                 <FiPlus className="mr-2" /> Invite Member
@@ -309,9 +423,156 @@ export default function FamilyPage() {
             {/* --------------------- PLACEHOLDERS ---------------------- */}
             {activeTab !== 'documents' && (
               <div className="rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-10 text-center">
-                <p className="text-gray-500">
-                  {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} section coming soon.
-                </p>
+                {activeTab === 'notes' && (
+                  <>
+                    {notesLoading ? (
+                      <p className="text-gray-500">Loading notes…</p>
+                    ) : notes.length === 0 ? (
+                      <p className="text-gray-500">No notes yet. Click “Create Note” to add one.</p>
+                    ) : (
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        {notes.map((note) => (
+                          <div key={note.id} className="rounded-lg border bg-white p-4 shadow-sm">
+                            <h3 className="text-base font-semibold text-gray-800">{note.title}</h3>
+                            {note.tags?.length > 0 && (
+                              <div className="mt-2 flex flex-wrap gap-1">
+                                {note.tags.map((tag: string) => (
+                                  <span
+                                    key={tag}
+                                    className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600"
+                                  >
+                                    <FiTag className="mr-1 h-3 w-3" />
+                                    {tag}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            <p className="mt-2 text-xs text-gray-500">
+                              {new Date(note.createdAt).toLocaleDateString()} ·{' '}
+                              {note.author.firstName} {note.author.lastName}
+                            </p>
+                            <p className="mt-2 text-xs text-gray-500">
+                              {note.commentCount} comments
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {activeTab === 'photos' && (
+                  <>
+                    {galleriesLoading ? (
+                      <p className="text-gray-500">Loading galleries…</p>
+                    ) : galleries.length === 0 ? (
+                      <p className="text-gray-500">
+                        No photo galleries yet. Click “Add Photos” to create one.
+                      </p>
+                    ) : (
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        {galleries.map((g) => (
+                          <div key={g.id} className="rounded-lg border bg-white shadow-sm">
+                            <div className="aspect-w-16 aspect-h-9 bg-gray-100">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={g.coverPhotoUrl || '/placeholder.png'}
+                                alt={g.title}
+                                className="h-full w-full object-cover"
+                              />
+                            </div>
+                            <div className="p-4">
+                              <h3 className="font-medium text-gray-800">{g.title}</h3>
+                              <p className="mt-1 text-xs text-gray-500">{g.photoCount} photos</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {activeTab === 'members' && (
+                  <>
+                    {membersLoading ? (
+                      <p className="text-gray-500">Loading members…</p>
+                    ) : members.length === 0 ? (
+                      <p className="text-gray-500">
+                        No members found. Use “Invite Member” to add one.
+                      </p>
+                    ) : (
+                      <ul className="space-y-4">
+                        {members.map((m) => (
+                          <li
+                            key={m.id}
+                            className="flex items-center justify-between rounded-md border bg-white p-4 shadow-sm"
+                          >
+                            <div className="flex items-center gap-3">
+                              {/* avatar */}
+                              {m.user.profileImageUrl ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={m.user.profileImageUrl}
+                                  alt={`${m.user.firstName} ${m.user.lastName}`}
+                                  className="h-10 w-10 rounded-full object-cover"
+                                />
+                              ) : (
+                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-600 text-sm font-medium text-white">
+                                  {m.user.firstName.charAt(0)}
+                                  {m.user.lastName.charAt(0)}
+                                </div>
+                              )}
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">
+                                  {m.user.firstName} {m.user.lastName}
+                                </p>
+                                <p className="text-xs text-gray-500">{m.user.email}</p>
+                              </div>
+                            </div>
+                            <div className="text-right text-xs">
+                              <p className="font-semibold text-gray-700">{m.role}</p>
+                              <p
+                                className={
+                                  m.status === 'ACTIVE'
+                                    ? 'text-green-600'
+                                    : m.status === 'PENDING'
+                                    ? 'text-yellow-600'
+                                    : 'text-red-600'
+                                }
+                              >
+                                {m.status}
+                              </p>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </>
+                )}
+                {activeTab === 'activity' && (
+                  <>
+                    {activityLoading ? (
+                      <p className="text-gray-500">Loading activity…</p>
+                    ) : activity.length === 0 ? (
+                      <p className="text-gray-500">No recent activity.</p>
+                    ) : (
+                      <ul className="space-y-4">
+                        {activity.map((a) => (
+                          <li
+                            key={a.id}
+                            className="rounded-md border bg-white p-4 shadow-sm"
+                          >
+                            <p className="text-sm text-gray-800">{a.description}</p>
+                            <p className="mt-1 text-xs text-gray-500">
+                              {new Date(a.createdAt).toLocaleString()} · {a.actor.firstName}{' '}
+                              {a.actor.lastName}
+                            </p>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -324,6 +585,35 @@ export default function FamilyPage() {
           isOpen={modalOpen}
           onClose={() => setModalOpen(false)}
           onUpload={onUpload}
+          familyId={familyId}
+        />
+      )}
+
+      {/* Note modal */}
+      {familyId && (
+        <NoteCreateModal
+          isOpen={noteModalOpen}
+          onClose={() => setNoteModalOpen(false)}
+          familyId={familyId}
+          onCreated={(n) => setNotes((prev) => [n, ...prev])}
+        />
+      )}
+
+      {/* Gallery modal */}
+      {familyId && (
+        <GalleryCreateModal
+          isOpen={galleryModalOpen}
+          onClose={() => setGalleryModalOpen(false)}
+          familyId={familyId}
+          onCreated={(g) => setGalleries((prev) => [g, ...prev])}
+        />
+      )}
+
+      {/* Invite modal */}
+      {familyId && (
+        <InviteMemberModal
+          isOpen={inviteModalOpen}
+          onClose={() => setInviteModalOpen(false)}
           familyId={familyId}
         />
       )}

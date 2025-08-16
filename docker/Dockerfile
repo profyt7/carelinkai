@@ -14,7 +14,7 @@ ENV NODE_ENV=production
 
 # Install dependencies first (for better layer caching)
 COPY package.json package-lock.json ./
-RUN npm ci --only=production
+RUN npm ci --omit=dev --legacy-peer-deps
 
 # Copy application code
 COPY . .
