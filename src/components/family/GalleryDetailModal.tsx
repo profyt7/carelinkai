@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   FiX,
   FiUpload,
@@ -9,6 +9,11 @@ import {
   FiEdit,
   FiExternalLink,
   FiDownload,
+  FiChevronLeft,
+  FiChevronRight,
+  FiCheck,
+  FiGrid,
+  FiDownloadCloud,
 } from 'react-icons/fi';
 
 interface GalleryDetailModalProps {
@@ -66,9 +71,20 @@ export default function GalleryDetailModal({
   const [savingCaptions, setSavingCaptions] = useState<Record<string, boolean>>({});
   const [deletingPhotos, setDeletingPhotos] = useState<Record<string, boolean>>({});
   
+  // Lightbox state
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  
+  // Selection mode state
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [isDeletingBulk, setIsDeletingBulk] = useState(false);
+  
   // Refs
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   // Fetch photos when modal opens
   useEffect(() => {
@@ -83,8 +99,33 @@ export default function GalleryDetailModal({
       setEditingCaptions({});
       setSavingCaptions({});
       setDeletingPhotos({});
+      setLightboxOpen(false);
+      setSelectMode(false);
+      setSelectedIds(new Set());
     }
   }, [isOpen, gallery.id]);
+  
+  // Keyboard event handlers for lightbox navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!lightboxOpen) return;
+      
+      switch (e.key) {
+        case 'ArrowLeft':
+          navigateLightbox('prev');
+          break;
+        case 'ArrowRight':
+          navigateLightbox('next');
+          break;
+        case 'Escape':
+          setLightboxOpen(false);
+          break;
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [lightboxOpen, currentIndex, photos.length]);
 
   // Fetch photos from API
   const fetchPhotos = async (cursor?: string) => {
@@ -308,6 +349,8 @@ export default function GalleryDetailModal({
 
   // Start caption editing
   const startEditingCaption = (photo: PhotoItem) => {
+    if (selectMode) return; // Don't allow editing in select mode
+    
     setEditingCaptions(prev => ({
       ...prev,
       [photo.id]: photo.caption || ''
@@ -394,6 +437,13 @@ export default function GalleryDetailModal({
       // Remove photo from state
       setPhotos(prev => prev.filter(p => p.id !== photoId));
       
+      // Remove from selected IDs if in selection mode
+      if (selectedIds.has(photoId)) {
+        const newSelectedIds = new Set(selectedIds);
+        newSelectedIds.delete(photoId);
+        setSelectedIds(newSelectedIds);
+      }
+      
       // Call onPhotoDeleted callback
       if (onPhotoDeleted) {
         onPhotoDeleted(photoId);
@@ -407,6 +457,202 @@ export default function GalleryDetailModal({
         delete newState[photoId];
         return newState;
       });
+    }
+  };
+  
+  // Lightbox navigation
+  const openLightbox = (index: number) => {
+    if (selectMode) return; // Don't open lightbox in select mode
+    setCurrentIndex(index);
+    setLightboxOpen(true);
+  };
+  
+  const navigateLightbox = (direction: 'prev' | 'next') => {
+    if (photos.length === 0) return;
+    
+    if (direction === 'prev') {
+      setCurrentIndex(prev => (prev === 0 ? photos.length - 1 : prev - 1));
+    } else {
+      setCurrentIndex(prev => (prev === photos.length - 1 ? 0 : prev + 1));
+    }
+  };
+  
+  // Selection mode handlers
+  const toggleSelectMode = () => {
+    setSelectMode(prev => !prev);
+    if (selectMode) {
+      // Clear selection when exiting select mode
+      setSelectedIds(new Set());
+    }
+  };
+  
+  const togglePhotoSelection = (photoId: string) => {
+    if (!selectMode) return;
+    
+    const newSelectedIds = new Set(selectedIds);
+    if (newSelectedIds.has(photoId)) {
+      newSelectedIds.delete(photoId);
+    } else {
+      newSelectedIds.add(photoId);
+    }
+    setSelectedIds(newSelectedIds);
+  };
+  
+  // Bulk actions
+  const handleDownloadAll = async () => {
+    if (!gallery.id || photos.length === 0) return;
+    
+    setIsDownloading(true);
+    setError(null);
+    
+    try {
+      const response = await fetch(`/api/family/galleries/${gallery.id}/photos/zip`, {
+        method: 'GET'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to download photos');
+      }
+      
+      const blob = await response.blob();
+      
+      // Get filename from Content-Disposition header or use default
+      let filename = `gallery-${gallery.id}.zip`;
+      const contentDisposition = response.headers.get('Content-Disposition');
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1];
+        }
+      }
+      
+      // Create download link and trigger download
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error('Error downloading photos:', err);
+      setError('Failed to download photos. Please try again.');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+  
+  const handleDownloadSelected = async () => {
+    if (!gallery.id || selectedIds.size === 0) return;
+    
+    setIsDownloading(true);
+    setError(null);
+    
+    try {
+      const response = await fetch(`/api/family/galleries/${gallery.id}/photos/zip`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          photoIds: Array.from(selectedIds)
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to download selected photos');
+      }
+      
+      const blob = await response.blob();
+      
+      // Get filename from Content-Disposition header or use default
+      let filename = `gallery-${gallery.id}-selected.zip`;
+      const contentDisposition = response.headers.get('Content-Disposition');
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1];
+        }
+      }
+      
+      // Create download link and trigger download
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error('Error downloading selected photos:', err);
+      setError('Failed to download selected photos. Please try again.');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+  
+  const handleDeleteSelected = async () => {
+    if (selectedIds.size === 0) return;
+    
+    if (!confirm(`Are you sure you want to delete ${selectedIds.size} selected photo${selectedIds.size > 1 ? 's' : ''}? This cannot be undone.`)) {
+      return;
+    }
+    
+    setIsDeletingBulk(true);
+    setError(null);
+    
+    try {
+      const selectedIdsArray = Array.from(selectedIds);
+      let deleteCount = 0;
+      
+      // Delete photos one by one
+      for (const photoId of selectedIdsArray) {
+        try {
+          setDeletingPhotos(prev => ({ ...prev, [photoId]: true }));
+          
+          const res = await fetch(`/api/family/galleries/${gallery.id}/photos/${photoId}`, {
+            method: 'DELETE'
+          });
+          
+          if (res.ok) {
+            deleteCount++;
+            
+            // Call onPhotoDeleted callback
+            if (onPhotoDeleted) {
+              onPhotoDeleted(photoId);
+            }
+          }
+        } catch (err) {
+          console.error(`Error deleting photo ${photoId}:`, err);
+        } finally {
+          setDeletingPhotos(prev => {
+            const newState = { ...prev };
+            delete newState[photoId];
+            return newState;
+          });
+        }
+      }
+      
+      // Update photos state to remove deleted photos
+      setPhotos(prev => prev.filter(p => !selectedIds.has(p.id)));
+      
+      // Clear selection
+      setSelectedIds(new Set());
+      
+      if (deleteCount === 0) {
+        setError('Failed to delete any photos. Please try again.');
+      } else if (deleteCount < selectedIdsArray.length) {
+        setError(`Only deleted ${deleteCount} of ${selectedIdsArray.length} photos. Some photos could not be deleted.`);
+      }
+    } catch (err) {
+      console.error('Error in bulk delete:', err);
+      setError('An error occurred during deletion. Some photos may not have been deleted.');
+    } finally {
+      setIsDeletingBulk(false);
     }
   };
 
@@ -423,7 +669,10 @@ export default function GalleryDetailModal({
       
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative w-full max-w-4xl transform overflow-hidden rounded-lg bg-white shadow-xl transition-all">
+        <div 
+          ref={modalRef}
+          className="relative w-full max-w-4xl transform overflow-hidden rounded-lg bg-white shadow-xl transition-all"
+        >
           {/* Header */}
           <div className="border-b border-gray-200 bg-gray-50 px-6 py-4">
             <div className="flex items-center justify-between">
@@ -568,7 +817,59 @@ export default function GalleryDetailModal({
             
             {/* Photos grid */}
             <div>
-              <h4 className="mb-2 text-sm font-medium text-gray-700">Gallery Photos</h4>
+              <div className="mb-4 flex items-center justify-between">
+                <h4 className="text-sm font-medium text-gray-700">Gallery Photos</h4>
+                
+                {/* Selection mode toolbar */}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={toggleSelectMode}
+                    className={`inline-flex items-center rounded-md px-3 py-1 text-xs font-medium ${
+                      selectMode 
+                        ? 'bg-primary-100 text-primary-800' 
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    <FiGrid className="mr-1 h-3 w-3" />
+                    {selectMode ? 'Exit Selection' : 'Select Photos'}
+                  </button>
+                  
+                  {selectMode && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleDownloadSelected}
+                        disabled={selectedIds.size === 0 || isDownloading}
+                        className="inline-flex items-center rounded-md bg-primary-50 px-3 py-1 text-xs font-medium text-primary-700 hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <FiDownload className="mr-1 h-3 w-3" />
+                        Download Selected ({selectedIds.size})
+                      </button>
+                      
+                      <button
+                        type="button"
+                        onClick={handleDeleteSelected}
+                        disabled={selectedIds.size === 0 || isDeletingBulk}
+                        className="inline-flex items-center rounded-md bg-red-50 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <FiTrash2 className="mr-1 h-3 w-3" />
+                        Delete Selected ({selectedIds.size})
+                      </button>
+                    </>
+                  )}
+                  
+                  <button
+                    type="button"
+                    onClick={handleDownloadAll}
+                    disabled={photos.length === 0 || isDownloading}
+                    className="inline-flex items-center rounded-md bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <FiDownloadCloud className="mr-1 h-3 w-3" />
+                    Download All
+                  </button>
+                </div>
+              </div>
               
               {loading ? (
                 <p className="text-center text-sm text-gray-500">Loading photos...</p>
@@ -577,26 +878,53 @@ export default function GalleryDetailModal({
               ) : (
                 <>
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
-                    {photos.map(photo => (
+                    {photos.map((photo, index) => (
                       <div
                         key={photo.id}
-                        className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm"
+                        className={`overflow-hidden rounded-lg border ${
+                          selectedIds.has(photo.id) 
+                            ? 'border-primary-500 ring-2 ring-primary-500' 
+                            : 'border-gray-200'
+                        } bg-white shadow-sm transition-all`}
                       >
                         {/* Photo */}
-                        <div className="aspect-w-4 aspect-h-3 bg-gray-100">
-                          <a
-                            href={photo.fileUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="block h-full w-full"
-                          >
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <div 
+                          className="relative aspect-w-4 aspect-h-3 bg-gray-100 cursor-pointer"
+                          onClick={() => selectMode ? togglePhotoSelection(photo.id) : openLightbox(index)}
+                        >
+                          {/* Selection indicator */}
+                          {selectMode && selectedIds.has(photo.id) && (
+                            <div className="absolute right-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-primary-500 text-white">
+                              <FiCheck className="h-4 w-4" />
+                            </div>
+                          )}
+                          
+                          {!selectMode && (
+                            <a
+                              href={photo.fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block h-full w-full"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={photo.thumbnailUrl || photo.fileUrl}
+                                alt={photo.caption || 'Gallery photo'}
+                                className="h-full w-full object-cover"
+                              />
+                            </a>
+                          )}
+                          
+                          {/* When in select mode, just show the image without link */}
+                          {selectMode && (
+                            /* eslint-disable-next-line @next/next/no-img-element */
                             <img
                               src={photo.thumbnailUrl || photo.fileUrl}
                               alt={photo.caption || 'Gallery photo'}
                               className="h-full w-full object-cover"
                             />
-                          </a>
+                          )}
                         </div>
                         
                         {/* Caption and controls */}
@@ -626,17 +954,18 @@ export default function GalleryDetailModal({
                               <p className="text-sm text-gray-700">
                                 {photo.caption || <span className="text-gray-400">No caption</span>}
                               </p>
-                              <button
-                                type="button"
-                                onClick={() => startEditingCaption(photo)}
-                                className="ml-1 rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-500"
-                              >
-                                <FiEdit className="h-4 w-4" />
-                              </button>
+                              {!selectMode && (
+                                <button
+                                  type="button"
+                                  onClick={() => startEditingCaption(photo)}
+                                  className="ml-1 rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-500"
+                                >
+                                  <FiEdit className="h-4 w-4" />
+                                </button>
+                              )}
                             </div>
                           )}
                           
-                          {/* Meta info and delete */}
                           {/* View / Download row */}
                           <div className="mb-1 flex items-center gap-3 text-xs">
                             <a
@@ -657,6 +986,7 @@ export default function GalleryDetailModal({
                               Download
                             </a>
                           </div>
+                          
                           {/* uploader / date + delete */}
                           <div className="flex items-center justify-between">
                             <div className="text-xs text-gray-500">
@@ -664,14 +994,16 @@ export default function GalleryDetailModal({
                               <br />
                               {new Date(photo.createdAt).toLocaleDateString()}
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => deletePhoto(photo.id)}
-                              disabled={deletingPhotos[photo.id]}
-                              className="rounded p-1 text-red-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
-                            >
-                              <FiTrash2 className="h-4 w-4" />
-                            </button>
+                            {!selectMode && (
+                              <button
+                                type="button"
+                                onClick={() => deletePhoto(photo.id)}
+                                disabled={deletingPhotos[photo.id]}
+                                className="rounded p-1 text-red-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                              >
+                                <FiTrash2 className="h-4 w-4" />
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -710,6 +1042,50 @@ export default function GalleryDetailModal({
           </div>
         </div>
       </div>
+      
+      {/* Lightbox */}
+      {lightboxOpen && photos.length > 0 && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-90">
+          <button
+            type="button"
+            onClick={() => setLightboxOpen(false)}
+            className="absolute right-4 top-4 rounded-full bg-black bg-opacity-50 p-2 text-white hover:bg-opacity-70"
+          >
+            <FiX className="h-6 w-6" />
+          </button>
+          
+          <button
+            type="button"
+            onClick={() => navigateLightbox('prev')}
+            className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-black bg-opacity-50 p-2 text-white hover:bg-opacity-70"
+          >
+            <FiChevronLeft className="h-6 w-6" />
+          </button>
+          
+          <button
+            type="button"
+            onClick={() => navigateLightbox('next')}
+            className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-black bg-opacity-50 p-2 text-white hover:bg-opacity-70"
+          >
+            <FiChevronRight className="h-6 w-6" />
+          </button>
+          
+          <div className="max-h-[90vh] max-w-[90vw] overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={photos[currentIndex]?.fileUrl}
+              alt={photos[currentIndex]?.caption || 'Gallery photo'}
+              className="max-h-[80vh] max-w-[80vw] object-contain"
+            />
+            
+            {photos[currentIndex]?.caption && (
+              <div className="mt-4 text-center">
+                <p className="text-white">{photos[currentIndex].caption}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
