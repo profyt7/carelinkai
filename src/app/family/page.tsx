@@ -960,6 +960,21 @@ export default function FamilyPage() {
                               <h3 className="font-medium text-gray-800">{g.title}</h3>
                               <p className="mt-1 text-xs text-gray-500">{g.photoCount} photos</p>
 
+                              {/* Gallery tags */}
+                              {g.tags && g.tags.length > 0 && (
+                                <div className="mt-2 flex flex-wrap gap-1">
+                                  {g.tags.map((tag: string) => (
+                                    <span
+                                      key={tag}
+                                      className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600"
+                                    >
+                                      <FiTag className="mr-1 h-3 w-3" />
+                                      {tag}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+
                               {/* Comments toggle */}
                               <button
                                 onClick={() => toggleGalleryComments(g.id)}
