@@ -80,6 +80,7 @@ export default function GalleryDetailModal({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isDownloading, setIsDownloading] = useState(false);
   const [isDeletingBulk, setIsDeletingBulk] = useState(false);
+  const [zipProgress, setZipProgress] = useState<number | null>(null);
   
   // Refs
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -102,6 +103,7 @@ export default function GalleryDetailModal({
       setLightboxOpen(false);
       setSelectMode(false);
       setSelectedIds(new Set());
+      setZipProgress(null);
     }
   }, [isOpen, gallery.id]);
   
@@ -126,6 +128,79 @@ export default function GalleryDetailModal({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [lightboxOpen, currentIndex, photos.length]);
+
+  // Helper function to download zip with progress
+  const downloadZipWithProgress = async (response: Response, defaultName: string) => {
+    if (!response.ok) {
+      throw new Error('Failed to download');
+    }
+    
+    // Get content length if available
+    const contentLength = response.headers.get('Content-Length');
+    const total = contentLength ? parseInt(contentLength, 10) : 0;
+    
+    // Get filename from Content-Disposition header or use default
+    let filename = defaultName;
+    const contentDisposition = response.headers.get('Content-Disposition');
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+      if (filenameMatch && filenameMatch[1]) {
+        filename = filenameMatch[1];
+      }
+    }
+    
+    // Read the response as a stream
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new Error('Failed to read response');
+    }
+    
+    // Accumulate chunks
+    const chunks: Uint8Array[] = [];
+    let receivedLength = 0;
+    
+    while (true) {
+      const { done, value } = await reader.read();
+      
+      if (done) {
+        break;
+      }
+      
+      chunks.push(value);
+      receivedLength += value.length;
+      
+      // Update progress if content length is known
+      if (total > 0) {
+        const progress = Math.round((receivedLength / total) * 100);
+        setZipProgress(progress);
+      }
+    }
+    
+    // Concatenate chunks into a single Uint8Array
+    const allChunks = new Uint8Array(receivedLength);
+    let position = 0;
+    for (const chunk of chunks) {
+      allChunks.set(chunk, position);
+      position += chunk.length;
+    }
+    
+    // Create a blob and download
+    const blob = new Blob([allChunks]);
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    
+    // Clean up
+    URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+    
+    return { filename, size: receivedLength };
+  };
 
   // Fetch photos from API
   const fetchPhotos = async (cursor?: string) => {
@@ -504,43 +579,20 @@ export default function GalleryDetailModal({
     
     setIsDownloading(true);
     setError(null);
+    setZipProgress(null);
     
     try {
       const response = await fetch(`/api/family/galleries/${gallery.id}/photos/zip`, {
         method: 'GET'
       });
       
-      if (!response.ok) {
-        throw new Error('Failed to download photos');
-      }
-      
-      const blob = await response.blob();
-      
-      // Get filename from Content-Disposition header or use default
-      let filename = `gallery-${gallery.id}.zip`;
-      const contentDisposition = response.headers.get('Content-Disposition');
-      if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
-        if (filenameMatch && filenameMatch[1]) {
-          filename = filenameMatch[1];
-        }
-      }
-      
-      // Create download link and trigger download
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      await downloadZipWithProgress(response, `gallery-${gallery.id}.zip`);
     } catch (err) {
       console.error('Error downloading photos:', err);
       setError('Failed to download photos. Please try again.');
     } finally {
       setIsDownloading(false);
+      setZipProgress(null);
     }
   };
   
@@ -549,6 +601,7 @@ export default function GalleryDetailModal({
     
     setIsDownloading(true);
     setError(null);
+    setZipProgress(null);
     
     try {
       const response = await fetch(`/api/family/galleries/${gallery.id}/photos/zip`, {
@@ -561,37 +614,13 @@ export default function GalleryDetailModal({
         })
       });
       
-      if (!response.ok) {
-        throw new Error('Failed to download selected photos');
-      }
-      
-      const blob = await response.blob();
-      
-      // Get filename from Content-Disposition header or use default
-      let filename = `gallery-${gallery.id}-selected.zip`;
-      const contentDisposition = response.headers.get('Content-Disposition');
-      if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
-        if (filenameMatch && filenameMatch[1]) {
-          filename = filenameMatch[1];
-        }
-      }
-      
-      // Create download link and trigger download
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      await downloadZipWithProgress(response, `gallery-${gallery.id}-selected.zip`);
     } catch (err) {
       console.error('Error downloading selected photos:', err);
       setError('Failed to download selected photos. Please try again.');
     } finally {
       setIsDownloading(false);
+      setZipProgress(null);
     }
   };
   
@@ -839,6 +868,20 @@ export default function GalleryDetailModal({
                     <>
                       <button
                         type="button"
+                        onClick={() => setSelectedIds(new Set(photos.map(p => p.id)))}
+                        className="inline-flex items-center rounded-md bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200"
+                      >
+                        Select All
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedIds(new Set())}
+                        className="inline-flex items-center rounded-md bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200"
+                      >
+                        Clear All
+                      </button>
+                      <button
+                        type="button"
                         onClick={handleDownloadSelected}
                         disabled={selectedIds.size === 0 || isDownloading}
                         className="inline-flex items-center rounded-md bg-primary-50 px-3 py-1 text-xs font-medium text-primary-700 hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-50"
@@ -870,6 +913,25 @@ export default function GalleryDetailModal({
                   </button>
                 </div>
               </div>
+              
+              {/* Progress bar for zip download */}
+              {isDownloading && (
+                <div className="mt-2 mb-4 w-full">
+                  <div className="text-xs text-gray-500 mb-1">
+                    {zipProgress !== null ? `Downloading: ${zipProgress}%` : 'Preparing download...'}
+                  </div>
+                  <div className="h-1 w-full bg-gray-200 rounded-full overflow-hidden">
+                    {zipProgress !== null ? (
+                      <div 
+                        className="h-full bg-primary-500 transition-all" 
+                        style={{ width: `${zipProgress}%` }}
+                      ></div>
+                    ) : (
+                      <div className="h-full bg-primary-500 animate-pulse w-full opacity-70"></div>
+                    )}
+                  </div>
+                </div>
+              )}
               
               {loading ? (
                 <p className="text-center text-sm text-gray-500">Loading photos...</p>
@@ -1046,13 +1108,22 @@ export default function GalleryDetailModal({
       {/* Lightbox */}
       {lightboxOpen && photos.length > 0 && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-90">
-          <button
-            type="button"
-            onClick={() => setLightboxOpen(false)}
-            className="absolute right-4 top-4 rounded-full bg-black bg-opacity-50 p-2 text-white hover:bg-opacity-70"
-          >
-            <FiX className="h-6 w-6" />
-          </button>
+          <div className="absolute right-4 top-4 flex gap-2">
+            <a
+              href={photos[currentIndex]?.fileUrl}
+              download
+              className="rounded-full bg-black bg-opacity-50 p-2 text-white hover:bg-opacity-70 flex items-center"
+            >
+              <FiDownload className="h-6 w-6" />
+            </a>
+            <button
+              type="button"
+              onClick={() => setLightboxOpen(false)}
+              className="rounded-full bg-black bg-opacity-50 p-2 text-white hover:bg-opacity-70"
+            >
+              <FiX className="h-6 w-6" />
+            </button>
+          </div>
           
           <button
             type="button"
