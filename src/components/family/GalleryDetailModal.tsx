@@ -20,7 +20,7 @@ interface GalleryDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   familyId: string;
-  gallery: { id: string; title: string; coverPhotoUrl?: string | null };
+  gallery: { id: string; title: string; coverPhotoUrl?: string | null; photoCount?: number };
   onPhotosAdded?: (added: number, firstThumbUrl?: string) => void;
   onPhotoUpdated?: (photo: any) => void;
   onPhotoDeleted?: (photoId: string) => void;
@@ -78,6 +78,7 @@ export default function GalleryDetailModal({
   // Selection mode state
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [selectAllAcross, setSelectAllAcross] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isDeletingBulk, setIsDeletingBulk] = useState(false);
   const [zipProgress, setZipProgress] = useState<number | null>(null);
@@ -558,6 +559,7 @@ export default function GalleryDetailModal({
     if (selectMode) {
       // Clear selection when exiting select mode
       setSelectedIds(new Set());
+      setSelectAllAcross(false);
     }
   };
   
@@ -597,6 +599,11 @@ export default function GalleryDetailModal({
   };
   
   const handleDownloadSelected = async () => {
+    if (selectAllAcross) {
+      // Same as download all
+      await handleDownloadAll();
+      return;
+    }
     if (!gallery.id || selectedIds.size === 0) return;
     
     setIsDownloading(true);
@@ -625,6 +632,10 @@ export default function GalleryDetailModal({
   };
   
   const handleDeleteSelected = async () => {
+    if (selectAllAcross) {
+      alert('Bulk delete for entire gallery not yet implemented. Please clear selection or select specific photos.');
+      return;
+    }
     if (selectedIds.size === 0) return;
     
     if (!confirm(`Are you sure you want to delete ${selectedIds.size} selected photo${selectedIds.size > 1 ? 's' : ''}? This cannot be undone.`)) {
@@ -882,22 +893,38 @@ export default function GalleryDetailModal({
                       </button>
                       <button
                         type="button"
+                        onClick={() => {
+                          // mark entire gallery selected (even not yet loaded)
+                          setSelectAllAcross(true);
+                          setSelectedIds(new Set()); // clear any individual selections
+                        }}
+                        className="inline-flex items-center rounded-md bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200"
+                      >
+                        Select Entire Gallery
+                      </button>
+                      <button
+                        type="button"
                         onClick={handleDownloadSelected}
-                        disabled={selectedIds.size === 0 || isDownloading}
+                        disabled={(selectedIds.size === 0 && !selectAllAcross) || isDownloading}
                         className="inline-flex items-center rounded-md bg-primary-50 px-3 py-1 text-xs font-medium text-primary-700 hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <FiDownload className="mr-1 h-3 w-3" />
-                        Download Selected ({selectedIds.size})
+                        {selectAllAcross
+                          ? 'Download Selected (All)'
+                          : `Download Selected (${selectedIds.size})`}
                       </button>
                       
                       <button
                         type="button"
                         onClick={handleDeleteSelected}
-                        disabled={selectedIds.size === 0 || isDeletingBulk}
+                        disabled={selectAllAcross || selectedIds.size === 0 || isDeletingBulk}
+                        title={selectAllAcross ? 'Bulk delete entire gallery is not supported' : undefined}
                         className="inline-flex items-center rounded-md bg-red-50 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <FiTrash2 className="mr-1 h-3 w-3" />
-                        Delete Selected ({selectedIds.size})
+                        {selectAllAcross
+                          ? 'Delete Selected'
+                          : `Delete Selected (${selectedIds.size})`}
                       </button>
                     </>
                   )}
@@ -938,7 +965,7 @@ export default function GalleryDetailModal({
               ) : photos.length === 0 ? (
                 <p className="text-center text-sm text-gray-500">No photos in this gallery yet.</p>
               ) : (
-                <>
+                <div className="relative">
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
                     {photos.map((photo, index) => (
                       <div
@@ -1085,7 +1112,15 @@ export default function GalleryDetailModal({
                       </button>
                     </div>
                   )}
-                </>
+                  {/* floating selected count badge */}
+                  {selectMode && (selectAllAcross || selectedIds.size > 0) && (
+                    <div className="pointer-events-none absolute right-6 bottom-6 rounded-full bg-primary-600 px-3 py-1 text-xs font-semibold text-white shadow">
+                      {selectAllAcross
+                        ? `All (${gallery.photoCount ?? photos.length}) selected`
+                        : `${selectedIds.size} selected`}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           </div>

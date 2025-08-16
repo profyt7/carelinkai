@@ -1285,7 +1285,12 @@ export default function FamilyPage() {
           isOpen={detailModalOpen}
           onClose={() => setDetailModalOpen(false)}
           familyId={familyId}
-          gallery={{ id: selectedGallery.id, title: selectedGallery.title, coverPhotoUrl: selectedGallery.coverPhotoUrl }}
+          gallery={{
+            id: selectedGallery.id,
+            title: selectedGallery.title,
+            coverPhotoUrl: selectedGallery.coverPhotoUrl,
+            photoCount: selectedGallery.photoCount,
+          }}
           onPhotosAdded={(added, firstThumbUrl) => {
             setGalleries(prev => prev.map(g => g.id === selectedGallery.id ? { ...g, photoCount: (g.photoCount || 0) + added, coverPhotoUrl: g.coverPhotoUrl || firstThumbUrl || g.coverPhotoUrl } : g));
           }}
