@@ -17,7 +17,7 @@ import { useDocuments } from '@/hooks/useDocuments';
 import dynamic from 'next/dynamic';
 import { DOCUMENT_TYPE_LABELS, formatFileSize } from '@/lib/types/family';
 import type { DocumentType } from '@/lib/types/family';
-import { FiPlus, FiSearch, FiTrash2, FiDownload, FiTag, FiMessageCircle, FiSend } from 'react-icons/fi';
+import { FiPlus, FiSearch, FiTrash2, FiDownload, FiTag, FiMessageCircle, FiSend, FiEye, FiEyeOff } from 'react-icons/fi';
 import type { FamilyMember } from '@prisma/client';
 
 // Lazy load modal to avoid big bundle
@@ -65,6 +65,119 @@ export default function FamilyPage() {
   
   /* ------------------- comments state ----------------------- */
   const [commentsState, setCommentsState] = useState<Record<string, { open: boolean; items: any[]; loading: boolean; newContent: string }>>({});
+
+  /* ------------------------------------------------------------------
+   * New state/helpers for note expand / delete and DOC-comment handling
+   * ------------------------------------------------------------------ */
+  const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({});
+  const toggleNoteView = (noteId: string) =>
+    setExpandedNotes(prev => ({ ...prev, [noteId]: !prev[noteId] }));
+
+  const deleteNote = async (noteId: string) => {
+    try {
+      const res = await fetch(`/api/family/notes?id=${noteId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete note');
+      setNotes(prev => prev.filter(n => n.id !== noteId));
+    } catch (err) {
+      /* eslint-disable no-console */
+      console.error('[FamilyPage] delete note error', err);
+    }
+  };
+
+  /* ---------------- Document-level comments ---------------- */
+  const [docCommentsState, setDocCommentsState] = useState<
+    Record<
+      string,
+      { open: boolean; items: any[]; loading: boolean; newContent: string }
+    >
+  >({});
+
+  const toggleDocComments = async (docId: string) => {
+    // init if missing
+    if (!docCommentsState[docId]) {
+      setDocCommentsState(prev => ({
+        ...prev,
+        [docId]: { open: false, items: [], loading: false, newContent: '' },
+      }));
+    }
+
+    // toggle
+    setDocCommentsState(prev => ({
+      ...prev,
+      [docId]: { ...prev[docId], open: !prev[docId]?.open },
+    }));
+
+    // fetch on first open
+    if (
+      !docCommentsState[docId]?.open &&
+      (docCommentsState[docId]?.items.length || 0) === 0
+    ) {
+      setDocCommentsState(prev => ({
+        ...prev,
+        [docId]: { ...prev[docId], loading: true },
+      }));
+      try {
+        const res = await fetch(
+          `/api/family/documents/${docId}/comments?familyId=${familyId}`
+        );
+        if (res.ok) {
+          const json = await res.json();
+          setDocCommentsState(prev => ({
+            ...prev,
+            [docId]: { ...prev[docId], items: json.items || [], loading: false },
+          }));
+        } else throw new Error();
+      } catch (e) {
+        console.error('Failed to fetch doc comments', e);
+        setDocCommentsState(prev => ({
+          ...prev,
+          [docId]: { ...prev[docId], loading: false },
+        }));
+      }
+    }
+  };
+
+  const addDocComment = async (docId: string) => {
+    if (!docCommentsState[docId]?.newContent.trim()) return;
+    setDocCommentsState(prev => ({
+      ...prev,
+      [docId]: { ...prev[docId], loading: true },
+    }));
+    try {
+      const res = await fetch(
+        `/api/family/documents/${docId}/comments?familyId=${familyId}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: docCommentsState[docId].newContent }),
+        }
+      );
+      if (res.ok) {
+        const json = await res.json();
+        setDocCommentsState(prev => ({
+          ...prev,
+          [docId]: {
+            ...prev[docId],
+            items: [...prev[docId].items, json.comment],
+            newContent: '',
+            loading: false,
+          },
+        }));
+      } else throw new Error();
+    } catch (e) {
+      console.error('Failed to add doc comment', e);
+      setDocCommentsState(prev => ({
+        ...prev,
+        [docId]: { ...prev[docId], loading: false },
+      }));
+    }
+  };
+
+  const handleDocCommentChange = (docId: string, value: string) =>
+    setDocCommentsState(prev => ({
+      ...prev,
+      [docId]: { ...prev[docId], newContent: value },
+    }));
 
   // Fetch fallback familyId if not provided
   useEffect(() => {
@@ -521,24 +634,81 @@ export default function FamilyPage() {
                         </div>
                       </div>
 
-                      <div className="mt-4 flex justify-end gap-2">
-                        <a
-                          href={doc.fileUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center text-primary-600 hover:underline"
-                        >
-                          <FiDownload className="mr-1" />
-                          View
-                        </a>
+                      <div className="mt-4 flex flex-col gap-2">
+                        {/* Comments toggle button */}
                         <button
-                          onClick={() => deleteDocument(doc.id)}
-                          className="inline-flex items-center text-red-600 hover:underline"
-                          title="Delete"
+                          onClick={() => toggleDocComments(doc.id)}
+                          className="flex items-center text-xs text-primary-600 hover:text-primary-700"
                         >
-                          <FiTrash2 className="mr-1" />
-                          Delete
+                          <FiMessageCircle className="mr-1" />
+                          {doc.commentCount || 0} comments
+                          {docCommentsState[doc.id]?.open ? ' (hide)' : ' (show)'}
                         </button>
+
+                        {/* Document comments section */}
+                        {docCommentsState[doc.id]?.open && (
+                          <div className="mt-2">
+                            {docCommentsState[doc.id]?.loading ? (
+                              <p className="text-xs text-gray-500">Loading comments...</p>
+                            ) : docCommentsState[doc.id]?.items.length === 0 ? (
+                              <p className="text-xs text-gray-500">No comments yet</p>
+                            ) : (
+                              <ul className="space-y-2">
+                                {docCommentsState[doc.id]?.items.map((comment: any) => (
+                                  <li key={comment.id} className="rounded bg-gray-50 p-2 text-xs">
+                                    <div className="font-medium">
+                                      {comment.author.firstName} {comment.author.lastName}
+                                    </div>
+                                    <div className="mt-1">{comment.content}</div>
+                                    <div className="mt-1 text-gray-400">
+                                      {new Date(comment.createdAt).toLocaleString()}
+                                    </div>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                            
+                            {/* Add document comment form */}
+                            <div className="mt-3 flex items-center gap-2">
+                              <input
+                                type="text"
+                                value={docCommentsState[doc.id]?.newContent || ''}
+                                onChange={(e) => handleDocCommentChange(doc.id, e.target.value)}
+                                placeholder="Add a comment..."
+                                className="flex-1 rounded-md border border-gray-300 px-3 py-1 text-xs focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                              />
+                              <button
+                                onClick={() => addDocComment(doc.id)}
+                                disabled={!docCommentsState[doc.id]?.newContent?.trim() || docCommentsState[doc.id]?.loading}
+                                className="inline-flex items-center rounded-md bg-primary-600 px-2 py-1 text-xs text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 disabled:opacity-50"
+                              >
+                                <FiSend className="mr-1 h-3 w-3" />
+                                Send
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Document actions */}
+                        <div className="flex justify-end gap-2">
+                          <a
+                            href={doc.fileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center text-primary-600 hover:underline"
+                          >
+                            <FiDownload className="mr-1" />
+                            View
+                          </a>
+                          <button
+                            onClick={() => deleteDocument(doc.id)}
+                            className="inline-flex items-center text-red-600 hover:underline"
+                            title="Delete"
+                          >
+                            <FiTrash2 className="mr-1" />
+                            Delete
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -579,6 +749,37 @@ export default function FamilyPage() {
                               {new Date(note.createdAt).toLocaleDateString()} ·{' '}
                               {note.author.firstName} {note.author.lastName}
                             </p>
+                            
+                            {/* Note actions row */}
+                            <div className="mt-3 flex items-center space-x-2 border-t pt-2">
+                              <button
+                                onClick={() => toggleNoteView(note.id)}
+                                className="flex items-center text-xs text-primary-600 hover:text-primary-700"
+                              >
+                                {expandedNotes[note.id] ? (
+                                  <>
+                                    <FiEyeOff className="mr-1" /> Hide
+                                  </>
+                                ) : (
+                                  <>
+                                    <FiEye className="mr-1" /> View
+                                  </>
+                                )}
+                              </button>
+                              <button
+                                onClick={() => deleteNote(note.id)}
+                                className="flex items-center text-xs text-red-600 hover:text-red-700"
+                              >
+                                <FiTrash2 className="mr-1" /> Delete
+                              </button>
+                            </div>
+
+                            {/* Note content when expanded */}
+                            {expandedNotes[note.id] && (
+                              <div className="mt-3 rounded bg-gray-50 p-3 text-sm text-gray-700">
+                                {note.content.plainText || note.content.content}
+                              </div>
+                            )}
                             
                             {/* Comments section */}
                             <div className="mt-3 border-t pt-2">

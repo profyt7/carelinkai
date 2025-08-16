@@ -64,8 +64,7 @@ const nextConfig = {
                    "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://js.stripe.com; " +
                    "connect-src 'self' https://api.stripe.com; " +
                    "img-src 'self' data: http://localhost:5000 https://carelinkai-storage.s3.amazonaws.com " +
-                   "https://a.tile.openstreetmap.org https://b.tile.openstreetmap.org https://c.tile.openstreetmap.org; " +
-                   // allow external placeholder avatars
+                   "https://a.tile.openstreetmap.org https://b.tile.openstreetmap.org https://c.tile.openstreetmap.org " +
                    "https://ui-avatars.com; " +
                    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
                    "font-src 'self' data: https://fonts.gstatic.com; " +
