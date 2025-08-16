@@ -338,8 +338,7 @@ export default function FamilyPage() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          content: commentsState[noteId].newContent,
-          familyId
+          content: commentsState[noteId].newContent
         })
       });
       
