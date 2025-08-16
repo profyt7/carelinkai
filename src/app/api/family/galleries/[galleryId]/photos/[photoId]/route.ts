@@ -95,7 +95,7 @@ export async function PATCH(
         data: {
           familyId: gallery.familyId,
           actorId: session.user.id,
-          type: 'GALLERY_PHOTO_UPDATED',
+          type: 'GALLERY_UPDATED',
           description: `Updated photo caption in gallery`,
           metadata: {
             galleryId,
@@ -225,7 +225,7 @@ export async function DELETE(
         data: {
           familyId: gallery.familyId,
           actorId: session.user.id,
-          type: 'GALLERY_PHOTO_DELETED',
+          type: 'GALLERY_UPDATED',
           description: `Deleted a photo from gallery`,
           metadata: {
             galleryId,
