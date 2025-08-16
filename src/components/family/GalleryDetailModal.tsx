@@ -1,7 +1,15 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { FiX, FiUpload, FiSave, FiTrash2, FiEdit } from 'react-icons/fi';
+import {
+  FiX,
+  FiUpload,
+  FiSave,
+  FiTrash2,
+  FiEdit,
+  FiExternalLink,
+  FiDownload,
+} from 'react-icons/fi';
 
 interface GalleryDetailModalProps {
   isOpen: boolean;
@@ -576,12 +584,19 @@ export default function GalleryDetailModal({
                       >
                         {/* Photo */}
                         <div className="aspect-w-4 aspect-h-3 bg-gray-100">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={photo.thumbnailUrl || photo.fileUrl}
-                            alt={photo.caption || 'Gallery photo'}
-                            className="h-full w-full object-cover"
-                          />
+                          <a
+                            href={photo.fileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block h-full w-full"
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={photo.thumbnailUrl || photo.fileUrl}
+                              alt={photo.caption || 'Gallery photo'}
+                              className="h-full w-full object-cover"
+                            />
+                          </a>
                         </div>
                         
                         {/* Caption and controls */}
@@ -622,6 +637,27 @@ export default function GalleryDetailModal({
                           )}
                           
                           {/* Meta info and delete */}
+                          {/* View / Download row */}
+                          <div className="mb-1 flex items-center gap-3 text-xs">
+                            <a
+                              href={photo.fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center text-primary-600 hover:text-primary-700"
+                            >
+                              <FiExternalLink className="mr-1 h-3 w-3" />
+                              View
+                            </a>
+                            <a
+                              href={photo.fileUrl}
+                              download
+                              className="inline-flex items-center text-primary-600 hover:text-primary-700"
+                            >
+                              <FiDownload className="mr-1 h-3 w-3" />
+                              Download
+                            </a>
+                          </div>
+                          {/* uploader / date + delete */}
                           <div className="flex items-center justify-between">
                             <div className="text-xs text-gray-500">
                               {photo.uploader.firstName} {photo.uploader.lastName}
