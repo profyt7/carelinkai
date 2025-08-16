@@ -17,7 +17,7 @@ import { useDocuments } from '@/hooks/useDocuments';
 import dynamic from 'next/dynamic';
 import { DOCUMENT_TYPE_LABELS, formatFileSize } from '@/lib/types/family';
 import type { DocumentType } from '@/lib/types/family';
-import { FiPlus, FiSearch, FiTrash2, FiDownload, FiTag } from 'react-icons/fi';
+import { FiPlus, FiSearch, FiTrash2, FiDownload, FiTag, FiMessageCircle, FiSend } from 'react-icons/fi';
 import type { FamilyMember } from '@prisma/client';
 
 // Lazy load modal to avoid big bundle
@@ -62,6 +62,9 @@ export default function FamilyPage() {
   const [membersLoading, setMembersLoading] = useState(false);
   const [activity, setActivity] = useState<any[]>([]);
   const [activityLoading, setActivityLoading] = useState(false);
+  
+  /* ------------------- comments state ----------------------- */
+  const [commentsState, setCommentsState] = useState<Record<string, { open: boolean; items: any[]; loading: boolean; newContent: string }>>({});
 
   // Fetch fallback familyId if not provided
   useEffect(() => {
@@ -144,6 +147,132 @@ export default function FamilyPage() {
     } finally {
       setActivityLoading(false);
     }
+  };
+  
+  /* ------------------- Comments functions ------------------- */
+  const toggleComments = async (noteId: string) => {
+    // Initialize state if not exists
+    if (!commentsState[noteId]) {
+      setCommentsState(prev => ({
+        ...prev,
+        [noteId]: { open: false, items: [], loading: false, newContent: '' }
+      }));
+    }
+    
+    // Toggle open state
+    setCommentsState(prev => ({
+      ...prev,
+      [noteId]: {
+        ...prev[noteId],
+        open: !prev[noteId]?.open
+      }
+    }));
+    
+    // Fetch comments if opening and no items yet
+    if (!commentsState[noteId]?.open && (!commentsState[noteId]?.items.length || commentsState[noteId]?.items.length === 0)) {
+      setCommentsState(prev => ({
+        ...prev,
+        [noteId]: {
+          ...prev[noteId],
+          loading: true
+        }
+      }));
+      
+      try {
+        const res = await fetch(`/api/family/notes/${noteId}/comments`);
+        if (res.ok) {
+          const json = await res.json();
+          setCommentsState(prev => ({
+            ...prev,
+            [noteId]: {
+              ...prev[noteId],
+              items: json.items || [],
+              loading: false
+            }
+          }));
+        } else {
+          throw new Error('Failed to fetch comments');
+        }
+      } catch (error) {
+        console.error('Error fetching comments:', error);
+        setCommentsState(prev => ({
+          ...prev,
+          [noteId]: {
+            ...prev[noteId],
+            loading: false
+          }
+        }));
+      }
+    }
+  };
+  
+  const addComment = async (noteId: string) => {
+    if (!familyId || !commentsState[noteId]?.newContent.trim()) return;
+    
+    // Set loading state
+    setCommentsState(prev => ({
+      ...prev,
+      [noteId]: {
+        ...prev[noteId],
+        loading: true
+      }
+    }));
+    
+    try {
+      const res = await fetch(`/api/family/notes/${noteId}/comments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          content: commentsState[noteId].newContent,
+          familyId
+        })
+      });
+      
+      if (res.ok) {
+        const json = await res.json();
+        
+        // Add comment to list and clear input
+        setCommentsState(prev => ({
+          ...prev,
+          [noteId]: {
+            ...prev[noteId],
+            items: [...prev[noteId].items, json.comment],
+            newContent: '',
+            loading: false
+          }
+        }));
+        
+        // Update note's comment count
+        setNotes(prev => prev.map(note => 
+          note.id === noteId 
+            ? { ...note, commentCount: json.commentCount } 
+            : note
+        ));
+      } else {
+        throw new Error('Failed to add comment');
+      }
+    } catch (error) {
+      console.error('Error adding comment:', error);
+      setCommentsState(prev => ({
+        ...prev,
+        [noteId]: {
+          ...prev[noteId],
+          loading: false
+        }
+      }));
+    }
+  };
+  
+  const handleCommentChange = (noteId: string, value: string) => {
+    setCommentsState(prev => ({
+      ...prev,
+      [noteId]: {
+        ...prev[noteId],
+        newContent: value
+      }
+    }));
   };
 
   /* Fetch once familyId resolves */
@@ -428,7 +557,7 @@ export default function FamilyPage() {
                     {notesLoading ? (
                       <p className="text-gray-500">Loading notes…</p>
                     ) : notes.length === 0 ? (
-                      <p className="text-gray-500">No notes yet. Click “Create Note” to add one.</p>
+                      <p className="text-gray-500">No notes yet. Click "Create Note" to add one.</p>
                     ) : (
                       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         {notes.map((note) => (
@@ -451,9 +580,62 @@ export default function FamilyPage() {
                               {new Date(note.createdAt).toLocaleDateString()} ·{' '}
                               {note.author.firstName} {note.author.lastName}
                             </p>
-                            <p className="mt-2 text-xs text-gray-500">
-                              {note.commentCount} comments
-                            </p>
+                            
+                            {/* Comments section */}
+                            <div className="mt-3 border-t pt-2">
+                              <button 
+                                onClick={() => toggleComments(note.id)}
+                                className="flex items-center text-xs text-primary-600 hover:text-primary-700"
+                              >
+                                <FiMessageCircle className="mr-1" />
+                                {note.commentCount || 0} comments
+                                {commentsState[note.id]?.open ? ' (hide)' : ' (show)'}
+                              </button>
+                              
+                              {/* Comments list */}
+                              {commentsState[note.id]?.open && (
+                                <div className="mt-2">
+                                  {commentsState[note.id]?.loading ? (
+                                    <p className="text-xs text-gray-500">Loading comments...</p>
+                                  ) : commentsState[note.id]?.items.length === 0 ? (
+                                    <p className="text-xs text-gray-500">No comments yet</p>
+                                  ) : (
+                                    <ul className="space-y-2">
+                                      {commentsState[note.id]?.items.map((comment: any) => (
+                                        <li key={comment.id} className="rounded bg-gray-50 p-2 text-xs">
+                                          <div className="font-medium">
+                                            {comment.author.firstName} {comment.author.lastName}
+                                          </div>
+                                          <div className="mt-1">{comment.content}</div>
+                                          <div className="mt-1 text-gray-400">
+                                            {new Date(comment.createdAt).toLocaleString()}
+                                          </div>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  )}
+                                  
+                                  {/* Add comment form */}
+                                  <div className="mt-3 flex items-center gap-2">
+                                    <input
+                                      type="text"
+                                      value={commentsState[note.id]?.newContent || ''}
+                                      onChange={(e) => handleCommentChange(note.id, e.target.value)}
+                                      placeholder="Add a comment..."
+                                      className="flex-1 rounded-md border border-gray-300 px-3 py-1 text-xs focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                                    />
+                                    <button
+                                      onClick={() => addComment(note.id)}
+                                      disabled={!commentsState[note.id]?.newContent?.trim() || commentsState[note.id]?.loading}
+                                      className="inline-flex items-center rounded-md bg-primary-600 px-2 py-1 text-xs text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 disabled:opacity-50"
+                                    >
+                                      <FiSend className="mr-1 h-3 w-3" />
+                                      Send
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -467,7 +649,7 @@ export default function FamilyPage() {
                       <p className="text-gray-500">Loading galleries…</p>
                     ) : galleries.length === 0 ? (
                       <p className="text-gray-500">
-                        No photo galleries yet. Click “Add Photos” to create one.
+                        No photo galleries yet. Click "Add Photos" to create one.
                       </p>
                     ) : (
                       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -498,7 +680,7 @@ export default function FamilyPage() {
                       <p className="text-gray-500">Loading members…</p>
                     ) : members.length === 0 ? (
                       <p className="text-gray-500">
-                        No members found. Use “Invite Member” to add one.
+                        No members found. Use "Invite Member" to add one.
                       </p>
                     ) : (
                       <ul className="space-y-4">
