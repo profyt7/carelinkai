@@ -179,6 +179,100 @@ export default function FamilyPage() {
       [docId]: { ...prev[docId], newContent: value },
     }));
 
+  /* ---------------- Gallery-level comments ---------------- */
+  const [galleryCommentsState, setGalleryCommentsState] = useState<
+    Record<
+      string,
+      { open: boolean; items: any[]; loading: boolean; newContent: string }
+    >
+  >({});
+
+  const toggleGalleryComments = async (galleryId: string) => {
+    if (!galleryCommentsState[galleryId]) {
+      setGalleryCommentsState(prev => ({
+        ...prev,
+        [galleryId]: { open: false, items: [], loading: false, newContent: '' },
+      }));
+    }
+
+    setGalleryCommentsState(prev => ({
+      ...prev,
+      [galleryId]: { ...prev[galleryId], open: !prev[galleryId]?.open },
+    }));
+
+    if (
+      !galleryCommentsState[galleryId]?.open &&
+      (galleryCommentsState[galleryId]?.items.length || 0) === 0
+    ) {
+      setGalleryCommentsState(prev => ({
+        ...prev,
+        [galleryId]: { ...prev[galleryId], loading: true },
+      }));
+      try {
+        const res = await fetch(`/api/family/galleries/${galleryId}/comments`);
+        if (res.ok) {
+          const json = await res.json();
+          setGalleryCommentsState(prev => ({
+            ...prev,
+            [galleryId]: {
+              ...prev[galleryId],
+              items: json.comments || [],
+              loading: false,
+            },
+          }));
+        } else throw new Error();
+      } catch (e) {
+        console.error('Failed to fetch gallery comments', e);
+        setGalleryCommentsState(prev => ({
+          ...prev,
+          [galleryId]: { ...prev[galleryId], loading: false },
+        }));
+      }
+    }
+  };
+
+  const addGalleryComment = async (galleryId: string) => {
+    const val = galleryCommentsState[galleryId]?.newContent?.trim();
+    if (!val) return;
+
+    setGalleryCommentsState(prev => ({
+      ...prev,
+      [galleryId]: { ...prev[galleryId], loading: true },
+    }));
+
+    try {
+      const res = await fetch(`/api/family/galleries/${galleryId}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: val }),
+      });
+      if (res.ok) {
+        const created = await res.json();
+        setGalleryCommentsState(prev => ({
+          ...prev,
+          [galleryId]: {
+            ...prev[galleryId],
+            items: [...prev[galleryId].items, created],
+            newContent: '',
+            loading: false,
+          },
+        }));
+      } else throw new Error();
+    } catch (e) {
+      console.error('Failed to add gallery comment', e);
+      setGalleryCommentsState(prev => ({
+        ...prev,
+        [galleryId]: { ...prev[galleryId], loading: false },
+      }));
+    }
+  };
+
+  const handleGalleryCommentChange = (galleryId: string, value: string) =>
+    setGalleryCommentsState(prev => ({
+      ...prev,
+      [galleryId]: { ...prev[galleryId], newContent: value },
+    }));
+
   // Fetch fallback familyId if not provided
   useEffect(() => {
     if (familyId) return;
@@ -865,6 +959,68 @@ export default function FamilyPage() {
                             <div className="p-4">
                               <h3 className="font-medium text-gray-800">{g.title}</h3>
                               <p className="mt-1 text-xs text-gray-500">{g.photoCount} photos</p>
+
+                              {/* Comments toggle */}
+                              <button
+                                onClick={() => toggleGalleryComments(g.id)}
+                                className="mt-2 flex items-center text-xs text-primary-600 hover:text-primary-700"
+                              >
+                                <FiMessageCircle className="mr-1" />
+                                {g.commentCount || 0} comments
+                                {galleryCommentsState[g.id]?.open ? ' (hide)' : ' (show)'}
+                              </button>
+
+                              {/* Comments section */}
+                              {galleryCommentsState[g.id]?.open && (
+                                <div className="mt-2">
+                                  {galleryCommentsState[g.id]?.loading ? (
+                                    <p className="text-xs text-gray-500">Loading comments...</p>
+                                  ) : galleryCommentsState[g.id]?.items.length === 0 ? (
+                                    <p className="text-xs text-gray-500">No comments yet</p>
+                                  ) : (
+                                    <ul className="space-y-2">
+                                      {galleryCommentsState[g.id]?.items.map((comment: any) => (
+                                        <li
+                                          key={comment.id}
+                                          className="rounded bg-gray-50 p-2 text-xs"
+                                        >
+                                          <div className="font-medium">
+                                            {comment.author.firstName} {comment.author.lastName}
+                                          </div>
+                                          <div className="mt-1">{comment.content}</div>
+                                          <div className="mt-1 text-gray-400">
+                                            {new Date(comment.createdAt).toLocaleString()}
+                                          </div>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  )}
+
+                                  {/* Add comment form */}
+                                  <div className="mt-3 flex items-center gap-2">
+                                    <input
+                                      type="text"
+                                      value={galleryCommentsState[g.id]?.newContent || ''}
+                                      onChange={(e) =>
+                                        handleGalleryCommentChange(g.id, e.target.value)
+                                      }
+                                      placeholder="Add a comment..."
+                                      className="flex-1 rounded-md border border-gray-300 px-3 py-1 text-xs focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                                    />
+                                    <button
+                                      onClick={() => addGalleryComment(g.id)}
+                                      disabled={
+                                        !galleryCommentsState[g.id]?.newContent?.trim() ||
+                                        galleryCommentsState[g.id]?.loading
+                                      }
+                                      className="inline-flex items-center rounded-md bg-primary-600 px-2 py-1 text-xs text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 disabled:opacity-50"
+                                    >
+                                      <FiSend className="mr-1 h-3 w-3" />
+                                      Send
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           </div>
                         ))}

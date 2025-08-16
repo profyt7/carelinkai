@@ -90,6 +90,7 @@ model User {
   createdGalleries      SharedGallery[]       @relation("GalleryCreator")
   uploadedPhotos        GalleryPhoto[]        @relation("PhotoUploader")
   activities            ActivityFeedItem[]    @relation("ActivityActor")
+  galleryComments       GalleryComment[]      @relation("GalleryCommentAuthor")
   
   // Timestamps
   createdAt         DateTime   @default(now())
@@ -1284,6 +1285,7 @@ model SharedGallery {
   family         Family        @relation(fields: [familyId], references: [id], onDelete: Cascade)
   creator        User          @relation("GalleryCreator", fields: [creatorId], references: [id])
   photos         GalleryPhoto[]
+  comments       GalleryComment[]
   // Activity tracking handled by ActivityFeedItem.resourceId
   
   // Timestamps
@@ -1317,6 +1319,29 @@ model GalleryPhoto {
   @@index([galleryId])
   @@index([uploaderId])
   @@index([createdAt])
+}
+
+model GalleryComment {
+  id              String           @id @default(cuid())
+  galleryId       String
+  authorId        String
+  content         String           @db.Text
+  parentCommentId String?
+
+  // Relationships
+  gallery         SharedGallery    @relation(fields: [galleryId], references: [id], onDelete: Cascade)
+  author          User             @relation("GalleryCommentAuthor", fields: [authorId], references: [id])
+  parentComment   GalleryComment?  @relation("GalleryCommentReplies", fields: [parentCommentId], references: [id])
+  replies         GalleryComment[] @relation("GalleryCommentReplies")
+
+  // Timestamps
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  // Indexes
+  @@index([galleryId])
+  @@index([authorId])
+  @@index([parentCommentId])
 }
 
 enum ActivityType {
