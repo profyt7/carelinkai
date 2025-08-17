@@ -73,6 +73,10 @@ export default function FamilyPage() {
   /* ------------------- comments state ----------------------- */
   const [commentsState, setCommentsState] = useState<Record<string, { open: boolean; items: any[]; loading: boolean; newContent: string }>>({});
 
+  /* ------------------- SSE refs ----------------------------- */
+  const esRef = React.useRef<EventSource | null>(null);
+  const seenRef = React.useRef<Set<string>>(new Set());
+
   /* ------------------- photo upload state ------------------ */
   const [uploadingGalleryIds, setUploadingGalleryIds] = useState<Record<string, boolean>>({});
 
@@ -595,6 +599,207 @@ export default function FamilyPage() {
   const onUpload = async (payload: any) => {
     await uploadDocuments(payload);
   };
+
+  /* ------------------------------------------------------------------
+   * Server-Sent Events – family real-time updates
+   * ------------------------------------------------------------------ */
+  useEffect(() => {
+    // Close connection if familyId disappears
+    if (!familyId) {
+      if (esRef.current) {
+        esRef.current.close();
+        esRef.current = null;
+      }
+      return;
+    }
+
+    // Re-establish new connection whenever familyId changes
+    if (esRef.current) {
+      esRef.current.close();
+      esRef.current = null;
+    }
+
+    const es = new EventSource(
+      `/api/sse?topics=${encodeURIComponent(`family:${familyId}`)}`
+    );
+    esRef.current = es;
+
+    const seen = seenRef.current;
+    const dedup = (key: string) => {
+      if (seen.has(key)) return true;
+      seen.add(key);
+      // trim set occasionally to avoid unbounded growth
+      if (seen.size > 5000) {
+        const it = seen.values();
+        for (let i = 0; i < 1000; i++) seen.delete(it.next().value);
+      }
+      return false;
+    };
+
+    /* ----------- NOTE EVENTS ----------- */
+    es.addEventListener('note:created', (evt) => {
+      try {
+        const { note } = JSON.parse((evt as MessageEvent).data);
+        if (!note || dedup(`note:created:${note.id}`)) return;
+        setNotes((prev) =>
+          prev.some((n) => n.id === note.id) ? prev : [note, ...prev]
+        );
+      } catch (e) {
+        console.error('[SSE] note:created', e);
+      }
+    });
+
+    es.addEventListener('note:updated', (evt) => {
+      try {
+        const { note } = JSON.parse((evt as MessageEvent).data);
+        if (!note || dedup(`note:updated:${note.id}:${note.updatedAt}`)) return;
+        setNotes((prev) => prev.map((n) => (n.id === note.id ? note : n)));
+      } catch (e) {
+        console.error('[SSE] note:updated', e);
+      }
+    });
+
+    es.addEventListener('note:deleted', (evt) => {
+      try {
+        const { noteId } = JSON.parse((evt as MessageEvent).data);
+        if (!noteId || dedup(`note:deleted:${noteId}`)) return;
+        setNotes((prev) => prev.filter((n) => n.id !== noteId));
+      } catch (e) {
+        console.error('[SSE] note:deleted', e);
+      }
+    });
+
+    es.addEventListener('note:commented', (evt) => {
+      try {
+        const { noteId, comment } = JSON.parse((evt as MessageEvent).data);
+        if (!noteId || (comment?.id && dedup(`note:cmt:${comment.id}`))) return;
+        setNotes((prev) =>
+          prev.map((n) =>
+            n.id === noteId
+              ? { ...n, commentCount: (n.commentCount || 0) + 1 }
+              : n
+          )
+        );
+        setCommentsState((prev) => {
+          const cur = prev[noteId];
+          if (!cur?.open) return prev;
+          return {
+            ...prev,
+            [noteId]: { ...cur, items: [...cur.items, comment] },
+          };
+        });
+      } catch (e) {
+        console.error('[SSE] note:commented', e);
+      }
+    });
+
+    /* ----------- GALLERY & PHOTO EVENTS ----------- */
+    es.addEventListener('gallery:created', (evt) => {
+      try {
+        const { gallery } = JSON.parse((evt as MessageEvent).data);
+        if (!gallery || dedup(`gal:created:${gallery.id}`)) return;
+        setGalleries((prev) =>
+          prev.some((g) => g.id === gallery.id) ? prev : [gallery, ...prev]
+        );
+      } catch (e) {
+        console.error('[SSE] gallery:created', e);
+      }
+    });
+
+    es.addEventListener('photo:uploaded', (evt) => {
+      try {
+        const { galleryId, photos } = JSON.parse((evt as MessageEvent).data);
+        if (!galleryId || !photos?.length) return;
+        if (dedup(`photo:up:${galleryId}:${photos[0].id}`)) return;
+        setGalleries((prev) =>
+          prev.map((g) =>
+            g.id === galleryId
+              ? {
+                  ...g,
+                  photoCount: (g.photoCount || 0) + photos.length,
+                  coverPhotoUrl:
+                    g.coverPhotoUrl ||
+                    photos[0].thumbnailUrl ||
+                    photos[0].fileUrl,
+                }
+              : g
+          )
+        );
+      } catch (e) {
+        console.error('[SSE] photo:uploaded', e);
+      }
+    });
+
+    es.addEventListener('photo:deleted', (evt) => {
+      try {
+        const { galleryId, photoId, coverPhotoUpdated, newCoverPhotoUrl } =
+          JSON.parse((evt as MessageEvent).data);
+        if (!galleryId || !photoId || dedup(`photo:del:${photoId}`)) return;
+        setGalleries((prev) =>
+          prev.map((g) =>
+            g.id === galleryId
+              ? {
+                  ...g,
+                  photoCount: Math.max(0, (g.photoCount || 0) - 1),
+                  coverPhotoUrl: coverPhotoUpdated
+                    ? newCoverPhotoUrl
+                    : g.coverPhotoUrl,
+                }
+              : g
+          )
+        );
+      } catch (e) {
+        console.error('[SSE] photo:deleted', e);
+      }
+    });
+
+    /* ----------- ACTIVITY EVENTS ----------- */
+    es.addEventListener('activity:created', (evt) => {
+      try {
+        const { activity: act } = JSON.parse((evt as MessageEvent).data);
+        if (!act?.id || dedup(`act:${act.id}`)) return;
+        setActivity((prev) => [act, ...prev]);
+      } catch (e) {
+        console.error('[SSE] activity:created', e);
+      }
+    });
+
+    /* ----------- GALLERY COMMENT EVENTS ----------- */
+    es.addEventListener('comment:created', (evt) => {
+      try {
+        const payload = JSON.parse((evt as MessageEvent).data);
+        if (payload.resourceType !== 'gallery') return;
+        const { resourceId: galleryId, comment } = payload;
+        if (!galleryId || (comment?.id && dedup(`gal:cmt:${comment.id}`))) return;
+        setGalleries((prev) =>
+          prev.map((g) =>
+            g.id === galleryId
+              ? { ...g, commentCount: (g.commentCount || 0) + 1 }
+              : g
+          )
+        );
+        setGalleryCommentsState((prev) => {
+          const cur = prev[galleryId];
+          if (!cur?.open) return prev;
+          return {
+            ...prev,
+            [galleryId]: { ...cur, items: [...cur.items, comment] },
+          };
+        });
+      } catch (e) {
+        console.error('[SSE] gallery comment', e);
+      }
+    });
+
+    es.onerror = (err) => {
+      console.error('[SSE] connection error', err);
+    };
+
+    return () => {
+      es.close();
+      esRef.current = null;
+    };
+  }, [familyId]);
 
   /* --------------------- Memo helpers ------------------------ */
   const docTypes = useMemo(() => Object.keys(DOCUMENT_TYPE_LABELS) as DocumentType[], []);

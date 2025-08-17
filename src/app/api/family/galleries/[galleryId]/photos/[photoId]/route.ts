@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { checkFamilyMembership } from '@/lib/services/family';
 import { FamilyMemberRole } from '@prisma/client';
 import { publish } from '@/lib/server/sse';
 import { z } from 'zod';
@@ -48,16 +47,26 @@ export async function PATCH(
       return NextResponse.json({ error: 'Photo does not belong to this gallery' }, { status: 400 });
     }
 
-    // Check family membership
-    const membership = await checkFamilyMembership(session.user.id, gallery.familyId);
-    if (!membership) {
+    // Lookup family membership & role
+    const member = await prisma.familyMember.findUnique({
+      where: {
+        familyId_userId: {
+          familyId: gallery.familyId,
+          userId: session.user.id,
+        },
+      },
+    });
+
+    if (!member) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Check permissions - allow if uploader or OWNER/CARE_PROXY
+    // Check permissions - allow if uploader or privileged role
     const isUploader = photo.uploaderId === session.user.id;
-    const hasPrivilegedRole = [FamilyMemberRole.OWNER, FamilyMemberRole.CARE_PROXY].includes(membership.role);
-    
+    const hasPrivilegedRole = [FamilyMemberRole.OWNER, FamilyMemberRole.CARE_PROXY].includes(
+      member.role
+    );
+
     if (!isUploader && !hasPrivilegedRole) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
@@ -81,13 +90,11 @@ export async function PATCH(
 
     // Publish SSE event (non-critical, wrapped in try/catch)
     try {
-      publish(`family:${gallery.familyId}`, {
-        event: 'gallery.photo.updated',
-        data: {
-          galleryId,
-          photoId,
-          caption: updatedPhoto.caption
-        }
+      publish(`family:${gallery.familyId}`, 'photo:updated', {
+        familyId: gallery.familyId,
+        galleryId,
+        photoId,
+        caption: updatedPhoto.caption,
       });
 
       // Log activity
@@ -157,16 +164,26 @@ export async function DELETE(
       return NextResponse.json({ error: 'Photo does not belong to this gallery' }, { status: 400 });
     }
 
-    // Check family membership
-    const membership = await checkFamilyMembership(session.user.id, gallery.familyId);
-    if (!membership) {
+    // Lookup family membership & role
+    const member = await prisma.familyMember.findUnique({
+      where: {
+        familyId_userId: {
+          familyId: gallery.familyId,
+          userId: session.user.id,
+        },
+      },
+    });
+
+    if (!member) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Check permissions - allow if uploader or OWNER/CARE_PROXY
+    // Check permissions - allow if uploader or privileged role
     const isUploader = photo.uploaderId === session.user.id;
-    const hasPrivilegedRole = [FamilyMemberRole.OWNER, FamilyMemberRole.CARE_PROXY].includes(membership.role);
-    
+    const hasPrivilegedRole = [FamilyMemberRole.OWNER, FamilyMemberRole.CARE_PROXY].includes(
+      member.role
+    );
+
     if (!isUploader && !hasPrivilegedRole) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
@@ -211,13 +228,11 @@ export async function DELETE(
 
     // Publish SSE event (non-critical, wrapped in try/catch)
     try {
-      publish(`family:${gallery.familyId}`, {
-        event: 'gallery.photo.deleted',
-        data: {
-          galleryId,
-          photoId,
-          ...updatedCoverInfo
-        }
+      publish(`family:${gallery.familyId}`, 'photo:deleted', {
+        familyId: gallery.familyId,
+        galleryId,
+        photoId,
+        ...updatedCoverInfo,
       });
 
       // Log activity
