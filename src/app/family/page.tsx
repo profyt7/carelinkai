@@ -209,6 +209,7 @@ export default function FamilyPage() {
   >({});
 
   const toggleGalleryComments = async (galleryId: string) => {
+    /* Initialise state slice if missing */
     if (!galleryCommentsState[galleryId]) {
       setGalleryCommentsState(prev => ({
         ...prev,
@@ -216,33 +217,50 @@ export default function FamilyPage() {
       }));
     }
 
-    setGalleryCommentsState(prev => ({
-      ...prev,
-      [galleryId]: { ...prev[galleryId], open: !prev[galleryId]?.open },
-    }));
-
-    if (
-      !galleryCommentsState[galleryId]?.open &&
-      (galleryCommentsState[galleryId]?.items.length || 0) === 0
-    ) {
-      setGalleryCommentsState(prev => ({
+    /* Toggle – and capture whether panel will be open afterwards */
+    let willOpen = false;
+    setGalleryCommentsState(prev => {
+      willOpen = !prev[galleryId]?.open;
+      return {
         ...prev,
-        [galleryId]: { ...prev[galleryId], loading: true },
-      }));
+        [galleryId]: {
+          ...prev[galleryId],
+          open: willOpen,
+          /* if we're opening, start loading immediately */
+          loading: willOpen ? true : prev[galleryId]?.loading ?? false,
+        },
+      };
+    });
+
+    /* If panel is opening, always fetch fresh comments for consistency */
+    if (willOpen) {
       try {
         const res = await fetch(`/api/family/galleries/${galleryId}/comments`);
-        if (res.ok) {
-          const json = await res.json();
-          setGalleryCommentsState(prev => ({
-            ...prev,
-            [galleryId]: {
-              ...prev[galleryId],
-              items: json.comments || [],
-              loading: false,
-            },
-          }));
-          setGalleries((prev) => prev.map((g) => (g.id === galleryId ? { ...g, commentCount: (json.comments || []).length } : g)));
-        } else throw new Error();
+        if (!res.ok) {
+          console.error(
+            `Failed to fetch gallery comments – status ${res.status}`
+          );
+          throw new Error('Non-200 response');
+        }
+        const json = await res.json();
+
+        setGalleryCommentsState(prev => ({
+          ...prev,
+          [galleryId]: {
+            ...prev[galleryId],
+            items: json.comments || [],
+            loading: false,
+          },
+        }));
+
+        /* Sync commentCount with latest list length */
+        setGalleries(prev =>
+          prev.map(g =>
+            g.id === galleryId
+              ? { ...g, commentCount: (json.comments || []).length }
+              : g
+          )
+        );
       } catch (e) {
         console.error('Failed to fetch gallery comments', e);
         setGalleryCommentsState(prev => ({
