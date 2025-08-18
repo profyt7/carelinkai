@@ -768,6 +768,22 @@ export default function FamilyPage() {
         const { activity: act } = JSON.parse((evt as MessageEvent).data);
         if (!act?.id || dedup(`act:${act.id}`)) return;
         setActivity((prev) => [act, ...prev]);
+
+        /* -- When activity represents photo uploads, increment gallery photoCount -- */
+        if (
+          act?.type === 'PHOTO_UPLOADED' &&
+          act?.resourceType === 'gallery' &&
+          act?.resourceId
+        ) {
+          const added = act?.metadata?.photoCount ?? 1;
+          setGalleries((prev) =>
+            prev.map((g) =>
+              g.id === act.resourceId
+                ? { ...g, photoCount: (g.photoCount || 0) + added }
+                : g
+            )
+          );
+        }
       } catch (e) {
         console.error('[SSE] activity:created', e);
       }
@@ -797,6 +813,35 @@ export default function FamilyPage() {
         });
       } catch (e) {
         console.error('[SSE] gallery comment', e);
+      }
+    });
+
+    /* ----------- GALLERY COMMENT ALIAS EVENTS ----------- */
+    es.addEventListener('gallery:commented', (evt) => {
+      try {
+        const payload = JSON.parse((evt as MessageEvent).data);
+        const galleryId: string | undefined = payload?.galleryId || payload?.resourceId;
+        const comment = payload?.comment;
+        if (!galleryId) return;
+        if (comment?.id && dedup(`gal:cmt:${comment.id}`)) return;
+
+        setGalleries((prev) =>
+          prev.map((g) =>
+            g.id === galleryId
+              ? { ...g, commentCount: (g.commentCount || 0) + 1 }
+              : g
+          )
+        );
+        setGalleryCommentsState((prev) => {
+          const existing = prev[galleryId];
+          if (!existing?.open) return prev;
+          return {
+            ...prev,
+            [galleryId]: { ...existing, items: [...existing.items, comment] },
+          };
+        });
+      } catch (e) {
+        console.error('[SSE] gallery:commented', e);
       }
     });
 
