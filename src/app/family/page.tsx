@@ -269,16 +269,34 @@ export default function FamilyPage() {
         body: JSON.stringify({ content: val }),
       });
       if (res.ok) {
-        const created = await res.json();
+        const createdComment = await res.json();
+
+        /* Optimistically bump gallery commentCount */
+        setGalleries(prev =>
+          prev.map(g =>
+            g.id === galleryId
+              ? { ...g, commentCount: (g.commentCount || 0) + 1 }
+              : g
+          )
+        );
+
+        /* Add comment to current open panel */
         setGalleryCommentsState(prev => ({
           ...prev,
           [galleryId]: {
             ...prev[galleryId],
-            items: [...prev[galleryId].items, created],
+            items: [...prev[galleryId].items, createdComment],
             newContent: '',
             loading: false,
           },
         }));
+
+        /* Mark as seen to avoid duplicate SSE handling */
+        try {
+          seenRef.current?.add(`gal:cmt:${createdComment.id}`);
+        } catch (_) {
+          /* ignore */
+        }
       } else throw new Error();
     } catch (e) {
       console.error('Failed to add gallery comment', e);
