@@ -29,6 +29,10 @@ const NoteCreateModal = dynamic(
   () => import('@/components/family/NoteCreateModal'),
   { ssr: false }
 );
+const NoteEditModal = dynamic(
+  () => import('@/components/family/NoteEditModal'),
+  { ssr: false }
+);
 const GalleryCreateModal = dynamic(
   () => import('@/components/family/GalleryCreateModal'),
   { ssr: false }
@@ -48,6 +52,8 @@ export default function FamilyPage() {
   const [familyId, setFamilyId] = useState<string>(queryFamilyId);
   const [modalOpen, setModalOpen] = useState(false);
   const [noteModalOpen, setNoteModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingNote, setEditingNote] = useState<any | null>(null);
   const [galleryModalOpen, setGalleryModalOpen] = useState(false);
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   /* ------------------- gallery detail modal --------------- */
@@ -140,6 +146,7 @@ export default function FamilyPage() {
             ...prev,
             [docId]: { ...prev[docId], items: json.items || [], loading: false },
           }));
+          setNotes((prev) => prev.map((n) => (n.id === docId ? { ...n, commentCount: (json.items || []).length } : n)));
         } else throw new Error();
       } catch (e) {
         console.error('Failed to fetch doc comments', e);
@@ -234,6 +241,7 @@ export default function FamilyPage() {
               loading: false,
             },
           }));
+          setGalleries((prev) => prev.map((g) => (g.id === galleryId ? { ...g, commentCount: (json.comments || []).length } : g)));
         } else throw new Error();
       } catch (e) {
         console.error('Failed to fetch gallery comments', e);
@@ -466,6 +474,7 @@ export default function FamilyPage() {
               loading: false
             }
           }));
+          setNotes((prev) => prev.map((n) => (n.id === noteId ? { ...n, commentCount: (json.items || []).length } : n)));
         } else {
           throw new Error('Failed to fetch comments');
         }
@@ -1129,6 +1138,12 @@ export default function FamilyPage() {
                                   </>
                                 )}
                               </button>
+                              <button 
+                                onClick={() => { setEditingNote(note); setEditModalOpen(true); }} 
+                                className="flex items-center text-xs text-gray-600 hover:text-gray-800"
+                              >
+                                Edit
+                              </button>
                               <button
                                 onClick={() => deleteNote(note.id)}
                                 className="flex items-center text-xs text-red-600 hover:text-red-700"
@@ -1462,6 +1477,21 @@ export default function FamilyPage() {
           onClose={() => setNoteModalOpen(false)}
           familyId={familyId}
           onCreated={(n) => setNotes((prev) => [n, ...prev])}
+        />
+      )}
+
+      {/* Note Edit Modal */}
+      {familyId && editingNote && (
+        <NoteEditModal
+          isOpen={editModalOpen}
+          onClose={() => setEditModalOpen(false)}
+          familyId={familyId}
+          note={editingNote}
+          onUpdated={(updated) => {
+            setNotes((prev) => prev.map((n) => (n.id === updated.id ? updated : n)));
+            setEditingNote(updated);
+            setEditModalOpen(false);
+          }}
         />
       )}
 
