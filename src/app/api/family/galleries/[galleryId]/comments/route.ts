@@ -105,6 +105,8 @@ export async function GET(
     
     return NextResponse.json({
       comments,
+      // alias to mirror documents API shape
+      items: comments,
       nextCursor,
     });
   } catch (error) {
@@ -126,14 +128,12 @@ export async function POST(
 ) {
   try {
     const { galleryId } = params;
-    
-    // Get authenticated user
+
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    
-    // Parse and validate request body
+
     const bodyResult = CreateCommentSchema.safeParse(await req.json());
     if (!bodyResult.success) {
       return NextResponse.json(
@@ -141,47 +141,39 @@ export async function POST(
         { status: 400 }
       );
     }
-    
     const { content, parentCommentId } = bodyResult.data;
-    
-    // Find the gallery and check if user has access
+
     const gallery = await prisma.sharedGallery.findUnique({
       where: { id: galleryId },
-      select: { 
-        id: true,
-        familyId: true,
-        title: true 
-      },
+      select: { id: true, familyId: true, title: true },
     });
-    
     if (!gallery) {
       return NextResponse.json({ error: "Gallery not found" }, { status: 404 });
     }
-    
-    // Check if user is an active member of the family
-    const isMember = await checkFamilyMembership(session.user.id, gallery.familyId);
+
+    const isMember = await checkFamilyMembership(
+      session.user.id,
+      gallery.familyId
+    );
     if (!isMember) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
-    
-    // If parentCommentId is provided, verify it exists and belongs to this gallery
+
     if (parentCommentId) {
-      const parentComment = await prisma.galleryComment.findUnique({
-        where: {
-          id: parentCommentId,
-          galleryId,
-        },
+      const parent = await prisma.galleryComment.findUnique({
+        where: { id: parentCommentId, galleryId },
       });
-      
-      if (!parentComment) {
+      if (!parent) {
         return NextResponse.json(
-          { error: "Parent comment not found or doesn't belong to this gallery" },
+          {
+            error:
+              "Parent comment not found or doesn't belong to this gallery",
+          },
           { status: 400 }
         );
       }
     }
-    
-    // Create the comment
+
     const comment = await prisma.galleryComment.create({
       data: {
         content,
@@ -200,43 +192,48 @@ export async function POST(
         },
       },
     });
-    
-    // Log activity
-    const activityDescription = `${session.user.firstName} ${session.user.lastName} commented on gallery: ${gallery.title}`;
-    
-    const activity = await prisma.activityFeedItem.create({
+
+    // Log activity (non-blocking if it fails)
+    await prisma.activityFeedItem.create({
       data: {
         familyId: gallery.familyId,
         actorId: session.user.id,
         type: ActivityType.GALLERY_UPDATED,
         resourceType: "gallery",
         resourceId: galleryId,
-        description: activityDescription,
-        metadata: {
-          commentId: comment.id,
-        },
+        description: `${session.user.firstName} ${session.user.lastName} commented on gallery: ${gallery.title}`,
+        metadata: { commentId: comment.id },
       },
     });
-    
-    // Publish SSE event for real-time updates
+
     try {
-      publish(`family:${gallery.familyId}`, "comment:created", {
+      const payload = {
+        familyId: gallery.familyId,
+        galleryId,
+        commentId: comment.id,
+        parentCommentId,
         comment,
+      };
+      // Generic event consumed by existing listeners
+      publish(`family:${gallery.familyId}`, "comment:created", {
+        ...payload,
         resourceType: "gallery",
         resourceId: galleryId,
       });
+      // Aliases to mirror documents behaviour
+      publish(`family:${gallery.familyId}`, "gallery:commented", payload);
+      publish(`gallery:${galleryId}`, "gallery:commented", payload);
     } catch (sseError) {
-      // Log SSE error but don't fail the request
-      console.error("Failed to publish SSE event:", sseError);
+      console.error("Failed to publish gallery comment SSE:", sseError);
     }
-    
-    return NextResponse.json(comment);
+
+    return NextResponse.json({ success: true, comment });
   } catch (error) {
     console.error("Error creating gallery comment:", error);
     return NextResponse.json(
-      { 
+      {
         error: "Failed to create comment",
-        ...(process.env.NODE_ENV === "development" && { details: error })
+        ...(process.env.NODE_ENV === "development" && { details: String(error) }),
       },
       { status: 500 }
     );
