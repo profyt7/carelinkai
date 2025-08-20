@@ -493,7 +493,8 @@ export default function DashboardLayout({
             )}
             
             {/* Real-time notifications */}
-            <NotificationCenter />
+            {/* Pass current userId for SSE subscription */}
+            <NotificationCenter userId={session?.user?.id} />
 
             {/* PWA Install button (desktop only) */}
             {!isMobile && (

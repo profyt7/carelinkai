@@ -15,7 +15,6 @@ import {
   FiTrash2,
   FiSettings
 } from 'react-icons/fi';
-import { useWebSocket } from '../../contexts/WebSocketContext';
 
 // Notification types
 export type NotificationType = 
@@ -62,84 +61,6 @@ interface ToastProps {
   autoClose?: boolean;
   duration?: number;
 }
-
-// Mock notifications for testing
-const MOCK_NOTIFICATIONS: Notification[] = [
-  {
-    id: 'notif-001',
-    type: 'MESSAGE',
-    title: 'New message from Sunshine Care Home',
-    message: 'Sarah Johnson: "Thank you for your inquiry. Would you like to schedule a tour?"',
-    timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(), // 5 minutes ago
-    isRead: false,
-    priority: 'MEDIUM',
-    link: '/dashboard/inquiries/inq-001/messages',
-    metadata: {
-      inquiryId: 'inq-001',
-      conversationId: 'conv-001',
-      homeName: 'Sunshine Care Home',
-      senderId: 'facility-001',
-      senderName: 'Sarah Johnson'
-    }
-  },
-  {
-    id: 'notif-002',
-    type: 'TOUR_REMINDER',
-    title: 'Upcoming Tour Reminder',
-    message: 'Your tour at Sunshine Care Home is scheduled for tomorrow at 10:00 AM',
-    timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 minutes ago
-    isRead: false,
-    priority: 'HIGH',
-    link: '/dashboard/inquiries/inq-001',
-    metadata: {
-      inquiryId: 'inq-001',
-      homeName: 'Sunshine Care Home',
-      tourDate: '2025-07-26',
-      tourTime: '10:00 AM'
-    }
-  },
-  {
-    id: 'notif-003',
-    type: 'DOCUMENT_SHARED',
-    title: 'New Document Shared',
-    message: 'Sunshine Care Home shared "Admission Forms" with you',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
-    isRead: true,
-    priority: 'MEDIUM',
-    link: '/dashboard/inquiries/inq-001/documents',
-    metadata: {
-      inquiryId: 'inq-001',
-      homeName: 'Sunshine Care Home',
-      documentId: 'doc-003',
-      documentName: 'Admission Forms'
-    }
-  },
-  {
-    id: 'notif-004',
-    type: 'STATUS_CHANGE',
-    title: 'Inquiry Status Updated',
-    message: 'Your inquiry for Golden Years Living has been updated from "Submitted" to "Contacted"',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(), // 5 hours ago
-    isRead: true,
-    priority: 'LOW',
-    link: '/dashboard/inquiries/inq-002',
-    metadata: {
-      inquiryId: 'inq-002',
-      homeName: 'Golden Years Living',
-      statusFrom: 'SUBMITTED',
-      statusTo: 'CONTACTED'
-    }
-  },
-  {
-    id: 'notif-005',
-    type: 'SYSTEM',
-    title: 'Welcome to CareLink AI',
-    message: 'Thank you for joining CareLink AI. Start your care home search today!',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), // 2 days ago
-    isRead: true,
-    priority: 'LOW'
-  }
-];
 
 // Toast Notification Component
 const Toast: React.FC<ToastProps> = ({ notification, onClose, autoClose = true, duration = 5000 }) => {
@@ -249,27 +170,44 @@ interface NotificationCenterProps {
   maxToasts?: number;
   toastDuration?: number;
   className?: string;
+  userId?: string;
 }
 
 // Main NotificationCenter Component
 const NotificationCenter: React.FC<NotificationCenterProps> = ({
   maxToasts = 3,
   toastDuration = 5000,
-  className = ''
+  className = '',
+  userId
 }) => {
   // State
   const [isOpen, setIsOpen] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [activeToasts, setActiveToasts] = useState<Notification[]>([]);
   const [filter, setFilter] = useState<NotificationType | 'ALL'>('ALL');
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const eventSourceRef = useRef<EventSource | null>(null);
   
-  // Get WebSocket context
-  // In a real implementation, we would use the WebSocket context
-  // For now, we'll just simulate it
-  // const { connectionState } = useWebSocket();
-  const connectionState = 'CONNECTED';
-  
+  // Show toast notification
+  const showToast = useCallback((notification: Notification) => {
+    setActiveToasts(prev => {
+      // Limit number of active toasts
+      const updated = [...prev];
+      if (updated.length >= maxToasts) {
+        updated.pop(); // Remove oldest
+      }
+      return [notification, ...updated];
+    });
+
+    // Add to notifications list if not already there
+    setNotifications(prev => {
+      if (!prev.some(n => n.id === notification.id)) {
+        return [notification, ...prev];
+      }
+      return prev;
+    });
+  }, [maxToasts]);
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -283,6 +221,156 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  // Fetch notifications on mount
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const response = await fetch('/api/notifications?page=1&limit=50');
+        if (!response.ok) {
+          throw new Error('Failed to fetch notifications');
+        }
+        
+        const data = await response.json();
+        if (data.success && data.items) {
+          // Map server notifications to component format
+          const mappedNotifications = data.items.map((item: any) => {
+            // Map notification type to known values or default to SYSTEM
+            let type: NotificationType = 'SYSTEM';
+            if (['MESSAGE', 'INQUIRY_UPDATE', 'TOUR_REMINDER', 'DOCUMENT_SHARED', 'STATUS_CHANGE'].includes(item.type)) {
+              type = item.type as NotificationType;
+            }
+            
+            // Determine link from data
+            let link: string | undefined = undefined;
+            if (item.data?.url) {
+              link = item.data.url;
+            } else if (item.data?.resourceType === 'document' && item.data?.documentId) {
+              link = `/family?documentId=${item.data.documentId}`;
+            }
+            
+            return {
+              id: item.id,
+              type,
+              title: item.title,
+              message: item.message,
+              timestamp: item.createdAt,
+              isRead: item.isRead,
+              priority: item.data?.priority || 'MEDIUM',
+              link,
+              metadata: item.data
+            } as Notification;
+          });
+          
+          setNotifications(mappedNotifications);
+        }
+      } catch (error) {
+        console.error('Error fetching notifications:', error);
+      }
+    };
+    
+    fetchNotifications();
+  }, []);
+  
+  // Set up SSE subscription if userId is provided
+  useEffect(() => {
+    if (!userId) return;
+    
+    // Clean up any existing connection
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+    }
+    
+    // Create new EventSource connection
+    const eventSource = new EventSource(`/api/sse?topics=${encodeURIComponent(`user:${userId}`)}`);
+    eventSourceRef.current = eventSource;
+    
+    // Handle new notifications
+    eventSource.addEventListener('notification:created', (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.notification) {
+          const item = data.notification;
+          
+          // Map to component notification format
+          let type: NotificationType = 'SYSTEM';
+          if (['MESSAGE', 'INQUIRY_UPDATE', 'TOUR_REMINDER', 'DOCUMENT_SHARED', 'STATUS_CHANGE'].includes(item.type)) {
+            type = item.type as NotificationType;
+          }
+          
+          // Determine link from data
+          let link: string | undefined = undefined;
+          if (item.data?.url) {
+            link = item.data.url;
+          } else if (item.data?.resourceType === 'document' && item.data?.documentId) {
+            link = `/family?documentId=${item.data.documentId}`;
+          }
+          
+          const notification: Notification = {
+            id: item.id,
+            type,
+            title: item.title,
+            message: item.message,
+            timestamp: item.createdAt,
+            isRead: item.isRead,
+            priority: item.data?.priority || 'MEDIUM',
+            link,
+            metadata: item.data
+          };
+          
+          // Add to notifications and show toast
+          setNotifications(prev => [notification, ...prev]);
+          showToast(notification);
+        }
+      } catch (error) {
+        console.error('Error processing SSE notification:', error);
+      }
+    });
+    
+    // Handle notification updates (mark as read)
+    eventSource.addEventListener('notification:updated', (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        
+        // Handle marking all as read
+        if (data.allMarkedRead) {
+          setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+          return;
+        }
+        
+        // Handle marking specific notifications as read
+        if (data.markedRead && Array.isArray(data.markedRead)) {
+          setNotifications(prev => 
+            prev.map(n => 
+              data.markedRead.includes(n.id) ? { ...n, isRead: true } : n
+            )
+          );
+        }
+      } catch (error) {
+        console.error('Error processing SSE notification update:', error);
+      }
+    });
+    
+    // Handle connection errors
+    eventSource.onerror = (error) => {
+      console.error('SSE connection error:', error);
+      // Attempt to reconnect after a delay
+      setTimeout(() => {
+        if (eventSourceRef.current) {
+          eventSourceRef.current.close();
+          eventSourceRef.current = null;
+        }
+      }, 5000);
+    };
+    
+    // Clean up on unmount
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
+    };
+  }, [userId, showToast]);
   
   // Get unread count
   const unreadCount = notifications.filter(n => !n.isRead).length;
@@ -305,22 +393,53 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
   };
   
   // Toggle dropdown
-  const toggleDropdown = () => {
-    setIsOpen(!isOpen);
+  const toggleDropdown = async () => {
+    const newIsOpen = !isOpen;
+    setIsOpen(newIsOpen);
     
     // Mark all as read when opening
-    if (!isOpen) {
-      setNotifications(prev => 
-        prev.map(n => ({ ...n, isRead: true }))
-      );
+    if (newIsOpen) {
+      try {
+        const response = await fetch('/api/notifications', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ all: true })
+        });
+        
+        if (response.ok) {
+          // Update local state
+          setNotifications(prev => 
+            prev.map(n => ({ ...n, isRead: true }))
+          );
+        }
+      } catch (error) {
+        console.error('Error marking notifications as read:', error);
+      }
     }
   };
   
   // Mark notification as read
-  const markAsRead = (id: string) => {
-    setNotifications(prev =>
-      prev.map(n => (n.id === id ? { ...n, isRead: true } : n))
-    );
+  const markAsRead = async (id: string) => {
+    try {
+      const response = await fetch('/api/notifications', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ ids: [id] })
+      });
+      
+      if (response.ok) {
+        // Update local state
+        setNotifications(prev =>
+          prev.map(n => (n.id === id ? { ...n, isRead: true } : n))
+        );
+      }
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
   };
   
   // Remove notification
@@ -334,26 +453,6 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
     setNotifications([]);
     setActiveToasts([]);
   };
-  
-  // Show toast notification
-  const showToast = useCallback((notification: Notification) => {
-    setActiveToasts(prev => {
-      // Limit number of active toasts
-      const updated = [...prev];
-      if (updated.length >= maxToasts) {
-        updated.pop(); // Remove oldest
-      }
-      return [notification, ...updated];
-    });
-    
-    // Add to notifications list if not already there
-    setNotifications(prev => {
-      if (!prev.some(n => n.id === notification.id)) {
-        return [notification, ...prev];
-      }
-      return prev;
-    });
-  }, [maxToasts]);
   
   // Close toast
   const closeToast = (id: string) => {
@@ -384,51 +483,6 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
         return <FiBell className="h-5 w-5 text-primary-500" />;
     }
   };
-  
-  // Simulate receiving a new notification
-  useEffect(() => {
-    const interval = setInterval(() => {
-      // 10% chance of receiving a new notification every 30 seconds
-      if (Math.random() < 0.1 && connectionState === 'CONNECTED') {
-        const types: NotificationType[] = ['MESSAGE', 'INQUIRY_UPDATE', 'TOUR_REMINDER', 'DOCUMENT_SHARED', 'STATUS_CHANGE'];
-        const randomType = types[Math.floor(Math.random() * types.length)] as NotificationType;
-        
-        const newNotification: Notification = {
-          id: `notif-${Date.now()}`,
-          type: randomType,
-          title: `New ${randomType.toLowerCase().replace('_', ' ')}`,
-          message: `This is a simulated ${randomType.toLowerCase().replace('_', ' ')} notification.`,
-          timestamp: new Date().toISOString(),
-          isRead: false,
-          priority: Math.random() > 0.7 ? 'HIGH' : Math.random() > 0.4 ? 'MEDIUM' : 'LOW'
-        };
-        
-        showToast(newNotification);
-      }
-    }, 30000); // Check every 30 seconds
-    
-    return () => clearInterval(interval);
-  }, [connectionState, showToast]);
-  
-  // For testing: show a toast notification on mount
-  useEffect(() => {
-    const testNotification: Notification = {
-      id: `notif-test-${Date.now()}`,
-      type: 'MESSAGE',
-      title: 'Welcome to Real-time Notifications',
-      message: 'You will now receive real-time updates about your inquiries and messages.',
-      timestamp: new Date().toISOString(),
-      isRead: false,
-      priority: 'MEDIUM'
-    };
-    
-    // Show test notification after 2 seconds
-    const timer = setTimeout(() => {
-      showToast(testNotification);
-    }, 2000);
-    
-    return () => clearTimeout(timer);
-  }, [showToast]);
   
   return (
     <>

@@ -27,6 +27,7 @@ import { prisma } from '@/lib/prisma';
 import logger from '@/lib/logger';
 import EmailService from '@/lib/email-service';
 import { publish } from '@/lib/server/sse';
+import { createInAppNotification } from '@/lib/services/notifications';
 import { ACLSubjectType, Permission } from '@/lib/types/family';
 import type { 
   FamilyMember,
@@ -1716,6 +1717,27 @@ export async function createDocumentComment(
       
       // Send emails to mentioned users
       if (recipients.length > 0) {
+        // In-app notifications for each recipient
+        for (const r of recipients) {
+          try {
+            await createInAppNotification({
+              userId: r.id,
+              type: 'SYSTEM',
+              title: `${comment.author.firstName} mentioned you in a document comment`,
+              message: `On “${document.title}”`,
+              data: {
+                kind: 'mention',
+                resourceType: 'document',
+                documentId,
+                commentId: comment.id,
+                familyId
+              }
+            });
+          } catch (notifErr) {
+            logger.error('Failed to create in-app notification', { notifErr, recipientId: r.id });
+          }
+        }
+
         await sendMentionEmails({
           recipients,
           author: {
