@@ -97,10 +97,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en" suppressHydrationWarning className={inter.variable}>
       <head>
         {/* PWA specific meta tags */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
+        {/* Mobile-web-app meta for non-iOS platforms (avoids deprecation warning) */}
+        <meta name="mobile-web-app-capable" content="yes" />
         <meta
           name="apple-mobile-web-app-status-bar-style"
           content="black-translucent"
