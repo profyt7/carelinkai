@@ -265,6 +265,16 @@ export function useDocuments({
         if (!commentId || seenCommentIdsRef.current.has(commentId)) return;
         seenCommentIdsRef.current.add(commentId);
 
+        // Guard against malformed payloads with no documentId
+        if (!documentId) {
+          // eslint-disable-next-line no-console
+          console.warn(
+            "[useDocuments] comment:created missing documentId, ignoring payload:",
+            payload
+          );
+          return;
+        }
+
         // Increment comment counts
         setState((prev) => {
           const updatedDocs = prev.documents.map((doc) =>
@@ -274,11 +284,11 @@ export function useDocuments({
           );
 
           const updatedSelected =
-            prev.selectedDocument?.id === documentId
+            prev.selectedDocument && prev.selectedDocument.id === documentId
               ? {
-                  // `selectedDocument` is guaranteed non-null in this branch
-                  ...prev.selectedDocument!,
-                  commentCount: (prev.selectedDocument!.commentCount ?? 0) + 1,
+                  ...prev.selectedDocument,
+                  commentCount:
+                    (prev.selectedDocument.commentCount ?? 0) + 1,
                 }
               : prev.selectedDocument;
 
