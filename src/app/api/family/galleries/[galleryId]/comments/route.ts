@@ -29,9 +29,11 @@ export async function GET(
     
     // Parse and validate query params
     const url = new URL(req.url);
+    const cursorParam = url.searchParams.get("cursor");
+    const limitParam  = url.searchParams.get("limit");
     const queryResult = GetCommentsQuerySchema.safeParse({
-      cursor: url.searchParams.get("cursor"),
-      limit: url.searchParams.get("limit"),
+      cursor: cursorParam ?? undefined,
+      limit:  limitParam  ?? undefined,
     });
     
     if (!queryResult.success) {
