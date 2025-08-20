@@ -235,6 +235,7 @@ export default function FamilyPage() {
     /* If panel is opening, always fetch fresh comments for consistency */
     if (willOpen) {
       try {
+        console.log(`[GalleryComments] fetch start`, { galleryId, familyId });
         /* timeout-aware fetch (8s) */
         const ac = new AbortController();
         const timer = setTimeout(() => ac.abort(), 8000);
@@ -251,6 +252,11 @@ export default function FamilyPage() {
           throw new Error('Non-200 response');
         }
         const json = await res.json();
+
+        console.log(`[GalleryComments] fetch ok`, {
+          galleryId,
+          count: (json.comments || []).length,
+        });
 
         setGalleryCommentsState(prev => ({
           ...prev,
@@ -270,7 +276,7 @@ export default function FamilyPage() {
           )
         );
       } catch (e) {
-        console.error('Failed to fetch gallery comments', e);
+        console.error('[GalleryComments] fetch error', e);
         setGalleryCommentsState(prev => ({
           ...prev,
           [galleryId]: { ...prev[galleryId], loading: false },
@@ -1272,27 +1278,40 @@ export default function FamilyPage() {
                                   ) : commentsState[note.id]?.items.length === 0 ? (
                                     <p className="text-xs text-gray-500">No comments yet</p>
                                   ) : (
-                                    <ul className="space-y-2">
-                                      {commentsState[note.id]?.items.map((comment: any) => (
-                                        <li key={comment.id} className="rounded bg-gray-50 p-2 text-xs">
-                                          <div className="font-medium">
-                                            {comment.author.firstName} {comment.author.lastName}
-                                          </div>
-                                          <div className="mt-1">{comment.content}</div>
-                                          <div className="mt-1 text-gray-400">
-                                            {new Date(comment.createdAt).toLocaleString()}
-                                          </div>
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  )}
-                                  
-                                  {/* Add comment form */}
-                                  <div className="mt-3 flex items-center gap-2">
-                                    <input
-                                      type="text"
-                                      value={commentsState[note.id]?.newContent || ''}
-                                      onChange={(e) => handleCommentChange(note.id, e.target.value)}
+                                    galleryCommentsState[g.id]?.items.length > 0 ? (
+                                      <>
+                                        {galleryCommentsState[g.id]?.loading && (
+                                          <p className="mb-1 text-[11px] text-gray-400">
+                                            Refreshing…
+                                          </p>
+                                        )}
+                                        <ul className="space-y-2">
+                                          {galleryCommentsState[g.id]?.items.map(
+                                            (comment: any) => (
+                                              <li
+                                                key={comment.id}
+                                                className="rounded bg-gray-50 p-2 text-xs"
+                                              >
+                                                <div className="font-medium">
+                                                  {comment.author.firstName}{' '}
+                                                  {comment.author.lastName}
+                                                </div>
+                                                <div className="mt-1">{comment.content}</div>
+                                                <div className="mt-1 text-gray-400">
+                                                  {new Date(
+                                                    comment.createdAt
+                                                  ).toLocaleString()}
+                                                </div>
+                                              </li>
+                                            )
+                                          )}
+                                        </ul>
+                                      </>
+                                    ) : galleryCommentsState[g.id]?.loading ? (
+                                      <p className="text-xs text-gray-500">Loading comments...</p>
+                                    ) : (
+                                      <p className="text-xs text-gray-500">No comments yet</p>
+                                    )}
                                       placeholder="Add a comment..."
                                       className="flex-1 rounded-md border border-gray-300 px-3 py-1 text-xs focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                                     />
