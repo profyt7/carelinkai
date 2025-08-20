@@ -235,10 +235,15 @@ export default function FamilyPage() {
     /* If panel is opening, always fetch fresh comments for consistency */
     if (willOpen) {
       try {
+        /* timeout-aware fetch (8s) */
+        const ac = new AbortController();
+        const timer = setTimeout(() => ac.abort(), 8000);
         const res = await fetch(`/api/family/galleries/${galleryId}/comments`, {
           credentials: 'same-origin',
-          cache: 'no-store'
+          cache: 'no-store',
+          signal: ac.signal,
         });
+        clearTimeout(timer);
         if (!res.ok) {
           console.error(
             `Failed to fetch gallery comments – status ${res.status}`
