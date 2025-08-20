@@ -71,7 +71,10 @@ export default function FamilyPage() {
   const [galleries, setGalleries] = useState<any[]>([]);
   const [galleriesLoading, setGalleriesLoading] = useState(false);
 
-  const [members, setMembers] = useState<FamilyMember[]>([]);
+  // Use a flexible type because member fetches include joined `user` object
+  // (profileImageUrl, name fields, etc.) which are not present on the bare
+  // FamilyMember Prisma model type.
+  const [members, setMembers] = useState<any[]>([]);
   const [membersLoading, setMembersLoading] = useState(false);
   const [activity, setActivity] = useState<any[]>([]);
   const [activityLoading, setActivityLoading] = useState(false);
@@ -122,48 +125,62 @@ export default function FamilyPage() {
     }
 
     // toggle
-    setDocCommentsState(prev => ({
-      ...prev,
-      [docId]: { ...prev[docId], open: !prev[docId]?.open },
-    }));
+    setDocCommentsState(prev => {
+      const cur =
+        prev[docId] ?? { open: false, items: [], loading: false, newContent: '' };
+      return {
+        ...prev,
+        [docId]: { ...cur, open: !cur.open },
+      };
+    });
 
     // fetch on first open
     if (
       !docCommentsState[docId]?.open &&
       (docCommentsState[docId]?.items.length || 0) === 0
     ) {
-      setDocCommentsState(prev => ({
-        ...prev,
-        [docId]: { ...prev[docId], loading: true },
-      }));
+      setDocCommentsState(prev => {
+        const cur =
+          prev[docId] ??
+          { open: false, items: [], loading: false, newContent: '' };
+        return { ...prev, [docId]: { ...cur, loading: true } };
+      });
       try {
         const res = await fetch(
           `/api/family/documents/${docId}/comments?familyId=${familyId}`
         );
         if (res.ok) {
           const json = await res.json();
-          setDocCommentsState(prev => ({
-            ...prev,
-            [docId]: { ...prev[docId], items: json.items || [], loading: false },
-          }));
+          setDocCommentsState(prev => {
+            const cur =
+              prev[docId] ??
+              { open: false, items: [], loading: false, newContent: '' };
+            return {
+              ...prev,
+              [docId]: { ...cur, items: json.items || [], loading: false },
+            };
+          });
           setNotes((prev) => prev.map((n) => (n.id === docId ? { ...n, commentCount: (json.items || []).length } : n)));
         } else throw new Error();
       } catch (e) {
         console.error('Failed to fetch doc comments', e);
-        setDocCommentsState(prev => ({
-          ...prev,
-          [docId]: { ...prev[docId], loading: false },
-        }));
+        setDocCommentsState(prev => {
+          const cur =
+            prev[docId] ??
+            { open: false, items: [], loading: false, newContent: '' };
+          return { ...prev, [docId]: { ...cur, loading: false } };
+        });
       }
     }
   };
 
   const addDocComment = async (docId: string) => {
     if (!docCommentsState[docId]?.newContent.trim()) return;
-    setDocCommentsState(prev => ({
-      ...prev,
-      [docId]: { ...prev[docId], loading: true },
-    }));
+    setDocCommentsState(prev => {
+      const cur =
+        prev[docId] ?? { open: false, items: [], loading: false, newContent: '' };
+      return { ...prev, [docId]: { ...cur, loading: true } };
+    });
     try {
       const res = await fetch(
         `/api/family/documents/${docId}/comments?familyId=${familyId}`,
@@ -175,30 +192,38 @@ export default function FamilyPage() {
       );
       if (res.ok) {
         const json = await res.json();
-        setDocCommentsState(prev => ({
-          ...prev,
-          [docId]: {
-            ...prev[docId],
-            items: [...prev[docId].items, json.comment],
-            newContent: '',
-            loading: false,
-          },
-        }));
+        setDocCommentsState(prev => {
+          const cur =
+            prev[docId] ??
+            { open: false, items: [], loading: false, newContent: '' };
+          return {
+            ...prev,
+            [docId]: {
+              ...cur,
+              items: [...cur.items, json.comment],
+              newContent: '',
+              loading: false,
+            },
+          };
+        });
       } else throw new Error();
     } catch (e) {
       console.error('Failed to add doc comment', e);
-      setDocCommentsState(prev => ({
-        ...prev,
-        [docId]: { ...prev[docId], loading: false },
-      }));
+      setDocCommentsState(prev => {
+        const cur =
+          prev[docId] ??
+          { open: false, items: [], loading: false, newContent: '' };
+        return { ...prev, [docId]: { ...cur, loading: false } };
+      });
     }
   };
 
   const handleDocCommentChange = (docId: string, value: string) =>
-    setDocCommentsState(prev => ({
-      ...prev,
-      [docId]: { ...prev[docId], newContent: value },
-    }));
+    setDocCommentsState(prev => {
+      const cur =
+        prev[docId] ?? { open: false, items: [], loading: false, newContent: '' };
+      return { ...prev, [docId]: { ...cur, newContent: value } };
+    });
 
   /* ---------------- Gallery-level comments ---------------- */
   const [galleryCommentsState, setGalleryCommentsState] = useState<
@@ -228,18 +253,24 @@ export default function FamilyPage() {
     const nextOpen = !currentOpen;
 
     /* Toggle panel and set loading if opening */
-    setGalleryCommentsState(prev => ({
-      ...prev,
-      [galleryId]: {
-        ...(prev[galleryId] || {
+    setGalleryCommentsState(prev => {
+      const cur =
+        prev[galleryId] ?? {
+          open: false,
           items: [],
+          loading: false,
           posting: false,
           newContent: '',
-        }),
-        open: nextOpen,
-        loading: nextOpen ? true : prev[galleryId]?.loading ?? false,
-      },
-    }));
+        };
+      return {
+        ...prev,
+        [galleryId]: {
+          ...cur,
+          open: nextOpen,
+          loading: nextOpen ? true : cur.loading,
+        },
+      };
+    });
 
     /* If opening, fetch latest comments */
     if (nextOpen) {
@@ -267,14 +298,24 @@ export default function FamilyPage() {
           count: (json.comments || []).length,
         });
 
-        setGalleryCommentsState(prev => ({
-          ...prev,
-          [galleryId]: {
-            ...prev[galleryId],
-            items: json.comments || [],
-            loading: false,
-          },
-        }));
+        setGalleryCommentsState(prev => {
+          const cur =
+            prev[galleryId] ?? {
+              open: false,
+              items: [],
+              loading: false,
+              posting: false,
+              newContent: '',
+            };
+          return {
+            ...prev,
+            [galleryId]: {
+              ...cur,
+              items: json.comments || [],
+              loading: false,
+            },
+          };
+        });
 
         /* Sync commentCount with latest list length */
         setGalleries(prev =>
@@ -286,10 +327,20 @@ export default function FamilyPage() {
         );
       } catch (e) {
         console.error('[GalleryComments] fetch error', e);
-        setGalleryCommentsState(prev => ({
-          ...prev,
-          [galleryId]: { ...prev[galleryId], loading: false },
-        }));
+        setGalleryCommentsState(prev => {
+          const cur =
+            prev[galleryId] ?? {
+              open: false,
+              items: [],
+              loading: false,
+              posting: false,
+              newContent: '',
+            };
+          return {
+            ...prev,
+            [galleryId]: { ...cur, loading: false },
+          };
+        });
       }
     }
   };
@@ -298,10 +349,17 @@ export default function FamilyPage() {
     const val = galleryCommentsState[galleryId]?.newContent?.trim();
     if (!val) return;
 
-    setGalleryCommentsState(prev => ({
-      ...prev,
-      [galleryId]: { ...prev[galleryId], posting: true },
-    }));
+    setGalleryCommentsState(prev => {
+      const cur =
+        prev[galleryId] ?? {
+          open: false,
+          items: [],
+          loading: false,
+          posting: false,
+          newContent: '',
+        };
+      return { ...prev, [galleryId]: { ...cur, posting: true } };
+    });
 
     try {
       const res = await fetch(`/api/family/galleries/${galleryId}/comments`, {
@@ -325,15 +383,25 @@ export default function FamilyPage() {
         );
 
         /* Add comment to current open panel */
-        setGalleryCommentsState(prev => ({
-          ...prev,
-          [galleryId]: {
-            ...prev[galleryId],
-            items: [...prev[galleryId].items, created],
-            newContent: '',
-            posting: false,
-          },
-        }));
+        setGalleryCommentsState(prev => {
+          const cur =
+            prev[galleryId] ?? {
+              open: false,
+              items: [],
+              loading: false,
+              posting: false,
+              newContent: '',
+            };
+          return {
+            ...prev,
+            [galleryId]: {
+              ...cur,
+              items: [...cur.items, created],
+              newContent: '',
+              posting: false,
+            },
+          };
+        });
 
         /* Mark as seen to avoid duplicate SSE handling */
         try {
@@ -346,18 +414,32 @@ export default function FamilyPage() {
       } else throw new Error();
     } catch (e) {
       console.error('Failed to add gallery comment', e);
-      setGalleryCommentsState(prev => ({
-        ...prev,
-        [galleryId]: { ...prev[galleryId], posting: false },
-      }));
+      setGalleryCommentsState(prev => {
+        const cur =
+          prev[galleryId] ?? {
+            open: false,
+            items: [],
+            loading: false,
+            posting: false,
+            newContent: '',
+          };
+        return { ...prev, [galleryId]: { ...cur, posting: false } };
+      });
     }
   };
 
   const handleGalleryCommentChange = (galleryId: string, value: string) =>
-    setGalleryCommentsState(prev => ({
-      ...prev,
-      [galleryId]: { ...prev[galleryId], newContent: value },
-    }));
+    setGalleryCommentsState(prev => {
+      const cur =
+        prev[galleryId] ?? {
+          open: false,
+          items: [],
+          loading: false,
+          posting: false,
+          newContent: '',
+        };
+      return { ...prev, [galleryId]: { ...cur, newContent: value } };
+    });
 
   /* ---------------- Photo upload function ---------------- */
   const uploadPhotos = async (galleryId: string, files: FileList) => {
@@ -508,49 +590,43 @@ export default function FamilyPage() {
     }
     
     // Toggle open state
-    setCommentsState(prev => ({
-      ...prev,
-      [noteId]: {
-        ...prev[noteId],
-        open: !prev[noteId]?.open
-      }
-    }));
+    setCommentsState(prev => {
+      const cur =
+        prev[noteId] ?? { open: false, items: [], loading: false, newContent: '' };
+      return { ...prev, [noteId]: { ...cur, open: !cur.open } };
+    });
     
     // Fetch comments if opening and no items yet
     if (!commentsState[noteId]?.open && (!commentsState[noteId]?.items.length || commentsState[noteId]?.items.length === 0)) {
-      setCommentsState(prev => ({
-        ...prev,
-        [noteId]: {
-          ...prev[noteId],
-          loading: true
-        }
-      }));
+      setCommentsState(prev => {
+        const cur =
+          prev[noteId] ?? { open: false, items: [], loading: false, newContent: '' };
+        return { ...prev, [noteId]: { ...cur, loading: true } };
+      });
       
       try {
         const res = await fetch(`/api/family/notes/${noteId}/comments`);
         if (res.ok) {
           const json = await res.json();
-          setCommentsState(prev => ({
-            ...prev,
-            [noteId]: {
-              ...prev[noteId],
-              items: json.items || [],
-              loading: false
-            }
-          }));
+          setCommentsState(prev => {
+            const cur =
+              prev[noteId] ?? { open: false, items: [], loading: false, newContent: '' };
+            return {
+              ...prev,
+              [noteId]: { ...cur, items: json.items || [], loading: false }
+            };
+          });
           setNotes((prev) => prev.map((n) => (n.id === noteId ? { ...n, commentCount: (json.items || []).length } : n)));
         } else {
           throw new Error('Failed to fetch comments');
         }
       } catch (error) {
         console.error('Error fetching comments:', error);
-        setCommentsState(prev => ({
-          ...prev,
-          [noteId]: {
-            ...prev[noteId],
-            loading: false
-          }
-        }));
+        setCommentsState(prev => {
+          const cur =
+            prev[noteId] ?? { open: false, items: [], loading: false, newContent: '' };
+          return { ...prev, [noteId]: { ...cur, loading: false } };
+        });
       }
     }
   };
@@ -559,13 +635,11 @@ export default function FamilyPage() {
     if (!familyId || !commentsState[noteId]?.newContent.trim()) return;
     
     // Set loading state
-    setCommentsState(prev => ({
-      ...prev,
-      [noteId]: {
-        ...prev[noteId],
-        loading: true
-      }
-    }));
+    setCommentsState(prev => {
+      const cur =
+        prev[noteId] ?? { open: false, items: [], loading: false, newContent: '' };
+      return { ...prev, [noteId]: { ...cur, loading: true } };
+    });
     
     try {
       const res = await fetch(`/api/family/notes/${noteId}/comments`, {
@@ -582,15 +656,19 @@ export default function FamilyPage() {
         const json = await res.json();
         
         // Add comment to list and clear input
-        setCommentsState(prev => ({
-          ...prev,
-          [noteId]: {
-            ...prev[noteId],
-            items: [...prev[noteId].items, json.comment],
-            newContent: '',
-            loading: false
-          }
-        }));
+        setCommentsState(prev => {
+          const cur =
+            prev[noteId] ?? { open: false, items: [], loading: false, newContent: '' };
+          return {
+            ...prev,
+            [noteId]: {
+              ...cur,
+              items: [...cur.items, json.comment],
+              newContent: '',
+              loading: false
+            }
+          };
+        });
         
         // Update note's comment count
         setNotes(prev => prev.map(note => 
@@ -603,25 +681,20 @@ export default function FamilyPage() {
       }
     } catch (error) {
       console.error('Error adding comment:', error);
-      setCommentsState(prev => ({
-        ...prev,
-        [noteId]: {
-          ...prev[noteId],
-          loading: false
-        }
-      }));
+      setCommentsState(prev => {
+        const cur =
+          prev[noteId] ?? { open: false, items: [], loading: false, newContent: '' };
+        return { ...prev, [noteId]: { ...cur, loading: false } };
+      });
     }
   };
   
-  const handleCommentChange = (noteId: string, value: string) => {
-    setCommentsState(prev => ({
-      ...prev,
-      [noteId]: {
-        ...prev[noteId],
-        newContent: value
-      }
-    }));
-  };
+  const handleCommentChange = (noteId: string, value: string) =>
+    setCommentsState(prev => {
+      const cur =
+        prev[noteId] ?? { open: false, items: [], loading: false, newContent: '' };
+      return { ...prev, [noteId]: { ...cur, newContent: value } };
+    });
 
   /* Fetch once familyId resolves */
   useEffect(() => {
@@ -705,7 +778,11 @@ export default function FamilyPage() {
       // trim set occasionally to avoid unbounded growth
       if (seen.size > 5000) {
         const it = seen.values();
-        for (let i = 0; i < 1000; i++) seen.delete(it.next().value);
+        for (let i = 0; i < 1000; i++) {
+          const r = it.next();
+          if (r.done) break;
+          seen.delete(r.value);
+        }
       }
       return false;
     };

@@ -69,7 +69,10 @@ export async function POST(request: NextRequest) {
     }
     
     // Check if user has permission to invite (must be OWNER or CARE_PROXY)
-    if (![FamilyMemberRole.OWNER, FamilyMemberRole.CARE_PROXY].includes(memberCheck.role)) {
+    if (
+      memberCheck.role !== FamilyMemberRole.OWNER &&
+      memberCheck.role !== FamilyMemberRole.CARE_PROXY
+    ) {
       return NextResponse.json({ 
         error: "Insufficient permissions to invite members" 
       }, { status: 403 });
@@ -152,7 +155,9 @@ export async function POST(request: NextRequest) {
       
     } else {
       // Generate signup link with invitation parameters
-      const signupUrl = new URL(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:5000'}/signup`);
+      const signupUrl = new URL(
+        `${process.env['NEXT_PUBLIC_APP_URL'] || 'http://localhost:5000'}/signup`
+      );
       signupUrl.searchParams.append('email', data.email);
       signupUrl.searchParams.append('inviteFamilyId', data.familyId);
       signupUrl.searchParams.append('inviteRole', data.role);

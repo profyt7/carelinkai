@@ -103,7 +103,12 @@ export async function GET(
     });
     
     // Get the next cursor
-    const nextCursor = comments.length === limit ? comments[comments.length - 1].id : null;
+    // Safely derive the cursor for the next page
+    // Guard against empty arrays to satisfy strict null-checks
+    const nextCursor =
+      comments.length === limit && comments.length > 0
+        ? comments[comments.length - 1]!.id
+        : null;
     
     return NextResponse.json({
       comments,

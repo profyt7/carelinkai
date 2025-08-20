@@ -140,8 +140,12 @@ export async function GET(
       },
     });
 
+    // Safely derive the next cursor only when we have a full page of results
+    // and the array is non-empty (satisfies strict null-checks)
     const nextCursor =
-      photos.length === limit ? photos[photos.length - 1].id : null;
+      photos.length === limit && photos.length > 0
+        ? photos[photos.length - 1]!.id
+        : null;
 
     return NextResponse.json({ photos, nextCursor });
   } catch (err) {
@@ -244,13 +248,14 @@ export async function POST(
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       
+      // Defensive checks ─ ensure `file` is defined before accessing properties
       // Validate file type
-      if (!file.type.startsWith("image/")) {
+      if (!file || !file.type.startsWith("image/")) {
         continue; // Skip non-image files
       }
       
       // Validate file size
-      if (file.size > MAX_FILE_SIZE) {
+      if (!file || file.size > MAX_FILE_SIZE) {
         continue; // Skip files that are too large
       }
       
@@ -339,7 +344,8 @@ export async function POST(
       metadata: {
         galleryTitle: gallery.title,
         photoCount: createdPhotos.length,
-        firstPhotoId: createdPhotos[0].id
+        // Non-null assertion since we already checked createdPhotos length
+        firstPhotoId: createdPhotos[0]!.id
       }
     });
     

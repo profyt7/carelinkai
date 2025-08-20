@@ -63,9 +63,9 @@ export async function PATCH(
 
     // Check permissions - allow if uploader or privileged role
     const isUploader = photo.uploaderId === session.user.id;
-    const hasPrivilegedRole = [FamilyMemberRole.OWNER, FamilyMemberRole.CARE_PROXY].includes(
-      member.role
-    );
+    const hasPrivilegedRole =
+      member.role === FamilyMemberRole.OWNER ||
+      member.role === FamilyMemberRole.CARE_PROXY;
 
     if (!isUploader && !hasPrivilegedRole) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
@@ -102,6 +102,8 @@ export async function PATCH(
         data: {
           familyId: gallery.familyId,
           actorId: session.user.id,
+          resourceType: 'gallery',
+          resourceId: galleryId,
           type: 'GALLERY_UPDATED',
           description: `Updated photo caption in gallery`,
           metadata: {
@@ -180,9 +182,9 @@ export async function DELETE(
 
     // Check permissions - allow if uploader or privileged role
     const isUploader = photo.uploaderId === session.user.id;
-    const hasPrivilegedRole = [FamilyMemberRole.OWNER, FamilyMemberRole.CARE_PROXY].includes(
-      member.role
-    );
+    const hasPrivilegedRole =
+      member.role === FamilyMemberRole.OWNER ||
+      member.role === FamilyMemberRole.CARE_PROXY;
 
     if (!isUploader && !hasPrivilegedRole) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
@@ -240,6 +242,8 @@ export async function DELETE(
         data: {
           familyId: gallery.familyId,
           actorId: session.user.id,
+          resourceType: 'gallery',
+          resourceId: galleryId,
           type: 'GALLERY_UPDATED',
           description: `Deleted a photo from gallery`,
           metadata: {

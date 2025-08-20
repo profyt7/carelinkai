@@ -388,8 +388,13 @@ export async function PUT(request: NextRequest) {
           }
         }
       });
-      
-      if (member && [FamilyMemberRole.OWNER, FamilyMemberRole.CARE_PROXY].includes(member.role)) {
+
+      // Allow privileged roles explicitly (avoids Array.includes strict-null error)
+      if (
+        member &&
+        (member.role === FamilyMemberRole.OWNER ||
+          member.role === FamilyMemberRole.CARE_PROXY)
+      ) {
         hasPermission = true;
       }
     }
@@ -545,8 +550,13 @@ export async function DELETE(request: NextRequest) {
           }
         }
       });
-      
-      if (member && [FamilyMemberRole.OWNER, FamilyMemberRole.CARE_PROXY].includes(member.role)) {
+
+      // Grant permission explicitly to privileged roles
+      if (
+        member &&
+        (member.role === FamilyMemberRole.OWNER ||
+          member.role === FamilyMemberRole.CARE_PROXY)
+      ) {
         hasPermission = true;
       }
     }

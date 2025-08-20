@@ -56,7 +56,7 @@ export async function GET(
 
     const photos = await prisma.galleryPhoto.findMany({
       where: { galleryId },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { createdAt: 'asc' as const },
       select: {
         id: true,
         fileUrl: true,
@@ -169,7 +169,7 @@ export async function POST(
         galleryId,
         ...(photoIds && photoIds.length > 0 ? { id: { in: photoIds } } : {})
       },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { createdAt: 'asc' as const },
       select: {
         id: true,
         fileUrl: true,
