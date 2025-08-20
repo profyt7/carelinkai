@@ -5,6 +5,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { 
   checkFamilyMembership,
+  handleMentionsInComment,
   createActivityRecord
 } from "@/lib/services/family";
 import { publish } from "@/lib/server/sse";
@@ -237,6 +238,15 @@ export async function POST(
           }
         }
       }
+    });
+
+    // Process @mentions and create notifications
+    await handleMentionsInComment({
+      familyId: note.familyId,
+      authorId: session.user.id,
+      content: data.content,
+      resource: { type: 'note', id: note.id, title: note.title || '' },
+      commentId: comment.id
     });
 
     // Get updated comment count

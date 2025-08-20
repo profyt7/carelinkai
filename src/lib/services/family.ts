@@ -453,6 +453,76 @@ async function sendMentionEmails(params: {
   }
 }
 
+/**
+ * Centralised helper to process @mentions for any comment type
+ */
+export async function handleMentionsInComment(params: {
+  familyId: string;
+  authorId: string;
+  content: string;
+  resource: { type: 'document' | 'note' | 'gallery'; id: string; title?: string };
+  commentId: string;
+}): Promise<{ recipientsNotified: string[] }> {
+  const { familyId, authorId, content, resource, commentId } = params;
+
+  // Extract potential names from text
+  const names = extractMentionNames(content || '');
+  if (names.length === 0) return { recipientsNotified: [] };
+
+  // Resolve names to family users
+  const mentioned = await resolveMentionedUsers(familyId, names);
+
+  // Remove author and dedupe
+  const unique = new Map<string, { id: string; firstName: string; lastName: string }>();
+  for (const u of mentioned) {
+    if (u.id === authorId) continue;
+    if (!unique.has(u.id)) unique.set(u.id, u);
+  }
+  const recipients = Array.from(unique.values());
+  if (recipients.length === 0) return { recipientsNotified: [] };
+
+  // Fetch author name (lightweight)
+  const author = await prisma.user.findUnique({
+    where: { id: authorId },
+    select: { firstName: true, lastName: true }
+  });
+  const authorName = author?.firstName || 'Someone';
+
+  // Build common notification message
+  const message =
+    resource.title && resource.title.length > 0
+      ? `On “${resource.title}”`
+      : '';
+
+  const recipientsNotified: string[] = [];
+
+  for (const r of recipients) {
+    try {
+      await createInAppNotification({
+        userId: r.id,
+        type: 'SYSTEM',
+        title: `${authorName} mentioned you in a ${resource.type} comment`,
+        message,
+        data: {
+          kind: 'mention',
+          resourceType: resource.type,
+          familyId,
+          commentId,
+          [`${resource.type}Id`]: resource.id
+        }
+      });
+      recipientsNotified.push(r.id);
+    } catch (notifErr) {
+      logger.error('handleMentionsInComment: failed notification', {
+        notifErr,
+        recipientId: r.id
+      });
+    }
+  }
+
+  return { recipientsNotified };
+}
+
 // ======================================================
 // ================= PERMISSION CHECKING ================
 // ======================================================

@@ -3,7 +3,10 @@ import { z } from "zod";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { checkFamilyMembership } from "@/lib/services/family";
+import { 
+  checkFamilyMembership,
+  handleMentionsInComment
+} from "@/lib/services/family";
 import { publish } from "@/lib/server/sse";
 import { ActivityType } from "@prisma/client";
 
@@ -198,6 +201,15 @@ export async function POST(
           },
         },
       },
+    });
+
+    // Process @mentions and trigger in-app notifications
+    await handleMentionsInComment({
+      familyId: gallery.familyId,
+      authorId: session.user.id,
+      content,
+      resource: { type: "gallery", id: gallery.id, title: gallery.title || "" },
+      commentId: comment.id,
     });
 
     // Log activity (non-blocking if it fails)
