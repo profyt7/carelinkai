@@ -209,31 +209,40 @@ export default function FamilyPage() {
   >({});
 
   const toggleGalleryComments = async (galleryId: string) => {
-    /* Initialise state slice if missing */
+    /* Ensure slice exists */
     if (!galleryCommentsState[galleryId]) {
       setGalleryCommentsState(prev => ({
         ...prev,
-        [galleryId]: { open: false, items: [], loading: false, posting: false, newContent: '' },
+        [galleryId]: {
+          open: false,
+          items: [],
+          loading: false,
+          posting: false,
+          newContent: '',
+        },
       }));
     }
 
-    /* Toggle – and capture whether panel will be open afterwards */
-    let willOpen = false;
-    setGalleryCommentsState(prev => {
-      willOpen = !prev[galleryId]?.open;
-      return {
-        ...prev,
-        [galleryId]: {
-          ...prev[galleryId],
-          open: willOpen,
-          /* if we're opening, start loading immediately */
-          loading: willOpen ? true : prev[galleryId]?.loading ?? false,
-        },
-      };
-    });
+    /* Determine current & next open state */
+    const currentOpen = !!galleryCommentsState[galleryId]?.open;
+    const nextOpen = !currentOpen;
 
-    /* If panel is opening, always fetch fresh comments for consistency */
-    if (willOpen) {
+    /* Toggle panel and set loading if opening */
+    setGalleryCommentsState(prev => ({
+      ...prev,
+      [galleryId]: {
+        ...(prev[galleryId] || {
+          items: [],
+          posting: false,
+          newContent: '',
+        }),
+        open: nextOpen,
+        loading: nextOpen ? true : prev[galleryId]?.loading ?? false,
+      },
+    }));
+
+    /* If opening, fetch latest comments */
+    if (nextOpen) {
       try {
         console.log(`[GalleryComments] fetch start`, { galleryId, familyId });
         /* timeout-aware fetch (8s) */
