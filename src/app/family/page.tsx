@@ -204,7 +204,7 @@ export default function FamilyPage() {
   const [galleryCommentsState, setGalleryCommentsState] = useState<
     Record<
       string,
-      { open: boolean; items: any[]; loading: boolean; newContent: string }
+      { open: boolean; items: any[]; loading: boolean; posting: boolean; newContent: string }
     >
   >({});
 
@@ -213,7 +213,7 @@ export default function FamilyPage() {
     if (!galleryCommentsState[galleryId]) {
       setGalleryCommentsState(prev => ({
         ...prev,
-        [galleryId]: { open: false, items: [], loading: false, newContent: '' },
+        [galleryId]: { open: false, items: [], loading: false, posting: false, newContent: '' },
       }));
     }
 
@@ -235,7 +235,10 @@ export default function FamilyPage() {
     /* If panel is opening, always fetch fresh comments for consistency */
     if (willOpen) {
       try {
-        const res = await fetch(`/api/family/galleries/${galleryId}/comments`);
+        const res = await fetch(`/api/family/galleries/${galleryId}/comments`, {
+          credentials: 'same-origin',
+          cache: 'no-store'
+        });
         if (!res.ok) {
           console.error(
             `Failed to fetch gallery comments – status ${res.status}`
@@ -277,7 +280,7 @@ export default function FamilyPage() {
 
     setGalleryCommentsState(prev => ({
       ...prev,
-      [galleryId]: { ...prev[galleryId], loading: true },
+      [galleryId]: { ...prev[galleryId], posting: true },
     }));
 
     try {
@@ -285,9 +288,12 @@ export default function FamilyPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: val }),
+        credentials: 'same-origin',
+        cache: 'no-store'
       });
       if (res.ok) {
-        const createdComment = await res.json();
+        const payload = await res.json();
+        const created = payload?.comment ?? payload;
 
         /* Optimistically bump gallery commentCount */
         setGalleries(prev =>
@@ -303,15 +309,17 @@ export default function FamilyPage() {
           ...prev,
           [galleryId]: {
             ...prev[galleryId],
-            items: [...prev[galleryId].items, createdComment],
+            items: [...prev[galleryId].items, created],
             newContent: '',
-            loading: false,
+            posting: false,
           },
         }));
 
         /* Mark as seen to avoid duplicate SSE handling */
         try {
-          seenRef.current?.add(`gal:cmt:${createdComment.id}`);
+          if (created.id) {
+            seenRef.current?.add(`gal:cmt:${created.id}`);
+          }
         } catch (_) {
           /* ignore */
         }
@@ -320,7 +328,7 @@ export default function FamilyPage() {
       console.error('Failed to add gallery comment', e);
       setGalleryCommentsState(prev => ({
         ...prev,
-        [galleryId]: { ...prev[galleryId], loading: false },
+        [galleryId]: { ...prev[galleryId], posting: false },
       }));
     }
   };
@@ -1427,7 +1435,7 @@ export default function FamilyPage() {
                                       onClick={() => addGalleryComment(g.id)}
                                       disabled={
                                         !galleryCommentsState[g.id]?.newContent?.trim() ||
-                                        galleryCommentsState[g.id]?.loading
+                                        galleryCommentsState[g.id]?.posting
                                       }
                                       className="inline-flex items-center rounded-md bg-primary-600 px-2 py-1 text-xs text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 disabled:opacity-50"
                                     >
