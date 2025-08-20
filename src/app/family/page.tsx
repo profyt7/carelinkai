@@ -643,7 +643,8 @@ export default function FamilyPage() {
     loading,
   } = useDocuments({
     familyId,
-    autoFetch: !!familyId,
+    // Only auto-fetch when the Documents tab is active
+    autoFetch: !!familyId && activeTab === 'documents',
   });
 
   /* --------------------- Handlers ---------------------------- */

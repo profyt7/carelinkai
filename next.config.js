@@ -13,6 +13,7 @@ const nextConfig = {
       'carelinkai-storage.s3.amazonaws.com',
       'example.com', // allows https://example.com/home-photo.jpg
       'ui-avatars.com', // for generated placeholder avatars
+      'randomuser.me', // remote avatar placeholders
     ],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
     formats: ['image/webp'],
@@ -65,7 +66,7 @@ const nextConfig = {
                    "connect-src 'self' https://api.stripe.com; " +
                    "img-src 'self' data: http://localhost:5000 https://carelinkai-storage.s3.amazonaws.com " +
                    "https://a.tile.openstreetmap.org https://b.tile.openstreetmap.org https://c.tile.openstreetmap.org " +
-                   "https://ui-avatars.com; " +
+                   "https://ui-avatars.com https://randomuser.me; " +
                    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
                    "font-src 'self' data: https://fonts.gstatic.com; " +
                    "frame-src 'self' https://js.stripe.com https://hooks.stripe.com;",
