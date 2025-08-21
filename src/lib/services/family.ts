@@ -380,10 +380,10 @@ export async function createActivityRecord(
 
 function extractMentionNames(text: string): string[] {
   // Match @ followed by 1-4 capitalized tokens (names) separated by spaces.
-  //   e.g. “@John Doe”, “@Mary-Anne O'Neil”, stops at the first non-name boundary.
+  //   e.g. "@John Doe", "@Mary-Anne O'Neil", stops at the first non-name boundary.
   // Relaxed: allow either upper- or lower-case first letter of each token
   const mentionRegex =
-    /@([A-Za-z][A-Za-z'\\-]+(?:\\s+[A-Za-z][A-Za-z'\\-]+){0,3})\\b/g;
+    /@([A-Za-z][A-Za-z'-]+(?:\s+[A-Za-z][A-Za-z'-]+){0,3})\b/g;
   const mentions = new Set<string>();
   let match;
   
@@ -419,7 +419,7 @@ async function resolveMentionedUsers(familyId: string, names: string[]): Promise
         const cleaned = raw
           .replace(/[.,;:!?)]*$/, '')      // trim trailing punctuation
           .toLowerCase()
-          .replace(/\\s+/g, ' ')           // normalise inner whitespace
+          .replace(/\s+/g, ' ')           // normalise inner whitespace
           .trim();
 
         // 2) tokenise and build prefixes up to 4 tokens
@@ -519,7 +519,7 @@ export async function handleMentionsInComment(params: {
   // Build common notification message
   const message =
     resource.title && resource.title.length > 0
-      ? `On “${resource.title}”`
+      ? `On "${resource.title}"`
       : '';
 
   // Deep-link to the resource in the family portal
@@ -1829,7 +1829,7 @@ export async function createDocumentComment(
               userId: r.id,
               type: 'SYSTEM',
               title: `${comment.author.firstName} mentioned you in a document comment`,
-              message: `On “${document.title}”`,
+              message: `On "${document.title}"`,
               data: {
                 kind: 'mention',
                 resourceType: 'document',
