@@ -379,14 +379,15 @@ export async function createActivityRecord(
 }
 
 function extractMentionNames(text: string): string[] {
-  const mentionRegex = /@([A-Za-z][A-Za-z\-'. ]+)/g;
+  // Match @ followed by 1-4 capitalized tokens (names) separated by spaces.
+  //   e.g. “@John Doe”, “@Mary-Anne O'Neil”, stops at the first non-name boundary.
+  const mentionRegex =
+    /@([A-Z][a-zA-Z'\\-]+(?:\\s+[A-Z][a-zA-Z'\\-]+){0,3})\\b/g;
   const mentions = new Set<string>();
   let match;
   
   while ((match = mentionRegex.exec(text)) !== null) {
-    let name = match[1].trim();
-    // Strip trailing punctuation
-    name = name.replace(/[.,;:!?)]$/, '').trim();
+    const name = match[1].trim();
     mentions.add(name);
   }
   
@@ -410,12 +411,34 @@ async function resolveMentionedUsers(familyId: string, names: string[]): Promise
   
   return familyMembers
     .filter(member => {
-      const fullName = `${member.user.firstName} ${member.user.lastName}`;
-      return names.some(name => 
-        fullName.toLowerCase() === name.toLowerCase()
-      );
+      const fullName = `${member.user.firstName} ${member.user.lastName}`.toLowerCase();
+
+      return names.some(raw => {
+        // 1) normalise candidate – remove trailing punctuation & lowercase
+        const cleaned = raw.replace(/[.,;:!?)]*$/, '').toLowerCase();
+
+        // 2) tokenise and build prefixes up to 4 tokens
+        const tokens = cleaned.split(/\s+/).filter(Boolean).slice(0, 4);
+        let prefix = '';
+        for (let i = 0; i < tokens.length; i++) {
+          prefix = (prefix ? prefix + ' ' : '') + tokens[i];
+          if (prefix === fullName) {
+            return true;
+          }
+        }
+        return false;
+      });
     })
-    .map(member => member.user);
+    // ensure uniqueness by user id
+    .reduce<Array<{ id: string; email: string; firstName: string; lastName: string }>>(
+      (acc, cur) => {
+        if (!acc.some(u => u.id === cur.user.id)) {
+          acc.push(cur.user);
+        }
+        return acc;
+      },
+      []
+    );
 }
 
 function getAppBaseUrl(): string {
@@ -494,6 +517,10 @@ export async function handleMentionsInComment(params: {
       ? `On “${resource.title}”`
       : '';
 
+  // Deep-link to the resource in the family portal
+  const baseUrl = getAppBaseUrl();
+  const url = `${baseUrl}/family?familyId=${familyId}&${resource.type}Id=${resource.id}`;
+
   const recipientsNotified: string[] = [];
 
   for (const r of recipients) {
@@ -506,6 +533,7 @@ export async function handleMentionsInComment(params: {
         data: {
           kind: 'mention',
           resourceType: resource.type,
+          url,
           familyId,
           commentId,
           [`${resource.type}Id`]: resource.id
@@ -1787,6 +1815,8 @@ export async function createDocumentComment(
       
       // Send emails to mentioned users
       if (recipients.length > 0) {
+        const baseUrl = getAppBaseUrl();
+        const url = `${baseUrl}/family?familyId=${familyId}&documentId=${documentId}`;
         // In-app notifications for each recipient
         for (const r of recipients) {
           try {
@@ -1800,7 +1830,8 @@ export async function createDocumentComment(
                 resourceType: 'document',
                 documentId,
                 commentId: comment.id,
-                familyId
+                familyId,
+                url
               }
             });
           } catch (notifErr) {
