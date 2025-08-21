@@ -381,8 +381,9 @@ export async function createActivityRecord(
 function extractMentionNames(text: string): string[] {
   // Match @ followed by 1-4 capitalized tokens (names) separated by spaces.
   //   e.g. “@John Doe”, “@Mary-Anne O'Neil”, stops at the first non-name boundary.
+  // Relaxed: allow either upper- or lower-case first letter of each token
   const mentionRegex =
-    /@([A-Z][a-zA-Z'\\-]+(?:\\s+[A-Z][a-zA-Z'\\-]+){0,3})\\b/g;
+    /@([A-Za-z][A-Za-z'\\-]+(?:\\s+[A-Za-z][A-Za-z'\\-]+){0,3})\\b/g;
   const mentions = new Set<string>();
   let match;
   
@@ -415,14 +416,18 @@ async function resolveMentionedUsers(familyId: string, names: string[]): Promise
 
       return names.some(raw => {
         // 1) normalise candidate – remove trailing punctuation & lowercase
-        const cleaned = raw.replace(/[.,;:!?)]*$/, '').toLowerCase();
+        const cleaned = raw
+          .replace(/[.,;:!?)]*$/, '')      // trim trailing punctuation
+          .toLowerCase()
+          .replace(/\\s+/g, ' ')           // normalise inner whitespace
+          .trim();
 
         // 2) tokenise and build prefixes up to 4 tokens
         const tokens = cleaned.split(/\s+/).filter(Boolean).slice(0, 4);
         let prefix = '';
         for (let i = 0; i < tokens.length; i++) {
           prefix = (prefix ? prefix + ' ' : '') + tokens[i];
-          if (prefix === fullName) {
+          if (fullName.startsWith(prefix)) {
             return true;
           }
         }
