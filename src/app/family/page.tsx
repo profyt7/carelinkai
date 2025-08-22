@@ -19,6 +19,7 @@ import { DOCUMENT_TYPE_LABELS, formatFileSize } from '@/lib/types/family';
 import type { DocumentType } from '@/lib/types/family';
 import { FiPlus, FiSearch, FiTrash2, FiDownload, FiTag, FiMessageCircle, FiSend, FiEye, FiEyeOff, FiUpload } from 'react-icons/fi';
 import type { FamilyMember } from '@prisma/client';
+import MentionInput from '@/components/mentions/MentionInput';
 
 // Lazy load modal to avoid big bundle
 const DocumentUploadModal = dynamic(
@@ -105,6 +106,35 @@ export default function FamilyPage() {
       /* eslint-disable no-console */
       console.error('[FamilyPage] delete note error', err);
     }
+  };
+
+  const renderWithMentions = (text: string) => {
+    if (!text) return null;
+    const parts: Array<{ text: string; isMention: boolean }> = [];
+    const regex = /@([A-Za-z][A-Za-z'-]+(?:\s+[A-Za-z][A-Za-z'-]+){0,3})\b/g;
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = regex.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push({ text: text.slice(lastIndex, match.index), isMention: false });
+      }
+      parts.push({ text: match[0], isMention: true });
+      lastIndex = regex.lastIndex;
+    }
+    if (lastIndex < text.length) {
+      parts.push({ text: text.slice(lastIndex), isMention: false });
+    }
+    return (
+      <>
+        {parts.map((p, i) =>
+          p.isMention ? (
+            <span key={i} className="text-primary-700 font-medium">{p.text}</span>
+          ) : (
+            <span key={i}>{p.text}</span>
+          )
+        )}
+      </>
+    );
   };
 
   /* ---------------- Document-level comments ---------------- */
@@ -1218,7 +1248,7 @@ export default function FamilyPage() {
                                     <div className="font-medium">
                                       {comment.author.firstName} {comment.author.lastName}
                                     </div>
-                                    <div className="mt-1">{comment.content}</div>
+                                    <div className="mt-1">{renderWithMentions(comment.content)}</div>
                                     <div className="mt-1 text-gray-400">
                                       {new Date(comment.createdAt).toLocaleString()}
                                     </div>
@@ -1229,12 +1259,14 @@ export default function FamilyPage() {
                             
                             {/* Add document comment form */}
                             <div className="mt-3 flex items-center gap-2">
-                              <input
-                                type="text"
+                              <MentionInput
                                 value={docCommentsState[doc.id]?.newContent || ''}
-                                onChange={(e) => handleDocCommentChange(doc.id, e.target.value)}
+                                onChange={(v) => handleDocCommentChange(doc.id, v)}
+                                onSubmit={() => addDocComment(doc.id)}
                                 placeholder="Add a comment..."
-                                className="flex-1 rounded-md border border-gray-300 px-3 py-1 text-xs focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                                className=""
+                                members={members}
+                                ensureMembersLoaded={reloadMembers}
                               />
                               <button
                                 onClick={() => addDocComment(doc.id)}
@@ -1369,7 +1401,7 @@ export default function FamilyPage() {
                                       {commentsState[note.id]?.items.map((comment: any) => (
                                         <li key={comment.id} className="rounded bg-gray-50 p-2 text-xs">
                                           <div className="font-medium">{comment.author.firstName} {comment.author.lastName}</div>
-                                          <div className="mt-1">{comment.content}</div>
+                                          <div className="mt-1">{renderWithMentions(comment.content)}</div>
                                           <div className="mt-1 text-gray-400">{new Date(comment.createdAt).toLocaleString()}</div>
                                         </li>
                                       ))}
@@ -1378,12 +1410,14 @@ export default function FamilyPage() {
 
                                   {/* Add comment form */}
                                   <div className="mt-3 flex items-center gap-2">
-                                    <input
-                                      type="text"
+                                    <MentionInput
                                       value={commentsState[note.id]?.newContent || ''}
-                                      onChange={(e) => handleCommentChange(note.id, e.target.value)}
+                                      onChange={(v) => handleCommentChange(note.id, v)}
+                                      onSubmit={() => addComment(note.id)}
                                       placeholder="Add a comment..."
-                                      className="flex-1 rounded-md border border-gray-300 px-3 py-1 text-xs focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                                      className=""
+                                      members={members}
+                                      ensureMembersLoaded={reloadMembers}
                                     />
                                     <button
                                       onClick={() => addComment(note.id)}
@@ -1505,7 +1539,7 @@ export default function FamilyPage() {
                                           <div className="font-medium">
                                             {comment.author.firstName} {comment.author.lastName}
                                           </div>
-                                          <div className="mt-1">{comment.content}</div>
+                                          <div className="mt-1">{renderWithMentions(comment.content)}</div>
                                           <div className="mt-1 text-gray-400">
                                             {new Date(comment.createdAt).toLocaleString()}
                                           </div>
@@ -1516,14 +1550,16 @@ export default function FamilyPage() {
 
                                   {/* Add comment form */}
                                   <div className="mt-3 flex items-center gap-2">
-                                    <input
-                                      type="text"
+                                    <MentionInput
                                       value={galleryCommentsState[g.id]?.newContent || ''}
-                                      onChange={(e) =>
-                                        handleGalleryCommentChange(g.id, e.target.value)
+                                      onChange={(v) =>
+                                        handleGalleryCommentChange(g.id, v)
                                       }
+                                      onSubmit={() => addGalleryComment(g.id)}
                                       placeholder="Add a comment..."
-                                      className="flex-1 rounded-md border border-gray-300 px-3 py-1 text-xs focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                                      className=""
+                                      members={members}
+                                      ensureMembersLoaded={reloadMembers}
                                     />
                                     <button
                                       onClick={() => addGalleryComment(g.id)}
