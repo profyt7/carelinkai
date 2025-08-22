@@ -45,6 +45,22 @@ const notificationPrefsSchema = z.object({
     security: z.boolean().default(true),
     reminders: z.boolean().default(true),
     messages: z.boolean().default(true)
+  }).optional(),
+  channels: z.object({
+    mentions: z.object({
+      toast: z.boolean().default(true),
+      inApp: z.boolean().default(true),
+      email: z.boolean().default(true)
+    }).optional()
+  }).optional(),
+  digest: z.object({
+    enabled: z.boolean().default(false),
+    timeOfDay: z.string().optional(),           // "HH:MM" 24-hour format
+    timezone: z.string().optional(),
+    frequency: z.enum(["DAILY", "WEEKLY"]).default("DAILY")
+  }).optional(),
+  mutes: z.object({
+    threads: z.array(z.string()).default([])
   }).optional()
 });
 
@@ -115,6 +131,33 @@ const preferencesSchema = z.object({
     affiliatePrefsSchema
   ]).optional()
 });
+
+/**
+ * Deep merge helper for preferences objects
+ */
+function mergePrefs(a: any, b: any): any {
+  // If either is not a plain object, prefer the new value
+  if (
+    a === null ||
+    b === null ||
+    typeof a !== "object" ||
+    typeof b !== "object" ||
+    Array.isArray(a) ||
+    Array.isArray(b)
+  ) {
+    return b;
+  }
+
+  const out: Record<string, any> = { ...a };
+  for (const key of Object.keys(b)) {
+    if (key in a) {
+      out[key] = mergePrefs(a[key], b[key]);
+    } else {
+      out[key] = b[key];
+    }
+  }
+  return out;
+}
 
 /**
  * GET handler to retrieve user preferences
@@ -264,6 +307,12 @@ export async function PUT(request: NextRequest) {
     
     // Extract different types of preferences
     const { notifications, privacy, accessibility, display, roleSpecific } = validatedData;
+
+    // Deep-merge notificationPrefs instead of overwrite
+    const mergedNotificationPrefs = mergePrefs(
+      user.notificationPrefs || {},
+      notifications || {}
+    );
     
     // Update base user preferences
     const existingPreferences: Record<string, any> =
@@ -286,7 +335,10 @@ export async function PUT(request: NextRequest) {
       where: { id: userId },
       data: {
         preferences: updatedPreferences,
-        notificationPrefs: (notifications ?? user.notificationPrefs) ?? Prisma.JsonNull,
+        notificationPrefs:
+          Object.keys(mergedNotificationPrefs).length > 0
+            ? mergedNotificationPrefs
+            : Prisma.JsonNull,
         timezone: display?.timezone || undefined
       }
     });

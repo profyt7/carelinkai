@@ -459,11 +459,37 @@ async function sendMentionEmails(params: {
   familyId: string;
 }): Promise<void> {
   try {
+    // ------------------------------------------------------------
+    // 1) Load recipients' notificationPrefs to respect email opt-outs
+    // ------------------------------------------------------------
+    const recipientIds = params.recipients.map(r => r.id);
+    let prefsByUser: Record<string, any> = {};
+    try {
+      const users = await prisma.user.findMany({
+        where: { id: { in: recipientIds } },
+        select: { id: true, notificationPrefs: true }
+      });
+      prefsByUser = Object.fromEntries(
+        users.map(u => [u.id, u.notificationPrefs || {}])
+      );
+    } catch (_) {
+      prefsByUser = {};
+    }
+
     const baseUrl = getAppBaseUrl();
     const documentLink = `${baseUrl}/family?documentId=${params.document.id}`;
     const authorName = params.author.firstName || 'Someone';
     
     for (const recipient of params.recipients) {
+      // ------------------------------------------------------------
+      // 2) Respect per-user email preference for mention channel
+      // ------------------------------------------------------------
+      const ch = prefsByUser[recipient.id]?.channels?.mentions as any;
+      const allowEmail = ch?.email !== false; // default true
+      if (!allowEmail) {
+        continue;
+      }
+
       await EmailService.sendEmail({
         to: recipient.email,
         subject: `${authorName} mentioned you on "${params.document.title}"`,

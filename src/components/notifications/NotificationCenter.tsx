@@ -13,7 +13,9 @@ import {
   FiX,
   FiCheck,
   FiTrash2,
-  FiSettings
+  FiSettings,
+  FiVolume2,
+  FiVolumeX
 } from 'react-icons/fi';
 
 // Notification types
@@ -185,11 +187,39 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [activeToasts, setActiveToasts] = useState<Notification[]>([]);
   const [filter, setFilter] = useState<NotificationType | 'ALL'>('ALL');
+  const [prefs, setPrefs] = useState<any>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
   
+  // Helper functions for notification preferences
+  const isMention = (item: any) => item?.data?.kind === 'mention';
+  
+  const threadKey = (item: any) => {
+    const rt = item?.data?.resourceType;
+    if (!rt) return undefined;
+    const id = item?.data?.documentId || item?.data?.noteId || item?.data?.galleryId;
+    return id ? `${rt}:${id}` : undefined;
+  };
+  
+  const isMuted = (item: any) => {
+    const key = threadKey(item);
+    const m = prefs?.notifications?.mutes?.threads || [];
+    return key ? m.includes(key) : false;
+  };
+  
+  const allowToast = (item: any) => {
+    if (!isMention(item)) return true; // only gating mentions for now
+    const ch = prefs?.notifications?.channels?.mentions;
+    return ch?.toast !== false; // default true
+  };
+  
   // Show toast notification
   const showToast = useCallback((notification: Notification) => {
+    // Skip showing toast if notification is muted or toasts are disabled for this type
+    if (isMuted({ data: notification.metadata }) || !allowToast({ data: notification.metadata })) {
+      return;
+    }
+    
     setActiveToasts(prev => {
       // Limit number of active toasts
       const updated = [...prev];
@@ -206,7 +236,26 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
       }
       return prev;
     });
-  }, [maxToasts]);
+  }, [maxToasts, prefs]);
+
+  // Fetch user preferences
+  useEffect(() => {
+    const fetchPreferences = async () => {
+      try {
+        const response = await fetch('/api/profile/preferences');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data && data.data.preferences) {
+            setPrefs(data.data.preferences);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user preferences:', error);
+      }
+    };
+    
+    fetchPreferences();
+  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -262,7 +311,9 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
             } as Notification;
           });
           
-          setNotifications(mappedNotifications);
+          // Filter out muted notifications
+          const filtered = mappedNotifications.filter((n: any) => !isMuted({ data: n.metadata }));
+          setNotifications(filtered);
         }
       } catch (error) {
         console.error('Error fetching notifications:', error);
@@ -270,7 +321,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
     };
     
     fetchNotifications();
-  }, []);
+  }, [prefs]); // Re-fetch when preferences change
   
   // Set up SSE subscription if userId is provided
   useEffect(() => {
@@ -291,6 +342,11 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
         const data = JSON.parse(event.data);
         if (data.notification) {
           const item = data.notification;
+          
+          // Skip if notification is muted
+          if (isMuted(item)) {
+            return;
+          }
           
           // Map to component notification format
           let type: NotificationType = 'SYSTEM';
@@ -318,9 +374,13 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
             metadata: item.data
           };
           
-          // Add to notifications and show toast
+          // Add to notifications and show toast (if allowed)
           setNotifications(prev => [notification, ...prev]);
-          showToast(notification);
+          
+          // Only show toast if allowed by preferences
+          if (allowToast(item)) {
+            showToast(notification);
+          }
         }
       } catch (error) {
         console.error('Error processing SSE notification:', error);
@@ -370,7 +430,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
         eventSourceRef.current = null;
       }
     };
-  }, [userId, showToast]);
+  }, [userId, showToast, prefs]);
   
   // Get unread count
   const unreadCount = notifications.filter(n => !n.isRead).length;
@@ -439,6 +499,79 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
       }
     } catch (error) {
       console.error('Error marking notification as read:', error);
+    }
+  };
+  
+  // Mute thread
+  const muteThread = async (notification: Notification) => {
+    const key = threadKey({ data: notification.metadata });
+    if (!key) return;
+    
+    // Get current muted threads
+    const currentMutes = prefs?.notifications?.mutes?.threads || [];
+    
+    // Skip if already muted
+    if (currentMutes.includes(key)) return;
+    
+    // Update local state optimistically
+    const updatedMutes = [...currentMutes, key];
+    setPrefs((prev: any) => ({
+      ...prev,
+      notifications: {
+        ...(prev?.notifications || {}),
+        mutes: {
+          ...(prev?.notifications?.mutes || {}),
+          threads: updatedMutes
+        }
+      }
+    }));
+    
+    // Remove notification from list
+    removeNotification(notification.id);
+    
+    try {
+      // Send update to server
+      const response = await fetch('/api/profile/preferences', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          notifications: {
+            mutes: {
+              threads: updatedMutes
+            }
+          }
+        })
+      });
+      
+      if (!response.ok) {
+        // Revert on failure
+        setPrefs((prev: any) => ({
+          ...prev,
+          notifications: {
+            ...(prev?.notifications || {}),
+            mutes: {
+              ...(prev?.notifications?.mutes || {}),
+              threads: currentMutes
+            }
+          }
+        }));
+      }
+    } catch (error) {
+      console.error('Error updating notification preferences:', error);
+      
+      // Revert on failure
+      setPrefs((prev: any) => ({
+        ...prev,
+        notifications: {
+          ...(prev?.notifications || {}),
+          mutes: {
+            ...(prev?.notifications?.mutes || {}),
+            threads: currentMutes
+          }
+        }
+      }));
     }
   };
   
@@ -583,6 +716,15 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
                                   title="Mark as read"
                                 >
                                   <FiCheck className="h-3 w-3" />
+                                </button>
+                              )}
+                              {threadKey({ data: notification.metadata }) && (
+                                <button
+                                  onClick={() => muteThread(notification)}
+                                  className="mr-1 rounded-full p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600"
+                                  title="Mute thread"
+                                >
+                                  <FiVolumeX className="h-3 w-3" />
                                 </button>
                               )}
                               <button
