@@ -19,12 +19,20 @@ import { logger } from '@/lib/logger';
 import { sendEmail } from '@/lib/email/sendgrid';
 import { prisma } from '@/lib/prisma';
 
+import { AppointmentStatus, AppointmentType } from '@/lib/types/calendar';
 import type { 
-  Appointment, AppointmentStatus, AppointmentType,
-  AvailabilitySlot, BookingRequest, BookingResponse,
-  CalendarEvent, CalendarFilter, DateRange,
-  RecurrenceFrequency, RecurrencePattern, TimeSlot,
-  DayOfWeek, AvailabilityCheck
+  Appointment,
+  AvailabilitySlot,
+  BookingRequest,
+  BookingResponse,
+  CalendarEvent,
+  CalendarFilter,
+  DateRange,
+  RecurrenceFrequency,
+  RecurrencePattern,
+  TimeSlot,
+  DayOfWeek,
+  AvailabilityCheck
 } from '@/lib/types/calendar';
 
 // Needed for AvailabilitySlot.userRole until real role lookup is added
