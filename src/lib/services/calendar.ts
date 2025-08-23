@@ -38,6 +38,9 @@ import type {
 // Needed for AvailabilitySlot.userRole until real role lookup is added
 import { UserRole } from '@prisma/client';
 
+// Environment flag to control mock vs database usage
+const CALENDAR_USE_MOCKS = (process.env.CALENDAR_USE_MOCKS ?? 'true').toLowerCase() === 'true';
+
 // Default timezone placeholder
 const DEFAULT_TIMEZONE = 'UTC';
 
@@ -370,7 +373,7 @@ function generateMockAppointments(filter: CalendarFilter): Appointment[] {
   ];
   
   // ------------------------------------------------------------------
-  // Resolve “current user” (first participant filter entry, if supplied)
+  // Resolve "current user" (first participant filter entry, if supplied)
   // ------------------------------------------------------------------
   const currentUserId = filter.participantIds?.[0];
 
@@ -382,7 +385,7 @@ function generateMockAppointments(filter: CalendarFilter): Appointment[] {
     { id: 'user789', firstName: 'Robert', lastName: 'Johnson', role: 'OPERATOR' }
   ];
 
-  // Inject synthetic “current user” so mock data can reference them
+  // Inject synthetic "current user" so mock data can reference them
   if (currentUserId && !users.some(u => u.id === currentUserId)) {
     users.push({
       id: currentUserId,
@@ -783,6 +786,12 @@ function findMockAppointmentById(id: string): Appointment | null {
  */
 export async function getAppointments(filter: CalendarFilter): Promise<Appointment[]> {
   try {
+    // If using mocks, immediately return mock data
+    if (CALENDAR_USE_MOCKS) {
+      return generateMockAppointments(filter);
+    }
+
+    // Otherwise, use the database
     // Build the where clause based on filter criteria
     const where: any = {};
     
@@ -830,16 +839,6 @@ export async function getAppointments(filter: CalendarFilter): Promise<Appointme
       ];
     }
     
-    /**
-     * TEMPORARY DEV OVERRIDE
-     * -------------------------------------------------------------
-     * For UI testing we bypass the database and always return
-     * deterministic mock data.  Remove this `return` when ready
-     * to test against a real or local database again.
-     */
-    return generateMockAppointments(filter);
-
-    /*  <-- keep for future DB testing
     try {
       const appointments = await prisma.appointment.findMany({
         where,
@@ -854,7 +853,6 @@ export async function getAppointments(filter: CalendarFilter): Promise<Appointme
       logger.warn('Database query failed, using mock appointment data', { filter, error: dbError });
       return generateMockAppointments(filter);
     }
-    */
   } catch (error) {
     logger.error('Error getting appointments', { filter, error });
     throw new CalendarError(
@@ -871,23 +869,21 @@ export async function getAppointments(filter: CalendarFilter): Promise<Appointme
  */
 export async function getAppointment(id: string): Promise<Appointment> {
   try {
-    /**
-     * TEMPORARY DEV OVERRIDE
-     * -------------------------------------------------------------
-     * For UI testing we bypass the database and use mock data
-     */
-    const mockAppointment = findMockAppointmentById(id);
-    if (mockAppointment) {
-      return mockAppointment;
+    // If using mocks, use mock data
+    if (CALENDAR_USE_MOCKS) {
+      const mockAppointment = findMockAppointmentById(id);
+      if (mockAppointment) {
+        return mockAppointment;
+      }
+      
+      // If mock appointment not found, throw error
+      throw new CalendarError(
+        `Appointment with ID ${id} not found`,
+        'APPOINTMENT_NOT_FOUND'
+      );
     }
     
-    // If mock appointment not found, throw error
-    throw new CalendarError(
-      `Appointment with ID ${id} not found`,
-      'APPOINTMENT_NOT_FOUND'
-    );
-
-    /* Keep for future DB testing
+    // Otherwise, use the database
     const appointment = await prisma.appointment.findUnique({
       where: { id },
       include: {
@@ -904,7 +900,6 @@ export async function getAppointment(id: string): Promise<Appointment> {
     }
     
     return mapDbAppointmentToAppointment(appointment);
-    */
   } catch (error) {
     if (error instanceof CalendarError) {
       throw error;
@@ -925,37 +920,35 @@ export async function getAppointment(id: string): Promise<Appointment> {
  */
 export async function createAppointment(appointmentData: Omit<Appointment, 'id' | 'metadata'>): Promise<Appointment> {
   try {
-    /**
-     * TEMPORARY DEV OVERRIDE
-     * -------------------------------------------------------------
-     * For UI testing we bypass the database and simulate creating an appointment
-     */
-    // Generate a new unique ID
-    const id = `mock-appt-new-${uuidv4().substring(0, 8)}`;
-    
-    // Create the appointment with current timestamps
-    const now = new Date().toISOString();
-    
-    const newAppointment: Appointment = {
-      ...appointmentData,
-      id,
-      metadata: {
-        createdAt: now,
-        updatedAt: now
+    // If using mocks, use mock data
+    if (CALENDAR_USE_MOCKS) {
+      // Generate a new unique ID
+      const id = `mock-appt-new-${uuidv4().substring(0, 8)}`;
+      
+      // Create the appointment with current timestamps
+      const now = new Date().toISOString();
+      
+      const newAppointment: Appointment = {
+        ...appointmentData,
+        id,
+        metadata: {
+          createdAt: now,
+          updatedAt: now
+        }
+      };
+      
+      // Add to cache if it exists
+      if (mockAppointmentsCache) {
+        mockAppointmentsCache.appointments.push(newAppointment);
       }
-    };
-    
-    // Add to cache if it exists
-    if (mockAppointmentsCache) {
-      mockAppointmentsCache.appointments.push(newAppointment);
+      
+      // Always add to user-created appointments array to ensure it persists across filter changes
+      userCreatedAppointments.push(newAppointment);
+      
+      return newAppointment;
     }
     
-    // Always add to user-created appointments array to ensure it persists across filter changes
-    userCreatedAppointments.push(newAppointment);
-    
-    return newAppointment;
-
-    /* Keep for future DB testing
+    // Otherwise, use the database
     // Create the appointment in the database
     const appointment = await prisma.appointment.create({
       data: {
@@ -992,7 +985,6 @@ export async function createAppointment(appointmentData: Omit<Appointment, 'id' 
     });
     
     return mapDbAppointmentToAppointment(appointment);
-    */
   } catch (error) {
     logger.error('Error creating appointment', { appointmentData, error });
     throw new CalendarError(
@@ -1013,46 +1005,44 @@ export async function updateAppointment(
   appointmentData: Partial<Appointment>
 ): Promise<Appointment> {
   try {
-    /**
-     * TEMPORARY DEV OVERRIDE
-     * -------------------------------------------------------------
-     * For UI testing we bypass the database and simulate updating an appointment
-     */
-    // Find the appointment in mock data
-    const existingAppointment = await getAppointment(id);
-    
-    // Update the appointment
-    const updatedAppointment: Appointment = {
-      ...existingAppointment,
-      ...appointmentData,
-      metadata: {
-        ...existingAppointment.metadata,
-        updatedAt: new Date().toISOString()
+    // If using mocks, use mock data
+    if (CALENDAR_USE_MOCKS) {
+      // Find the appointment in mock data
+      const existingAppointment = await getAppointment(id);
+      
+      // Update the appointment
+      const updatedAppointment: Appointment = {
+        ...existingAppointment,
+        ...appointmentData,
+        metadata: {
+          ...existingAppointment.metadata,
+          updatedAt: new Date().toISOString()
+        }
+      };
+      
+      // Update in cache if it exists
+      if (mockAppointmentsCache) {
+        const index = mockAppointmentsCache.appointments.findIndex(a => a.id === id);
+        if (index !== -1) {
+          mockAppointmentsCache.appointments[index] = updatedAppointment;
+        }
       }
-    };
-    
-    // Update in cache if it exists
-    if (mockAppointmentsCache) {
-      const index = mockAppointmentsCache.appointments.findIndex(a => a.id === id);
-      if (index !== -1) {
-        mockAppointmentsCache.appointments[index] = updatedAppointment;
+      
+      // Update in userCreatedAppointments if it exists there
+      const userCreatedIndex = userCreatedAppointments.findIndex(a => a.id === id);
+      if (userCreatedIndex !== -1 || id.startsWith('mock-appt-new-')) {
+        if (userCreatedIndex !== -1) {
+          userCreatedAppointments[userCreatedIndex] = updatedAppointment;
+        } else {
+          // If this is a user-created appointment but not in the array yet, add it
+          userCreatedAppointments.push(updatedAppointment);
+        }
       }
+      
+      return updatedAppointment;
     }
     
-    // Update in userCreatedAppointments if it exists there
-    const userCreatedIndex = userCreatedAppointments.findIndex(a => a.id === id);
-    if (userCreatedIndex !== -1 || id.startsWith('mock-appt-new-')) {
-      if (userCreatedIndex !== -1) {
-        userCreatedAppointments[userCreatedIndex] = updatedAppointment;
-      } else {
-        // If this is a user-created appointment but not in the array yet, add it
-        userCreatedAppointments.push(updatedAppointment);
-      }
-    }
-    
-    return updatedAppointment;
-
-    /* Keep for future DB testing
+    // Otherwise, use the database
     // Get the existing appointment
     const existingAppointment = await prisma.appointment.findUnique({
       where: { id },
@@ -1149,7 +1139,6 @@ export async function updateAppointment(
     });
     
     return mapDbAppointmentToAppointment(finalAppointment!);
-    */
   } catch (error) {
     if (error instanceof CalendarError) {
       throw error;
@@ -1176,59 +1165,57 @@ export async function cancelAppointment(
   cancelledBy: string
 ): Promise<Appointment> {
   try {
-    /**
-     * TEMPORARY DEV OVERRIDE
-     * -------------------------------------------------------------
-     * For UI testing we bypass the database and simulate cancelling an appointment
-     */
-    // Find the appointment in mock data
-    const existingAppointment = await getAppointment(id);
-    
-    // Check if user has permission to cancel
-    const isCreator = existingAppointment.createdBy.id === cancelledBy;
-    const isParticipant = existingAppointment.participants.some(p => p.userId === cancelledBy);
-    
-    if (!isCreator && !isParticipant) {
-      throw new CalendarError(
-        'You do not have permission to cancel this appointment',
-        'PERMISSION_DENIED'
-      );
+    // If using mocks, use mock data
+    if (CALENDAR_USE_MOCKS) {
+      // Find the appointment in mock data
+      const existingAppointment = await getAppointment(id);
+      
+      // Check if user has permission to cancel
+      const isCreator = existingAppointment.createdBy.id === cancelledBy;
+      const isParticipant = existingAppointment.participants.some(p => p.userId === cancelledBy);
+      
+      if (!isCreator && !isParticipant) {
+        throw new CalendarError(
+          'You do not have permission to cancel this appointment',
+          'PERMISSION_DENIED'
+        );
+      }
+      
+      // Update the appointment with cancelled status
+      const cancelledAppointment: Appointment = {
+        ...existingAppointment,
+        status: AppointmentStatus.CANCELLED,
+        metadata: {
+          ...existingAppointment.metadata,
+          updatedAt: new Date().toISOString(),
+          cancelledAt: new Date().toISOString(),
+          cancelReason
+        }
+      };
+      
+      // Update in cache if it exists
+      if (mockAppointmentsCache) {
+        const index = mockAppointmentsCache.appointments.findIndex(a => a.id === id);
+        if (index !== -1) {
+          mockAppointmentsCache.appointments[index] = cancelledAppointment;
+        }
+      }
+      
+      // Update in userCreatedAppointments if it exists there
+      const userCreatedIndex = userCreatedAppointments.findIndex(a => a.id === id);
+      if (userCreatedIndex !== -1 || id.startsWith('mock-appt-new-')) {
+        if (userCreatedIndex !== -1) {
+          userCreatedAppointments[userCreatedIndex] = cancelledAppointment;
+        } else {
+          // If this is a user-created appointment but not in the array yet, add it
+          userCreatedAppointments.push(cancelledAppointment);
+        }
+      }
+      
+      return cancelledAppointment;
     }
     
-    // Update the appointment with cancelled status
-    const cancelledAppointment: Appointment = {
-      ...existingAppointment,
-      status: AppointmentStatus.CANCELLED,
-      metadata: {
-        ...existingAppointment.metadata,
-        updatedAt: new Date().toISOString(),
-        cancelledAt: new Date().toISOString(),
-        cancelReason
-      }
-    };
-    
-    // Update in cache if it exists
-    if (mockAppointmentsCache) {
-      const index = mockAppointmentsCache.appointments.findIndex(a => a.id === id);
-      if (index !== -1) {
-        mockAppointmentsCache.appointments[index] = cancelledAppointment;
-      }
-    }
-    
-    // Update in userCreatedAppointments if it exists there
-    const userCreatedIndex = userCreatedAppointments.findIndex(a => a.id === id);
-    if (userCreatedIndex !== -1 || id.startsWith('mock-appt-new-')) {
-      if (userCreatedIndex !== -1) {
-        userCreatedAppointments[userCreatedIndex] = cancelledAppointment;
-      } else {
-        // If this is a user-created appointment but not in the array yet, add it
-        userCreatedAppointments.push(cancelledAppointment);
-      }
-    }
-    
-    return cancelledAppointment;
-
-    /* Keep for future DB testing
+    // Otherwise, use the database
     // Get the existing appointment
     const existingAppointment = await prisma.appointment.findUnique({
       where: { id },
@@ -1256,16 +1243,22 @@ export async function cancelAppointment(
       );
     }
     
+    // Prepare metadata with cancellation info
+    const metadata = existingAppointment.metadata ? 
+      JSON.parse(existingAppointment.metadata as any) : {};
+    
+    const updatedMetadata = {
+      ...metadata,
+      cancelledAt: new Date().toISOString(),
+      cancelReason
+    };
+    
     // Cancel the appointment
     const cancelledAppointment = await prisma.appointment.update({
       where: { id },
       data: {
         status: AppointmentStatus.CANCELLED,
-        metadata: {
-          ...existingAppointment.metadata,
-          cancelledAt: new Date().toISOString(),
-          cancelReason
-        }
+        metadata: JSON.stringify(updatedMetadata)
       },
       include: {
         participants: true,
@@ -1274,7 +1267,6 @@ export async function cancelAppointment(
     });
     
     return mapDbAppointmentToAppointment(cancelledAppointment);
-    */
   } catch (error) {
     if (error instanceof CalendarError) {
       throw error;
@@ -1301,59 +1293,57 @@ export async function completeAppointment(
   completedBy: string
 ): Promise<Appointment> {
   try {
-    /**
-     * TEMPORARY DEV OVERRIDE
-     * -------------------------------------------------------------
-     * For UI testing we bypass the database and simulate completing an appointment
-     */
-    // Find the appointment in mock data
-    const existingAppointment = await getAppointment(id);
-    
-    // Check if user has permission to mark as complete
-    const isCreator = existingAppointment.createdBy.id === completedBy;
-    const isParticipant = existingAppointment.participants.some(p => p.userId === completedBy);
-    
-    if (!isCreator && !isParticipant) {
-      throw new CalendarError(
-        'You do not have permission to mark this appointment as complete',
-        'PERMISSION_DENIED'
-      );
+    // If using mocks, use mock data
+    if (CALENDAR_USE_MOCKS) {
+      // Find the appointment in mock data
+      const existingAppointment = await getAppointment(id);
+      
+      // Check if user has permission to mark as complete
+      const isCreator = existingAppointment.createdBy.id === completedBy;
+      const isParticipant = existingAppointment.participants.some(p => p.userId === completedBy);
+      
+      if (!isCreator && !isParticipant) {
+        throw new CalendarError(
+          'You do not have permission to mark this appointment as complete',
+          'PERMISSION_DENIED'
+        );
+      }
+      
+      // Update the appointment with completed status
+      const completedAppointment: Appointment = {
+        ...existingAppointment,
+        status: AppointmentStatus.COMPLETED,
+        metadata: {
+          ...existingAppointment.metadata,
+          updatedAt: new Date().toISOString(),
+          completedAt: new Date().toISOString(),
+          completionNotes
+        }
+      };
+      
+      // Update in cache if it exists
+      if (mockAppointmentsCache) {
+        const index = mockAppointmentsCache.appointments.findIndex(a => a.id === id);
+        if (index !== -1) {
+          mockAppointmentsCache.appointments[index] = completedAppointment;
+        }
+      }
+      
+      // Update in userCreatedAppointments if it exists there
+      const userCreatedIndex = userCreatedAppointments.findIndex(a => a.id === id);
+      if (userCreatedIndex !== -1 || id.startsWith('mock-appt-new-')) {
+        if (userCreatedIndex !== -1) {
+          userCreatedAppointments[userCreatedIndex] = completedAppointment;
+        } else {
+          // If this is a user-created appointment but not in the array yet, add it
+          userCreatedAppointments.push(completedAppointment);
+        }
+      }
+      
+      return completedAppointment;
     }
     
-    // Update the appointment with completed status
-    const completedAppointment: Appointment = {
-      ...existingAppointment,
-      status: AppointmentStatus.COMPLETED,
-      metadata: {
-        ...existingAppointment.metadata,
-        updatedAt: new Date().toISOString(),
-        completedAt: new Date().toISOString(),
-        completionNotes
-      }
-    };
-    
-    // Update in cache if it exists
-    if (mockAppointmentsCache) {
-      const index = mockAppointmentsCache.appointments.findIndex(a => a.id === id);
-      if (index !== -1) {
-        mockAppointmentsCache.appointments[index] = completedAppointment;
-      }
-    }
-    
-    // Update in userCreatedAppointments if it exists there
-    const userCreatedIndex = userCreatedAppointments.findIndex(a => a.id === id);
-    if (userCreatedIndex !== -1 || id.startsWith('mock-appt-new-')) {
-      if (userCreatedIndex !== -1) {
-        userCreatedAppointments[userCreatedIndex] = completedAppointment;
-      } else {
-        // If this is a user-created appointment but not in the array yet, add it
-        userCreatedAppointments.push(completedAppointment);
-      }
-    }
-    
-    return completedAppointment;
-
-    /* Keep for future DB testing
+    // Otherwise, use the database
     // Get the existing appointment
     const existingAppointment = await prisma.appointment.findUnique({
       where: { id },
@@ -1381,16 +1371,22 @@ export async function completeAppointment(
       );
     }
     
+    // Prepare metadata with completion info
+    const metadata = existingAppointment.metadata ? 
+      JSON.parse(existingAppointment.metadata as any) : {};
+    
+    const updatedMetadata = {
+      ...metadata,
+      completedAt: new Date().toISOString(),
+      completionNotes
+    };
+    
     // Mark the appointment as complete
     const completedAppointment = await prisma.appointment.update({
       where: { id },
       data: {
         status: AppointmentStatus.COMPLETED,
-        metadata: {
-          ...existingAppointment.metadata,
-          completedAt: new Date().toISOString(),
-          completionNotes
-        }
+        metadata: JSON.stringify(updatedMetadata)
       },
       include: {
         participants: true,
@@ -1399,7 +1395,6 @@ export async function completeAppointment(
     });
     
     return mapDbAppointmentToAppointment(completedAppointment);
-    */
   } catch (error) {
     if (error instanceof CalendarError) {
       throw error;

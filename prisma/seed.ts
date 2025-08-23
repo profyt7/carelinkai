@@ -16,7 +16,7 @@
    Caregivers, Affiliates, etc. – see generated output or Prisma Studio
    ----------------------------------------------------------------- */
 
-import { PrismaClient, UserRole, UserStatus, HomeStatus, CareLevel, InquiryStatus, BookingStatus } from '@prisma/client';
+import { PrismaClient, UserRole, UserStatus, HomeStatus, CareLevel, InquiryStatus, BookingStatus, AppointmentType, AppointmentStatus } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -56,6 +56,9 @@ async function main() {
 
   // Create messages between users
   await createMessages(familyUsers, operatorUsers, caregiverUsers);
+
+  // Create calendar appointments
+  await createCalendarSeedData(familyUsers, operatorUsers, caregiverUsers);
 
   // Create audit logs
   await createAuditLogs(adminUser.id);
@@ -676,6 +679,127 @@ async function createMessages(familyUsers: any[], operatorUsers: any[], caregive
   }
   
   console.log('✅ Created messages');
+}
+
+/**
+ * Create calendar appointments with participants
+ */
+async function createCalendarSeedData(
+  familyUsers: any[],
+  operatorUsers: any[],
+  caregiverUsers: any[]
+) {
+  console.log('📅 Creating calendar appointments...');
+
+  // Pull supporting data
+  const homes = await prisma.assistedLivingHome.findMany();
+
+  // Flatten resident list for easy random pick
+  const residents = await prisma.resident.findMany();
+
+  const allCreators = [
+    ...familyUsers.map((f: any) => f.user),
+    ...operatorUsers.map((o: any) => o.user),
+    ...caregiverUsers.map((c: any) => c.user),
+  ];
+
+  const appointmentTypes = Object.values(AppointmentType);
+
+  // Generate ~40 appointments
+  const apptCount = 40 + Math.floor(Math.random() * 5);
+
+  for (let i = 0; i < apptCount; i++) {
+    // Creator
+    const creator = allCreators[Math.floor(Math.random() * allCreators.length)];
+
+    // Timing – somewhere within ±30 days
+    const offsetDays = Math.floor(Math.random() * 60) - 30; // -30 .. +29
+    const startHour = 8 + Math.floor(Math.random() * 10); // 8-17
+    const durationMin = [30, 60, 90][Math.floor(Math.random() * 3)];
+    const startTime = new Date();
+    startTime.setDate(startTime.getDate() + offsetDays);
+    startTime.setHours(startHour, Math.random() < 0.5 ? 0 : 30, 0, 0);
+    const endTime = new Date(startTime.getTime() + durationMin * 60000);
+
+    // Type & status
+    const type = appointmentTypes[Math.floor(Math.random() * appointmentTypes.length)];
+    const statusRand = Math.random();
+    const status: AppointmentStatus =
+      statusRand < 0.6
+        ? 'CONFIRMED'
+        : statusRand < 0.8
+        ? 'PENDING'
+        : statusRand < 0.9
+        ? 'COMPLETED'
+        : 'CANCELLED';
+
+    // Optional home / resident
+    const homeId = Math.random() > 0.4 && homes.length
+      ? homes[Math.floor(Math.random() * homes.length)].id
+      : null;
+    const residentId = Math.random() > 0.5 && residents.length
+      ? residents[Math.floor(Math.random() * residents.length)].id
+      : null;
+
+    // Simple location json
+    const location =
+      Math.random() > 0.3
+        ? {
+            address: `${100 + Math.floor(Math.random() * 900)} ${getRandomStreetName()}`,
+            room: `Room ${Math.floor(Math.random() * 200)}`,
+          }
+        : null;
+
+    // Insert appointment
+    const appointment = await prisma.appointment.create({
+      data: {
+        type,
+        status,
+        title: `${type.replace('_', ' ')} #${i + 1}`,
+        description: `Auto-generated ${type.toLowerCase()} for seed data.`,
+        startTime,
+        endTime,
+        location: location ? JSON.stringify(location) : null,
+        homeId,
+        residentId,
+        createdById: creator.id,
+        notes: null,
+        customFields: null,
+        recurrence: null,
+        reminders: null,
+        metadata: JSON.stringify({
+          createdAt: new Date().toISOString(),
+        }),
+      },
+    });
+
+    // Participants 1-3 excluding creator
+    const participantPool = allCreators.filter((u) => u.id !== creator.id);
+    const participantCount = 1 + Math.floor(Math.random() * 3);
+    const chosenParticipants: any[] = [];
+    while (chosenParticipants.length < participantCount && participantPool.length) {
+      const pick = participantPool.splice(
+        Math.floor(Math.random() * participantPool.length),
+        1
+      )[0];
+      chosenParticipants.push(pick);
+    }
+
+    if (chosenParticipants.length) {
+      await prisma.appointmentParticipant.createMany({
+        data: chosenParticipants.map((p) => ({
+          appointmentId: appointment.id,
+          userId: p.id,
+          name: `${p.firstName} ${p.lastName}`,
+          role: p.role,
+          status: Math.random() > 0.2 ? 'ACCEPTED' : 'PENDING',
+          notes: null,
+        })),
+      });
+    }
+  }
+
+  console.log(`✅ Created ${apptCount} appointments`);
 }
 
 /**
