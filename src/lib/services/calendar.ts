@@ -361,13 +361,28 @@ function generateMockAppointments(filter: CalendarFilter): Appointment[] {
     AppointmentStatus.RESCHEDULED
   ];
   
-  // Sample users
-  const users = [
+  // ------------------------------------------------------------------
+  // Resolve “current user” (first participant filter entry, if supplied)
+  // ------------------------------------------------------------------
+  const currentUserId = filter.participantIds?.[0];
+
+  // Sample users (will be augmented with current user if not present)
+  const users: Array<{ id: string; firstName: string; lastName: string; role: string }> = [
     { id: 'cmdhjmp2x0000765nc52usnp7', firstName: 'Admin', lastName: 'User', role: 'ADMIN' },
     { id: 'user123', firstName: 'John', lastName: 'Doe', role: 'FAMILY' },
     { id: 'user456', firstName: 'Jane', lastName: 'Smith', role: 'CAREGIVER' },
     { id: 'user789', firstName: 'Robert', lastName: 'Johnson', role: 'OPERATOR' }
   ];
+
+  // Inject synthetic “current user” so mock data can reference them
+  if (currentUserId && !users.some(u => u.id === currentUserId)) {
+    users.push({
+      id: currentUserId,
+      firstName: 'You',
+      lastName: 'User',
+      role: 'FAMILY'
+    });
+  }
   
   // Sample homes
   const homes = [
@@ -528,8 +543,13 @@ function generateMockAppointments(filter: CalendarFilter): Appointment[] {
       status = AppointmentStatus.CANCELLED;
     }
     
-    // Random creator (weighted toward admin) - using seeded random
-    const creator = random() < 0.7 ? users[0] : users[Math.floor(random() * users.length)];
+    // Random creator:
+    //  • 50% chance the current logged-in user is the creator (if defined)
+    //  • Otherwise fall back to previous weighted logic favouring Admin
+    const useCurrentAsCreator = currentUserId ? random() < 0.5 : false;
+    const creator = useCurrentAsCreator
+      ? { id: currentUserId!, firstName: 'You', lastName: 'User', role: 'FAMILY' }
+      : (random() < 0.7 ? users[0] : users[Math.floor(random() * users.length)]);
     
     // Random title and description based on type - using seeded random
     const titles = appointmentTitles[appointmentType];
@@ -563,6 +583,19 @@ function generateMockAppointments(filter: CalendarFilter): Appointment[] {
         role: user.role,
         status: random() < 0.8 ? 'ACCEPTED' : 'PENDING',
         notes: random() < 0.3 ? 'Some notes about participation' : undefined
+      });
+    }
+
+    // Ensure current user is involved if they are not already creator/participant
+    if (currentUserId &&
+        creator.id !== currentUserId &&
+        !participants.some(p => p.userId === currentUserId)) {
+      participants.push({
+        userId: currentUserId,
+        name: 'You User',
+        role: 'FAMILY',
+        status: 'ACCEPTED',
+        notes: undefined
       });
     }
     
