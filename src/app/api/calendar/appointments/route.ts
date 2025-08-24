@@ -370,7 +370,19 @@ export async function GET(request: NextRequest) {
     
     // Participant ID
     if (params['participantId']) {
-      filter.participantIds = [params['participantId']];
+      // ────────────────────────────────────────────────────────────────
+      // Support special values coming from the non-admin “scope toggle”
+      //   • 'all' – show every appointment that the role is allowed to
+      //   • 'my'  – force only the current user's appointments
+      //   • any other string – treat as concrete participantId
+      // ────────────────────────────────────────────────────────────────
+      if (params['participantId'] === 'all') {
+        // leave filter.participantIds undefined  → API will return all
+      } else if (params['participantId'] === 'my') {
+        filter.participantIds = [session.user.id];
+      } else {
+        filter.participantIds = [params['participantId']];
+      }
     } else {
       // Privilege-based default filtering
       const role = session.user.role as UserRole;

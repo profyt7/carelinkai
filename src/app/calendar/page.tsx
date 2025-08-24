@@ -32,6 +32,12 @@ export default function CalendarPage() {
   const [statusFilters, setStatusFilters] = useState<AppointmentStatus[]>([]);
   const [refreshKey, setRefreshKey] = useState(0); // Used to force refresh
 
+  // ------------------------------------------------------------------
+  // Non-admin "My vs All" view-scope toggle
+  // ------------------------------------------------------------------
+  type ViewScope = "my" | "all";
+  const [viewScope, setViewScope] = useState<ViewScope>("my");
+
   // Get calendar data using our hook
   const {
     appointments,
@@ -101,6 +107,25 @@ export default function CalendarPage() {
       }
     },
     [refreshSource, fetchAppointments]
+  );
+
+  /**
+   * Handle scope switch between "my" and "all" (non-admin)
+   */
+  const handleScopeChange = useCallback(
+    async (scope: ViewScope) => {
+      // Optimistically update UI
+      setViewScope(scope);
+
+      if (scope === "my") {
+        setFilter({ participantIds: [session?.user?.id || "my"] });
+      } else {
+        setFilter({ participantIds: ["all"] });
+      }
+
+      await fetchAppointments();
+    },
+    [setFilter, fetchAppointments, session?.user?.id]
   );
 
   /**
@@ -313,6 +338,29 @@ export default function CalendarPage() {
           >
             <FiPlus className="mr-1.5" /> New Appointment
           </button>
+
+          {/* View-Scope Toggle (only for non-privileged roles) */}
+          {!(session?.user?.role === UserRole.ADMIN ||
+              session?.user?.role === UserRole.STAFF ||
+              session?.user?.role === UserRole.OPERATOR) && (
+            <div className="flex rounded-md border border-neutral-200 bg-white">
+              {(["my", "all"] as ViewScope[]).map((scopeOpt) => (
+                <button
+                  key={scopeOpt}
+                  onClick={() => handleScopeChange(scopeOpt)}
+                  className={`px-2 py-1 text-xs font-medium ${
+                    viewScope === scopeOpt
+                      ? "bg-primary-500 text-white"
+                      : "text-neutral-700 hover:bg-neutral-100"
+                  } ${scopeOpt === "my" ? "rounded-l-md" : "rounded-r-md"}`}
+                  style={{ minWidth: "48px" }}
+                >
+                  {scopeOpt === "my" ? "My" : "All"}
+                </button>
+              ))}
+            </div>
+          )}
+
           <button
             onClick={handleExportCalendar}
             className="flex items-center rounded-md bg-white px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
