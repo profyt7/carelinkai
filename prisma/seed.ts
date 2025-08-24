@@ -24,6 +24,28 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting database seed process...');
 
+  // ------------------------------------------------------------------
+  // If the database already contains users, assume core seed data exists
+  // and run *only* the calendar-specific seeding to avoid unique clashes.
+  // ------------------------------------------------------------------
+  const existingUsersCount = await prisma.user.count();
+  if (existingUsersCount > 0) {
+    console.log('ℹ️ Users already exist — running calendar-only seed');
+
+    // Build minimal user role groupings expected by createCalendarSeedData
+    const familyUsers   = (await prisma.user.findMany({ where: { role: 'FAMILY'    } }))
+                            .map(u => ({ user: u }));
+    const operatorUsers = (await prisma.user.findMany({ where: { role: 'OPERATOR'  } }))
+                            .map(u => ({ user: u }));
+    const caregiverUsers= (await prisma.user.findMany({ where: { role: 'CAREGIVER' } }))
+                            .map(u => ({ user: u }));
+
+    await createCalendarSeedData(familyUsers, operatorUsers, caregiverUsers);
+
+    console.log('✅ Calendar seeding completed on existing DB.');
+    return; // Skip full seed
+  }
+
   // Clear existing data (comment out if you want to keep existing data)
   // NOTE:
   // ------------------------------------------------------------------
