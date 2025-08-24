@@ -785,14 +785,16 @@ function findMockAppointmentById(id: string): Appointment | null {
  * @returns Array of appointments
  */
 export async function getAppointments(filter: CalendarFilter): Promise<Appointment[]> {
-  try {
-    // If using mocks, immediately return mock data
-    if (CALENDAR_USE_MOCKS) {
-      return generateMockAppointments(filter);
-    }
+  return getAppointmentsFromSource(filter, 'auto');
+}
 
-    // Otherwise, use the database
-    // Build the where clause based on filter criteria
+/**
+ * INTERNAL – DB query implementation extracted from the old getAppointments
+ * so it can be reused by the new getAppointmentsFromSource with different
+ * runtime source rules.
+ */
+async function fetchAppointmentsFromDb(filter: CalendarFilter): Promise<Appointment[]> {
+  // Build the where clause based on filter criteria
     const where: any = {};
     
     if (filter.appointmentTypes && filter.appointmentTypes.length > 0) {
@@ -853,12 +855,39 @@ export async function getAppointments(filter: CalendarFilter): Promise<Appointme
       logger.warn('Database query failed, using mock appointment data', { filter, error: dbError });
       return generateMockAppointments(filter);
     }
-  } catch (error) {
-    logger.error('Error getting appointments', { filter, error });
-    throw new CalendarError(
-      'Failed to get appointments',
-      'GET_APPOINTMENTS_FAILED'
-    );
+
+}
+
+/**
+ * Returns appointments according to a runtime source override.
+ * @param filter Filter criteria
+ * @param source 'auto' (default → env flag), 'db', or 'mocks'
+ */
+export async function getAppointmentsFromSource(
+  filter: CalendarFilter,
+  source: 'auto' | 'db' | 'mocks' = 'auto'
+): Promise<Appointment[]> {
+  // Resolve effective source
+  let effective: 'db' | 'mocks';
+  if (source === 'auto') {
+    effective = CALENDAR_USE_MOCKS ? 'mocks' : 'db';
+  } else {
+    effective = source;
+  }
+
+  if (effective === 'mocks') {
+    // Always return mock data
+    return generateMockAppointments(filter);
+  }
+
+  // Try DB first, fallback to mocks on failure
+  try {
+    return await fetchAppointmentsFromDb(filter);
+  } catch (dbErr) {
+    logger.warn('DB fetch failed in getAppointmentsFromSource, falling back to mocks', {
+      error: dbErr
+    });
+    return generateMockAppointments(filter);
   }
 }
 

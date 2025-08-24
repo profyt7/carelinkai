@@ -22,6 +22,7 @@ import {
   updateAppointment, 
   cancelAppointment,
   completeAppointment,
+  getAppointmentsFromSource,
   CalendarError
 } from '@/lib/services/calendar';
 import { 
@@ -317,6 +318,13 @@ export async function GET(request: NextRequest) {
     if (url.searchParams.getAll('status').length > 1) {
       params['status'] = url.searchParams.getAll('status');
     }
+
+    // --------------------------------------------------------------
+    // Determine runtime calendar source override
+    // --------------------------------------------------------------
+    const cookieSource = request.cookies.get('calendar_source')?.value;
+    const sourceParam = url.searchParams.get('source');
+    const sourceOverride = (sourceParam || cookieSource || 'auto') as 'auto' | 'db' | 'mocks';
     
     // 3. Build filter criteria directly without strict validation
     const filter: any = {};
@@ -364,8 +372,16 @@ export async function GET(request: NextRequest) {
     if (params['participantId']) {
       filter.participantIds = [params['participantId']];
     } else {
-      // By default, show appointments where the current user is involved
-      filter.participantIds = [session.user.id];
+      // Privilege-based default filtering
+      const role = session.user.role as UserRole;
+      if (
+        role !== UserRole.ADMIN &&
+        role !== UserRole.STAFF &&
+        role !== UserRole.OPERATOR
+      ) {
+        // Non-privileged users see only their own related appointments
+        filter.participantIds = [session.user.id];
+      }
     }
     
     // Search
@@ -374,7 +390,7 @@ export async function GET(request: NextRequest) {
     }
     
     // 4. Get appointments from calendar service
-    const appointments = await getAppointments(filter);
+    const appointments = await getAppointmentsFromSource(filter, sourceOverride);
     
     // 5. Return formatted response
     return NextResponse.json({

@@ -46,6 +46,63 @@ export default function CalendarPage() {
     setFilter
   } = useCalendar();
 
+  // ------------------------------------------------------------------
+  // Runtime calendar source override (admin tool)
+  // ------------------------------------------------------------------
+  // Valid source options
+  type SourceOption = "auto" | "db" | "mocks";
+
+  // State for override selected by the user and the effective source
+  const [sourceOverride, setSourceOverride] = useState<SourceOption>("auto");
+  const [effectiveSource, setEffectiveSource] = useState<SourceOption>("auto");
+
+  /**
+   * Fetch current calendar source (override + effective) from API
+   */
+  const refreshSource = useCallback(async () => {
+    try {
+      const res = await fetch("/api/calendar/source");
+      const json = await res.json();
+      if (json?.success) {
+        setSourceOverride((json.data?.override || "auto") as SourceOption);
+        setEffectiveSource((json.data?.effective || "auto") as SourceOption);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  // Run once on mount to populate source state
+  useEffect(() => {
+    refreshSource();
+  }, [refreshSource]);
+
+  /**
+   * Update the calendar source and refresh data
+   */
+  const handleSourceChange = useCallback(
+    async (opt: SourceOption) => {
+      try {
+        const res = await fetch("/api/calendar/source", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ source: opt }),
+        });
+        const json = await res.json();
+        if (json?.success) {
+          await refreshSource();
+          await fetchAppointments();
+          toast.success(`Calendar source set to ${opt.toUpperCase()}`);
+        } else {
+          toast.error(json?.error || "Failed to set source");
+        }
+      } catch {
+        toast.error("Failed to set calendar source");
+      }
+    },
+    [refreshSource, fetchAppointments]
+  );
+
   /**
    * Callback fired by CalendarView whenever it creates / updates / cancels
    * an appointment.  We immediately refetch appointments and bump the
@@ -352,6 +409,32 @@ export default function CalendarPage() {
                 >
                   <FiUsers className="mr-2" /> Staff Scheduling
                 </button>
+
+                {/* Calendar Source Selector */}
+                <div className="pt-4">
+                  <p className="mb-2 text-xs font-semibold text-neutral-600">
+                    Calendar Source
+                    <span className="ml-2 text-[10px] font-normal italic text-neutral-400">
+                      Effective:{" "}
+                      {effectiveSource === "db" ? "Database" : effectiveSource === "mocks" ? "Mock" : "Auto"}
+                    </span>
+                  </p>
+                  <div className="flex space-x-1">
+                    {(["auto", "db", "mocks"] as SourceOption[]).map((opt) => (
+                      <button
+                        key={opt}
+                        onClick={() => handleSourceChange(opt)}
+                        className={`flex-1 rounded-md border px-2 py-1 text-xs font-medium ${
+                          sourceOverride === opt
+                            ? "border-primary-500 bg-primary-50 text-primary-700"
+                            : "border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50"
+                        }`}
+                      >
+                        {opt.toUpperCase()}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           )}
