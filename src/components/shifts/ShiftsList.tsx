@@ -378,22 +378,31 @@ export default function ShiftsList({ role }: ShiftsListProps) {
                     <div className="space-y-2">
                       {/* OFFER ACTION */}
                       {shift.status === 'OPEN' && (
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="text"
-                            placeholder="Caregiver ID"
-                            value={offerData[shift.id] || ''}
-                            onChange={(e) => handleCaregiverIdChange(shift.id, e.target.value)}
-                            className="form-input text-xs py-1 px-2 rounded border-neutral-300 w-32"
-                          />
-                          <button
-                            onClick={() => handleOffer(shift.id)}
-                            disabled={actionInProgress === shift.id}
-                            className="text-xs py-1 px-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {actionInProgress === shift.id ? 'Offering...' : 'Offer'}
-                          </button>
-                        </div>
+                        <>
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="text"
+                              aria-label="Caregiver ID"
+                              placeholder="e.g., cg_123"
+                              value={offerData[shift.id] || ''}
+                              onChange={(e) => handleCaregiverIdChange(shift.id, e.target.value)}
+                              className="form-input text-xs py-1 px-2 rounded border-neutral-300 w-32"
+                            />
+                            <button
+                              onClick={() => handleOffer(shift.id)}
+                              disabled={
+                                actionInProgress === shift.id ||
+                                !(offerData[shift.id]?.trim())
+                              }
+                              className="text-xs py-1 px-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {actionInProgress === shift.id ? 'Offering...' : 'Offer'}
+                            </button>
+                          </div>
+                          <p className="text-[10px] text-neutral-500 mt-1">
+                            Enter the caregiver&nbsp;ID from the applications list before offering.
+                          </p>
+                        </>
                       )}
 
                       {/* CONFIRM ACTION */}

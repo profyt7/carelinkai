@@ -15,7 +15,8 @@
     "generate:vapid": "node scripts/generate-vapid.js --update-env",
     "generate:icons": "node scripts/generate-pwa-icons.js",
     "test:pwa": "node scripts/test-pwa.js",
-    "build:pwa": "npm run build && npm run test:pwa"
+    "build:pwa": "npm run build && npm run test:pwa",
+    "test:e2e": "playwright test --reporter=list"
   },
   "prisma": {
     "seed": "ts-node --transpile-only prisma/seed.ts"
@@ -77,6 +78,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
     "@testing-library/jest-dom": "^6.1.4",
     "@testing-library/react": "^14.1.2",
     "@types/bcryptjs": "^2.4.2",
