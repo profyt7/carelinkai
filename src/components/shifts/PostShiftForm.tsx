@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from 'react';
+import { toast } from 'react-hot-toast';
 import type { FormEvent } from 'react';
 
 interface Home {
@@ -40,17 +41,17 @@ export default function PostShiftForm({ homes }: PostShiftFormProps) {
     
     // Basic validation
     if (!formData.homeId) {
-      window.alert('Please select a home');
+      toast.error('Please select a home');
       return;
     }
     
     if (!formData.startTime) {
-      window.alert('Please select a start time');
+      toast.error('Please select a start time');
       return;
     }
     
     if (!formData.endTime) {
-      window.alert('Please select an end time');
+      toast.error('Please select an end time');
       return;
     }
     
@@ -58,13 +59,13 @@ export default function PostShiftForm({ homes }: PostShiftFormProps) {
     const endTime = new Date(formData.endTime);
     
     if (endTime <= startTime) {
-      window.alert('End time must be after start time');
+      toast.error('End time must be after start time');
       return;
     }
     
     const hourlyRate = parseFloat(formData.hourlyRate);
     if (isNaN(hourlyRate) || hourlyRate <= 0) {
-      window.alert('Please enter a valid hourly rate');
+      toast.error('Please enter a valid hourly rate');
       return;
     }
     
@@ -95,7 +96,7 @@ export default function PostShiftForm({ homes }: PostShiftFormProps) {
       }
       
       // Success
-      window.alert('Shift posted successfully!');
+      toast.success('Shift posted successfully!');
       
       // Reset form
       setFormData({
@@ -106,7 +107,7 @@ export default function PostShiftForm({ homes }: PostShiftFormProps) {
         notes: ''
       });
     } catch (error) {
-      window.alert(`Error: ${error instanceof Error ? error.message : 'Failed to post shift'}`);
+      toast.error(error instanceof Error ? error.message : 'Failed to post shift');
     } finally {
       setIsSubmitting(false);
     }

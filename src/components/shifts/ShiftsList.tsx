@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { UserRole, ShiftStatus, ShiftApplicationStatus } from '@prisma/client';
+import { toast } from 'react-hot-toast';
 
 interface Shift {
   id: string;
@@ -99,10 +100,10 @@ export default function ShiftsList({ role }: ShiftsListProps) {
         throw new Error(result.error || 'Failed to apply for shift');
       }
 
-      window.alert('Successfully applied for the shift!');
+      toast.success('Successfully applied for the shift!');
       fetchShifts(); // Refresh the list
     } catch (err) {
-      window.alert(`Error: ${err instanceof Error ? err.message : 'Failed to apply for shift'}`);
+      toast.error(err instanceof Error ? err.message : 'Failed to apply for shift');
     } finally {
       setActionInProgress(null);
     }
@@ -114,7 +115,7 @@ export default function ShiftsList({ role }: ShiftsListProps) {
     
     const caregiverId = offerData[shiftId];
     if (!caregiverId || caregiverId.trim() === '') {
-      window.alert('Please enter a caregiver ID');
+      toast.error('Please enter a caregiver ID');
       return;
     }
 
@@ -135,7 +136,7 @@ export default function ShiftsList({ role }: ShiftsListProps) {
         throw new Error(result.error || 'Failed to offer shift');
       }
 
-      window.alert('Successfully offered the shift to the caregiver!');
+      toast.success('Successfully offered the shift to the caregiver!');
       fetchShifts(); // Refresh the list
       
       // Clear the input field
@@ -144,7 +145,7 @@ export default function ShiftsList({ role }: ShiftsListProps) {
         [shiftId]: ''
       }));
     } catch (err) {
-      window.alert(`Error: ${err instanceof Error ? err.message : 'Failed to offer shift'}`);
+      toast.error(err instanceof Error ? err.message : 'Failed to offer shift');
     } finally {
       setActionInProgress(null);
     }
@@ -171,10 +172,10 @@ export default function ShiftsList({ role }: ShiftsListProps) {
         throw new Error(result.error || 'Failed to confirm shift');
       }
 
-      window.alert('Successfully confirmed the shift!');
+      toast.success('Successfully confirmed the shift!');
       fetchShifts(); // Refresh the list
     } catch (err) {
-      window.alert(`Error: ${err instanceof Error ? err.message : 'Failed to confirm shift'}`);
+      toast.error(err instanceof Error ? err.message : 'Failed to confirm shift');
     } finally {
       setActionInProgress(null);
     }
@@ -204,10 +205,10 @@ export default function ShiftsList({ role }: ShiftsListProps) {
         throw new Error(result.error || 'Failed to cancel shift');
       }
 
-      window.alert('Successfully canceled the shift!');
+      toast.success('Successfully canceled the shift!');
       fetchShifts(); // Refresh the list
     } catch (err) {
-      window.alert(`Error: ${err instanceof Error ? err.message : 'Failed to cancel shift'}`);
+      toast.error(err instanceof Error ? err.message : 'Failed to cancel shift');
     } finally {
       setActionInProgress(null);
     }
@@ -237,10 +238,10 @@ export default function ShiftsList({ role }: ShiftsListProps) {
         throw new Error(result.error || 'Failed to complete shift');
       }
 
-      window.alert('Successfully completed the shift!');
+      toast.success('Successfully completed the shift!');
       fetchShifts(); // Refresh the list
     } catch (err) {
-      window.alert(`Error: ${err instanceof Error ? err.message : 'Failed to complete shift'}`);
+      toast.error(err instanceof Error ? err.message : 'Failed to complete shift');
     } finally {
       setActionInProgress(null);
     }
