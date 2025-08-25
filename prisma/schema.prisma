@@ -29,6 +29,14 @@ enum UserStatus {
   DEACTIVATED
 }
 
+// Credential status for caregiver documents
+enum CredentialStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
 model User {
   id                String    @id @default(cuid())
   email             String    @unique
@@ -123,6 +131,47 @@ model Session {
   @@index([userId])
 }
 
+// ==================== CAREGIVER MARKETPLACE SEARCH MODELS ====================
+
+model CaregiverSearchProfile {
+  id           String   @id @default(cuid())
+  caregiverId  String   @unique
+
+  // Duped location for faster geo queries
+  city         String?
+  state        String?
+  zipCode      String?
+  latitude     Float?
+  longitude    Float?
+
+  // Search preferences
+  searchable   Boolean  @default(true)
+  minHourly    Decimal? @db.Decimal(10, 2)
+  maxHourly    Decimal? @db.Decimal(10, 2)
+  roles        String[] @default([])
+  specialties  String[] @default([])
+
+  // Relations
+  caregiver    Caregiver @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([city, state])
+  @@index([zipCode])
+  @@index([latitude, longitude])
+}
+
+model CaregiverRatingAggregate {
+  caregiverId  String  @id
+  average      Float   @default(0)
+  count        Int     @default(0)
+  updatedAt    DateTime @updatedAt
+
+  caregiver    Caregiver @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+}
+
 // ==================== ROLE-SPECIFIC MODELS ====================
 
 model Family {
@@ -182,6 +231,9 @@ model Caregiver {
   yearsExperience   Int?
   hourlyRate        Decimal?  @db.Decimal(10, 2)
   availability      Json?     // Store availability as JSON
+  skills            String[]  @default([])
+  maxTravelMiles    Int?
+  ratingAverage     Float?
   
   // Relationships
   user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -189,6 +241,9 @@ model Caregiver {
   employments       CaregiverEmployment[]
   shifts            CaregiverShift[]
   reviews           CaregiverReview[]
+  searchProfile     CaregiverSearchProfile?
+  ratingAggregate   CaregiverRatingAggregate?
+  applications      ShiftApplication[]
   
   // Timestamps
   createdAt         DateTime  @default(now())
@@ -196,6 +251,8 @@ model Caregiver {
   
   // Indexes
   @@index([userId])
+  @@index([ratingAverage])
+  @@index([skills])
 }
 
 model Affiliate {
@@ -481,6 +538,10 @@ model Credential {
   isVerified        Boolean   @default(false)
   verifiedBy        String?
   verifiedAt        DateTime?
+  status            CredentialStatus @default(PENDING)
+  reviewNotes       String?   @db.Text
+  fileType          String?
+  fileSize          Int?
   
   // Relationships
   caregiver         Caregiver @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
@@ -493,6 +554,7 @@ model Credential {
   @@index([caregiverId])
   @@index([type])
   @@index([expirationDate])
+  @@index([caregiverId, status])
 }
 
 model CaregiverEmployment {
@@ -531,6 +593,7 @@ model CaregiverShift {
   id                String    @id @default(cuid())
   homeId            String
   caregiverId       String?
+  appointmentId     String?   // Added field to link to calendar appointment
   startTime         DateTime
   endTime           DateTime
   status            ShiftStatus @default(OPEN)
@@ -540,6 +603,7 @@ model CaregiverShift {
   // Relationships
   home              AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
   caregiver         Caregiver? @relation(fields: [caregiverId], references: [id])
+  applications      ShiftApplication[]
   
   // Timestamps
   createdAt         DateTime  @default(now())
@@ -549,6 +613,41 @@ model CaregiverShift {
   @@index([homeId])
   @@index([caregiverId])
   @@index([startTime])
+  @@index([status])
+  @@index([appointmentId])  // Added index for the new field
+}
+
+enum ShiftApplicationStatus {
+  APPLIED
+  OFFERED
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+}
+
+model ShiftApplication {
+  id                String    @id @default(cuid())
+  shiftId           String
+  caregiverId       String
+  status            ShiftApplicationStatus @default(APPLIED)
+  notes             String?   @db.Text
+  offeredAt         DateTime?
+  acceptedAt        DateTime?
+  rejectedAt        DateTime?
+  withdrawnAt       DateTime?
+  
+  // Relationships
+  shift             CaregiverShift @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  caregiver         Caregiver @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+  
+  // Timestamps
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Indexes
+  @@unique([shiftId, caregiverId])
+  @@index([shiftId])
+  @@index([caregiverId])
   @@index([status])
 }
 
