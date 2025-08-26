@@ -8,8 +8,13 @@ const createJestConfig = nextJest({
 const customJestConfig = {
   testEnvironment: 'node',
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/src/',
+    '^@/(.*)$': '<rootDir>/src/$1',
   },
+  // Ignore Playwright test directory so Jest doesn't attempt to run e2e specs
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '<rootDir>/tests/e2e/',
+  ],
   setupFilesAfterEnv: [],
 }
 

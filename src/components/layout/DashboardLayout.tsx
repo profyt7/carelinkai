@@ -64,7 +64,7 @@ const navItems: NavItem[] = [
   { name: "Search Homes", icon: <FiSearch size={20} />, href: "/search", showInMobileBar: false },
   { name: "Inquiries", icon: <FiFileText size={20} />, href: "/dashboard/inquiries", showInMobileBar: false },
   { name: "Residents", icon: <FiUsers size={20} />, href: "/residents", showInMobileBar: true },
-  { name: "Caregivers", icon: <FiUsers size={20} />, href: "/caregivers", showInMobileBar: false },
+  { name: "Shifts", icon: <FiCalendar size={20} />, href: "/dashboard/shifts", showInMobileBar: true },
   { name: "Calendar", icon: <FiCalendar size={20} />, href: "/calendar", showInMobileBar: true },
   // Family collaboration (visible to all)
   { name: "Family", icon: <FiUsers size={20} />, href: "/family", showInMobileBar: true },

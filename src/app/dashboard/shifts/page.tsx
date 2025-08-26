@@ -28,6 +28,9 @@ export default function ShiftsPage() {
   // Check if user can post shifts
   const canPostShifts = ['OPERATOR', 'ADMIN', 'STAFF'].includes(userRole || '');
 
+  // Caregiver tab state
+  const [caregiverView, setCaregiverView] = useState<'open' | 'mine'>('open');
+
   // Fetch homes for operators, admins, and staff
   useEffect(() => {
     if (status === 'loading' || !canPostShifts) return;
@@ -92,7 +95,42 @@ export default function ShiftsPage() {
           {/* Right column - Shifts List (for all users) */}
           <div className={`${canPostShifts ? 'lg:col-span-2' : 'lg:col-span-3'}`}>
             {userRole ? (
-              <ShiftsList role={userRole} />
+              <>
+                {/* Caregiver tabs */}
+                {userRole === 'CAREGIVER' && (
+                  <div className="mb-4 flex border-b border-neutral-200">
+                    <button
+                      onClick={() => setCaregiverView('open')}
+                      className={`px-4 py-2 text-sm font-medium ${
+                        caregiverView === 'open'
+                          ? 'border-b-2 border-primary-600 text-primary-700'
+                          : 'text-neutral-600 hover:text-primary-700'
+                      }`}
+                    >
+                      Open Shifts
+                    </button>
+                    <button
+                      onClick={() => setCaregiverView('mine')}
+                      className={`ml-4 px-4 py-2 text-sm font-medium ${
+                        caregiverView === 'mine'
+                          ? 'border-b-2 border-primary-600 text-primary-700'
+                          : 'text-neutral-600 hover:text-primary-700'
+                      }`}
+                    >
+                      My Shifts
+                    </button>
+                  </div>
+                )}
+
+                <ShiftsList
+                  role={userRole}
+                  query={
+                    userRole === 'CAREGIVER' && caregiverView === 'mine'
+                      ? '?status=ASSIGNED&status=COMPLETED'
+                      : ''
+                  }
+                />
+              </>
             ) : (
               <div className="bg-white rounded-lg shadow p-6 flex items-center justify-center h-64">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>

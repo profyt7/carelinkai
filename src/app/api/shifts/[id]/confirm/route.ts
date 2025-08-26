@@ -230,13 +230,17 @@ export async function POST(
     }
     
     // 11. Create a calendar appointment
+    // Normalize dates to avoid runtime errors if Prisma serializes them as strings
+    const start = new Date(shift.startTime as any);
+    const end = new Date(shift.endTime as any);
+
     const appointmentData = {
       type: AppointmentType.CAREGIVER_SHIFT,
       status: AppointmentStatus.CONFIRMED,
       title: `Caregiver Shift - ${shift.home.name}`,
       description: notes || `Caregiver shift at ${shift.home.name}`,
-      startTime: shift.startTime.toISOString(),
-      endTime: shift.endTime.toISOString(),
+      startTime: start.toISOString(),
+      endTime: end.toISOString(),
       location: shift.home.address ? {
         address: `${shift.home.address.street}, ${shift.home.address.city}, ${shift.home.address.state} ${shift.home.address.zipCode}`,
         ...(shift.home.address.latitude && shift.home.address.longitude ? {
@@ -266,6 +270,14 @@ export async function POST(
     let appointment;
     try {
       appointment = await createAppointment(appointmentData);
+      // Verify appointment object integrity
+      if (!appointment || !appointment.id) {
+        logger.error('Calendar service did not return a valid appointment', { appointment });
+        return NextResponse.json(
+          { success: false, error: 'Failed to create calendar appointment' },
+          { status: 500 }
+        );
+      }
     } catch (error) {
       logger.error('Failed to create calendar appointment for shift', { error });
       return NextResponse.json(
@@ -318,8 +330,8 @@ export async function POST(
     try {
       const caregiverUserId = caregiverUser.id;
       const operatorName = shift.home.operator.companyName;
-      const shiftDate = shift.startTime.toLocaleDateString();
-      const shiftTime = `${shift.startTime.toLocaleTimeString()} - ${shift.endTime.toLocaleTimeString()}`;
+      const shiftDate = start.toLocaleDateString();
+      const shiftTime = `${start.toLocaleTimeString()} - ${end.toLocaleTimeString()}`;
       
       await createInAppNotification({
         userId: caregiverUserId,

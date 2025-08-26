@@ -38,19 +38,20 @@ interface Shift {
 
 interface ShiftsListProps {
   role: 'OPERATOR' | 'CAREGIVER' | 'ADMIN' | 'STAFF';
+  query?: string;
 }
 
-export default function ShiftsList({ role }: ShiftsListProps) {
+export default function ShiftsList({ role, query }: ShiftsListProps) {
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [offerData, setOfferData] = useState<{ [shiftId: string]: string }>({});
   const [actionInProgress, setActionInProgress] = useState<string | null>(null);
 
-  // Fetch shifts on component mount
+  // Fetch shifts on component mount or when query changes
   useEffect(() => {
     fetchShifts();
-  }, []);
+  }, [query]);
 
   // Function to fetch shifts
   const fetchShifts = async () => {
@@ -58,7 +59,7 @@ export default function ShiftsList({ role }: ShiftsListProps) {
       setLoading(true);
       setError(null);
 
-      const response = await fetch('/api/shifts');
+      const response = await fetch(`/api/shifts${query ?? ''}`);
       
       if (!response.ok) {
         throw new Error(`Failed to fetch shifts: ${response.statusText}`);
