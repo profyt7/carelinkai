@@ -175,12 +175,26 @@ test.describe('Caregiver Shifts Confirmation Flow', () => {
       // Wait for the table to load
       await operatorPage.waitForSelector('table');
 
+      // Wait until the API reflects that at least one application is ACCEPTED for this shift
+      await expect.poll(async () => {
+        const r = await operatorPage.request.get(`/api/shifts/${shiftId}`);
+        if (!r.ok()) return 'PENDING';
+        const j = await r.json();
+        const hasAccepted = (j.data?.applications || []).some(
+          (a: any) => a.status === 'ACCEPTED'
+        );
+        return hasAccepted ? 'READY' : 'PENDING';
+      }).toBe('READY');
+
       // Click the Confirm button for our specific shift
       const confirmForShift = operatorPage
         .locator(`button[data-testid="confirm-btn"][data-shift-id="${shiftId}"]`)
         .first();
 
-      await expect(confirmForShift).toBeVisible();
+      await operatorPage.waitForSelector(
+        `button[data-testid="confirm-btn"][data-shift-id="${shiftId}"]`,
+        { timeout: 15_000 }
+      );
       await confirmForShift.click();
 
       // Poll until the shift status becomes ASSIGNED
