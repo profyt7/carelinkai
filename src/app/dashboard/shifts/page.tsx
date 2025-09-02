@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import DashboardLayout from '@/components/layout/DashboardLayout';
 import PostShiftForm from '@/components/shifts/PostShiftForm';
 import ShiftsList from '@/components/shifts/ShiftsList';
 
@@ -99,7 +98,7 @@ export default function ShiftsPage() {
   }, [status, userRole]);
 
   return (
-    <DashboardLayout title="Shifts Dashboard">
+    <div data-layout="dashboard">
       <div className="p-4 md:p-6">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-neutral-800">Caregiver Shifts</h1>
@@ -384,6 +383,6 @@ export default function ShiftsPage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </div>
   );
 }
