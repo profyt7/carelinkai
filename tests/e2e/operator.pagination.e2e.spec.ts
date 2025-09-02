@@ -52,9 +52,13 @@ test.describe('Operator Pagination Controls', () => {
     await page.getByTestId('home-filter').selectOption(homeId);
     await waitForShifts(page, ["homeId=" + homeId]);
     await page.getByTestId('page-size').selectOption('10');
+    await waitForShifts(page, ['limit=10']);
+
     await page.getByTestId('sort-by').selectOption('createdAt');
+    await waitForShifts(page, ['sortBy=createdAt']);
+
     await page.getByTestId('sort-order').selectOption('desc');
-    await waitForShifts(page, ["homeId=" + homeId, 'sortBy=createdAt', 'sortOrder=desc', 'limit=10', 'offset=0']);
+    await waitForShifts(page, ['sortOrder=desc']);
 
     // Page 1: expect first 10 rows visible
     const firstPageRows = await page.locator('tbody tr').count();
