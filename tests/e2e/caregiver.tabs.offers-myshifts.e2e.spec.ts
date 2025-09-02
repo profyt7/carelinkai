@@ -85,7 +85,11 @@ test.describe('Caregiver Tabs: My Offers and My Shifts', () => {
     await caregiverPage.getByRole('button', { name: 'My Offers' }).click();
 
     // Expect the offered shift row to appear
-    await expect(caregiverPage.locator(`tr:has-text("${homeName}")`)).toBeVisible();
+    await expect(
+      caregiverPage.locator(
+        `tr:has(td:has-text("${homeName}")):has(td:has-text("$26.00/hr"))`
+      )
+    ).toBeVisible();
 
     // Accept via API for stability
     const acceptRes = await caregiverPage.request.post(`/api/shifts/${shiftId}/accept`, { data: {} });
@@ -107,7 +111,11 @@ test.describe('Caregiver Tabs: My Offers and My Shifts', () => {
 
     // Caregiver: open My Shifts tab and expect row visible
     await caregiverPage.getByRole('button', { name: 'My Shifts' }).click();
-    await expect(caregiverPage.locator(`tr:has-text("${homeName}")`)).toBeVisible();
+    await expect(
+      caregiverPage.locator(
+        `tr:has(td:has-text("${homeName}")):has(td:has-text("$26.00/hr"))`
+      )
+    ).toBeVisible();
 
     await operatorContext.close();
     await caregiverContext.close();
