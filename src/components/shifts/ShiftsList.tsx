@@ -452,7 +452,14 @@ export default function ShiftsList({ role, query, caregiverId }: ShiftsListProps
                   {role === 'CAREGIVER' &&
                     shift.status === 'OPEN' &&
                     // show Apply only when caregiver has no application yet
-                    !(shift.applications.some((app) => app.caregiverId === caregiverId)) && (
+                    !(
+                      shift.applications.some(
+                        (app) =>
+                          app.caregiverId === caregiverId &&
+                          app.status !== 'WITHDRAWN' &&
+                          app.status !== 'REJECTED'
+                      )
+                    ) && (
                     <button
                       onClick={() => handleApply(shift.id)}
                       disabled={actionInProgress === shift.id}
