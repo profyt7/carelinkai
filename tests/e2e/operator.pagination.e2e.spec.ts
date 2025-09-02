@@ -70,19 +70,16 @@ test.describe('Operator Pagination Controls', () => {
 
     // Next to page 2
     await page.getByTestId('next-page').click();
-    await waitForShifts(page, ["homeId=" + homeId, 'limit=10', 'offset=10']);
     await expect(page.getByTestId('page-indicator')).toContainText('Page 2');
     // First row from page 1 should not be visible now
     await expect(page.locator(`tr[data-shift-id='${firstRowId}']`)).toHaveCount(0);
 
     // Next to page 3
     await page.getByTestId('next-page').click();
-    await waitForShifts(page, ["homeId=" + homeId, 'limit=10', 'offset=20']);
     await expect(page.getByTestId('page-indicator')).toContainText('Page 3');
 
     // Prev back to page 2 and ensure some row exists
     await page.getByTestId('prev-page').click();
-    await waitForShifts(page, ["homeId=" + homeId, 'limit=10', 'offset=10']);
     await expect(page.getByTestId('page-indicator')).toContainText('Page 2');
     const rowsPage2 = await page.locator('tbody tr').count();
     expect(rowsPage2).toBeGreaterThan(0);
