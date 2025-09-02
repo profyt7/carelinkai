@@ -77,7 +77,7 @@ test.describe('Caregiver Withdraw Flow', () => {
 
     // Optionally ensure Apply is available again in Open Shifts
     await cgPage.getByRole('button', { name: 'Open Shifts' }).click();
-    const row = cgPage.locator(`tr:has(td:has-text("${homeName}")):has(td:has-text("$28.00/hr"))`);
+    const row = cgPage.locator(`tr[data-shift-id='${shiftId}']`);
     await expect(row).toBeVisible();
     await expect(row.locator('button:has-text("Apply")')).toBeVisible();
 
