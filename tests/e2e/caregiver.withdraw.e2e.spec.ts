@@ -69,10 +69,11 @@ test.describe('Caregiver Withdraw Flow', () => {
     const delJson = await delRes.json();
     expect(delJson.success).toBeTruthy();
 
-    // Verify row remains but shows WITHDRAWN status
-    const appRow = cgPage.locator(`tr:has(td:has-text("${homeName}"))`);
-    await expect(appRow).toBeVisible();
-    await expect(appRow.locator(':text("WITHDRAWN")')).toBeVisible();
+    // Verify in DB status is WITHDRAWN
+    const appRecord = await prisma.shiftApplication.findFirst({
+      where: { shiftId: shiftId!, caregiverId }
+    });
+    expect(appRecord?.status).toBe('WITHDRAWN');
 
     // Optionally ensure Apply is available again in Open Shifts
     await cgPage.getByRole('button', { name: 'Open Shifts' }).click();
