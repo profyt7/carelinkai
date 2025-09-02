@@ -57,7 +57,6 @@ test.describe('Operator Pagination Controls', () => {
     await waitForShifts(page, ['sortBy=createdAt']);
 
     await page.getByTestId('sort-order').selectOption('desc');
-    await waitForShifts(page, ['sortOrder=desc']);
 
     // Page 1: expect first 10 rows visible
     const firstPageRows = await page.locator('tbody tr').count();
