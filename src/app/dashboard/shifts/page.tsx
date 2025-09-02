@@ -21,10 +21,11 @@ export default function ShiftsPage() {
   /* operator filter state */
   const [operatorHomeId, setOperatorHomeId] = useState('');
   const [operatorStatus, setOperatorStatus] = useState('');
-  const [sortBy, setSortBy] = useState('startTime');
-  const [sortOrder, setSortOrder] = useState('asc');
+  /* default to newest shifts first */
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState('desc');
   const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(50);
 
   useEffect(() => {
     if (status !== 'authenticated' || userRole !== 'CAREGIVER') return;
