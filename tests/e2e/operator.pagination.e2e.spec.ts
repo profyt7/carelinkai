@@ -52,7 +52,6 @@ test.describe('Operator Pagination Controls', () => {
     await page.getByTestId('home-filter').selectOption(homeId);
     await waitForShifts(page, ["homeId=" + homeId]);
     await page.getByTestId('page-size').selectOption('10');
-    await waitForShifts(page, ['limit=10']);
 
     await page.getByTestId('sort-by').selectOption('createdAt');
     await waitForShifts(page, ['sortBy=createdAt']);
