@@ -397,7 +397,14 @@ export default function ShiftsList({ role, query, caregiverId }: ShiftsListProps
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   {/* CAREGIVER ACTIONS */}
-                  {role === 'CAREGIVER' && shift.status === 'OPEN' && (
+                  {role === 'CAREGIVER' &&
+                    shift.status === 'OPEN' &&
+                    !(
+                      caregiverId &&
+                      shift.applications.some(
+                        (app) => app.caregiverId === caregiverId
+                      )
+                    ) && (
                     <button
                       onClick={() => handleApply(shift.id)}
                       disabled={actionInProgress === shift.id}
