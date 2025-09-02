@@ -110,6 +110,36 @@ export default function ShiftsList({ role, query }: ShiftsListProps) {
     }
   };
 
+  // Handle caregiver accepting an offered shift
+  const handleAccept = async (shiftId: string) => {
+    if (actionInProgress) return;
+
+    try {
+      setActionInProgress(shiftId);
+
+      const response = await fetch(`/api/shifts/${shiftId}/accept`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to accept shift offer');
+      }
+
+      toast.success('Successfully accepted the offer!');
+      fetchShifts(); // Refresh the list
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to accept shift offer');
+    } finally {
+      setActionInProgress(null);
+    }
+  };
+
   // Handle operator offering a shift to a caregiver
   const handleOffer = async (shiftId: string) => {
     if (actionInProgress) return;
@@ -372,6 +402,20 @@ export default function ShiftsList({ role, query }: ShiftsListProps) {
                     >
                       {actionInProgress === shift.id ? 'Applying...' : 'Apply'}
                     </button>
+                  )}
+                  {/* ACCEPT OFFER ACTION */}
+                  {role === 'CAREGIVER' &&
+                    shift.status === 'OPEN' &&
+                    shift.applications.some(app => app.status === 'OFFERED') && (
+                      <div className="mt-2">
+                        <button
+                          onClick={() => handleAccept(shift.id)}
+                          disabled={actionInProgress === shift.id}
+                          className="text-primary-600 hover:text-primary-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {actionInProgress === shift.id ? 'Accepting...' : 'Accept'}
+                        </button>
+                      </div>
                   )}
 
                   {/* OPERATOR/ADMIN/STAFF ACTIONS */}
