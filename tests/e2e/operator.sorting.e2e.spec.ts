@@ -29,6 +29,8 @@ test.describe('Operator Sorting Controls', () => {
     await page.fill('#password', 'Operator123!');
     await page.click('button:has-text("Sign in")');
     await page.waitForURL('**/dashboard**');
+    // Navigate directly to the Shifts dashboard where controls exist
+    await page.goto('/dashboard/shifts');
 
     // Create 3 shifts with distinct hourly rates
     const base = addMinutes(new Date(), 200);
