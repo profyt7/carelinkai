@@ -56,11 +56,27 @@ test.describe('Operator Sorting Controls', () => {
 
     // Filter to our home and set page size large
     await page.getByTestId('home-filter').selectOption(homeId);
+    // wait until filtered list loaded
+    await page.waitForResponse(
+      (res) =>
+        res.url().includes('/api/shifts') &&
+        res.url().includes(`homeId=${homeId}`) &&
+        res.status() === 200
+    );
     await page.getByTestId('page-size').selectOption('50');
 
     // Sort by Rate asc
     await page.getByTestId('sort-by').selectOption('hourlyRate');
     await page.getByTestId('sort-order').selectOption('asc');
+    // wait for asc sorted data
+    await page.waitForResponse(
+      (res) =>
+        res.url().includes('/api/shifts') &&
+        res.url().includes(`homeId=${homeId}`) &&
+        res.url().includes('sortBy=hourlyRate') &&
+        res.url().includes('sortOrder=asc') &&
+        res.status() === 200
+    );
 
     const asc20 = await rowIndexFor(page, id20);
     const asc25 = await rowIndexFor(page, id25);
@@ -71,6 +87,15 @@ test.describe('Operator Sorting Controls', () => {
 
     // Sort by Rate desc
     await page.getByTestId('sort-order').selectOption('desc');
+    // wait for desc sorted data
+    await page.waitForResponse(
+      (res) =>
+        res.url().includes('/api/shifts') &&
+        res.url().includes(`homeId=${homeId}`) &&
+        res.url().includes('sortBy=hourlyRate') &&
+        res.url().includes('sortOrder=desc') &&
+        res.status() === 200
+    );
 
     const desc20 = await rowIndexFor(page, id20);
     const desc25 = await rowIndexFor(page, id25);
