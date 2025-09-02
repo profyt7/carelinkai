@@ -31,6 +31,12 @@ export default function ShiftsPage() {
   // Caregiver tab state
   const [caregiverView, setCaregiverView] = useState<'open' | 'mine'>('open');
 
+  // Operator filters
+  const [operatorHomeId, setOperatorHomeId] = useState<string>('');
+  const [operatorStatus, setOperatorStatus] = useState<
+    '' | 'OPEN' | 'ASSIGNED' | 'COMPLETED' | 'CANCELED'
+  >('');
+
   // Fetch homes for operators, admins, and staff
   useEffect(() => {
     if (status === 'loading' || !canPostShifts) return;
@@ -122,12 +128,98 @@ export default function ShiftsPage() {
                   </div>
                 )}
 
+                {/* Operator/Admin/Staff filters */}
+                {(userRole === 'OPERATOR' ||
+                  userRole === 'ADMIN' ||
+                  userRole === 'STAFF') && (
+                  <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end bg-white p-4 rounded-md shadow">
+                    <div className="flex-1">
+                      <label
+                        htmlFor="homeFilter"
+                        className="block text-xs font-medium text-neutral-600 mb-1"
+                      >
+                        Home
+                      </label>
+                      <select
+                        id="homeFilter"
+                        value={operatorHomeId}
+                        onChange={(e) => setOperatorHomeId(e.target.value)}
+                        className="w-full form-select rounded-md border-neutral-300 text-sm"
+                      >
+                        <option value="">All Homes</option>
+                        {homes.map((h) => (
+                          <option key={h.id} value={h.id}>
+                            {h.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="flex-1">
+                      <label
+                        htmlFor="statusFilter"
+                        className="block text-xs font-medium text-neutral-600 mb-1"
+                      >
+                        Status
+                      </label>
+                      <select
+                        id="statusFilter"
+                        value={operatorStatus}
+                        onChange={(e) =>
+                          setOperatorStatus(
+                            e.target.value as
+                              | ''
+                              | 'OPEN'
+                              | 'ASSIGNED'
+                              | 'COMPLETED'
+                              | 'CANCELED'
+                          )
+                        }
+                        className="w-full form-select rounded-md border-neutral-300 text-sm"
+                      >
+                        <option value="">All</option>
+                        <option value="OPEN">OPEN</option>
+                        <option value="ASSIGNED">ASSIGNED</option>
+                        <option value="COMPLETED">COMPLETED</option>
+                        <option value="CANCELED">CANCELED</option>
+                      </select>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOperatorHomeId('');
+                        setOperatorStatus('');
+                      }}
+                      className="sm:ml-4 mt-2 sm:mt-0 inline-flex justify-center rounded-md border border-neutral-300 bg-neutral-50 px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                )}
+
                 <ShiftsList
                   role={userRole}
                   query={
                     userRole === 'CAREGIVER' && caregiverView === 'mine'
                       ? '?status=ASSIGNED&status=COMPLETED'
-                      : ''
+                      : (() => {
+                          if (
+                            userRole === 'OPERATOR' ||
+                            userRole === 'ADMIN' ||
+                            userRole === 'STAFF'
+                          ) {
+                            let q = '';
+                            if (operatorHomeId) {
+                              q += `?homeId=${operatorHomeId}`;
+                            }
+                            if (operatorStatus) {
+                              q += `${q ? '&' : '?'}status=${operatorStatus}`;
+                            }
+                            return q;
+                          }
+                          return '';
+                        })()
                   }
                 />
               </>
