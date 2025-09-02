@@ -399,6 +399,7 @@ export default function ShiftsList({ role, query, caregiverId }: ShiftsListProps
                   {/* CAREGIVER ACTIONS */}
                   {role === 'CAREGIVER' &&
                     shift.status === 'OPEN' &&
+                    !(query && query.includes('applications=mine')) &&
                     !(
                       caregiverId &&
                       shift.applications.some(
