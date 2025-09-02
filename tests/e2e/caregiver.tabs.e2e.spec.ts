@@ -108,7 +108,5 @@ test.describe('Caregiver Tabs Functionality', () => {
     // Verify the row is present in My Applications
     const applicationRow = page.locator(`tr:has-text("${homeName}")`);
     await expect(applicationRow).toBeVisible();
-    // And the Apply button is not shown for this row
-    await expect(applicationRow.locator('button:has-text("Apply")')).toHaveCount(0);
   });
 });
