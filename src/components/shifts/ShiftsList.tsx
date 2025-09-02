@@ -461,6 +461,8 @@ export default function ShiftsList({ role, query, caregiverId }: ShiftsListProps
                         <button
                           onClick={() => handleConfirm(shift.id)}
                           disabled={actionInProgress === shift.id}
+                          data-testid="confirm-btn"
+                          data-shift-id={shift.id}
                           className="text-xs py-1 px-2 bg-green-100 text-green-700 rounded hover:bg-green-200 disabled:opacity-50 disabled:cursor-not-allowed block w-full"
                         >
                           {actionInProgress === shift.id ? 'Confirming...' : 'Confirm'}
@@ -520,6 +522,8 @@ export default function ShiftsList({ role, query, caregiverId }: ShiftsListProps
                                   <button
                                     onClick={() => handleConfirm(shift.id, app.caregiverId)}
                                     disabled={actionInProgress === shift.id}
+                                    data-testid="confirm-btn"
+                                    data-shift-id={shift.id}
                                     className="ml-2 text-xs py-0.5 px-1.5 bg-green-50 text-green-700 rounded hover:bg-green-100 disabled:opacity-50"
                                   >
                                     Confirm

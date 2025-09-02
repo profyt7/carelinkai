@@ -171,31 +171,26 @@ test.describe('Caregiver Shifts Confirmation Flow', () => {
       // Reload the shifts page to see the updated status
       await operatorPage.reload();
       await operatorPage.waitForSelector('h1:has-text("Caregiver Shifts")');
-      
+
       // Wait for the table to load
       await operatorPage.waitForSelector('table');
-      
-      // Find the confirm button for our shift
-      const confirmButtons = operatorPage.locator('button:has-text("Confirm")');
-      const beforeCount = await confirmButtons.count();
 
-      // Ensure at least one confirm button is present
-      expect(beforeCount).toBeGreaterThan(0);
+      // Click the Confirm button for our specific shift
+      const confirmForShift = operatorPage
+        .locator(`button[data-testid="confirm-btn"][data-shift-id="${shiftId}"]`)
+        .first();
 
-      // Click the first available Confirm button
-      await confirmButtons.first().click();
+      await expect(confirmForShift).toBeVisible();
+      await confirmForShift.click();
 
-      // Wait until the number of confirm buttons decreases by one
-      await expect(confirmButtons).toHaveCount(beforeCount - 1);
-      
-      // Verify the shift status has changed
-      const updatedShiftsResponse = await operatorPage.request.get('/api/shifts');
-      const updatedShiftsData = await updatedShiftsResponse.json();
-      
-      const confirmedShift = updatedShiftsData.data.find(shift => shift.id === shiftId);
-      expect(confirmedShift).toBeTruthy();
-      expect(confirmedShift.status).toBe('ASSIGNED');
-      
+      // Poll until the shift status becomes ASSIGNED
+      await expect.poll(async () => {
+        const updated = await operatorPage.request.get('/api/shifts');
+        const json = await updated.json();
+        const s = json.data.find((x: any) => x.id === shiftId);
+        return s?.status;
+      }).toBe('ASSIGNED');
+
       console.log('Shift confirmed by operator');
     });
     
