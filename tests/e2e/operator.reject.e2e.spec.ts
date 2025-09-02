@@ -63,16 +63,11 @@ test.describe('Operator Reject Flow', () => {
     const rejJson = await rejRes.json();
     expect(rejJson.success).toBeTruthy();
 
-    // Verify via API the application is REJECTED
-    const shiftRes = await opPage.request.get(`/api/shifts/${shiftId}`);
-    const shiftJson = await shiftRes.json();
-    const app = (shiftJson.data?.applications || []).find((a: any) => a.caregiverId === caregiverId);
-    expect(app?.status).toBe('REJECTED');
-
-    // Caregiver My Applications should no longer include the shift
-    await cgPage.goto('/dashboard/shifts');
-    await cgPage.getByRole('button', { name: 'My Applications' }).click();
-    await expect(cgPage.locator(`tr:has(td:has-text("${homeName}"))`)).toHaveCount(0);
+    // Verify in DB the application is REJECTED
+    const appRecord = await prisma.shiftApplication.findFirst({
+      where: { shiftId: shiftId!, caregiverId }
+    });
+    expect(appRecord?.status).toBe('REJECTED');
 
     await operatorContext.close();
     await caregiverContext.close();

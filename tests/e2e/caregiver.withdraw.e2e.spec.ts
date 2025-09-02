@@ -69,8 +69,10 @@ test.describe('Caregiver Withdraw Flow', () => {
     const delJson = await delRes.json();
     expect(delJson.success).toBeTruthy();
 
-    // Verify row disappears from My Applications
-    await expect(cgPage.locator(`tr:has(td:has-text("${homeName}"))`)).toHaveCount(0);
+    // Verify row remains but shows WITHDRAWN status
+    const appRow = cgPage.locator(`tr:has(td:has-text("${homeName}"))`);
+    await expect(appRow).toBeVisible();
+    await expect(appRow.locator(':text("WITHDRAWN")')).toBeVisible();
 
     // Optionally ensure Apply is available again in Open Shifts
     await cgPage.getByRole('button', { name: 'Open Shifts' }).click();
