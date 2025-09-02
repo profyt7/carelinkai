@@ -398,7 +398,6 @@ export default function ShiftsList({ role, query, caregiverId }: ShiftsListProps
           </thead>
           <tbody className="bg-white divide-y divide-neutral-200">
             {shifts.map(shift => (
-              {/* Added data-shift-id for stable E2E selectors */}
               <tr key={shift.id} data-shift-id={shift.id}>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm font-medium text-neutral-900">{shift.home.name}</div>
