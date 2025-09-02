@@ -146,6 +146,7 @@ export default function ShiftsPage() {
                 value={operatorHomeId}
                 onChange={(e) => setOperatorHomeId(e.target.value)}
                 className="form-select text-sm border-neutral-300 rounded-md"
+                data-testid="home-filter"
               >
                 <option value="">All Homes</option>
                 {homes.map((h) => (
@@ -160,6 +161,7 @@ export default function ShiftsPage() {
                 value={operatorStatus}
                 onChange={(e) => setOperatorStatus(e.target.value)}
                 className="form-select text-sm border-neutral-300 rounded-md"
+                data-testid="status-filter"
               >
                 <option value="">All Status</option>
                 <option value="OPEN">OPEN</option>
@@ -176,6 +178,7 @@ export default function ShiftsPage() {
                   setPage(0);
                 }}
                 className="form-select text-sm border-neutral-300 rounded-md"
+                data-testid="sort-by"
               >
                 <option value="startTime">Start</option>
                 <option value="createdAt">Created</option>
@@ -190,6 +193,7 @@ export default function ShiftsPage() {
                   setPage(0);
                 }}
                 className="form-select text-sm border-neutral-300 rounded-md"
+                data-testid="sort-order"
               >
                 <option value="asc">Asc</option>
                 <option value="desc">Desc</option>
@@ -203,6 +207,7 @@ export default function ShiftsPage() {
                   setPage(0);
                 }}
                 className="form-select text-sm border-neutral-300 rounded-md"
+                data-testid="page-size"
               >
                 {[10, 20, 50].map((s) => (
                   <option key={s} value={s}>
@@ -216,13 +221,17 @@ export default function ShiftsPage() {
                 onClick={() => setPage((p) => Math.max(0, p - 1))}
                 disabled={page === 0}
                 className="px-2 py-1 text-xs bg-neutral-100 rounded disabled:opacity-50"
+                data-testid="prev-page"
               >
                 Prev
               </button>
-              <span className="text-xs">Page {page + 1}</span>
+              <span className="text-xs" data-testid="page-indicator">
+                Page {page + 1}
+              </span>
               <button
                 onClick={() => setPage((p) => p + 1)}
                 className="px-2 py-1 text-xs bg-neutral-100 rounded"
+                data-testid="next-page"
               >
                 Next
               </button>
