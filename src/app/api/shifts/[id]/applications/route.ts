@@ -57,8 +57,8 @@ function handleApiError(error: unknown) {
 }
 
 // ========================================================================
- * DELETE handler for withdrawing an application
- */
+// DELETE handler for withdrawing an application
+// ========================================================================
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
