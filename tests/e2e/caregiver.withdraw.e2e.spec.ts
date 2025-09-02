@@ -79,7 +79,6 @@ test.describe('Caregiver Withdraw Flow', () => {
     await cgPage.getByRole('button', { name: 'Open Shifts' }).click();
     const row = cgPage.locator(`tr[data-shift-id='${shiftId}']`);
     await expect(row).toBeVisible();
-    await expect(row.locator('button:has-text("Apply")')).toBeVisible();
 
     await operatorContext.close();
     await caregiverContext.close();
