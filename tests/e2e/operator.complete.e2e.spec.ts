@@ -74,10 +74,10 @@ test.describe('Operator Complete Flow', () => {
     expect(confirmJson.success).toBeTruthy();
 
     await expect.poll(async () => {
-      const updated = await op.request.get('/api/shifts');
-      const json = await updated.json();
-      const s = json.data.find((x: any) => x.id === shiftId);
-      return s?.status;
+      const r = await op.request.get(`/api/shifts/${shiftId}`);
+      if (!r.ok()) return 'PENDING';
+      const j = await r.json();
+      return j.data?.status;
     }).toBe('ASSIGNED');
 
     // Complete via API
