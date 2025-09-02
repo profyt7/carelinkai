@@ -1,9 +1,9 @@
 import { defineConfig, devices } from '@playwright/test'
 
 // Allow overriding the base URL and server-launch behaviour via env vars
-const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5000'
+const baseURL = process.env['PLAYWRIGHT_BASE_URL'] || 'http://localhost:5000'
 const webServer =
-  process.env.PLAYWRIGHT_WEB_SERVER === 'false'
+  process.env['PLAYWRIGHT_WEB_SERVER'] === 'false'
     ? undefined
     : {
         command: 'npx next start -p 5001',
