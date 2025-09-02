@@ -406,7 +406,12 @@ export default function ShiftsList({ role, query }: ShiftsListProps) {
                   {/* ACCEPT OFFER ACTION */}
                   {role === 'CAREGIVER' &&
                     shift.status === 'OPEN' &&
-                    shift.applications.some(app => app.status === 'OFFERED') && (
+                    caregiverId &&
+                    shift.applications.some(
+                      // backend now includes caregiverId on application objects
+                      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+                      (app: any) => app.status === 'OFFERED' && app.caregiverId === caregiverId
+                    ) && (
                       <div className="mt-2">
                         <button
                           onClick={() => handleAccept(shift.id)}

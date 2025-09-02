@@ -29,7 +29,12 @@ export default function ShiftsPage() {
   const canPostShifts = ['OPERATOR', 'ADMIN', 'STAFF'].includes(userRole || '');
 
   // Caregiver tab state
-  const [caregiverView, setCaregiverView] = useState<'open' | 'mine'>('open');
+  const [caregiverView, setCaregiverView] = useState<
+    'open' | 'mine' | 'offers' | 'applications'
+  >('open');
+
+  // Logged-in caregiver id (for offer/accept logic downstream)
+  const [caregiverId, setCaregiverId] = useState<string>('');
 
   // Operator filters
   const [operatorHomeId, setOperatorHomeId] = useState<string>('');
@@ -69,6 +74,24 @@ export default function ShiftsPage() {
 
     fetchHomes();
   }, [status, canPostShifts]);
+
+  // Fetch caregiverId for CAREGIVER role
+  useEffect(() => {
+    if (status !== 'authenticated' || userRole !== 'CAREGIVER') return;
+    const fetchProfile = async () => {
+      try {
+        const res = await fetch('/api/profile');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.success && data.data?.roleSpecificData?.id) {
+          setCaregiverId(data.data.roleSpecificData.id as string);
+        }
+      } catch {
+        /* ignore */
+      }
+    };
+    fetchProfile();
+  }, [status, userRole]);
 
   return (
     <DashboardLayout title="Shifts Dashboard">
@@ -124,6 +147,26 @@ export default function ShiftsPage() {
                       }`}
                     >
                       My Shifts
+                    </button>
+                    <button
+                      onClick={() => setCaregiverView('offers')}
+                      className={`ml-4 px-4 py-2 text-sm font-medium ${
+                        caregiverView === 'offers'
+                          ? 'border-b-2 border-primary-600 text-primary-700'
+                          : 'text-neutral-600 hover:text-primary-700'
+                      }`}
+                    >
+                      My Offers
+                    </button>
+                    <button
+                      onClick={() => setCaregiverView('applications')}
+                      className={`ml-4 px-4 py-2 text-sm font-medium ${
+                        caregiverView === 'applications'
+                          ? 'border-b-2 border-primary-600 text-primary-700'
+                          : 'text-neutral-600 hover:text-primary-700'
+                      }`}
+                    >
+                      My Applications
                     </button>
                   </div>
                 )}
@@ -200,9 +243,22 @@ export default function ShiftsPage() {
 
                 <ShiftsList
                   role={userRole}
+                  // @ts-ignore — ShiftsList currently doesn’t type caregiverId; passing for future use
+                  caregiverId={caregiverId}
                   query={
-                    userRole === 'CAREGIVER' && caregiverView === 'mine'
-                      ? '?status=ASSIGNED&status=COMPLETED'
+                    userRole === 'CAREGIVER'
+                      ? (() => {
+                          switch (caregiverView) {
+                            case 'mine':
+                              return '?status=ASSIGNED&status=COMPLETED';
+                            case 'offers':
+                              return '?applications=mine&appStatus=OFFERED';
+                            case 'applications':
+                              return '?applications=mine&appStatus=APPLIED';
+                            default:
+                              return '';
+                          }
+                        })()
                       : (() => {
                           if (
                             userRole === 'OPERATOR' ||

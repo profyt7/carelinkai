@@ -11,7 +11,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { z } from 'zod';
-import { Prisma, ShiftStatus, UserRole } from '@prisma/client';
+import { Prisma, ShiftStatus, UserRole, ShiftApplicationStatus } from '@prisma/client';
 import { authOptions } from '@/lib/auth-db-simple';
 import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
@@ -218,6 +218,22 @@ export async function GET(request: NextRequest) {
           filter.status.in && filter.status.in.some((s: ShiftStatus) => s !== ShiftStatus.OPEN)) {
         filter.caregiverId = caregiverId.id;
       }
+
+      // New: application based filtering (offers / applications tabs)
+      if (params['applications'] === 'mine') {
+        // Optional application-status filter
+        let validAppStatus: ShiftApplicationStatus | undefined;
+        if (params['appStatus'] && Object.values(ShiftApplicationStatus).includes(params['appStatus'] as ShiftApplicationStatus)) {
+          validAppStatus = params['appStatus'] as ShiftApplicationStatus;
+        }
+
+        filter.applications = {
+          some: {
+            caregiverId: caregiverId.id,
+            ...(validAppStatus ? { status: validAppStatus } : {})
+          }
+        };
+      }
     }
     // ADMIN and STAFF can see all shifts without additional filtering
     
@@ -255,6 +271,7 @@ export async function GET(request: NextRequest) {
           applications: {
             select: {
               id: true,
+              caregiverId: true,
               status: true
             }
           }
