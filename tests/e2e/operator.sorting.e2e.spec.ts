@@ -22,7 +22,7 @@ test.describe('Operator Sorting Controls', () => {
     homeId = home.id;
   });
 
-  test('Sort by Rate asc/desc reorders rows', async ({ page, request }) => {
+  test('Sort by Rate asc/desc reorders rows', async ({ page }) => {
     // Login as operator
     await page.goto('/auth/login');
     await page.fill('#email', 'operator1@example.com');
@@ -34,7 +34,15 @@ test.describe('Operator Sorting Controls', () => {
     const base = addMinutes(new Date(), 200);
 
     const mk = async (rate: number) => {
-      const res = await request.post('/api/shifts', { data: { homeId, startTime: toIso(base), endTime: toIso(addHours(base, 2)), hourlyRate: rate, notes: `E2E sort ${rate}` } });
+      const res = await page.request.post('/api/shifts', {
+        data: {
+          homeId,
+          startTime: toIso(base),
+          endTime: toIso(addHours(base, 2)),
+          hourlyRate: rate,
+          notes: `E2E sort ${rate}`,
+        },
+      });
       const j = await res.json();
       expect(j.success).toBeTruthy();
       return j.data.id as string;
