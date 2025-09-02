@@ -143,6 +143,45 @@ export default function ShiftsList({ role, query, caregiverId }: ShiftsListProps
     }
   };
 
+  // Handle caregiver withdrawing an application
+  const handleWithdraw = async (shiftId: string) => {
+    if (actionInProgress) return;
+    try {
+      setActionInProgress(shiftId);
+      const res = await fetch(`/api/shifts/${shiftId}/applications`, {
+        method: 'DELETE',
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed to withdraw');
+      toast.success('Application withdrawn');
+      fetchShifts();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to withdraw');
+    } finally {
+      setActionInProgress(null);
+    }
+  };
+
+  // Handle operator rejecting an application
+  const handleReject = async (shiftId: string, cgId?: string) => {
+    if (actionInProgress || !cgId) return;
+    try {
+      setActionInProgress(shiftId);
+      const res = await fetch(
+        `/api/shifts/${shiftId}/applications/${cgId}/reject`,
+        { method: 'POST' }
+      );
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed to reject');
+      toast.success('Application rejected');
+      fetchShifts();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to reject');
+    } finally {
+      setActionInProgress(null);
+    }
+  };
+
   // Handle operator offering a shift to a caregiver
   const handleOffer = async (shiftId: string, caregiverIdParam?: string) => {
     if (actionInProgress) return;
@@ -382,6 +421,19 @@ export default function ShiftsList({ role, query, caregiverId }: ShiftsListProps
                       'bg-neutral-100 text-neutral-800'}`}>
                     {shift.status}
                   </span>
+                  {/* Caregiver-specific application status badge */}
+                  {role === 'CAREGIVER' &&
+                    caregiverId &&
+                    shift.applications.some((a) => a.caregiverId === caregiverId) && (
+                      <span className="ml-1 px-1.5 inline-flex text-[10px] leading-4 font-medium rounded 
+                        bg-neutral-100 text-neutral-600">
+                        {
+                          shift.applications.find(
+                            (a) => a.caregiverId === caregiverId
+                          )?.status
+                        }
+                      </span>
+                  )}
                   {shift.applicationsCount > 0 && (
                     <div className="text-xs text-neutral-500 mt-1">
                       {shift.applicationsCount} application{shift.applicationsCount !== 1 ? 's' : ''}
@@ -399,13 +451,8 @@ export default function ShiftsList({ role, query, caregiverId }: ShiftsListProps
                   {/* CAREGIVER ACTIONS */}
                   {role === 'CAREGIVER' &&
                     shift.status === 'OPEN' &&
-                    !(query && query.includes('applications=mine')) &&
-                    !(
-                      caregiverId &&
-                      shift.applications.some(
-                        (app) => app.caregiverId === caregiverId
-                      )
-                    ) && (
+                    // show Apply only when caregiver has no application yet
+                    !(shift.applications.some((app) => app.caregiverId === caregiverId)) && (
                     <button
                       onClick={() => handleApply(shift.id)}
                       disabled={actionInProgress === shift.id}
@@ -429,7 +476,29 @@ export default function ShiftsList({ role, query, caregiverId }: ShiftsListProps
                         >
                           {actionInProgress === shift.id ? 'Accepting...' : 'Accept'}
                         </button>
+                        <button
+                          onClick={() => handleWithdraw(shift.id)}
+                          disabled={actionInProgress === shift.id}
+                          className="text-red-600 hover:text-red-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {actionInProgress === shift.id ? 'Withdrawing...' : 'Withdraw'}
+                        </button>
                       </div>
+                  )}
+                  {/* WITHDRAW action for APPLIED */}
+                  {role === 'CAREGIVER' &&
+                    shift.status === 'OPEN' &&
+                    caregiverId &&
+                    shift.applications.some(
+                      app => app.status === 'APPLIED' && app.caregiverId === caregiverId
+                    ) && (
+                      <button
+                        onClick={() => handleWithdraw(shift.id)}
+                        disabled={actionInProgress === shift.id}
+                        className="text-red-600 hover:text-red-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {actionInProgress === shift.id ? 'Withdrawing...' : 'Withdraw'}
+                      </button>
                   )}
 
                   {/* OPERATOR/ADMIN/STAFF ACTIONS */}
@@ -524,6 +593,15 @@ export default function ShiftsList({ role, query, caregiverId }: ShiftsListProps
                                     className="ml-2 text-xs py-0.5 px-1.5 bg-blue-50 text-blue-700 rounded hover:bg-blue-100 disabled:opacity-50"
                                   >
                                     Offer
+                                  </button>
+                                )}
+                                {app.status === 'APPLIED' && (
+                                  <button
+                                    onClick={() => handleReject(shift.id, app.caregiverId)}
+                                    disabled={actionInProgress === shift.id}
+                                    className="ml-1 text-xs py-0.5 px-1.5 bg-red-50 text-red-700 rounded hover:bg-red-100 disabled:opacity-50"
+                                  >
+                                    Reject
                                   </button>
                                 )}
                                 {app.status === 'ACCEPTED' && (
