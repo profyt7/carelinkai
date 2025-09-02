@@ -31,6 +31,8 @@ interface Shift {
   applications: {
     id: string;
     status: ShiftApplicationStatus;
+    caregiverId?: string;
+    caregiverName?: string;
   }[];
   createdAt: string;
   updatedAt: string;
@@ -39,9 +41,10 @@ interface Shift {
 interface ShiftsListProps {
   role: 'OPERATOR' | 'CAREGIVER' | 'ADMIN' | 'STAFF';
   query?: string;
+  caregiverId?: string;
 }
 
-export default function ShiftsList({ role, query }: ShiftsListProps) {
+export default function ShiftsList({ role, query, caregiverId }: ShiftsListProps) {
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -141,10 +144,10 @@ export default function ShiftsList({ role, query }: ShiftsListProps) {
   };
 
   // Handle operator offering a shift to a caregiver
-  const handleOffer = async (shiftId: string) => {
+  const handleOffer = async (shiftId: string, caregiverIdParam?: string) => {
     if (actionInProgress) return;
     
-    const caregiverId = offerData[shiftId];
+    const caregiverId = caregiverIdParam ?? offerData[shiftId];
     if (!caregiverId || caregiverId.trim() === '') {
       toast.error('Please enter a caregiver ID');
       return;
@@ -408,9 +411,7 @@ export default function ShiftsList({ role, query }: ShiftsListProps) {
                     shift.status === 'OPEN' &&
                     caregiverId &&
                     shift.applications.some(
-                      // backend now includes caregiverId on application objects
-                      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-                      (app: any) => app.status === 'OFFERED' && app.caregiverId === caregiverId
+                      app => app.status === 'OFFERED' && app.caregiverId === caregiverId
                     ) && (
                       <div className="mt-2">
                         <button
@@ -486,6 +487,48 @@ export default function ShiftsList({ role, query }: ShiftsListProps) {
                         >
                           {actionInProgress === shift.id ? 'Completing...' : 'Complete'}
                         </button>
+                      )}
+                      
+                      {/* APPLICATIONS LIST */}
+                      {shift.applications.length > 0 && (
+                        <div className="mt-3 border-t pt-2">
+                          <p className="text-xs font-medium text-neutral-500">Applications:</p>
+                          <div className="space-y-1 mt-1">
+                            {shift.applications.map(app => (
+                              <div key={app.id} className="flex items-center justify-between text-xs">
+                                <span className="text-neutral-700">
+                                  {app.caregiverName || app.caregiverId || 'Unknown'} - 
+                                  <span className={`ml-1 ${
+                                    app.status === 'APPLIED' ? 'text-blue-600' :
+                                    app.status === 'OFFERED' ? 'text-amber-600' :
+                                    app.status === 'ACCEPTED' ? 'text-green-600' :
+                                    'text-neutral-600'
+                                  }`}>
+                                    {app.status}
+                                  </span>
+                                </span>
+                                {app.status === 'APPLIED' && (
+                                  <button
+                                    onClick={() => handleOffer(shift.id, app.caregiverId)}
+                                    disabled={actionInProgress === shift.id}
+                                    className="ml-2 text-xs py-0.5 px-1.5 bg-blue-50 text-blue-700 rounded hover:bg-blue-100 disabled:opacity-50"
+                                  >
+                                    Offer
+                                  </button>
+                                )}
+                                {app.status === 'ACCEPTED' && (
+                                  <button
+                                    onClick={() => handleConfirm(shift.id, app.caregiverId)}
+                                    disabled={actionInProgress === shift.id}
+                                    className="ml-2 text-xs py-0.5 px-1.5 bg-green-50 text-green-700 rounded hover:bg-green-100 disabled:opacity-50"
+                                  >
+                                    Confirm
+                                  </button>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       )}
                     </div>
                   )}

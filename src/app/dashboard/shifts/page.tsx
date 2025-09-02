@@ -41,6 +41,11 @@ export default function ShiftsPage() {
   const [operatorStatus, setOperatorStatus] = useState<
     '' | 'OPEN' | 'ASSIGNED' | 'COMPLETED' | 'CANCELED'
   >('');
+  // Sorting / paging
+  const [sortBy, setSortBy] = useState<'startTime' | 'createdAt' | 'hourlyRate'>('startTime');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
 
   // Fetch homes for operators, admins, and staff
   useEffect(() => {
@@ -228,15 +233,105 @@ export default function ShiftsPage() {
                       </select>
                     </div>
 
+                    {/* Sort By */}
+                    <div className="flex-1">
+                      <label
+                        htmlFor="sortBy"
+                        className="block text-xs font-medium text-neutral-600 mb-1"
+                      >
+                        Sort By
+                      </label>
+                      <select
+                        id="sortBy"
+                        value={sortBy}
+                        onChange={(e) => {
+                          setSortBy(e.target.value as 'startTime' | 'createdAt' | 'hourlyRate');
+                          setPage(0);
+                        }}
+                        className="w-full form-select rounded-md border-neutral-300 text-sm"
+                      >
+                        <option value="startTime">Start Time</option>
+                        <option value="createdAt">Created</option>
+                        <option value="hourlyRate">Hourly Rate</option>
+                      </select>
+                    </div>
+
+                    {/* Sort Order */}
+                    <div className="flex-1">
+                      <label
+                        htmlFor="sortOrder"
+                        className="block text-xs font-medium text-neutral-600 mb-1"
+                      >
+                        Order
+                      </label>
+                      <select
+                        id="sortOrder"
+                        value={sortOrder}
+                        onChange={(e) => {
+                          setSortOrder(e.target.value as 'asc' | 'desc');
+                          setPage(0);
+                        }}
+                        className="w-full form-select rounded-md border-neutral-300 text-sm"
+                      >
+                        <option value="asc">Ascending</option>
+                        <option value="desc">Descending</option>
+                      </select>
+                    </div>
+
+                    {/* Page size */}
+                    <div className="flex-1">
+                      <label
+                        htmlFor="pageSize"
+                        className="block text-xs font-medium text-neutral-600 mb-1"
+                      >
+                        Page Size
+                      </label>
+                      <select
+                        id="pageSize"
+                        value={pageSize}
+                        onChange={(e) => {
+                          setPageSize(parseInt(e.target.value));
+                          setPage(0);
+                        }}
+                        className="w-full form-select rounded-md border-neutral-300 text-sm"
+                      >
+                        <option value={10}>10</option>
+                        <option value={20}>20</option>
+                        <option value={50}>50</option>
+                      </select>
+                    </div>
+
                     <button
                       type="button"
                       onClick={() => {
                         setOperatorHomeId('');
                         setOperatorStatus('');
+                        setSortBy('startTime');
+                        setSortOrder('asc');
+                        setPageSize(10);
+                        setPage(0);
                       }}
                       className="sm:ml-4 mt-2 sm:mt-0 inline-flex justify-center rounded-md border border-neutral-300 bg-neutral-50 px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
                     >
                       Clear
+                    </button>
+                  </div>
+
+                  {/* Pagination controls */}
+                  <div className="mb-4 flex items-center gap-4">
+                    <button
+                      onClick={() => setPage((p) => Math.max(0, p - 1))}
+                      disabled={page === 0}
+                      className="px-3 py-1 text-sm bg-neutral-100 rounded disabled:opacity-50"
+                    >
+                      Prev
+                    </button>
+                    <span className="text-sm text-neutral-600">Page {page + 1}</span>
+                    <button
+                      onClick={() => setPage((p) => p + 1)}
+                      className="px-3 py-1 text-sm bg-neutral-100 rounded"
+                    >
+                      Next
                     </button>
                   </div>
                 )}
@@ -272,6 +367,9 @@ export default function ShiftsPage() {
                             if (operatorStatus) {
                               q += `${q ? '&' : '?'}status=${operatorStatus}`;
                             }
+                          // sorting / paging
+                          q += `${q ? '&' : '?'}sortBy=${sortBy}&sortOrder=${sortOrder}`;
+                          q += `&limit=${pageSize}&offset=${page * pageSize}`;
                             return q;
                           }
                           return '';

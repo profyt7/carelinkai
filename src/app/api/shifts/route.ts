@@ -31,6 +31,7 @@ const GetShiftsQuerySchema = z.object({
   endDate: z.string().optional(),
   limit: z.coerce.number().min(1).max(100).default(50),
   offset: z.coerce.number().min(0).default(0),
+  // new optional sorting params will be validated manually later
 });
 
 // Schema for POST request body (create shift)
@@ -116,6 +117,25 @@ export async function GET(request: NextRequest) {
     
     // 3. Build filter criteria
     const filter: any = {};
+
+    // --------------------------------------------------------------------
+    // Sorting params (sortBy / sortOrder)
+    // --------------------------------------------------------------------
+    const allowedSortFields = ['startTime', 'createdAt', 'hourlyRate'] as const;
+    type AllowedSortField = typeof allowedSortFields[number];
+    const sortByParam = params['sortBy'] as AllowedSortField | undefined;
+    const sortOrderParam = params['sortOrder'] as 'asc' | 'desc' | undefined;
+
+    let orderBy: Prisma.CaregiverShiftOrderByWithRelationInput = { startTime: 'asc' };
+
+    if (sortByParam && allowedSortFields.includes(sortByParam)) {
+      orderBy = {
+        [sortByParam]:
+          sortOrderParam && (sortOrderParam === 'desc' || sortOrderParam === 'asc')
+            ? sortOrderParam
+            : 'asc',
+      };
+    }
     
     // Date range
     if (params['startDate'] && params['endDate']) {
@@ -272,11 +292,23 @@ export async function GET(request: NextRequest) {
             select: {
               id: true,
               caregiverId: true,
-              status: true
+              status: true,
+              caregiver: {
+                select: {
+                  id: true,
+                  user: {
+                    select: {
+                      id: true,
+                      firstName: true,
+                      lastName: true,
+                    },
+                  },
+                },
+              },
             }
           }
         },
-        orderBy: { startTime: 'asc' },
+        orderBy,
         skip: parseInt(params['offset'] || '0'),
         take: parseInt(params['limit'] || '50')
       }),
@@ -310,7 +342,11 @@ export async function GET(request: NextRequest) {
       applicationsCount: shift.applications.length,
       applications: shift.applications.map(app => ({
         id: app.id,
-        status: app.status
+        status: app.status,
+        caregiverId: app.caregiverId,
+        caregiverName: app.caregiver?.user
+          ? `${app.caregiver.user.firstName} ${app.caregiver.user.lastName}`
+          : undefined,
       })),
       createdAt: shift.createdAt,
       updatedAt: shift.updatedAt
