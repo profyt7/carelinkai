@@ -338,7 +338,6 @@ export default function ShiftsPage() {
 
                 <ShiftsList
                   role={userRole}
-                  // @ts-ignore — ShiftsList currently doesn’t type caregiverId; passing for future use
                   caregiverId={caregiverId}
                   query={
                     userRole === 'CAREGIVER'
