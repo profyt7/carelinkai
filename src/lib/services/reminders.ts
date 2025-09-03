@@ -28,12 +28,33 @@ function formatInTz(iso: string, tz?: string): string {
   }
 }
 
-async function getUserBasic(userId: string) {
+type UserWithPrefs = {
+  id: string;
+  email: string | null;
+  phone: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  timezone: string | null;
+  preferences: any | null;
+};
+
+async function getUserWithPrefs(userId: string): Promise<UserWithPrefs | null> {
   return prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, email: true, firstName: true, lastName: true, timezone: true }
-  });
+    select: {
+      id: true,
+      email: true,
+      phone: true,
+      firstName: true,
+      lastName: true,
+      timezone: true,
+      preferences: true
+    }
+  }) as any;
 }
+
+// legacy callers
+const getUserBasic = getUserWithPrefs;
 
 export async function scheduleUpcomingAppointmentReminders(windowMinutes: number = 1440) {
   if (CALENDAR_USE_MOCKS) {
@@ -84,8 +105,44 @@ export async function scheduleUpcomingAppointmentReminders(windowMinutes: number
 
     const recipientIds = new Set<string>([appt.createdById as string, ...appt.participants.map(p => p.userId)]);
 
+    // cache user record lookups
+    const prefCache = new Map<string, UserWithPrefs>();
+
     for (const userId of recipientIds) {
-      for (const { minutesBefore, method } of pairs) {
+      // --------------------------------------------
+      // Build per-user preference-aware reminder list
+      // --------------------------------------------
+      let user = prefCache.get(userId);
+      if (!user) {
+        user = await getUserWithPrefs(userId);
+        if (user) prefCache.set(userId, user);
+      }
+
+      // fallback prefs structure
+      const reminderPrefs = (user?.preferences?.notifications?.reminders ?? {}) as {
+        channels?: { email?: boolean; push?: boolean; sms?: boolean };
+        offsets?: number[];
+      };
+
+      const enabledChannels = {
+        email: reminderPrefs.channels?.email !== false, // default true
+        push: reminderPrefs.channels?.push !== false,   // default true
+        sms: reminderPrefs.channels?.sms === true       // default false
+      };
+      const offsets: number[] = Array.isArray(reminderPrefs.offsets) && reminderPrefs.offsets.length > 0
+        ? reminderPrefs.offsets
+        : [1440, 60];
+
+      const userPairs: Array<{ minutesBefore: number; method: Method }> = [];
+      for (const mb of offsets) {
+        // always schedule IN_APP
+        userPairs.push({ minutesBefore: mb, method: 'IN_APP' });
+        if (enabledChannels.email) userPairs.push({ minutesBefore: mb, method: 'EMAIL' });
+        if (enabledChannels.push) userPairs.push({ minutesBefore: mb, method: 'PUSH' });
+        if (enabledChannels.sms) userPairs.push({ minutesBefore: mb, method: 'SMS' });
+      }
+
+      for (const { minutesBefore, method } of userPairs) {
         const scheduledFor = new Date(startMs - minutesBefore * 60000);
         if (scheduledFor.getTime() <= now.getTime() - 60000) {
           // too far in the past; skip
@@ -130,7 +187,7 @@ export async function scheduleUpcomingAppointmentReminders(windowMinutes: number
               startTime: startISO,
               minutesBefore,
               method,
-              timezone: (appt.createdBy as any)?.timezone || 'UTC'
+              timezone: user?.timezone || 'UTC'
             } as any
           }
         });
