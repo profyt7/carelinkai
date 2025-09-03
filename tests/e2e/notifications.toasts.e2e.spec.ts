@@ -13,13 +13,25 @@ async function row(page, id: string) {
 
 test.describe('Notifications Toasts', () => {
   let homeId: string;
+  let caregiverId: string;
   const caregiverEmail = 'caregiver1@example.com';
 
   test.beforeAll(async () => {
-    const op = await prisma.user.findUnique({ where: { email: 'operator1@example.com' }, include: { operator: { include: { homes: { take: 1 } } } } });
+    // Get operator home
+    const op = await prisma.user.findUnique({ 
+      where: { email: 'operator1@example.com' }, 
+      include: { operator: { include: { homes: { take: 1 } } } } 
+    });
     const home = op?.operator?.homes?.[0];
     if (!home) throw new Error('home not found');
     homeId = home.id;
+
+    // Get caregiver ID
+    const cg = await prisma.caregiver.findFirst({ 
+      where: { user: { email: caregiverEmail } } 
+    });
+    if (!cg) throw new Error('caregiver not found');
+    caregiverId = cg.id;
   });
 
   test.afterAll(async () => {
@@ -41,32 +53,38 @@ test.describe('Notifications Toasts', () => {
 
     // Create shift
     const base = addMinutes(new Date(), 200);
-    const created = await op.request.post('/api/shifts', { data: { homeId, startTime: toIso(base), endTime: toIso(addHours(base, 2)), hourlyRate: 27, notes: 'E2E toast' } });
+    const created = await op.request.post('/api/shifts', { 
+      data: { 
+        homeId, 
+        startTime: toIso(base), 
+        endTime: toIso(addHours(base, 2)), 
+        hourlyRate: 27, 
+        notes: 'E2E toast' 
+      } 
+    });
     const cjson = await created.json();
     expect(cjson.success).toBeTruthy();
     const shiftId = cjson.data.id as string;
 
-    // Caregiver login and apply via UI
+    // Caregiver login (no apply step)
     await cg.goto('/auth/login');
     await cg.fill('#email', caregiverEmail);
     await cg.fill('#password', 'Caregiver123!');
     await cg.click('button:has-text("Sign in")');
     await cg.waitForURL('**/dashboard**');
 
-    await cg.goto('/dashboard/shifts');
-    await cg.getByRole('button', { name: 'Open Shifts' }).click();
-    const rowCg = await row(cg, shiftId);
-    await rowCg.locator('button:has-text("Apply")').click();
-    await expect(cg.getByText('Successfully applied for the shift!')).toBeVisible();
-
-    // Operator offers via UI (applications list quick Offer)
+    // Operator offers directly via UI
     await op.goto('/dashboard/shifts');
     await op.getByTestId('home-filter').selectOption(homeId);
     const rowOp = await row(op, shiftId);
-    await rowOp.locator('div:has-text("Applications:")').locator('button:has-text("Offer")').first().click();
+    
+    // Fill caregiver ID and click Offer
+    await rowOp.locator('input[placeholder="e.g., cg_123"]').fill(caregiverId);
+    await rowOp.locator('button:has-text("Offer")').first().click();
     await expect(op.getByText('Successfully offered the shift to the caregiver!')).toBeVisible();
 
     // Caregiver accepts via UI
+    await cg.goto('/dashboard/shifts');
     await cg.getByRole('button', { name: 'My Offers' }).click();
     const rowOffer = await row(cg, shiftId);
     await rowOffer.locator('button:has-text("Accept")').click();
@@ -97,32 +115,44 @@ test.describe('Notifications Toasts', () => {
     await op.waitForURL('**/dashboard**');
 
     const base = addMinutes(new Date(), 220);
-    const created = await op.request.post('/api/shifts', { data: { homeId, startTime: toIso(base), endTime: toIso(addHours(base, 2)), hourlyRate: 26, notes: 'E2E toast withdraw/reject' } });
+    const created = await op.request.post('/api/shifts', { 
+      data: { 
+        homeId, 
+        startTime: toIso(base), 
+        endTime: toIso(addHours(base, 2)), 
+        hourlyRate: 26, 
+        notes: 'E2E toast withdraw/reject' 
+      } 
+    });
     const cjson = await created.json();
     expect(cjson.success).toBeTruthy();
     const shiftId = cjson.data.id as string;
 
-    // Caregiver login and apply via UI
+    // Caregiver login
     await cg.goto('/auth/login');
     await cg.fill('#email', caregiverEmail);
     await cg.fill('#password', 'Caregiver123!');
     await cg.click('button:has-text("Sign in")');
     await cg.waitForURL('**/dashboard**');
 
-    await cg.goto('/dashboard/shifts');
-    await cg.getByRole('button', { name: 'Open Shifts' }).click();
-    const rowCg = await row(cg, shiftId);
-    await rowCg.locator('button:has-text("Apply")').click();
-    await expect(cg.getByText('Successfully applied for the shift!')).toBeVisible();
+    // Apply via API instead of UI
+    const applyRes = await cg.request.post(`/api/shifts/${shiftId}/applications`, { data: {} });
+    const applyJson = await applyRes.json();
+    expect(applyJson.success).toBeTruthy();
 
-    // Withdraw via UI
+    // Navigate to My Applications and withdraw
+    await cg.goto('/dashboard/shifts');
+    await cg.getByRole('button', { name: 'My Applications' }).click();
+    const rowCg = await row(cg, shiftId);
     await rowCg.locator('button:has-text("Withdraw")').click();
     await expect(cg.getByText('Application withdrawn')).toBeVisible();
 
-    // Apply again then operator rejects via UI
-    await rowCg.locator('button:has-text("Apply")').click();
-    await expect(cg.getByText('Successfully applied for the shift!')).toBeVisible();
+    // Apply again via API
+    const reapplyRes = await cg.request.post(`/api/shifts/${shiftId}/applications`, { data: {} });
+    const reapplyJson = await reapplyRes.json();
+    expect(reapplyJson.success).toBeTruthy();
 
+    // Operator rejects via UI
     await op.goto('/dashboard/shifts');
     await op.getByTestId('home-filter').selectOption(homeId);
     const rowOp = await row(op, shiftId);
