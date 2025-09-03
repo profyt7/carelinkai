@@ -105,7 +105,10 @@ test.describe('Notifications Toasts', () => {
       return hasAccepted ? 'READY' : 'PENDING';
     }).toBe('READY');
 
-    await rowOp2.getByTestId('confirm-btn').click();
+    // Refresh operator UI so Confirm button is rendered
+    await op.getByTestId('home-filter').selectOption(homeId);
+    const rowOp3 = await row(op, shiftId);
+    await rowOp3.getByTestId('confirm-btn').click();
     await expect(op.getByText('Successfully confirmed the shift!').first()).toBeVisible();
 
     await operatorContext.close();
