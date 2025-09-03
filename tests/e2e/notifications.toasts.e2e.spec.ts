@@ -81,21 +81,21 @@ test.describe('Notifications Toasts', () => {
     // Fill caregiver ID and click Offer
     await rowOp.locator('input[placeholder="e.g., cg_123"]').fill(caregiverId);
     await rowOp.locator('button:has-text("Offer")').first().click();
-    await expect(op.getByText('Successfully offered the shift to the caregiver!')).toBeVisible();
+    await expect(op.getByText('Successfully offered the shift to the caregiver!').first()).toBeVisible();
 
     // Caregiver accepts via UI
     await cg.goto('/dashboard/shifts');
     await cg.getByRole('button', { name: 'My Offers' }).click();
     const rowOffer = await row(cg, shiftId);
     await rowOffer.locator('button:has-text("Accept")').click();
-    await expect(cg.getByText('Successfully accepted the offer!')).toBeVisible();
+    await expect(cg.getByText('Successfully accepted the offer!').first()).toBeVisible();
 
     // Operator confirms via UI
     await op.goto('/dashboard/shifts');
     await op.getByTestId('home-filter').selectOption(homeId);
     const rowOp2 = await row(op, shiftId);
     await rowOp2.getByTestId('confirm-btn').click();
-    await expect(op.getByText('Successfully confirmed the shift!')).toBeVisible();
+    await expect(op.getByText('Successfully confirmed the shift!').first()).toBeVisible();
 
     await operatorContext.close();
     await caregiverContext.close();
@@ -145,7 +145,7 @@ test.describe('Notifications Toasts', () => {
     await cg.getByRole('button', { name: 'My Applications' }).click();
     const rowCg = await row(cg, shiftId);
     await rowCg.locator('button:has-text("Withdraw")').click();
-    await expect(cg.getByText('Application withdrawn')).toBeVisible();
+    await expect(cg.getByText('Application withdrawn').first()).toBeVisible();
 
     // Apply again via API
     const reapplyRes = await cg.request.post(`/api/shifts/${shiftId}/applications`, { data: {} });
@@ -157,7 +157,7 @@ test.describe('Notifications Toasts', () => {
     await op.getByTestId('home-filter').selectOption(homeId);
     const rowOp = await row(op, shiftId);
     await rowOp.locator('div:has-text("Applications:")').locator('button:has-text("Reject")').first().click();
-    await expect(op.getByText('Application rejected')).toBeVisible();
+    await expect(op.getByText('Application rejected').first()).toBeVisible();
 
     await operatorContext.close();
     await caregiverContext.close();
