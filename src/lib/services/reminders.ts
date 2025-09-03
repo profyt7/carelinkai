@@ -1,6 +1,8 @@
 ﻿import { prisma } from '@/lib/prisma';
 import EmailService from '@/lib/email-service';
 import { createInAppNotification } from '@/lib/services/notifications';
+import { sendSms } from '@/lib/services/sms';
+import { sendPushToUser } from '@/lib/services/push';
 import type { ScheduledNotificationStatus, AppointmentStatus, NotificationType } from '@prisma/client';
 
 const CALENDAR_USE_MOCKS = (process.env.CALENDAR_USE_MOCKS ?? 'true').toLowerCase() === 'true';
@@ -167,19 +169,35 @@ export async function processDueScheduledNotifications(maxPerRun: number = 100) 
 
       if (sn.method === 'EMAIL') {
         if (!user?.email) throw new Error('Missing user email');
-        const subject = Reminder: ;
-        const text = This is a reminder for "" starting at  ().\n\nAppointment ID: ;
-        const html = <p>This is a reminder for <strong></strong>.</p><p>Starts at <strong></strong> ().</p>;
+        const subject = `Reminder: ${title}`;
+        const text = `This is a reminder for "${title}" starting at ${whenStr} (${tz}).\n\nAppointment ID: ${payload.appointmentId}`;
+        const html = `<p>This is a reminder for <strong>${title}</strong>.</p><p>Starts at <strong>${whenStr}</strong> (${tz}).</p>`;
         const res = await EmailService.sendEmail({ to: user.email, subject, text, html, fromName: 'CareLinkAI' } as any);
         if (!res.success) throw res.error || new Error('Email failed');
       } else if (sn.method === 'IN_APP') {
         await createInAppNotification({
           userId: sn.userId,
           type: 'BOOKING' as unknown as NotificationType,
-          title: Upcoming: ,
-          message: Starts at  (),
+          title: `Upcoming: ${title}`,
+          message: `Starts at ${whenStr} (${tz})`,
           data: { appointmentId: payload.appointmentId }
         });
+      } else if (sn.method === 'SMS') {
+        if (!user?.phone) throw new Error('Missing user phone');
+        const res = await sendSms({
+          to: user.phone,
+          body: `Reminder: ${title}\nStarts at ${whenStr} (${tz})\nAppt ID: ${payload.appointmentId}`
+        });
+        if (!res.success) throw res.error || new Error('SMS failed');
+      } else if (sn.method === 'PUSH') {
+        const pushRes = await sendPushToUser(sn.userId, {
+          title: 'Appointment reminder',
+          body: `${title}\nStarts at ${whenStr} (${tz})`,
+          data: { appointmentId: payload.appointmentId, kind: 'appointment_reminder' }
+        });
+        if (pushRes.sent === 0) {
+          throw new Error(pushRes.errors.join('; ') || 'Push failed');
+        }
       } else {
         // SMS/PUSH: stub as sent
       }
@@ -234,7 +252,7 @@ export async function detectAndMarkNoShows(graceMinutes: number = 30) {
           userId,
           type: 'BOOKING' as unknown as NotificationType,
           title: 'Appointment marked as no-show',
-          message: ${appt.title} (),
+          message: `"${appt.title}" ended at ${endStr} (${tz})`,
           data: { appointmentId: appt.id }
         }).catch(() => {});
       }

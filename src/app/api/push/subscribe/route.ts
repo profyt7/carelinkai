@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth-db-simple';
+import { prisma } from '@/lib/prisma';
 import webpush from 'web-push';
 
 /**
@@ -29,11 +30,21 @@ export async function POST(req: NextRequest) {
       );
     }
     
-    // Check if this subscription already exists
-    // TODO: re-enable when PushSubscription model is added to Prisma
-    const existingSubscription = null;
-    
-    // Skip DB persistence in stub mode
+    // Persist the subscription using Prisma (create or update by endpoint)
+    const record = await prisma.pushSubscription.upsert({
+      where: { endpoint: subscription.endpoint },
+      update: {
+        userId: session.user.id,
+        p256dh: subscription.keys?.p256dh,
+        auth: subscription.keys?.auth
+      },
+      create: {
+        userId: session.user.id,
+        endpoint: subscription.endpoint,
+        p256dh: subscription.keys?.p256dh,
+        auth: subscription.keys?.auth
+      }
+    });
     
     // Send a test notification if requested
     if (data.sendTestNotification) {
@@ -84,9 +95,8 @@ export async function POST(req: NextRequest) {
     
     return NextResponse.json({
       success: true,
-      message: existingSubscription
-        ? 'Subscription updated successfully (stubbed)'
-        : 'Subscription stored successfully (stubbed)'
+      id: record.id,
+      message: 'Subscription stored successfully'
     });
   } catch (error) {
     console.error('Error storing push subscription:', error);
@@ -122,10 +132,18 @@ export async function DELETE(req: NextRequest) {
         { status: 400 }
       );
     }
-    
-    return NextResponse.json({ 
-      success: true, 
-      message: 'Subscription removed successfully (stubbed)' 
+
+    const result = await prisma.pushSubscription.deleteMany({
+      where: { endpoint, userId: session.user.id },
+    });
+
+    return NextResponse.json({
+      success: true,
+      removed: result.count,
+      message:
+        result.count > 0
+          ? 'Subscription removed successfully'
+          : 'No matching subscription found',
     });
   } catch (error) {
     console.error('Error removing push subscription:', error);

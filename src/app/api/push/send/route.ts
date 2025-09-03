@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth-db-simple';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import webpush from 'web-push';
-
-const prisma = new PrismaClient();
 
 /**
  * POST handler for sending push notifications
@@ -131,15 +129,10 @@ export async function POST(req: NextRequest) {
       };
     }
     
-    // Get subscriptions from database
-    // TODO: Replace stub when PushSubscription model is available in Prisma schema
-    const subscriptions: Array<{
-      id?: string;
-      endpoint: string;
-      p256dh: string;
-      auth: string;
-      userId: string;
-    }> = [];
+  // Fetch subscriptions from database
+  const subscriptions = await prisma.pushSubscription.findMany(
+    subscriptionQuery as any
+  );
     
     if (subscriptions.length === 0) {
       return NextResponse.json(
@@ -179,9 +172,15 @@ export async function POST(req: NextRequest) {
         
         // If subscription is invalid (gone), remove it
         if (error.statusCode === 410) {
-          // Stubbed: would normally remove invalid subscription from DB
+          try {
+            await prisma.pushSubscription.delete({
+              where: { id: subscription.id }
+            });
+          } catch {
+            /* ignore */ 
+          }
           results.errors.push(
-            `Subscription expired (stubbed removal): ${subscription.endpoint.substring(
+            `Subscription expired and removed: ${subscription.endpoint.substring(
               0,
               50
             )}...`
@@ -221,11 +220,12 @@ export async function GET(req: NextRequest) {
         { status: 401 }
       );
     }
-    
+
     // Check if the user has any subscriptions
-    // TODO: Replace stub when PushSubscription model is available
-    const subscriptionCount = 0;
-    
+    const subscriptionCount = await prisma.pushSubscription.count({
+      where: { userId: session.user.id }
+    });
+
     return NextResponse.json({
       supported: true,
       vapidPublicKey: process.env['NEXT_PUBLIC_VAPID_PUBLIC_KEY'],

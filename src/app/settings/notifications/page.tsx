@@ -68,6 +68,13 @@ export default function NotificationsSettingsPage() {
               threads: []
             };
           }
+          // Ensure reminders structure exists
+          if (!prefs.notifications.reminders) {
+            prefs.notifications.reminders = {
+              channels: { email: true, push: true, sms: false },
+              offsets: [1440, 60]
+            };
+          }
           
           setPreferences(prefs);
           setOriginalPreferences(JSON.parse(JSON.stringify(prefs))); // Deep copy for comparison
@@ -102,6 +109,38 @@ export default function NotificationsSettingsPage() {
     }));
   };
   
+  // Handle reminder channel toggle
+  const handleReminderChannelToggle = (channel: 'email' | 'push' | 'sms') => {
+    setPreferences((prev: any) => ({
+      ...prev,
+      notifications: {
+        ...prev.notifications,
+        reminders: {
+          ...prev.notifications.reminders,
+          channels: {
+            ...prev.notifications.reminders.channels,
+            [channel]: !prev.notifications.reminders.channels[channel]
+          }
+        }
+      }
+    }));
+  };
+
+  // Handle offsets input (comma-sep numbers)
+  const handleOffsetsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const parts = e.target.value.split(',').map(p => parseInt(p.trim(), 10)).filter(n => !isNaN(n) && n > 0);
+    setPreferences((prev: any) => ({
+      ...prev,
+      notifications: {
+        ...prev.notifications,
+        reminders: {
+          ...prev.notifications.reminders,
+          offsets: parts
+        }
+      }
+    }));
+  };
+
   // Handle digest toggle
   const handleDigestToggle = () => {
     setPreferences((prev: any) => ({
@@ -401,6 +440,61 @@ export default function NotificationsSettingsPage() {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+          
+          {/* Appointment Reminders Section */}
+          <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm">
+            <div className="border-b border-neutral-200 bg-neutral-50 px-4 py-3">
+              <h3 className="text-base font-medium text-neutral-800">Appointment Reminders</h3>
+              <p className="text-sm text-neutral-500">Default channels and timing for calendar reminders</p>
+            </div>
+            <div className="p-4 space-y-4">
+              {/* Channels */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <label className="flex items-center justify-between rounded-md border p-3">
+                  <span className="text-sm font-medium text-neutral-700">Email</span>
+                  <input
+                    type="checkbox"
+                    checked={preferences.notifications.reminders.channels.email}
+                    onChange={() => handleReminderChannelToggle('email')}
+                    className="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                  />
+                </label>
+                <label className="flex items-center justify-between rounded-md border p-3">
+                  <span className="text-sm font-medium text-neutral-700">Push</span>
+                  <input
+                    type="checkbox"
+                    checked={preferences.notifications.reminders.channels.push}
+                    onChange={() => handleReminderChannelToggle('push')}
+                    className="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                  />
+                </label>
+                <label className="flex items-center justify-between rounded-md border p-3">
+                  <span className="text-sm font-medium text-neutral-700">SMS</span>
+                  <input
+                    type="checkbox"
+                    checked={preferences.notifications.reminders.channels.sms}
+                    onChange={() => handleReminderChannelToggle('sms')}
+                    className="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                  />
+                </label>
+              </div>
+              {/* Offsets */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700">
+                    Reminder Offsets (minutes)
+                  </label>
+                  <p className="text-xs text-neutral-500">Comma-separated, e.g. 1440, 60</p>
+                </div>
+                <input
+                  type="text"
+                  value={preferences.notifications.reminders.offsets.join(', ')}
+                  onChange={handleOffsetsChange}
+                  className="w-52 rounded-md border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
             </div>
           </div>
           
