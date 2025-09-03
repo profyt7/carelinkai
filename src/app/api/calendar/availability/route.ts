@@ -25,6 +25,51 @@ import { UserRole } from '@prisma/client';
 // VALIDATION SCHEMAS
 // ========================================================================
 
+/**
+ * Get numeric hour (0-23) of a Date in a specific IANA timezone.
+ */
+function getHourInTimeZone(date: Date, timeZone: string): number {
+  try {
+    const dtf = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      hour: '2-digit',
+      hour12: false,
+    });
+    const parts = dtf.formatToParts(date);
+    const hourPart = parts.find((p) => p.type === 'hour');
+    return hourPart ? Number(hourPart.value) : date.getUTCHours();
+  } catch {
+    // Invalid or unsupported timezone – fall back to UTC hour
+    return date.getUTCHours();
+  }
+}
+
+/**
+ * Get numeric weekday (0 = Sun … 6 = Sat) of a Date in a specific IANA timezone.
+ */
+function getDayInTimeZone(date: Date, timeZone: string): number {
+  try {
+    const dtf = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      weekday: 'short',
+    });
+    const weekdayStr = dtf.format(date); // e.g., "Sun"
+    const map: Record<string, number> = {
+      Sun: 0,
+      Mon: 1,
+      Tue: 2,
+      Wed: 3,
+      Thu: 4,
+      Fri: 5,
+      Sat: 6,
+    };
+    return map[weekdayStr] ?? date.getUTCDay();
+  } catch {
+    // Invalid or unsupported timezone – fall back to UTC day
+    return date.getUTCDay();
+  }
+}
+
 // Schema for GET query parameters (check availability)
 const CheckAvailabilityQuerySchema = z.object({
   userId: z.string(),
@@ -247,6 +292,11 @@ export async function POST(request: NextRequest) {
       businessHoursOnly,
       timezone
     } = parseResult.data;
+
+    // ------------------------------------------------------------------
+    // Resolve effective timezone (default UTC)
+    // ------------------------------------------------------------------
+    const tz = timezone || 'UTC';
     
     // 3. Check permission to view user availability
     const hasPermission = canViewUserAvailability(
@@ -279,17 +329,15 @@ export async function POST(request: NextRequest) {
     
     if (excludeWeekends) {
       filteredSlots = filteredSlots.filter(slot => {
-        const date = new Date(slot.startTime);
-        const day = date.getDay();
+        const day = getDayInTimeZone(new Date(slot.startTime), tz);
         return day !== 0 && day !== 6; // 0 = Sunday, 6 = Saturday
       });
     }
     
     if (businessHoursOnly) {
       filteredSlots = filteredSlots.filter(slot => {
-        const date = new Date(slot.startTime);
-        const hour = date.getHours();
-        return hour >= 9 && hour < 17; // 9 AM to 5 PM
+        const hour = getHourInTimeZone(new Date(slot.startTime), tz);
+        return hour >= 9 && hour < 17; // 9 AM to 5 PM in requested TZ
       });
     }
     
@@ -298,7 +346,8 @@ export async function POST(request: NextRequest) {
     
     filteredSlots.forEach(slot => {
       const date = new Date(slot.startTime);
-      const dayKey = date.toISOString().split('T')[0]; // YYYY-MM-DD
+      // Use slice to avoid potential undefined from split indexing
+      const dayKey = date.toISOString().slice(0, 10); // YYYY-MM-DD
       
       if (!slotsByDay[dayKey]) {
         slotsByDay[dayKey] = [];
@@ -315,7 +364,7 @@ export async function POST(request: NextRequest) {
         slotsByDay,
         totalSlots: filteredSlots.length,
         requestedDuration: duration,
-        timezone: timezone || 'UTC'
+        timezone: tz
       }
     });
   } catch (error) {
