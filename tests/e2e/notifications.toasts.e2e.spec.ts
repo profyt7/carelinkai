@@ -94,6 +94,17 @@ test.describe('Notifications Toasts', () => {
     await op.goto('/dashboard/shifts');
     await op.getByTestId('home-filter').selectOption(homeId);
     const rowOp2 = await row(op, shiftId);
+    // wait until ACCEPTED application exists (poll API)
+    await expect.poll(async () => {
+      const r = await op.request.get(`/api/shifts/${shiftId}`);
+      if (!r.ok()) return 'PENDING';
+      const j = await r.json();
+      const hasAccepted = (j.data?.applications || []).some(
+        (a: any) => a.status === 'ACCEPTED'
+      );
+      return hasAccepted ? 'READY' : 'PENDING';
+    }).toBe('READY');
+
     await rowOp2.getByTestId('confirm-btn').click();
     await expect(op.getByText('Successfully confirmed the shift!').first()).toBeVisible();
 
@@ -147,15 +158,29 @@ test.describe('Notifications Toasts', () => {
     await rowCg.locator('button:has-text("Withdraw")').click();
     await expect(cg.getByText('Application withdrawn').first()).toBeVisible();
 
-    // Apply again via API
-    const reapplyRes = await cg.request.post(`/api/shifts/${shiftId}/applications`, { data: {} });
-    const reapplyJson = await reapplyRes.json();
-    expect(reapplyJson.success).toBeTruthy();
+    // ---------- create new shift for reject flow ----------
+    const created2 = await op.request.post('/api/shifts', {
+      data: {
+        homeId,
+        startTime: toIso(addMinutes(new Date(), 240)),
+        endTime: toIso(addHours(new Date(), 4)),
+        hourlyRate: 26,
+        notes: 'E2E toast reject only'
+      }
+    });
+    const cjson2 = await created2.json();
+    expect(cjson2.success).toBeTruthy();
+    const shiftIdReject = cjson2.data.id as string;
+
+    // Caregiver applies to second shift via API
+    const applyRes2 = await cg.request.post(`/api/shifts/${shiftIdReject}/applications`, { data: {} });
+    const applyJson2 = await applyRes2.json();
+    expect(applyJson2.success).toBeTruthy();
 
     // Operator rejects via UI
     await op.goto('/dashboard/shifts');
     await op.getByTestId('home-filter').selectOption(homeId);
-    const rowOp = await row(op, shiftId);
+    const rowOp = await row(op, shiftIdReject);
     await rowOp.locator('div:has-text("Applications:")').locator('button:has-text("Reject")').first().click();
     await expect(op.getByText('Application rejected').first()).toBeVisible();
 
