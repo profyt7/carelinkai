@@ -102,9 +102,7 @@ export async function GET(request: NextRequest) {
         capacity: favorite.home.capacity,
         availability: favorite.home.capacity - favorite.home.currentOccupancy,
         amenities: favorite.home.amenities,
-        imageUrl: ((favorite.home.photos?.length ?? 0) > 0)
-          ? favorite.home.photos![0].url
-          : null,
+        imageUrl: favorite.home.photos?.[0]?.url ?? null,
         operator: favorite.home.operator ? {
           name: `${favorite.home.operator.user.firstName} ${favorite.home.operator.user.lastName}`,
           email: favorite.home.operator.user.email
@@ -124,7 +122,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: false,
       error: 'An error occurred while fetching favorites',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      details: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : String(error)) : undefined
     }, { status: 500 });
   } finally {
     // Always disconnect from the database
@@ -224,7 +222,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: false,
       error: 'An error occurred while adding favorite',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      details: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : String(error)) : undefined
     }, { status: 500 });
   } finally {
     // Always disconnect from the database
@@ -306,7 +304,7 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({
       success: false,
       error: 'An error occurred while removing favorite',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      details: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : String(error)) : undefined
     }, { status: 500 });
   } finally {
     // Always disconnect from the database

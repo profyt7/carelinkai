@@ -4,6 +4,98 @@ import { getServerSession } from 'next-auth/next';
 import authOptions from '@/lib/auth';
 
 /**
+ * GET /api/marketplace/applications
+ * 
+ * Fetches applications for a specific listing
+ * Requires authentication and user must be the listing owner
+ */
+export async function GET(request: Request) {
+  try {
+    // Check authentication
+    const session = await getServerSession(authOptions);
+    
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+    
+    // Get query parameters
+    const { searchParams } = new URL(request.url);
+    const listingId = searchParams.get('listingId');
+    const status = searchParams.get('status');
+    
+    // Validate required parameters
+    if (!listingId) {
+      return NextResponse.json(
+        { error: 'Listing ID is required' },
+        { status: 400 }
+      );
+    }
+    
+    // Check if listing exists and is owned by the user
+    const listing = await (prisma as any).marketplaceListing.findUnique({
+      where: { id: listingId }
+    });
+    
+    if (!listing) {
+      return NextResponse.json(
+        { error: 'Listing not found' },
+        { status: 404 }
+      );
+    }
+    
+    if (listing.postedByUserId !== session.user.id) {
+      return NextResponse.json(
+        { error: 'You do not have permission to view these applications' },
+        { status: 403 }
+      );
+    }
+    
+    // Build query conditions
+    const where: any = { listingId };
+    if (status) {
+      where.status = status;
+    }
+    
+    // Fetch applications with caregiver and user data
+    const applications = await (prisma as any).marketplaceApplication.findMany({
+      where,
+      include: {
+        caregiver: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                profileImageUrl: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+    
+    return NextResponse.json(
+      { data: applications },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error('Error fetching applications:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch applications' },
+      { status: 500 }
+    );
+  }
+}
+
+/**
  * POST /api/marketplace/applications
  * 
  * Creates a new application for a marketplace listing
@@ -104,12 +196,8 @@ export async function POST(request: Request) {
 }
 
 /**
- * Return 405 Method Not Allowed for non-POST requests
+ * Return 405 Method Not Allowed for non-GET/POST requests
  */
-export function GET() {
-  return methodNotAllowed();
-}
-
 export function PUT() {
   return methodNotAllowed();
 }
@@ -131,7 +219,7 @@ function methodNotAllowed() {
     {
       status: 405,
       headers: {
-        Allow: 'POST',
+        Allow: 'GET, POST',
       },
     }
   );
