@@ -14,7 +14,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient, AuditAction } from "@prisma/client";
+import { PrismaClient, AuditAction, Prisma } from "@prisma/client";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth-db-simple";
 import { mkdir, writeFile, unlink } from "fs/promises";
@@ -280,7 +280,7 @@ export async function DELETE(request: NextRequest) {
     // Update user profile to remove photo URLs
     await prisma.user.update({
       where: { id: userId },
-      data: { profileImageUrl: null }
+      data: { profileImageUrl: Prisma.JsonNull }
     });
     
     // Create audit log entry
