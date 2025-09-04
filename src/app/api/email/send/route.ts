@@ -92,7 +92,10 @@ function formatRecipients(to: any): string | string[] {
  * @param recipient - string or string[]
  */
 function toSingleRecipient(recipient: string | string[]): string {
-  return Array.isArray(recipient) ? recipient[0] : recipient;
+  // If an array is provided, return the first recipient or a safe fallback.
+  // This prevents strict TypeScript configs (noUncheckedIndexedAccess) from
+  // flagging a potential undefined value when the array is empty.
+  return Array.isArray(recipient) ? (recipient[0] ?? '') : recipient;
 }
 
 /**
