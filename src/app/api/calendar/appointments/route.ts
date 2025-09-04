@@ -310,21 +310,21 @@ export async function GET(request: NextRequest) {
     
     // Special handling for type and status which can be arrays
     if (url.searchParams.getAll('type').length > 1) {
-      params.type = url.searchParams.getAll('type');
+      params['type'] = url.searchParams.getAll('type');
     }
     
     if (url.searchParams.getAll('status').length > 1) {
-      params.status = url.searchParams.getAll('status');
+      params['status'] = url.searchParams.getAll('status');
     }
     
     // 3. Build filter criteria directly without strict validation
     const filter: any = {};
     
     // Date range
-    if (params.startDate && params.endDate) {
+    if (params['startDate'] && params['endDate']) {
       filter.dateRange = {
-        start: params.startDate,
-        end: params.endDate
+        start: params['startDate'],
+        end: params['endDate']
       };
     } else {
       // Default date range if not provided (current month + 30 days)
@@ -336,40 +336,40 @@ export async function GET(request: NextRequest) {
     }
     
     // Appointment types
-    if (params.type) {
-      filter.appointmentTypes = Array.isArray(params.type) 
-        ? params.type 
-        : [params.type];
+    if (params['type']) {
+      filter.appointmentTypes = Array.isArray(params['type']) 
+        ? params['type'] 
+        : [params['type']];
     }
     
     // Status
-    if (params.status) {
-      filter.status = Array.isArray(params.status) 
-        ? params.status 
-        : [params.status];
+    if (params['status']) {
+      filter.status = Array.isArray(params['status']) 
+        ? params['status'] 
+        : [params['status']];
     }
     
     // Home ID
-    if (params.homeId) {
-      filter.homeIds = [params.homeId];
+    if (params['homeId']) {
+      filter.homeIds = [params['homeId']];
     }
     
     // Resident ID
-    if (params.residentId) {
-      filter.residentIds = [params.residentId];
+    if (params['residentId']) {
+      filter.residentIds = [params['residentId']];
     }
     
     // Participant ID
-    if (params.participantId) {
-      filter.participantIds = [params.participantId];
+    if (params['participantId']) {
+      filter.participantIds = [params['participantId']];
     } else {
       // By default, show appointments where the current user is involved
       filter.participantIds = [session.user.id];
     }
     
     // Search
-    if (params.search) {
-      filter.searchText = params.search;
+    if (params['search']) {
+      filter.searchText = params['search'];
     }
     
     // 4. Get appointments from calendar service
@@ -381,8 +381,8 @@ export async function GET(request: NextRequest) {
       data: appointments,
       meta: {
         total: appointments.length,
-        limit: parseInt(params.limit || '50'),
-        offset: parseInt(params.offset || '0')
+        limit: parseInt(params['limit'] || '50'),
+        offset: parseInt(params['offset'] || '0')
       }
     });
   } catch (error) {
