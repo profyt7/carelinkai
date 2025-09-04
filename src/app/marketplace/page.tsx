@@ -69,7 +69,8 @@ export default function MarketplacePage() {
     try {
       const response = await fetch("/api/marketplace/categories");
       const data = await response.json();
-      setCategories(data.data);
+      // Ensure categories is always an object to avoid undefined look-ups
+      setCategories(data.data || {});
     } catch (error) {
       console.error("Failed to fetch categories:", error);
     }
@@ -246,7 +247,7 @@ export default function MarketplacePage() {
         </div>
         
         {/* Care Settings */}
-        {categories.SETTING && (
+        {categories?.SETTING && (
           <div className="mb-6">
             <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-500 mb-2">Care Setting</h3>
             <select
@@ -255,7 +256,7 @@ export default function MarketplacePage() {
               onChange={(e) => setSelectedSetting(e.target.value)}
             >
               <option value="">Any Setting</option>
-              {categories.SETTING.map((category: any) => (
+              {categories.SETTING?.map((category: any) => (
                 <option key={category.id} value={category.slug}>
                   {category.name}
                 </option>
@@ -265,11 +266,11 @@ export default function MarketplacePage() {
         )}
         
         {/* Care Types */}
-        {categories.CARE_TYPE && (
+        {categories?.CARE_TYPE && (
           <div className="mb-6">
             <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-500 mb-2">Care Types</h3>
             <div className="space-y-2">
-              {categories.CARE_TYPE.map((category: any) => (
+              {categories.CARE_TYPE?.map((category: any) => (
                 <div key={category.id} className="flex items-center">
                   <input
                     type="checkbox"
@@ -288,11 +289,11 @@ export default function MarketplacePage() {
         )}
         
         {/* Services */}
-        {categories.SERVICE && (
+        {categories?.SERVICE && (
           <div className="mb-6">
             <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-500 mb-2">Services</h3>
             <div className="space-y-2">
-              {categories.SERVICE.map((category: any) => (
+              {categories.SERVICE?.map((category: any) => (
                 <div key={category.id} className="flex items-center">
                   <input
                     type="checkbox"
@@ -311,11 +312,11 @@ export default function MarketplacePage() {
         )}
         
         {/* Specialties */}
-        {categories.SPECIALTY && (
+        {categories?.SPECIALTY && (
           <div className="mb-6">
             <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-500 mb-2">Specialties</h3>
             <div className="space-y-2">
-              {categories.SPECIALTY.map((category: any) => (
+              {categories.SPECIALTY?.map((category: any) => (
                 <div key={category.id} className="flex items-center">
                   <input
                     type="checkbox"
@@ -557,7 +558,7 @@ export default function MarketplacePage() {
                   </div>
                 </div>
                 
-                {categories.SETTING && (
+                {categories?.SETTING && (
                   <div>
                     <label htmlFor="setting" className="block text-sm font-medium text-gray-700 mb-1">
                       Care Setting
@@ -570,7 +571,7 @@ export default function MarketplacePage() {
                       onChange={handleFormChange}
                     >
                       <option value="">Select a setting</option>
-                      {categories.SETTING.map((category: any) => (
+                      {categories.SETTING?.map((category: any) => (
                         <option key={category.id} value={category.slug}>
                           {category.name}
                         </option>
@@ -579,11 +580,11 @@ export default function MarketplacePage() {
                   </div>
                 )}
                 
-                {categories.CARE_TYPE && (
+                {categories?.CARE_TYPE && (
                   <div>
                     <span className="block text-sm font-medium text-gray-700 mb-2">Care Types</span>
                     <div className="grid grid-cols-2 gap-2">
-                      {categories.CARE_TYPE.map((category: any) => (
+                      {categories.CARE_TYPE?.map((category: any) => (
                         <div key={category.id} className="flex items-center">
                           <input
                             type="checkbox"
@@ -601,11 +602,11 @@ export default function MarketplacePage() {
                   </div>
                 )}
                 
-                {categories.SERVICE && (
+                {categories?.SERVICE && (
                   <div>
                     <span className="block text-sm font-medium text-gray-700 mb-2">Services</span>
                     <div className="grid grid-cols-2 gap-2">
-                      {categories.SERVICE.map((category: any) => (
+                      {categories.SERVICE?.map((category: any) => (
                         <div key={category.id} className="flex items-center">
                           <input
                             type="checkbox"
@@ -623,11 +624,11 @@ export default function MarketplacePage() {
                   </div>
                 )}
                 
-                {categories.SPECIALTY && (
+                {categories?.SPECIALTY && (
                   <div>
                     <span className="block text-sm font-medium text-gray-700 mb-2">Specialties</span>
                     <div className="grid grid-cols-2 gap-2">
-                      {categories.SPECIALTY.map((category: any) => (
+                      {categories.SPECIALTY?.map((category: any) => (
                         <div key={category.id} className="flex items-center">
                           <input
                             type="checkbox"
