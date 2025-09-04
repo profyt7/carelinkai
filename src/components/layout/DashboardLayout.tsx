@@ -61,6 +61,8 @@ interface NavItem {
 const navItems: NavItem[] = [
   { name: "Dashboard", icon: <FiHome size={20} />, href: "/dashboard", showInMobileBar: true },
   { name: "Search Homes", icon: <FiSearch size={20} />, href: "/search", showInMobileBar: false },
+  // Marketplace (feature-flagged)
+  { name: "Marketplace", icon: <FiUsers size={20} />, href: "/marketplace", showInMobileBar: true },
   { name: "Inquiries", icon: <FiFileText size={20} />, href: "/dashboard/inquiries", showInMobileBar: false },
   { name: "Residents", icon: <FiUsers size={20} />, href: "/residents", showInMobileBar: true },
   { name: "Caregivers", icon: <FiUsers size={20} />, href: "/caregivers", showInMobileBar: false },
@@ -96,6 +98,10 @@ export default function DashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
   
+  // Feature flags
+  const marketplaceEnabled =
+    process.env.NEXT_PUBLIC_MARKETPLACE_ENABLED !== "false";
+
   // Responsive state
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
@@ -364,6 +370,10 @@ export default function DashboardLayout({
               !("roleRestriction" in item) ||
               !item.roleRestriction ||
               item.roleRestriction.includes(userRole as string)
+            // Feature-flag gate for Marketplace
+            ).filter(
+              (item) =>
+                item.name !== "Marketplace" || marketplaceEnabled
           );
           return (
             <nav className="sidebar-nav mt-4" aria-label="Sidebar navigation">
@@ -690,7 +700,13 @@ export default function DashboardLayout({
             paddingBottom: 'env(safe-area-inset-bottom, 0px)' // iOS safe area
           }}
         >
-          {navItems.filter(item => item.showInMobileBar).map((item) => (
+          {navItems
+            .filter(
+              (item) =>
+                item.showInMobileBar &&
+                (item.name !== "Marketplace" || marketplaceEnabled)
+            )
+            .map((item) => (
             <Link 
               key={item.name}
               href={item.href}
