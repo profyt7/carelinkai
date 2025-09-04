@@ -102,7 +102,9 @@ export async function GET(request: NextRequest) {
         capacity: favorite.home.capacity,
         availability: favorite.home.capacity - favorite.home.currentOccupancy,
         amenities: favorite.home.amenities,
-        imageUrl: favorite.home.photos.length > 0 ? favorite.home.photos[0].url : null,
+        imageUrl: ((favorite.home.photos?.length ?? 0) > 0)
+          ? favorite.home.photos![0].url
+          : null,
         operator: favorite.home.operator ? {
           name: `${favorite.home.operator.user.firstName} ${favorite.home.operator.user.lastName}`,
           email: favorite.home.operator.user.email
