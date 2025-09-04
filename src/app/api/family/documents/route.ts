@@ -11,7 +11,7 @@ import { publish } from "@/lib/server/sse";
 import type {
   FamilyDocumentWithDetails
 } from "@/lib/types/family";
-import { DocumentType } from "@prisma/client";
+import { FamilyDocumentType } from "@prisma/client";
 import { 
   checkFamilyMembership,
   hasPermissionToUploadDocuments,
@@ -51,13 +51,13 @@ const documentCreateSchema = z.object({
   title: z.string().min(1).max(255),
   description: z.string().max(1000).optional(),
   type: z.enum([
-    "CARE_PLAN", 
-    "MEDICAL_RECORD", 
-    "INSURANCE_DOCUMENT", 
-    "LEGAL_DOCUMENT", 
-    "FINANCIAL_DOCUMENT", 
-    "MEDICATION_LIST", 
-    "CONTACT_INFO", 
+    "CARE_PLAN",
+    "MEDICAL_RECORD",
+    "INSURANCE_DOCUMENT",
+    "PHOTO",
+    "VIDEO",
+    "LEGAL_DOCUMENT",
+    "PERSONAL_DOCUMENT",
     "OTHER"
   ]),
   isEncrypted: z.boolean().default(true),
@@ -70,25 +70,27 @@ const documentFilterSchema = z.object({
   familyId: z.string().cuid(),
   type: z.union([
     z.enum([
-      "CARE_PLAN", 
-      "MEDICAL_RECORD", 
-      "INSURANCE_DOCUMENT", 
-      "LEGAL_DOCUMENT", 
-      "FINANCIAL_DOCUMENT", 
-      "MEDICATION_LIST", 
-      "CONTACT_INFO", 
+      "CARE_PLAN",
+      "MEDICAL_RECORD",
+      "INSURANCE_DOCUMENT",
+      "PHOTO",
+      "VIDEO",
+      "LEGAL_DOCUMENT",
+      "PERSONAL_DOCUMENT",
       "OTHER"
     ]),
-    z.array(z.enum([
-      "CARE_PLAN", 
-      "MEDICAL_RECORD", 
-      "INSURANCE_DOCUMENT", 
-      "LEGAL_DOCUMENT", 
-      "FINANCIAL_DOCUMENT", 
-      "MEDICATION_LIST", 
-      "CONTACT_INFO", 
-      "OTHER"
-    ]))
+    z.array(
+      z.enum([
+        "CARE_PLAN",
+        "MEDICAL_RECORD",
+        "INSURANCE_DOCUMENT",
+        "PHOTO",
+        "VIDEO",
+        "LEGAL_DOCUMENT",
+        "PERSONAL_DOCUMENT",
+        "OTHER"
+      ])
+    )
   ]).optional(),
   search: z.string().optional(),
   tags: z.union([z.string(), z.array(z.string())]).optional(),
@@ -364,7 +366,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Parse document type
-    const type = typeRaw as DocumentType;
+    const type = typeRaw as FamilyDocumentType;
     
     // Parse isEncrypted
     const isEncrypted = isEncryptedRaw === "true" || isEncryptedRaw === "1";
