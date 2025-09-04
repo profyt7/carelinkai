@@ -1444,20 +1444,8 @@ export async function findAvailableSlots(
   return slots;
 }
 
-// Export all public functions
-export {
-  // These functions are already exported above
-  // getAppointments,
-  // getAppointment,
-  // createAppointment,
-  // updateAppointment,
-  // cancelAppointment,
-  // completeAppointment,
-  // appointmentToCalendarEvent,
-  // formatDate,
-  // doSlotsOverlap,
-  // getSlotDuration,
-  // Newly added helpers for availability routes
-  checkUserAvailability,
-  findAvailableSlots
-};
+// ------------------------------------------------------------------------
+// NOTE:
+// All necessary functions are exported individually where they are declared
+// (e.g. `export async function getAppointments(...) { ... }`).
+// ------------------------------------------------------------------------
