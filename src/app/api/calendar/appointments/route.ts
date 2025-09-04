@@ -422,10 +422,27 @@ export async function POST(request: NextRequest) {
       }
       
       const appointmentData = parseResult.data;
+
+      // Normalize location coordinates so latitude & longitude are both present or omitted
+      const location = appointmentData.location
+        ? {
+            ...appointmentData.location,
+            coordinates:
+              appointmentData.location.coordinates &&
+              appointmentData.location.coordinates.latitude !== undefined &&
+              appointmentData.location.coordinates.longitude !== undefined
+                ? {
+                    latitude: appointmentData.location.coordinates.latitude as number,
+                    longitude: appointmentData.location.coordinates.longitude as number,
+                  }
+                : undefined,
+          }
+        : undefined;
       
       // Add creator information
       const appointment = {
         ...appointmentData,
+        location,
         status: AppointmentStatus.CONFIRMED,
         createdBy: {
           id: session.user.id,
