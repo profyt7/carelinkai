@@ -19,7 +19,7 @@ export async function GET() {
     });
 
     // Group categories by type
-    const groupedCategories = categories.reduce((acc, category) => {
+    const groupedCategories = categories.reduce((acc: Record<string, any>, category: any) => {
       if (!acc[category.type]) {
         acc[category.type] = [];
       }
