@@ -9,7 +9,7 @@ import { prisma } from '@/lib/prisma';
 export async function GET() {
   try {
     // Fetch all active categories ordered by sortOrder
-    const categories = await prisma.marketplaceCategory.findMany({
+    const categories = await (prisma as any).marketplaceCategory.findMany({
       where: {
         isActive: true,
       },

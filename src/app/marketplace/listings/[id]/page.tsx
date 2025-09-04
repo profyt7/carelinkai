@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 async function getListingById(id: string) {
   try {
-    const listing = await prisma.marketplaceListing.findUnique({
+    const listing = await (prisma as any).marketplaceListing.findUnique({
       where: { id },
       include: {
         postedBy: {

@@ -67,7 +67,7 @@ export async function GET(request: Request) {
     }
     
     // Fetch listings with counts
-    const listings = await prisma.marketplaceListing.findMany({
+    const listings = await (prisma as any).marketplaceListing.findMany({
       where,
       orderBy: {
         createdAt: 'desc'
@@ -135,7 +135,7 @@ export async function POST(request: Request) {
     }
     
     // Create listing
-    const listing = await prisma.marketplaceListing.create({
+    const listing = await (prisma as any).marketplaceListing.create({
       data: {
         title: body.title,
         description: body.description,
