@@ -10,8 +10,10 @@ import {
 } from "@/lib/services/family";
 import { publish } from "@/lib/server/sse";
 import { 
-  DocumentCommentWithAuthor, 
-  CreateDocumentCommentRequest 
+  // type-only import to satisfy TS `verbatimModuleSyntax`
+  // and avoid runtime bundling of purely compile-time types
+  type DocumentCommentWithAuthor, 
+  type CreateDocumentCommentRequest 
 } from "@/lib/types/family";
 
 /**
