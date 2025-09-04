@@ -5,7 +5,9 @@ import { sendSms } from '@/lib/services/sms';
 import { sendPushToUser } from '@/lib/services/push';
 import type { ScheduledNotificationStatus, AppointmentStatus, NotificationType } from '@prisma/client';
 
-const CALENDAR_USE_MOCKS = (process.env.CALENDAR_USE_MOCKS ?? 'true').toLowerCase() === 'true';
+// Use bracket notation to avoid noPropertyAccessFromIndexSignature TS error
+const CALENDAR_USE_MOCKS =
+  ((process.env['CALENDAR_USE_MOCKS'] ?? 'true') as string).toLowerCase() === 'true';
 const REMINDER_TYPE = 'APPOINTMENT_REMINDER';
 
 type Method = 'EMAIL' | 'SMS' | 'PUSH' | 'IN_APP';
@@ -56,6 +58,56 @@ async function getUserWithPrefs(userId: string): Promise<UserWithPrefs | null> {
 // legacy callers
 const getUserBasic = getUserWithPrefs;
 
+/* ------------------------------------------------------------------ */
+/* Preference helpers                                                  */
+/* ------------------------------------------------------------------ */
+
+type ChannelSet = { email: boolean; push: boolean; sms: boolean };
+type Settings = { channels: ChannelSet; offsets: number[] };
+
+const DEFAULT_SETTINGS: Settings = {
+  channels: { email: true, push: true, sms: false },
+  offsets: [1440, 60]
+};
+
+function extractSettings(raw: any): Partial<Settings> {
+  if (!raw) return {};
+  const channels: Partial<ChannelSet> = {};
+  try {
+    if (typeof raw === 'string') raw = JSON.parse(raw);
+  } catch {
+    /* ignore */
+  }
+  if (!raw) return {};
+
+  // notifications.reminders shape from prefs JSON
+  if (raw.notifications?.reminders) raw = raw.notifications.reminders;
+
+  if (raw.channels) {
+    channels.email = raw.channels.email;
+    channels.push = raw.channels.push;
+    channels.sms = raw.channels.sms;
+  }
+  const offsets = Array.isArray(raw.offsets) ? raw.offsets.filter((n: any) => typeof n === 'number' && n > 0) : undefined;
+  return {
+    channels: channels as ChannelSet,
+    offsets
+  };
+}
+
+function mergeSettings(...layers: Array<Partial<Settings> | undefined>): Settings {
+  const out: Settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+  for (const layer of layers.filter(Boolean)) {
+    if (layer?.channels) {
+      out.channels = { ...out.channels, ...layer.channels };
+    }
+    if (layer?.offsets && layer.offsets.length) {
+      out.offsets = [...new Set(layer.offsets)].sort((a, b) => a - b);
+    }
+  }
+  return out;
+}
+
 export async function scheduleUpcomingAppointmentReminders(windowMinutes: number = 1440) {
   if (CALENDAR_USE_MOCKS) {
     console.log('[reminders] CALENDAR_USE_MOCKS=true → schedule no-op');
@@ -74,6 +126,8 @@ export async function scheduleUpcomingAppointmentReminders(windowMinutes: number
     orderBy: { startTime: 'asc' }
   });
 
+  // cache org prefs by operatorId
+  const orgCache = new Map<string, Partial<Settings>>();
   let scheduled = 0;
   let skippedExisting = 0;
 
@@ -103,6 +157,19 @@ export async function scheduleUpcomingAppointmentReminders(windowMinutes: number
       ];
     }
 
+    // -------------------- org-level prefs --------------------
+    let orgPrefs: Partial<Settings> | undefined;
+    const op =
+      (appt as any).home?.operator ?? (appt as any).createdBy?.operator;
+    if (op) {
+      if (orgCache.has(op.id)) {
+        orgPrefs = orgCache.get(op.id);
+      } else {
+        orgPrefs = extractSettings(op.preferences);
+        orgCache.set(op.id, orgPrefs);
+      }
+    }
+
     const recipientIds = new Set<string>([appt.createdById as string, ...appt.participants.map(p => p.userId)]);
 
     // cache user record lookups
@@ -114,32 +181,24 @@ export async function scheduleUpcomingAppointmentReminders(windowMinutes: number
       // --------------------------------------------
       let user = prefCache.get(userId);
       if (!user) {
-        user = await getUserWithPrefs(userId);
-        if (user) prefCache.set(userId, user);
+        const fetched = await getUserWithPrefs(userId);
+        if (fetched) {
+          user = fetched;
+          prefCache.set(userId, fetched);
+        }
       }
 
       // fallback prefs structure
-      const reminderPrefs = (user?.preferences?.notifications?.reminders ?? {}) as {
-        channels?: { email?: boolean; push?: boolean; sms?: boolean };
-        offsets?: number[];
-      };
-
-      const enabledChannels = {
-        email: reminderPrefs.channels?.email !== false, // default true
-        push: reminderPrefs.channels?.push !== false,   // default true
-        sms: reminderPrefs.channels?.sms === true       // default false
-      };
-      const offsets: number[] = Array.isArray(reminderPrefs.offsets) && reminderPrefs.offsets.length > 0
-        ? reminderPrefs.offsets
-        : [1440, 60];
+      const userPrefs = extractSettings(user?.preferences);
+      const apptPrefs = extractSettings((appt as any).reminders);
+      const effective = mergeSettings(DEFAULT_SETTINGS, orgPrefs, userPrefs, apptPrefs);
 
       const userPairs: Array<{ minutesBefore: number; method: Method }> = [];
-      for (const mb of offsets) {
-        // always schedule IN_APP
+      for (const mb of effective.offsets) {
         userPairs.push({ minutesBefore: mb, method: 'IN_APP' });
-        if (enabledChannels.email) userPairs.push({ minutesBefore: mb, method: 'EMAIL' });
-        if (enabledChannels.push) userPairs.push({ minutesBefore: mb, method: 'PUSH' });
-        if (enabledChannels.sms) userPairs.push({ minutesBefore: mb, method: 'SMS' });
+        if (effective.channels.email) userPairs.push({ minutesBefore: mb, method: 'EMAIL' });
+        if (effective.channels.push) userPairs.push({ minutesBefore: mb, method: 'PUSH' });
+        if (effective.channels.sms) userPairs.push({ minutesBefore: mb, method: 'SMS' });
       }
 
       for (const { minutesBefore, method } of userPairs) {
