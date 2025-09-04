@@ -128,7 +128,8 @@ export async function scheduleUpcomingAppointmentReminders(windowMinutes: number
         const scheduledFor = new Date(appointment.startTime.getTime() - offset * 60 * 1000);
         
         // Skip if already in the past
-        if (scheduledFor <= now) continue;
+        // Allow reminders scheduled exactly at the current moment
+        if (scheduledFor < now) continue;
         
         // Process each notification method
         for (const method of enabledMethods) {
