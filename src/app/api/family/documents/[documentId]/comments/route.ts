@@ -188,7 +188,7 @@ export async function POST(
       familyId,
       documentId,
       session.user.id,
-      { content, parentCommentId }
+      { documentId, content, parentCommentId } as CreateDocumentCommentRequest
     );
 
     /* ------------------------------------------------------------------
