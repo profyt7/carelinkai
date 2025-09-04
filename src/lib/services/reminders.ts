@@ -138,22 +138,11 @@ export async function scheduleUpcomingAppointmentReminders(windowMinutes: number
               userId,
               type: 'APPOINTMENT_REMINDER',
               method,
+              scheduledFor,
               status: {
-                not: 'CANCELLED'
+                not: 'CANCELLED',
               },
-              payload: {
-                path: ['appointmentId'],
-                equals: appointment.id
-              },
-              AND: [
-                {
-                  payload: {
-                    path: ['minutesBefore'],
-                    equals: offset
-                  }
-                }
-              ]
-            }
+            },
           });
           
           if (existingNotification) {
