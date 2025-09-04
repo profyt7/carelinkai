@@ -100,7 +100,8 @@ async function sendVerificationEmail(email: string, token: string, isResend: boo
     const expiryTime = new Date(Date.now() + TOKEN_EXPIRY_HOURS * 60 * 60 * 1000);
     
     // Create verification URL
-    const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/verify?token=${token}`;
+    const baseUrl = process.env['NEXT_PUBLIC_APP_URL'] || 'http://localhost:3000';
+    const verificationUrl = `${baseUrl}/auth/verify?token=${token}`;
     
     // In a real implementation, this would use an email service like SendGrid, AWS SES, etc.
     // For now, we'll log the email content
