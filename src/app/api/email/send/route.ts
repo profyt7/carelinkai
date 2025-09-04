@@ -87,6 +87,15 @@ function formatRecipients(to: any): string | string[] {
 }
 
 /**
+ * Coerce a recipient or recipient array to a single recipient string.
+ * Useful for helpers that expect exactly one email address.
+ * @param recipient - string or string[]
+ */
+function toSingleRecipient(recipient: string | string[]): string {
+  return Array.isArray(recipient) ? recipient[0] : recipient;
+}
+
+/**
  * Extract a meaningful error message from different kinds of error objects.
  *  - Native Error instances → `error.message`
  *  - SendGrid error objects → `error.response.body.errors[0].message`
@@ -231,6 +240,7 @@ export async function POST(req: NextRequest) {
 async function processEmail(emailData: any, session: any) {
   const { type, to, subject } = emailData;
   const formattedTo = formatRecipients(to);
+  const toOne = toSingleRecipient(formattedTo);
   
   // Log email attempt
   logger.info(`Email request: type=${type}, to=${Array.isArray(formattedTo) ? formattedTo.join(',') : formattedTo}`);
@@ -239,7 +249,7 @@ async function processEmail(emailData: any, session: any) {
   switch (type) {
     case 'welcome': {
       const { firstName, lastName, verificationUrl } = emailData.templateData;
-      return await emailService.sendWelcomeEmail(formattedTo, {
+      return await emailService.sendWelcomeEmail(toOne, {
         firstName,
         lastName,
         verificationUrl,
@@ -248,7 +258,7 @@ async function processEmail(emailData: any, session: any) {
     
     case 'password-reset': {
       const { firstName, resetUrl, expiresInMinutes } = emailData.templateData;
-      return await emailService.sendPasswordResetEmail(formattedTo, {
+      return await emailService.sendPasswordResetEmail(toOne, {
         firstName,
         resetUrl,
         expiresInMinutes,
@@ -258,7 +268,7 @@ async function processEmail(emailData: any, session: any) {
     case 'notification': {
       const { firstName, message, actionUrl, actionText, category } = emailData.templateData;
       return await emailService.sendNotificationEmail(
-        formattedTo,
+        toOne,
         subject,
         {
           firstName,
@@ -281,7 +291,7 @@ async function processEmail(emailData: any, session: any) {
         calendarLink,
       } = emailData.templateData;
       
-      return await emailService.sendAppointmentEmail(formattedTo, {
+      return await emailService.sendAppointmentEmail(toOne, {
         firstName,
         appointmentType,
         dateTime,
@@ -301,7 +311,7 @@ async function processEmail(emailData: any, session: any) {
         message,
       } = emailData.templateData;
       
-      return await emailService.sendDocumentSharedEmail(formattedTo, {
+      return await emailService.sendDocumentSharedEmail(toOne, {
         firstName,
         sharedBy,
         documentName,
@@ -313,7 +323,7 @@ async function processEmail(emailData: any, session: any) {
     case 'custom': {
       const { html, text } = emailData;
       return await emailService.sendCustomEmail(
-        formattedTo,
+        toOne,
         subject,
         html,
         text
