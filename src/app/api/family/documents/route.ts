@@ -8,9 +8,8 @@ import { v4 as uuidv4 } from "uuid";
 import { mkdir } from "fs/promises";
 import { prisma } from "@/lib/prisma";
 import { publish } from "@/lib/server/sse";
-import type { 
-  FamilyDocumentWithDetails, 
-  DocumentFilterParams 
+import type {
+  FamilyDocumentWithDetails
 } from "@/lib/types/family";
 import { DocumentType } from "@prisma/client";
 import { 
@@ -200,7 +199,7 @@ export async function GET(request: NextRequest) {
         );
       }
       
-      const filters = validationResult.data as DocumentFilterParams;
+      const filters = validationResult.data;
       console.log(`[Documents API] Validation successful, elapsed: ${Date.now() - startedAt}ms`, { filters });
       
       // Check if user is a member of the family
