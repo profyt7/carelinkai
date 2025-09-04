@@ -423,6 +423,15 @@ export async function POST(request: NextRequest) {
       
       const appointmentData = parseResult.data;
 
+      // Ensure participant objects contain required properties with defaults
+      const participants = (appointmentData.participants || []).map((p) => ({
+        userId: p.userId,
+        name: p.name ?? '',
+        role: (p.role as UserRole) ?? UserRole.FAMILY,
+        status: p.status ?? 'PENDING',
+        notes: p.notes,
+      }));
+
       // Normalize location coordinates so latitude & longitude are both present or omitted
       const location = appointmentData.location
         ? {
@@ -443,6 +452,7 @@ export async function POST(request: NextRequest) {
       const appointment = {
         ...appointmentData,
         location,
+        participants,
         status: AppointmentStatus.CONFIRMED,
         createdBy: {
           id: session.user.id,
