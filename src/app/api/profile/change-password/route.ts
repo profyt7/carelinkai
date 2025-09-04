@@ -153,7 +153,8 @@ export async function POST(request: NextRequest) {
     }
     
     // Verify current password
-    const isPasswordValid = await compare(currentPassword, user.passwordHash);
+    const isPasswordValid =
+      user.passwordHash ? await compare(currentPassword, user.passwordHash) : false;
     
     if (!isPasswordValid) {
       // Create audit log entry for incorrect password
@@ -180,7 +181,8 @@ export async function POST(request: NextRequest) {
     }
     
     // Check if new password is same as current password
-    const isSamePassword = await compare(newPassword, user.passwordHash);
+    const isSamePassword =
+      user.passwordHash ? await compare(newPassword, user.passwordHash) : false;
     
     if (isSamePassword) {
       return NextResponse.json(
