@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     // Apply rate limiting
     const identifier = req.ip || "unknown";
     try {
-      await limiter.check(3, identifier); // 3 requests per hour per IP
+      await limiter.check(identifier); // 3 requests per hour per IP
     } catch (error) {
       return NextResponse.json(
         { success: false, message: "Too many deactivation attempts. Please try again later." },
