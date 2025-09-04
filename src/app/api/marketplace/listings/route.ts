@@ -83,7 +83,7 @@ export async function GET(request: Request) {
     });
     
     // Transform the data to include counts directly
-    const formattedListings = listings.map(listing => {
+    const formattedListings = listings.map((listing: any) => {
       const { _count, ...listingData } = listing;
       return {
         ...listingData,
