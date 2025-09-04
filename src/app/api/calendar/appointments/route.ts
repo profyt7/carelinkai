@@ -432,6 +432,13 @@ export async function POST(request: NextRequest) {
         notes: p.notes,
       }));
 
+      // Ensure reminders include required `sent` flag
+      const reminders = (appointmentData.reminders || []).map((r) => ({
+        minutesBefore: r.minutesBefore,
+        method: r.method,
+        sent: false,
+      }));
+
       // Normalize location coordinates so latitude & longitude are both present or omitted
       const location = appointmentData.location
         ? {
@@ -453,6 +460,7 @@ export async function POST(request: NextRequest) {
         ...appointmentData,
         location,
         participants,
+        reminders,
         status: AppointmentStatus.CONFIRMED,
         createdBy: {
           id: session.user.id,
