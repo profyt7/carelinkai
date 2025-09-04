@@ -1,1 +1,1 @@
-﻿ALTER TABLE "Operator" ADD COLUMN "preferences" JSONB;
+ALTER TABLE "Operator" ADD COLUMN "preferences" JSONB;
