@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { checkFamilyMembership } from "@/lib/services/family";
 
 export async function GET(request: NextRequest) {
@@ -65,17 +66,17 @@ export async function GET(request: NextRequest) {
     // Build the search query
     const whereConditions = tokens.map(token => ({
       OR: [
-        { firstName: { contains: token, mode: 'insensitive' } },
-        { lastName: { contains: token, mode: 'insensitive' } }
+        { firstName: { contains: token, mode: Prisma.QueryMode.insensitive } },
+        { lastName: { contains: token, mode: Prisma.QueryMode.insensitive } }
       ]
     }));
     
     // Add full name match optimization if we have multiple tokens
     if (tokens.length > 1) {
       whereConditions.push({
-        ['AND']: [
-          { firstName: { contains: firstToken, mode: 'insensitive' } },
-          { lastName: { contains: lastToken, mode: 'insensitive' } }
+        ["AND"]: [
+          { firstName: { contains: firstToken, mode: Prisma.QueryMode.insensitive } },
+          { lastName: { contains: lastToken, mode: Prisma.QueryMode.insensitive } }
         ]
       } as any);
     }
