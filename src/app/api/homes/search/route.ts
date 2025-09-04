@@ -82,12 +82,12 @@ export async function GET(req: NextRequest) {
     });
     
     // Handle array parameters (they come as comma-separated values)
-    if (rawParams.careLevel) {
-      rawParams.careLevel = rawParams.careLevel.split(',');
+    if ((rawParams as any)['careLevel']) {
+      (rawParams as any)['careLevel'] = (rawParams as any)['careLevel'].split(',');
     }
     
-    if (rawParams.amenities) {
-      rawParams.amenities = rawParams.amenities.split(',');
+    if ((rawParams as any)['amenities']) {
+      (rawParams as any)['amenities'] = (rawParams as any)['amenities'].split(',');
     }
     
     // Validate query parameters
