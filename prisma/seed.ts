@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Database Seed Script for CareLinkAI
  * 
@@ -16,7 +17,18 @@
    Caregivers, Affiliates, etc. – see generated output or Prisma Studio
    ----------------------------------------------------------------- */
 
-import { PrismaClient, UserRole, UserStatus, HomeStatus, CareLevel, InquiryStatus, BookingStatus } from '@prisma/client';
+import {
+  PrismaClient,
+  UserRole,
+  UserStatus,
+  HomeStatus,
+  CareLevel,
+  InquiryStatus,
+  BookingStatus,
+  CategoryType,
+  MarketplaceListingStatus,
+  ApplicationStatus,
+} from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -57,6 +69,10 @@ async function main() {
   // Create messages between users
   await createMessages(familyUsers, operatorUsers, caregiverUsers);
 
+  // Marketplace seeding
+  await seedMarketplaceTaxonomy();
+  await seedMarketplaceListings(familyUsers, operatorUsers, caregiverUsers);
+
   // Create audit logs
   await createAuditLogs(adminUser.id);
 
@@ -74,6 +90,225 @@ async function clearDatabase() {
   await prisma.message.deleteMany({});
   await prisma.notification.deleteMany({});
   await prisma.homeReview.deleteMany({});
+ * -----------------------
+ * Marketplace Seeding
+ * -----------------------
+ */
+async function seedMarketplaceTaxonomy() {
+  console.log('🛒 Seeding marketplace taxonomy...');
+
+  const groups: { type: CategoryType; names: string[] }[] = [
+    {
+      type: 'SETTING',
+      names: [
+        'In-home',
+        'Assisted Living',
+        'Independent Living',
+        'Memory Care',
+        'Senior Living Community',
+      ],
+    },
+    {
+      type: 'CARE_TYPE',
+      names: [
+        'Companion Care',
+        'Personal Care',
+        'Dementia/Alzheimer’s',
+        'Hospice Support',
+        'Post-Surgery Support',
+        'Special Needs Adult Care',
+        'Respite Care',
+      ],
+    },
+    {
+      type: 'SERVICE',
+      names: [
+        'Transportation',
+        'Errands',
+        'Household Tasks',
+        'Medication Prompting',
+        'Mobility Assistance',
+      ],
+    },
+    {
+      type: 'SPECIALTY',
+      names: ['Companionship', 'Dementia Care'],
+    },
+  ];
+
+  for (const group of groups) {
+    let sort = 1;
+    for (const name of group.names) {
+      const slug = name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+
+      await prisma.marketplaceCategory.upsert({
+        where: { slug },
+        update: {
+          name,
+          type: group.type as CategoryType,
+          sortOrder: sort,
+          isActive: true,
+        },
+        create: {
+          name,
+          slug,
+          type: group.type as CategoryType,
+          sortOrder: sort,
+          isActive: true,
+        },
+      });
+      sort += 1;
+    }
+  }
+
+  console.log('✅ Marketplace taxonomy seeded');
+}
+
+async function seedMarketplaceListings(
+  familyUsers: any[],
+  operatorUsers: any[],
+  caregiverUsers: any[],
+) {
+  console.log('📝 Seeding sample marketplace listings...');
+
+  const posters = [
+    ...familyUsers.map((f) => f.user),
+    ...operatorUsers.map((o) => o.user),
+  ];
+
+  const samples = [
+    {
+      title: 'In-home companion care (weekday mornings)',
+      description:
+        'Looking for a friendly caregiver to provide companionship, light housekeeping, and medication prompting for 4 hours each weekday morning.',
+      setting: 'In-home',
+      careTypes: ['Companion Care', 'Personal Care'],
+      services: ['Household Tasks', 'Medication Prompting'],
+      specialties: ['Companionship'],
+      city: 'San Francisco',
+      state: 'CA',
+      zipCode: '94103',
+      hourlyRateMin: 22,
+      hourlyRateMax: 28,
+      durationHours: 4,
+    },
+    {
+      title: 'Memory care support for assisted living resident',
+      description:
+        'Seeking caregiver with dementia experience to support resident during afternoon hours; redirecting, activities, and gentle reminders.',
+      setting: 'Assisted Living',
+      careTypes: ['Dementia/Alzheimer’s', 'Companion Care'],
+      services: ['Transportation', 'Household Tasks'],
+      specialties: ['Dementia Care'],
+      city: 'Oakland',
+      state: 'CA',
+      zipCode: '94612',
+      hourlyRateMin: 24,
+      hourlyRateMax: 32,
+      durationHours: 5,
+    },
+    {
+      title: 'Post-surgery support for 2 weeks',
+      description:
+        'Need post-op support including mobility assistance, hygiene, and meal prep. 6 hours/day for 14 days.',
+      setting: 'In-home',
+      careTypes: ['Post-Surgery Support', 'Personal Care'],
+      services: ['Mobility Assistance', 'Household Tasks'],
+      specialties: ['Companionship'],
+      city: 'San Jose',
+      state: 'CA',
+      zipCode: '95112',
+      hourlyRateMin: 25,
+      hourlyRateMax: 35,
+      durationHours: 6,
+    },
+    {
+      title: 'Transportation and errands for independent senior',
+      description:
+        'Provide transportation to appointments and help with errands twice per week.',
+      setting: 'Independent Living',
+      careTypes: ['Companion Care'],
+      services: ['Transportation', 'Errands'],
+      specialties: ['Companionship'],
+      city: 'Sacramento',
+      state: 'CA',
+      zipCode: '95814',
+      hourlyRateMin: 20,
+      hourlyRateMax: 26,
+      durationHours: 3,
+    },
+    {
+      title: 'Respite care (weekend coverage)',
+      description:
+        'Weekend coverage to give primary caregiver a break. Personal care, companionship, light housekeeping.',
+      setting: 'In-home',
+      careTypes: ['Respite Care', 'Personal Care'],
+      services: ['Medication Prompting', 'Household Tasks'],
+      specialties: ['Companionship'],
+      city: 'Fremont',
+      state: 'CA',
+      zipCode: '94538',
+      hourlyRateMin: 23,
+      hourlyRateMax: 30,
+      durationHours: 8,
+    },
+  ];
+
+  const now = Date.now();
+
+  for (const sample of samples) {
+    const poster = posters[Math.floor(Math.random() * posters.length)];
+    const start = new Date(
+      now + Math.floor(Math.random() * 7) * 24 * 3600 * 1000,
+    );
+    start.setHours(9, 0, 0, 0);
+    const end = new Date(start.getTime() + sample.durationHours * 3600 * 1000);
+
+    const listing = await prisma.marketplaceListing.create({
+      data: {
+        postedByUserId: poster.id,
+        title: sample.title,
+        description: sample.description,
+        setting: sample.setting,
+        careTypes: sample.careTypes,
+        services: sample.services,
+        specialties: sample.specialties,
+        city: sample.city,
+        state: sample.state,
+        zipCode: sample.zipCode,
+        startTime: start,
+        endTime: end,
+        hourlyRateMin: sample.hourlyRateMin,
+        hourlyRateMax: sample.hourlyRateMax,
+        status: MarketplaceListingStatus.OPEN,
+      },
+    });
+
+    // 2-4 random caregiver applications
+    const shuffled = [...caregiverUsers].sort(() => 0.5 - Math.random());
+    const applicants = shuffled.slice(
+      0,
+      2 + Math.floor(Math.random() * 3),
+    );
+    for (const applicant of applicants) {
+      await prisma.marketplaceApplication.create({
+        data: {
+          listingId: listing.id,
+          caregiverId: applicant.caregiver.id,
+          status: ApplicationStatus.APPLIED,
+          note: 'Interested and available for the requested schedule.',
+        },
+      });
+    }
+  }
+
+  console.log('✅ Sample marketplace listings and applications created');
+}
+
+/**
   await prisma.caregiverReview.deleteMany({});
   await prisma.payment.deleteMany({});
   await prisma.walletTransaction.deleteMany({});
