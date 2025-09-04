@@ -1370,6 +1370,80 @@ function getAppointmentColors(
   };
 }
 
+// ========================================================================
+// SIMPLE AVAILABILITY HELPERS (stub implementations for API route needs)
+// ========================================================================
+
+/**
+ * Very-lightweight availability check.
+ * Always returns `isAvailable: true` with no conflicts.
+ * Satisfies API import expectations until full scheduling logic is ready.
+ */
+export async function checkUserAvailability(
+  userId: string,
+  timeRange: { startTime: string; endTime: string },
+  appointmentType: AppointmentType,
+  homeId?: string
+): Promise<AvailabilityCheck> {
+  return {
+    userId,
+    appointmentType,
+    requestedSlot: {
+      startTime: timeRange.startTime,
+      endTime: timeRange.endTime
+    },
+    isAvailable: true,
+    conflicts: []
+  };
+}
+
+/**
+ * Generates a handful of evenly-spaced available slots between the given dates
+ * (one slot per day at 09:00, 11:00, 13:00 and 15:00 local time).
+ * Duration is respected.  Stub implementation for API compile-time needs.
+ */
+export async function findAvailableSlots(
+  userId: string,
+  range: { start: Date; end: Date },
+  appointmentType: AppointmentType,
+  duration: number,
+  homeId?: string
+): Promise<AvailabilitySlot[]> {
+  const slots: AvailabilitySlot[] = [];
+  const millis = duration * 60 * 1000;
+
+  // iterate days inclusive
+  for (
+    let day = startOfDay(range.start);
+    day <= range.end;
+    day = addDays(day, 1)
+  ) {
+    // skip if outside overall range (safety)
+    if (day > range.end) break;
+
+    const hours = [9, 11, 13, 15];
+    for (const h of hours) {
+      const start = new Date(day);
+      start.setHours(h, 0, 0, 0);
+      // ensure not before requested range.start
+      if (start < range.start) continue;
+      const end = new Date(start.getTime() + millis);
+      // ensure slot ends before range.end
+      if (end > range.end) continue;
+
+      slots.push({
+        userId,
+        appointmentType,
+        startTime: start.toISOString(),
+        endTime: end.toISOString(),
+        homeId
+      });
+    }
+  }
+
+  return slots;
+}
+
 // Export all public functions
 export {
   // These functions are already exported above
@@ -1382,5 +1456,8 @@ export {
   // appointmentToCalendarEvent,
   // formatDate,
   // doSlotsOverlap,
-  // getSlotDuration
+  // getSlotDuration,
+  // Newly added helpers for availability routes
+  checkUserAvailability,
+  findAvailableSlots
 };
