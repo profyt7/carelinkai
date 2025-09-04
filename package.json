@@ -15,7 +15,10 @@
     "generate:vapid": "node scripts/generate-vapid.js --update-env",
     "generate:icons": "node scripts/generate-pwa-icons.js",
     "test:pwa": "node scripts/test-pwa.js",
-    "build:pwa": "npm run build && npm run test:pwa"
+    "build:pwa": "npm run build && npm run test:pwa",
+    "test:e2e": "playwright test --reporter=list",
+    "cron:schedule": "node scripts/run-cron.js --mode schedule",
+    "cron:run": "node scripts/run-cron.js"
   },
   "prisma": {
     "seed": "ts-node --transpile-only prisma/seed.ts"
@@ -39,6 +42,7 @@
     "@tailwindcss/forms": "^0.5.10",
     "@tailwindcss/typography": "^0.5.16",
     "@types/nodemailer": "^6.4.17",
+    "archiver": "^7.0.1",
     "axios": "^1.6.2",
     "bcryptjs": "^2.4.3",
     "chart.js": "^4.4.0",
@@ -71,11 +75,13 @@
     "socket.io": "^4.7.2",
     "socket.io-client": "^4.7.2",
     "stripe": "^14.5.0",
+    "twilio": "^5.8.2",
     "uuid": "^9.0.1",
     "web-push": "^3.6.7",
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
     "@testing-library/jest-dom": "^6.1.4",
     "@testing-library/react": "^14.1.2",
     "@types/bcryptjs": "^2.4.2",
