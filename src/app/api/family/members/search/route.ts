@@ -73,11 +73,11 @@ export async function GET(request: NextRequest) {
     // Add full name match optimization if we have multiple tokens
     if (tokens.length > 1) {
       whereConditions.push({
-        AND: [
+        ['AND']: [
           { firstName: { contains: firstToken, mode: 'insensitive' } },
           { lastName: { contains: lastToken, mode: 'insensitive' } }
         ]
-      });
+      } as any);
     }
 
     // Query for matching family members
