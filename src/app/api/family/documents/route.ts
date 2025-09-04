@@ -9,10 +9,10 @@ import { mkdir } from "fs/promises";
 import { prisma } from "@/lib/prisma";
 import { publish } from "@/lib/server/sse";
 import { 
-  DocumentType, 
   FamilyDocumentWithDetails, 
   DocumentFilterParams 
 } from "@/lib/types/family";
+import { DocumentType } from "@prisma/client";
 import { 
   checkFamilyMembership,
   hasPermissionToUploadDocuments,
