@@ -576,7 +576,48 @@ export async function PUT(request: NextRequest) {
       }
 
       // Otherwise perform normal single-instance update
-      const updatedAppointment = await updateAppointment(id, updateData);
+      // ------------------------------------------------
+      // 1. Normalize fields to satisfy strict Appointment typing
+      const normalizedUpdate: any = { ...updateData };
+
+      // Normalize location.coordinates to ensure both latitude & longitude exist
+      if (normalizedUpdate.location) {
+        const coords = normalizedUpdate.location.coordinates;
+        normalizedUpdate.location = {
+          ...normalizedUpdate.location,
+          coordinates:
+            coords &&
+            coords.latitude !== undefined &&
+            coords.longitude !== undefined
+              ? {
+                  latitude: coords.latitude as number,
+                  longitude: coords.longitude as number,
+                }
+              : undefined,
+        };
+      }
+
+      // Ensure participants include required defaults
+      if (normalizedUpdate.participants) {
+        normalizedUpdate.participants = normalizedUpdate.participants.map((p: any) => ({
+          userId: p.userId,
+          name: p.name ?? '',
+          role: (p.role as UserRole) ?? UserRole.FAMILY,
+          status: p.status ?? 'PENDING',
+          notes: p.notes,
+        }));
+      }
+
+      // Ensure reminders contain `sent` flag
+      if (normalizedUpdate.reminders) {
+        normalizedUpdate.reminders = normalizedUpdate.reminders.map((r: any) => ({
+          minutesBefore: r.minutesBefore,
+          method: r.method,
+          sent: false,
+        }));
+      }
+
+      const updatedAppointment = await updateAppointment(id, normalizedUpdate);
 
       return NextResponse.json({ success: true, data: updatedAppointment });
     }
