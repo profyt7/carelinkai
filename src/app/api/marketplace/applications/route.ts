@@ -181,6 +181,25 @@ export async function POST(request: Request) {
         status: 'APPLIED'
       }
     });
+
+    // Notify listing owner of new application (in-app notification only)
+    try {
+      await (prisma as any).notification.create({
+        data: {
+          userId: listing.postedByUserId,
+          type: 'SYSTEM',
+          title: 'New application received',
+          message: `You received a new application for "${listing.title}"`,
+          data: {
+            listingId: listing.id,
+            applicationId: application.id
+          }
+        }
+      });
+    } catch (notifyErr) {
+      // Log and swallow notification errors so they don't block application creation
+      console.error('Failed to create notification for new application:', notifyErr);
+    }
     
     return NextResponse.json(
       { data: application },

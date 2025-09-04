@@ -12,6 +12,7 @@ import {
   FiXCircle,
   FiAlertCircle
 } from "react-icons/fi";
+import ApplicationActions from "./ApplicationActions";
 
 export const dynamic = "force-dynamic";
 
@@ -261,6 +262,11 @@ export default async function ApplicationsPage({ params }: { params: { id: strin
                       </Link>
                     </div>
                   </div>
+                </div>
+
+                {/* Owner action controls */}
+                <div className="border-t border-gray-200 p-4 bg-white">
+                  <ApplicationActions applicationId={application.id} />
                 </div>
               ))}
             </div>
