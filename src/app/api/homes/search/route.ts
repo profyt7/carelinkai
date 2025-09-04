@@ -358,7 +358,7 @@ export async function GET(req: NextRequest) {
     }
     
     // Format homes for response (remove sensitive data)
-    const formattedHomes = processedHomes.map(home => ({
+    const formattedHomes = processedHomes.map((home: any) => ({
       id: home.id,
       name: home.name,
       description: home.description,
