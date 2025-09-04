@@ -142,7 +142,6 @@ export async function POST(request: NextRequest) {
         id: true,
         email: true,
         passwordHash: true,
-        passwordLastChanged: true
       }
     });
     
@@ -198,7 +197,6 @@ export async function POST(request: NextRequest) {
       where: { id: userId },
       data: {
         passwordHash: newPasswordHash,
-        passwordLastChanged: new Date()
       }
     });
     
