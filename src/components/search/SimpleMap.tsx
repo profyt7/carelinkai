@@ -27,7 +27,8 @@ interface HomeData {
   id: string;
   name: string;
   description: string;
-  address: HomeAddress;
+  // Accept either structured object returned from API or simple string fallback
+  address: HomeAddress | string;
   careLevel: string[];
   priceRange: {
     min: number | null;
@@ -38,7 +39,12 @@ interface HomeData {
   capacity: number;
   availability: number;
   amenities: string[];
-  imageUrl: string | null;
+  imageUrl?: string | null;
+  // Some callers (e.g. home details page) include coordinates at root level
+  coordinates?: {
+    lat: number;
+    lng: number;
+  };
 }
 
 interface SimpleMapProps {
@@ -73,13 +79,26 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
     typeof n === 'number' && !Number.isNaN(n) && Number.isFinite(n);
 
   const getLat = (home: HomeData) => {
-    const lat = home.address?.coordinates?.lat ?? home.address?.latitude;
+    let lat: number | undefined;
+    // address may be object or string
+    if (typeof home.address !== 'string') {
+      lat = home.address.coordinates?.lat ?? home.address.latitude;
+    }
+    if (lat === undefined) {
+      lat = home.coordinates?.lat;
+    }
     console.log(`[SimpleMap] Home ${home.id} latitude:`, lat);
     return lat;
   };
 
   const getLng = (home: HomeData) => {
-    const lng = home.address?.coordinates?.lng ?? home.address?.longitude;
+    let lng: number | undefined;
+    if (typeof home.address !== 'string') {
+      lng = home.address.coordinates?.lng ?? home.address.longitude;
+    }
+    if (lng === undefined) {
+      lng = home.coordinates?.lng;
+    }
     console.log(`[SimpleMap] Home ${home.id} longitude:`, lng);
     return lng;
   };
@@ -141,6 +160,11 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
   // Create popup content for a home
   const createPopupContent = (home: HomeData) => {
     const isFavorite = favorites.includes(home.id);
+    // Support either string or structured address object
+    const addressText =
+      typeof home.address === 'string'
+        ? home.address
+        : `${home.address.street}, ${home.address.city}, ${home.address.state}`;
     
     return `
       <div class="w-64 p-2">
@@ -157,7 +181,7 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
         </div>
         
         <p class="text-xs text-neutral-600 mb-2">
-          ${home.address.street}, ${home.address.city}, ${home.address.state}
+          ${addressText}
         </p>
         
         <div class="flex items-center text-xs text-neutral-500 mb-2">

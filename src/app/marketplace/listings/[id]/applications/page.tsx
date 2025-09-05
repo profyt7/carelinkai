@@ -210,7 +210,10 @@ export default async function ApplicationsPage({ params }: { params: { id: strin
           ) : (
             <div className="space-y-6">
               {applications.map((application: any) => (
-                <div key={application.id} className="border border-gray-200 rounded-lg overflow-hidden">
+                <div
+                  key={application.id}
+                  className="border border-gray-200 rounded-lg overflow-hidden"
+                >
                   <div className="p-4 bg-gray-50 border-b border-gray-200 flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-10 w-10 bg-gray-200 rounded-full overflow-hidden">
@@ -262,11 +265,11 @@ export default async function ApplicationsPage({ params }: { params: { id: strin
                       </Link>
                     </div>
                   </div>
-                </div>
 
-                {/* Owner action controls */}
-                <div className="border-t border-gray-200 p-4 bg-white">
-                  <ApplicationActions applicationId={application.id} />
+                  {/* Owner action controls */}
+                  <div className="border-t border-gray-200 p-4 bg-white">
+                    <ApplicationActions applicationId={application.id} />
+                  </div>
                 </div>
               ))}
             </div>
