@@ -641,11 +641,15 @@ export async function GET(request: NextRequest) {
     
   } catch (error) {
     console.error('Search API error:', error);
-    
+
     return NextResponse.json({
       success: false,
       error: 'An error occurred while processing your search',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      // Safely expose message in development while satisfying TS about unknown errors
+      details:
+        process.env['NODE_ENV'] === 'development'
+          ? ((error as any)?.message ?? String(error))
+          : undefined
     }, { status: 500 });
   } finally {
     // Always disconnect from the database
