@@ -165,7 +165,7 @@ export default async function ListingDetailPage({
                 <div>
                   <h3 className="text-sm font-medium text-gray-500">Care Types</h3>
                   <div className="mt-1 flex flex-wrap gap-1">
-                    {listing.careTypes.map((type) => (
+                    {listing.careTypes.map((type: string) => (
                       <span
                         key={type}
                         className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"
@@ -182,7 +182,7 @@ export default async function ListingDetailPage({
                 <div>
                   <h3 className="text-sm font-medium text-gray-500">Services</h3>
                   <div className="mt-1 flex flex-wrap gap-1">
-                    {listing.services.map((service) => (
+                    {listing.services.map((service: string) => (
                       <span
                         key={service}
                         className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
@@ -199,7 +199,7 @@ export default async function ListingDetailPage({
                 <div>
                   <h3 className="text-sm font-medium text-gray-500">Specialties</h3>
                   <div className="mt-1 flex flex-wrap gap-1">
-                    {listing.specialties.map((specialty) => (
+                    {listing.specialties.map((specialty: string) => (
                       <span
                         key={specialty}
                         className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800"
