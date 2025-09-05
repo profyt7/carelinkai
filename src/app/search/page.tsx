@@ -405,7 +405,7 @@ export default function SearchPage() {
         </div>
 
         {/* Active filters */}
-        {(filters.careLevels?.length > 0 || 
+        {((filters.careLevels?.length ?? 0) > 0 || 
           filters.priceMin || 
           filters.priceMax || 
           filters.gender !== "ALL" || 
