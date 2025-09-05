@@ -12,6 +12,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "seed": "ts-node --transpile-only prisma/seed.ts",
+    "seed:marketplace-demo": "ts-node --transpile-only prisma/seed-marketplace-demo.ts",
     "generate:vapid": "node scripts/generate-vapid.js --update-env",
     "generate:icons": "node scripts/generate-pwa-icons.js",
     "test:pwa": "node scripts/test-pwa.js",
