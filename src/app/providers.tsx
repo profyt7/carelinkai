@@ -231,41 +231,32 @@ function SocketProvider({ children }: { children: React.ReactNode }) {
   });
 
   useEffect(() => {
-    // Only connect to socket if in browser and user is authenticated
-    if (typeof window !== "undefined") {
-      // We would check authentication here before connecting
-      const token = localStorage.getItem("token");
-      
-      if (token) {
-        const socket = io(process.env["NEXT_PUBLIC_SOCKET_URL"] || "", {
-          auth: {
-            token,
-          },
-          transports: ["websocket"],
-          // HIPAA compliance: Ensure secure connection
-          secure: true,
-        });
+    // Only run in the browser
+    if (typeof window === "undefined") return;
 
-        socket.on("connect", () => {
-          setSocketState({
-            socket,
-            connected: true,
-          });
-        });
+    // Retrieve auth token
+    const token = localStorage.getItem("token");
+    if (!token) return;
 
-        socket.on("disconnect", () => {
-          setSocketState((prev) => ({
-            ...prev,
-            connected: false,
-          }));
-        });
+    // Establish socket connection
+    const socket = io(process.env["NEXT_PUBLIC_SOCKET_URL"] || "", {
+      auth: { token },
+      transports: ["websocket"],
+      secure: true, // HIPAA compliance: ensure secure transport
+    });
 
-        // Cleanup on unmount
-        return () => {
-          socket.disconnect();
-        };
-      }
-    }
+    socket.on("connect", () => {
+      setSocketState({ socket, connected: true });
+    });
+
+    socket.on("disconnect", () => {
+      setSocketState((prev) => ({ ...prev, connected: false }));
+    });
+
+    // Cleanup on unmount
+    return () => {
+      socket.disconnect();
+    };
   }, []);
 
   return (
