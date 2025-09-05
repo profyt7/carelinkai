@@ -274,7 +274,8 @@ export async function PUT(request: NextRequest) {
       where: { id: userId },
       data: {
         preferences: updatedPreferences,
-        notificationPrefs: notifications || user.notificationPrefs,
+        // Cast to `any` to satisfy Prisma JSON input types while preserving existing value
+        notificationPrefs: (notifications as any) ?? (user.notificationPrefs as any),
         timezone: display?.timezone || undefined
       }
     });
