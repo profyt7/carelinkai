@@ -40,12 +40,8 @@ import {
 import DashboardLayout from "@/components/layout/DashboardLayout";
 // Import our new components
 import PhotoGallery from "@/components/homes/PhotoGallery";
-import PricingCalculator, { 
-  RoomPricing, 
-  AdditionalService,
-  OneTimeFee,
-  PricingEstimate 
-} from "@/components/homes/PricingCalculator";
+import PricingCalculator from "@/components/homes/PricingCalculator";
+import type { PricingEstimate } from "@/components/homes/PricingCalculator";
 
 // Dynamically import the SimpleMap component with SSR disabled
 const SimpleMap = dynamic(
