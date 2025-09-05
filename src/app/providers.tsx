@@ -16,7 +16,8 @@ import { ThemeProvider } from "next-themes";
 import { Toaster } from "react-hot-toast";
 
 // Initialize Stripe
-const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+const publishableKey =
+  process.env["NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY"];
 const stripePromise = publishableKey ? loadStripe(publishableKey) : null;
 
 // Socket.io Context
@@ -236,7 +237,7 @@ function SocketProvider({ children }: { children: React.ReactNode }) {
       const token = localStorage.getItem("token");
       
       if (token) {
-        const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || "", {
+        const socket = io(process.env["NEXT_PUBLIC_SOCKET_URL"] || "", {
           auth: {
             token,
           },
