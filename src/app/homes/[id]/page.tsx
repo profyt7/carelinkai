@@ -269,7 +269,8 @@ export default function HomeDetailPage() {
     phone: "",
     residentName: "",
     moveInTimeframe: "1-3 months",
-    careNeeded: [],
+    // Explicitly assert string[] to avoid `never[]` inference issues
+    careNeeded: [] as string[],
     message: "",
     tourDate: "",
     tourTime: ""
