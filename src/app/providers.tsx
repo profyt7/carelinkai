@@ -11,6 +11,7 @@ import React, {
 import { SessionProvider } from "next-auth/react";
 import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
+import type { StripeElementsOptions } from "@stripe/stripe-js";
 import { io, Socket } from "socket.io-client";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "react-hot-toast";
@@ -332,7 +333,7 @@ function AppProvider({ children }: { children: React.ReactNode }) {
 // Main Providers component that wraps the app
 export function Providers({ children }: { children: React.ReactNode }) {
   // Stripe payment options with HIPAA compliance considerations
-  const stripeOptions = useMemo(
+  const stripeOptions = useMemo<StripeElementsOptions>(
     () => ({
       locale: "en",
       // HIPAA compliance: Ensure proper data handling
