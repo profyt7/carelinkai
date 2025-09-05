@@ -306,15 +306,20 @@ function AppProvider({ children }: { children: React.ReactNode }) {
 
   // Auto-remove alerts after their duration
   useEffect(() => {
+    const timers: ReturnType<typeof setTimeout>[] = [];
+
     state.alerts.forEach((alert) => {
       if (alert.autoClose !== false) {
         const timer = setTimeout(() => {
           dispatch({ type: "REMOVE_ALERT", payload: alert.id });
         }, alert.duration || 5000);
-
-        return () => clearTimeout(timer);
+        timers.push(timer);
       }
     });
+
+    return () => {
+      timers.forEach((t) => clearTimeout(t));
+    };
   }, [state.alerts]);
 
   return (
