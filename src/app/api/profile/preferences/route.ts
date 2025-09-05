@@ -161,7 +161,7 @@ export async function GET(request: NextRequest) {
       display: {
         timezone: user.timezone || "UTC"
       },
-      ...(user.preferences || {})
+      ...((user.preferences as any) || {})
     };
     
     // Create audit log entry for preferences view
