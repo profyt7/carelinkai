@@ -599,7 +599,8 @@ export default function InquiryDetailPage() {
     
     const eventTitle = `Tour at ${inquiry.home.name}`;
     const eventDate = new Date(inquiry.tourDate);
-    const [hours, minutes] = inquiry.tourTime.split(':');
+    // Provide safe defaults in case split returns missing segments
+    const [hours = '0', minutes = '0'] = inquiry.tourTime.split(':');
     eventDate.setHours(parseInt(hours), parseInt(minutes));
     
     const endDate = new Date(eventDate);
