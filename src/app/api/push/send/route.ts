@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
     }
     
     // Get subscriptions from database
-    const subscriptions = await prisma.pushSubscription.findMany(subscriptionQuery);
+    const subscriptions = await (prisma as any).pushSubscription.findMany(subscriptionQuery);
     
     if (subscriptions.length === 0) {
       return NextResponse.json(
@@ -170,7 +170,7 @@ export async function POST(req: NextRequest) {
         // If subscription is invalid (gone), remove it
         if (error.statusCode === 410) {
           try {
-            await prisma.pushSubscription.delete({
+            await (prisma as any).pushSubscription.delete({
               where: { id: subscription.id }
             });
             results.errors.push(`Subscription expired and removed: ${subscription.endpoint.substring(0, 50)}...`);
@@ -212,7 +212,7 @@ export async function GET(req: NextRequest) {
     }
     
     // Check if the user has any subscriptions
-    const subscriptionCount = await prisma.pushSubscription.count({
+    const subscriptionCount = await (prisma as any).pushSubscription.count({
       where: { userId: session.user.id }
     });
     

@@ -8,9 +8,9 @@ const prisma = new PrismaClient();
 
 // Configure web-push with VAPID keys
 webpush.setVapidDetails(
-  process.env.VAPID_SUBJECT || 'mailto:support@carelinkai.com',
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '',
-  process.env.VAPID_PRIVATE_KEY || ''
+  process.env['VAPID_SUBJECT'] || 'mailto:support@carelinkai.com',
+  process.env['NEXT_PUBLIC_VAPID_PUBLIC_KEY'] || '',
+  process.env['VAPID_PRIVATE_KEY'] || ''
 );
 
 /**
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     }
     
     // Check if this subscription already exists
-    const existingSubscription = await prisma.pushSubscription.findFirst({
+    const existingSubscription = await (prisma as any).pushSubscription.findFirst({
       where: {
         endpoint: subscription.endpoint,
         userId: session.user.id
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
     
     if (existingSubscription) {
       // Update the existing subscription
-      await prisma.pushSubscription.update({
+      await (prisma as any).pushSubscription.update({
         where: { id: existingSubscription.id },
         data: {
           p256dh: subscription.keys.p256dh,
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     }
     
     // Create a new subscription
-    await prisma.pushSubscription.create({
+    await (prisma as any).pushSubscription.create({
       data: {
         endpoint: subscription.endpoint,
         p256dh: subscription.keys.p256dh,
@@ -137,7 +137,7 @@ export async function DELETE(req: NextRequest) {
     }
     
     // Delete the subscription
-    await prisma.pushSubscription.deleteMany({
+    await (prisma as any).pushSubscription.deleteMany({
       where: {
         endpoint: endpoint,
         userId: session.user.id
