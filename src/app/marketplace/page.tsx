@@ -47,7 +47,7 @@ export default function MarketplacePage() {
 
   useEffect(() => {
     // Check feature flag
-    const featureEnabled = process.env.NEXT_PUBLIC_MARKETPLACE_ENABLED !== "false";
+    const featureEnabled = process.env["NEXT_PUBLIC_MARKETPLACE_ENABLED"] !== "false";
     setIsFeatureEnabled(featureEnabled);
     
     if (featureEnabled) {
