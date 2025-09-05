@@ -38,7 +38,7 @@ interface HomeData {
   };
   capacity: number;
   availability: number;
-  amenities: string[];
+  amenities: string[] | { category: string; items: string[] }[];
   imageUrl?: string | null;
   // Some callers (e.g. home details page) include coordinates at root level
   coordinates?: {
