@@ -902,12 +902,7 @@ export default function HomeDetailPage() {
               <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white">
                 <div className="h-80 w-full">
                   {home.coordinates && (
-                    <SimpleMap
-                      homes={[home]}
-                      center={home.coordinates}
-                      zoom={15}
-                      showPopup={true}
-                    />
+                    <SimpleMap homes={[home]} />
                   )}
                 </div>
                 <div className="p-6">
