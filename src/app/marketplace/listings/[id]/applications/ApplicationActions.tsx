@@ -23,12 +23,11 @@ export default function ApplicationActions({
 
   // Clear success message after 3 seconds
   useEffect(() => {
-    if (success) {
-      const timer = setTimeout(() => {
-        setSuccess(null);
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
+    if (!success) return;
+    const timer = setTimeout(() => {
+      setSuccess(null);
+    }, 3000);
+    return () => clearTimeout(timer);
   }, [success]);
 
   const handleSubmit = async (e: React.FormEvent) => {
