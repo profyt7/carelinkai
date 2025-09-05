@@ -39,7 +39,7 @@ import {
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
 // Import our new components
-import PhotoGallery, { Photo } from "@/components/homes/PhotoGallery";
+import PhotoGallery from "@/components/homes/PhotoGallery";
 import PricingCalculator, { 
   RoomPricing, 
   AdditionalService,
