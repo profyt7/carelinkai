@@ -10,17 +10,11 @@ import {
   FiList, 
   FiFilter, 
   FiX, 
-  FiStar, 
-  FiDollarSign, 
-  FiUsers, 
-  FiCalendar,
-  FiChevronDown,
-  FiChevronUp,
   FiHeart,
-  FiInfo,
   FiHome,
   FiAward,
-  FiMessageCircle
+  FiMessageCircle,
+  FiGrid
 } from "react-icons/fi";
 import { CareLevel } from "@prisma/client";
 import { 
@@ -32,7 +26,6 @@ import {
   type SearchResponse,
   type SearchResultItem
 } from "@/lib/searchService";
-import { formatCurrency } from "@/lib/utils";
 import {
   getFavorites,
   toggleFavorite,
@@ -398,7 +391,7 @@ export default function SearchPage() {
         </div>
 
         {/* Active filters */}
-        {(filters.careLevels?.length > 0 || 
+        {(((filters.careLevels?.length ?? 0) > 0) || 
           filters.priceMin || 
           filters.priceMax || 
           filters.gender !== "ALL" || 
