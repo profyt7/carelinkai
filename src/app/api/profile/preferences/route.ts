@@ -259,7 +259,7 @@ export async function PUT(request: NextRequest) {
     const { notifications, privacy, accessibility, display, roleSpecific } = validatedData;
     
     // Update base user preferences
-    const existingPreferences = user.preferences || {};
+    const existingPreferences = (user.preferences as any) || {};
     const updatedPreferences = {
       ...existingPreferences,
       privacy: privacy || existingPreferences.privacy,
