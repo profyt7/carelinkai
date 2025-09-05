@@ -306,7 +306,8 @@ export default function HomeDetailPage() {
     if (home.activities && home.activities.length > 0) {
       const uniqueDates = [...new Set(home.activities.map(activity => activity.date))];
       if (uniqueDates.length > 0) {
-        setSelectedDate(uniqueDates[0]);
+        const firstDate = uniqueDates[0];
+        if (firstDate) setSelectedDate(firstDate);
       }
     }
   }, [home.activities]);
