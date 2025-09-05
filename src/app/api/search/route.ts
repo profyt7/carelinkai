@@ -568,8 +568,8 @@ export async function GET(request: NextRequest) {
         priceRange: {
           min: home.priceMin ? Number(home.priceMin) : null,
           max: home.priceMax ? Number(home.priceMax) : null,
-          formattedMin: home.priceMin ? formatCurrency(home.priceMin) : null,
-          formattedMax: home.priceMax ? formatCurrency(home.priceMax) : null,
+          formattedMin: home.priceMin ? formatCurrency(Number(home.priceMin)) : null,
+          formattedMax: home.priceMax ? formatCurrency(Number(home.priceMax)) : null,
         },
         capacity: home.capacity,
         availability: home.capacity - home.currentOccupancy,
