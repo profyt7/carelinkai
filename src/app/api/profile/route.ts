@@ -364,6 +364,9 @@ export async function PATCH(request: NextRequest) {
     // Update role-specific data if any fields provided
     let roleSpecificUpdate = null;
     
+    // Cast roleSpecificFields to any for flexible property access
+    const rs: any = roleSpecificFields;
+
     if (Object.keys(roleSpecificFields).length > 0) {
       switch (user.role) {
         case UserRole.FAMILY:
@@ -371,8 +374,8 @@ export async function PATCH(request: NextRequest) {
             roleSpecificUpdate = await prisma.family.update({
               where: { userId },
               data: {
-                emergencyContact: roleSpecificFields.emergencyContact,
-                emergencyPhone: roleSpecificFields.emergencyPhone
+                emergencyContact: rs.emergencyContact,
+                emergencyPhone: rs.emergencyPhone
               }
             });
           }
@@ -383,9 +386,9 @@ export async function PATCH(request: NextRequest) {
             roleSpecificUpdate = await prisma.operator.update({
               where: { userId },
               data: {
-                companyName: roleSpecificFields.companyName,
-                taxId: roleSpecificFields.taxId,
-                businessLicense: roleSpecificFields.businessLicense
+                companyName: rs.companyName,
+                taxId: rs.taxId,
+                businessLicense: rs.businessLicense
               }
             });
           }
@@ -397,10 +400,10 @@ export async function PATCH(request: NextRequest) {
             roleSpecificUpdate = await prisma.caregiver.update({
               where: { userId },
               data: {
-                bio: roleSpecificFields.bio,
-                yearsExperience: roleSpecificFields.yearsExperience,
-                hourlyRate: roleSpecificFields.hourlyRate,
-                availability: roleSpecificFields.availability
+                bio: rs.bio,
+                yearsExperience: rs.yearsExperience,
+                hourlyRate: rs.hourlyRate,
+                availability: rs.availability
               }
             });
           }
@@ -412,9 +415,9 @@ export async function PATCH(request: NextRequest) {
             roleSpecificUpdate = await prisma.affiliate.update({
               where: { userId },
               data: {
-                organization: roleSpecificFields.organization,
-                commissionRate: roleSpecificFields.commissionRate,
-                paymentDetails: roleSpecificFields.paymentDetails
+                organization: rs.organization,
+                commissionRate: rs.commissionRate,
+                paymentDetails: rs.paymentDetails
               }
             });
           }
