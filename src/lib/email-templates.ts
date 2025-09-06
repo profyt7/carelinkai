@@ -518,7 +518,7 @@ export function getWelcomeTemplate(
       ]
     },
     ADMIN: {
-      greeting: 'Welcome to CareLinkAI! You've been granted administrator access to the platform.',
+      greeting: "Welcome to CareLinkAI! You've been granted administrator access to the platform.",
       nextSteps: [
         'Familiarize yourself with the admin dashboard',
         'Review pending approvals and verifications',
@@ -539,7 +539,7 @@ export function getWelcomeTemplate(
   
   const normalizedRole = role.toUpperCase();
   const content = roleSpecificContent[normalizedRole] || {
-    greeting: 'Welcome to CareLinkAI! We're glad to have you join our community.',
+    greeting: "Welcome to CareLinkAI! We're glad to have you join our community.",
     nextSteps: [
       'Complete your profile',
       'Explore the platform features',
