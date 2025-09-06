@@ -98,7 +98,7 @@ export const authOptions: NextAuthOptions = {
           // Log failed login attempt for inactive account
           await prisma.auditLog.create({
             data: {
-              action: AuditAction.SECURITY,
+              action: AuditAction.ACCESS_DENIED,
               resourceType: "AUTH",
               resourceId: user.id,
               description: "Login attempt on inactive account",
@@ -129,7 +129,7 @@ export const authOptions: NextAuthOptions = {
           // Log failed login attempt due to invalid password
           await prisma.auditLog.create({
             data: {
-              action: AuditAction.SECURITY,
+              action: AuditAction.ACCESS_DENIED,
               resourceType: "AUTH",
               resourceId: user.id,
               description: "Failed login attempt - invalid password",
@@ -179,7 +179,7 @@ export const authOptions: NextAuthOptions = {
             // Log failed 2FA attempt
             await prisma.auditLog.create({
               data: {
-                action: AuditAction.SECURITY,
+                action: AuditAction.ACCESS_DENIED,
                 resourceType: "AUTH",
                 resourceId: user.id,
                 description: "Failed 2FA verification",
@@ -208,7 +208,7 @@ export const authOptions: NextAuthOptions = {
             // Log backup code usage
             await prisma.auditLog.create({
               data: {
-                action: AuditAction.SECURITY,
+                action: AuditAction.OTHER,
                 resourceType: "AUTH",
                 resourceId: user.id,
                 description: "Backup code used for 2FA",
@@ -232,7 +232,7 @@ export const authOptions: NextAuthOptions = {
         // Log successful login
         await prisma.auditLog.create({
           data: {
-            action: AuditAction.SECURITY,
+            action: AuditAction.LOGIN,
             resourceType: "AUTH",
             resourceId: user.id,
             description: "Successful login",
