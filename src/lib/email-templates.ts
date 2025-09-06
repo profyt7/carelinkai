@@ -491,16 +491,16 @@ export function getWelcomeTemplate(
 ) {
   const roleSpecificContent: Record<string, { greeting: string, nextSteps: string[] }> = {
     FAMILY: {
-      greeting: 'Welcome to CareLinkAI! We're here to help you find the perfect care solution for your loved one.',
+      greeting: "Welcome to CareLinkAI! We're here to help you find the perfect care solution for your loved one.",
       nextSteps: [
         'Complete your family profile',
-        'Add information about your loved one's care needs',
+        "Add information about your loved one's care needs",
         'Browse available assisted living homes',
         'Schedule tours with homes that match your needs'
       ]
     },
     OPERATOR: {
-      greeting: 'Welcome to CareLinkAI! We're excited to partner with you to showcase your assisted living homes.',
+      greeting: "Welcome to CareLinkAI! We're excited to partner with you to showcase your assisted living homes.",
       nextSteps: [
         'Complete your operator profile',
         'Add your assisted living homes to the platform',
@@ -509,7 +509,7 @@ export function getWelcomeTemplate(
       ]
     },
     CAREGIVER: {
-      greeting: 'Welcome to CareLinkAI! We're glad to have you join our network of professional caregivers.',
+      greeting: "Welcome to CareLinkAI! We're glad to have you join our network of professional caregivers.",
       nextSteps: [
         'Complete your caregiver profile',
         'Upload your credentials and certifications',
@@ -527,7 +527,7 @@ export function getWelcomeTemplate(
       ]
     },
     AFFILIATE: {
-      greeting: 'Welcome to CareLinkAI! We're excited to have you as an affiliate partner.',
+      greeting: "Welcome to CareLinkAI! We're excited to have you as an affiliate partner.",
       nextSteps: [
         'Complete your affiliate profile',
         'Access your unique referral links',
