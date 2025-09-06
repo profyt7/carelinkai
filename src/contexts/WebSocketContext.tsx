@@ -375,7 +375,11 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const otherParticipants = conversation.participants.filter(p => p.id !== MOCK_USER_ID);
     if (otherParticipants.length === 0) return;
     
-    const respondingParticipant = otherParticipants[Math.floor(Math.random() * otherParticipants.length)];
+    // We have already checked that `otherParticipants` length is > 0, so the
+    // random lookup is guaranteed to return a Participant. Use the non-null
+    // assertion operator to inform TypeScript of this fact.
+    const respondingParticipant =
+      otherParticipants[Math.floor(Math.random() * otherParticipants.length)]!;
     
     // Simulate typing indicator
     startTyping(conversationId, respondingParticipant.id);
