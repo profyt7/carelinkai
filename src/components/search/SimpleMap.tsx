@@ -65,6 +65,7 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersRef = useRef<{ [key: string]: L.Marker }>({});
+  const resizeHandlerRef = useRef<((this: Window, ev: UIEvent) => any) | null>(null);
   const [mounted, setMounted] = useState(false);
   const [domReady, setDomReady] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
@@ -374,11 +375,8 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
           }
         };
         
+        resizeHandlerRef.current = handleResize;
         window.addEventListener('resize', handleResize);
-        
-        return () => {
-          window.removeEventListener('resize', handleResize);
-        };
       } catch (error) {
         console.error("[SimpleMap] Error initializing map:", error);
         setMapError(`Failed to initialize map: ${error instanceof Error ? error.message : String(error)}`);
@@ -391,6 +389,10 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
     // Cleanup function
     return () => {
       console.log("[SimpleMap] Cleaning up map...");
+      if (resizeHandlerRef.current) {
+        window.removeEventListener('resize', resizeHandlerRef.current);
+        resizeHandlerRef.current = null;
+      }
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
