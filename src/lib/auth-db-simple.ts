@@ -6,19 +6,20 @@
  * authentication works reliably.
  */
 
-import { NextAuthOptions } from "next-auth";
+import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import AppleProvider from "next-auth/providers/apple";
-import { PrismaClient, UserRole, UserStatus } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
+import type { UserRole, UserStatus } from "@prisma/client";
 import { compare } from "bcryptjs";
 
 // Initialize Prisma client
 const prisma = new PrismaClient();
 
 // Constants for security settings
-const JWT_MAX_AGE = parseInt(process.env.JWT_EXPIRATION || "86400"); // 24 hours in seconds
-const SESSION_MAX_AGE = parseInt(process.env.SESSION_EXPIRY || "86400"); // 24 hours in seconds
+const JWT_MAX_AGE = parseInt(process.env["JWT_EXPIRATION"] || "86400"); // 24 hours in seconds
+const SESSION_MAX_AGE = parseInt(process.env["SESSION_EXPIRY"] || "86400"); // 24 hours in seconds
 
 /**
  * NextAuth configuration options - simplified for reliable database auth
@@ -29,11 +30,11 @@ export const authOptions: NextAuthOptions = {
     /* --------------------------------------------
      * Google OAuth (enabled only if env vars exist)
      * ------------------------------------------ */
-    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+    ...(process.env["GOOGLE_CLIENT_ID"] && process.env["GOOGLE_CLIENT_SECRET"]
       ? [
           GoogleProvider({
-            clientId: process.env.GOOGLE_CLIENT_ID!,
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+            clientId: process.env["GOOGLE_CLIENT_ID"]!,
+            clientSecret: process.env["GOOGLE_CLIENT_SECRET"]!,
           }),
         ]
       : []),
@@ -41,18 +42,18 @@ export const authOptions: NextAuthOptions = {
     /* --------------------------------------------
      * Apple OAuth (enabled only if env vars exist)
      * ------------------------------------------ */
-    ...(process.env.APPLE_ID &&
-    process.env.APPLE_TEAM_ID &&
-    process.env.APPLE_PRIVATE_KEY &&
-    process.env.APPLE_KEY_ID
+    ...(process.env["APPLE_ID"] &&
+    process.env["APPLE_TEAM_ID"] &&
+    process.env["APPLE_PRIVATE_KEY"] &&
+    process.env["APPLE_KEY_ID"]
       ? [
           AppleProvider({
-            clientId: process.env.APPLE_ID!,
+            clientId: process.env["APPLE_ID"]!,
             clientSecret: {
-              appleId: process.env.APPLE_ID!,
-              teamId: process.env.APPLE_TEAM_ID!,
-              privateKey: process.env.APPLE_PRIVATE_KEY!.replace(/\\n/g, "\n"),
-              keyId: process.env.APPLE_KEY_ID!,
+              appleId: process.env["APPLE_ID"]!,
+              teamId: process.env["APPLE_TEAM_ID"]!,
+              privateKey: process.env["APPLE_PRIVATE_KEY"]!.replace(/\\n/g, "\n"),
+              keyId: process.env["APPLE_KEY_ID"]!,
             },
           }),
         ]
@@ -148,7 +149,7 @@ export const authOptions: NextAuthOptions = {
     // JWT callback to customize token content
     async jwt({ token, user }) {
       /* ---------- DEBUG ---------- */
-      if (process.env.NODE_ENV === "development") {
+      if (process.env["NODE_ENV"] === "development") {
         console.log(
           "[auth] JWT callback – phase:",
           user ? "initial-signin" : "refresh",
@@ -191,7 +192,7 @@ export const authOptions: NextAuthOptions = {
             token.lastName = freshUser.lastName;
             token.email = freshUser.email;
 
-            if (process.env.NODE_ENV === "development") {
+            if (process.env["NODE_ENV"] === "development") {
               console.log("[auth] JWT callback – refreshed from DB:", {
                 id: token.id,
                 profileImageUrl: token.profileImageUrl,
@@ -201,7 +202,7 @@ export const authOptions: NextAuthOptions = {
         }
       } catch (err) {
         // Log in dev mode but never throw – falling back to existing token data.
-        if (process.env.NODE_ENV === "development") {
+        if (process.env["NODE_ENV"] === "development") {
           console.warn("JWT callback refresh failed:", err);
         }
       }
@@ -211,7 +212,7 @@ export const authOptions: NextAuthOptions = {
     
     // Session callback to pass data to client
     async session({ session, token }) {
-      if (process.env.NODE_ENV === "development") {
+      if (process.env["NODE_ENV"] === "development") {
         console.log("[auth] Session callback – incoming token:", {
           id: token.id,
           profileImageUrl: token.profileImageUrl,
@@ -230,7 +231,7 @@ export const authOptions: NextAuthOptions = {
         session.user.email = token.email as string;
       }
       
-      if (process.env.NODE_ENV === "development") {
+      if (process.env["NODE_ENV"] === "development") {
         console.log("[auth] Session callback – outgoing session.user:", {
           id: session.user.id,
           profileImageUrl: session.user.profileImageUrl,
@@ -262,5 +263,5 @@ export const authOptions: NextAuthOptions = {
   },
   
   // Debug mode (enable for development)
-  debug: process.env.NODE_ENV === "development",
+  debug: process.env["NODE_ENV"] === "development",
 };
