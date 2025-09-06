@@ -707,7 +707,7 @@ export function useDocuments({
       // Upload each document sequentially
       for (let i = 0; i < documents.length; i++) {
         const docToUpload = documents[i]!;
-        const documentId = documentIds[i];
+        const documentId = documentIds[i]!;
         
         // Create form data for this document
         const formData = new FormData();
