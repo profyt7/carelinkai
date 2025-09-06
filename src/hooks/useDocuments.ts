@@ -304,13 +304,13 @@ export function useDocuments({
               : doc
           );
 
-          const updatedSelected =
-            prev.selectedDocument?.id === documentId
-              ? {
-                  ...prev.selectedDocument,
-                  commentCount: (prev.selectedDocument.commentCount ?? 0) + 1,
-                }
-              : prev.selectedDocument;
+          let updatedSelected = prev.selectedDocument;
+          if (updatedSelected && updatedSelected.id === documentId) {
+            updatedSelected = {
+              ...updatedSelected,
+              commentCount: (updatedSelected.commentCount ?? 0) + 1,
+            };
+          }
 
           return {
             ...prev,
@@ -384,10 +384,10 @@ export function useDocuments({
             d.id === doc.id ? doc : d
           );
 
-          const updatedSelected =
-            prev.selectedDocument?.id === doc.id
-              ? { ...prev.selectedDocument, ...doc }
-              : prev.selectedDocument;
+          let updatedSelected = prev.selectedDocument;
+          if (updatedSelected && updatedSelected.id === doc.id) {
+            updatedSelected = { ...updatedSelected, ...doc };
+          }
 
           return { ...prev, documents: updatedDocs, selectedDocument: updatedSelected };
         });
