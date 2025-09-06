@@ -164,8 +164,12 @@ export const authOptions: NextAuthOptions = {
               email: user.email,
               name: `${user.firstName} ${user.lastName}`,
               requiresTwoFactor: true,
-              profileImageUrl: null
-            };
+              profileImageUrl: null,
+              status: user.status,
+              role: user.role,
+              firstName: user.firstName,
+              lastName: user.lastName,
+            } as any;
           }
           
           // Verify 2FA code
@@ -261,10 +265,11 @@ export const authOptions: NextAuthOptions = {
           firstName: user.firstName,
           lastName: user.lastName,
           role: user.role,
+          status: user.status,
           emailVerified: user.emailVerified,
           twoFactorEnabled: user.twoFactorEnabled,
           profileImageUrl: null
-        };
+        } as any;
       }
     })
   ],
