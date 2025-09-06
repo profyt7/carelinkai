@@ -297,12 +297,16 @@ export function usePWAFeatures(): UsePWAFeaturesReturn {
         data: options.data,
         requireInteraction: options.requireInteraction,
         silent: options.silent,
-        actions: options.actions as any,
       };
 
       // 'image' isn't in lib.dom NotificationOptions in our TS version; add dynamically
       if (options.image) {
         (notifOptions as any).image = options.image;
+      }
+
+      // 'actions' isn't in lib.dom NotificationOptions in our TS version; add dynamically
+      if (options.actions) {
+        (notifOptions as any).actions = options.actions;
       }
 
       // Show notification
