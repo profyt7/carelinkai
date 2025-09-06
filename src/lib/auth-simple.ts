@@ -94,13 +94,14 @@ export const authOptions: NextAuthOptions = {
         // Return user object without sensitive data
         return {
           id: user.id,
+          profileImageUrl: null,
           email: user.email,
           name: `${user.firstName} ${user.lastName}`,
           firstName: user.firstName,
           lastName: user.lastName,
           role: user.role,
           status: user.status,
-        };
+        } as any;
       },
     }),
   ],
