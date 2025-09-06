@@ -667,12 +667,8 @@ export async function detectUnusualAccessPatterns(lookbackDays = 30) {
   const userResourceAccess: Record<string, Record<string, number>> = {};
   
   logs.forEach(log => {
-    if (!userResourceAccess[log.userId]) {
-      userResourceAccess[log.userId] = {};
-    }
-    
-    userResourceAccess[log.userId][log.resourceType] = 
-      (userResourceAccess[log.userId][log.resourceType] || 0) + 1;
+    const byUser = userResourceAccess[log.userId] ?? (userResourceAccess[log.userId] = {});
+    byUser[log.resourceType] = (byUser[log.resourceType] ?? 0) + 1;
   });
   
   // Identify unusual patterns
