@@ -16,7 +16,8 @@ import {
   FiCornerDownRight,
   FiSmile,
   FiMic,
-  FiVideo
+  FiVideo,
+  FiMessageSquare
 } from 'react-icons/fi';
 
 // Types
