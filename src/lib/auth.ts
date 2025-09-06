@@ -85,19 +85,9 @@ export const authOptions: NextAuthOptions = {
         
         // User not found
         if (!user) {
-          // Log failed login attempt for non-existent user
-          await prisma.auditLog.create({
-            data: {
-              action: AuditAction.SECURITY,
-              resourceType: "AUTH",
-              resourceId: "unknown",
-              description: "Failed login attempt for non-existent user",
-              ipAddress: req.headers?.["x-forwarded-for"] || "unknown",
-              metadata: {
-                email,
-                reason: "USER_NOT_FOUND"
-              }
-            }
+          console.warn("[auth] Failed login attempt for non-existent user", { 
+            email, 
+            ip: req.headers?.["x-forwarded-for"] || "unknown" 
           });
           
           throw new Error("Invalid email or password");
