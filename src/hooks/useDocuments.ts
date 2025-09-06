@@ -706,26 +706,26 @@ export function useDocuments({
     try {
       // Upload each document sequentially
       for (let i = 0; i < documents.length; i++) {
-        const document = documents[i];
+        const docToUpload = documents[i]!;
         const documentId = documentIds[i];
         
         // Create form data for this document
         const formData = new FormData();
-        formData.append('familyId', document.familyId);
-        formData.append('title', document.title);
+        formData.append('familyId', docToUpload.familyId);
+        formData.append('title', docToUpload.title);
         
-        if (document.description) {
-          formData.append('description', document.description);
+        if (docToUpload.description) {
+          formData.append('description', docToUpload.description);
         }
         
-        formData.append('type', document.type);
-        formData.append('isEncrypted', document.isEncrypted.toString());
+        formData.append('type', docToUpload.type);
+        formData.append('isEncrypted', docToUpload.isEncrypted.toString());
         
-        if (document.tags && document.tags.length > 0) {
-          formData.append('tags', JSON.stringify(document.tags));
+        if (docToUpload.tags && docToUpload.tags.length > 0) {
+          formData.append('tags', JSON.stringify(docToUpload.tags));
         }
         
-        formData.append('file', document.file);
+        formData.append('file', docToUpload.file);
         
         // Create upload request with progress tracking
         const xhr = new XMLHttpRequest();
@@ -807,10 +807,10 @@ export function useDocuments({
             [documentId]: 100
           }));
         } else {
-          failedUploads.push(document.title);
+          failedUploads.push(docToUpload.title);
           
           // Show error for this file
-          toast.error(`Failed to upload "${document.title}": ${uploadResult.error || 'Unknown error'}`);
+          toast.error(`Failed to upload "${docToUpload.title}": ${uploadResult.error || 'Unknown error'}`);
         }
       }
       
