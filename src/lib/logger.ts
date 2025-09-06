@@ -34,7 +34,11 @@ const colors = {
 function getTimestamp(): string {
   const now = new Date();
   const iso = now.toISOString();
-  const time = iso.includes('T') ? iso.split('T')[1].slice(0, -1) : iso;
+  // Split ISO string to safely extract the time portion without risking
+  // undefined access when using strict optional checks.
+  const parts = iso.split('T');
+  const part1 = parts.length > 1 ? parts[1] : '';
+  const time = part1 ? part1.slice(0, -1) : iso;
   return `[${time}]`;
 }
 
