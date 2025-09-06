@@ -115,42 +115,40 @@ export const SimpleModal: React.FC<SimpleModalProps> = ({
           tabIndex={-1}
         >
           {/* Header with title and close button */}
-          {(title || onClose) && (
-            <div className="flex justify-between items-center mb-4">
-              {title && (
-                <h3 
-                  id="modal-title"
-                  className="text-lg font-medium text-neutral-900"
+          <div className="flex justify-between items-center mb-4">
+            {title && (
+              <h3 
+                id="modal-title"
+                className="text-lg font-medium text-neutral-900"
+              >
+                {title}
+              </h3>
+            )}
+            
+            {onClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="text-neutral-500 hover:text-neutral-700"
+                aria-label="Close modal"
+              >
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  width="20" 
+                  height="20" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="2" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round"
                 >
-                  {title}
-                </h3>
-              )}
-              
-              {onClose && (
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="text-neutral-500 hover:text-neutral-700"
-                  aria-label="Close modal"
-                >
-                  <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    width="20" 
-                    height="20" 
-                    viewBox="0 0 24 24" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    strokeWidth="2" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round"
-                  >
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                  </svg>
-                </button>
-              )}
-            </div>
-          )}
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            )}
+          </div>
           
           {/* Modal body */}
           <div>{children}</div>
