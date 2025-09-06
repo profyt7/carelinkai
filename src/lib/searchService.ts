@@ -378,7 +378,7 @@ export function parseNaturalLanguageQuery(query: string): Partial<SearchParams> 
   // Extract availability requirement
   const availMatch = q.match(/(at least|min(?:imum)?)[^\\d]*(\\d+)/);
   if (availMatch) {
-    params.minAvailability = parseInt(availMatch[2], 10);
+    params.minAvailability = parseInt((availMatch[2] || '0'), 10);
   } else if (
     q.includes('available') ||
     q.includes('vacancy') ||
