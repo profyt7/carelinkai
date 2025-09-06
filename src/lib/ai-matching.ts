@@ -383,12 +383,12 @@ function extractHomeAmenities(home: any): string[] {
     if (typeof home.amenities[0] === 'object') {
       // Handle category-based amenities
       if (home.amenities[0].items) {
-        return home.amenities.flatMap(category => category.items);
+        return home.amenities.flatMap((category: { items: string[] }) => category.items);
       }
       
       // Handle object-based amenities
       if (home.amenities[0].name) {
-        return home.amenities.map(amenity => amenity.name);
+        return home.amenities.map((amenity: { name: string }) => amenity.name);
       }
     }
   }
