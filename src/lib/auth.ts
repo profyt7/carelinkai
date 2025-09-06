@@ -269,14 +269,14 @@ export const authOptions: NextAuthOptions = {
     // Add custom claims to JWT
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
-        token.email = user.email;
-        token.name = user.name;
-        token.firstName = user.firstName;
-        token.lastName = user.lastName;
-        token.role = user.role;
-        token.emailVerified = user.emailVerified;
-        token.twoFactorEnabled = user.twoFactorEnabled;
+        token["id"] = user.id;
+        token["email"] = user.email;
+        token["name"] = user.name;
+        token["firstName"] = user.firstName;
+        token["lastName"] = user.lastName;
+        token["role"] = user.role;
+        token["emailVerified"] = user.emailVerified as any;
+        token["twoFactorEnabled"] = user.twoFactorEnabled;
       }
       return token;
     },
@@ -284,14 +284,14 @@ export const authOptions: NextAuthOptions = {
     // Add custom session data
     async session({ session, token }) {
       if (token && session.user) {
-        session.user.id = token.id as string;
-        session.user.email = token.email as string;
-        session.user.name = token.name as string;
-        session.user.firstName = token.firstName as string;
-        session.user.lastName = token.lastName as string;
-        session.user.role = token.role as string;
-        session.user.emailVerified = token.emailVerified as Date;
-        session.user.twoFactorEnabled = token.twoFactorEnabled as boolean;
+        session.user.id = token["id"] as string;
+        session.user.email = token["email"] as string;
+        session.user.name = token["name"] as string;
+        session.user.firstName = token["firstName"] as string;
+        session.user.lastName = token["lastName"] as string;
+        session.user.role = token["role"] as string;
+        session.user.emailVerified = token["emailVerified"] as Date;
+        session.user.twoFactorEnabled = token["twoFactorEnabled"] as boolean;
       }
       return session;
     }
