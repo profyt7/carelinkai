@@ -1,13 +1,44 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "react-hot-toast";
 import { useSession } from "next-auth/react";
-import {
-  DocumentFilterParams,
+import type {
   FamilyDocumentWithDetails,
-  FamilyDocumentUpload,
-  PaginationData,
-  DocumentType
+  FamilyDocumentType
 } from "@/lib/types/family";
+
+/* ------------------------------------------------------------------
+ * Local fall-back/utility types – keep in sync with backend contracts.
+ * ------------------------------------------------------------------ */
+interface PaginationData {
+  page: number;
+  limit: number;
+  totalCount: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
+interface DocumentFilterParams {
+  familyId: string;
+  page: number;
+  limit: number;
+  sortBy: "createdAt" | "updatedAt" | "title" | "fileSize";
+  sortOrder: "asc" | "desc";
+  type?: FamilyDocumentType | FamilyDocumentType[];
+  status?: string | string[];
+  searchQuery?: string;
+  tags?: string[];
+}
+
+interface FamilyDocumentUpload {
+  familyId: string;
+  title: string;
+  description?: string;
+  type: FamilyDocumentType;
+  isEncrypted: boolean;
+  tags?: string[];
+  file: File;
+}
 
 interface DocumentsState {
   documents: FamilyDocumentWithDetails[];
