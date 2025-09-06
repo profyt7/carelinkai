@@ -22,8 +22,8 @@ import { v4 as uuidv4 } from "uuid";
 const prisma = new PrismaClient();
 
 // Constants
-const AUDIT_LOG_RETENTION_DAYS = parseInt(process.env.AUDIT_LOG_RETENTION_DAYS || "2555"); // Default: 7 years (HIPAA requirement)
-const AUDIT_LOGGING_ENABLED = process.env.AUDIT_LOGGING_ENABLED !== "false"; // Enabled by default
+const AUDIT_LOG_RETENTION_DAYS = parseInt(process.env["AUDIT_LOG_RETENTION_DAYS"] || "2555"); // Default: 7 years (HIPAA requirement)
+const AUDIT_LOGGING_ENABLED = process.env["AUDIT_LOGGING_ENABLED"] !== "false"; // Enabled by default
 
 // Types for audit logging
 export interface AuditLogOptions {
@@ -90,7 +90,7 @@ export async function createAuditLog(options: AuditLogOptions) {
     console.error("Failed to create audit log:", error);
     
     // In production, we might want to send this to a monitoring service
-    if (process.env.NODE_ENV === "production") {
+    if (process.env["NODE_ENV"] === "production") {
       // reportToMonitoring("AUDIT_LOG_FAILURE", error);
     }
     
