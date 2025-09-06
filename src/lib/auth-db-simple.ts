@@ -79,7 +79,7 @@ export const authOptions: NextAuthOptions = {
           }
 
           // Check if account is suspended
-          if (user.status === UserStatus.SUSPENDED) {
+          if (user.status === "SUSPENDED") {
             console.log("Account suspended:", email);
             throw new Error("Your account has been suspended. Please contact support.");
           }
