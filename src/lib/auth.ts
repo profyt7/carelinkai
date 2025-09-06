@@ -14,7 +14,7 @@ import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { PrismaClient, AuditAction } from "@prisma/client";
-import type { UserStatus } from "@prisma/client";
+import type { UserStatus, UserRole } from "@prisma/client";
 import { compare } from "bcryptjs";
 import { authenticator } from "otplib";
 
@@ -289,7 +289,7 @@ export const authOptions: NextAuthOptions = {
         session.user.name = token["name"] as string;
         session.user.firstName = token["firstName"] as string;
         session.user.lastName = token["lastName"] as string;
-        session.user.role = token["role"] as string;
+        session.user.role = token["role"] as UserRole;
         session.user.emailVerified = token["emailVerified"] as Date;
         session.user.twoFactorEnabled = token["twoFactorEnabled"] as boolean;
       }
