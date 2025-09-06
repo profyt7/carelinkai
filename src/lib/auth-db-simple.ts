@@ -58,7 +58,7 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, _req) {
         if (!credentials?.email || !credentials?.password) {
           throw new Error("Email and password are required");
         }
@@ -102,14 +102,14 @@ export const authOptions: NextAuthOptions = {
           // Return user object without sensitive data
           return {
             id: user.id,
-            profileImageUrl: user.profileImageUrl ?? null,
+            profileImageUrl: (user.profileImageUrl ?? null) as unknown as string | { thumbnail?: string; medium?: string; large?: string } | null,
             email: user.email,
             name: `${user.firstName} ${user.lastName}`,
             firstName: user.firstName,
             lastName: user.lastName,
             role: user.role,
             status: user.status,
-          };
+          } as any;
         } catch (error) {
           console.error("Auth error:", error);
           throw new Error(error instanceof Error ? error.message : "Authentication failed");
