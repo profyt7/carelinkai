@@ -391,7 +391,7 @@ export function parseNaturalLanguageQuery(query: string): Partial<SearchParams> 
   // Extract radius (e.g., "within 10 miles", "inside 25 mi")
   const radiusMatch = q.match(/(?:within|inside)\\s+(\\d+)\\s*(?:miles?|mi)/);
   if (radiusMatch) {
-    params.radius = parseInt(radiusMatch[1], 10);
+    params.radius = parseInt((radiusMatch[1] || '0'), 10);
   }
 
   // Extract verified requirement
