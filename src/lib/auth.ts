@@ -290,8 +290,6 @@ export const authOptions: NextAuthOptions = {
         session.user.firstName = token["firstName"] as string;
         session.user.lastName = token["lastName"] as string;
         session.user.role = token["role"] as UserRole;
-        session.user.emailVerified = token["emailVerified"] as Date;
-        session.user.twoFactorEnabled = token["twoFactorEnabled"] as boolean;
       }
       return session;
     }
