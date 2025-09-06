@@ -10,10 +10,11 @@
  * - Integration with Prisma for database access
  */
 
-import { NextAuthOptions } from "next-auth";
+import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
-import { PrismaClient, AuditAction, UserStatus } from "@prisma/client";
+import { PrismaClient, AuditAction } from "@prisma/client";
+import type { UserStatus } from "@prisma/client";
 import { compare } from "bcryptjs";
 import { authenticator } from "otplib";
 
@@ -103,7 +104,7 @@ export const authOptions: NextAuthOptions = {
         }
         
         // Check if account is active
-        if (user.status !== UserStatus.ACTIVE) {
+        if (user.status !== "ACTIVE") {
           // Log failed login attempt for inactive account
           await prisma.auditLog.create({
             data: {
@@ -121,7 +122,7 @@ export const authOptions: NextAuthOptions = {
             }
           });
           
-          if (user.status === UserStatus.PENDING) {
+          if (user.status === "PENDING") {
             throw new Error("Please verify your email before logging in");
           } else {
             throw new Error("Your account is not active");
@@ -129,6 +130,9 @@ export const authOptions: NextAuthOptions = {
         }
         
         // Verify password
+        if (!user.passwordHash) {
+          throw new Error("Invalid email or password");
+        }
         const passwordValid = await compare(credentials.password, user.passwordHash);
         
         if (!passwordValid) {
@@ -159,7 +163,8 @@ export const authOptions: NextAuthOptions = {
               id: user.id,
               email: user.email,
               name: `${user.firstName} ${user.lastName}`,
-              requiresTwoFactor: true
+              requiresTwoFactor: true,
+              profileImageUrl: null
             };
           }
           
@@ -257,7 +262,8 @@ export const authOptions: NextAuthOptions = {
           lastName: user.lastName,
           role: user.role,
           emailVerified: user.emailVerified,
-          twoFactorEnabled: user.twoFactorEnabled
+          twoFactorEnabled: user.twoFactorEnabled,
+          profileImageUrl: null
         };
       }
     })
@@ -297,7 +303,7 @@ export const authOptions: NextAuthOptions = {
   },
   
   // Enable debug in development
-  debug: process.env.NODE_ENV === "development",
+  debug: process.env["NODE_ENV"] === "development",
 };
 
 export default authOptions;
