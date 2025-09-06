@@ -162,7 +162,7 @@ export async function sendEmail(emailData: EmailData): Promise<EmailResult> {
     };
 
     // Send the email
-    const [response] = await sgMail.send(msg);
+    const [response] = await sgMail.send(msg as any);
     
     logger.info(`Email sent successfully to ${Array.isArray(emailData.to) ? emailData.to.join(', ') : emailData.to}`);
     
