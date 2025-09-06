@@ -26,7 +26,7 @@ export interface SearchParams {
   /* ---- Phase-1 enhancements ---- */
   radius?: number;             // Search radius in miles
   sortBy?: 'relevance' | 'price_low' | 'price_high' | 'distance' | 'rating';
-  availability?: number;       // Minimum availability required
+  minAvailability?: number;    // Minimum availability required
   verified?: boolean;          // Only show verified homes
 }
 
@@ -145,6 +145,7 @@ function formatSearchParams(params: SearchParams): URLSearchParams {
   // Add other filters
   if (params.gender) searchParams.set('gender', params.gender);
   if (params.availability !== undefined) searchParams.set('availability', params.availability.toString());
+  if (params.minAvailability !== undefined) searchParams.set('minAvailability', params.minAvailability.toString());
   if (params.radius) searchParams.set('radius', params.radius.toString());
   if (params.sortBy) searchParams.set('sortBy', params.sortBy);
   if (params.verified !== undefined) searchParams.set('verified', params.verified.toString());
@@ -208,8 +209,8 @@ export function validateSearchParams(params: SearchParams): string[] {
     errors.push('Radius must be greater than zero.');
   }
 
-  if (params.availability !== undefined && params.availability < 0) {
-    errors.push('Availability must be zero or a positive number.');
+  if (params.minAvailability !== undefined && params.minAvailability < 0) {
+    errors.push('Minimum availability must be zero or a positive number.');
   }
 
   return errors;
@@ -377,9 +378,14 @@ export function parseNaturalLanguageQuery(query: string): Partial<SearchParams> 
   // Extract availability requirement
   const availMatch = q.match(/(at least|min(?:imum)?)[^\\d]*(\\d+)/);
   if (availMatch) {
-    params.availability = parseInt(availMatch[2], 10);
-  } else if (q.includes('available') || q.includes('vacancy') || q.includes('open spot') || q.includes('openings')) {
-    params.availability = 1; // default minimum 1 slot
+    params.minAvailability = parseInt(availMatch[2], 10);
+  } else if (
+    q.includes('available') ||
+    q.includes('vacancy') ||
+    q.includes('open spot') ||
+    q.includes('openings')
+  ) {
+    params.minAvailability = 1; // default minimum 1 slot
   }
 
   // Extract radius (e.g., "within 10 miles", "inside 25 mi")
