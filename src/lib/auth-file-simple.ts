@@ -189,7 +189,7 @@ const updateUser = (id: string, data: Partial<FileUser>): FileUser | undefined =
     ...users[userIndex],
     ...data,
     // Ensure required immutable fields remain intact
-    id: users[userIndex].id,
+    id: users[userIndex]!.id,
     updatedAt: new Date().toISOString(),
   } as FileUser;
   
