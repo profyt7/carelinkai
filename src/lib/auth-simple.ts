@@ -5,10 +5,10 @@
  * for testing the login UI without requiring a database connection.
  */
 
-import { NextAuthOptions } from "next-auth";
+import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
-import { UserRole, UserStatus } from "@prisma/client";
+import type { UserRole, UserStatus } from "@prisma/client";
 
 // Mock user data for testing (matches our seeded users)
 const mockUsers = [
@@ -43,8 +43,8 @@ const mockUsers = [
 ];
 
 // Constants for security settings
-const JWT_MAX_AGE = parseInt(process.env.JWT_EXPIRATION || "86400"); // 24 hours in seconds
-const SESSION_MAX_AGE = parseInt(process.env.SESSION_EXPIRY || "86400"); // 24 hours in seconds
+const JWT_MAX_AGE = parseInt(process.env["JWT_EXPIRATION"] || "86400"); // 24 hours in seconds
+const SESSION_MAX_AGE = parseInt(process.env["SESSION_EXPIRY"] || "86400"); // 24 hours in seconds
 
 /**
  * NextAuth configuration options
@@ -59,7 +59,7 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, _req) {
         if (!credentials?.email || !credentials?.password) {
           throw new Error("Email and password are required");
         }
@@ -77,7 +77,7 @@ export const authOptions: NextAuthOptions = {
         }
 
         // Check if account is suspended
-        if (user.status === UserStatus.SUSPENDED) {
+        if (user.status === "SUSPENDED") {
           console.log("Account suspended:", email);
           throw new Error("Your account has been suspended. Please contact support.");
         }
@@ -187,5 +187,5 @@ export const authOptions: NextAuthOptions = {
   },
   
   // Debug mode (enable for development)
-  debug: process.env.NODE_ENV === "development",
+  debug: process.env["NODE_ENV"] === "development",
 };
