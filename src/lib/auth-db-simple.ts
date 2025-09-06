@@ -155,7 +155,7 @@ export const authOptions: NextAuthOptions = {
       // 1) Initial sign-in: copy data from `user` object.
       if (user) {
         token.id = user.id;
-        token.profileImageUrl = (user as any).profileImageUrl ?? null;
+        token.profileImageUrl = ((user as any).profileImageUrl ?? null) as unknown as { thumbnail?: string; medium?: string; large?: string } | string | null;
         token.role = user.role;
         token.status = user.status;
         token.firstName = user.firstName;
@@ -180,7 +180,7 @@ export const authOptions: NextAuthOptions = {
           });
 
           if (freshUser) {
-            token.profileImageUrl = freshUser.profileImageUrl ?? null;
+            token.profileImageUrl = (freshUser.profileImageUrl ?? null) as unknown as { thumbnail?: string; medium?: string; large?: string } | string | null;
             token.role = freshUser.role;
             token.status = freshUser.status;
             token.firstName = freshUser.firstName;
