@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { DocumentCommentWithAuthor } from '@/lib/types/family';
+import type { DocumentCommentWithAuthor } from '@/lib/types/family';
 
 interface PaginationState {
   page: number;
