@@ -473,7 +473,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     if (typingParticipants.length === 0) return null;
     
     const typingText = typingParticipants.length === 1
-      ? `${typingParticipants[0].name} is typing...`
+      ? `${(typingParticipants[0]?.name || 'Someone')} is typing...`
       : 'Multiple people are typing...';
     
     return (
