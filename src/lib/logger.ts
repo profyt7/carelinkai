@@ -12,7 +12,7 @@
 
 // Determine if we're in a browser or Node.js environment
 const isBrowser = typeof window !== 'undefined';
-const isDevelopment = process.env.NODE_ENV === 'development';
+const isDevelopment = process.env["NODE_ENV"] === 'development';
 
 // Log level definitions
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
@@ -33,7 +33,9 @@ const colors = {
  */
 function getTimestamp(): string {
   const now = new Date();
-  return `[${now.toISOString().split('T')[1].slice(0, -1)}]`;
+  const iso = now.toISOString();
+  const time = iso.includes('T') ? iso.split('T')[1].slice(0, -1) : iso;
+  return `[${time}]`;
 }
 
 /**
