@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useContext, createContext, ReactNode } from "react";
+import React, { useState, useEffect, useContext, createContext } from "react";
+import type { ReactNode } from "react";
 import { toast } from "react-hot-toast";
 import { FiWifi, FiWifiOff, FiDownload, FiRefreshCw, FiBell } from "react-icons/fi";
 
@@ -86,7 +87,7 @@ export default function PWAManager({ children }: PWAManagerProps) {
        * ------------------------------------------------------------------
        * During local development the service-worker can easily get into an
        * inconsistent state (e.g. caching stale chunks) which results in the
-       * page rendering without CSS/JS – exactly the “unstyled HTML” you saw.
+       * page rendering without CSS/JS – exactly the "unstyled HTML" you saw.
        *
        * To avoid this headache we simply do NOT register the SW when
        * `process.env.NODE_ENV !== "production"`, unless the developer
