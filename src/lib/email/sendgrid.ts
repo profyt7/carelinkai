@@ -11,16 +11,16 @@ import sgMail from '@sendgrid/mail';
 import { logger } from '../logger';
 
 // Initialize SendGrid with API key from environment
-if (!process.env.SENDGRID_API_KEY) {
+if (!process.env["SENDGRID_API_KEY"]) {
   logger.warn('SENDGRID_API_KEY is not defined. Email functionality will not work.');
 } else {
-  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+  sgMail.setApiKey(process.env["SENDGRID_API_KEY"]);
 }
 
 // Email configuration from environment
-const EMAIL_FROM = process.env.EMAIL_FROM || 'noreply@carelinkai.com';
-const EMAIL_FROM_NAME = process.env.EMAIL_FROM_NAME || 'CareLinkAI';
-const EMAIL_REPLY_TO = process.env.EMAIL_REPLY_TO || 'support@carelinkai.com';
+const EMAIL_FROM = process.env["EMAIL_FROM"] || 'noreply@carelinkai.com';
+const EMAIL_FROM_NAME = process.env["EMAIL_FROM_NAME"] || 'CareLinkAI';
+const EMAIL_REPLY_TO = process.env["EMAIL_REPLY_TO"] || 'support@carelinkai.com';
 
 // Types for email templates and options
 export interface EmailData {
@@ -191,7 +191,7 @@ export async function sendWelcomeEmail(
 ): Promise<EmailResult> {
   const htmlBody = `
     <p>Hello ${data.firstName}${data.lastName ? ' ' + data.lastName : ''},</p>
-    <p>Welcome to CareLinkAI! We’re excited to have you on board.</p>
+    <p>Welcome to CareLinkAI! We're excited to have you on board.</p>
     ${
       data.verificationUrl
         ? `<p style="text-align:center;margin:30px 0;">
@@ -201,7 +201,7 @@ export async function sendWelcomeEmail(
            </p>`
         : ''
     }
-    <p>If you have any questions, simply reply to this email—we’re always happy to help.</p>
+    <p>If you have any questions, simply reply to this email—we're always happy to help.</p>
     <p>Cheers,<br/>The CareLinkAI Team</p>
   `;
   return sendEmail({
@@ -231,7 +231,7 @@ export async function sendPasswordResetEmail(
       </a>
     </p>
     <p>This link will expire in ${data.expiresInMinutes || 30} minutes.</p>
-    <p>If you didn’t request a password reset, you can ignore this email.</p>
+    <p>If you didn't request a password reset, you can ignore this email.</p>
     <p>Stay safe,<br/>The CareLinkAI Team</p>
   `;
   return sendEmail({
@@ -240,7 +240,7 @@ export async function sendPasswordResetEmail(
     html: buildBasicHtml('Password Reset', htmlBody),
     text: `Hello ${data.firstName},\n\nReset your password using the link below (expires in ${
       data.expiresInMinutes || 30
-    } minutes):\n${data.resetUrl}\n\nIf you didn’t request this, please ignore.\n\nThe CareLinkAI Team`
+    } minutes):\n${data.resetUrl}\n\nIf you didn't request this, please ignore.\n\nThe CareLinkAI Team`
   });
 }
 
