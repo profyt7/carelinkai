@@ -347,7 +347,7 @@ export default function SearchFilters({
                 type="number"
                 className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 placeholder="Minimum Availability"
-                value={localFilters.availability === undefined ? '' : localFilters.availability}
+                value={typeof localFilters.availability === 'number' ? localFilters.availability : ''}
                 onChange={(e) => {
                   const value = e.target.value ? Number(e.target.value) : undefined;
                   handleFilterChange('availability', value);
