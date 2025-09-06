@@ -315,27 +315,13 @@ export function usePWAFeatures(): UsePWAFeaturesReturn {
       // Handle notification click
       notification.onclick = (event) => {
         event.preventDefault();
-        
-        // Focus on existing window or open new one
-        if (clients && clients.matchAll) {
-          clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-            // If we have a client, focus it
-            for (const client of clientList) {
-              if ('focus' in client) {
-                client.focus();
-                return;
-              }
-            }
-            
-            // Otherwise open a new window
-            if (clients.openWindow) {
-              clients.openWindow('/');
-            }
-          });
-        } else {
-          // Fallback for browsers that don't support clients API
+        try {
           window.focus();
-        }
+        } catch {}
+        // Optionally navigate to home
+        try {
+          window.location.href = '/';
+        } catch {}
       };
 
       return true;
