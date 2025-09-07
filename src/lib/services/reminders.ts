@@ -129,7 +129,7 @@ export async function scheduleUpcomingAppointmentReminders(windowMinutes: number
         
         // Skip if already in the past
         // Allow reminders scheduled exactly at the current moment
-        if (scheduledFor < now) continue;
+        if (scheduledFor.getTime() < now.getTime() - 1000) continue; // allow ~1s tolerance for clock drift.
         
         // Process each notification method
         for (const method of enabledMethods) {

@@ -888,7 +888,7 @@ function generateMockDocument(
   }
   
   // Generate file details
-  const fileTypes = (MOCK_DATA.fileTypes as Record<string, string[]>)[type] ?? ['application/pdf'];
+  const fileTypes = (MOCK_DATA.fileTypes as Record<string, string[]>)[String(type)] ?? ['application/pdf'];
   const fileType = fileTypes[Math.floor(random() * fileTypes.length)] ?? 'application/pdf';
   const fileExtension = fileType === 'application/pdf' ? 'pdf' : 
                         fileType.includes('word') ? 'docx' :
