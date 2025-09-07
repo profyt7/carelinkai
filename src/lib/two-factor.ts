@@ -18,7 +18,6 @@ import * as qrcode from 'qrcode';
 
 // Constants
 const ISSUER = 'CareLinkAI';
-const ALGORITHM = 'sha1'; // Standard for most authenticator apps
 const DIGITS = 6; // Standard 6-digit codes
 const PERIOD = 30; // 30-second validity period
 const WINDOW = 1; // Allow 1 step before/after for clock drift (±30 sec)
@@ -30,7 +29,6 @@ export class TwoFactorService {
   constructor() {
     // Configure authenticator
     authenticator.options = {
-      algorithm: ALGORITHM,
       digits: DIGITS,
       period: PERIOD,
       window: WINDOW,
@@ -46,7 +44,6 @@ export class TwoFactorService {
   async generateSecret(userId: string): Promise<{ secret: string; qrCodeUrl: string }> {
     // Generate a secure random secret
     const secret = authenticator.generateSecret();
-    
     // Create a label for the authenticator app
     const label = encodeURIComponent(`${ISSUER}:${userId}`);
     
@@ -154,14 +151,13 @@ export class TwoFactorService {
   decryptSecret(encryptedSecret: string, encryptionKey: string): string {
     try {
       // Split the stored data
-      const parts = encryptedSecret.split(':');
-      if (parts.length !== 3) {
+      const [ivHex, encrypted, authTagHex] = encryptedSecret.split(':');
+      if (!ivHex || !encrypted || !authTagHex) {
         throw new Error('Invalid encrypted secret format');
       }
       
-      const iv = Buffer.from(parts[0], 'hex');
-      const encrypted = parts[1];
-      const authTag = Buffer.from(parts[2], 'hex');
+      const iv = Buffer.from(ivHex, 'hex');
+      const authTag = Buffer.from(authTagHex, 'hex');
       
       // Create the decipher
       const key = crypto.createHash('sha256').update(encryptionKey).digest();
@@ -226,14 +222,18 @@ export async function hashBackupCode(code: string): Promise<string> {
 export async function verifyBackupCode(code: string, hash: string): Promise<boolean> {
   return new Promise((resolve, reject) => {
     // Split the hash into salt and hash
-    const [salt, key] = hash.split(':');
+    const [saltHex, keyHex] = hash.split(':');
+    if (!saltHex || !keyHex) {
+      resolve(false);
+      return;
+    }
     
     // Hash the provided code with the same salt
-    crypto.pbkdf2(code, Buffer.from(salt, 'hex'), 10000, 64, 'sha512', (err, derivedKey) => {
+    crypto.pbkdf2(code, Buffer.from(saltHex, 'hex'), 10000, 64, 'sha512', (err, derivedKey) => {
       if (err) reject(err);
       
       // Compare the hashes
-      resolve(key === derivedKey.toString('hex'));
+      resolve(keyHex === derivedKey.toString('hex'));
     });
   });
 }

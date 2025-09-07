@@ -13,10 +13,7 @@ import {
   FamilyMemberRole as PrismaFamilyMemberRole,
   FamilyMemberStatus as PrismaFamilyMemberStatus,
   FamilyDocumentType as PrismaFamilyDocumentType,
-  ActivityType as PrismaActivityType,
-  User,
-  Family,
-  Resident
+  ActivityType as PrismaActivityType
 } from '@prisma/client';
 
 // ======================================================

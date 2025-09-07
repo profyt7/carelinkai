@@ -6,13 +6,6 @@ import webpush from 'web-push';
 
 const prisma = new PrismaClient();
 
-// Configure web-push with VAPID keys
-webpush.setVapidDetails(
-  process.env['VAPID_SUBJECT'] || 'mailto:support@carelinkai.com',
-  process.env['NEXT_PUBLIC_VAPID_PUBLIC_KEY'] || '',
-  process.env['VAPID_PRIVATE_KEY'] || ''
-);
-
 /**
  * POST handler for sending push notifications
  */
@@ -83,6 +76,18 @@ export async function POST(req: NextRequest) {
       requireInteraction: urgent,
       silent: isTest // Test notifications can be silent
     });
+    
+    // Configure web-push with VAPID keys (lazy configuration)
+    const subject = process.env['VAPID_SUBJECT'] || 'mailto:support@carelinkai.com';
+    const pub = process.env['NEXT_PUBLIC_VAPID_PUBLIC_KEY'];
+    const priv = process.env['VAPID_PRIVATE_KEY'];
+    if (pub && priv) {
+      try {
+        webpush.setVapidDetails(subject, pub, priv);
+      } catch (e) {
+        console.warn('Skipping web-push VAPID setup due to invalid keys at runtime');
+      }
+    }
     
     // Determine which subscriptions to use
     let subscriptionQuery: any = {};

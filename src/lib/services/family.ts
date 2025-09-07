@@ -26,7 +26,7 @@ import { prisma } from '@/lib/prisma';
 import logger from '@/lib/logger';
 import EmailService from '@/lib/email-service';
 import { publish } from '@/lib/server/sse';
-import { 
+import type { 
   FamilyMember,
   FamilyMemberWithUser,
   FamilyDocument,
@@ -65,10 +65,9 @@ import {
   PresignedUrlRequest,
   PresignedUrlResponse,
   ACLEntry,
-  ACLSubjectType,
-  Permission,
   RichTextContent
 } from '@/lib/types/family';
+import { ACLSubjectType, Permission } from '@/lib/types/family';
 
 // ======================================================
 // ================= CONFIGURATION ======================
@@ -80,10 +79,10 @@ import {
 const CONFIG = {
   // S3 configuration
   s3: {
-    region: process.env.AWS_REGION || 'us-west-2',
-    bucket: process.env.AWS_S3_BUCKET || 'carelinkai-family-docs',
-    endpoint: process.env.AWS_S3_ENDPOINT,
-    forcePathStyle: process.env.AWS_S3_FORCE_PATH_STYLE === 'true',
+    region: process.env['AWS_REGION'] || 'us-west-2',
+    bucket: process.env['AWS_S3_BUCKET'] || 'carelinkai-family-docs',
+    endpoint: process.env['AWS_S3_ENDPOINT'],
+    forcePathStyle: process.env['AWS_S3_FORCE_PATH_STYLE'] === 'true',
     presignedUrlExpiration: 3600, // 1 hour
   },
   // Pagination defaults
@@ -93,7 +92,7 @@ const CONFIG = {
   },
   // Mock data configuration
   mockData: {
-    enabled: process.env.NODE_ENV !== 'production',
+    enabled: process.env['NODE_ENV'] !== 'production',
     seed: 'carelinkai-family-collaboration',
     familyMembersCount: 8,
     documentsCount: 25,
@@ -298,7 +297,7 @@ export async function createActivityRecord(
   let item: ActivityFeedItem;
 
   try {
-    item = await prisma.activityFeedItem.create({
+    const created = await prisma.activityFeedItem.create({
       data: {
         familyId: data.familyId,
         actorId: data.actorId,
@@ -309,6 +308,18 @@ export async function createActivityRecord(
         metadata: data.metadata as Prisma.JsonObject,
       },
     });
+    
+    item = {
+      id: created.id,
+      familyId: created.familyId,
+      actorId: created.actorId,
+      type: created.type as ActivityType,
+      resourceType: created.resourceType,
+      resourceId: created.resourceId,
+      description: created.description,
+      metadata: created.metadata as Record<string, any> | null,
+      createdAt: created.createdAt,
+    };
   } catch (error) {
     logger.error('Failed to log activity', {
       error,
@@ -383,7 +394,9 @@ function extractMentionNames(text: string): string[] {
   let match;
   
   while ((match = mentionRegex.exec(text)) !== null) {
-    let name = match[1].trim();
+    const captured = match?.[1];
+    if (!captured) continue;
+    let name = captured.trim();
     // Strip trailing punctuation
     name = name.replace(/[.,;:!?)]$/, '').trim();
     mentions.add(name);
@@ -418,9 +431,9 @@ async function resolveMentionedUsers(familyId: string, names: string[]): Promise
 }
 
 function getAppBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_APP_URL || 
-         process.env.APP_URL || 
-         (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+  return process.env['NEXT_PUBLIC_APP_URL'] || 
+         process.env['APP_URL'] || 
+         (process.env['VERCEL_URL'] ? `https://${process.env['VERCEL_URL']}` : 'http://localhost:3000');
 }
 
 async function sendMentionEmails(params: { 
@@ -559,11 +572,12 @@ export async function hasPermissionToUploadDocuments(
     // Only OWNER, CARE_PROXY, and MEMBER roles can upload documents
     if (!member) return false;
     
-    return [
+    const allowed: FamilyMemberRole[] = [
       FamilyMemberRole.OWNER,
       FamilyMemberRole.CARE_PROXY,
-      FamilyMemberRole.MEMBER
-    ].includes(member.role);
+      FamilyMemberRole.MEMBER,
+    ];
+    return allowed.includes(member.role);
   } catch (error) {
     logger.error('Failed to check document upload permission', { error, userId, familyId });
     throw error;
@@ -620,10 +634,11 @@ export async function hasPermissionToEditDocument(
     if (!member) return false;
     
     // By default, only OWNER and CARE_PROXY can edit documents they didn't create
-    return [
+    const allowedEditors: FamilyMemberRole[] = [
       FamilyMemberRole.OWNER,
-      FamilyMemberRole.CARE_PROXY
-    ].includes(member.role);
+      FamilyMemberRole.CARE_PROXY,
+    ];
+    return allowedEditors.includes(member.role);
   } catch (error) {
     logger.error('Failed to check document edit permission', { error, userId, documentId: document.id });
     
@@ -741,8 +756,8 @@ export async function generateMockFamilyMembers(familyId: string): Promise<Famil
   const result: FamilyMemberWithUser[] = [];
   
   // Create an owner as the first member
-  const ownerFirstName = MOCK_DATA.firstNames[Math.floor(random() * MOCK_DATA.firstNames.length)];
-  const ownerLastName = MOCK_DATA.lastNames[Math.floor(random() * MOCK_DATA.lastNames.length)];
+  const ownerFirstName = MOCK_DATA.firstNames[Math.floor(random() * MOCK_DATA.firstNames.length)] ?? 'Alex';
+  const ownerLastName = MOCK_DATA.lastNames[Math.floor(random() * MOCK_DATA.lastNames.length)] ?? 'Smith';
   
   const owner: FamilyMemberWithUser = {
     id: `mock-member-${familyId}-owner`,
@@ -786,10 +801,10 @@ export async function generateMockFamilyMembers(familyId: string): Promise<Famil
   ];
   
   for (let i = 0; i < Math.min(roles.length, CONFIG.mockData.familyMembersCount - 1); i++) {
-    const firstName = MOCK_DATA.firstNames[Math.floor(random() * MOCK_DATA.firstNames.length)];
-    const lastName = MOCK_DATA.lastNames[Math.floor(random() * MOCK_DATA.lastNames.length)];
-    const role = roles[i];
-    const status = statuses[i];
+    const firstName = MOCK_DATA.firstNames[Math.floor(random() * MOCK_DATA.firstNames.length)] ?? 'Alex';
+    const lastName = MOCK_DATA.lastNames[Math.floor(random() * MOCK_DATA.lastNames.length)] ?? 'Smith';
+    const role = roles[i] ?? FamilyMemberRole.MEMBER;
+    const status = statuses[i] ?? FamilyMemberStatus.ACTIVE;
     const joinedAt = status === FamilyMemberStatus.ACTIVE ? 
       subDays(new Date(), Math.floor(random() * 300)) : 
       undefined;
@@ -844,16 +859,26 @@ function generateMockDocument(
 ): FamilyDocumentWithDetails {
   const random = seededRandom(`${CONFIG.mockData.seed}-document-${familyId}-${index}`);
   
-  // Get random uploader from mock family members
-  const mockMembers = generateMockFamilyMembers(familyId);
-  const uploader = mockMembers.find(m => m.userId === uploaderId) || mockMembers[0];
+  // ------------------------------------------------------------------
+  // Simplified uploader: avoid awaiting generateMockFamilyMembers here
+  // ------------------------------------------------------------------
+  const uploader = {
+    userId: uploaderId,
+    user: {
+      firstName: 'Family',
+      lastName: 'Member',
+      profileImageUrl: {
+        thumbnail: 'https://ui-avatars.com/api/?name=Family+Member&size=150'
+      }
+    }
+  } as Pick<FamilyMemberWithUser, 'userId' | 'user'>;
   
   // Select document type
   const documentTypes = Object.values(FamilyDocumentType);
-  const type = documentTypes[Math.floor(random() * documentTypes.length)];
+  const type = documentTypes[Math.floor(random() * documentTypes.length)] ?? FamilyDocumentType.OTHER;
   
   // Generate title
-  let title = MOCK_DATA.documentTitles[index % MOCK_DATA.documentTitles.length];
+  let title = MOCK_DATA.documentTitles[index % MOCK_DATA.documentTitles.length] ?? 'Document';
   if (title.includes('{firstName}')) {
     title = title.replace('{firstName}', uploader.user.firstName);
   }
@@ -863,8 +888,8 @@ function generateMockDocument(
   }
   
   // Generate file details
-  const fileTypes = MOCK_DATA.fileTypes[type] || ['application/pdf'];
-  const fileType = fileTypes[Math.floor(random() * fileTypes.length)];
+  const fileTypes = (MOCK_DATA.fileTypes as Record<string, string[]>)[type] ?? ['application/pdf'];
+  const fileType = fileTypes[Math.floor(random() * fileTypes.length)] ?? 'application/pdf';
   const fileExtension = fileType === 'application/pdf' ? 'pdf' : 
                         fileType.includes('word') ? 'docx' :
                         fileType.includes('spreadsheet') ? 'xlsx' :
@@ -879,7 +904,7 @@ function generateMockDocument(
   const tagCount = Math.floor(random() * 4);
   const tags: string[] = [];
   for (let i = 0; i < tagCount; i++) {
-    const tag = MOCK_DATA.tags[Math.floor(random() * MOCK_DATA.tags.length)];
+    const tag = MOCK_DATA.tags[Math.floor(random() * MOCK_DATA.tags.length)] ?? 'important';
     if (!tags.includes(tag)) {
       tags.push(tag);
     }
@@ -1128,10 +1153,16 @@ export async function getFamilyDocuments(
       }
     });
     
-    // Map to response type
+    // Map to response type with proper type coercion
     const documentsWithDetails = documents.map(doc => ({
       ...doc,
-      commentCount: doc._count.comments
+      uploader: {
+        ...doc.uploader,
+        profileImageUrl: doc.uploader?.profileImageUrl as unknown as { thumbnail?: string } | null,
+      },
+      acl: doc.acl as unknown as ACLEntry[] | null,
+      metadata: doc.metadata as unknown as Record<string, any> | null,
+      commentCount: doc._count.comments,
     }));
     
     return createPaginatedResponse(documentsWithDetails, total, pagination);
@@ -1201,7 +1232,13 @@ export async function getFamilyDocument(
     
     return {
       ...document,
-      commentCount: document._count.comments
+      uploader: {
+        ...document.uploader,
+        profileImageUrl: document.uploader?.profileImageUrl as unknown as { thumbnail?: string } | null,
+      },
+      acl: document.acl as unknown as ACLEntry[] | null,
+      metadata: document.metadata as unknown as Record<string, any> | null,
+      commentCount: document._count.comments,
     };
   } catch (error) {
     logger.error('Failed to get family document', { error, familyId, documentId });
@@ -1228,7 +1265,14 @@ export async function getFamilyDocument(
 export async function createFamilyDocument(
   familyId: string,
   uploaderId: string,
-  data: CreateFamilyDocumentRequest
+  data: CreateFamilyDocumentRequest & {
+    fileUrl: string;
+    fileName: string;
+    fileType: string;
+    fileSize: number;
+    isEncrypted?: boolean;
+    metadata?: Record<string, any>;
+  }
 ): Promise<FamilyDocumentWithDetails> {
   try {
     // Create document
@@ -1246,7 +1290,8 @@ export async function createFamilyDocument(
         version: 1,
         isEncrypted: data.isEncrypted || false,
         tags: data.tags || [],
-        acl: createDefaultAcl(uploaderId),
+        // cast to JSON value to satisfy Prisma exact type
+        acl: createDefaultAcl(uploaderId) as unknown as Prisma.InputJsonValue,
         metadata: data.metadata as Prisma.JsonObject,
         residentId: data.residentId
       },
@@ -1285,7 +1330,13 @@ export async function createFamilyDocument(
     
     return {
       ...document,
-      commentCount: 0
+      uploader: {
+        ...document.uploader,
+        profileImageUrl: document.uploader?.profileImageUrl as unknown as { thumbnail?: string } | null,
+      },
+      acl: document.acl as unknown as ACLEntry[] | null,
+      metadata: document.metadata as unknown as Record<string, any> | null,
+      commentCount: 0,
     };
   } catch (error) {
     logger.error('Failed to create family document', { error, familyId, data });
@@ -1293,7 +1344,14 @@ export async function createFamilyDocument(
     // In development, return mock document
     if (CONFIG.mockData.enabled) {
       const mockMembers = await generateMockFamilyMembers(familyId);
-      const uploader = mockMembers.find(m => m.userId === uploaderId) || mockMembers[0];
+      const uploader = (mockMembers.find(m => m.userId === uploaderId) ?? mockMembers[0]) || {
+        userId: uploaderId,
+        user: {
+          firstName: 'Family',
+          lastName: 'Member',
+          profileImageUrl: { thumbnail: '' }
+        }
+      } as unknown as FamilyMemberWithUser;
       
       const mockDoc: FamilyDocumentWithDetails = {
         id: uuidv4(),
@@ -1341,7 +1399,7 @@ export async function updateFamilyDocument(
   familyId: string,
   documentId: string,
   userId: string,
-  data: UpdateFamilyDocumentRequest
+  data: UpdateFamilyDocumentRequest & { isEncrypted?: boolean }
 ): Promise<FamilyDocumentWithDetails> {
   try {
     // Check if document exists
@@ -1412,7 +1470,13 @@ export async function updateFamilyDocument(
     
     return {
       ...updatedDocument,
-      commentCount: updatedDocument._count.comments
+      uploader: {
+        ...updatedDocument.uploader,
+        profileImageUrl: updatedDocument.uploader?.profileImageUrl as unknown as { thumbnail?: string } | null,
+      },
+      acl: updatedDocument.acl as unknown as ACLEntry[] | null,
+      metadata: updatedDocument.metadata as unknown as Record<string, any> | null,
+      commentCount: updatedDocument._count.comments,
     };
   } catch (error) {
     logger.error('Failed to update family document', { error, familyId, documentId, data });
@@ -1420,7 +1484,10 @@ export async function updateFamilyDocument(
     // In development, return mock document
     if (CONFIG.mockData.enabled) {
       const mockMembers = await generateMockFamilyMembers(familyId);
-      const mockDocs = generateMockDocuments(familyId, mockMembers[0].userId);
+      const mockDocs = generateMockDocuments(
+        familyId,
+        mockMembers[0]?.userId || `mock-user-${familyId}-uploader`
+      );
       const existingDoc = mockDocs.find(doc => doc.id === documentId);
       
       if (!existingDoc) {
@@ -1602,13 +1669,27 @@ export async function getDocumentComments(
       }
     });
     
-    return createPaginatedResponse(comments, total, pagination);
+    const mapped = comments.map(c => ({
+      ...c,
+      author: {
+        ...c.author,
+        profileImageUrl: c.author?.profileImageUrl as unknown as { thumbnail?: string } | null,
+      },
+      replies: c.replies.map(r => ({
+        ...r,
+        author: {
+          ...r.author,
+          profileImageUrl: r.author?.profileImageUrl as unknown as { thumbnail?: string } | null,
+        }
+      }))
+    }));
+    return createPaginatedResponse(mapped, total, pagination);
   } catch (error) {
     logger.error('Failed to get document comments', { error, familyId, documentId });
     
     // Fall back to mock data if database query fails
     if (CONFIG.mockData.enabled) {
-      const mockComments = generateMockDocumentComments(documentId, familyId);
+      const mockComments: DocumentCommentWithAuthor[] = [];
       
       // Apply pagination
       const { page = 1, limit = CONFIG.pagination.defaultLimit } = pagination || {};
@@ -1770,7 +1851,7 @@ export async function createDocumentComment(
         id: comment.author.id,
         firstName: comment.author.firstName,
         lastName: comment.author.lastName,
-        profileImageUrl: comment.author.profileImageUrl
+        profileImageUrl: comment.author.profileImageUrl as unknown as { thumbnail?: string } | null
       },
       replies: []
     };
@@ -1821,23 +1902,30 @@ export async function getDocumentUploadUrl(
     const url = await getSignedUrl(s3Client, command, {
       expiresIn: CONFIG.s3.presignedUrlExpiration
     });
-    
+
+    // Compute public file URL that the document will ultimately be accessible at
+    const base =
+      CONFIG.s3.endpoint ??
+      `https://${CONFIG.s3.bucket}.s3.${CONFIG.s3.region}.amazonaws.com`;
+    const fileUrl = `${base}/${key}`;
+
     return {
       url,
-      key,
-      expiresIn: CONFIG.s3.presignedUrlExpiration,
-      fields: {}
+      fields: {},
+      fileUrl,
+      expires: CONFIG.s3.presignedUrlExpiration
     };
   } catch (error) {
     logger.error('Failed to get document upload URL', { error, familyId, data });
     
     // In development, return a mock URL
     if (CONFIG.mockData.enabled) {
+      const mockKey = `family/${familyId}/documents/${Date.now()}-${uuidv4()}-${data.fileName}`;
       return {
         url: `https://example.com/mock-upload/${familyId}/${uuidv4()}/${data.fileName}`,
-        key: `family/${familyId}/documents/${Date.now()}-${uuidv4()}-${data.fileName}`,
-        expiresIn: CONFIG.s3.presignedUrlExpiration,
-        fields: {}
+        fields: {},
+        fileUrl: `https://example.com/mock-files/${familyId}/${uuidv4()}-${data.fileName}`,
+        expires: CONFIG.s3.presignedUrlExpiration
       };
     }
     

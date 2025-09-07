@@ -84,6 +84,8 @@
     "**/*.test.ts",
     "**/*.test.tsx",
     "**/*.spec.ts",
-    "**/*.spec.tsx"
+    "**/*.spec.tsx",
+    "src/lib/services/calendar-backup.ts",
+    "src/unused/**"
   ]
 }
