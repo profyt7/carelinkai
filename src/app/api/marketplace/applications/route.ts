@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth/next';
 import authOptions from '@/lib/auth';
+import { z, ZodError } from 'zod';
+import { Prisma } from '@prisma/client';
 
 /**
  * GET /api/marketplace/applications
@@ -113,16 +115,13 @@ export async function POST(request: Request) {
       );
     }
     
-    // Parse request body
-    const body = await request.json();
-    
-    // Validate required fields
-    if (!body.listingId) {
-      return NextResponse.json(
-        { error: 'Listing ID is required' },
-        { status: 400 }
-      );
-    }
+    // ---------------- Validation ----------------
+    const BodySchema = z.object({
+      listingId: z.string().min(1, 'Listing ID is required'),
+      note: z.string().optional()
+    });
+
+    const body = BodySchema.parse(await request.json());
     
     // Check if user has a caregiver profile
     const caregiver = await (prisma as any).caregiver.findUnique({
@@ -205,7 +204,24 @@ export async function POST(request: Request) {
       { data: application },
       { status: 201 }
     );
-  } catch (error) {
+  } catch (error: any) {
+    // Validation errors
+    if (error instanceof ZodError) {
+      return NextResponse.json(
+        { error: error.issues[0]?.message ?? 'Invalid input' },
+        { status: 400 }
+      );
+    }
+
+    // Prisma known errors (field constraint, FK, etc.)
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      console.error('Prisma error creating application:', error);
+      return NextResponse.json(
+        { error: error.message },
+        { status: 400 }
+      );
+    }
+
     console.error('Error creating application:', error);
     return NextResponse.json(
       { error: 'Failed to create application' },

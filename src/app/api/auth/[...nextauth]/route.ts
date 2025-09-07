@@ -15,7 +15,7 @@ import NextAuth from "next-auth";
 // (password: `secure_password_change_me`).  We can safely switch
 // back to the primary database authentication strategy.
 // -------------------------------------------------------------
-import { authOptions } from "@/lib/auth-db-simple";
+import authOptions from "@/lib/auth";
 
 // Create handler with our custom authOptions
 const handler = NextAuth(authOptions);

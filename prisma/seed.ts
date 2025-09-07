@@ -3,7 +3,8 @@
  * Database Seed Script for CareLinkAI
  * Seeds marketplace taxonomy only.
  */
-import { PrismaClient, CategoryType } from '@prisma/client';
+import { PrismaClient, CategoryType, UserRole, UserStatus } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function seedMarketplaceTaxonomy() {
@@ -43,9 +44,40 @@ async function seedMarketplaceTaxonomy() {
   console.log('Marketplace taxonomy seeded');
 }
 
+/**
+ * Ensure a development ADMIN user exists
+ */
+async function upsertAdminUser() {
+  // Read credentials from env or fall back to sensible defaults
+  const email = process.env.ADMIN_EMAIL ?? 'admin@carelinkai.com';
+  const rawPassword = process.env.ADMIN_PASSWORD ?? 'Admin123!';
+
+  // Hash password (bcrypt, 10 rounds)
+  const passwordHash = await bcrypt.hash(rawPassword, 10);
+
+  const admin = await prisma.user.upsert({
+    where: { email },
+    update: {
+      passwordHash,
+      status: UserStatus.ACTIVE,
+    },
+    create: {
+      email,
+      firstName: 'Admin',
+      lastName: 'User',
+      passwordHash,
+      role: UserRole.ADMIN,
+      status: UserStatus.ACTIVE,
+    },
+  });
+
+  console.log(`Admin user ready: ${admin.email} (${admin.id})`);
+}
+
 async function main() {
   console.log('Starting database seed process...');
   await seedMarketplaceTaxonomy();
+  await upsertAdminUser();
   console.log('Seed complete');
 }
 

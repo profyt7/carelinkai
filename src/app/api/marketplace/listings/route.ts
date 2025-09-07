@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth/next';
 import authOptions from '@/lib/auth';
+import { z, ZodError } from 'zod';
+import { Prisma } from '@prisma/client';
 
 /**
  * GET /api/marketplace/listings
@@ -123,24 +125,34 @@ export async function POST(request: Request) {
       );
     }
     
-    // Parse request body
-    const body = await request.json();
-    
-    // Validate required fields
-    if (!body.title || !body.description) {
-      return NextResponse.json(
-        { error: 'Title and description are required' },
-        { status: 400 }
-      );
-    }
-    
+    // ------------------ Validation ------------------
+    const ListingSchema = z.object({
+      title: z.string().min(1, 'Title is required'),
+      description: z.string().min(1, 'Description is required'),
+      hourlyRateMin: z.coerce.number().positive().optional(),
+      hourlyRateMax: z.coerce.number().positive().optional(),
+      setting: z.string().optional(),
+      careTypes: z.array(z.string()).optional(),
+      services: z.array(z.string()).optional(),
+      specialties: z.array(z.string()).optional(),
+      city: z.string().optional(),
+      state: z.string().optional(),
+      zipCode: z.string().optional(),
+      latitude: z.coerce.number().optional(),
+      longitude: z.coerce.number().optional(),
+      startTime: z.coerce.date().optional(),
+      endTime: z.coerce.date().optional(),
+    });
+
+    const body = ListingSchema.parse(await request.json());
+
     // Create listing
     const listing = await (prisma as any).marketplaceListing.create({
       data: {
         title: body.title,
         description: body.description,
-        hourlyRateMin: body.hourlyRateMin ? parseFloat(body.hourlyRateMin) : null,
-        hourlyRateMax: body.hourlyRateMax ? parseFloat(body.hourlyRateMax) : null,
+        hourlyRateMin: body.hourlyRateMin ?? null,
+        hourlyRateMax: body.hourlyRateMax ?? null,
         setting: body.setting,
         careTypes: body.careTypes || [],
         services: body.services || [],
@@ -148,10 +160,10 @@ export async function POST(request: Request) {
         city: body.city,
         state: body.state,
         zipCode: body.zipCode,
-        latitude: body.latitude ? parseFloat(body.latitude) : null,
-        longitude: body.longitude ? parseFloat(body.longitude) : null,
-        startTime: body.startTime ? new Date(body.startTime) : null,
-        endTime: body.endTime ? new Date(body.endTime) : null,
+        latitude: body.latitude ?? null,
+        longitude: body.longitude ?? null,
+        startTime: body.startTime ?? null,
+        endTime: body.endTime ?? null,
         status: 'OPEN',
         postedByUserId: session.user.id
       }
@@ -161,7 +173,24 @@ export async function POST(request: Request) {
       { data: listing },
       { status: 201 }
     );
-  } catch (error) {
+  } catch (error: any) {
+    // Validation errors
+    if (error instanceof ZodError) {
+      return NextResponse.json(
+        { error: error.issues[0]?.message ?? 'Invalid input' },
+        { status: 400 }
+      );
+    }
+
+    // Prisma known errors (e.g., field too long, FK fail)
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      console.error('Prisma error creating listing:', error);
+      return NextResponse.json(
+        { error: error.message },
+        { status: 400 }
+      );
+    }
+
     console.error('Error creating marketplace listing:', error);
     return NextResponse.json(
       { error: 'Failed to create marketplace listing' },
