@@ -33,7 +33,10 @@ type Listing = {
 export default function MarketplacePage() {
   const { data: session } = useSession();
 
-  const [activeTab, setActiveTab] = useState<"jobs" | "caregivers">("caregivers");
+  // Include "providers" as a valid tab option
+  const [activeTab, setActiveTab] = useState<"jobs" | "caregivers" | "providers">(
+    "caregivers"
+  );
   const [search, setSearch] = useState("");
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
@@ -45,6 +48,23 @@ export default function MarketplacePage() {
 
   const [listings, setListings] = useState<Listing[]>([]);
   const [listingsLoading, setListingsLoading] = useState(false);
+
+  // Providers state --------------------------------------------------------
+  type Provider = {
+    id: string;
+    name: string;
+    city: string;
+    state: string;
+    services: string[];
+    hourlyRate: number | null;
+    perMileRate: number | null;
+    ratingAverage: number;
+    reviewCount: number;
+    badges: string[];
+  };
+
+  const [providers, setProviders] = useState<Provider[]>([]);
+  const [providersLoading, setProvidersLoading] = useState(false);
 
   useEffect(() => {
     // Load SPECIALTY categories for filters
@@ -106,6 +126,30 @@ export default function MarketplacePage() {
     run();
   }, [activeTab, search, city, state, specialties]);
 
+  /* ----------------------------------------------------------------------
+     Fetch providers
+  ----------------------------------------------------------------------*/
+  useEffect(() => {
+    if (activeTab !== "providers") return;
+    const run = async () => {
+      setProvidersLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (search) params.set("q", search);
+        if (city) params.set("city", city);
+        if (state) params.set("state", state);
+        const res = await fetch(`/api/marketplace/providers?${params.toString()}`);
+        const json = await res.json();
+        setProviders(json?.data ?? []);
+      } catch (e) {
+        setProviders([]);
+      } finally {
+        setProvidersLoading(false);
+      }
+    };
+    run();
+  }, [activeTab, search, city, state]);
+
   const toggleSpecialty = (slug: string) => {
     setSpecialties((prev) =>
       prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]
@@ -118,7 +162,7 @@ export default function MarketplacePage() {
         {/* Tabs */}
         <div className="mb-4 border-b border-gray-200">
           <nav className="-mb-px flex space-x-6" aria-label="Tabs">
-            {["caregivers", "jobs"].map((t) => (
+            {["caregivers", "jobs", "providers"].map((t) => (
               <button
                 key={t}
                 onClick={() => setActiveTab(t as any)}
@@ -129,14 +173,19 @@ export default function MarketplacePage() {
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300")
                 }
               >
-                {t === "caregivers" ? "Caregivers" : "Jobs"}
+                {t === "caregivers"
+                  ? "Caregivers"
+                  : t === "jobs"
+                  ? "Jobs"
+                  : "Providers"}
               </button>
             ))}
           </nav>
         </div>
 
         {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-6">
+        <div className="mb-6 rounded-md border border-gray-200 bg-white p-3">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -167,6 +216,7 @@ export default function MarketplacePage() {
               </label>
             ))}
           </div>
+          </div>
         </div>
 
         {/* CTA for caregivers */}
@@ -188,7 +238,7 @@ export default function MarketplacePage() {
           ) : caregivers.length === 0 ? (
             <div className="py-20 text-center text-gray-500">No caregivers found</div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
               {caregivers.map((cg) => (
                 <CaregiverCard key={cg.id} caregiver={cg} />
               ))}
@@ -199,7 +249,7 @@ export default function MarketplacePage() {
         ) : listings.length === 0 ? (
           <div className="py-20 text-center text-gray-500">No jobs found</div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
             {listings.map((job) => (
               <div key={job.id} className="bg-white border rounded-md p-4">
                 <h3 className="font-semibold text-gray-900 mb-1">{job.title}</h3>
@@ -220,6 +270,71 @@ export default function MarketplacePage() {
             ))}
           </div>
         )}
+
+        {/* Providers body --------------------------------------------------*/}
+        {activeTab === "providers" &&
+          (providersLoading ? (
+            <div className="py-20 text-center text-gray-500">Loading providers…</div>
+          ) : providers.length === 0 ? (
+            <div className="py-20 text-center text-gray-500">No providers found</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
+              {providers.map((p) => (
+                <div key={p.id} className="bg-white border rounded-md p-4">
+                  <h3 className="font-semibold text-gray-900 mb-1">{p.name}</h3>
+                  <div className="text-sm text-gray-600 mb-1">
+                    {[p.city, p.state].filter(Boolean).join(", ")}
+                  </div>
+                  {/* Rating */}
+                  <div className="flex items-center text-sm mb-2">
+                    <span className="mr-1 flex">
+                      {Array.from({ length: 5 }).map((_, idx) => (
+                        <span
+                          key={idx}
+                          className={
+                            idx < Math.round(p.ratingAverage)
+                              ? "text-yellow-400"
+                              : "text-gray-300"
+                          }
+                        >
+                          ★
+                        </span>
+                      ))}
+                    </span>
+                    <span className="text-gray-600">
+                      {p.ratingAverage.toFixed(1)} ({p.reviewCount})
+                    </span>
+                  </div>
+
+                  {/* Services chips */}
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {p.services.slice(0, 4).map((s) => (
+                      <span
+                        key={s}
+                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800"
+                      >
+                        {s.replace(/-/g, " ")}
+                      </span>
+                    ))}
+                    {p.services.length > 4 && (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                        +{p.services.length - 4} more
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Rate line */}
+                  {p.hourlyRate !== null || p.perMileRate !== null ? (
+                    <div className="text-sm text-gray-800 mb-2">
+                      {p.hourlyRate !== null
+                        ? `$${p.hourlyRate}/hr`
+                        : `$${p.perMileRate?.toFixed(2)}/mi`}
+                    </div>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          ))}
       </div>
     </DashboardLayout>
   );

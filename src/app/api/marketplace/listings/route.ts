@@ -94,6 +94,17 @@ export async function GET(request: Request) {
       };
     });
     
+    /* ------------------------------------------------------------------
+       Dev-mode fallback: return mock jobs when DB is empty
+    ------------------------------------------------------------------*/
+    if (
+      formattedListings.length === 0 &&
+      process.env.NODE_ENV !== 'production'
+    ) {
+      const mockJobs = generateMockListings(12);
+      return NextResponse.json({ data: mockJobs }, { status: 200 });
+    }
+
     return NextResponse.json(
       { data: formattedListings },
       { status: 200 }
@@ -197,6 +208,56 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
+}
+
+/* -----------------------------------------------------------------------
+   Development helper – generate mock job listings when DB is empty
+------------------------------------------------------------------------*/
+function generateMockListings(count: number = 12) {
+  const titles = [
+    'Evening caregiver for mom',
+    'Weekend companion needed',
+    'Overnight dementia care',
+    'Post-surgery recovery assistance',
+    'Medication & housekeeping help',
+    'Errands and transport support',
+  ];
+
+  const descriptions = [
+    'Looking for a compassionate caregiver to assist with ADLs and companionship.',
+    'Seeking experienced caregiver with memory-care background; reliable and patient.',
+    'Need help with medication reminders, mobility assistance, and light housekeeping.',
+    'Support with bathing, dressing, meals, and transportation to appointments.',
+  ];
+
+  const cities = [
+    'San Francisco',
+    'Oakland',
+    'San Jose',
+    'Berkeley',
+    'Palo Alto',
+    'Sunnyvale',
+  ];
+
+  const states = ['CA'];
+
+  const rand = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)];
+
+  return Array.from({ length: count }).map((_, idx) => {
+    const hourlyMin = 20 + Math.floor(Math.random() * 10); // 20-29
+    const hourlyMax = hourlyMin + 5 + Math.floor(Math.random() * 10); // +5-+14
+
+    return {
+      id: `mock-listing-${idx + 1}`,
+      title: rand(titles),
+      description: rand(descriptions),
+      city: rand(cities),
+      state: rand(states),
+      hourlyRateMin: hourlyMin,
+      hourlyRateMax: hourlyMax,
+      createdAt: new Date(Date.now() - idx * 86_400_000).toISOString(), // staggered days
+    };
+  });
 }
 
 /**

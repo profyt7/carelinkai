@@ -14,6 +14,9 @@ interface CaregiverCardProps {
     bio: string | null;
     photoUrl: string | null;
     backgroundCheckStatus: string;
+    ratingAverage?: number | null;
+    reviewCount?: number | null;
+    badges?: string[];
   };
 }
 
@@ -23,6 +26,24 @@ const CaregiverCard: React.FC<CaregiverCardProps> = ({ caregiver }) => {
     .filter(Boolean)
     .join(', ');
   
+  // Rating helpers ---------------------------------------------------------
+  const ratingAvg = caregiver.ratingAverage ?? 0;
+  const reviewCount = caregiver.reviewCount ?? 0;
+  const filledStars = Math.round(ratingAvg); // 0-5
+  const renderStars = () =>
+    Array.from({ length: 5 }).map((_, idx) => (
+      <span
+        key={idx}
+        className={
+          idx < filledStars ? 'text-yellow-400' : 'text-gray-300'
+        }
+        aria-hidden="true"
+      >
+        ★
+      </span>
+    ));
+  // ------------------------------------------------------------------------
+
   // Get background check badge color
   const getBackgroundCheckBadgeColor = (status: string) => {
     switch (status) {
@@ -64,6 +85,13 @@ const CaregiverCard: React.FC<CaregiverCardProps> = ({ caregiver }) => {
   // Get visible specialties and count of hidden ones
   const visibleSpecialties = caregiver.specialties.slice(0, 3);
   const hiddenSpecialtiesCount = Math.max(0, caregiver.specialties.length - 3);
+
+  // Combine default + dynamic badges (dedup by label)
+  const additionalBadges = caregiver.badges ?? [];
+  const experienceLabel =
+    caregiver.yearsExperience &&
+    `${caregiver.yearsExperience} ${caregiver.yearsExperience === 1 ? 'Year' : 'Years'} Experience`;
+  const badgeLabels = new Set<string>();
   
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
@@ -95,6 +123,18 @@ const CaregiverCard: React.FC<CaregiverCardProps> = ({ caregiver }) => {
             )}
           </div>
         </div>
+
+        {/* Rating row */}
+        <div className="mb-2 flex items-center text-sm">
+          {/* Stars */}
+          <span className="mr-2 flex">
+            {renderStars()}
+          </span>
+          {/* Numeric average & count */}
+          <span className="text-gray-600">
+            {ratingAvg.toFixed(1)} ({reviewCount})
+          </span>
+        </div>
         
         {/* Badges row */}
         <div className="flex flex-wrap gap-2 mb-3">
@@ -113,6 +153,20 @@ const CaregiverCard: React.FC<CaregiverCardProps> = ({ caregiver }) => {
           )}
         </div>
         
+        {/* Dynamic badges (gamification etc.) */}
+        {additionalBadges.map((label) => {
+          if (badgeLabels.has(label)) return null;
+          badgeLabels.add(label);
+          return (
+            <span
+              key={label}
+              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 mr-2 mb-2"
+            >
+              {label}
+            </span>
+          );
+        })}
+
         {/* Hourly rate */}
         {caregiver.hourlyRate && (
           <div className="flex items-center text-lg font-semibold text-gray-900 mb-3">

@@ -332,7 +332,8 @@ export async function GET(request: NextRequest) {
       // Transform documents to include comment count
       const documentsWithDetails = documents.map(doc => ({
         ...doc,
-        commentCount: doc.comments.length,
+        // fallback to 0 if comments is undefined (e.g., mock data)
+        commentCount: (doc as any).comments?.length ?? 0,
         comments: undefined // Remove comments array
       })) as FamilyDocumentWithDetails[];
       
@@ -661,7 +662,7 @@ export async function PUT(request: NextRequest) {
     // ------------------------------------------------------------------
     const normalized = {
       ...updatedDocument,
-      commentCount: updatedDocument.comments.length,
+      commentCount: (updatedDocument as any).comments?.length ?? 0,
       comments: undefined
     } as any;
 
@@ -675,7 +676,7 @@ export async function PUT(request: NextRequest) {
       success: true,
       document: {
         ...updatedDocument,
-        commentCount: updatedDocument.comments.length,
+        commentCount: (updatedDocument as any).comments?.length ?? 0,
         comments: undefined
       }
     });

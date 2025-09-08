@@ -81,6 +81,8 @@ async function main() {
   await seedMockCaregivers(12);
   // ---------------- Mock family job listings ----------------
   await seedMockFamilyJobs(15);
+  // ---------------- Mock caregiver reviews ----------------
+  await seedMockCaregiverReviews();
   console.log('Seed complete');
 }
 
@@ -135,6 +137,11 @@ async function seedMockCaregivers(count: number = 12) {
     const last  = lastNames[Math.floor(Math.random() * lastNames.length)];
     const email = `${first.toLowerCase()}.${last.toLowerCase()}.${i + 1}@example.com`;
 
+    // ------------------ random avatar ------------------
+    const gender = Math.random() < 0.5 ? 'women' : 'men';
+    const avatarIdx = Math.floor(Math.random() * 90); // 0-89 images available
+    const profileImageUrl = `https://randomuser.me/api/portraits/${gender}/${avatarIdx}.jpg`;
+
     const user = await prisma.user.upsert({
       where: { email },
       update: {
@@ -143,6 +150,7 @@ async function seedMockCaregivers(count: number = 12) {
         role: 'CAREGIVER',
         status: 'ACTIVE',
         passwordHash,
+        profileImageUrl,
       },
       create: {
         email,
@@ -151,6 +159,7 @@ async function seedMockCaregivers(count: number = 12) {
         role: 'CAREGIVER',
         status: 'ACTIVE',
         passwordHash,
+        profileImageUrl,
       },
     });
 
@@ -296,4 +305,154 @@ async function seedMockFamilyJobs(count: number = 15) {
   }
 
   console.log('Mock family job listings seeded.');
-}
+}
+
+/**
+ * Seed mock caregiver reviews
+ * Creates 5-15 reviews for each caregiver with ratings between 3-5 stars
+ */
+async function seedMockCaregiverReviews() {
+  console.log('Seeding mock caregiver reviews...');
+
+  // Fetch all caregivers
+  const caregivers = await prisma.caregiver.findMany();
+  if (caregivers.length === 0) {
+    console.log('No caregivers found, skipping review seeding');
+    return;
+  }
+
+  // Fetch existing FAMILY users
+  let familyUsers = await prisma.user.findMany({
+    where: { role: 'FAMILY', status: 'ACTIVE' },
+    select: { id: true, firstName: true, lastName: true },
+  });
+
+  // Ensure we have at least 5 FAMILY users
+  if (familyUsers.length < 5) {
+    console.log(`Only ${familyUsers.length} FAMILY users found, creating additional ones...`);
+    const defaultPassword = process.env.MOCK_USER_PASSWORD ?? 'Care123!';
+    const passwordHash = await bcrypt.hash(defaultPassword, 10);
+
+    const neededCount = 5 - familyUsers.length;
+    const newFamilyUsers = [];
+
+    for (let i = 0; i < neededCount; i++) {
+      const userNumber = familyUsers.length + i + 1;
+      const email = `family.reviewer${userNumber}@example.com`;
+      
+      try {
+        const user = await prisma.user.upsert({
+          where: { email },
+          update: { role: 'FAMILY', status: 'ACTIVE' },
+          create: {
+            email,
+            firstName: 'Family',
+            lastName: `Reviewer${userNumber}`,
+            role: 'FAMILY',
+            status: 'ACTIVE',
+            passwordHash,
+          },
+        });
+        newFamilyUsers.push({ id: user.id, firstName: user.firstName, lastName: user.lastName });
+      } catch (e) {
+        console.error(`Failed to create family user ${email}:`, e);
+      }
+    }
+
+    familyUsers = [...familyUsers, ...newFamilyUsers];
+  }
+
+  // Review comments for variety
+  const reviewComments = [
+    'Excellent caregiver, very attentive and professional.',
+    'Provided outstanding care for my parent, highly recommend!',
+    'Reliable, punctual, and compassionate. Would hire again.',
+    'Very knowledgeable about senior care needs.',
+    'Great communication skills and genuinely caring attitude.',
+    'Went above and beyond expectations.',
+    'My parent really enjoyed their company and care.',
+    'Handled challenging situations with patience and grace.',
+    'Very responsive and adaptable to changing needs.',
+    'Excellent at medication management and reminders.',
+    'Kept our home clean and organized while providing care.',
+    'Prepared nutritious meals that my parent enjoyed.',
+    'Great at engaging in meaningful activities.',
+    'Professional demeanor while maintaining a personal touch.',
+    'Skilled at mobility assistance and transfer techniques.',
+    'Provided peace of mind for our family.',
+    'Excellent driving record and transportation assistance.',
+    'Very respectful of privacy and dignity.',
+    'Good at encouraging independence while providing necessary support.',
+    'Handled memory care needs with expertise and compassion.',
+  ];
+
+  // Process each caregiver
+  for (const caregiver of caregivers) {
+    // Generate 5-15 reviews per caregiver
+    const reviewCount = 5 + Math.floor(Math.random() * 11); // 5-15 reviews
+    const reviewData = [];
+
+    // Create unique family user and date combinations
+    const usedCombinations = new Set();
+    
+    for (let i = 0; i < reviewCount; i++) {
+      // Select random family user
+      const reviewer = familyUsers[Math.floor(Math.random() * familyUsers.length)];
+      
+      // Generate random date in the past year
+      const daysAgo = Math.floor(Math.random() * 365);
+      const reviewDate = new Date();
+      reviewDate.setDate(reviewDate.getDate() - daysAgo);
+      
+      // Create a unique key for this combination
+      const combinationKey = `${caregiver.id}-${reviewer.id}-${reviewDate.toISOString().split('T')[0]}`;
+      
+      // Skip if this combination already exists
+      if (usedCombinations.has(combinationKey)) {
+        continue;
+      }
+      usedCombinations.add(combinationKey);
+
+      // Generate random rating (weighted toward higher ratings)
+      // 3 stars: 10%, 4 stars: 30%, 5 stars: 60%
+      const ratingRandom = Math.random();
+      let rating;
+      if (ratingRandom < 0.1) {
+        rating = 3;
+      } else if (ratingRandom < 0.4) {
+        rating = 4;
+      } else {
+        rating = 5;
+      }
+
+      // Select random comment
+      const comment = reviewComments[Math.floor(Math.random() * reviewComments.length)];
+
+      reviewData.push({
+        caregiverId: caregiver.id,
+        reviewerId: reviewer.id,
+        rating,
+        comment,
+        createdAt: reviewDate,
+        updatedAt: reviewDate,
+      });
+    }
+
+    // Bulk insert reviews
+    if (reviewData.length > 0) {
+      try {
+        await prisma.caregiverReview.createMany({
+          data: reviewData,
+          skipDuplicates: true,
+        });
+        console.log(`Created ${reviewData.length} reviews for caregiver ${caregiver.id}`);
+      } catch (e) {
+        console.error(`Failed to create reviews for caregiver ${caregiver.id}:`, e);
+      }
+    }
+  }
+
+  // Count total reviews created
+  const totalReviews = await prisma.caregiverReview.count();
+  console.log(`Total caregiver reviews in database: ${totalReviews}`);
+}

@@ -343,7 +343,7 @@ function sanitizeImageUrl(url: string | null): string | null {
  * Development-only: generate an array of mock homes so that UI
  * continues to work when the database is unavailable or empty.
  */
-function generateMockHomes(count: number = 12) {
+export function generateMockHomes(count: number = 12) {
   const careLevels: CareLevel[][] = [
     [CareLevel.ASSISTED],
     [CareLevel.MEMORY_CARE],
@@ -390,7 +390,8 @@ function generateMockHomes(count: number = 12) {
       availability: 5 + (i % 4),
       gender: 'ALL',
       amenities: amenitiesSamples[i % amenitiesSamples.length],
-      imageUrl: null,
+      // Use seeded Picsum photos so each mock home gets a stable image
+      imageUrl: `https://picsum.photos/seed/carehome-${i}/800/600`,
       operator: null,
       aiMatchScore: 60 + (i * 3) % 35, // 60-95
       isFavorited: false,

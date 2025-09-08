@@ -106,6 +106,34 @@ export async function GET(request: Request) {
       prisma.caregiver.count({ where })
     ]);
     
+    /* ------------------------------------------------------------------
+       Pull rating aggregates (avg + count) for this result set
+    ------------------------------------------------------------------*/
+    const reviewAgg = await prisma.caregiverReview.groupBy({
+      by: ['caregiverId'],
+      where: { caregiverId: { in: caregivers.map((c) => c.id) } },
+      _avg: { rating: true },
+      _count: { _all: true }
+    });
+    const reviewMap = new Map(
+      reviewAgg.map((r) => [
+        r.caregiverId,
+        {
+          avg: r._avg.rating ?? 0,
+          count: r._count._all
+        }
+      ])
+    );
+
+    // helper to derive badges
+    const deriveBadges = (avg: number, count: number, yearsExp: number | null, bgStatus: string) => {
+      const badges: string[] = [];
+      if (bgStatus === 'CLEAR') badges.push('Background Check Clear');
+      if (yearsExp !== null && yearsExp >= 5) badges.push('Experienced');
+      if (count >= 5 && avg >= 4.5) badges.push('Top Rated');
+      return badges;
+    };
+
     // Transform the data to a clean DTO format
     const formattedCaregivers = caregivers.map((caregiver: any) => {
       // Find the first address if available
@@ -127,6 +155,9 @@ export async function GET(request: Request) {
         }
       }
       
+      // rating data
+      const ratingInfo = reviewMap.get(caregiver.id) ?? { avg: 0, count: 0 };
+
       return {
         id: caregiver.id,
         userId: caregiver.user.id,
@@ -138,7 +169,15 @@ export async function GET(request: Request) {
         specialties: caregiver.specialties || [],
         bio: caregiver.bio || null,
         backgroundCheckStatus: caregiver.backgroundCheckStatus,
-        photoUrl
+        photoUrl,
+        ratingAverage: Number(ratingInfo.avg?.toFixed(1)) || 0,
+        reviewCount: ratingInfo.count,
+        badges: deriveBadges(
+          ratingInfo.avg ?? 0,
+          ratingInfo.count,
+          caregiver.yearsExperience,
+          caregiver.backgroundCheckStatus
+        )
       };
     });
     
@@ -215,8 +254,12 @@ export async function GET(request: Request) {
 
 /**
  * Generate mock caregivers for development
+ * (exported for unit tests)
  */
-function generateMockCaregivers(count: number, specialtyOptions: string[] = []) {
+export function generateMockCaregivers(
+  count: number,
+  specialtyOptions: string[] = []
+) {
   // Default specialties if none provided
   const defaultSpecialties = [
     'alzheimers-care', 'dementia-care', 'diabetes-care', 'hospice-care',
@@ -268,7 +311,22 @@ function generateMockCaregivers(count: number, specialtyOptions: string[] = []) 
       caregiverSpecialties.push(shuffledSpecialties[j]);
     }
     
-    const backgroundCheckStatus = backgroundCheckStatuses[Math.floor(Math.random() * backgroundCheckStatuses.length)];
+    const backgroundCheckStatus =
+      backgroundCheckStatuses[
+        Math.floor(Math.random() * backgroundCheckStatuses.length)
+      ];
+
+    // ---------- random profile photo -------------
+    const gender = Math.random() < 0.5 ? 'women' : 'men';
+    const idx = Math.floor(Math.random() * 90); // 0-89 available
+    const photoUrl = `https://randomuser.me/api/portraits/${gender}/${idx}.jpg`;
+      // rating / reviews
+      const reviewCount = Math.floor(Math.random() * 50) + 5; // 5-54
+      const ratingAverage = parseFloat((Math.random() * 1.5 + 3.5).toFixed(1)); // 3.5-5.0
+      const badges: string[] = [];
+      if (backgroundCheckStatus === 'CLEAR') badges.push('Background Check Clear');
+      if (yearsExperience >= 5) badges.push('Experienced');
+      if (reviewCount >= 5 && ratingAverage >= 4.5) badges.push('Top Rated');
     
     return {
       id: `mock-${i + 1}`,
@@ -281,7 +339,10 @@ function generateMockCaregivers(count: number, specialtyOptions: string[] = []) 
       specialties: caregiverSpecialties,
       bio,
       backgroundCheckStatus,
-      photoUrl: null // Mock caregivers don't have photos
+      photoUrl,
+      ratingAverage,
+      reviewCount,
+      badges
     };
   });
 }

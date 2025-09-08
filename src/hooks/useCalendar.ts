@@ -135,7 +135,8 @@ export function useCalendar(): CalendarHook {
       start: new Date().toISOString(),
       end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days from now
     },
-    participantIds: session?.user?.id ? [session.user.id] : []
+    // Default to an empty array so admins (and others) see all appointments
+    participantIds: []
   });
   
   // Update filter with partial changes
