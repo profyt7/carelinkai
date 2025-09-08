@@ -432,7 +432,7 @@ async function seedMockCaregiverReviews() {
         caregiverId: caregiver.id,
         reviewerId: reviewer.id,
         rating,
-        comment,
+        content: comment,
         createdAt: reviewDate,
         updatedAt: reviewDate,
       });
