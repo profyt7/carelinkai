@@ -79,6 +79,8 @@ async function main() {
   await seedMarketplaceTaxonomy();
   await upsertAdminUser();
   await seedMockCaregivers(12);
+  // ---------------- Mock family job listings ----------------
+  await seedMockFamilyJobs(15);
   console.log('Seed complete');
 }
 
@@ -185,3 +187,113 @@ async function seedMockCaregivers(count: number = 12) {
 
   console.log('Mock caregivers seeded.');
 }
+
+/**
+ * Seed mock family job listings
+ */
+async function seedMockFamilyJobs(count: number = 15) {
+  console.log(`Seeding ${count} mock family job listings...`);
+
+  // Load marketplace category slugs
+  const [settings, careTypes, services, specialties] = await Promise.all([
+    prisma.marketplaceCategory.findMany({ where: { type: 'SETTING', isActive: true }, orderBy: { sortOrder: 'asc' } }),
+    prisma.marketplaceCategory.findMany({ where: { type: 'CARE_TYPE', isActive: true }, orderBy: { sortOrder: 'asc' } }),
+    prisma.marketplaceCategory.findMany({ where: { type: 'SERVICE', isActive: true }, orderBy: { sortOrder: 'asc' } }),
+    prisma.marketplaceCategory.findMany({ where: { type: 'SPECIALTY', isActive: true }, orderBy: { sortOrder: 'asc' } }),
+  ]);
+
+  const settingSlugs = settings.map((c: any) => c.slug);
+  const careTypeSlugs = careTypes.map((c: any) => c.slug);
+  const serviceSlugs = services.map((c: any) => c.slug);
+  const specialtySlugs = specialties.map((c: any) => c.slug);
+
+  const titles = [
+    'Evening caregiver for mom',
+    'Weekend companion needed',
+    'Overnight dementia care',
+    'Post-surgery recovery assistance',
+    'Medication & housekeeping help',
+    'Errands and transport support',
+    'Part-time daytime caregiver',
+    'Memory care support required',
+    'Short-term respite care',
+    'Daily living assistance',
+  ];
+
+  const descriptions = [
+    'Looking for a compassionate caregiver to assist with ADLs and companionship.',
+    'Seeking experienced caregiver with memory-care background; reliable and patient.',
+    'Need help with medication reminders, mobility assistance, and light housekeeping.',
+    'Support with bathing, dressing, meals, and transportation to appointments.',
+    'Family seeking weekend coverage; flexible hours available.',
+  ];
+
+  const cities = ['San Francisco', 'Oakland', 'San Jose', 'Berkeley', 'Palo Alto', 'Mountain View', 'Sunnyvale'];
+  const states = ['CA'];
+
+  const rand = (n: number) => Math.floor(Math.random() * n);
+  const pick = <T,>(arr: T[]) => (arr.length ? arr[rand(arr.length)] : undefined);
+  const pickMany = (arr: string[], k: number) => {
+    const shuffled = [...arr].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, Math.min(k, shuffled.length));
+  };
+
+  // Create or reuse a few family users
+  const familyUserIds: string[] = [];
+  const defaultPassword = process.env.MOCK_USER_PASSWORD ?? 'Care123!';
+  const passwordHash = await bcrypt.hash(defaultPassword, 10);
+
+  const familyCount = Math.max(5, Math.ceil(count / 3));
+  for (let i = 0; i < familyCount; i++) {
+    const email = `family.demo${i + 1}@example.com`;
+    const user = await prisma.user.upsert({
+      where: { email },
+      update: { role: 'FAMILY', status: 'ACTIVE', passwordHash },
+      create: {
+        email,
+        firstName: 'Family',
+        lastName: `Demo${i + 1}`,
+        role: 'FAMILY',
+        status: 'ACTIVE',
+        passwordHash,
+      },
+    });
+    familyUserIds.push(user.id);
+  }
+
+  for (let i = 0; i < count; i++) {
+    const postedByUserId = pick(familyUserIds)!;
+
+    const city = pick(cities);
+    const state = pick(states);
+
+    const hourlyMin = 20 + rand(10); // 20-29
+    const hourlyMax = hourlyMin + 5 + rand(10); // +5-+14
+
+    const start = new Date();
+    start.setDate(start.getDate() + rand(21) + 2);
+    const end = new Date(start);
+    end.setDate(start.getDate() + (rand(7) + 1));
+
+    await prisma.marketplaceListing.create({
+      data: {
+        postedByUserId,
+        title: pick(titles) ?? 'Caregiver needed',
+        description: pick(descriptions) ?? 'Seeking reliable caregiver.',
+        hourlyRateMin: hourlyMin,
+        hourlyRateMax: hourlyMax,
+        setting: pick(settingSlugs) ?? undefined,
+        careTypes: pickMany(careTypeSlugs, 2),
+        services: pickMany(serviceSlugs, 2),
+        specialties: pickMany(specialtySlugs, 3),
+        city,
+        state,
+        status: 'OPEN',
+        startTime: start,
+        endTime: end,
+      },
+    });
+  }
+
+  console.log('Mock family job listings seeded.');
+}
