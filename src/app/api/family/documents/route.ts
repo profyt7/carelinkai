@@ -18,6 +18,7 @@ import {
   hasPermissionToViewDocuments,
   createActivityRecord
 } from "@/lib/services/family";
+import { generateMockDocuments } from "@/lib/services/family";
 
 // Maximum file size (10MB)
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -258,7 +259,9 @@ export async function GET(request: NextRequest) {
       console.log(`[Documents API] Starting Prisma queries, elapsed: ${Date.now() - startedAt}ms`, { whereClause });
       
       // Query documents with pagination
-      const [documents, totalCount] = await Promise.all([
+      let documents: any[] = [];
+      let totalCount = 0;
+      [documents, totalCount] = await Promise.all([
         prisma.familyDocument.findMany({
           where: whereClause,
           include: {
@@ -286,6 +289,35 @@ export async function GET(request: NextRequest) {
           where: whereClause
         })
       ]);
+
+      /* ------------------------------------------------------------------
+         Development fallback: use mock documents if DB returns none
+      ------------------------------------------------------------------*/
+      if (
+        totalCount === 0 &&
+        process.env["NODE_ENV"] !== "production"
+      ) {
+        const mockAll = generateMockDocuments(filters.familyId, session.user.id, undefined, {
+          search: filters.search,
+          types: Array.isArray(filters.type)
+            ? filters.type
+            : filters.type
+            ? [filters.type]
+            : undefined,
+          tags: filters.tags
+            ? Array.isArray(filters.tags)
+              ? filters.tags
+              : [filters.tags]
+            : undefined,
+          uploaderId: filters.uploaderId
+        });
+
+        totalCount = mockAll.length;
+        // apply pagination locally
+        const start = (filters.page - 1) * filters.limit;
+        const end = start + filters.limit;
+        documents = mockAll.slice(start, end);
+      }
       
       console.log(`[Documents API] Prisma queries completed, elapsed: ${Date.now() - startedAt}ms`, { 
         documentCount: documents.length,

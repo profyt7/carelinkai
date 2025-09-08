@@ -18,12 +18,14 @@ import { logger } from '@/lib/logger';
 import { sendEmail } from '@/lib/email/sendgrid';
 import { prisma } from '@/lib/prisma';
 
-import { 
-  Appointment, AppointmentStatus, AppointmentType,
-  AvailabilitySlot, BookingRequest, BookingResponse,
-  CalendarEvent, CalendarFilter, DateRange,
-  RecurrenceFrequency, RecurrencePattern, TimeSlot,
-  DayOfWeek, AvailabilityCheck
+import type { UserRole } from '@prisma/client';
+import type {
+  Appointment, AvailabilitySlot, BookingRequest, BookingResponse,
+  CalendarEvent, CalendarFilter, DateRange, RecurrencePattern, TimeSlot,
+  AvailabilityCheck
+} from '@/lib/types/calendar';
+import {
+  AppointmentStatus, AppointmentType, RecurrenceFrequency, DayOfWeek
 } from '@/lib/types/calendar';
 
 // Default timezone placeholder
@@ -186,7 +188,7 @@ function areFiltersSimilar(filter1: CalendarFilter, filter2: CalendarFilter): bo
   const participantOverlap = filter1.participantIds && filter2.participantIds && 
     filter1.participantIds.some(id => filter2.participantIds?.includes(id));
   
-  return dateRangeSimilar || participantOverlap;
+  return Boolean(dateRangeSimilar) || Boolean(participantOverlap);
 }
 
 /**
@@ -260,6 +262,7 @@ function generateMockAppointments(filter: CalendarFilter): Appointment[] {
     { id: 'user456', firstName: 'Jane', lastName: 'Smith', role: 'CAREGIVER' },
     { id: 'user789', firstName: 'Robert', lastName: 'Johnson', role: 'OPERATOR' }
   ];
+  const firstUser = users[0]!;
   
   // Sample homes
   const homes = [
@@ -399,11 +402,12 @@ function generateMockAppointments(filter: CalendarFilter): Appointment[] {
                            random() < 0.5 ? 0 : 30, 0, 0);
     
     // Random duration between 30 minutes and 2 hours - using seeded random
-    const durationMinutes = [30, 60, 90, 120][Math.floor(random() * 4)];
-    const endTime = new Date(appointmentDate.getTime() + durationMinutes * 60000);
+    const durationOptions = [30, 60, 90, 120] as const;
+    const durationMinutes = durationOptions[Math.floor(random() * durationOptions.length)] ?? 60;
+    const endTime = new Date(appointmentDate.getTime() + Number(durationMinutes) * 60000);
     
     // Random appointment type - using seeded random
-    const appointmentType = appointmentTypes[Math.floor(random() * appointmentTypes.length)];
+    const appointmentType = appointmentTypes[Math.floor(random() * appointmentTypes.length)] as AppointmentType;
     
     // Random status (weighted toward CONFIRMED) - using seeded random
     const statusRandom = random();
@@ -421,38 +425,38 @@ function generateMockAppointments(filter: CalendarFilter): Appointment[] {
     }
     
     // Random creator (weighted toward admin) - using seeded random
-    const creator = random() < 0.7 ? users[0] : users[Math.floor(random() * users.length)];
+    const creator = random() < 0.7 ? firstUser : (users[Math.floor(random() * users.length)] ?? firstUser);
+    const usedUserIds = new Set([creator?.id ?? firstUser.id]);
     
     // Random title and description based on type - using seeded random
     const titles = appointmentTitles[appointmentType];
     const descriptions = appointmentDescriptions[appointmentType];
-    const title = titles[Math.floor(random() * titles.length)];
-    const description = descriptions[Math.floor(random() * descriptions.length)];
+    const title = titles[Math.floor(random() * titles.length)] ?? 'Appointment';
+    const description = descriptions[Math.floor(random() * descriptions.length)] ?? '';
     
     // Random location - using seeded random
     const location = locations[Math.floor(random() * locations.length)];
     
     // Random home and resident (may be undefined) - using seeded random
-    const homeId = random() < 0.7 ? homes[Math.floor(random() * homes.length)].id : undefined;
-    const residentId = random() < 0.6 ? residents[Math.floor(random() * residents.length)].id : undefined;
+    const homeId = random() < 0.7 ? homes[Math.floor(random() * homes.length)]?.id : undefined;
+    const residentId = random() < 0.6 ? residents[Math.floor(random() * residents.length)]?.id : undefined;
     
     // Generate 1-3 participants - using seeded random
     const numParticipants = Math.floor(random() * 3) + 1;
-    const participants = [];
-    const usedUserIds = new Set([creator.id]);
+    const participants: Appointment['participants'] = [];
     
     for (let j = 0; j < numParticipants; j++) {
-      let user;
-      do {
-        user = users[Math.floor(random() * users.length)];
-      } while (usedUserIds.has(user.id));
-      
+      let userCandidate = users[Math.floor(random() * users.length)] ?? firstUser;
+      while (usedUserIds.has(userCandidate.id)) {
+        userCandidate = users[Math.floor(random() * users.length)] ?? firstUser;
+      }
+      const user = userCandidate;
       usedUserIds.add(user.id);
       
       participants.push({
         userId: user.id,
         name: `${user.firstName} ${user.lastName}`,
-        role: user.role,
+        role: user.role as UserRole,
         status: random() < 0.8 ? 'ACCEPTED' : 'PENDING',
         notes: random() < 0.3 ? 'Some notes about participation' : undefined
       });
@@ -471,9 +475,9 @@ function generateMockAppointments(filter: CalendarFilter): Appointment[] {
       homeId: homeId,
       residentId: residentId,
       createdBy: {
-        id: creator.id,
-        name: `${creator.firstName} ${creator.lastName}`,
-        role: creator.role
+        id: creator?.id ?? firstUser.id,
+        name: `${creator?.firstName ?? firstUser.firstName} ${creator?.lastName ?? firstUser.lastName}`,
+        role: (creator?.role ?? firstUser.role) as UserRole
       },
       participants: participants,
       notes: random() < 0.5 ? 'Additional notes about this appointment.' : undefined,
@@ -1283,14 +1287,7 @@ export function appointmentToCalendarEvent(appointment: Appointment): CalendarEv
     borderColor: colors.borderColor,
     textColor: colors.textColor,
     extendedProps: {
-      type: appointment.type,
-      status: appointment.status,
-      description: appointment.description,
-      location: appointment.location,
-      participants: appointment.participants,
-      createdBy: appointment.createdBy,
-      notes: appointment.notes,
-      metadata: appointment.metadata
+      appointment
     }
   };
 }
@@ -1432,11 +1429,14 @@ export async function findAvailableSlots(
       if (end > range.end) continue;
 
       slots.push({
+        id: `slot-${uuidv4()}`,
         userId,
-        appointmentType,
+        userRole: 'CAREGIVER' as UserRole,
         startTime: start.toISOString(),
         endTime: end.toISOString(),
-        homeId
+        isAvailable: true,
+        homeId,
+        availableFor: [appointmentType]
       });
     }
   }

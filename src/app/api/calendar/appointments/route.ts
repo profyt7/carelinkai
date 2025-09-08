@@ -13,7 +13,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { z } from 'zod';
-import { authOptions } from '@/lib/auth-db-simple';
+import { authOptions } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { 
   getAppointments, 
@@ -362,9 +362,6 @@ export async function GET(request: NextRequest) {
     // Participant ID
     if (params['participantId']) {
       filter.participantIds = [params['participantId']];
-    } else {
-      // By default, show appointments where the current user is involved
-      filter.participantIds = [session.user.id];
     }
     
     // Search

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef, TouchEvent } from "react";
+import { useState, useEffect, useRef } from "react";
+import type { TouchEvent } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
@@ -67,6 +68,8 @@ const navItems: NavItem[] = [
   { name: "Residents", icon: <FiUsers size={20} />, href: "/residents", showInMobileBar: true },
   { name: "Caregivers", icon: <FiUsers size={20} />, href: "/caregivers", showInMobileBar: false },
   { name: "Calendar", icon: <FiCalendar size={20} />, href: "/calendar", showInMobileBar: true },
+  // Shifts page
+  { name: "Shifts", icon: <FiCalendar size={20} />, href: "/shifts", showInMobileBar: true },
   // Family collaboration (visible to all)
   { name: "Family", icon: <FiUsers size={20} />, href: "/family", showInMobileBar: true },
   { name: "Finances", icon: <FiDollarSign size={20} />, href: "/finances", showInMobileBar: true },
@@ -100,7 +103,7 @@ export default function DashboardLayout({
   
   // Feature flags
   const marketplaceEnabled =
-    process.env.NEXT_PUBLIC_MARKETPLACE_ENABLED !== "false";
+    process.env['NEXT_PUBLIC_MARKETPLACE_ENABLED'] !== 'false';
 
   // Responsive state
   const [isMobile, setIsMobile] = useState(false);
@@ -228,16 +231,20 @@ export default function DashboardLayout({
   
   // Touch event handlers for swipe gestures
   const handleTouchStart = (e: TouchEvent<HTMLDivElement>) => {
-    setTouchStartX(e.touches[0].clientX);
-    setTouchStartY(e.touches[0].clientY);
+    const firstTouch = e.touches?.item(0);
+    if (firstTouch) {
+      setTouchStartX(firstTouch.clientX);
+      setTouchStartY(firstTouch.clientY);
+    }
     setIsSwiping(true);
   };
   
   const handleTouchMove = (e: TouchEvent<HTMLDivElement>) => {
-    if (!isSwiping) return;
+    const firstTouch = e.touches?.item(0);
+    if (!isSwiping || !firstTouch) return;
     
-    const currentX = e.touches[0].clientX;
-    const currentY = e.touches[0].clientY;
+    const currentX = firstTouch.clientX;
+    const currentY = firstTouch.clientY;
     const deltaX = currentX - touchStartX;
     const deltaY = currentY - touchStartY;
     

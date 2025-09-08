@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useCallback, Fragment, ChangeEvent, DragEvent } from "react";
+import { useState, useRef, useCallback, Fragment } from "react";
+import type { ChangeEvent, DragEvent } from "react";
 import { Dialog, Transition, Listbox } from "@headlessui/react";
 import { 
   FiX, 
@@ -14,7 +15,7 @@ import {
   FiPlus,
   FiTag
 } from "react-icons/fi";
-import { DocumentType, FamilyDocumentUpload } from "@/lib/types/family";
+import type { FamilyDocumentType } from "@/lib/types/family";
 
 // Maximum file size in bytes (10MB)
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -53,6 +54,19 @@ const DOCUMENT_TYPES = [
   { id: "OTHER", name: "Other" }
 ];
 
+type UploadDocument = {
+  familyId: string;
+  title: string;
+  description?: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  file: File;
+  type: FamilyDocumentType;
+  isEncrypted: boolean;
+  tags: string[];
+};
+
 interface FileWithPreview extends File {
   id: string;
   preview?: string;
@@ -64,7 +78,7 @@ interface FileWithPreview extends File {
 interface DocumentUploadModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onUpload: (data: FamilyDocumentUpload[]) => Promise<void>;
+  onUpload: (data: UploadDocument[]) => Promise<void>;
   familyId: string;
 }
 
@@ -78,7 +92,7 @@ export default function DocumentUploadModal({
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [documentType, setDocumentType] = useState<DocumentType>("CARE_PLAN");
+  const [documentType, setDocumentType] = useState<FamilyDocumentType>("CARE_PLAN");
   const [tags, setTags] = useState<string[]>([]);
   const [currentTag, setCurrentTag] = useState("");
   const [isEncrypted, setIsEncrypted] = useState(true);
@@ -336,7 +350,7 @@ export default function DocumentUploadModal({
 
     try {
       // Prepare document data
-      const documents: FamilyDocumentUpload[] = files.map(file => ({
+      const documents: UploadDocument[] = files.map(file => ({
         familyId,
         title: title.trim(),
         description: description.trim(),
@@ -384,7 +398,7 @@ export default function DocumentUploadModal({
 
       // Close the modal after a slightly longer delay – this prevents
       // the UI from trying to access file properties that have already
-      // been cleared/reset (root cause of the “NaN MB / undefined” issue)
+      // been cleared/reset (root cause of the "NaN MB / undefined" issue)
       setTimeout(() => {
         handleClose();
       }, 2000);

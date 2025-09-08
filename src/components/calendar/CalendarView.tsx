@@ -27,17 +27,11 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import listPlugin from '@fullcalendar/list';
+import type { CalendarOptions } from '@fullcalendar/core';
 
 // Import types
-import { 
-  AppointmentType, 
-  AppointmentStatus, 
-  Appointment,
-  CalendarEvent,
-  BookingRequest,
-  RecurrenceFrequency,
-  RecurrencePattern
-} from '@/lib/types/calendar';
+import { AppointmentType, AppointmentStatus } from '@/lib/types/calendar';
+import type { Appointment, CalendarEvent, BookingRequest, RecurrenceFrequency, RecurrencePattern } from '@/lib/types/calendar';
 import { UserRole } from '@prisma/client';
 
 // Calendar view options
@@ -510,10 +504,7 @@ export default function CalendarView({
       onSearchChange(newValue);
     } else {
       setInternalSearchQuery(newValue);
-      setFilter(prev => ({
-        ...prev,
-        searchText: newValue || undefined
-      }));
+      setFilter({ searchText: newValue || undefined });
       fetchAppointments();
     }
   }, [onSearchChange, setFilter, fetchAppointments]);
@@ -533,10 +524,7 @@ export default function CalendarView({
           ? prev.filter(t => t !== type)
           : [...prev, type];
         
-        setFilter(prevFilter => ({
-          ...prevFilter,
-          appointmentTypes: newFilters.length > 0 ? newFilters : undefined
-        }));
+        setFilter({ appointmentTypes: newFilters.length > 0 ? newFilters : undefined });
         
         fetchAppointments();
         return newFilters;
@@ -559,10 +547,7 @@ export default function CalendarView({
           ? prev.filter(s => s !== status)
           : [...prev, status];
         
-        setFilter(prevFilter => ({
-          ...prevFilter,
-          status: newFilters.length > 0 ? newFilters : undefined
-        }));
+        setFilter({ status: newFilters.length > 0 ? newFilters : undefined });
         
         fetchAppointments();
         return newFilters;
@@ -576,21 +561,21 @@ export default function CalendarView({
       onTypeFiltersChange([]);
     } else {
       setInternalTypeFilters([]);
-      setFilter(prev => ({ ...prev, appointmentTypes: undefined }));
+      setFilter({ appointmentTypes: undefined });
     }
     
     if (onStatusFiltersChange) {
       onStatusFiltersChange([]);
     } else {
       setInternalStatusFilters([]);
-      setFilter(prev => ({ ...prev, status: undefined }));
+      setFilter({ status: undefined });
     }
     
     if (onSearchChange) {
       onSearchChange('');
     } else {
       setInternalSearchQuery('');
-      setFilter(prev => ({ ...prev, searchText: undefined }));
+      setFilter({ searchText: undefined });
     }
     
     // Fetch updated appointments if using internal state
@@ -600,7 +585,7 @@ export default function CalendarView({
   }, [onTypeFiltersChange, onStatusFiltersChange, onSearchChange, setFilter, fetchAppointments]);
   
   // Calendar options
-  const calendarOptions = useMemo(() => ({
+  const calendarOptions = useMemo<CalendarOptions>(() => ({
     plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin],
     initialView: currentView,
     headerToolbar: false, // We'll create our own toolbar
@@ -650,7 +635,7 @@ export default function CalendarView({
       hour: 'numeric',
       minute: '2-digit',
       meridiem: true
-    },
+    } as const,
     views: {
       dayGridMonth: {
         titleFormat: { year: 'numeric', month: 'long' }
@@ -661,7 +646,7 @@ export default function CalendarView({
           hour: 'numeric',
           minute: '2-digit',
           meridiem: true
-        }
+        } as const
       },
       timeGridDay: {
         titleFormat: { year: 'numeric', month: 'long', day: 'numeric' },
@@ -669,7 +654,7 @@ export default function CalendarView({
           hour: 'numeric',
           minute: '2-digit',
           meridiem: true
-        }
+        } as const
       },
       listWeek: {
         titleFormat: { year: 'numeric', month: 'long' }

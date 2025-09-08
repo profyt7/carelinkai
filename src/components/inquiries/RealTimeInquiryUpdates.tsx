@@ -340,10 +340,10 @@ const RealTimeInquiryUpdates: React.FC<RealTimeInquiryUpdatesProps> = ({
       // 15% chance of receiving a new update every 45 seconds
       if (Math.random() < 0.15) {
         const updateTypes: UpdateType[] = ['STATUS_CHANGE', 'NEW_MESSAGE', 'TOUR_REMINDER', 'DOCUMENT_SHARED', 'NOTE_ADDED'];
-        const randomType = updateTypes[Math.floor(Math.random() * updateTypes.length)];
+        const randomType = updateTypes[Math.floor(Math.random() * updateTypes.length)] ?? 'STATUS_CHANGE';
         
-        const mockInquiryIds = inquiryId ? [inquiryId] : ['inq-001', 'inq-002', 'inq-003'];
-        const randomInquiryId = mockInquiryIds[Math.floor(Math.random() * mockInquiryIds.length)];
+        const mockInquiryIds = (inquiryId ? [inquiryId] : ['inq-001', 'inq-002', 'inq-003']).filter(Boolean) as string[];
+        const randomInquiryId = mockInquiryIds[Math.floor(Math.random() * mockInquiryIds.length)] ?? 'inq-001';
         
         const homeNames: Record<string, string> = {
           'inq-001': 'Sunshine Care Home',
