@@ -743,7 +743,7 @@ export default function SearchPage() {
                             {home.careLevel.map((level) => (
                               <span
                                 key={`${home.id}-${level}`}
-                                className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600"
+                                className="rounded-full bg-neutral-100 px-2 py-1 text-xs font-medium text-neutral-700"
                               >
                                 {getCareLevelName(level)}
                               </span>
@@ -754,20 +754,28 @@ export default function SearchPage() {
                             <span className="text-xs font-medium text-neutral-700">
                               {home.priceRange.formattedMin}+
                             </span>
-                            <button
-                              type="button"
-                              aria-label={favoriteIds.has(home.id) ? "Unfavorite" : "Favorite"}
-                              onClick={(e) => handleToggleFavorite(home.id, e)}
-                              className="group"
-                            >
-                              <FiHeart
-                                className={`h-4 w-4 ${
-                                  favoriteIds.has(home.id)
-                                    ? "text-primary-500 fill-current"
-                                    : "text-neutral-400 group-hover:text-primary-500"
-                                }`}
-                              />
-                            </button>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                aria-label={favoriteIds.has(home.id) ? "Unfavorite" : "Favorite"}
+                                onClick={(e) => handleToggleFavorite(home.id, e)}
+                                className="group"
+                              >
+                                <FiHeart
+                                  className={`h-4 w-4 ${
+                                    favoriteIds.has(home.id)
+                                      ? "text-primary-500 fill-current"
+                                      : "text-neutral-400 group-hover:text-primary-500"
+                                  }`}
+                                />
+                              </button>
+                              <button
+                                type="button"
+                                className="hidden text-xs font-medium text-primary-600 hover:text-primary-800 sm:inline-block"
+                              >
+                                View Listing
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </Link>
@@ -906,7 +914,7 @@ export default function SearchPage() {
                                 />
                               </button>
                               <button className="rounded-md bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600">
-                                View Details
+                                View Listing
                               </button>
                             </div>
                           </div>

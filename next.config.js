@@ -18,6 +18,7 @@ const nextConfig = {
       'placehold.co',
       'ui-avatars.com',
       'fastly.picsum.photos',
+      'images.unsplash.com',
     ],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
     formats: ['image/webp'],
@@ -71,6 +72,7 @@ const nextConfig = {
                    "img-src 'self' data: blob: http://localhost:5000 https://carelinkai-storage.s3.amazonaws.com " +
                    "https://picsum.photos https://randomuser.me https://placehold.co https://ui-avatars.com " +
                    "https://fastly.picsum.photos " +
+                   "https://images.unsplash.com " +
                    "https://a.tile.openstreetmap.org https://b.tile.openstreetmap.org https://c.tile.openstreetmap.org; " +
                    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
                    "font-src 'self' data: https://fonts.gstatic.com; " +
