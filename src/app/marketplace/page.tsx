@@ -174,261 +174,144 @@ export default function MarketplacePage() {
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300")
                 }
               >
-                {t === "caregivers"
-                  ? "Caregivers"
-                  : t === "jobs"
-                  ? "Jobs"
-                  : "Providers"}
+                {t === "caregivers" ? "Caregivers" : t === "jobs" ? "Jobs" : "Providers"}
               </button>
             ))}
           </nav>
         </div>
 
-        {/* ---------- TWO-COLUMN WRAPPER ---------- */}
+        {/* Two-column layout */}
         <div className="flex md:space-x-6">
-
-          {/* ---------------- Sidebar (desktop) ---------------- */}
+          {/* Sidebar (desktop) */}
           <div className="hidden md:block md:w-72 md:shrink-0">
             <div className="rounded-md border border-gray-200 bg-white p-4 space-y-3">
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              />
-              <input
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                placeholder="City"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              />
-              <input
-                value={state}
-                onChange={(e) => setState(e.target.value)}
-                placeholder="State"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              />
+              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search" className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+              <input value={city} onChange={(e) => setCity(e.target.value)} placeholder="City" className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+              <input value={state} onChange={(e) => setState(e.target.value)} placeholder="State" className="w-full px-3 py-2 border border-gray-300 rounded-md" />
               <div className="space-y-1 max-h-56 overflow-y-auto pr-1">
                 {allSpecialties.slice(0, 10).map((sp) => (
-                  <label
-                    key={sp}
-                    className="flex items-center gap-2 text-sm whitespace-nowrap"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={specialties.includes(sp)}
-                      onChange={() => toggleSpecialty(sp)}
-                    />
+                  <label key={sp} className="flex items-center gap-2 text-sm whitespace-nowrap">
+                    <input type="checkbox" checked={specialties.includes(sp)} onChange={() => toggleSpecialty(sp)} />
                     <span>{sp.replace(/-/g, " ")}</span>
                   </label>
                 ))}
               </div>
-              <button
-                onClick={() => {
-                  setSearch("");
-                  setCity("");
-                  setState("");
-                  setSpecialties([]);
-                }}
-                className="w-full rounded-md bg-gray-100 px-3 py-2 text-sm text-gray-700 hover:bg-gray-200"
-              >
-                Clear Filters
-              </button>
+              <button onClick={() => { setSearch(""); setCity(""); setState(""); setSpecialties([]); }} className="w-full rounded-md bg-gray-100 px-3 py-2 text-sm text-gray-700 hover:bg-gray-200">Clear Filters</button>
             </div>
           </div>
 
-          {/* ---------------- Mobile filter bar ---------------- */}
-          {/* md:hidden ensures this only shows on small screens */}
-          <div className="mb-6 rounded-md border border-gray-200 bg-white p-3 md:hidden">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md"
-          />
-          <input
-            value={city}
-            onChange={(e) => setCity(e.target.value)}
-            placeholder="City"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md"
-          />
-          <input
-            value={state}
-            onChange={(e) => setState(e.target.value)}
-            placeholder="State"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md"
-          />
-          <div className="flex items-center gap-2 overflow-x-auto">
-            {allSpecialties.slice(0, 6).map((sp) => (
-              <label key={sp} className="flex items-center gap-1 text-sm whitespace-nowrap">
-                <input
-                  type="checkbox"
-                  checked={specialties.includes(sp)}
-                  onChange={() => toggleSpecialty(sp)}
-                />
-                <span>{sp.replace(/-/g, " ")}</span>
-              </label>
-            ))}
-          </div>
-          </div>
+          {/* Main content */}
+          <div className="flex-1">
+            {/* Mobile filters */}
+            <div className="mb-6 rounded-md border border-gray-200 bg-white p-3 md:hidden">
+              <div className="grid grid-cols-1 gap-3">
+                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search" className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                <input value={city} onChange={(e) => setCity(e.target.value)} placeholder="City" className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                <input value={state} onChange={(e) => setState(e.target.value)} placeholder="State" className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                <div className="flex items-center gap-2 overflow-x-auto">
+                  {allSpecialties.slice(0, 6).map((sp) => (
+                    <label key={sp} className="flex items-center gap-1 text-sm whitespace-nowrap">
+                      <input type="checkbox" checked={specialties.includes(sp)} onChange={() => toggleSpecialty(sp)} />
+                      <span>{sp.replace(/-/g, " ")}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Caregivers CTA */}
+            {activeTab === "caregivers" && session?.user?.role === "CAREGIVER" && (
+              <div className="mb-4">
+                <Link href="/settings/profile" className="inline-flex items-center px-4 py-2 rounded-md bg-primary-600 text-white text-sm font-medium hover:bg-primary-700">Create / Update Profile</Link>
+              </div>
+            )}
+
+            {/* Tab bodies */}
+            {activeTab === "caregivers" ? (
+              caregiversLoading ? (
+                <div className="py-20 text-center text-gray-500">Loading caregivers…</div>
+              ) : caregivers.length === 0 ? (
+                <div className="py-20 text-center text-gray-500">No caregivers found</div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
+                  {caregivers.map((cg) => (
+                    <CaregiverCard key={cg.id} caregiver={cg} />
+                  ))}
+                </div>
+              )
+            ) : activeTab === "jobs" ? (
+              listingsLoading ? (
+                <div className="py-20 text-center text-gray-500">Loading jobs…</div>
+              ) : listings.length === 0 ? (
+                <div className="py-20 text-center text-gray-500">No jobs found</div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
+                  {listings.map((job) => (
+                    <div key={job.id} className="bg-white border rounded-md p-4">
+                      <div className="flex items-start mb-2">
+                        <div className="h-12 w-12 rounded-md overflow-hidden bg-gray-100 flex-shrink-0 mr-3">
+                          <Image src={`https://ui-avatars.com/api/?name=${encodeURIComponent(job.title)}&background=random&size=128`} alt={job.title} width={48} height={48} />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-900">{job.title}</h3>
+                          <div className="text-sm text-gray-600">{[job.city, job.state].filter(Boolean).join(", ") || "Location"}</div>
+                        </div>
+                      </div>
+                      {(job.hourlyRateMin || job.hourlyRateMax) && (
+                        <div className="text-sm text-gray-800 mb-2">
+                          {job.hourlyRateMin && job.hourlyRateMax ? `$${job.hourlyRateMin} - $${job.hourlyRateMax}/hr` : job.hourlyRateMin ? `From $${job.hourlyRateMin}/hr` : `Up to $${job.hourlyRateMax}/hr`}
+                        </div>
+                      )}
+                      <p className="text-sm text-gray-700 line-clamp-2">{job.description}</p>
+                    </div>
+                  ))}
+                </div>
+              )
+            ) : (
+              providersLoading ? (
+                <div className="py-20 text-center text-gray-500">Loading providers…</div>
+              ) : providers.length === 0 ? (
+                <div className="py-20 text-center text-gray-500">No providers found</div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
+                  {providers.map((p) => (
+                    <div key={p.id} className="bg-white border rounded-md p-4">
+                      <div className="flex items-start mb-2">
+                        <div className="h-12 w-12 rounded-full overflow-hidden bg-gray-100 flex-shrink-0 mr-3">
+                          <Image src={`https://ui-avatars.com/api/?name=${encodeURIComponent(p.name)}&background=random&size=128`} alt={p.name} width={48} height={48} />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-900">{p.name}</h3>
+                          <div className="text-sm text-gray-600">{[p.city, p.state].filter(Boolean).join(", ")}</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center text-sm mb-2">
+                        <span className="mr-1 flex">
+                          {Array.from({ length: 5 }).map((_, idx) => (
+                            <span key={idx} className={idx < Math.round(p.ratingAverage) ? "text-yellow-400" : "text-gray-300"}>★</span>
+                          ))}
+                        </span>
+                        <span className="text-gray-600">{p.ratingAverage.toFixed(1)} ({p.reviewCount})</span>
+                      </div>
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {p.services.slice(0, 4).map((s) => (
+                          <span key={s} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">{s.replace(/-/g, " ")}</span>
+                        ))}
+                        {p.services.length > 4 && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">+{p.services.length - 4} more</span>
+                        )}
+                      </div>
+                      {(p.hourlyRate !== null || p.perMileRate !== null) && (
+                        <div className="text-sm text-gray-800 mb-2">{p.hourlyRate !== null ? `$${p.hourlyRate}/hr` : `$${p.perMileRate?.toFixed(2)}/mi`}</div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )
+            )}
           </div>
         </div>
-
-        {/* MAIN CONTENT COLUMN */}
-        <div className="flex-1">
-        {/* CTA for caregivers */}
-        {activeTab === "caregivers" && session?.user?.role === "CAREGIVER" && (
-          <div className="mb-4">
-            <Link
-              href="/settings/profile"
-              className="inline-flex items-center px-4 py-2 rounded-md bg-primary-600 text-white text-sm font-medium hover:bg-primary-700"
-            >
-              Create / Update Profile
-            </Link>
-          </div>
-        )}
-
-        {/* Body */}
-        {activeTab === "caregivers" ? (
-          caregiversLoading ? (
-            <div className="py-20 text-center text-gray-500">Loading caregivers…</div>
-          ) : caregivers.length === 0 ? (
-            <div className="py-20 text-center text-gray-500">No caregivers found</div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
-              {caregivers.map((cg) => (
-                <CaregiverCard key={cg.id} caregiver={cg} />
-              ))}
-            </div>
-          )
-        ) : listingsLoading ? (
-          <div className="py-20 text-center text-gray-500">Loading jobs…</div>
-        ) : listings.length === 0 ? (
-          <div className="py-20 text-center text-gray-500">No jobs found</div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
-            {listings.map((job) => (
-              <div key={job.id} className="bg-white border rounded-md p-4">
-                <div className="flex items-start mb-2">
-                  <div className="h-12 w-12 rounded-md overflow-hidden bg-gray-100 flex-shrink-0 mr-3">
-                    <Image
-                      src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
-                        job.title
-                      )}&background=random&size=128`}
-                      alt={job.title}
-                      width={48}
-                      height={48}
-                    />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">{job.title}</h3>
-                    <div className="text-sm text-gray-600">
-                      {[job.city, job.state].filter(Boolean).join(", ") ||
-                        "Location"}
-                    </div>
-                  </div>
-                </div>
-                <div className="text-sm text-gray-600 mb-2">
-                  {[job.city, job.state].filter(Boolean).join(", ") || "Location"}
-                </div>
-                {(job.hourlyRateMin || job.hourlyRateMax) && (
-                  <div className="text-sm text-gray-800 mb-2">
-                    {job.hourlyRateMin && job.hourlyRateMax
-                      ? `$${job.hourlyRateMin} - $${job.hourlyRateMax}/hr`
-                      : job.hourlyRateMin
-                      ? `From $${job.hourlyRateMin}/hr`
-                      : `Up to $${job.hourlyRateMax}/hr`}
-                  </div>
-                )}
-                <p className="text-sm text-gray-700 line-clamp-2">{job.description}</p>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Providers body --------------------------------------------------*/}
-        {activeTab === "providers" &&
-          (providersLoading ? (
-            <div className="py-20 text-center text-gray-500">Loading providers…</div>
-          ) : providers.length === 0 ? (
-            <div className="py-20 text-center text-gray-500">No providers found</div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
-              {providers.map((p) => (
-                <div key={p.id} className="bg-white border rounded-md p-4">
-                  {/* Header with avatar, name, location */}
-                  <div className="flex items-start mb-2">
-                    <div className="h-12 w-12 rounded-full overflow-hidden bg-gray-100 flex-shrink-0 mr-3">
-                      <Image
-                        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
-                          p.name
-                        )}&background=random&size=128`}
-                        alt={p.name}
-                        width={48}
-                        height={48}
-                      />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{p.name}</h3>
-                      <div className="text-sm text-gray-600">
-                        {[p.city, p.state].filter(Boolean).join(", ")}
-                      </div>
-                    </div>
-                  </div>
-                  {/* Rating */}
-                  <div className="flex items-center text-sm mb-2">
-                    <span className="mr-1 flex">
-                      {Array.from({ length: 5 }).map((_, idx) => (
-                        <span
-                          key={idx}
-                          className={
-                            idx < Math.round(p.ratingAverage)
-                              ? "text-yellow-400"
-                              : "text-gray-300"
-                          }
-                        >
-                          ★
-                        </span>
-                      ))}
-                    </span>
-                    <span className="text-gray-600">
-                      {p.ratingAverage.toFixed(1)} ({p.reviewCount})
-                    </span>
-                  </div>
-
-                  {/* Services chips */}
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {p.services.slice(0, 4).map((s) => (
-                      <span
-                        key={s}
-                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800"
-                      >
-                        {s.replace(/-/g, " ")}
-                      </span>
-                    ))}
-                    {p.services.length > 4 && (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                        +{p.services.length - 4} more
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Rate line */}
-                  {p.hourlyRate !== null || p.perMileRate !== null ? (
-                    <div className="text-sm text-gray-800 mb-2">
-                      {p.hourlyRate !== null
-                        ? `$${p.hourlyRate}/hr`
-                        : `$${p.perMileRate?.toFixed(2)}/mi`}
-                    </div>
-                  ) : null}
-                </div>
-              ))}
-            </div>
-          ))}
       </div>
-      </div> {/* end flex-1 */}
-    </div> {/* end TWO-COLUMN WRAPPER */}
     </DashboardLayout>
   );
 }
