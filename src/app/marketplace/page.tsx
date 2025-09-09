@@ -114,6 +114,8 @@ export default function MarketplacePage() {
         if (minRate) params.set("minRate", minRate);
         if (maxRate) params.set("maxRate", maxRate);
         if (minExperience) params.set("minExperience", minExperience);
+        if (setting) params.set("setting", setting);
+        if (careTypes.length > 0) params.set("careTypes", careTypes.join(","));
         const res = await fetch(`/api/marketplace/caregivers?${params.toString()}`);
         const json = await res.json();
         setCaregivers(json?.data ?? []);
@@ -124,7 +126,7 @@ export default function MarketplacePage() {
       }
     };
     run();
-  }, [activeTab, search, city, state, specialties, minRate, maxRate, minExperience]);
+  }, [activeTab, search, city, state, specialties, minRate, maxRate, minExperience, setting, careTypes]);
 
   useEffect(() => {
     if (activeTab !== "jobs") return;
@@ -232,7 +234,7 @@ export default function MarketplacePage() {
               <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search" className="w-full px-3 py-2 border border-gray-300 rounded-md" />
               <input value={city} onChange={(e) => setCity(e.target.value)} placeholder="City" className="w-full px-3 py-2 border border-gray-300 rounded-md" />
               <input value={state} onChange={(e) => setState(e.target.value)} placeholder="State" className="w-full px-3 py-2 border border-gray-300 rounded-md" />
-              <div className="space-y-1 max-h-56 overflow-y-auto pr-1">
+              <div className="space-y-3">
                 {activeTab === "caregivers" && (
                   <>
                     <div className="mb-3">
@@ -264,6 +266,32 @@ export default function MarketplacePage() {
                         placeholder="Min Experience" 
                         className="w-full px-3 py-2 border border-gray-300 rounded-md"
                       />
+                    </div>
+                    <div className="mb-3">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Setting</label>
+                      <select 
+                        value={setting} 
+                        onChange={(e) => setSetting(e.target.value)} 
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      >
+                        <option value="">Any setting</option>
+                        {(categories['SETTING'] || []).map((item) => (
+                          <option key={item.slug} value={item.slug}>{item.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="mt-4">
+                      <h4 className="font-medium text-sm mb-2">Care Types</h4>
+                      {(categories['CARE_TYPE'] || []).map((careType) => (
+                        <label key={careType.slug} className="flex items-center gap-2 text-sm whitespace-nowrap">
+                          <input 
+                            type="checkbox" 
+                            checked={careTypes.includes(careType.slug)} 
+                            onChange={() => toggleCareType(careType.slug)} 
+                          />
+                          <span>{careType.name}</span>
+                        </label>
+                      ))}
                     </div>
                     <div className="mt-4">
                       <h4 className="font-medium text-sm mb-2">Specialties</h4>
@@ -456,8 +484,8 @@ export default function MarketplacePage() {
                   </>
                 )}
                 
-                <div className="flex items-center gap-2 overflow-x-auto">
-                  {activeTab === "caregivers" && (categories['SPECIALTY'] || []).slice(0, 6).map((specialty) => (
+                <div className="flex flex-wrap items-center gap-2">
+                  {activeTab === "caregivers" && (categories['SPECIALTY'] || []).map((specialty) => (
                     <label key={specialty.slug} className="flex items-center gap-1 text-sm whitespace-nowrap">
                       <input 
                         type="checkbox" 
@@ -468,7 +496,7 @@ export default function MarketplacePage() {
                     </label>
                   ))}
                   
-                  {activeTab === "jobs" && (categories['CARE_TYPE'] || []).slice(0, 6).map((careType) => (
+                  {activeTab === "jobs" && (categories['CARE_TYPE'] || []).map((careType) => (
                     <label key={careType.slug} className="flex items-center gap-1 text-sm whitespace-nowrap">
                       <input 
                         type="checkbox" 
@@ -479,7 +507,7 @@ export default function MarketplacePage() {
                     </label>
                   ))}
                   
-                  {activeTab === "providers" && (categories['SERVICE'] || []).slice(0, 6).map((service) => (
+                  {activeTab === "providers" && (categories['SERVICE'] || []).map((service) => (
                     <label key={service.slug} className="flex items-center gap-1 text-sm whitespace-nowrap">
                       <input 
                         type="checkbox" 
