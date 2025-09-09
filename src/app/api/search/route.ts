@@ -377,6 +377,8 @@ export function generateMockHomes(count: number = 12) {
     ['Pool', 'Gym'],
   ];
   const states = ['CA', 'WA', 'TX', 'FL', 'NY'];
+  // Mock city names for deterministic seeding
+  const cities = ['San Francisco', 'Seattle', 'Austin', 'Miami', 'Albany'];
 
   /* ------------------------------------------------------------------
 
