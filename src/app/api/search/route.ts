@@ -36,6 +36,25 @@ const DEFAULT_PAGE_SIZE = 10;
 const MAX_PAGE_SIZE = 50;
 
 /**
+ * Curated exterior / home photos sourced from Unsplash (free to use)
+ * NOTE: keep the list small and static so mocks are deterministic.
+ */
+const HOME_IMAGES: string[] = [
+  'https://images.unsplash.com/photo-1507089947368-19c1da9775ae?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1599423300746-b62533397364?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1552913901-78b958e7195f?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1560185127-6d0e16c2c7e4?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1613977257363-707ba9348223?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1599423300695-1ff7d551a704?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1615873968403-89d8e4bdc5a5?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1559599238-0e0b9be3e5c6?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=1200&q=80',
+];
+
+/**
  * AI-based text similarity score between two strings
  * 
  * @param text1 First text to compare
@@ -360,24 +379,6 @@ export function generateMockHomes(count: number = 12) {
   const states = ['CA', 'WA', 'TX', 'FL', 'NY'];
 
   /* ------------------------------------------------------------------
-     Curated exterior / home photos sourced from Unsplash (free to use)
-     NOTE: keep the list small and static so mocks are deterministic.
-  ------------------------------------------------------------------*/
-  const HOME_IMAGES: string[] = [
-    'https://images.unsplash.com/photo-1507089947368-19c1da9775ae?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1599423300746-b62533397364?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1552913901-78b958e7195f?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1560185127-6d0e16c2c7e4?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1613977257363-707ba9348223?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1599423300695-1ff7d551a704?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1615873968403-89d8e4bdc5a5?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1559599238-0e0b9be3e5c6?auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=1200&q=80'
-  ];
-  const cities = ['San Francisco', 'Seattle', 'Austin', 'Miami', 'Albany'];
 
   /** simple currency formatter */
   const fmt = (v: number) => formatCurrency(v);
@@ -630,12 +631,17 @@ export async function GET(request: NextRequest) {
       // longitude: userLongitude
     };
     
-    // Calculate match scores and format results
-    const results = homes.map(home => {
-      // Calculate AI match score
+    // Calculate match scores and format results with reliable image fallback
+    const results = homes.map((home, i) => {
+      // 1. AI Match Score
       const aiMatchScore = calculateMatchScore(home, searchCriteria);
-      
-      // Format the result
+
+      // 2. Image handling – prefer primary DB photo, else deterministic Unsplash fallback
+      const primary = sanitizeImageUrl(home.photos?.[0]?.url ?? null);
+      const fallback = HOME_IMAGES[i % HOME_IMAGES.length];
+      const imageUrl = primary ?? fallback;
+
+      // 3. Build response object
       return {
         id: home.id,
         name: home.name,
@@ -662,8 +668,7 @@ export async function GET(request: NextRequest) {
         availability: home.capacity - home.currentOccupancy,
         gender: home.genderRestriction || 'ALL',
         amenities: home.amenities,
-        // Filter out placeholder images that point to unconfigured hosts
-        imageUrl: sanitizeImageUrl(home.photos?.[0]?.url ?? null),
+        imageUrl,
         operator: home.operator ? {
           name: `${home.operator.user.firstName} ${home.operator.user.lastName}`,
           email: home.operator.user.email
