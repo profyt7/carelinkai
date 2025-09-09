@@ -40,18 +40,18 @@ const MAX_PAGE_SIZE = 50;
  * NOTE: keep the list small and static so mocks are deterministic.
  */
 const HOME_IMAGES: string[] = [
-  'https://images.unsplash.com/photo-1507089947368-19c1da9775ae?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1599423300746-b62533397364?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1552913901-78b958e7195f?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1560185127-6d0e16c2c7e4?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1613977257363-707ba9348223?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1599423300695-1ff7d551a704?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1615873968403-89d8e4bdc5a5?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1559599238-0e0b9be3e5c6?auto=format&fit=crop&w=1200&q=80',
-  'https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=1200&q=80',
+  '/images/homes/1.jpg',
+  '/images/homes/2.jpg',
+  '/images/homes/3.jpg',
+  '/images/homes/4.jpg',
+  '/images/homes/5.jpg',
+  '/images/homes/6.jpg',
+  '/images/homes/7.jpg',
+  '/images/homes/8.jpg',
+  '/images/homes/9.jpg',
+  '/images/homes/10.jpg',
+  '/images/homes/11.jpg',
+  '/images/homes/12.jpg',
 ];
 
 /**

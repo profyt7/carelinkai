@@ -71,12 +71,12 @@ const MOCK_HOME = {
   reviewsCount: 42,
   aiMatchScore: 92,
   photos: [
-    { id: "p1", url: "https://placehold.co/800x600/e9ecef/495057?text=Front+Entrance", caption: "Front entrance with beautiful garden" },
-    { id: "p2", url: "https://placehold.co/800x600/e9ecef/495057?text=Common+Area", caption: "Spacious common area" },
-    { id: "p3", url: "https://placehold.co/800x600/e9ecef/495057?text=Private+Room", caption: "Private bedroom" },
-    { id: "p4", url: "https://placehold.co/800x600/e9ecef/495057?text=Dining+Room", caption: "Dining room" },
-    { id: "p5", url: "https://placehold.co/800x600/e9ecef/495057?text=Garden+Patio", caption: "Garden patio" },
-    { id: "p6", url: "https://placehold.co/800x600/e9ecef/495057?text=Activity+Room", caption: "Activity room" }
+    { id: "p1", url: "/images/homes/1.jpg", caption: "Front entrance with beautiful garden" },
+    { id: "p2", url: "/images/homes/2.jpg", caption: "Spacious common area" },
+    { id: "p3", url: "/images/homes/3.jpg", caption: "Private bedroom" },
+    { id: "p4", url: "/images/homes/4.jpg", caption: "Dining room" },
+    { id: "p5", url: "/images/homes/5.jpg", caption: "Garden patio" },
+    { id: "p6", url: "/images/homes/6.jpg", caption: "Activity room" }
   ],
   amenities: [
     { category: "Living Spaces", items: ["Private Rooms", "Semi-Private Rooms", "Furnished Rooms Available", "Private Bathrooms", "Cable TV", "Internet Access", "Housekeeping"] },

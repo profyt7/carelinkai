@@ -267,7 +267,7 @@ export default function MarketplacePage() {
                     </div>
                     <div className="mt-4">
                       <h4 className="font-medium text-sm mb-2">Specialties</h4>
-                      {(categories.SPECIALTY || []).map((specialty) => (
+                      {(categories['SPECIALTY'] || []).map((specialty) => (
                         <label key={specialty.slug} className="flex items-center gap-2 text-sm whitespace-nowrap">
                           <input 
                             type="checkbox" 
@@ -301,14 +301,14 @@ export default function MarketplacePage() {
                         className="w-full px-3 py-2 border border-gray-300 rounded-md"
                       >
                         <option value="">Any setting</option>
-                        {(categories.SETTING || []).map((item) => (
+                        {(categories['SETTING'] || []).map((item) => (
                           <option key={item.slug} value={item.slug}>{item.name}</option>
                         ))}
                       </select>
                     </div>
                     <div className="mt-4">
                       <h4 className="font-medium text-sm mb-2">Care Types</h4>
-                      {(categories.CARE_TYPE || []).map((careType) => (
+                      {(categories['CARE_TYPE'] || []).map((careType) => (
                         <label key={careType.slug} className="flex items-center gap-2 text-sm whitespace-nowrap">
                           <input 
                             type="checkbox" 
@@ -321,7 +321,7 @@ export default function MarketplacePage() {
                     </div>
                     <div className="mt-4">
                       <h4 className="font-medium text-sm mb-2">Services</h4>
-                      {(categories.SERVICE || []).map((service) => (
+                      {(categories['SERVICE'] || []).map((service) => (
                         <label key={service.slug} className="flex items-center gap-2 text-sm whitespace-nowrap">
                           <input 
                             type="checkbox" 
@@ -334,7 +334,7 @@ export default function MarketplacePage() {
                     </div>
                     <div className="mt-4">
                       <h4 className="font-medium text-sm mb-2">Specialties</h4>
-                      {(categories.SPECIALTY || []).map((specialty) => (
+                      {(categories['SPECIALTY'] || []).map((specialty) => (
                         <label key={specialty.slug} className="flex items-center gap-2 text-sm whitespace-nowrap">
                           <input 
                             type="checkbox" 
@@ -363,7 +363,7 @@ export default function MarketplacePage() {
                 {activeTab === "providers" && (
                   <div className="mt-4">
                     <h4 className="font-medium text-sm mb-2">Services</h4>
-                    {(categories.SERVICE || []).map((service) => (
+                    {(categories['SERVICE'] || []).map((service) => (
                       <label key={service.slug} className="flex items-center gap-2 text-sm whitespace-nowrap">
                         <input 
                           type="checkbox" 
@@ -449,7 +449,7 @@ export default function MarketplacePage() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md"
                     >
                       <option value="">Any setting</option>
-                      {(categories.SETTING || []).map((item) => (
+                      {(categories['SETTING'] || []).map((item) => (
                         <option key={item.slug} value={item.slug}>{item.name}</option>
                       ))}
                     </select>
@@ -457,7 +457,7 @@ export default function MarketplacePage() {
                 )}
                 
                 <div className="flex items-center gap-2 overflow-x-auto">
-                  {activeTab === "caregivers" && (categories.SPECIALTY || []).slice(0, 6).map((specialty) => (
+                  {activeTab === "caregivers" && (categories['SPECIALTY'] || []).slice(0, 6).map((specialty) => (
                     <label key={specialty.slug} className="flex items-center gap-1 text-sm whitespace-nowrap">
                       <input 
                         type="checkbox" 
@@ -468,7 +468,7 @@ export default function MarketplacePage() {
                     </label>
                   ))}
                   
-                  {activeTab === "jobs" && (categories.CARE_TYPE || []).slice(0, 6).map((careType) => (
+                  {activeTab === "jobs" && (categories['CARE_TYPE'] || []).slice(0, 6).map((careType) => (
                     <label key={careType.slug} className="flex items-center gap-1 text-sm whitespace-nowrap">
                       <input 
                         type="checkbox" 
@@ -479,7 +479,7 @@ export default function MarketplacePage() {
                     </label>
                   ))}
                   
-                  {activeTab === "providers" && (categories.SERVICE || []).slice(0, 6).map((service) => (
+                  {activeTab === "providers" && (categories['SERVICE'] || []).slice(0, 6).map((service) => (
                     <label key={service.slug} className="flex items-center gap-1 text-sm whitespace-nowrap">
                       <input 
                         type="checkbox" 
