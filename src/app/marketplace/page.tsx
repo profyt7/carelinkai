@@ -42,7 +42,27 @@ export default function MarketplacePage() {
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
   const [specialties, setSpecialties] = useState<string[]>([]);
-  const [allSpecialties, setAllSpecialties] = useState<string[]>([]);
+  /* ------------------------------------------------------------------
+     Marketplace categories (SERVICE / CARE_TYPE / SPECIALTY / SETTING)
+  ------------------------------------------------------------------*/
+  const [categories, setCategories] = useState<
+    Record<string, { slug: string; name: string }[]>
+  >({});
+
+  /* ---------------- Caregiver-specific numeric filters -------------- */
+  const [minRate, setMinRate] = useState(""); // $/hr  (string keeps empty/unset)
+  const [maxRate, setMaxRate] = useState("");
+  const [minExperience, setMinExperience] = useState("");
+
+  /* ---------------- Job-specific filters (place-holders) ------------ */
+  const [zip, setZip] = useState("");
+  const [setting, setSetting] = useState("");
+  const [careTypes, setCareTypes] = useState<string[]>([]);
+  const [services, setServices] = useState<string[]>([]);
+  const [postedByMe, setPostedByMe] = useState(false);
+
+  /* ---------------- Provider-specific filters ----------------------- */
+  const [providerServices, setProviderServices] = useState<string[]>([]);
 
   const [caregivers, setCaregivers] = useState<Caregiver[]>([]);
   const [caregiversLoading, setCaregiversLoading] = useState(false);
@@ -68,19 +88,17 @@ export default function MarketplacePage() {
   const [providersLoading, setProvidersLoading] = useState(false);
 
   useEffect(() => {
-    // Load SPECIALTY categories for filters
-    const loadSpecialties = async () => {
+    // Load marketplace categories once
+    const loadCategories = async () => {
       try {
         const res = await fetch("/api/marketplace/categories");
         const json = await res.json();
-        const data = json?.data || {};
-        const names = (data.SPECIALTY || []).map((c: any) => c.slug);
-        setAllSpecialties(names);
-      } catch (e) {
-        setAllSpecialties([]);
+        setCategories(json?.data || {});
+      } catch {
+        setCategories({});
       }
     };
-    loadSpecialties();
+    loadCategories();
   }, []);
 
   useEffect(() => {
@@ -93,6 +111,9 @@ export default function MarketplacePage() {
         if (city) params.set("city", city);
         if (state) params.set("state", state);
         if (specialties.length > 0) params.set("specialties", specialties.join(","));
+        if (minRate) params.set("minRate", minRate);
+        if (maxRate) params.set("maxRate", maxRate);
+        if (minExperience) params.set("minExperience", minExperience);
         const res = await fetch(`/api/marketplace/caregivers?${params.toString()}`);
         const json = await res.json();
         setCaregivers(json?.data ?? []);
@@ -103,7 +124,7 @@ export default function MarketplacePage() {
       }
     };
     run();
-  }, [activeTab, search, city, state, specialties]);
+  }, [activeTab, search, city, state, specialties, minRate, maxRate, minExperience]);
 
   useEffect(() => {
     if (activeTab !== "jobs") return;
@@ -115,6 +136,11 @@ export default function MarketplacePage() {
         if (city) params.set("city", city);
         if (state) params.set("state", state);
         if (specialties.length > 0) params.set("specialties", specialties.join(","));
+        if (zip) params.set("zip", zip);
+        if (setting) params.set("setting", setting);
+        if (careTypes.length > 0) params.set("careTypes", careTypes.join(","));
+        if (services.length > 0) params.set("services", services.join(","));
+        if (postedByMe && session?.user?.id) params.set("postedByMe", "true");
         const res = await fetch(`/api/marketplace/listings?${params.toString()}`);
         const json = await res.json();
         setListings(json?.data ?? []);
@@ -125,7 +151,7 @@ export default function MarketplacePage() {
       }
     };
     run();
-  }, [activeTab, search, city, state, specialties]);
+  }, [activeTab, search, city, state, specialties, zip, setting, careTypes, services, postedByMe, session]);
 
   /* ----------------------------------------------------------------------
      Fetch providers
@@ -139,6 +165,7 @@ export default function MarketplacePage() {
         if (search) params.set("q", search);
         if (city) params.set("city", city);
         if (state) params.set("state", state);
+        if (providerServices.length > 0) params.set("services", providerServices.join(","));
         const res = await fetch(`/api/marketplace/providers?${params.toString()}`);
         const json = await res.json();
         setProviders(json?.data ?? []);
@@ -149,10 +176,27 @@ export default function MarketplacePage() {
       }
     };
     run();
-  }, [activeTab, search, city, state]);
+  }, [activeTab, search, city, state, providerServices]);
 
   const toggleSpecialty = (slug: string) => {
     setSpecialties((prev) =>
+      prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]
+    );
+  };
+
+  /* helpers for future job / provider filters */
+  const toggleCareType = (slug: string) => {
+    setCareTypes((prev) =>
+      prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]
+    );
+  };
+  const toggleService = (slug: string) => {
+    setServices((prev) =>
+      prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]
+    );
+  };
+  const toggleProviderService = (slug: string) => {
+    setProviderServices((prev) =>
       prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]
     );
   };
@@ -189,14 +233,169 @@ export default function MarketplacePage() {
               <input value={city} onChange={(e) => setCity(e.target.value)} placeholder="City" className="w-full px-3 py-2 border border-gray-300 rounded-md" />
               <input value={state} onChange={(e) => setState(e.target.value)} placeholder="State" className="w-full px-3 py-2 border border-gray-300 rounded-md" />
               <div className="space-y-1 max-h-56 overflow-y-auto pr-1">
-                {allSpecialties.slice(0, 10).map((sp) => (
-                  <label key={sp} className="flex items-center gap-2 text-sm whitespace-nowrap">
-                    <input type="checkbox" checked={specialties.includes(sp)} onChange={() => toggleSpecialty(sp)} />
-                    <span>{sp.replace(/-/g, " ")}</span>
-                  </label>
-                ))}
+                {activeTab === "caregivers" && (
+                  <>
+                    <div className="mb-3">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Minimum Hourly Rate ($)</label>
+                      <input 
+                        type="number" 
+                        value={minRate} 
+                        onChange={(e) => setMinRate(e.target.value)} 
+                        placeholder="Min Rate" 
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      />
+                    </div>
+                    <div className="mb-3">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Maximum Hourly Rate ($)</label>
+                      <input 
+                        type="number" 
+                        value={maxRate} 
+                        onChange={(e) => setMaxRate(e.target.value)} 
+                        placeholder="Max Rate" 
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      />
+                    </div>
+                    <div className="mb-3">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Minimum Experience (years)</label>
+                      <input 
+                        type="number" 
+                        value={minExperience} 
+                        onChange={(e) => setMinExperience(e.target.value)} 
+                        placeholder="Min Experience" 
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      />
+                    </div>
+                    <div className="mt-4">
+                      <h4 className="font-medium text-sm mb-2">Specialties</h4>
+                      {(categories.SPECIALTY || []).map((specialty) => (
+                        <label key={specialty.slug} className="flex items-center gap-2 text-sm whitespace-nowrap">
+                          <input 
+                            type="checkbox" 
+                            checked={specialties.includes(specialty.slug)} 
+                            onChange={() => toggleSpecialty(specialty.slug)} 
+                          />
+                          <span>{specialty.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </>
+                )}
+                
+                {activeTab === "jobs" && (
+                  <>
+                    <div className="mb-3">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">ZIP Code</label>
+                      <input 
+                        type="text" 
+                        value={zip} 
+                        onChange={(e) => setZip(e.target.value)} 
+                        placeholder="ZIP Code" 
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      />
+                    </div>
+                    <div className="mb-3">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Setting</label>
+                      <select 
+                        value={setting} 
+                        onChange={(e) => setSetting(e.target.value)} 
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      >
+                        <option value="">Any setting</option>
+                        {(categories.SETTING || []).map((item) => (
+                          <option key={item.slug} value={item.slug}>{item.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="mt-4">
+                      <h4 className="font-medium text-sm mb-2">Care Types</h4>
+                      {(categories.CARE_TYPE || []).map((careType) => (
+                        <label key={careType.slug} className="flex items-center gap-2 text-sm whitespace-nowrap">
+                          <input 
+                            type="checkbox" 
+                            checked={careTypes.includes(careType.slug)} 
+                            onChange={() => toggleCareType(careType.slug)} 
+                          />
+                          <span>{careType.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <div className="mt-4">
+                      <h4 className="font-medium text-sm mb-2">Services</h4>
+                      {(categories.SERVICE || []).map((service) => (
+                        <label key={service.slug} className="flex items-center gap-2 text-sm whitespace-nowrap">
+                          <input 
+                            type="checkbox" 
+                            checked={services.includes(service.slug)} 
+                            onChange={() => toggleService(service.slug)} 
+                          />
+                          <span>{service.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <div className="mt-4">
+                      <h4 className="font-medium text-sm mb-2">Specialties</h4>
+                      {(categories.SPECIALTY || []).map((specialty) => (
+                        <label key={specialty.slug} className="flex items-center gap-2 text-sm whitespace-nowrap">
+                          <input 
+                            type="checkbox" 
+                            checked={specialties.includes(specialty.slug)} 
+                            onChange={() => toggleSpecialty(specialty.slug)} 
+                          />
+                          <span>{specialty.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                    {session?.user?.id && (
+                      <div className="mt-4">
+                        <label className="flex items-center gap-2 text-sm whitespace-nowrap">
+                          <input 
+                            type="checkbox" 
+                            checked={postedByMe} 
+                            onChange={(e) => setPostedByMe(e.target.checked)} 
+                          />
+                          <span>Posted by me</span>
+                        </label>
+                      </div>
+                    )}
+                  </>
+                )}
+                
+                {activeTab === "providers" && (
+                  <div className="mt-4">
+                    <h4 className="font-medium text-sm mb-2">Services</h4>
+                    {(categories.SERVICE || []).map((service) => (
+                      <label key={service.slug} className="flex items-center gap-2 text-sm whitespace-nowrap">
+                        <input 
+                          type="checkbox" 
+                          checked={providerServices.includes(service.slug)} 
+                          onChange={() => toggleProviderService(service.slug)} 
+                        />
+                        <span>{service.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
-              <button onClick={() => { setSearch(""); setCity(""); setState(""); setSpecialties([]); }} className="w-full rounded-md bg-gray-100 px-3 py-2 text-sm text-gray-700 hover:bg-gray-200">Clear Filters</button>
+              <button 
+                onClick={() => { 
+                  setSearch(""); 
+                  setCity(""); 
+                  setState(""); 
+                  setSpecialties([]); 
+                  setMinRate(''); 
+                  setMaxRate(''); 
+                  setMinExperience(''); 
+                  setZip(''); 
+                  setSetting(''); 
+                  setCareTypes([]); 
+                  setServices([]); 
+                  setProviderServices([]); 
+                  setPostedByMe(false);
+                }} 
+                className="w-full rounded-md bg-gray-100 px-3 py-2 text-sm text-gray-700 hover:bg-gray-200"
+              >
+                Clear Filters
+              </button>
             </div>
           </div>
 
@@ -208,11 +407,86 @@ export default function MarketplacePage() {
                 <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search" className="w-full px-3 py-2 border border-gray-300 rounded-md" />
                 <input value={city} onChange={(e) => setCity(e.target.value)} placeholder="City" className="w-full px-3 py-2 border border-gray-300 rounded-md" />
                 <input value={state} onChange={(e) => setState(e.target.value)} placeholder="State" className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                
+                {activeTab === "caregivers" && (
+                  <>
+                    <input 
+                      type="number" 
+                      value={minRate} 
+                      onChange={(e) => setMinRate(e.target.value)} 
+                      placeholder="Min Rate ($)" 
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    />
+                    <input 
+                      type="number" 
+                      value={maxRate} 
+                      onChange={(e) => setMaxRate(e.target.value)} 
+                      placeholder="Max Rate ($)" 
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    />
+                    <input 
+                      type="number" 
+                      value={minExperience} 
+                      onChange={(e) => setMinExperience(e.target.value)} 
+                      placeholder="Min Experience (years)" 
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    />
+                  </>
+                )}
+                
+                {activeTab === "jobs" && (
+                  <>
+                    <input 
+                      type="text" 
+                      value={zip} 
+                      onChange={(e) => setZip(e.target.value)} 
+                      placeholder="ZIP Code" 
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    />
+                    <select 
+                      value={setting} 
+                      onChange={(e) => setSetting(e.target.value)} 
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    >
+                      <option value="">Any setting</option>
+                      {(categories.SETTING || []).map((item) => (
+                        <option key={item.slug} value={item.slug}>{item.name}</option>
+                      ))}
+                    </select>
+                  </>
+                )}
+                
                 <div className="flex items-center gap-2 overflow-x-auto">
-                  {allSpecialties.slice(0, 6).map((sp) => (
-                    <label key={sp} className="flex items-center gap-1 text-sm whitespace-nowrap">
-                      <input type="checkbox" checked={specialties.includes(sp)} onChange={() => toggleSpecialty(sp)} />
-                      <span>{sp.replace(/-/g, " ")}</span>
+                  {activeTab === "caregivers" && (categories.SPECIALTY || []).slice(0, 6).map((specialty) => (
+                    <label key={specialty.slug} className="flex items-center gap-1 text-sm whitespace-nowrap">
+                      <input 
+                        type="checkbox" 
+                        checked={specialties.includes(specialty.slug)} 
+                        onChange={() => toggleSpecialty(specialty.slug)} 
+                      />
+                      <span>{specialty.name}</span>
+                    </label>
+                  ))}
+                  
+                  {activeTab === "jobs" && (categories.CARE_TYPE || []).slice(0, 6).map((careType) => (
+                    <label key={careType.slug} className="flex items-center gap-1 text-sm whitespace-nowrap">
+                      <input 
+                        type="checkbox" 
+                        checked={careTypes.includes(careType.slug)} 
+                        onChange={() => toggleCareType(careType.slug)} 
+                      />
+                      <span>{careType.name}</span>
+                    </label>
+                  ))}
+                  
+                  {activeTab === "providers" && (categories.SERVICE || []).slice(0, 6).map((service) => (
+                    <label key={service.slug} className="flex items-center gap-1 text-sm whitespace-nowrap">
+                      <input 
+                        type="checkbox" 
+                        checked={providerServices.includes(service.slug)} 
+                        onChange={() => toggleProviderService(service.slug)} 
+                      />
+                      <span>{service.name}</span>
                     </label>
                   ))}
                 </div>
