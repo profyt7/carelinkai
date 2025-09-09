@@ -12,6 +12,11 @@ const nextConfig = {
       'localhost',
       'carelinkai-storage.s3.amazonaws.com',
       'example.com', // allows https://example.com/home-photo.jpg
+      // Additional remote image hosts used throughout the app
+      'picsum.photos',
+      'randomuser.me',
+      'placehold.co',
+      'ui-avatars.com',
     ],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
     formats: ['image/webp'],
@@ -62,7 +67,8 @@ const nextConfig = {
             value: "default-src 'self'; " +
                    "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://js.stripe.com; " +
                    "connect-src 'self' https://api.stripe.com; " +
-                   "img-src 'self' data: http://localhost:5000 https://carelinkai-storage.s3.amazonaws.com " +
+                   "img-src 'self' data: blob: http://localhost:5000 https://carelinkai-storage.s3.amazonaws.com " +
+                   "https://picsum.photos https://randomuser.me https://placehold.co https://ui-avatars.com " +
                    "https://a.tile.openstreetmap.org https://b.tile.openstreetmap.org https://c.tile.openstreetmap.org; " +
                    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
                    "font-src 'self' data: https://fonts.gstatic.com; " +

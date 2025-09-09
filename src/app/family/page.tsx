@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import DocumentUploadModal from '@/components/family/DocumentUploadModal';
 
 export default function FamilyPage() {
   /* ------------------------------------------------------------------
@@ -25,6 +26,7 @@ export default function FamilyPage() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [docType, setDocType] = useState<string>('');
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
 
   const FAMILY_ID = 'cmdhjmp2x0000765nc52usnp7';
 
@@ -75,16 +77,113 @@ export default function FamilyPage() {
   }, [search, docType]);
 
   /* ------------------------------------------------------------------
+     Real-time updates via SSE
+  ------------------------------------------------------------------*/
+  useEffect(() => {
+    const es = new EventSource(
+      `/api/sse?topics=${encodeURIComponent(`family:${FAMILY_ID}`)}`
+    );
+
+    const parseData = (e: MessageEvent<any>) => {
+      try {
+        return JSON.parse(e.data);
+      } catch {
+        return null;
+      }
+    };
+
+    es.addEventListener('document:created', (e) => {
+      const data = parseData(e as MessageEvent);
+      if (data?.document) {
+        setDocs((prev) => [data.document, ...prev]);
+      }
+    });
+
+    es.addEventListener('document:updated', (e) => {
+      const data = parseData(e as MessageEvent);
+      if (data?.document) {
+        setDocs((prev) =>
+          prev.map((d) => (d.id === data.document.id ? data.document : d))
+        );
+      }
+    });
+
+    es.addEventListener('document:deleted', (e) => {
+      const data = parseData(e as MessageEvent);
+      if (data?.documentId) {
+        setDocs((prev) => prev.filter((d) => d.id !== data.documentId));
+      }
+    });
+
+    return () => {
+      es.close();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /* ------------------------------------------------------------------
+     Upload handler passed to modal
+  ------------------------------------------------------------------*/
+  interface UploadDocument {
+    familyId: string;
+    title: string;
+    description?: string;
+    fileName: string;
+    fileType: string;
+    fileSize: number;
+    file: File;
+    type: string;
+    isEncrypted: boolean;
+    tags: string[];
+  }
+
+  const handleUpload = async (items: UploadDocument[]) => {
+    for (const item of items) {
+      const form = new FormData();
+      form.append('familyId', item.familyId);
+      form.append('title', item.title);
+      form.append('description', item.description ?? '');
+      form.append('type', item.type);
+      form.append('isEncrypted', item.isEncrypted ? 'true' : 'false');
+      form.append('tags', JSON.stringify(item.tags));
+      form.append('file', item.file);
+
+      const res = await fetch('/api/family/documents', {
+        method: 'POST',
+        body: form,
+      });
+
+      if (!res.ok) {
+        throw new Error('Upload failed');
+      }
+      const json = await res.json();
+      if (json.document) {
+        setDocs((prev) => [json.document, ...prev]);
+      }
+    }
+  };
+
+  /* ------------------------------------------------------------------
      Render
   ------------------------------------------------------------------*/
   return (
     <DashboardLayout title="Family Collaboration">
       <div className="space-y-6">
         <div className="mb-8 rounded-lg bg-gradient-to-r from-primary-500 to-primary-700 p-6 text-white shadow-md">
-          <h1 className="text-2xl font-bold md:text-3xl">Family Collaboration</h1>
-          <p className="mt-1 text-primary-100">
-            Shared documents and resources for your family.
-          </p>
+          <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
+            <div>
+              <h1 className="text-2xl font-bold md:text-3xl">Family Collaboration</h1>
+              <p className="mt-1 text-primary-100">
+                Shared documents and resources for your family.
+              </p>
+            </div>
+            <button
+              onClick={() => setIsUploadOpen(true)}
+              className="inline-flex items-center rounded-md bg-white/20 px-4 py-2 text-sm font-medium text-white backdrop-blur hover:bg-white/30"
+            >
+              Upload Documents
+            </button>
+          </div>
         </div>
 
         {/* Filters */}
@@ -165,6 +264,13 @@ export default function FamilyPage() {
           </div>
         )}
       </div>
+      {/* Upload modal */}
+      <DocumentUploadModal
+        isOpen={isUploadOpen}
+        onClose={() => setIsUploadOpen(false)}
+        onUpload={handleUpload}
+        familyId={FAMILY_ID}
+      />
     </DashboardLayout>
   );
 }

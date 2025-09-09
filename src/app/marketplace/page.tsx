@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import CaregiverCard from "@/components/marketplace/CaregiverCard";
+import Image from "next/image";
 
 type Caregiver = {
   id: string;
@@ -183,8 +184,62 @@ export default function MarketplacePage() {
           </nav>
         </div>
 
-        {/* Filters */}
-        <div className="mb-6 rounded-md border border-gray-200 bg-white p-3">
+        {/* ---------- TWO-COLUMN WRAPPER ---------- */}
+        <div className="flex md:space-x-6">
+
+          {/* ---------------- Sidebar (desktop) ---------------- */}
+          <div className="hidden md:block md:w-72 md:shrink-0">
+            <div className="rounded-md border border-gray-200 bg-white p-4 space-y-3">
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              />
+              <input
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                placeholder="City"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              />
+              <input
+                value={state}
+                onChange={(e) => setState(e.target.value)}
+                placeholder="State"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              />
+              <div className="space-y-1 max-h-56 overflow-y-auto pr-1">
+                {allSpecialties.slice(0, 10).map((sp) => (
+                  <label
+                    key={sp}
+                    className="flex items-center gap-2 text-sm whitespace-nowrap"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={specialties.includes(sp)}
+                      onChange={() => toggleSpecialty(sp)}
+                    />
+                    <span>{sp.replace(/-/g, " ")}</span>
+                  </label>
+                ))}
+              </div>
+              <button
+                onClick={() => {
+                  setSearch("");
+                  setCity("");
+                  setState("");
+                  setSpecialties([]);
+                }}
+                className="w-full rounded-md bg-gray-100 px-3 py-2 text-sm text-gray-700 hover:bg-gray-200"
+              >
+                Clear Filters
+              </button>
+            </div>
+          </div>
+
+          {/* ---------------- Mobile filter bar ---------------- */}
+          {/* md:hidden ensures this only shows on small screens */}
+          <div className="mb-6 rounded-md border border-gray-200 bg-white p-3 md:hidden">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <input
             value={search}
@@ -217,8 +272,11 @@ export default function MarketplacePage() {
             ))}
           </div>
           </div>
+          </div>
         </div>
 
+        {/* MAIN CONTENT COLUMN */}
+        <div className="flex-1">
         {/* CTA for caregivers */}
         {activeTab === "caregivers" && session?.user?.role === "CAREGIVER" && (
           <div className="mb-4">
@@ -252,7 +310,25 @@ export default function MarketplacePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
             {listings.map((job) => (
               <div key={job.id} className="bg-white border rounded-md p-4">
-                <h3 className="font-semibold text-gray-900 mb-1">{job.title}</h3>
+                <div className="flex items-start mb-2">
+                  <div className="h-12 w-12 rounded-md overflow-hidden bg-gray-100 flex-shrink-0 mr-3">
+                    <Image
+                      src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
+                        job.title
+                      )}&background=random&size=128`}
+                      alt={job.title}
+                      width={48}
+                      height={48}
+                    />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">{job.title}</h3>
+                    <div className="text-sm text-gray-600">
+                      {[job.city, job.state].filter(Boolean).join(", ") ||
+                        "Location"}
+                    </div>
+                  </div>
+                </div>
                 <div className="text-sm text-gray-600 mb-2">
                   {[job.city, job.state].filter(Boolean).join(", ") || "Location"}
                 </div>
@@ -281,9 +357,24 @@ export default function MarketplacePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
               {providers.map((p) => (
                 <div key={p.id} className="bg-white border rounded-md p-4">
-                  <h3 className="font-semibold text-gray-900 mb-1">{p.name}</h3>
-                  <div className="text-sm text-gray-600 mb-1">
-                    {[p.city, p.state].filter(Boolean).join(", ")}
+                  {/* Header with avatar, name, location */}
+                  <div className="flex items-start mb-2">
+                    <div className="h-12 w-12 rounded-full overflow-hidden bg-gray-100 flex-shrink-0 mr-3">
+                      <Image
+                        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
+                          p.name
+                        )}&background=random&size=128`}
+                        alt={p.name}
+                        width={48}
+                        height={48}
+                      />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">{p.name}</h3>
+                      <div className="text-sm text-gray-600">
+                        {[p.city, p.state].filter(Boolean).join(", ")}
+                      </div>
+                    </div>
                   </div>
                   {/* Rating */}
                   <div className="flex items-center text-sm mb-2">
@@ -336,6 +427,8 @@ export default function MarketplacePage() {
             </div>
           ))}
       </div>
+      </div> {/* end flex-1 */}
+    </div> {/* end TWO-COLUMN WRAPPER */}
     </DashboardLayout>
   );
 }
