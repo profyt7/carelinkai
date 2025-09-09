@@ -47,6 +47,10 @@ const SimpleMap = dynamic(
   { ssr: false }
 );
 
+// Fallback image for any thumbnail load errors
+const FALLBACK_IMG =
+  "https://placehold.co/1200x800?text=Care+Home";
+
 // Care level options for filtering
 const CARE_LEVELS = [
   { id: CareLevel.INDEPENDENT, label: "Independent Living" },
@@ -704,6 +708,11 @@ export default function SearchPage() {
                                 alt={home.name}
                                 fill
                                 className="object-cover"
+                                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                  onError={(e) => {
+                                    const t = e.currentTarget as HTMLImageElement;
+                                    if (t.src !== FALLBACK_IMG) t.src = FALLBACK_IMG;
+                                  }}
                               />
                             </div>
                           ) : (
@@ -815,6 +824,11 @@ export default function SearchPage() {
                                 alt={home.name}
                                 fill
                                 className="object-cover"
+                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                onError={(e) => {
+                                  const t = e.currentTarget as HTMLImageElement;
+                                  if (t.src !== FALLBACK_IMG) t.src = FALLBACK_IMG;
+                                }}
                               />
                             </div>
                           ) : (
