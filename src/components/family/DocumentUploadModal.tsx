@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, Fragment } from "react";
+import { useState, useRef, useCallback, useEffect, Fragment } from "react";
 import type { ChangeEvent, DragEvent } from "react";
 import { Dialog, Transition, Listbox } from "@headlessui/react";
 import { 
@@ -80,13 +80,15 @@ interface DocumentUploadModalProps {
   onClose: () => void;
   onUpload: (data: UploadDocument[]) => Promise<void>;
   familyId: string;
+  initialFiles?: File[];
 }
 
 export default function DocumentUploadModal({
   isOpen,
   onClose,
   onUpload,
-  familyId
+  familyId,
+  initialFiles = []
 }: DocumentUploadModalProps) {
   // Form state
   const [files, setFiles] = useState<FileWithPreview[]>([]);
@@ -108,6 +110,18 @@ export default function DocumentUploadModal({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
+
+  /* ------------------------------------------------------------------
+     Prefill files when modal opens
+  ------------------------------------------------------------------*/
+  useEffect(() => {
+    if (isOpen && initialFiles && initialFiles.length > 0) {
+      // avoid duplicates by resetting first
+      setFiles([]);
+      addFiles(initialFiles);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, initialFiles]);
   
   // Reset state when modal closes
   const handleClose = useCallback(() => {

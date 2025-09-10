@@ -42,7 +42,11 @@ export default function FamilyPage() {
   const [docType, setDocType] = useState<string>('');
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  // Prefill dropped files into upload modal
+  const [prefillFiles, setPrefillFiles] = useState<File[]>([]);
   const [role, setRole] = useState<string|undefined>();
+  /* Unread messages */
+  const [unreadCount, setUnreadCount] = useState<number>(0);
   const isGuest = role === 'GUEST';
 
   /* ------------------------------------------------------------------
@@ -193,6 +197,48 @@ export default function FamilyPage() {
     };
     fetchMembership();
   }, []);
+
+  /* ------------------------------------------------------------------
+     Fetch documents
+  ------------------------------------------------------------------*/
+
+  /* ------------------------------------------------------------------
+     Unread messages polling
+  ------------------------------------------------------------------*/
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    const fetchUnread = async () => {
+      try {
+        const res = await fetch('/api/messages/unread');
+        if (res.ok) {
+          const json = await res.json();
+          setUnreadCount(Number(json.count || 0));
+        }
+      } catch {
+        /* ignore */
+      }
+    };
+    fetchUnread();
+    timer = setInterval(fetchUnread, 30000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Refresh unread count when switching to Messages tab
+  useEffect(() => {
+    if (activeTab === 'messages') {
+      (async () => {
+        try {
+          const res = await fetch('/api/messages/unread');
+          if (res.ok) {
+            const json = await res.json();
+            setUnreadCount(Number(json.count || 0));
+          }
+        } catch {
+          /* ignore */
+        }
+      })();
+    }
+  }, [activeTab]);
 
   /* ------------------------------------------------------------------
      Fetch documents
@@ -490,19 +536,9 @@ export default function FamilyPage() {
 
       if (valid.length === 0) return;
 
-      const uploads: UploadDocument[] = files.map(file => ({
-        familyId: FAMILY_ID,
-        title: file.name,
-        fileName: file.name,
-        fileType: file.type,
-        fileSize: file.size,
-        file,
-        type: 'OTHER',
-        isEncrypted: false,
-        tags: [],
-      }));
-      
-      handleUpload(uploads);
+      // Open modal with the valid files pre-selected for upload
+      setPrefillFiles(valid);
+      setIsUploadOpen(true);
     }
   };
 
@@ -547,7 +583,14 @@ export default function FamilyPage() {
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  <>
+                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                    {tab === 'messages' && unreadCount > 0 && (
+                      <span className="ml-2 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-red-600 px-1.5 text-[10px] font-semibold text-white">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    )}
+                  </>
                 </button>
               )
             )}
@@ -968,9 +1011,13 @@ export default function FamilyPage() {
       {/* Upload modal */}
       <DocumentUploadModal
         isOpen={isUploadOpen}
-        onClose={() => setIsUploadOpen(false)}
+        onClose={() => {
+          setIsUploadOpen(false);
+          setPrefillFiles([]);
+        }}
         onUpload={handleUpload}
         familyId={FAMILY_ID}
+        initialFiles={prefillFiles}
       />
       {/* Deposit modal */}
       <DepositModal
