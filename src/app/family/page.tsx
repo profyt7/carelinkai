@@ -1,10 +1,21 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import DocumentUploadModal from '@/components/family/DocumentUploadModal';
 import dynamic from 'next/dynamic';
+import {
+  FiFileText,
+  FiEdit2,
+  FiTrash2,
+  FiMessageSquare,
+  FiImage,
+  FiUsers,
+  FiUserPlus,
+  FiUserCheck,
+  FiFolder,
+} from 'react-icons/fi';
 import Link from 'next/link';
 
 export default function FamilyPage() {
@@ -60,12 +71,62 @@ export default function FamilyPage() {
   type Activity = {
     id: string;
     description: string;
+    type: string;
+    resourceType?: string;
     createdAt: string;
-    actor?: { firstName?: string | null; lastName?: string | null };
+    actor?: {
+      firstName?: string | null;
+      lastName?: string | null;
+      profileImageUrl?: { thumbnail?: string } | null;
+    };
   };
   const [activities, setActivities] = useState<Activity[]>([]);
   const [timelineLoading, setTimelineLoading] = useState(false);
   const [timelineError, setTimelineError] = useState<string | null>(null);
+
+  /* ------------------------------------------------------------------
+     Timeline filter helpers
+  ------------------------------------------------------------------*/
+  type ActivityFilter = 'ALL' | 'DOCUMENTS' | 'NOTES' | 'MEDIA' | 'MEMBERS';
+  const [activityFilter, setActivityFilter] = useState<ActivityFilter>('ALL');
+
+  const isTypeInFilter = (t: string, f: ActivityFilter) => {
+    if (f === 'ALL') return true;
+    const docTypes = [
+      'DOCUMENT_UPLOADED',
+      'DOCUMENT_UPDATED',
+      'DOCUMENT_DELETED',
+      'DOCUMENT_COMMENTED',
+    ];
+    const noteTypes = ['NOTE_CREATED', 'NOTE_UPDATED', 'NOTE_DELETED', 'NOTE_COMMENTED'];
+    const mediaTypes = ['GALLERY_CREATED', 'GALLERY_UPDATED', 'PHOTO_UPLOADED'];
+    const memberTypes = ['MEMBER_INVITED', 'MEMBER_JOINED', 'MEMBER_ROLE_CHANGED'];
+    const maps: Record<ActivityFilter, string[]> = {
+      DOCUMENTS: docTypes,
+      NOTES: noteTypes,
+      MEDIA: mediaTypes,
+      MEMBERS: memberTypes,
+      ALL: [],
+    };
+    return maps[f].includes(t);
+  };
+
+  const iconForType = (t: string) => {
+    if (t.startsWith('DOCUMENT')) return <FiFileText />;
+    if (t.startsWith('NOTE_') && !t.includes('COMMENT')) return <FiEdit2 />;
+    if (t.endsWith('COMMENTED')) return <FiMessageSquare />;
+    if (t.startsWith('GALLERY') || t === 'PHOTO_UPLOADED') return <FiImage />;
+    if (t === 'MEMBER_INVITED') return <FiUserPlus />;
+    if (t === 'MEMBER_JOINED') return <FiUserCheck />;
+    if (t === 'MEMBER_ROLE_CHANGED') return <FiUsers />;
+    return <FiFolder />;
+  };
+
+  // Memoised list of activities that match the current filter
+  const filteredActivities = useMemo(
+    () => activities.filter((a) => isTypeInFilter(a.type, activityFilter)),
+    [activities, activityFilter]
+  );
 
   const FAMILY_ID = 'cmdhjmp2x0000765nc52usnp7';
 
@@ -370,6 +431,27 @@ export default function FamilyPage() {
   /* ------------------------------------------------------------------
      Drag and drop handling
   ------------------------------------------------------------------*/
+
+  // Validation constants reused from modal
+  const MAX_FILE_SIZE = 10 * 1024 * 1024;
+  const ALLOWED_FILE_TYPES = [
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.ms-powerpoint',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    'text/plain',
+    'image/jpeg',
+    'image/png',
+    'image/gif',
+    'image/heic',
+    'image/heif',
+    'application/zip',
+    'application/x-zip-compressed',
+  ];
+
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(true);
@@ -390,6 +472,24 @@ export default function FamilyPage() {
     
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const files = Array.from(e.dataTransfer.files);
+
+      const invalids: string[] = [];
+      const valid = files.filter((file) => {
+        if (file.size > MAX_FILE_SIZE || !ALLOWED_FILE_TYPES.includes(file.type)) {
+          invalids.push(file.name);
+          return false;
+        }
+        return true;
+      });
+
+      if (invalids.length) {
+        alert(
+          `Some files were skipped due to size/type restrictions: ${invalids.join(', ')}`
+        );
+      }
+
+      if (valid.length === 0) return;
+
       const uploads: UploadDocument[] = files.map(file => ({
         familyId: FAMILY_ID,
         title: file.name,
@@ -453,6 +553,25 @@ export default function FamilyPage() {
             )}
           </div>
         </div>
+
+        {/* Timeline filters */}
+        {activeTab === 'timeline' && (
+          <div className="flex flex-wrap gap-2 mt-3">
+            {(['ALL', 'DOCUMENTS', 'NOTES', 'MEDIA', 'MEMBERS'] as ActivityFilter[]).map((f) => (
+              <button
+                key={f}
+                onClick={() => setActivityFilter(f)}
+                className={`rounded-md px-3 py-1 text-sm font-medium ${
+                  activityFilter === f
+                    ? 'bg-primary-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Filters */}
         {activeTab === 'documents' && (
@@ -593,13 +712,13 @@ export default function FamilyPage() {
               <div className="rounded-md border border-red-200 bg-red-50 p-4 text-red-700">
                 {timelineError}
               </div>
-            ) : activities.length === 0 ? (
+            ) : filteredActivities.length === 0 ? (
               <div className="py-20 text-center text-gray-500">
                 No activity yet
               </div>
             ) : (
               <div className="space-y-6">
-                {groupActivitiesByDate(activities).map(([date, items]) => (
+                {groupActivitiesByDate(filteredActivities).map(([date, items]) => (
                   <div key={date}>
                     <h3 className="mb-2 text-sm font-medium text-gray-500">
                       {new Date(date).toLocaleDateString(undefined, {
@@ -615,12 +734,32 @@ export default function FamilyPage() {
                           key={a.id}
                           className="rounded-md border bg-white p-4 shadow-sm"
                         >
-                          <div className="text-sm text-gray-800">{a.description}</div>
-                          <div className="mt-1 text-xs text-gray-500">
-                            {a.actor
-                              ? `${a.actor.firstName ?? ''} ${a.actor.lastName ?? ''} • `
-                              : ''}
-                            {new Date(a.createdAt).toLocaleTimeString()}
+                          <div className="flex items-start gap-3">
+                            <span className="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary-50 text-primary-700">
+                              {React.cloneElement(iconForType(a.type) as any, {
+                                className: 'h-4 w-4',
+                              })}
+                            </span>
+                            <div className="flex-1">
+                              <div className="text-sm text-gray-800">
+                                {a.description}
+                              </div>
+                              <div className="mt-1 flex items-center text-xs text-gray-500">
+                                <span className="mr-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-600">
+                                  {`${a.actor?.firstName?.[0] ?? ''}${
+                                    a.actor?.lastName?.[0] ?? ''
+                                  }`}
+                                </span>
+                                <span>
+                                  {a.actor
+                                    ? `${a.actor.firstName ?? ''} ${
+                                        a.actor.lastName ?? ''
+                                      }`
+                                    : '—'}{' '}
+                                  • {new Date(a.createdAt).toLocaleTimeString()}
+                                </span>
+                              </div>
+                            </div>
                           </div>
                         </li>
                       ))}
