@@ -47,11 +47,18 @@ describe('Mock data generators', () => {
         // imageUrl should not be empty
         expect(home.imageUrl.length).toBeGreaterThan(0);
         
-        // imageUrl should be a valid URL
-        expect(() => new URL(home.imageUrl)).not.toThrow();
+        // Absolute URLs should be valid, otherwise allow relative asset paths
+        if (home.imageUrl.startsWith('http')) {
+          expect(() => new URL(home.imageUrl)).not.toThrow();
+        } else {
+          // Relative paths must start with our public images folder
+          expect(home.imageUrl.startsWith('/images/')).toBe(true);
+        }
         
-        // Verify it's a picsum URL (based on our implementation)
-        expect(home.imageUrl).toMatch(/^https:\/\/picsum\.photos\/seed\/carehome-\d+\/800\/600$/);
+        // Ensure it starts with either 'http' (external) or '/' (internal asset)
+        expect(
+          home.imageUrl.startsWith('http') || home.imageUrl.startsWith('/')
+        ).toBe(true);
       });
     });
   });

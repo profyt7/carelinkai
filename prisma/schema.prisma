@@ -182,6 +182,7 @@ model Family {
   notes                FamilyNote[]
   galleries            SharedGallery[]
   activities           ActivityFeedItem[]
+  emergencyPreferences EmergencyPreference[]
   
   // Timestamps
   createdAt         DateTime  @default(now())
@@ -408,6 +409,7 @@ model Resident {
   // Family collaboration relationships
   familyDocuments      FamilyDocument[]
   familyNotes          FamilyNote[]
+  emergencyPreferences EmergencyPreference[]
   
   // Timestamps
   createdAt         DateTime  @default(now())
@@ -1415,6 +1417,31 @@ model ActivityFeedItem {
   @@index([actorId])
   @@index([type])
   @@index([createdAt])
+}
+
+/// -----------------------------------------------------
+/// Emergency escalation preferences
+/// -----------------------------------------------------
+model EmergencyPreference {
+  id               String   @id @default(cuid())
+  familyId         String
+  residentId       String?
+  escalationChain  Json     // Ordered list of contacts and methods
+  notifyMethods    String[] // e.g. ["SMS", "EMAIL", "CALL"]
+  careInstructions String?  @db.Text
+  lastConfirmedAt  DateTime?
+
+  // Relations
+  family           Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  resident         Resident? @relation(fields: [residentId], references: [id])
+
+  // Timestamps
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@unique([familyId, residentId])
+  @@index([familyId])
+  @@index([residentId])
 }
 
 // =====================================================

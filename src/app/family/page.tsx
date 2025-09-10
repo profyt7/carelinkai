@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import DocumentUploadModal from '@/components/family/DocumentUploadModal';
+import dynamic from 'next/dynamic';
 
 export default function FamilyPage() {
   /* ------------------------------------------------------------------
@@ -28,7 +29,42 @@ export default function FamilyPage() {
   const [docType, setDocType] = useState<string>('');
   const [isUploadOpen, setIsUploadOpen] = useState(false);
 
+  /* ------------------------------------------------------------------
+     Portal tabs
+  ------------------------------------------------------------------*/
+  type TabKey = 'documents' | 'timeline' | 'messages' | 'billing' | 'emergency';
+  const [activeTab, setActiveTab] = useState<TabKey>('documents');
+
+  /* ------------------------------------------------------------------
+     Timeline state
+  ------------------------------------------------------------------*/
+  type Activity = {
+    id: string;
+    description: string;
+    createdAt: string;
+    actor?: { firstName?: string | null; lastName?: string | null };
+  };
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [timelineLoading, setTimelineLoading] = useState(false);
+  const [timelineError, setTimelineError] = useState<string | null>(null);
+
   const FAMILY_ID = 'cmdhjmp2x0000765nc52usnp7';
+
+  /* ------------------------------------------------------------------
+     Billing state
+  ------------------------------------------------------------------*/
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
+  const [payments, setPayments] = useState<any[]>([]);
+  const [billingLoading, setBillingLoading] = useState(false);
+  const [depositOpen, setDepositOpen] = useState(false);
+  const [depositAmount, setDepositAmount] = useState<number>(0);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+
+  // Load DepositModal dynamically so Stripe is only imported when needed
+  const DepositModal = dynamic(
+    () => import('@/components/billing/DepositModal'),
+    { ssr: false },
+  );
 
   /* ------------------------------------------------------------------
      Helpers
@@ -72,7 +108,12 @@ export default function FamilyPage() {
       }
     };
 
-    fetchDocs();
+    // Only fetch when Documents tab is active
+    if (activeTab === 'documents') {
+      fetchDocs();
+      return () => controller.abort();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     return () => controller.abort();
   }, [search, docType]);
 
@@ -122,6 +163,111 @@ export default function FamilyPage() {
   }, []);
 
   /* ------------------------------------------------------------------
+     Timeline fetch + SSE
+  ------------------------------------------------------------------*/
+  useEffect(() => {
+    if (activeTab !== 'timeline') return;
+
+    const controller = new AbortController();
+    const load = async () => {
+      try {
+        setTimelineLoading(true);
+        const res = await fetch(
+          `/api/family/activity?familyId=${FAMILY_ID}&limit=50`,
+          { signal: controller.signal }
+        );
+        if (!res.ok) throw new Error('Failed to load activity');
+        const json = await res.json();
+        setActivities(json.items ?? []);
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+          setTimelineError(err.message ?? 'Error');
+        }
+      } finally {
+        setTimelineLoading(false);
+      }
+    };
+    load();
+
+    const es = new EventSource(
+      `/api/sse?topics=${encodeURIComponent(`family:${FAMILY_ID}`)}`
+    );
+    es.addEventListener('activity:created', (e) => {
+      try {
+        const data = JSON.parse((e as MessageEvent).data);
+        if (data?.activity) {
+          setActivities((prev) => [data.activity, ...prev]);
+        }
+      } catch {
+        /* ignore */
+      }
+    });
+
+    return () => {
+      controller.abort();
+      es.close();
+    };
+  }, [activeTab]);
+
+  /* ------------------------------------------------------------------
+     Fetch wallet & payments
+  ------------------------------------------------------------------*/
+  const loadBilling = async () => {
+    try {
+      setBillingLoading(true);
+      const [walletRes, payRes] = await Promise.all([
+        fetch(`/api/billing/wallet?familyId=${FAMILY_ID}`),
+        fetch(`/api/billing/payments?familyId=${FAMILY_ID}`),
+      ]);
+      if (walletRes.ok) {
+        const json = await walletRes.json();
+        setWalletBalance(Number(json.wallet?.balance ?? 0));
+      }
+      if (payRes.ok) {
+        const json = await payRes.json();
+        setPayments(json.payments ?? []);
+      }
+    } catch {
+      /* ignore for now */
+    } finally {
+      setBillingLoading(false);
+    }
+  };
+
+  // Trigger load when billing tab active
+  useEffect(() => {
+    if (activeTab === 'billing') {
+      loadBilling();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
+
+  /* ------------------------------------------------------------------
+     Deposit flow
+  ------------------------------------------------------------------*/
+  const createDeposit = async () => {
+    if (depositAmount <= 0) return;
+    try {
+      const res = await fetch('/api/billing/deposit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amountCents: Math.round(depositAmount * 100),
+          familyId: FAMILY_ID,
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to initiate deposit');
+      const json = await res.json();
+      setClientSecret(json.clientSecret ?? null);
+      setDepositOpen(true);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error(err);
+      alert('Unable to create deposit. Please try again.');
+    }
+  };
+
+  /* ------------------------------------------------------------------
      Upload handler passed to modal
   ------------------------------------------------------------------*/
   interface UploadDocument {
@@ -167,27 +313,49 @@ export default function FamilyPage() {
      Render
   ------------------------------------------------------------------*/
   return (
-    <DashboardLayout title="Family Collaboration">
+    <DashboardLayout title="Family Portal">
       <div className="space-y-6">
         <div className="mb-8 rounded-lg bg-gradient-to-r from-primary-500 to-primary-700 p-6 text-white shadow-md">
           <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
             <div>
-              <h1 className="text-2xl font-bold md:text-3xl">Family Collaboration</h1>
+              <h1 className="text-2xl font-bold md:text-3xl">Family Portal</h1>
               <p className="mt-1 text-primary-100">
-                Shared documents and resources for your family.
+                Stay connected with your loved one's care.
               </p>
             </div>
-            <button
+            {activeTab === 'documents' && (
+              <button
               onClick={() => setIsUploadOpen(true)}
               className="inline-flex items-center rounded-md bg-white/20 px-4 py-2 text-sm font-medium text-white backdrop-blur hover:bg-white/30"
             >
               Upload Documents
-            </button>
+              </button>
+            )}
           </div>
         </div>
 
+        {/* Tab navigation */}
+        <div className="flex flex-wrap gap-3">
+          {(['documents', 'timeline', 'messages', 'billing', 'emergency'] as TabKey[]).map(
+            (tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium ${
+                  activeTab === tab
+                    ? 'bg-primary-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              </button>
+            )
+          )}
+        </div>
+
         {/* Filters */}
-        <div className="flex flex-col gap-3 md:flex-row md:items-center">
+        {activeTab === 'documents' && (
+          <div className="flex flex-col gap-3 md:flex-row md:items-center">
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -209,17 +377,18 @@ export default function FamilyPage() {
             )}
           </select>
         </div>
+        )}
 
         {/* Content */}
-        {loading ? (
+        {activeTab === 'documents' && loading ? (
           <div className="py-20 text-center text-gray-500">Loading documents…</div>
-        ) : error ? (
+        ) : activeTab === 'documents' && error ? (
           <div className="rounded-md border border-red-200 bg-red-50 p-4 text-red-700">
             {error}
           </div>
-        ) : docs.length === 0 ? (
+        ) : activeTab === 'documents' && docs.length === 0 ? (
           <div className="py-20 text-center text-gray-500">No documents found</div>
-        ) : (
+        ) : activeTab === 'documents' ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {docs.map((doc) => (
               <div
@@ -262,6 +431,152 @@ export default function FamilyPage() {
               </div>
             ))}
           </div>
+        ) : null}
+
+        {/* Timeline Tab */}
+        {activeTab === 'timeline' && (
+          <div>
+            {timelineLoading ? (
+              <div className="py-20 text-center text-gray-500">
+                Loading timeline…
+              </div>
+            ) : timelineError ? (
+              <div className="rounded-md border border-red-200 bg-red-50 p-4 text-red-700">
+                {timelineError}
+              </div>
+            ) : activities.length === 0 ? (
+              <div className="py-20 text-center text-gray-500">
+                No activity yet
+              </div>
+            ) : (
+              <ul className="space-y-4">
+                {activities.map((a) => (
+                  <li
+                    key={a.id}
+                    className="rounded-md border bg-white p-4 shadow-sm"
+                  >
+                    <div className="text-sm text-gray-800">{a.description}</div>
+                    <div className="mt-1 text-xs text-gray-500">
+                      {a.actor
+                        ? `${a.actor.firstName ?? ''} ${a.actor.lastName ?? ''} • `
+                        : ''}
+                      {new Date(a.createdAt).toLocaleString()}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
+        {/* Messages Tab */}
+        {activeTab === 'messages' && (
+          <div className="space-y-4 rounded-md border bg-white p-6 shadow-sm">
+            <p className="text-gray-700">
+              View and send secure messages with caregivers and operators.
+            </p>
+            <a
+              href="/messages"
+              className="inline-flex items-center rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
+            >
+              Open Messages
+            </a>
+          </div>
+        )}
+
+        {/* Billing Tab */}
+        {activeTab === 'billing' && (
+          <div className="space-y-6 rounded-md border bg-white p-6 shadow-sm">
+            {billingLoading ? (
+              <div className="text-center text-gray-500">Loading…</div>
+            ) : (
+              <>
+                <div className="text-2xl font-semibold text-gray-800">
+                  Balance:{' '}
+                  {walletBalance !== null ? (
+                    new Intl.NumberFormat('en-US', {
+                      style: 'currency',
+                      currency: 'USD',
+                    }).format(Number(walletBalance))
+                  ) : (
+                    <span className="animate-pulse text-gray-500">$—.—</span>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap items-end gap-3">
+                  <div>
+                    <label
+                      htmlFor="amount"
+                      className="block text-sm font-medium text-gray-700"
+                    >
+                      Amount (USD)
+                    </label>
+                    <input
+                      id="amount"
+                      type="number"
+                      min={1}
+                      step={1}
+                      value={depositAmount}
+                      onChange={(e) =>
+                        setDepositAmount(Number(e.target.value))
+                      }
+                      className="mt-1 w-36 rounded-md border-gray-300 px-3 py-2"
+                    />
+                  </div>
+                  <button
+                    disabled={depositAmount <= 0}
+                    onClick={createDeposit}
+                    className="rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
+                  >
+                    Deposit
+                  </button>
+                </div>
+
+                {/* Payment history */}
+                <div>
+                  <h4 className="mb-2 text-sm font-semibold text-gray-700">
+                    Recent Payments
+                  </h4>
+                  {payments.length === 0 ? (
+                    <p className="text-sm text-gray-500">No payments yet.</p>
+                  ) : (
+                    <ul className="divide-y divide-gray-100">
+                      {payments.map((p: any) => (
+                        <li key={p.id} className="py-2 text-sm">
+                          {new Intl.DateTimeFormat('en-US').format(
+                            new Date(p.createdAt)
+                          )}{' '}
+                          —{' '}
+                          {new Intl.NumberFormat('en-US', {
+                            style: 'currency',
+                            currency: 'USD',
+                          }).format(Number(p.amount))}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Emergency Tab */}
+        {activeTab === 'emergency' && (
+          <div className="space-y-4 rounded-md border bg-white p-6 shadow-sm">
+            <p className="text-gray-700">
+              Configure who we contact in case of emergencies.
+            </p>
+            <div className="rounded-md border border-gray-100 bg-gray-50 p-4 text-sm text-gray-600">
+              Escalation chain configuration coming soon.
+            </div>
+            <a
+              href="/family/emergency"
+              className="rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
+            >
+              Configure Preferences
+            </a>
+          </div>
         )}
       </div>
       {/* Upload modal */}
@@ -270,6 +585,19 @@ export default function FamilyPage() {
         onClose={() => setIsUploadOpen(false)}
         onUpload={handleUpload}
         familyId={FAMILY_ID}
+      />
+      {/* Deposit modal */}
+      <DepositModal
+        isOpen={depositOpen}
+        onClose={() => setDepositOpen(false)}
+        clientSecret={clientSecret}
+        amountCents={Math.round(depositAmount * 100)}
+        onSuccess={() => {
+          setDepositOpen(false);
+          setClientSecret(null);
+          setDepositAmount(0);
+          loadBilling();
+        }}
       />
     </DashboardLayout>
   );
