@@ -47,6 +47,8 @@ export default function FamilyPage() {
   const [role, setRole] = useState<string|undefined>();
   /* Unread messages */
   const [unreadCount, setUnreadCount] = useState<number>(0);
+  /* Current user id for SSE subscriptions */
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const isGuest = role === 'GUEST';
 
   /* ------------------------------------------------------------------
@@ -205,6 +207,25 @@ export default function FamilyPage() {
   /* ------------------------------------------------------------------
      Unread messages polling
   ------------------------------------------------------------------*/
+
+  /* ------------------------------------------------------------------
+     Fetch current user id for SSE (once on mount)
+  ------------------------------------------------------------------*/
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/profile');
+        if (res.ok) {
+          const json = await res.json();
+          const id = json?.data?.user?.id;
+          if (id) setCurrentUserId(id);
+        }
+      } catch {
+        /* ignore */
+      }
+    })();
+  }, []);
+
   useEffect(() => {
     let timer: NodeJS.Timeout;
     const fetchUnread = async () => {
@@ -243,6 +264,38 @@ export default function FamilyPage() {
   /* ------------------------------------------------------------------
      Fetch documents
   ------------------------------------------------------------------*/
+
+  /* ------------------------------------------------------------------
+     SSE subscription for unread message updates
+  ------------------------------------------------------------------*/
+  useEffect(() => {
+    if (!currentUserId) return;
+
+    const refreshUnread = async () => {
+      try {
+        const res = await fetch('/api/messages/unread');
+        if (res.ok) {
+          const json = await res.json();
+          setUnreadCount(Number(json.count || 0));
+        }
+      } catch {
+        /* ignore */
+      }
+    };
+
+    const es = new EventSource(
+      `/api/sse?topics=${encodeURIComponent(`notifications:${currentUserId}`)}`
+    );
+    es.addEventListener('message:created', refreshUnread as EventListener);
+    es.addEventListener('message:read', refreshUnread as EventListener);
+
+    // initial refresh to ensure up-to-date
+    refreshUnread();
+
+    return () => {
+      es.close();
+    };
+  }, [currentUserId]);
   useEffect(() => {
     const controller = new AbortController();
     const fetchDocs = async () => {

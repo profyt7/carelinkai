@@ -95,6 +95,8 @@ export default function DocumentUploadModal({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [documentType, setDocumentType] = useState<FamilyDocumentType>("CARE_PLAN");
+  // track if user manually changed document type
+  const [userTouchedType, setUserTouchedType] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
   const [currentTag, setCurrentTag] = useState("");
   const [isEncrypted, setIsEncrypted] = useState(true);
@@ -112,6 +114,16 @@ export default function DocumentUploadModal({
   const formRef = useRef<HTMLFormElement>(null);
 
   /* ------------------------------------------------------------------
+     Helpers
+  ------------------------------------------------------------------*/
+  const guessType = (incoming: File[]): FamilyDocumentType => {
+    if (incoming.some((f) => f.type.startsWith("image/"))) return "PHOTO";
+    if (incoming.some((f) => f.type.startsWith("video/"))) return "VIDEO";
+    if (incoming.some((f) => f.type === "application/pdf")) return "OTHER";
+    return "OTHER";
+  };
+
+  /* ------------------------------------------------------------------
      Prefill files when modal opens
   ------------------------------------------------------------------*/
   useEffect(() => {
@@ -120,9 +132,32 @@ export default function DocumentUploadModal({
       setFiles([]);
       addFiles(initialFiles);
     }
+    if (isOpen) {
+      try {
+        const savedType = localStorage.getItem("docUpload:lastType");
+        if (savedType) setDocumentType(savedType as FamilyDocumentType);
+        const savedTags = localStorage.getItem("docUpload:lastTags");
+        if (savedTags) setTags(JSON.parse(savedTags));
+      } catch {
+        /* ignore */
+      }
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, initialFiles]);
   
+  // persist prefs
+  useEffect(() => {
+    try {
+      localStorage.setItem("docUpload:lastType", documentType);
+    } catch {/* ignore */}
+  }, [documentType]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("docUpload:lastTags", JSON.stringify(tags));
+    } catch {/* ignore */}
+  }, [tags]);
+
   // Reset state when modal closes
   const handleClose = useCallback(() => {
     // Small delay to allow animation to complete
@@ -244,6 +279,10 @@ export default function DocumentUploadModal({
     // Add valid files to state
     if (validFiles.length > 0) {
       setFiles(prev => [...prev, ...validFiles]);
+      // auto-select type unless user already chose
+      if (!userTouchedType) {
+        setDocumentType(guessType(validFiles));
+      }
       
       // Auto-fill title if it's empty and only one file is being uploaded
       if (
@@ -627,7 +666,14 @@ export default function DocumentUploadModal({
                       <label htmlFor="document-type" className="block text-sm font-medium text-gray-700">
                         Document Type
                       </label>
-                      <Listbox value={documentType} onChange={setDocumentType} disabled={isUploading}>
+                      <Listbox
+                        value={documentType}
+                        onChange={(val) => {
+                          setDocumentType(val);
+                          setUserTouchedType(true);
+                        }}
+                        disabled={isUploading}
+                      >
                         <div className="relative mt-1">
                           <Listbox.Button className="relative w-full cursor-default rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-left shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 sm:text-sm">
                             <span className="block truncate">
