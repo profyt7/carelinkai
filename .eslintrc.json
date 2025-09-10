@@ -1,0 +1,6 @@
+{
+  "extends": ["next", "next/core-web-vitals"],
+  "rules": {
+    // Keep adjustments minimal; can be expanded later
+  }
+}

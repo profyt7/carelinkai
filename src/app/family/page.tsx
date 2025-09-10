@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import DocumentUploadModal from '@/components/family/DocumentUploadModal';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 
 export default function FamilyPage() {
   /* ------------------------------------------------------------------
@@ -28,12 +30,29 @@ export default function FamilyPage() {
   const [search, setSearch] = useState('');
   const [docType, setDocType] = useState<string>('');
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [role, setRole] = useState<string|undefined>();
+  const isGuest = role === 'GUEST';
+
+  /* ------------------------------------------------------------------
+     Router and URL state
+  ------------------------------------------------------------------*/
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   /* ------------------------------------------------------------------
      Portal tabs
   ------------------------------------------------------------------*/
   type TabKey = 'documents' | 'timeline' | 'messages' | 'billing' | 'emergency';
-  const [activeTab, setActiveTab] = useState<TabKey>('documents');
+  const [activeTab, setActiveTab] = useState<TabKey>(() => {
+    const tabParam = searchParams.get('tab');
+    return (tabParam as TabKey) || 'documents';
+  });
+
+  const handleTabChange = (tab: TabKey) => {
+    setActiveTab(tab);
+    router.replace(`/family?tab=${tab}`);
+  };
 
   /* ------------------------------------------------------------------
      Timeline state
@@ -55,10 +74,15 @@ export default function FamilyPage() {
   ------------------------------------------------------------------*/
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [payments, setPayments] = useState<any[]>([]);
+  const [transactions, setTransactions] = useState<any[]>([]);
   const [billingLoading, setBillingLoading] = useState(false);
   const [depositOpen, setDepositOpen] = useState(false);
   const [depositAmount, setDepositAmount] = useState<number>(0);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+
+  // Check if Stripe is configured
+  const isStripeConfigured = typeof process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY === 'string' && 
+    process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY.length > 0;
 
   // Load DepositModal dynamically so Stripe is only imported when needed
   const DepositModal = dynamic(
@@ -75,6 +99,39 @@ export default function FamilyPage() {
     if (mb >= 1) return `${mb.toFixed(1)} MB`;
     return `${(bytes / 1024).toFixed(0)} KB`;
   };
+
+  // Helper to group activities by date
+  const groupActivitiesByDate = (activities: Activity[]) => {
+    const groups: Record<string, Activity[]> = {};
+    
+    activities.forEach(activity => {
+      const date = new Date(activity.createdAt).toISOString().split('T')[0];
+      if (!groups[date]) {
+        groups[date] = [];
+      }
+      groups[date].push(activity);
+    });
+    
+    return Object.entries(groups).sort((a, b) => b[0].localeCompare(a[0]));
+  };
+
+  /* ------------------------------------------------------------------
+     Fetch membership role
+  ------------------------------------------------------------------*/
+  useEffect(() => {
+    const fetchMembership = async () => {
+      try {
+        const res = await fetch(`/api/family/membership?familyId=${FAMILY_ID}`);
+        if (res.ok) {
+          const data = await res.json();
+          setRole(data.role);
+        }
+      } catch (err) {
+        console.error('Failed to fetch membership role:', err);
+      }
+    };
+    fetchMembership();
+  }, []);
 
   /* ------------------------------------------------------------------
      Fetch documents
@@ -115,7 +172,7 @@ export default function FamilyPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     return () => controller.abort();
-  }, [search, docType]);
+  }, [search, docType, activeTab]);
 
   /* ------------------------------------------------------------------
      Real-time updates via SSE
@@ -222,6 +279,7 @@ export default function FamilyPage() {
       if (walletRes.ok) {
         const json = await walletRes.json();
         setWalletBalance(Number(json.wallet?.balance ?? 0));
+        setTransactions(json.transactions ?? []);
       }
       if (payRes.ok) {
         const json = await payRes.json();
@@ -310,6 +368,45 @@ export default function FamilyPage() {
   };
 
   /* ------------------------------------------------------------------
+     Drag and drop handling
+  ------------------------------------------------------------------*/
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    if (isGuest) {
+      alert("Guests cannot upload documents. Please contact a family administrator.");
+      return;
+    }
+    
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const files = Array.from(e.dataTransfer.files);
+      const uploads: UploadDocument[] = files.map(file => ({
+        familyId: FAMILY_ID,
+        title: file.name,
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+        file,
+        type: 'OTHER',
+        isEncrypted: false,
+        tags: [],
+      }));
+      
+      handleUpload(uploads);
+    }
+  };
+
+  /* ------------------------------------------------------------------
      Render
   ------------------------------------------------------------------*/
   return (
@@ -320,125 +417,177 @@ export default function FamilyPage() {
             <div>
               <h1 className="text-2xl font-bold md:text-3xl">Family Portal</h1>
               <p className="mt-1 text-primary-100">
-                Stay connected with your loved one's care.
+                Stay connected with your loved one&apos;s care.
               </p>
             </div>
-            {activeTab === 'documents' && (
+            {activeTab === 'documents' && !isGuest && (
               <button
-              onClick={() => setIsUploadOpen(true)}
-              className="inline-flex items-center rounded-md bg-white/20 px-4 py-2 text-sm font-medium text-white backdrop-blur hover:bg-white/30"
-            >
-              Upload Documents
+                onClick={() => setIsUploadOpen(true)}
+                className="inline-flex items-center rounded-md bg-white/20 px-4 py-2 text-sm font-medium text-white backdrop-blur hover:bg-white/30"
+              >
+                Upload Documents
               </button>
             )}
           </div>
         </div>
 
         {/* Tab navigation */}
-        <div className="flex flex-wrap gap-3">
-          {(['documents', 'timeline', 'messages', 'billing', 'emergency'] as TabKey[]).map(
-            (tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`rounded-md px-3 py-1.5 text-sm font-medium ${
-                  activeTab === tab
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
-              </button>
-            )
-          )}
+        <div className="sticky top-0 bg-white/70 backdrop-blur z-10 pb-2 border-b" role="tablist">
+          <div className="flex flex-wrap gap-3">
+            {(['documents', 'timeline', 'messages', 'billing', 'emergency'] as TabKey[]).map(
+              (tab) => (
+                <button
+                  key={tab}
+                  role="tab"
+                  aria-selected={activeTab === tab}
+                  onClick={() => handleTabChange(tab)}
+                  className={`rounded-md px-3 py-1.5 text-sm font-medium ${
+                    activeTab === tab
+                      ? 'bg-primary-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                </button>
+              )
+            )}
+          </div>
         </div>
 
         {/* Filters */}
         {activeTab === 'documents' && (
           <div className="flex flex-col gap-3 md:flex-row md:items-center">
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search documents…"
-            className="w-full rounded-md border border-gray-300 px-3 py-2 md:max-w-xs"
-          />
-          <select
-            value={docType}
-            onChange={(e) => setDocType(e.target.value)}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 md:max-w-xs"
-          >
-            <option value="">All Types</option>
-            {['CARE_PLAN','MEDICAL_RECORD','LEGAL_DOCUMENT','INSURANCE_DOCUMENT','PHOTO','VIDEO','PERSONAL_DOCUMENT','OTHER'].map(
-              (t) => (
-                <option key={t} value={t}>
-                  {t.replace(/_/g, ' ')}
-                </option>
-              )
-            )}
-          </select>
-        </div>
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search documents…"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 md:max-w-xs"
+            />
+            <select
+              value={docType}
+              onChange={(e) => setDocType(e.target.value)}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 md:max-w-xs"
+            >
+              <option value="">All Types</option>
+              {['CARE_PLAN','MEDICAL_RECORD','LEGAL_DOCUMENT','INSURANCE_DOCUMENT','PHOTO','VIDEO','PERSONAL_DOCUMENT','OTHER'].map(
+                (t) => (
+                  <option key={t} value={t}>
+                    {t.replace(/_/g, ' ')}
+                  </option>
+                )
+              )}
+            </select>
+          </div>
         )}
 
         {/* Content */}
-        {activeTab === 'documents' && loading ? (
-          <div className="py-20 text-center text-gray-500">Loading documents…</div>
-        ) : activeTab === 'documents' && error ? (
-          <div className="rounded-md border border-red-200 bg-red-50 p-4 text-red-700">
-            {error}
-          </div>
-        ) : activeTab === 'documents' && docs.length === 0 ? (
-          <div className="py-20 text-center text-gray-500">No documents found</div>
-        ) : activeTab === 'documents' ? (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {docs.map((doc) => (
-              <div
-                key={doc.id}
-                className="flex flex-col rounded-md border bg-white p-4 shadow-sm"
+        {activeTab === 'documents' && (
+          <>
+            {/* Dropzone area */}
+            {!isGuest && (
+              <div 
+                className={`border-2 border-dashed rounded-lg p-6 text-center mb-6 transition-colors ${
+                  isDragging 
+                    ? 'border-primary-500 bg-primary-50' 
+                    : 'border-gray-300 hover:border-gray-400'
+                }`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
               >
-                {/* title */}
-                <h3 className="mb-1 line-clamp-2 font-medium text-gray-900">
-                  {doc.title}
-                </h3>
-                {/* type badge */}
-                <span className="mb-2 inline-block rounded-full bg-primary-100 px-2.5 py-0.5 text-xs font-medium text-primary-800">
-                  {doc.type.replace(/_/g, ' ')}
-                </span>
-                {/* meta */}
-                <div className="mb-2 text-xs text-gray-500">
-                  {new Date(doc.createdAt).toLocaleDateString()} •{' '}
-                  {formatBytes(doc.fileSize)}
-                </div>
-                {/* tags */}
-                <div className="mb-3 flex flex-wrap gap-1">
-                  {doc.tags.slice(0, 4).map((tag) => (
-                    <span
-                      key={tag}
-                      className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-700"
-                    >
-                      #{tag}
-                    </span>
-                  ))}
-                </div>
-                {/* uploader initials */}
-                <div className="mt-auto flex items-center">
-                  <div className="mr-2 flex h-7 w-7 items-center justify-center rounded-full bg-gray-200 text-xs font-semibold text-gray-600">
-                    {`${doc.uploader.firstName?.[0] ?? ''}${doc.uploader.lastName?.[0] ?? ''}`}
-                  </div>
-                  <span className="text-xs text-gray-600">
-                    {doc.uploader.firstName} {doc.uploader.lastName}
-                  </span>
-                </div>
+                <p className="text-gray-600">
+                  Drag and drop files here to upload
+                </p>
+                <p className="text-sm text-gray-500 mt-1">
+                  or click the Upload Documents button above
+                </p>
               </div>
-            ))}
-          </div>
-        ) : null}
+            )}
+            
+            {loading ? (
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {[...Array(8)].map((_, i) => (
+                  <div key={i} className="flex flex-col rounded-md border bg-white p-4 shadow-sm animate-pulse">
+                    <div className="h-4 w-3/4 bg-gray-200 rounded mb-2"></div>
+                    <div className="h-3 w-1/4 bg-gray-200 rounded mb-3"></div>
+                    <div className="h-2 w-1/2 bg-gray-200 rounded mb-1"></div>
+                    <div className="h-2 w-1/3 bg-gray-200 rounded mb-3"></div>
+                    <div className="flex gap-1 mb-3">
+                      {[...Array(3)].map((_, j) => (
+                        <div key={j} className="h-2 w-10 bg-gray-200 rounded"></div>
+                      ))}
+                    </div>
+                    <div className="mt-auto flex items-center">
+                      <div className="mr-2 h-7 w-7 rounded-full bg-gray-200"></div>
+                      <div className="h-2 w-20 bg-gray-200 rounded"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : error ? (
+              <div className="rounded-md border border-red-200 bg-red-50 p-4 text-red-700">
+                {error}
+              </div>
+            ) : docs.length === 0 ? (
+              <div className="py-20 text-center text-gray-500">No documents found</div>
+            ) : (
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {docs.map((doc) => (
+                  <div
+                    key={doc.id}
+                    className="flex flex-col rounded-md border bg-white p-4 shadow-sm"
+                  >
+                    {/* title */}
+                    <h3 className="mb-1 line-clamp-2 font-medium text-gray-900">
+                      {doc.title}
+                    </h3>
+                    {/* type badge */}
+                    <span className="mb-2 inline-block rounded-full bg-primary-100 px-2.5 py-0.5 text-xs font-medium text-primary-800">
+                      {doc.type.replace(/_/g, ' ')}
+                    </span>
+                    {/* meta */}
+                    <div className="mb-2 text-xs text-gray-500">
+                      {new Date(doc.createdAt).toLocaleDateString()} •{' '}
+                      {formatBytes(doc.fileSize)}
+                    </div>
+                    {/* tags */}
+                    <div className="mb-3 flex flex-wrap gap-1">
+                      {doc.tags.slice(0, 4).map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-700"
+                        >
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+                    {/* uploader initials */}
+                    <div className="mt-auto flex items-center">
+                      <div className="mr-2 flex h-7 w-7 items-center justify-center rounded-full bg-gray-200 text-xs font-semibold text-gray-600">
+                        {`${doc.uploader.firstName?.[0] ?? ''}${doc.uploader.lastName?.[0] ?? ''}`}
+                      </div>
+                      <span className="text-xs text-gray-600">
+                        {doc.uploader.firstName} {doc.uploader.lastName}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
 
         {/* Timeline Tab */}
         {activeTab === 'timeline' && (
           <div>
             {timelineLoading ? (
-              <div className="py-20 text-center text-gray-500">
-                Loading timeline…
+              <div className="space-y-4">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="rounded-md border bg-white p-4 shadow-sm animate-pulse">
+                    <div className="h-3 w-3/4 bg-gray-200 rounded mb-2"></div>
+                    <div className="h-2 w-1/3 bg-gray-200 rounded"></div>
+                  </div>
+                ))}
               </div>
             ) : timelineError ? (
               <div className="rounded-md border border-red-200 bg-red-50 p-4 text-red-700">
@@ -449,22 +598,36 @@ export default function FamilyPage() {
                 No activity yet
               </div>
             ) : (
-              <ul className="space-y-4">
-                {activities.map((a) => (
-                  <li
-                    key={a.id}
-                    className="rounded-md border bg-white p-4 shadow-sm"
-                  >
-                    <div className="text-sm text-gray-800">{a.description}</div>
-                    <div className="mt-1 text-xs text-gray-500">
-                      {a.actor
-                        ? `${a.actor.firstName ?? ''} ${a.actor.lastName ?? ''} • `
-                        : ''}
-                      {new Date(a.createdAt).toLocaleString()}
-                    </div>
-                  </li>
+              <div className="space-y-6">
+                {groupActivitiesByDate(activities).map(([date, items]) => (
+                  <div key={date}>
+                    <h3 className="mb-2 text-sm font-medium text-gray-500">
+                      {new Date(date).toLocaleDateString(undefined, {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </h3>
+                    <ul className="space-y-3">
+                      {items.map((a) => (
+                        <li
+                          key={a.id}
+                          className="rounded-md border bg-white p-4 shadow-sm"
+                        >
+                          <div className="text-sm text-gray-800">{a.description}</div>
+                          <div className="mt-1 text-xs text-gray-500">
+                            {a.actor
+                              ? `${a.actor.firstName ?? ''} ${a.actor.lastName ?? ''} • `
+                              : ''}
+                            {new Date(a.createdAt).toLocaleTimeString()}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 ))}
-              </ul>
+              </div>
             )}
           </div>
         )}
@@ -488,7 +651,16 @@ export default function FamilyPage() {
         {activeTab === 'billing' && (
           <div className="space-y-6 rounded-md border bg-white p-6 shadow-sm">
             {billingLoading ? (
-              <div className="text-center text-gray-500">Loading…</div>
+              <div className="space-y-4">
+                <div className="h-8 w-32 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-10 w-full max-w-md bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
+                <div className="space-y-2">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="h-4 w-full bg-gray-200 rounded animate-pulse"></div>
+                  ))}
+                </div>
+              </div>
             ) : (
               <>
                 <div className="text-2xl font-semibold text-gray-800">
@@ -503,33 +675,102 @@ export default function FamilyPage() {
                   )}
                 </div>
 
-                <div className="flex flex-wrap items-end gap-3">
-                  <div>
-                    <label
-                      htmlFor="amount"
-                      className="block text-sm font-medium text-gray-700"
+                <div>
+                  <div className="flex flex-wrap items-end gap-3">
+                    <div>
+                      <label
+                        htmlFor="amount"
+                        className="block text-sm font-medium text-gray-700"
+                      >
+                        Amount (USD)
+                      </label>
+                      <input
+                        id="amount"
+                        type="number"
+                        min={1}
+                        step={1}
+                        value={depositAmount}
+                        onChange={(e) =>
+                          setDepositAmount(Number(e.target.value))
+                        }
+                        className="mt-1 w-36 rounded-md border-gray-300 px-3 py-2"
+                      />
+                    </div>
+                    <button
+                      disabled={depositAmount <= 0 || isGuest}
+                      onClick={createDeposit}
+                      className="rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
                     >
-                      Amount (USD)
-                    </label>
-                    <input
-                      id="amount"
-                      type="number"
-                      min={1}
-                      step={1}
-                      value={depositAmount}
-                      onChange={(e) =>
-                        setDepositAmount(Number(e.target.value))
-                      }
-                      className="mt-1 w-36 rounded-md border-gray-300 px-3 py-2"
-                    />
+                      Deposit
+                    </button>
                   </div>
-                  <button
-                    disabled={depositAmount <= 0}
-                    onClick={createDeposit}
-                    className="rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
-                  >
-                    Deposit
-                  </button>
+                  
+                  {/* Amount presets */}
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {[25, 50, 100].map(amount => (
+                      <button
+                        key={amount}
+                        type="button"
+                        onClick={() => setDepositAmount(amount)}
+                        className={`px-3 py-1 text-sm rounded-md ${
+                          depositAmount === amount 
+                            ? 'bg-primary-100 text-primary-800 border border-primary-300' 
+                            : 'bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200'
+                        }`}
+                      >
+                        ${amount}
+                      </button>
+                    ))}
+                  </div>
+                  
+                  {/* Stripe configuration notice */}
+                  {!isStripeConfigured && (
+                    <div className="mt-2 rounded-md bg-yellow-50 p-3 text-sm text-yellow-700 border border-yellow-200">
+                      Test mode - no real charges will be made.
+                    </div>
+                  )}
+                  
+                  {isGuest && (
+                    <div className="mt-2 rounded-md bg-gray-50 p-3 text-sm text-gray-600 border border-gray-200">
+                      Guests cannot make deposits. Please contact a family administrator.
+                    </div>
+                  )}
+                </div>
+
+                {/* Wallet transactions */}
+                <div className="mt-4">
+                  <h4 className="mb-2 text-sm font-semibold text-gray-700">
+                    Recent Wallet Transactions
+                  </h4>
+                  {transactions.length === 0 ? (
+                    <p className="text-sm text-gray-500">No transactions yet.</p>
+                  ) : (
+                    <ul className="divide-y divide-gray-100">
+                      {transactions.slice(0, 5).map((tx: any) => (
+                        <li key={tx.id} className="py-2 text-sm flex justify-between">
+                          <div>
+                            <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
+                              tx.type === 'DEPOSIT' 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-blue-100 text-blue-800'
+                            }`}>
+                              {tx.type}
+                            </span>
+                            <span className="ml-2 text-gray-600">
+                              {new Intl.DateTimeFormat('en-US').format(new Date(tx.createdAt))}
+                            </span>
+                          </div>
+                          <span className={tx.type === 'DEPOSIT' ? 'text-green-600' : ''}>
+                            {tx.type === 'DEPOSIT' ? '+' : ''}
+                            {new Intl.NumberFormat('en-US', {
+                              style: 'currency',
+                              currency: tx.currency || 'USD',
+                            }).format(Number(tx.amount))}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
 
                 {/* Payment history */}
@@ -568,14 +809,20 @@ export default function FamilyPage() {
               Configure who we contact in case of emergencies.
             </p>
             <div className="rounded-md border border-gray-100 bg-gray-50 p-4 text-sm text-gray-600">
-              Escalation chain configuration coming soon.
+              Set up your emergency contact list and notification preferences.
             </div>
-            <a
+            <Link
               href="/family/emergency"
-              className="rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
+              className="inline-flex items-center rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
             >
               Configure Preferences
-            </a>
+            </Link>
+            
+            {isGuest && (
+              <div className="mt-2 rounded-md bg-gray-50 p-3 text-sm text-gray-600 border border-gray-200">
+                Note: As a guest, you can view but not modify emergency preferences.
+              </div>
+            )}
           </div>
         )}
       </div>

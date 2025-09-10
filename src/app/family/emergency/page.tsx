@@ -27,6 +27,10 @@ export default function EmergencyPreferencesPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
+  // Role gating --------------------------------------------------------
+  const [role, setRole] = useState<string | undefined>();
+  const isGuest = role === 'GUEST';
+  
   // Form state
   const [preferences, setPreferences] = useState<EmergencyPreference>({
     escalationChain: [],
@@ -58,6 +62,22 @@ export default function EmergencyPreferencesPage() {
     };
     
     loadPreferences();
+  }, []);
+
+  // Load membership role ----------------------------------------------
+  useEffect(() => {
+    const loadRole = async () => {
+      try {
+        const res = await fetch(`/api/family/membership?familyId=${FAMILY_ID}`);
+        if (res.ok) {
+          const data = await res.json();
+          setRole(data.role);
+        }
+      } catch {
+        /* ignore */
+      }
+    };
+    loadRole();
   }, []);
 
   // Handle notify method checkbox changes
@@ -175,9 +195,20 @@ export default function EmergencyPreferencesPage() {
           </Link>
         </div>
 
+        {/* View-only banner for guests */}
+        {isGuest && (
+          <div className="rounded-md border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-700">
+            You have view-only access. Please contact a family administrator to make changes.
+          </div>
+        )}
+
         {/* Content */}
         {loading ? (
-          <div className="py-20 text-center text-gray-500">Loading preferences…</div>
+          <div className="space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-20 rounded-md bg-gray-100 animate-pulse" />
+            ))}
+          </div>
         ) : error ? (
           <div className="rounded-md border border-red-200 bg-red-50 p-4 text-red-700">
             {error}
@@ -247,6 +278,7 @@ export default function EmergencyPreferencesPage() {
                       <button
                         type="button"
                         onClick={() => removeContact(index)}
+                        disabled={isGuest}
                         className="inline-flex items-center rounded-md border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
                       >
                         <FiTrash2 className="mr-1" /> Remove
@@ -259,6 +291,7 @@ export default function EmergencyPreferencesPage() {
               <button
                 type="button"
                 onClick={addContact}
+                disabled={isGuest}
                 className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
               >
                 <FiPlus className="mr-1" /> Add Contact
@@ -285,7 +318,7 @@ export default function EmergencyPreferencesPage() {
               <button
                 type="button"
                 onClick={savePreferences}
-                disabled={saving}
+                disabled={saving || isGuest}
                 className="inline-flex items-center rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50"
               >
                 {saving ? 'Saving...' : (
