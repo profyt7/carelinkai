@@ -82,12 +82,12 @@ export async function GET(req: NextRequest) {
     });
     
     // Handle array parameters (they come as comma-separated values)
-    if (rawParams.careLevel) {
-      rawParams.careLevel = rawParams.careLevel.split(',');
+    if ((rawParams as any)['careLevel']) {
+      (rawParams as any)['careLevel'] = (rawParams as any)['careLevel'].split(',');
     }
     
-    if (rawParams.amenities) {
-      rawParams.amenities = rawParams.amenities.split(',');
+    if ((rawParams as any)['amenities']) {
+      (rawParams as any)['amenities'] = (rawParams as any)['amenities'].split(',');
     }
     
     // Validate query parameters
@@ -184,13 +184,8 @@ export async function GET(req: NextRequest) {
     
     // Apply amenities filter
     if (params.amenities && params.amenities.length > 0) {
-      // This assumes amenities are stored in a separate table with a relation to homes
       where.amenities = {
-        some: {
-          name: {
-            in: params.amenities,
-          },
-        },
+        hasSome: params.amenities,
       };
     }
     
@@ -268,7 +263,6 @@ export async function GET(req: NextRequest) {
               rating: true,
             },
           },
-          amenities: true,
           operator: {
             select: {
               id: true,
@@ -364,7 +358,7 @@ export async function GET(req: NextRequest) {
     }
     
     // Format homes for response (remove sensitive data)
-    const formattedHomes = processedHomes.map(home => ({
+    const formattedHomes = processedHomes.map((home: any) => ({
       id: home.id,
       name: home.name,
       description: home.description,
@@ -390,7 +384,7 @@ export async function GET(req: NextRequest) {
       aiMatchScore: home.aiMatchScore,
       distance: home.distance,
       primaryPhoto: home.photos[0]?.url || null,
-      amenities: home.amenities.map(a => a.name),
+      amenities: home.amenities,
       operator: {
         id: home.operator.id,
         name: home.operator.companyName,

@@ -106,11 +106,11 @@ export class DashboardDataService {
       
       // Calculate average price
       const homesWithPrices = homes.filter(h => h.priceMin !== null && h.priceMax !== null);
-      const avgMinPrice = homesWithPrices.length > 0 
-        ? homesWithPrices.reduce((sum, h) => sum + h.priceMin, 0) / homesWithPrices.length 
+      const avgMinPrice = homesWithPrices.length > 0
+        ? homesWithPrices.reduce((sum, h) => sum + Number(h.priceMin), 0) / homesWithPrices.length
         : 0;
-      const avgMaxPrice = homesWithPrices.length > 0 
-        ? homesWithPrices.reduce((sum, h) => sum + h.priceMax, 0) / homesWithPrices.length 
+      const avgMaxPrice = homesWithPrices.length > 0
+        ? homesWithPrices.reduce((sum, h) => sum + Number(h.priceMax), 0) / homesWithPrices.length
         : 0;
 
       return {

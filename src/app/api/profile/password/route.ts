@@ -54,7 +54,8 @@ export async function POST(req: NextRequest) {
     // Apply rate limiting
     const identifier = req.ip || "unknown";
     try {
-      await limiter.check(10, identifier); // 10 requests per minute per IP
+      // 10 requests per minute per IP
+      await limiter.check(identifier);
     } catch (error) {
       return NextResponse.json(
         { success: false, message: "Too many password change attempts. Please try again later." },

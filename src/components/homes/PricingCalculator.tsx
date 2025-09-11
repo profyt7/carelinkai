@@ -84,19 +84,23 @@ const PricingCalculator: React.FC<PricingCalculatorProps> = ({
   // Calculate totals
   const calculateTotals = (): PricingEstimate => {
     const selectedRoom = pricing[selectedRoomIndex];
-    
+
+    const roomType = selectedRoom?.type ?? "";
+    const basePrice = selectedRoom?.base ?? 0;
+    const additionalServices = selectedRoom?.additional ?? [];
+
     // Calculate monthly services
-    const selectedServicesList = selectedRoom.additional.filter(
-      service => selectedServices[service.service]
+    const selectedServicesList = additionalServices.filter(
+      (service) => selectedServices[service.service]
     );
-    
+
     const monthlyServicesTotal = selectedServicesList.reduce(
-      (total, service) => total + service.cost, 
+      (total, service) => total + service.cost,
       0
     );
-    
-    const totalMonthly = selectedRoom.base + monthlyServicesTotal;
-    
+
+    const totalMonthly = basePrice + monthlyServicesTotal;
+
     // Calculate one-time fees
     const selectedOneTimeFeesList = oneTimeFees.filter(
       fee => selectedOneTimeFees[fee.name]
@@ -111,8 +115,8 @@ const PricingCalculator: React.FC<PricingCalculatorProps> = ({
     const firstMonthTotal = totalMonthly + totalOneTime;
     
     return {
-      roomType: selectedRoom.type,
-      basePrice: selectedRoom.base,
+      roomType,
+      basePrice,
       selectedServices: selectedServicesList,
       totalMonthly,
       selectedOneTimeFees: selectedOneTimeFeesList,
@@ -161,6 +165,9 @@ const PricingCalculator: React.FC<PricingCalculatorProps> = ({
 
   // Get the current estimate
   const estimate = calculateTotals();
+
+  // Safe current room reference for rendering
+  const currentRoom = pricing[selectedRoomIndex];
 
   return (
     <div className="pricing-calculator rounded-lg border border-neutral-200 bg-white">
@@ -221,7 +228,7 @@ const PricingCalculator: React.FC<PricingCalculatorProps> = ({
       <div className="border-b border-neutral-100 p-4">
         <h4 className="mb-3 font-medium text-neutral-800">Additional Care Services</h4>
         <div className="grid gap-2 md:grid-cols-2">
-          {pricing[selectedRoomIndex].additional.map((service, index) => (
+          {(currentRoom?.additional ?? []).map((service, index) => (
             <div 
               key={`service-${index}`}
               onClick={() => toggleService(service.service)}
@@ -252,7 +259,7 @@ const PricingCalculator: React.FC<PricingCalculatorProps> = ({
             </div>
           ))}
           
-          {pricing[selectedRoomIndex].additional.length === 0 && (
+          {(currentRoom?.additional?.length ?? 0) === 0 && (
             <p className="col-span-2 text-sm text-neutral-600">
               No additional services available for this room type.
             </p>

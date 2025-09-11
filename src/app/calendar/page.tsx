@@ -14,7 +14,8 @@ import {
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import CalendarView from "@/components/calendar/CalendarView";
 import { useCalendar } from "@/hooks/useCalendar";
-import { AppointmentStatus, AppointmentType, Appointment } from "@/lib/types/calendar";
+import { AppointmentStatus, AppointmentType } from "@/lib/types/calendar";
+import type { Appointment } from "@/lib/types/calendar";
 import { UserRole } from "@prisma/client";
 
 // Calendar page with comprehensive features
@@ -59,30 +60,24 @@ export default function CalendarPage() {
   // Handle filter changes
   const handleSearchChange = useCallback((query: string) => {
     setSearchQuery(query);
-    setFilter(prev => ({
-      ...prev,
-      searchText: query || undefined
-    }));
+    const partial = { searchText: query || undefined };
+    setFilter(partial);
     // Immediately refetch with the updated filter
-    fetchAppointments();
+    fetchAppointments(partial);
   }, [setFilter, fetchAppointments]);
 
   const handleTypeFilterChange = useCallback((types: AppointmentType[]) => {
     setTypeFilters(types);
-    setFilter(prev => ({
-      ...prev,
-      appointmentTypes: types.length > 0 ? types : undefined
-    }));
-    fetchAppointments();
+    const partial = { appointmentTypes: types.length > 0 ? types : undefined };
+    setFilter(partial);
+    fetchAppointments(partial);
   }, [setFilter, fetchAppointments]);
 
   const handleStatusFilterChange = useCallback((statuses: AppointmentStatus[]) => {
     setStatusFilters(statuses);
-    setFilter(prev => ({
-      ...prev,
-      status: statuses.length > 0 ? statuses : undefined
-    }));
-    fetchAppointments();
+    const partial = { status: statuses.length > 0 ? statuses : undefined };
+    setFilter(partial);
+    fetchAppointments(partial);
   }, [setFilter, fetchAppointments]);
 
   // Check authentication

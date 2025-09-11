@@ -17,7 +17,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient, AuditAction } from "@prisma/client";
+import { PrismaClient, AuditAction, Prisma } from "@prisma/client";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { authenticator } from "otplib";
@@ -240,7 +240,7 @@ export async function POST(request: NextRequest) {
       data: {
         twoFactorEnabled: false,
         twoFactorSecret: null,
-        backupCodes: null
+        backupCodes: Prisma.DbNull
       }
     });
     

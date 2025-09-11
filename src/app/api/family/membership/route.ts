@@ -1,0 +1,57 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+
+/**
+ * GET /api/family/membership
+ * 
+ * Returns the current user's membership role for a given family
+ * If familyId is not provided, returns the first membership
+ * Requires authentication
+ */
+export async function GET(request: NextRequest) {
+  try {
+    // Get session and verify authentication
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Get familyId from query params
+    const searchParams = request.nextUrl.searchParams;
+    const familyId = searchParams.get("familyId");
+
+    // Query for family membership
+    const membership = await prisma.familyMember.findFirst({
+      where: {
+        userId: session.user.id,
+        ...(familyId && { familyId }),
+      },
+      select: {
+        familyId: true,
+        role: true,
+      },
+    });
+
+    // Return 404 if no family found
+    if (!membership) {
+      return NextResponse.json(
+        { error: "No family found for user" },
+        { status: 404 }
+      );
+    }
+
+    // Return membership details
+    return NextResponse.json({
+      familyId: membership.familyId,
+      role: membership.role,
+    });
+  } catch (error) {
+    console.error("Error fetching family membership:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch family membership" },
+      { status: 500 }
+    );
+  }
+}

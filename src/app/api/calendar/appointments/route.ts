@@ -1,625 +1,800 @@
-/**
- * Calendar Appointments API Route
- * 
- * Provides endpoints for managing calendar appointments:
- * - GET: Fetch appointments with filtering
- * - POST: Create new appointments
- * - PUT: Update existing appointments
- * - DELETE: Cancel appointments
- * 
- * @module api/calendar/appointments
- */
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { z } from 'zod';
-import { authOptions } from '@/lib/auth-db-simple';
-import { logger } from '@/lib/logger';
-import { 
-  getAppointments, 
-  getAppointment, 
-  createAppointment, 
-  updateAppointment, 
-  cancelAppointment,
-  completeAppointment,
-  CalendarError
-} from '@/lib/services/calendar';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { z } from "zod";
 import { 
   AppointmentType, 
   AppointmentStatus,
-  RecurrenceFrequency,
-  DayOfWeek
-} from '@/lib/types/calendar';
-import { UserRole } from '@prisma/client';
+  type Appointment,
+  type TimeSlot,
+  type BookingRequest,
+  type BookingResponse
+} from "@/lib/types/calendar";
 
-// Rate limiting constants
-const MAX_REQUESTS_PER_MINUTE = 60;
-const MAX_APPOINTMENTS_PER_DAY = 50;
-
-// ========================================================================
-// VALIDATION SCHEMAS
-// ========================================================================
-
-// Schema for GET query parameters - more flexible for array parameters
-const GetAppointmentsQuerySchema = z.object({
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
-  // More flexible type validation - accept string or array of strings
-  type: z.union([
-    z.string(),
-    z.array(z.string())
-  ]).optional(),
-  // More flexible status validation - accept string or array of strings
-  status: z.union([
-    z.string(),
-    z.array(z.string())
-  ]).optional(),
-  homeId: z.string().optional(),
-  residentId: z.string().optional(),
-  participantId: z.string().optional(),
-  limit: z.coerce.number().min(1).max(100).default(50),
-  offset: z.coerce.number().min(0).default(0),
-  search: z.string().optional(),
-});
-
-// Schema for location object
-const LocationSchema = z.object({
-  address: z.string().optional(),
-  room: z.string().optional(),
-  coordinates: z.object({
-    latitude: z.number().optional(),
-    longitude: z.number().optional(),
-  }).optional(),
-}).optional();
-
-// Schema for reminder object
-const ReminderSchema = z.object({
-  minutesBefore: z.number().min(1),
-  method: z.enum(['EMAIL', 'SMS', 'PUSH', 'IN_APP']),
-}).array().optional();
-
-// Schema for recurrence pattern
-const RecurrencePatternSchema = z.object({
-  frequency: z.nativeEnum(RecurrenceFrequency),
-  daysOfWeek: z.nativeEnum(DayOfWeek).array().optional(),
-  dayOfMonth: z.number().min(1).max(31).optional(),
-  monthOfYear: z.number().min(1).max(12).optional(),
-  endDate: z.string().optional(),
-  occurrences: z.number().min(1).optional(),
-  customRule: z.string().optional(),
-  excludeDates: z.string().array().optional(),
-}).optional();
-
-// Schema for participant object
-const ParticipantSchema = z.object({
-  userId: z.string(),
-  name: z.string().optional(),
-  role: z.nativeEnum(UserRole).optional(),
-  status: z.enum(['PENDING', 'ACCEPTED', 'DECLINED', 'TENTATIVE']).optional().default('PENDING'),
-  notes: z.string().optional(),
-});
-
-// Schema for POST request body (create appointment)
-const CreateAppointmentSchema = z.object({
+const appointmentCreateSchema = z.object({
   type: z.nativeEnum(AppointmentType),
-  title: z.string().min(1).max(100),
-  description: z.string().max(1000).optional(),
-  startTime: z.string(), // ISO date string
-  endTime: z.string(), // ISO date string
-  location: LocationSchema,
+  title: z.string().min(1, "Title is required"),
+  description: z.string().optional(),
+  startTime: z.string().datetime(),
+  endTime: z.string().datetime(),
+  location: z.object({
+    address: z.string().optional(),
+    room: z.string().optional(),
+    coordinates: z.object({
+      latitude: z.number(),
+      longitude: z.number()
+    }).optional()
+  }).optional(),
   homeId: z.string().optional(),
   residentId: z.string().optional(),
-  participants: ParticipantSchema.array().optional().default([]),
-  recurrence: RecurrencePatternSchema,
-  reminders: ReminderSchema,
-  notes: z.string().max(1000).optional(),
-  customFields: z.record(z.any()).optional(),
+  participants: z.array(z.object({
+    userId: z.string(),
+    name: z.string().optional(),
+    role: z.string().optional(),
+    status: z.string().default("PENDING")
+  })).optional(),
+  recurrence: z.object({
+    frequency: z.string(),
+    daysOfWeek: z.array(z.string()).optional(),
+    dayOfMonth: z.number().optional(),
+    monthOfYear: z.number().optional(),
+    endDate: z.string().optional(),
+    occurrences: z.number().optional(),
+    customRule: z.string().optional(),
+    excludeDates: z.array(z.string()).optional()
+  }).optional(),
+  reminders: z.array(z.object({
+    minutesBefore: z.number(),
+    method: z.enum(["EMAIL", "SMS", "PUSH", "IN_APP"])
+  })).optional(),
+  notes: z.string().optional(),
+  customFields: z.record(z.any()).optional()
 });
 
-// Schema for PUT request body (update appointment)
-const UpdateAppointmentSchema = z.object({
+const bookingRequestSchema = z.object({
+  type: z.nativeEnum(AppointmentType),
+  title: z.string().min(1, "Title is required"),
+  description: z.string().optional(),
+  requestedStartTime: z.string().datetime(),
+  requestedEndTime: z.string().datetime(),
+  alternativeTimeSlots: z.array(z.object({
+    startTime: z.string().datetime(),
+    endTime: z.string().datetime()
+  })).optional(),
+  location: z.object({
+    address: z.string().optional(),
+    room: z.string().optional(),
+    coordinates: z.object({
+      latitude: z.number(),
+      longitude: z.number()
+    }).optional()
+  }).optional(),
+  homeId: z.string().optional(),
+  residentId: z.string().optional(),
+  participants: z.array(z.object({
+    userId: z.string(),
+    name: z.string().optional(),
+    role: z.string().optional(),
+    required: z.boolean().default(true)
+  })).optional(),
+  recurrence: z.object({
+    frequency: z.string(),
+    daysOfWeek: z.array(z.string()).optional(),
+    dayOfMonth: z.number().optional(),
+    monthOfYear: z.number().optional(),
+    endDate: z.string().optional(),
+    occurrences: z.number().optional(),
+    customRule: z.string().optional(),
+    excludeDates: z.array(z.string()).optional()
+  }).optional(),
+  reminders: z.array(z.object({
+    minutesBefore: z.number(),
+    method: z.enum(["EMAIL", "SMS", "PUSH", "IN_APP"])
+  })).optional(),
+  notes: z.string().optional(),
+  customFields: z.record(z.any()).optional()
+});
+
+const appointmentUpdateSchema = z.object({
   id: z.string(),
   type: z.nativeEnum(AppointmentType).optional(),
-  title: z.string().min(1).max(100).optional(),
-  description: z.string().max(1000).optional(),
-  startTime: z.string().optional(), // ISO date string
-  endTime: z.string().optional(), // ISO date string
-  location: LocationSchema,
+  title: z.string().optional(),
+  description: z.string().optional(),
+  startTime: z.string().datetime().optional(),
+  endTime: z.string().datetime().optional(),
+  status: z.nativeEnum(AppointmentStatus).optional(),
+  location: z.object({
+    address: z.string().optional(),
+    room: z.string().optional(),
+    coordinates: z.object({
+      latitude: z.number(),
+      longitude: z.number()
+    }).optional()
+  }).optional(),
   homeId: z.string().optional(),
   residentId: z.string().optional(),
-  participants: ParticipantSchema.array().optional(),
-  recurrence: RecurrencePatternSchema,
-  reminders: ReminderSchema,
-  notes: z.string().max(1000).optional(),
-  customFields: z.record(z.any()).optional(),
-  updateMode: z.enum(['THIS_ONLY', 'THIS_AND_FUTURE', 'ALL']).optional().default('THIS_ONLY'),
+  participants: z.array(z.object({
+    userId: z.string(),
+    name: z.string().optional(),
+    role: z.string().optional(),
+    status: z.string().optional()
+  })).optional(),
+  notes: z.string().optional(),
+  updateMode: z.enum(['THIS_ONLY', 'THIS_AND_FUTURE', 'ALL']).optional().default('THIS_ONLY')
 });
 
-// Schema for DELETE request parameters
-const CancelAppointmentSchema = z.object({
-  id: z.string(),
-  reason: z.string().max(500).optional(),
-  cancelMode: z.enum(['THIS_ONLY', 'THIS_AND_FUTURE', 'ALL']).optional().default('THIS_ONLY'),
+const appointmentCancelSchema = z.object({
+  reason: z.string().optional(),
+  cancelMode: z.enum(['THIS_ONLY', 'THIS_AND_FUTURE', 'ALL']).optional().default('THIS_ONLY')
 });
 
-// Schema for completing an appointment
-const CompleteAppointmentSchema = z.object({
-  id: z.string(),
-  notes: z.string().max(1000).optional(),
-});
+function mapPrismaAppointmentToFrontend(
+  appointment: any,
+  includeParticipants = true
+): Appointment {
+  return {
+    id: appointment.id,
+    type: appointment.type,
+    status: appointment.status,
+    title: appointment.title,
+    description: appointment.description || undefined,
+    startTime: appointment.startTime.toISOString(),
+    endTime: appointment.endTime.toISOString(),
+    location: appointment.location || undefined,
+    homeId: appointment.homeId || undefined,
+    residentId: appointment.residentId || undefined,
+    createdBy: {
+      id: appointment.createdBy?.id || appointment.createdById,
+      name: appointment.createdBy ? `${appointment.createdBy.firstName} ${appointment.createdBy.lastName}` : '',
+      role: appointment.createdBy?.role || 'UNKNOWN'
+    },
+    participants: includeParticipants 
+      ? (appointment.participants?.map((p: any) => ({
+          userId: p.userId,
+          name: p.name || (p.user ? `${p.user.firstName} ${p.user.lastName}` : ''),
+          role: p.role || p.user?.role || 'UNKNOWN',
+          status: p.status || 'PENDING',
+          notes: p.notes
+        })) || [])
+      : [],
+    recurrence: appointment.recurrence || undefined,
+    reminders: appointment.reminders || undefined,
+    notes: appointment.notes || undefined,
+    customFields: appointment.customFields || undefined,
+    metadata: {
+      createdAt: appointment.createdAt.toISOString(),
+      updatedAt: appointment.updatedAt.toISOString()
+    }
+  };
+}
 
-// Schema for booking request
-const BookingRequestSchema = z.object({
-  type: z.nativeEnum(AppointmentType),
-  title: z.string().min(1).max(100),
-  description: z.string().max(1000).optional(),
-  requestedStartTime: z.string(), // ISO date string
-  requestedEndTime: z.string(), // ISO date string
-  alternativeTimeSlots: z.array(
-    z.object({
-      startTime: z.string(),
-      endTime: z.string(),
-    })
-  ).optional(),
-  location: LocationSchema,
-  homeId: z.string().optional(),
-  residentId: z.string().optional(),
-  participants: z.array(
-    z.object({
-      userId: z.string(),
-      name: z.string().optional(),
-      role: z.nativeEnum(UserRole).optional(),
-      required: z.boolean().default(true),
-    })
-  ).optional(),
-  recurrence: RecurrencePatternSchema,
-  reminders: ReminderSchema,
-  notes: z.string().max(1000).optional(),
-  customFields: z.record(z.any()).optional(),
-});
+async function checkForConflicts(
+  userId: string, 
+  startTime: Date, 
+  endTime: Date, 
+  excludeAppointmentId?: string
+): Promise<boolean> {
+  const overlappingAppointments = await prisma.appointment.findMany({
+    where: {
+      OR: [
+        {
+          createdById: userId,
+          startTime: { lt: endTime },
+          endTime: { gt: startTime },
+          status: { not: AppointmentStatus.CANCELLED },
+          ...(excludeAppointmentId ? { id: { not: excludeAppointmentId } } : {})
+        },
+        {
+          participants: {
+            some: {
+              userId,
+            }
+          },
+          startTime: { lt: endTime },
+          endTime: { gt: startTime },
+          status: { not: AppointmentStatus.CANCELLED },
+          ...(excludeAppointmentId ? { id: { not: excludeAppointmentId } } : {})
+        }
+      ]
+    }
+  });
+  
+  return overlappingAppointments.length > 0;
+}
 
-// ========================================================================
-// HELPER FUNCTIONS
-// ========================================================================
+async function checkParticipantConflicts(
+  participantIds: string[],
+  startTime: Date,
+  endTime: Date,
+  excludeAppointmentId?: string
+): Promise<{ hasConflicts: boolean, conflicts: any[] }> {
+  const overlappingAppointments = await prisma.appointment.findMany({
+    where: {
+      OR: [
+        {
+          createdById: { in: participantIds },
+          startTime: { lt: endTime },
+          endTime: { gt: startTime },
+          status: { not: AppointmentStatus.CANCELLED },
+          ...(excludeAppointmentId ? { id: { not: excludeAppointmentId } } : {})
+        },
+        {
+          participants: {
+            some: {
+              userId: { in: participantIds }
+            }
+          },
+          startTime: { lt: endTime },
+          endTime: { gt: startTime },
+          status: { not: AppointmentStatus.CANCELLED },
+          ...(excludeAppointmentId ? { id: { not: excludeAppointmentId } } : {})
+        }
+      ]
+    },
+    include: {
+      createdBy: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          role: true
+        }
+      },
+      participants: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              role: true
+            }
+          }
+        }
+      }
+    }
+  });
+  
+  return { 
+    hasConflicts: overlappingAppointments.length > 0,
+    conflicts: overlappingAppointments.map(appt => mapPrismaAppointmentToFrontend(appt))
+  };
+}
 
-/**
- * Handles API errors and returns appropriate responses
- */
-function handleApiError(error: unknown) {
-  if (error instanceof CalendarError) {
-    // Handle known calendar service errors
-    const statusCode = getStatusCodeForError(error.code);
+export async function GET(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const searchParams = request.nextUrl.searchParams;
+    const appointmentId = searchParams.get("id");
+
+    if (appointmentId) {
+      const appointment = await prisma.appointment.findUnique({
+        where: { id: appointmentId },
+        include: {
+          createdBy: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              role: true
+            }
+          },
+          participants: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  role: true
+                }
+              }
+            }
+          }
+        }
+      });
+
+      if (!appointment) {
+        return NextResponse.json({ error: "Appointment not found" }, { status: 404 });
+      }
+
+      return NextResponse.json({
+        data: mapPrismaAppointmentToFrontend(appointment)
+      });
+    } else {
+      const startDate = searchParams.get("startDate");
+      const endDate = searchParams.get("endDate");
+      const types = searchParams.getAll("type");
+      const statuses = searchParams.getAll("status");
+      const homeId = searchParams.get("homeId");
+      const residentId = searchParams.get("residentId");
+      const participantId = searchParams.get("participantId");
+      const search = searchParams.get("search");
+
+      const whereClause: any = {};
+
+      if (startDate) {
+        whereClause.startTime = { gte: new Date(startDate) };
+      }
+
+      if (endDate) {
+        whereClause.endTime = { lte: new Date(endDate) };
+      }
+
+      if (types.length > 0) {
+        whereClause.type = { in: types };
+      }
+
+      if (statuses.length > 0) {
+        whereClause.status = { in: statuses };
+      }
+
+      if (homeId) {
+        whereClause.homeId = homeId;
+      }
+
+      if (residentId) {
+        whereClause.residentId = residentId;
+      }
+
+      if (participantId) {
+        whereClause.OR = [
+          { createdById: participantId },
+          { participants: { some: { userId: participantId } } }
+        ];
+      } else {
+        whereClause.OR = [
+          { createdById: session.user.id },
+          { participants: { some: { userId: session.user.id } } }
+        ];
+      }
+
+      if (search) {
+        whereClause.OR = [
+          ...(whereClause.OR || []),
+          { title: { contains: search, mode: 'insensitive' } },
+          { description: { contains: search, mode: 'insensitive' } }
+        ];
+      }
+
+      const appointments = await prisma.appointment.findMany({
+        where: whereClause,
+        include: {
+          createdBy: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              role: true
+            }
+          },
+          participants: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  role: true
+                }
+              }
+            }
+          }
+        },
+        orderBy: { startTime: 'asc' }
+      });
+
+      return NextResponse.json({
+        data: appointments.map(appointment => mapPrismaAppointmentToFrontend(appointment))
+      });
+    }
+  } catch (error) {
+    console.error("Error fetching appointments:", error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: error.message,
-        code: error.code 
-      }, 
-      { status: statusCode }
-    );
-  } else if (error instanceof z.ZodError) {
-    // Handle validation errors
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Invalid request data',
-        validation: error.errors 
-      }, 
-      { status: 400 }
-    );
-  } else {
-    // Handle unknown errors
-    logger.error('Unexpected error in calendar API', { error });
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: 'An unexpected error occurred' 
-      }, 
+      { error: "Failed to fetch appointments" },
       { status: 500 }
     );
   }
 }
 
-/**
- * Maps error codes to HTTP status codes
- */
-function getStatusCodeForError(code: string): number {
-  const codeMap: Record<string, number> = {
-    'APPOINTMENT_NOT_FOUND': 404,
-    'PERMISSION_DENIED': 403,
-    'VALIDATION_ERROR': 400,
-    'PARTICIPANTS_UNAVAILABLE': 409,
-    'CREATE_APPOINTMENT_FAILED': 500,
-    'UPDATE_APPOINTMENT_FAILED': 500,
-    'CANCEL_APPOINTMENT_FAILED': 500,
-    'GET_APPOINTMENT_FAILED': 500,
-    'GET_APPOINTMENTS_FAILED': 500,
-    'AVAILABILITY_CHECK_FAILED': 500,
-    'FIND_SLOTS_FAILED': 500,
-    'CREATE_RECURRING_FAILED': 500,
-    'UPDATE_RECURRING_FAILED': 500,
-  };
-  
-  return codeMap[code] || 500;
-}
-
-/**
- * Checks if user has permission to manage an appointment
- */
-function canManageAppointment(
-  appointment: any, 
-  userId: string, 
-  userRole: UserRole
-): boolean {
-  // Admins and staff can manage all appointments
-  if (userRole === UserRole.ADMIN || userRole === UserRole.STAFF) {
-    return true;
-  }
-  
-  // Creators can manage their own appointments
-  if (appointment.createdBy.id === userId) {
-    return true;
-  }
-  
-  // Operators can manage appointments at their facilities
-  if (userRole === UserRole.OPERATOR && appointment.homeId) {
-    // In a real app, we'd check if the operator manages this home
-    // For now, we'll assume they can only manage their own appointments
-    return appointment.createdBy.id === userId;
-  }
-  
-  // Participants can't manage appointments unless they created them
-  return false;
-}
-
-// ========================================================================
-// API ROUTE HANDLERS
-// ========================================================================
-
-/**
- * GET handler for fetching appointments
- */
-export async function GET(request: NextRequest) {
-  try {
-    // 1. Authenticate user
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' }, 
-        { status: 401 }
-      );
-    }
-    
-    // 2. Parse query parameters - improved handling for arrays
-    const url = new URL(request.url);
-    const params: Record<string, any> = {};
-    
-    // Get all parameters including arrays
-    for (const [key, value] of url.searchParams.entries()) {
-      // Handle array parameters
-      if (params[key]) {
-        // If parameter already exists, convert to array if not already
-        if (!Array.isArray(params[key])) {
-          params[key] = [params[key]];
-        }
-        params[key].push(value);
-      } else {
-        params[key] = value;
-      }
-    }
-    
-    // Special handling for type and status which can be arrays
-    if (url.searchParams.getAll('type').length > 1) {
-      params.type = url.searchParams.getAll('type');
-    }
-    
-    if (url.searchParams.getAll('status').length > 1) {
-      params.status = url.searchParams.getAll('status');
-    }
-    
-    // 3. Build filter criteria directly without strict validation
-    const filter: any = {};
-    
-    // Date range
-    if (params.startDate && params.endDate) {
-      filter.dateRange = {
-        start: params.startDate,
-        end: params.endDate
-      };
-    } else {
-      // Default date range if not provided (current month + 30 days)
-      const now = new Date();
-      filter.dateRange = {
-        start: now.toISOString(),
-        end: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString()
-      };
-    }
-    
-    // Appointment types
-    if (params.type) {
-      filter.appointmentTypes = Array.isArray(params.type) 
-        ? params.type 
-        : [params.type];
-    }
-    
-    // Status
-    if (params.status) {
-      filter.status = Array.isArray(params.status) 
-        ? params.status 
-        : [params.status];
-    }
-    
-    // Home ID
-    if (params.homeId) {
-      filter.homeIds = [params.homeId];
-    }
-    
-    // Resident ID
-    if (params.residentId) {
-      filter.residentIds = [params.residentId];
-    }
-    
-    // Participant ID
-    if (params.participantId) {
-      filter.participantIds = [params.participantId];
-    } else {
-      // By default, show appointments where the current user is involved
-      filter.participantIds = [session.user.id];
-    }
-    
-    // Search
-    if (params.search) {
-      filter.searchText = params.search;
-    }
-    
-    // 4. Get appointments from calendar service
-    const appointments = await getAppointments(filter);
-    
-    // 5. Return formatted response
-    return NextResponse.json({
-      success: true,
-      data: appointments,
-      meta: {
-        total: appointments.length,
-        limit: parseInt(params.limit || '50'),
-        offset: parseInt(params.offset || '0')
-      }
-    });
-  } catch (error) {
-    return handleApiError(error);
-  }
-}
-
-/**
- * POST handler for creating appointments
- */
 export async function POST(request: NextRequest) {
   try {
-    // 1. Authenticate user
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' }, 
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    
-    // 2. Parse request body
-    const body = await request.json();
-    
-    // Treat all POST requests as direct appointment creation
-      const parseResult = CreateAppointmentSchema.safeParse(body);
-      
-      if (!parseResult.success) {
-        return NextResponse.json(
-          { 
-            success: false, 
-            error: 'Invalid appointment data',
-            validation: parseResult.error.errors 
-          }, 
-          { status: 400 }
-        );
-      }
-      
-      const appointmentData = parseResult.data;
-      
-      // Add creator information
-      const appointment = {
-        ...appointmentData,
-        status: AppointmentStatus.CONFIRMED,
-        createdBy: {
-          id: session.user.id,
-          name: `${session.user.firstName} ${session.user.lastName}`,
-          role: session.user.role
-        }
-      };
-      
-      // Create appointment
-      const createdAppointment = await createAppointment(appointment);
-      
-      return NextResponse.json(
-        { success: true, data: createdAppointment },
-        { status: 201 }
-      );
-  } catch (error) {
-    return handleApiError(error);
-  }
-}
 
-/**
- * PUT handler for updating appointments
- */
-export async function PUT(request: NextRequest) {
-  try {
-    // 1. Authenticate user
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' }, 
-        { status: 401 }
-      );
-    }
-    
-    // 2. Parse request body
     const body = await request.json();
-    
-    // 3. Check if it's a completion request or an update
-    if (body.notes && !body.title && !body.type) {
-      // It's likely a completion request
-      const parseResult = CompleteAppointmentSchema.safeParse(body);
-      
-      if (!parseResult.success) {
+    const isBookingRequest = 'requestedStartTime' in body;
+
+    if (isBookingRequest) {
+      const validationResult = bookingRequestSchema.safeParse(body);
+      if (!validationResult.success) {
         return NextResponse.json(
           { 
-            success: false, 
-            error: 'Invalid completion data',
-            validation: parseResult.error.errors 
-          }, 
+            error: "Invalid request parameters", 
+            details: validationResult.error.format() 
+          },
           { status: 400 }
         );
       }
+
+      const bookingData = validationResult.data;
+      const startTime = new Date(bookingData.requestedStartTime);
+      const endTime = new Date(bookingData.requestedEndTime);
       
-      const { id, notes } = parseResult.data;
+      const participantIds = [
+        session.user.id,
+        ...(bookingData.participants?.map(p => p.userId) || [])
+      ];
       
-      // Get the appointment to check permissions
-      const appointment = await getAppointment(id);
+      const { hasConflicts, conflicts } = await checkParticipantConflicts(
+        participantIds,
+        startTime,
+        endTime
+      );
       
-      // Check if user has permission to complete this appointment
-      if (!canManageAppointment(appointment, session.user.id, session.user.role as UserRole)) {
-        return NextResponse.json(
-          { success: false, error: 'You do not have permission to complete this appointment' }, 
-          { status: 403 }
-        );
+      if (hasConflicts) {
+        return NextResponse.json({
+          success: false,
+          error: "Time slot conflicts with existing appointments",
+          conflicts,
+          alternativeSlots: [] // Would be populated in a more advanced implementation
+        });
       }
       
-      // Complete the appointment
-      const completedAppointment = await completeAppointment(
-        id,
-        notes || 'Marked as completed',
-        session.user.id
-      );
+      const appointment = await prisma.appointment.create({
+        data: {
+          type: bookingData.type,
+          status: AppointmentStatus.CONFIRMED,
+          title: bookingData.title,
+          description: bookingData.description,
+          startTime,
+          endTime,
+          location: bookingData.location,
+          homeId: bookingData.homeId,
+          residentId: bookingData.residentId,
+          createdById: session.user.id,
+          recurrence: bookingData.recurrence,
+          reminders: bookingData.reminders,
+          notes: bookingData.notes,
+          customFields: bookingData.customFields
+        }
+      });
+      
+      if (bookingData.participants && bookingData.participants.length > 0) {
+        await prisma.appointmentParticipant.createMany({
+          data: bookingData.participants.map(p => ({
+            appointmentId: appointment.id,
+            userId: p.userId,
+            name: p.name,
+            role: p.role,
+            status: "PENDING"
+          }))
+        });
+      }
+      
+      const createdAppointment = await prisma.appointment.findUnique({
+        where: { id: appointment.id },
+        include: {
+          createdBy: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              role: true
+            }
+          },
+          participants: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  role: true
+                }
+              }
+            }
+          }
+        }
+      });
       
       return NextResponse.json({
         success: true,
-        data: completedAppointment
+        data: mapPrismaAppointmentToFrontend(createdAppointment!)
       });
     } else {
-      // It's an update request
-      const parseResult = UpdateAppointmentSchema.safeParse(body);
-      
-      if (!parseResult.success) {
+      const validationResult = appointmentCreateSchema.safeParse(body);
+      if (!validationResult.success) {
         return NextResponse.json(
           { 
-            success: false, 
-            error: 'Invalid update data',
-            validation: parseResult.error.errors 
-          }, 
+            error: "Invalid request parameters", 
+            details: validationResult.error.format() 
+          },
           { status: 400 }
         );
       }
       
-      const { id, updateMode, ...updateData } = parseResult.data;
+      const appointmentData = validationResult.data;
       
-      // Get the appointment to check permissions
-      const appointment = await getAppointment(id);
+      const appointment = await prisma.appointment.create({
+        data: {
+          type: appointmentData.type,
+          status: AppointmentStatus.PENDING,
+          title: appointmentData.title,
+          description: appointmentData.description,
+          startTime: new Date(appointmentData.startTime),
+          endTime: new Date(appointmentData.endTime),
+          location: appointmentData.location,
+          homeId: appointmentData.homeId,
+          residentId: appointmentData.residentId,
+          createdById: session.user.id,
+          recurrence: appointmentData.recurrence,
+          reminders: appointmentData.reminders,
+          notes: appointmentData.notes,
+          customFields: appointmentData.customFields
+        }
+      });
       
-      // Check if user has permission to update this appointment
-      if (!canManageAppointment(appointment, session.user.id, session.user.role as UserRole)) {
-        return NextResponse.json(
-          { success: false, error: 'You do not have permission to update this appointment' }, 
-          { status: 403 }
-        );
+      if (appointmentData.participants && appointmentData.participants.length > 0) {
+        await prisma.appointmentParticipant.createMany({
+          data: appointmentData.participants.map(p => ({
+            appointmentId: appointment.id,
+            userId: p.userId,
+            name: p.name,
+            role: p.role,
+            status: p.status || "PENDING"
+          }))
+        });
       }
       
-      // If this is part of a recurring series and client requested more than THIS_ONLY,
-      // return Not-Implemented for now.
-      if (appointment.recurrence && updateMode !== 'THIS_ONLY') {
-        return NextResponse.json(
-          { success: false, error: 'Updating recurring series is not yet implemented' },
-          { status: 501 }
-        );
-      }
-
-      // Otherwise perform normal single-instance update
-      const updatedAppointment = await updateAppointment(id, updateData);
-
-      return NextResponse.json({ success: true, data: updatedAppointment });
+      const createdAppointment = await prisma.appointment.findUnique({
+        where: { id: appointment.id },
+        include: {
+          createdBy: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              role: true
+            }
+          },
+          participants: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  role: true
+                }
+              }
+            }
+          }
+        }
+      });
+      
+      return NextResponse.json({
+        data: mapPrismaAppointmentToFrontend(createdAppointment!)
+      });
     }
   } catch (error) {
-    return handleApiError(error);
+    console.error("Error creating appointment:", error);
+    return NextResponse.json(
+      { error: "Failed to create appointment" },
+      { status: 500 }
+    );
   }
 }
 
-/**
- * DELETE handler for cancelling appointments
- */
-export async function DELETE(request: NextRequest) {
+export async function PUT(request: NextRequest) {
   try {
-    // 1. Authenticate user
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' }, 
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const body = await request.json();
+    const validationResult = appointmentUpdateSchema.safeParse(body);
     
-    // 2. Parse request URL and body
-    const url = new URL(request.url);
-    const id = url.searchParams.get('id');
-    
-    if (!id) {
+    if (!validationResult.success) {
       return NextResponse.json(
-        { success: false, error: 'Appointment ID is required' }, 
+        { 
+          error: "Invalid request parameters", 
+          details: validationResult.error.format() 
+        },
         { status: 400 }
       );
     }
     
-    // Try to parse body for additional parameters
-    let reason = '';
-    let cancelMode = 'THIS_ONLY';
+    const { id, updateMode, participants, ...updateData } = validationResult.data;
     
-    try {
-      const body = await request.json();
-      reason = body.reason || '';
-      cancelMode = body.cancelMode || 'THIS_ONLY';
-    } catch (e) {
-      // No body or invalid JSON, use defaults
+    const existingAppointment = await prisma.appointment.findUnique({
+      where: { id },
+      include: { participants: true }
+    });
+    
+    if (!existingAppointment) {
+      return NextResponse.json({ error: "Appointment not found" }, { status: 404 });
     }
     
-    // 3. Get the appointment to check permissions
-    const appointment = await getAppointment(id);
+    const isOnlyNotesUpdate = Object.keys(updateData).length === 1 && 'notes' in updateData;
     
-    // 4. Check if user has permission to cancel this appointment
-    if (!canManageAppointment(appointment, session.user.id, session.user.role as UserRole)) {
-      return NextResponse.json(
-        { success: false, error: 'You do not have permission to cancel this appointment' }, 
-        { status: 403 }
-      );
+    if (isOnlyNotesUpdate) {
+      updateData.status = AppointmentStatus.COMPLETED;
     }
     
-    // 5. Check if it's a recurring appointment that needs special handling
-    if (appointment.recurrence && cancelMode !== 'THIS_ONLY') {
-      // For recurring appointments, we need to handle the series
-      // This would require additional implementation in the calendar service
-      return NextResponse.json(
-        { success: false, error: 'Cancelling recurring series is not yet implemented' }, 
-        { status: 501 }
-      );
-    } else {
-      // 6. Cancel the appointment
-      const cancelledAppointment = await cancelAppointment(
-        id,
-        reason,
-        session.user.id
-      );
-      
-      return NextResponse.json({
-        success: true,
-        data: cancelledAppointment
+    const updatedAppointment = await prisma.appointment.update({
+      where: { id },
+      data: updateData,
+      include: {
+        createdBy: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            role: true
+          }
+        },
+        participants: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                role: true
+              }
+            }
+          }
+        }
+      }
+    });
+    
+    if (participants) {
+      await prisma.appointmentParticipant.deleteMany({
+        where: { appointmentId: id }
       });
+      
+      if (participants.length > 0) {
+        await prisma.appointmentParticipant.createMany({
+          data: participants.map(p => ({
+            appointmentId: id,
+            userId: p.userId,
+            name: p.name,
+            role: p.role,
+            status: p.status || "PENDING"
+          }))
+        });
+      }
+      
+      // Re-fetch if participants were updated
+      const refreshedAppointment = await prisma.appointment.findUnique({
+        where: { id },
+        include: {
+          createdBy: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              role: true
+            }
+          },
+          participants: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  role: true
+                }
+              }
+            }
+          }
+        }
+      });
+      
+      if (refreshedAppointment) {
+        updatedAppointment.participants = refreshedAppointment.participants;
+      }
     }
+    
+    const mappedAppointment = mapPrismaAppointmentToFrontend(updatedAppointment);
+    
+    if (isOnlyNotesUpdate) {
+      mappedAppointment.metadata.completedAt = new Date().toISOString();
+      mappedAppointment.metadata.completionNotes = updateData.notes;
+    }
+    
+    return NextResponse.json({ data: mappedAppointment });
   } catch (error) {
-    return handleApiError(error);
+    console.error("Error updating appointment:", error);
+    return NextResponse.json(
+      { error: "Failed to update appointment" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const searchParams = request.nextUrl.searchParams;
+    const id = searchParams.get("id");
+    
+    if (!id) {
+      return NextResponse.json({ error: "Appointment ID is required" }, { status: 400 });
+    }
+    
+    const existingAppointment = await prisma.appointment.findUnique({
+      where: { id }
+    });
+    
+    if (!existingAppointment) {
+      return NextResponse.json({ error: "Appointment not found" }, { status: 404 });
+    }
+    
+    let cancelData: { reason?: string; cancelMode?: string } = {};
+    
+    if (request.method === 'DELETE' && request.body) {
+      const body = await request.json();
+      const validationResult = appointmentCancelSchema.safeParse(body);
+      
+      if (validationResult.success) {
+        cancelData = validationResult.data;
+      }
+    }
+    
+    const updatedAppointment = await prisma.appointment.update({
+      where: { id },
+      data: { status: AppointmentStatus.CANCELLED },
+      include: {
+        createdBy: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            role: true
+          }
+        },
+        participants: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                role: true
+              }
+            }
+          }
+        }
+      }
+    });
+    
+    const mappedAppointment = mapPrismaAppointmentToFrontend(updatedAppointment);
+    
+    mappedAppointment.status = AppointmentStatus.CANCELLED;
+    mappedAppointment.metadata.cancelledAt = new Date().toISOString();
+    mappedAppointment.metadata.cancelReason = cancelData.reason;
+    
+    return NextResponse.json({ data: mappedAppointment });
+  } catch (error) {
+    console.error("Error cancelling appointment:", error);
+    return NextResponse.json(
+      { error: "Failed to cancel appointment" },
+      { status: 500 }
+    );
   }
 }

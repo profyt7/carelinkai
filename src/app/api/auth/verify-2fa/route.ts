@@ -240,7 +240,7 @@ export async function POST(request: NextRequest) {
     // Create audit log entry
     await prisma.auditLog.create({
       data: {
-        action: isValid ? AuditAction.ACCESS_GRANTED : AuditAction.ACCESS_DENIED,
+        action: isValid ? AuditAction.LOGIN : AuditAction.ACCESS_DENIED,
         resourceType: "TWO_FACTOR",
         resourceId: user.id,
         description: isValid 

@@ -11,12 +11,14 @@ import React, {
 import { SessionProvider } from "next-auth/react";
 import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
+import type { StripeElementsOptions } from "@stripe/stripe-js";
 import { io, Socket } from "socket.io-client";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "react-hot-toast";
 
 // Initialize Stripe
-const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+const publishableKey =
+  process.env["NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY"];
 const stripePromise = publishableKey ? loadStripe(publishableKey) : null;
 
 // Socket.io Context
@@ -230,41 +232,32 @@ function SocketProvider({ children }: { children: React.ReactNode }) {
   });
 
   useEffect(() => {
-    // Only connect to socket if in browser and user is authenticated
-    if (typeof window !== "undefined") {
-      // We would check authentication here before connecting
-      const token = localStorage.getItem("token");
-      
-      if (token) {
-        const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || "", {
-          auth: {
-            token,
-          },
-          transports: ["websocket"],
-          // HIPAA compliance: Ensure secure connection
-          secure: true,
-        });
+    // Only run in the browser
+    if (typeof window === "undefined") return;
 
-        socket.on("connect", () => {
-          setSocketState({
-            socket,
-            connected: true,
-          });
-        });
+    // Retrieve auth token
+    const token = localStorage.getItem("token");
+    if (!token) return;
 
-        socket.on("disconnect", () => {
-          setSocketState((prev) => ({
-            ...prev,
-            connected: false,
-          }));
-        });
+    // Establish socket connection
+    const socket = io(process.env["NEXT_PUBLIC_SOCKET_URL"] || "", {
+      auth: { token },
+      transports: ["websocket"],
+      secure: true, // HIPAA compliance: ensure secure transport
+    });
 
-        // Cleanup on unmount
-        return () => {
-          socket.disconnect();
-        };
-      }
-    }
+    socket.on("connect", () => {
+      setSocketState({ socket, connected: true });
+    });
+
+    socket.on("disconnect", () => {
+      setSocketState((prev) => ({ ...prev, connected: false }));
+    });
+
+    // Cleanup on unmount
+    return () => {
+      socket.disconnect();
+    };
   }, []);
 
   return (
@@ -314,15 +307,20 @@ function AppProvider({ children }: { children: React.ReactNode }) {
 
   // Auto-remove alerts after their duration
   useEffect(() => {
+    const timers: ReturnType<typeof setTimeout>[] = [];
+
     state.alerts.forEach((alert) => {
       if (alert.autoClose !== false) {
         const timer = setTimeout(() => {
           dispatch({ type: "REMOVE_ALERT", payload: alert.id });
         }, alert.duration || 5000);
-
-        return () => clearTimeout(timer);
+        timers.push(timer);
       }
     });
+
+    return () => {
+      timers.forEach((t) => clearTimeout(t));
+    };
   }, [state.alerts]);
 
   return (
@@ -335,7 +333,7 @@ function AppProvider({ children }: { children: React.ReactNode }) {
 // Main Providers component that wraps the app
 export function Providers({ children }: { children: React.ReactNode }) {
   // Stripe payment options with HIPAA compliance considerations
-  const stripeOptions = useMemo(
+  const stripeOptions = useMemo<StripeElementsOptions>(
     () => ({
       locale: "en",
       // HIPAA compliance: Ensure proper data handling

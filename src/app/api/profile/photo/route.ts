@@ -14,7 +14,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient, AuditAction } from "@prisma/client";
+import { PrismaClient, AuditAction, Prisma } from "@prisma/client";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth-db-simple";
 import { mkdir, writeFile, unlink } from "fs/promises";
@@ -29,8 +29,9 @@ const prisma = new PrismaClient();
 // Configuration
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
-const UPLOAD_DIR = process.env.UPLOAD_DIR || "public/uploads/profiles";
-const PUBLIC_URL_PATH = process.env.NEXT_PUBLIC_URL || "http://localhost:5002";
+// Access via index signature to satisfy TypeScript
+const UPLOAD_DIR = process.env["UPLOAD_DIR"] || "public/uploads/profiles";
+const PUBLIC_URL_PATH = process.env["NEXT_PUBLIC_URL"] || "http://localhost:5002";
 const PHOTO_SIZES = {
   thumbnail: { width: 150, height: 150 },
   medium: { width: 300, height: 300 },
@@ -279,7 +280,7 @@ export async function DELETE(request: NextRequest) {
     // Update user profile to remove photo URLs
     await prisma.user.update({
       where: { id: userId },
-      data: { profileImageUrl: null }
+      data: { profileImageUrl: Prisma.JsonNull }
     });
     
     // Create audit log entry

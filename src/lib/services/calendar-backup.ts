@@ -18,12 +18,13 @@ import { logger } from '@/lib/logger';
 import { sendEmail } from '@/lib/email/sendgrid';
 import { prisma } from '@/lib/prisma';
 
-import { 
-  Appointment, AppointmentStatus, AppointmentType,
-  AvailabilitySlot, BookingRequest, BookingResponse,
-  CalendarEvent, CalendarFilter, DateRange,
-  RecurrenceFrequency, RecurrencePattern, TimeSlot,
-  DayOfWeek, AvailabilityCheck
+import type {
+  Appointment, AvailabilitySlot, BookingRequest, BookingResponse,
+  CalendarEvent, CalendarFilter, DateRange, RecurrencePattern, TimeSlot,
+  AvailabilityCheck
+} from '@/lib/types/calendar';
+import {
+  AppointmentStatus, AppointmentType, RecurrenceFrequency, DayOfWeek
 } from '@/lib/types/calendar';
 
 // Default timezone placeholder (currently unused after timezone removal)
@@ -408,66 +409,6 @@ export async function checkUserAvailability(
       'AVAILABILITY_CHECK_FAILED'
     );
   }
-  // --------------------------------------------------------------------
-  // Status-specific colour overrides
-  // --------------------------------------------------------------------
-  const statusColors: Record<
-    AppointmentStatus,
-    { bg: string; border: string; text: string; status: string }
-  > = {
-    [AppointmentStatus.PENDING]: {
-      bg: '#fff8e1',
-      border: '#ffc107',
-      text: '#ff6f00',
-      status: '#ff6f00',
-    },
-    [AppointmentStatus.CONFIRMED]: {
-      bg: '',
-      border: '',
-      text: '',
-      status: '#43a047',
-    },
-    [AppointmentStatus.CANCELLED]: {
-      bg: '#f5f5f5',
-      border: '#9e9e9e',
-      text: '#424242',
-      status: '#d32f2f',
-    },
-    [AppointmentStatus.COMPLETED]: {
-      bg: '',
-      border: '',
-      text: '',
-      status: '#1976d2',
-    },
-    [AppointmentStatus.NO_SHOW]: {
-      bg: '#fafafa',
-      border: '#f44336',
-      text: '#b71c1c',
-      status: '#b71c1c',
-    },
-    [AppointmentStatus.RESCHEDULED]: {
-      bg: '#e1f5fe',
-      border: '#03a9f4',
-      text: '#01579b',
-      status: '#0288d1',
-    },
-  };
-  // Base colours from appointment type
-  const base = typeColors[type];
-  const statusMod = statusColors[status];
-
-  // For CANCELLED or NO_SHOW we completely override with status colours;
-  // otherwise we use type colours and only display a status indicator colour.
-  const useStatus = status === AppointmentStatus.CANCELLED ||
-                    status === AppointmentStatus.NO_SHOW;
-
-  return {
-    color: base.border,
-    backgroundColor: useStatus ? statusMod.bg : base.bg,
-    borderColor: useStatus ? statusMod.border : base.border,
-    textColor: useStatus ? statusMod.text : base.text,
-    statusColor: statusMod.status,
-  };
 }
 
 /**
@@ -507,6 +448,8 @@ async function cancelAppointmentReminders(
   appointmentId: string
 ): Promise<void> {
   logger.info(`Mock-cancel reminders for appointment ${appointmentId}`);
+}
+
 // ========================================================================
 // DATA VALIDATION HELPERS
 // ========================================================================
@@ -2155,62 +2098,4 @@ export function appointmentsToCalendarEvents(appointments: Appointment[]): Calen
       textColor: colors.textColor,
       classNames: [
         `appointment-type-${appointment.type.toLowerCase()}`,
-        `appointment-status-${appointment.status.toLowerCase()}`
-      ],
-      editable: appointment.status !== AppointmentStatus.CANCELLED && 
-                appointment.status !== AppointmentStatus.COMPLETED,
-      extendedProps: {
-        appointment,
-        uiMeta: {
-          icon: getAppointmentIcon(appointment.type),
-          status: appointment.status,
-          statusColor: colors.statusColor
-        }
-      }
-    };
-  });
-}
-
-/**
- * Gets color scheme for an appointment based on type and status
- * @param type Appointment type
- * @param status Appointment status
- * @returns Color scheme
- */
-function getAppointmentColors(type: AppointmentType, status: AppointmentStatus): {
-  color: string;
-  backgroundColor: string;
-  borderColor: string;
-  textColor: string;
-  statusColor: string;
-} {
-  // Base colors by appointment type
-  const typeColors: Record<AppointmentType, { bg: string, border: string, text: string }> = {
-    [AppointmentType.CARE_EVALUATION]: { 
-      bg: '#e3f2fd', border: '#2196f3', text: '#0d47a1' 
-    },
-    [AppointmentType.FACILITY_TOUR]: { 
-      bg: '#e8f5e9', border: '#4caf50', text: '#1b5e20' 
-    },
-    [AppointmentType.CAREGIVER_SHIFT]: { 
-      bg: '#ede7f6', border: '#673ab7', text: '#311b92' 
-    },
-    [AppointmentType.FAMILY_VISIT]: { 
-      bg: '#fff3e0', border: '#ff9800', text: '#e65100' 
-    },
-    [AppointmentType.CONSULTATION]: { 
-      bg: '#f3e5f5', border: '#9c27b0', text: '#4a148c' 
-    },
-    [AppointmentType.MEDICAL_APPOINTMENT]: { 
-      bg: '#ffebee', border: '#f44336', text: '#b71c1c' 
-    },
-    [AppointmentType.ADMIN_MEETING]: { 
-      bg: '#e0f2f1', border: '#009688', text: '#004d40' 
-    },
-    [AppointmentType.SOCIAL_EVENT]: { 
-      bg: '#f1f8e9', border: '#8bc34a', text: '#33691e' 
-    }
-  };
-  
-  // Status color modifiers
-  const statusColors: Record<AppointmentStatus, { bg: string, border:
+        `appointment-status-${appointment.

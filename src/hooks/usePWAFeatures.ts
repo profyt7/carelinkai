@@ -12,7 +12,7 @@ interface OfflineFormData {
   timestamp: number;
 }
 
-interface NotificationOptions {
+interface AppNotificationOptions {
   title: string;
   body: string;
   icon?: string;
@@ -64,7 +64,7 @@ interface UsePWAFeaturesReturn {
   
   // Notifications
   requestNotificationPermission: () => Promise<NotificationPermission>;
-  showNotification: (options: NotificationOptions) => Promise<boolean>;
+  showNotification: (options: AppNotificationOptions) => Promise<boolean>;
   getNotificationPermission: () => NotificationPermission | null;
   
   // Installation
@@ -272,7 +272,7 @@ export function usePWAFeatures(): UsePWAFeaturesReturn {
   /**
    * Show a notification
    */
-  const showNotification = async (options: NotificationOptions): Promise<boolean> => {
+  const showNotification = async (options: AppNotificationOptions): Promise<boolean> => {
     try {
       // Check if notifications are supported
       if (typeof Notification === 'undefined') {
@@ -288,43 +288,40 @@ export function usePWAFeatures(): UsePWAFeaturesReturn {
         return false;
       }
 
-      // Show notification
-      const notification = new Notification(options.title, {
+      // Build options compatible with DOM NotificationOptions
+      const notifOptions: globalThis.NotificationOptions = {
         body: options.body,
         icon: options.icon || '/icons/icon-192x192.png',
         badge: options.badge || '/icons/badge-96x96.png',
-        image: options.image,
         tag: options.tag,
         data: options.data,
         requireInteraction: options.requireInteraction,
         silent: options.silent,
-        actions: options.actions,
-      });
+      };
+
+      // 'image' isn't in lib.dom NotificationOptions in our TS version; add dynamically
+      if (options.image) {
+        (notifOptions as any).image = options.image;
+      }
+
+      // 'actions' isn't in lib.dom NotificationOptions in our TS version; add dynamically
+      if (options.actions) {
+        (notifOptions as any).actions = options.actions;
+      }
+
+      // Show notification
+      const notification = new Notification(options.title, notifOptions);
 
       // Handle notification click
       notification.onclick = (event) => {
         event.preventDefault();
-        
-        // Focus on existing window or open new one
-        if (clients && clients.matchAll) {
-          clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-            // If we have a client, focus it
-            for (const client of clientList) {
-              if ('focus' in client) {
-                client.focus();
-                return;
-              }
-            }
-            
-            // Otherwise open a new window
-            if (clients.openWindow) {
-              clients.openWindow('/');
-            }
-          });
-        } else {
-          // Fallback for browsers that don't support clients API
+        try {
           window.focus();
-        }
+        } catch {}
+        // Optionally navigate to home
+        try {
+          window.location.href = '/';
+        } catch {}
       };
 
       return true;

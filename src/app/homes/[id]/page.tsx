@@ -34,18 +34,16 @@ import {
   FiFlag,
   FiMapPin as FiMapPinOutline,
   FiCoffee,
-  FiActivity
+  FiActivity,
+  FiChevronDown,
+  FiChevronUp
 } from "react-icons/fi";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
 // Import our new components
-import PhotoGallery, { Photo } from "@/components/homes/PhotoGallery";
-import PricingCalculator, { 
-  RoomPricing, 
-  AdditionalService,
-  OneTimeFee,
-  PricingEstimate 
-} from "@/components/homes/PricingCalculator";
+import PhotoGallery from "@/components/homes/PhotoGallery";
+import PricingCalculator from "@/components/homes/PricingCalculator";
+import type { PricingEstimate } from "@/components/homes/PricingCalculator";
 
 // Dynamically import the SimpleMap component with SSR disabled
 const SimpleMap = dynamic(
@@ -75,12 +73,12 @@ const MOCK_HOME = {
   reviewsCount: 42,
   aiMatchScore: 92,
   photos: [
-    { id: "p1", url: "https://placehold.co/800x600/e9ecef/495057?text=Front+Entrance", caption: "Front entrance with beautiful garden" },
-    { id: "p2", url: "https://placehold.co/800x600/e9ecef/495057?text=Common+Area", caption: "Spacious common area" },
-    { id: "p3", url: "https://placehold.co/800x600/e9ecef/495057?text=Private+Room", caption: "Private bedroom" },
-    { id: "p4", url: "https://placehold.co/800x600/e9ecef/495057?text=Dining+Room", caption: "Dining room" },
-    { id: "p5", url: "https://placehold.co/800x600/e9ecef/495057?text=Garden+Patio", caption: "Garden patio" },
-    { id: "p6", url: "https://placehold.co/800x600/e9ecef/495057?text=Activity+Room", caption: "Activity room" }
+    { id: "p1", url: "/images/homes/1.jpg", caption: "Front entrance with beautiful garden" },
+    { id: "p2", url: "/images/homes/2.jpg", caption: "Spacious common area" },
+    { id: "p3", url: "/images/homes/3.jpg", caption: "Private bedroom" },
+    { id: "p4", url: "/images/homes/4.jpg", caption: "Dining room" },
+    { id: "p5", url: "/images/homes/5.jpg", caption: "Garden patio" },
+    { id: "p6", url: "/images/homes/6.jpg", caption: "Activity room" }
   ],
   amenities: [
     { category: "Living Spaces", items: ["Private Rooms", "Semi-Private Rooms", "Furnished Rooms Available", "Private Bathrooms", "Cable TV", "Internet Access", "Housekeeping"] },
@@ -273,7 +271,8 @@ export default function HomeDetailPage() {
     phone: "",
     residentName: "",
     moveInTimeframe: "1-3 months",
-    careNeeded: [],
+    // Explicitly assert string[] to avoid `never[]` inference issues
+    careNeeded: [] as string[],
     message: "",
     tourDate: "",
     tourTime: ""
@@ -281,6 +280,9 @@ export default function HomeDetailPage() {
   
   // State for booking step
   const [bookingStep, setBookingStep] = useState(0); // 0: not started, 1: inquiry form, 2: tour scheduling, 3: submitted
+  
+  // State for collapsible amenities
+  const [amenitiesExpanded, setAmenitiesExpanded] = useState<Record<string, boolean>>({});
   
   // Reference for scrolling to sections
   const overviewRef = useRef<HTMLDivElement>(null);
@@ -291,6 +293,7 @@ export default function HomeDetailPage() {
   const reviewsRef = useRef<HTMLDivElement>(null);
   const locationRef = useRef<HTMLDivElement>(null);
   const contactRef = useRef<HTMLDivElement>(null);
+  const bookingRef = useRef<HTMLDivElement>(null);
   
   // Fetch home data
   useEffect(() => {
@@ -310,7 +313,8 @@ export default function HomeDetailPage() {
     if (home.activities && home.activities.length > 0) {
       const uniqueDates = [...new Set(home.activities.map(activity => activity.date))];
       if (uniqueDates.length > 0) {
-        setSelectedDate(uniqueDates[0]);
+        const firstDate = uniqueDates[0];
+        if (firstDate) setSelectedDate(firstDate);
       }
     }
   }, [home.activities]);
@@ -417,6 +421,14 @@ export default function HomeDetailPage() {
     return [...new Set(home.activities.map(activity => activity.date))];
   };
   
+  // Toggle amenity category expansion
+  const toggleAmenityCategory = (category: string) => {
+    setAmenitiesExpanded(prev => ({
+      ...prev,
+      [category]: !prev[category]
+    }));
+  };
+  
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -427,7 +439,7 @@ export default function HomeDetailPage() {
   
   return (
     <DashboardLayout title={`Home Details - ${home.name}`}>
-    <div className="min-h-screen bg-neutral-50 pb-16">
+    <div className="min-h-screen bg-neutral-50 pb-28">
       {/* Back button */}
       <div className="sticky top-0 z-20 bg-white shadow-sm">
         <div className="container mx-auto px-4 py-4">
@@ -735,13 +747,31 @@ export default function HomeDetailPage() {
                   >
                     <h3 className="mb-3 text-lg font-medium text-neutral-800">{category.category}</h3>
                     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
-                      {category.items.map(item => (
+                      {(amenitiesExpanded[category.category] ? category.items : category.items.slice(0, 6)).map(item => (
                         <div key={item} className="flex items-center">
                           <FiCheck className="mr-2 h-5 w-5 text-success-500" />
                           <span className="text-neutral-700">{item}</span>
                         </div>
                       ))}
                     </div>
+                    {category.items.length > 6 && (
+                      <button 
+                        onClick={() => toggleAmenityCategory(category.category)}
+                        className="mt-3 flex items-center text-sm font-medium text-primary-600 hover:text-primary-700"
+                      >
+                        {amenitiesExpanded[category.category] ? (
+                          <>
+                            <FiChevronUp className="mr-1 h-4 w-4" />
+                            Show less
+                          </>
+                        ) : (
+                          <>
+                            <FiChevronDown className="mr-1 h-4 w-4" />
+                            Show all {category.items.length} items
+                          </>
+                        )}
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -849,7 +879,7 @@ export default function HomeDetailPage() {
                     <FiStar className="fill-current" />
                     <span className="ml-1 font-medium text-neutral-800">{home.rating}</span>
                   </div>
-                  <span className="ml-1 text-sm text-neutral-500">({home.reviews} reviews)</span>
+                  <span className="ml-1 text-sm text-neutral-500">({home.reviewsCount} reviews)</span>
                 </div>
               </div>
               
@@ -904,12 +934,7 @@ export default function HomeDetailPage() {
               <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white">
                 <div className="h-80 w-full">
                   {home.coordinates && (
-                    <SimpleMap
-                      homes={[home]}
-                      center={home.coordinates}
-                      zoom={15}
-                      showPopup={true}
-                    />
+                    <SimpleMap homes={[home]} />
                   )}
                 </div>
                 <div className="p-6">
@@ -1010,7 +1035,7 @@ export default function HomeDetailPage() {
           
           {/* Right column - Inquiry sidebar */}
           <div className="mt-8 w-full lg:mt-0 lg:w-80">
-            <div className="sticky top-20">
+            <div ref={bookingRef} className="sticky top-20">
               <div className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
                 {bookingStep === 0 && (
                   <>
@@ -1361,6 +1386,30 @@ export default function HomeDetailPage() {
               )}
             </div>
           </div>
+        </div>
+      </div>
+      
+      {/* Mobile sticky CTA bar */}
+      <div className="fixed bottom-0 inset-x-0 z-40 border-t border-neutral-200 bg-white p-3 shadow-[0_-2px_8px_rgba(0,0,0,0.06)] md:hidden">
+        <div className="flex gap-2 sm:flex-row flex-col">
+          <button
+            onClick={() => {
+              setBookingStep(1);
+              bookingRef.current?.scrollIntoView({behavior: 'smooth'});
+            }}
+            className="flex-1 rounded-md bg-primary-500 px-4 py-2 font-medium text-white hover:bg-primary-600"
+          >
+            Schedule Tour
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab('contact');
+              contactRef.current?.scrollIntoView({behavior: 'smooth'});
+            }}
+            className="flex-1 rounded-md border border-neutral-300 bg-white px-4 py-2 font-medium text-neutral-700 hover:bg-neutral-50"
+          >
+            Contact
+          </button>
         </div>
       </div>
     </div>

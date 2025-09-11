@@ -7,7 +7,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { useEmail, EmailResponse } from '@/hooks/useEmail';
+import { useEmail } from '@/hooks/useEmail';
+import type { EmailResponse } from '@/hooks/useEmail';
 import { Tab } from '@headlessui/react';
 import { FiMail, FiSend, FiAlertCircle, FiCalendar, FiFile, FiCode, FiClock } from 'react-icons/fi';
 import { format } from 'date-fns';
@@ -226,7 +227,7 @@ export default function EmailDemo() {
         </div>
       ) : null}
 
-      <Tab.Group selectedIndex={tabs.findIndex(t => t.key === selectedTab)} onChange={(index) => setSelectedTab(tabs[index].key as EmailTab)}>
+      <Tab.Group selectedIndex={tabs.findIndex(t => t.key === selectedTab)} onChange={(index) => setSelectedTab((tabs[index]?.key as EmailTab) ?? 'welcome')}>
         <Tab.List className="flex space-x-1 rounded-xl bg-blue-50 p-1 mb-6">
           {tabs.map((tab) => (
             <Tab

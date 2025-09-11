@@ -6,13 +6,6 @@ import webpush from 'web-push';
 
 const prisma = new PrismaClient();
 
-// Configure web-push with VAPID keys
-webpush.setVapidDetails(
-  process.env.VAPID_SUBJECT || 'mailto:support@carelinkai.com',
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '',
-  process.env.VAPID_PRIVATE_KEY || ''
-);
-
 /**
  * POST handler for sending push notifications
  */
@@ -84,6 +77,18 @@ export async function POST(req: NextRequest) {
       silent: isTest // Test notifications can be silent
     });
     
+    // Configure web-push with VAPID keys (lazy configuration)
+    const subject = process.env['VAPID_SUBJECT'] || 'mailto:support@carelinkai.com';
+    const pub = process.env['NEXT_PUBLIC_VAPID_PUBLIC_KEY'];
+    const priv = process.env['VAPID_PRIVATE_KEY'];
+    if (pub && priv) {
+      try {
+        webpush.setVapidDetails(subject, pub, priv);
+      } catch (e) {
+        console.warn('Skipping web-push VAPID setup due to invalid keys at runtime');
+      }
+    }
+    
     // Determine which subscriptions to use
     let subscriptionQuery: any = {};
     
@@ -113,7 +118,7 @@ export async function POST(req: NextRequest) {
     }
     
     // Get subscriptions from database
-    const subscriptions = await prisma.pushSubscription.findMany(subscriptionQuery);
+    const subscriptions = await (prisma as any).pushSubscription.findMany(subscriptionQuery);
     
     if (subscriptions.length === 0) {
       return NextResponse.json(
@@ -146,16 +151,15 @@ export async function POST(req: NextRequest) {
         
         results.successful++;
         
-        // Log notification in database for non-test notifications
+        // Log in-app notification for non-test notifications
         if (!isTest) {
-          await prisma.notification.create({
+          await (prisma as any).notification.create({
             data: {
+              userId: subscription.userId,
+              type: 'SYSTEM',
               title,
-              body,
-              type: 'PUSH',
-              recipientId: subscription.userId,
-              senderId: session.user.id,
-              metadata: {
+              message: body,
+              data: {
                 icon,
                 tag,
                 urgent,
@@ -170,7 +174,7 @@ export async function POST(req: NextRequest) {
         // If subscription is invalid (gone), remove it
         if (error.statusCode === 410) {
           try {
-            await prisma.pushSubscription.delete({
+            await (prisma as any).pushSubscription.delete({
               where: { id: subscription.id }
             });
             results.errors.push(`Subscription expired and removed: ${subscription.endpoint.substring(0, 50)}...`);
@@ -212,13 +216,13 @@ export async function GET(req: NextRequest) {
     }
     
     // Check if the user has any subscriptions
-    const subscriptionCount = await prisma.pushSubscription.count({
+    const subscriptionCount = await (prisma as any).pushSubscription.count({
       where: { userId: session.user.id }
     });
     
     return NextResponse.json({
       supported: true,
-      vapidPublicKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+      vapidPublicKey: process.env['NEXT_PUBLIC_VAPID_PUBLIC_KEY'],
       hasSubscriptions: subscriptionCount > 0,
       subscriptionCount
     });

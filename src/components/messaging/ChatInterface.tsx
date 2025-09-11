@@ -16,7 +16,8 @@ import {
   FiCornerDownRight,
   FiSmile,
   FiMic,
-  FiVideo
+  FiVideo,
+  FiMessageSquare
 } from 'react-icons/fi';
 
 // Types
@@ -102,7 +103,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   showReadReceipts = true,
   className = '',
   height = '500px'
-}) {
+}) => {
   // State
   const [message, setMessage] = useState('');
   const [attachments, setAttachments] = useState<File[]>([]);
@@ -472,7 +473,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     if (typingParticipants.length === 0) return null;
     
     const typingText = typingParticipants.length === 1
-      ? `${typingParticipants[0].name} is typing...`
+      ? `${(typingParticipants[0]?.name || 'Someone')} is typing...`
       : 'Multiple people are typing...';
     
     return (
@@ -551,7 +552,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     const sender = getParticipant(msg.senderId);
                     const isCurrentUser = msg.senderId === currentUserId;
                     const style = getMessageStyle(msg.senderId);
-                    const showSender = msgIndex === 0 || group.messages[msgIndex - 1].senderId !== msg.senderId;
+                    const showSender = msgIndex === 0 || group.messages[msgIndex - 1]?.senderId !== msg.senderId;
                     const replyMessage = msg.replyTo ? getReplyToMessage(msg.replyTo) : undefined;
                     const replyToSender = replyMessage ? getParticipant(replyMessage.senderId) : undefined;
                     

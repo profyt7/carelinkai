@@ -13,10 +13,9 @@ import { useSession } from 'next-auth/react';
 import { toast } from 'react-hot-toast';
 import { format, parseISO, isAfter, isBefore } from 'date-fns';
 
-import {
+import { AppointmentType, AppointmentStatus } from '@/lib/types/calendar';
+import type {
   Appointment,
-  AppointmentType,
-  AppointmentStatus,
   CalendarEvent,
   CalendarFilter,
   TimeSlot,
@@ -136,7 +135,8 @@ export function useCalendar(): CalendarHook {
       start: new Date().toISOString(),
       end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days from now
     },
-    participantIds: session?.user?.id ? [session.user.id] : []
+    // Default to an empty array so admins (and others) see all appointments
+    participantIds: []
   });
   
   // Update filter with partial changes
@@ -864,7 +864,7 @@ export function useCalendar(): CalendarHook {
    *
    * We intentionally avoid depending on the memoised `fetchAppointments`
    * callback itself (its identity changes any time `filter` mutates) to
-   * prevent unnecessary extra fetch cycles that caused “cycling” data.
+   * prevent unnecessary extra fetch cycles that caused "cycling" data.
    *
    * NOTE: Arrays are converted to joined-string keys so React can do a
    * shallow comparison and avoid re-running when the content is unchanged.

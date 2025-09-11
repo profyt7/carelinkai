@@ -37,19 +37,18 @@
  */
 
 import { PrismaClient, AuditAction } from '@prisma/client';
-import { EmailTemplate } from './email-templates';
 import { v4 as uuidv4 } from 'uuid';
 
 // Initialize Prisma client for logging
 const prisma = new PrismaClient();
 
 // Email configuration from environment variables
-const EMAIL_PROVIDER = process.env.EMAIL_PROVIDER || 'mock';
-const EMAIL_FROM = process.env.EMAIL_FROM || 'noreply@carelinkai.com';
-const EMAIL_FROM_NAME = process.env.EMAIL_FROM_NAME || 'CareLinkAI';
-const MAX_RETRIES = parseInt(process.env.EMAIL_MAX_RETRIES || '3');
-const RETRY_DELAY_MS = parseInt(process.env.EMAIL_RETRY_DELAY_MS || '1000');
-const RATE_LIMIT_PER_SECOND = parseInt(process.env.EMAIL_RATE_LIMIT || '10');
+const EMAIL_PROVIDER = process.env["EMAIL_PROVIDER"] || 'mock';
+const EMAIL_FROM = process.env["EMAIL_FROM"] || 'noreply@carelinkai.com';
+const EMAIL_FROM_NAME = process.env["EMAIL_FROM_NAME"] || 'CareLinkAI';
+const MAX_RETRIES = parseInt(process.env["EMAIL_MAX_RETRIES"] || '3');
+const RETRY_DELAY_MS = parseInt(process.env["EMAIL_RETRY_DELAY_MS"] || '1000');
+const RATE_LIMIT_PER_SECOND = parseInt(process.env["EMAIL_RATE_LIMIT"] || '10');
 
 /**
  * Email message interface
@@ -239,7 +238,7 @@ class SendGridEmailProvider implements EmailProvider {
     try {
       // Dynamic import to avoid requiring the package if not used
       const sgMail = require('@sendgrid/mail');
-      sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+      sgMail.setApiKey(process.env["SENDGRID_API_KEY"]);
       this.client = sgMail;
     } catch (error) {
       console.error('Failed to initialize SendGrid client:', error);
@@ -317,9 +316,9 @@ class AwsSesEmailProvider implements EmailProvider {
       
       // Configure AWS SDK
       AWS.config.update({
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-        region: process.env.AWS_REGION || 'us-east-1'
+        accessKeyId: process.env["AWS_ACCESS_KEY_ID"],
+        secretAccessKey: process.env["AWS_SECRET_ACCESS_KEY"],
+        region: process.env["AWS_REGION"] || 'us-east-1'
       });
       
       this.ses = new AWS.SES({ apiVersion: '2010-12-01' });
@@ -355,7 +354,7 @@ class AwsSesEmailProvider implements EmailProvider {
             }
           }
         },
-        ConfigurationSetName: process.env.AWS_SES_CONFIGURATION_SET
+        ConfigurationSetName: process.env["AWS_SES_CONFIGURATION_SET"]
       };
 
       // Send email
@@ -397,15 +396,15 @@ class NodemailerEmailProvider implements EmailProvider {
       
       // Create transporter
       this.transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: process.env.SMTP_PORT || 587,
-        secure: process.env.SMTP_SECURE === 'true',
+        host: process.env["SMTP_HOST"],
+        port: process.env["SMTP_PORT"] || 587,
+        secure: process.env["SMTP_SECURE"] === 'true',
         auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASSWORD
+          user: process.env["SMTP_USER"],
+          pass: process.env["SMTP_PASSWORD"]
         },
         tls: {
-          rejectUnauthorized: process.env.NODE_ENV === 'production'
+          rejectUnauthorized: process.env["NODE_ENV"] === 'production'
         }
       });
     } catch (error) {
@@ -675,7 +674,7 @@ export class EmailService {
         ...(result ? {
           success: result.success,
           providerMessageId: result.messageId,
-          errorCode: result.error?.code || result.error?.name,
+          errorCode: (result.error as any)?.["code"] || result.error?.name,
           errorMessage: result.error ? this.sanitizeErrorMessage(result.error.message) : undefined
         } : {})
       };

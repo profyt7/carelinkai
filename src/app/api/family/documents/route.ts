@@ -8,17 +8,17 @@ import { v4 as uuidv4 } from "uuid";
 import { mkdir } from "fs/promises";
 import { prisma } from "@/lib/prisma";
 import { publish } from "@/lib/server/sse";
-import { 
-  DocumentType, 
-  FamilyDocumentWithDetails, 
-  DocumentFilterParams 
+import type {
+  FamilyDocumentWithDetails
 } from "@/lib/types/family";
+import { FamilyDocumentType } from "@prisma/client";
 import { 
   checkFamilyMembership,
   hasPermissionToUploadDocuments,
   hasPermissionToViewDocuments,
   createActivityRecord
 } from "@/lib/services/family";
+import { generateMockDocuments } from "@/lib/services/family";
 
 // Maximum file size (10MB)
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -52,13 +52,13 @@ const documentCreateSchema = z.object({
   title: z.string().min(1).max(255),
   description: z.string().max(1000).optional(),
   type: z.enum([
-    "CARE_PLAN", 
-    "MEDICAL_RECORD", 
-    "INSURANCE_DOCUMENT", 
-    "LEGAL_DOCUMENT", 
-    "FINANCIAL_DOCUMENT", 
-    "MEDICATION_LIST", 
-    "CONTACT_INFO", 
+    "CARE_PLAN",
+    "MEDICAL_RECORD",
+    "INSURANCE_DOCUMENT",
+    "PHOTO",
+    "VIDEO",
+    "LEGAL_DOCUMENT",
+    "PERSONAL_DOCUMENT",
     "OTHER"
   ]),
   isEncrypted: z.boolean().default(true),
@@ -71,25 +71,27 @@ const documentFilterSchema = z.object({
   familyId: z.string().cuid(),
   type: z.union([
     z.enum([
-      "CARE_PLAN", 
-      "MEDICAL_RECORD", 
-      "INSURANCE_DOCUMENT", 
-      "LEGAL_DOCUMENT", 
-      "FINANCIAL_DOCUMENT", 
-      "MEDICATION_LIST", 
-      "CONTACT_INFO", 
+      "CARE_PLAN",
+      "MEDICAL_RECORD",
+      "INSURANCE_DOCUMENT",
+      "PHOTO",
+      "VIDEO",
+      "LEGAL_DOCUMENT",
+      "PERSONAL_DOCUMENT",
       "OTHER"
     ]),
-    z.array(z.enum([
-      "CARE_PLAN", 
-      "MEDICAL_RECORD", 
-      "INSURANCE_DOCUMENT", 
-      "LEGAL_DOCUMENT", 
-      "FINANCIAL_DOCUMENT", 
-      "MEDICATION_LIST", 
-      "CONTACT_INFO", 
-      "OTHER"
-    ]))
+    z.array(
+      z.enum([
+        "CARE_PLAN",
+        "MEDICAL_RECORD",
+        "INSURANCE_DOCUMENT",
+        "PHOTO",
+        "VIDEO",
+        "LEGAL_DOCUMENT",
+        "PERSONAL_DOCUMENT",
+        "OTHER"
+      ])
+    )
   ]).optional(),
   search: z.string().optional(),
   tags: z.union([z.string(), z.array(z.string())]).optional(),
@@ -177,11 +179,11 @@ export async function GET(request: NextRequest) {
       
       // Handle array parameters
       if (searchParams.has("type") && searchParams.getAll("type").length > 1) {
-        filterParams.type = searchParams.getAll("type");
+        filterParams['type'] = searchParams.getAll('type');
       }
       
       if (searchParams.has("tags") && searchParams.getAll("tags").length > 1) {
-        filterParams.tags = searchParams.getAll("tags");
+        filterParams['tags'] = searchParams.getAll('tags');
       }
       
       // Clean up undefined values
@@ -200,7 +202,7 @@ export async function GET(request: NextRequest) {
         );
       }
       
-      const filters = validationResult.data as DocumentFilterParams;
+      const filters = validationResult.data;
       console.log(`[Documents API] Validation successful, elapsed: ${Date.now() - startedAt}ms`, { filters });
       
       // Check if user is a member of the family
@@ -257,7 +259,9 @@ export async function GET(request: NextRequest) {
       console.log(`[Documents API] Starting Prisma queries, elapsed: ${Date.now() - startedAt}ms`, { whereClause });
       
       // Query documents with pagination
-      const [documents, totalCount] = await Promise.all([
+      let documents: any[] = [];
+      let totalCount = 0;
+      [documents, totalCount] = await Promise.all([
         prisma.familyDocument.findMany({
           where: whereClause,
           include: {
@@ -285,6 +289,35 @@ export async function GET(request: NextRequest) {
           where: whereClause
         })
       ]);
+
+      /* ------------------------------------------------------------------
+         Development fallback: use mock documents if DB returns none
+      ------------------------------------------------------------------*/
+      if (
+        totalCount === 0 &&
+        process.env["NODE_ENV"] !== "production"
+      ) {
+        const mockAll = generateMockDocuments(filters.familyId, session.user.id, undefined, {
+          search: filters.search,
+          types: Array.isArray(filters.type)
+            ? filters.type
+            : filters.type
+            ? [filters.type]
+            : undefined,
+          tags: filters.tags
+            ? Array.isArray(filters.tags)
+              ? filters.tags
+              : [filters.tags]
+            : undefined,
+          uploaderId: filters.uploaderId
+        });
+
+        totalCount = mockAll.length;
+        // apply pagination locally
+        const start = (filters.page - 1) * filters.limit;
+        const end = start + filters.limit;
+        documents = mockAll.slice(start, end);
+      }
       
       console.log(`[Documents API] Prisma queries completed, elapsed: ${Date.now() - startedAt}ms`, { 
         documentCount: documents.length,
@@ -299,7 +332,8 @@ export async function GET(request: NextRequest) {
       // Transform documents to include comment count
       const documentsWithDetails = documents.map(doc => ({
         ...doc,
-        commentCount: doc.comments.length,
+        // fallback to 0 if comments is undefined (e.g., mock data)
+        commentCount: (doc as any).comments?.length ?? 0,
         comments: undefined // Remove comments array
       })) as FamilyDocumentWithDetails[];
       
@@ -365,7 +399,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Parse document type
-    const type = typeRaw as DocumentType;
+    const type = typeRaw as FamilyDocumentType;
     
     // Parse isEncrypted
     const isEncrypted = isEncryptedRaw === "true" || isEncryptedRaw === "1";
@@ -628,7 +662,7 @@ export async function PUT(request: NextRequest) {
     // ------------------------------------------------------------------
     const normalized = {
       ...updatedDocument,
-      commentCount: updatedDocument.comments.length,
+      commentCount: (updatedDocument as any).comments?.length ?? 0,
       comments: undefined
     } as any;
 
@@ -642,7 +676,7 @@ export async function PUT(request: NextRequest) {
       success: true,
       document: {
         ...updatedDocument,
-        commentCount: updatedDocument.comments.length,
+        commentCount: (updatedDocument as any).comments?.length ?? 0,
         comments: undefined
       }
     });

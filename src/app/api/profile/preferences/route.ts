@@ -161,7 +161,7 @@ export async function GET(request: NextRequest) {
       display: {
         timezone: user.timezone || "UTC"
       },
-      ...(user.preferences || {})
+      ...((user.preferences as any) || {})
     };
     
     // Create audit log entry for preferences view
@@ -259,7 +259,7 @@ export async function PUT(request: NextRequest) {
     const { notifications, privacy, accessibility, display, roleSpecific } = validatedData;
     
     // Update base user preferences
-    const existingPreferences = user.preferences || {};
+    const existingPreferences = (user.preferences as any) || {};
     const updatedPreferences = {
       ...existingPreferences,
       privacy: privacy || existingPreferences.privacy,
@@ -274,7 +274,8 @@ export async function PUT(request: NextRequest) {
       where: { id: userId },
       data: {
         preferences: updatedPreferences,
-        notificationPrefs: notifications || user.notificationPrefs,
+        // Cast to `any` to satisfy Prisma JSON input types while preserving existing value
+        notificationPrefs: (notifications as any) ?? (user.notificationPrefs as any),
         timezone: display?.timezone || undefined
       }
     });

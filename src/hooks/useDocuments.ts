@@ -1,13 +1,44 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "react-hot-toast";
 import { useSession } from "next-auth/react";
-import {
-  DocumentFilterParams,
+import type {
   FamilyDocumentWithDetails,
-  FamilyDocumentUpload,
-  PaginationData,
-  DocumentType
+  FamilyDocumentType
 } from "@/lib/types/family";
+
+/* ------------------------------------------------------------------
+ * Local fall-back/utility types – keep in sync with backend contracts.
+ * ------------------------------------------------------------------ */
+interface PaginationData {
+  page: number;
+  limit: number;
+  totalCount: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
+interface DocumentFilterParams {
+  familyId: string;
+  page: number;
+  limit: number;
+  sortBy: "createdAt" | "updatedAt" | "title" | "fileSize";
+  sortOrder: "asc" | "desc";
+  type?: FamilyDocumentType | FamilyDocumentType[];
+  status?: string | string[];
+  searchQuery?: string;
+  tags?: string[];
+}
+
+interface FamilyDocumentUpload {
+  familyId: string;
+  title: string;
+  description?: string;
+  type: FamilyDocumentType;
+  isEncrypted: boolean;
+  tags?: string[];
+  file: File;
+}
 
 interface DocumentsState {
   documents: FamilyDocumentWithDetails[];
@@ -273,13 +304,13 @@ export function useDocuments({
               : doc
           );
 
-          const updatedSelected =
-            prev.selectedDocument?.id === documentId
-              ? {
-                  ...prev.selectedDocument,
-                  commentCount: (prev.selectedDocument.commentCount ?? 0) + 1,
-                }
-              : prev.selectedDocument;
+          let updatedSelected = prev.selectedDocument;
+          if (updatedSelected && updatedSelected.id === documentId) {
+            updatedSelected = {
+              ...updatedSelected,
+              commentCount: (updatedSelected.commentCount ?? 0) + 1,
+            };
+          }
 
           return {
             ...prev,
@@ -353,10 +384,10 @@ export function useDocuments({
             d.id === doc.id ? doc : d
           );
 
-          const updatedSelected =
-            prev.selectedDocument?.id === doc.id
-              ? { ...prev.selectedDocument, ...doc }
-              : prev.selectedDocument;
+          let updatedSelected = prev.selectedDocument;
+          if (updatedSelected && updatedSelected.id === doc.id) {
+            updatedSelected = { ...updatedSelected, ...doc };
+          }
 
           return { ...prev, documents: updatedDocs, selectedDocument: updatedSelected };
         });
@@ -656,7 +687,7 @@ export function useDocuments({
     setErrors(prev => ({ ...prev, uploadError: null }));
     
     // Initialize progress tracking
-    const progressMap: Record<string, number> = {
+    const progressMap: UploadProgress = {
       overall: 0
     };
     
@@ -675,26 +706,26 @@ export function useDocuments({
     try {
       // Upload each document sequentially
       for (let i = 0; i < documents.length; i++) {
-        const document = documents[i];
-        const documentId = documentIds[i];
+        const docToUpload = documents[i]!;
+        const documentId = documentIds[i]!;
         
         // Create form data for this document
         const formData = new FormData();
-        formData.append('familyId', document.familyId);
-        formData.append('title', document.title);
+        formData.append('familyId', docToUpload.familyId);
+        formData.append('title', docToUpload.title);
         
-        if (document.description) {
-          formData.append('description', document.description);
+        if (docToUpload.description) {
+          formData.append('description', docToUpload.description);
         }
         
-        formData.append('type', document.type);
-        formData.append('isEncrypted', document.isEncrypted.toString());
+        formData.append('type', docToUpload.type);
+        formData.append('isEncrypted', docToUpload.isEncrypted.toString());
         
-        if (document.tags && document.tags.length > 0) {
-          formData.append('tags', JSON.stringify(document.tags));
+        if (docToUpload.tags && docToUpload.tags.length > 0) {
+          formData.append('tags', JSON.stringify(docToUpload.tags));
         }
         
-        formData.append('file', document.file);
+        formData.append('file', docToUpload.file);
         
         // Create upload request with progress tracking
         const xhr = new XMLHttpRequest();
@@ -711,7 +742,7 @@ export function useDocuments({
               // Calculate overall progress as average of all files
               overall: Object.keys(prev)
                 .filter(key => key !== 'overall')
-                .reduce((sum, key) => sum + (key === documentId ? percentComplete : prev[key]), 0) / documents.length
+                .reduce((sum, key) => sum + (key === documentId ? percentComplete : (prev[key] ?? 0)), 0) / documents.length
             }));
           }
         });
@@ -776,10 +807,10 @@ export function useDocuments({
             [documentId]: 100
           }));
         } else {
-          failedUploads.push(document.title);
+          failedUploads.push(docToUpload.title);
           
           // Show error for this file
-          toast.error(`Failed to upload "${document.title}": ${uploadResult.error || 'Unknown error'}`);
+          toast.error(`Failed to upload "${docToUpload.title}": ${uploadResult.error || 'Unknown error'}`);
         }
       }
       

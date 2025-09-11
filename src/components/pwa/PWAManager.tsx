@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useContext, createContext, ReactNode } from "react";
+import React, { useState, useEffect, useContext, createContext } from "react";
+import type { ReactNode } from "react";
 import { toast } from "react-hot-toast";
 import { FiWifi, FiWifiOff, FiDownload, FiRefreshCw, FiBell } from "react-icons/fi";
 
@@ -86,7 +87,7 @@ export default function PWAManager({ children }: PWAManagerProps) {
        * ------------------------------------------------------------------
        * During local development the service-worker can easily get into an
        * inconsistent state (e.g. caching stale chunks) which results in the
-       * page rendering without CSS/JS – exactly the “unstyled HTML” you saw.
+       * page rendering without CSS/JS – exactly the "unstyled HTML" you saw.
        *
        * To avoid this headache we simply do NOT register the SW when
        * `process.env.NODE_ENV !== "production"`, unless the developer
@@ -223,8 +224,8 @@ export default function PWAManager({ children }: PWAManagerProps) {
       // Trigger background sync when back online
       if (registration && 'sync' in registration) {
         try {
-          registration.sync.register('sync-inquiries');
-          registration.sync.register('sync-messages');
+          (registration as any).sync.register('sync-inquiries');
+          (registration as any).sync.register('sync-messages');
         } catch (error) {
           console.error('Background sync registration failed:', error);
         }
@@ -339,7 +340,7 @@ export default function PWAManager({ children }: PWAManagerProps) {
             const subscribeOptions = {
               userVisibleOnly: true,
               applicationServerKey: urlBase64ToUint8Array(
-                process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || ''
+                process.env['NEXT_PUBLIC_VAPID_PUBLIC_KEY'] || ''
               ),
             };
             
@@ -409,13 +410,13 @@ export default function PWAManager({ children }: PWAManagerProps) {
         
         // Register sync if supported
         if (registration && 'sync' in registration) {
-          await registration.sync.register(tag);
+          await (registration as any).sync.register(tag);
           console.log('Your data will be sent when you\'re back online');
           toast.success('Your data will be sent when you\'re back online');
           return true;
         } else {
           console.warn('Background sync not supported, please try again when online');
-          toast.warning('Background sync not supported, please try again when online');
+          toast('Background sync not supported, please try again when online');
           return false;
         }
       } catch (error) {

@@ -20,12 +20,12 @@ export async function GET() {
   const startTime = Date.now();
   const checks = {
     status: "healthy",
-    database: { status: "unknown", message: null },
-    redis: { status: "unknown", message: null },
-    storage: { status: "unknown", message: null },
+    database: { status: "unknown", message: "" },
+    redis: { status: "unknown", message: "" },
+    storage: { status: "unknown", message: "" },
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || "development",
+    environment: process.env['NODE_ENV'] || "development",
   };
 
   // Check database connectivity
@@ -36,7 +36,7 @@ export async function GET() {
   } catch (error) {
     checks.database = { 
       status: "unhealthy", 
-      message: process.env.NODE_ENV === "production" 
+      message: process.env['NODE_ENV'] === "production" 
         ? "Database connection failed" 
         : `Database error: ${(error as Error).message}` 
     };
@@ -44,9 +44,9 @@ export async function GET() {
   }
 
   // Check Redis if configured
-  if (process.env.REDIS_URL) {
+  if (process.env['REDIS_URL']) {
     try {
-      const redis = new Redis(process.env.REDIS_URL, {
+      const redis = new Redis(process.env['REDIS_URL'], {
         connectTimeout: 3000,
         commandTimeout: 3000,
       });
@@ -65,7 +65,7 @@ export async function GET() {
     } catch (error) {
       checks.redis = { 
         status: "unhealthy", 
-        message: process.env.NODE_ENV === "production" 
+        message: process.env['NODE_ENV'] === "production" 
           ? "Redis connection failed" 
           : `Redis error: ${(error as Error).message}` 
       };
@@ -76,20 +76,20 @@ export async function GET() {
   }
 
   // Check S3/MinIO storage if configured
-  if (process.env.S3_ENDPOINT && process.env.S3_ACCESS_KEY && process.env.S3_SECRET_KEY) {
+  if (process.env['S3_ENDPOINT'] && process.env['S3_ACCESS_KEY'] && process.env['S3_SECRET_KEY']) {
     try {
       const s3Client = new S3Client({
-        endpoint: process.env.S3_ENDPOINT,
-        region: process.env.S3_REGION || "us-east-1",
+        endpoint: process.env['S3_ENDPOINT'],
+        region: process.env['S3_REGION'] || "us-east-1",
         credentials: {
-          accessKeyId: process.env.S3_ACCESS_KEY,
-          secretAccessKey: process.env.S3_SECRET_KEY,
+          accessKeyId: process.env['S3_ACCESS_KEY'],
+          secretAccessKey: process.env['S3_SECRET_KEY'],
         },
         forcePathStyle: true,
       });
 
       const command = new HeadBucketCommand({
-        Bucket: process.env.S3_BUCKET || "carelinkai-storage",
+        Bucket: process.env['S3_BUCKET'] || "carelinkai-storage",
       });
 
       await s3Client.send(command);
@@ -97,7 +97,7 @@ export async function GET() {
     } catch (error) {
       checks.storage = { 
         status: "unhealthy", 
-        message: process.env.NODE_ENV === "production" 
+        message: process.env['NODE_ENV'] === "production" 
           ? "Storage connection failed" 
           : `Storage error: ${(error as Error).message}` 
       };
@@ -114,11 +114,12 @@ export async function GET() {
   const statusCode = checks.status === "healthy" ? 200 : 503;
 
   // HIPAA compliance: Don't expose sensitive information in production
-  if (process.env.NODE_ENV === "production") {
+  if (process.env['NODE_ENV'] === "production") {
     // Remove potentially sensitive error messages in production
+    const anyChecks = checks as any;
     Object.keys(checks).forEach((key) => {
-      if (typeof checks[key] === "object" && checks[key].message && checks[key].status === "unhealthy") {
-        checks[key].message = `${key} check failed`;
+      if (typeof anyChecks[key] === "object" && anyChecks[key].message && anyChecks[key].status === "unhealthy") {
+        anyChecks[key].message = `${key} check failed`;
       }
     });
   }

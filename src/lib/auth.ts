@@ -10,10 +10,11 @@
  * - Integration with Prisma for database access
  */
 
-import { NextAuthOptions } from "next-auth";
+import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
-import { PrismaClient, AuditAction, UserStatus } from "@prisma/client";
+import { PrismaClient, AuditAction } from "@prisma/client";
+import type { UserStatus, UserRole } from "@prisma/client";
 import { compare } from "bcryptjs";
 import { authenticator } from "otplib";
 
@@ -84,30 +85,20 @@ export const authOptions: NextAuthOptions = {
         
         // User not found
         if (!user) {
-          // Log failed login attempt for non-existent user
-          await prisma.auditLog.create({
-            data: {
-              action: AuditAction.SECURITY,
-              resourceType: "AUTH",
-              resourceId: "unknown",
-              description: "Failed login attempt for non-existent user",
-              ipAddress: req.headers?.["x-forwarded-for"] || "unknown",
-              metadata: {
-                email,
-                reason: "USER_NOT_FOUND"
-              }
-            }
+          console.warn("[auth] Failed login attempt for non-existent user", { 
+            email, 
+            ip: req.headers?.["x-forwarded-for"] || "unknown" 
           });
           
           throw new Error("Invalid email or password");
         }
         
         // Check if account is active
-        if (user.status !== UserStatus.ACTIVE) {
+        if (user.status !== "ACTIVE") {
           // Log failed login attempt for inactive account
           await prisma.auditLog.create({
             data: {
-              action: AuditAction.SECURITY,
+              action: AuditAction.ACCESS_DENIED,
               resourceType: "AUTH",
               resourceId: user.id,
               description: "Login attempt on inactive account",
@@ -121,7 +112,7 @@ export const authOptions: NextAuthOptions = {
             }
           });
           
-          if (user.status === UserStatus.PENDING) {
+          if (user.status === "PENDING") {
             throw new Error("Please verify your email before logging in");
           } else {
             throw new Error("Your account is not active");
@@ -129,13 +120,16 @@ export const authOptions: NextAuthOptions = {
         }
         
         // Verify password
+        if (!user.passwordHash) {
+          throw new Error("Invalid email or password");
+        }
         const passwordValid = await compare(credentials.password, user.passwordHash);
         
         if (!passwordValid) {
           // Log failed login attempt due to invalid password
           await prisma.auditLog.create({
             data: {
-              action: AuditAction.SECURITY,
+              action: AuditAction.ACCESS_DENIED,
               resourceType: "AUTH",
               resourceId: user.id,
               description: "Failed login attempt - invalid password",
@@ -159,8 +153,13 @@ export const authOptions: NextAuthOptions = {
               id: user.id,
               email: user.email,
               name: `${user.firstName} ${user.lastName}`,
-              requiresTwoFactor: true
-            };
+              requiresTwoFactor: true,
+              profileImageUrl: null,
+              status: user.status,
+              role: user.role,
+              firstName: user.firstName,
+              lastName: user.lastName,
+            } as any;
           }
           
           // Verify 2FA code
@@ -180,7 +179,7 @@ export const authOptions: NextAuthOptions = {
             // Log failed 2FA attempt
             await prisma.auditLog.create({
               data: {
-                action: AuditAction.SECURITY,
+                action: AuditAction.ACCESS_DENIED,
                 resourceType: "AUTH",
                 resourceId: user.id,
                 description: "Failed 2FA verification",
@@ -209,7 +208,7 @@ export const authOptions: NextAuthOptions = {
             // Log backup code usage
             await prisma.auditLog.create({
               data: {
-                action: AuditAction.SECURITY,
+                action: AuditAction.OTHER,
                 resourceType: "AUTH",
                 resourceId: user.id,
                 description: "Backup code used for 2FA",
@@ -233,7 +232,7 @@ export const authOptions: NextAuthOptions = {
         // Log successful login
         await prisma.auditLog.create({
           data: {
-            action: AuditAction.SECURITY,
+            action: AuditAction.LOGIN,
             resourceType: "AUTH",
             resourceId: user.id,
             description: "Successful login",
@@ -256,9 +255,11 @@ export const authOptions: NextAuthOptions = {
           firstName: user.firstName,
           lastName: user.lastName,
           role: user.role,
+          status: user.status,
           emailVerified: user.emailVerified,
-          twoFactorEnabled: user.twoFactorEnabled
-        };
+          twoFactorEnabled: user.twoFactorEnabled,
+          profileImageUrl: null
+        } as any;
       }
     })
   ],
@@ -268,14 +269,14 @@ export const authOptions: NextAuthOptions = {
     // Add custom claims to JWT
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
-        token.email = user.email;
-        token.name = user.name;
-        token.firstName = user.firstName;
-        token.lastName = user.lastName;
-        token.role = user.role;
-        token.emailVerified = user.emailVerified;
-        token.twoFactorEnabled = user.twoFactorEnabled;
+        token["id"] = (user as any).id;
+        token["email"] = (user as any).email;
+        token["name"] = (user as any).name;
+        token["firstName"] = (user as any).firstName;
+        token["lastName"] = (user as any).lastName;
+        token["role"] = (user as any).role;
+        token["emailVerified"] = (user as any).emailVerified as any;
+        token["twoFactorEnabled"] = (user as any).twoFactorEnabled;
       }
       return token;
     },
@@ -283,21 +284,19 @@ export const authOptions: NextAuthOptions = {
     // Add custom session data
     async session({ session, token }) {
       if (token && session.user) {
-        session.user.id = token.id as string;
-        session.user.email = token.email as string;
-        session.user.name = token.name as string;
-        session.user.firstName = token.firstName as string;
-        session.user.lastName = token.lastName as string;
-        session.user.role = token.role as string;
-        session.user.emailVerified = token.emailVerified as Date;
-        session.user.twoFactorEnabled = token.twoFactorEnabled as boolean;
+        session.user.id = token["id"] as string;
+        session.user.email = token["email"] as string;
+        session.user.name = token["name"] as string;
+        session.user.firstName = token["firstName"] as string;
+        session.user.lastName = token["lastName"] as string;
+        session.user.role = token["role"] as UserRole;
       }
       return session;
     }
   },
   
   // Enable debug in development
-  debug: process.env.NODE_ENV === "development",
+  debug: process.env["NODE_ENV"] === "development",
 };
 
 export default authOptions;

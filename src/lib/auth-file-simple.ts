@@ -6,15 +6,15 @@
  * development and testing purposes only.
  */
 
-import { NextAuthOptions } from "next-auth";
+import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import fs from "fs";
 import path from "path";
-import { UserRole, UserStatus } from "@prisma/client";
+import type { UserRole, UserStatus } from "@prisma/client";
 
 // Constants for security settings
-const JWT_MAX_AGE = parseInt(process.env.JWT_EXPIRATION || "86400"); // 24 hours in seconds
-const SESSION_MAX_AGE = parseInt(process.env.SESSION_EXPIRY || "86400"); // 24 hours in seconds
+const JWT_MAX_AGE = parseInt(process.env["JWT_EXPIRATION"] || "86400"); // 24 hours in seconds
+const SESSION_MAX_AGE = parseInt(process.env["SESSION_EXPIRY"] || "86400"); // 24 hours in seconds
 
 // Define the user data structure
 interface FileUser {
@@ -36,7 +36,7 @@ const DEFAULT_USERS_FILE_PATH = path.join(process.cwd(), "data", "dev-users.json
 
 // Get the users file path from environment or use default
 const getUsersFilePath = () => {
-  return process.env.AUTH_USERS_FILE || DEFAULT_USERS_FILE_PATH;
+  return process.env["AUTH_USERS_FILE"] || DEFAULT_USERS_FILE_PATH;
 };
 
 // Ensure the users file directory exists
@@ -188,8 +188,10 @@ const updateUser = (id: string, data: Partial<FileUser>): FileUser | undefined =
   users[userIndex] = {
     ...users[userIndex],
     ...data,
-    updatedAt: new Date().toISOString()
-  };
+    // Ensure required immutable fields remain intact
+    id: users[userIndex]!.id,
+    updatedAt: new Date().toISOString(),
+  } as FileUser;
   
   // Save updated users
   saveUsers(users);
@@ -210,7 +212,7 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, _req) {
         if (!credentials?.email || !credentials?.password) {
           throw new Error("Email and password are required");
         }
@@ -220,7 +222,7 @@ export const authOptions: NextAuthOptions = {
         // -----------------------------------------------------------
         // DEBUG: Track every incoming authentication attempt
         // -----------------------------------------------------------
-        if (process.env.NODE_ENV === "development") {
+        if (process.env["NODE_ENV"] === "development") {
           console.log(
             "[auth-file-simple] 🔐 authorize() called – incoming request",
             "\n  ➜ email:", email
@@ -249,7 +251,7 @@ export const authOptions: NextAuthOptions = {
           try {
             const { compare } = await import("bcryptjs");
             // ------------ DEBUG LOGS ------------
-            if (process.env.NODE_ENV === "development") {
+            if (process.env["NODE_ENV"] === "development") {
               console.log(
                 "[auth-file-simple] Comparing passwords (bcrypt)",
                 "\n  ➜ entered:", credentials.password,
@@ -257,7 +259,7 @@ export const authOptions: NextAuthOptions = {
               );
             }
             passwordValid = await compare(credentials.password, user.passwordHash);
-            if (process.env.NODE_ENV === "development") {
+            if (process.env["NODE_ENV"] === "development") {
               console.log(
                 "[auth-file-simple] bcrypt comparison result:",
                 passwordValid
@@ -269,7 +271,7 @@ export const authOptions: NextAuthOptions = {
               "[auth-file-simple] bcryptjs compare failed – falling back to plain-text check"
             );
             passwordValid = credentials.password === user.passwordHash;
-              if (process.env.NODE_ENV === "development") {
+              if (process.env["NODE_ENV"] === "development") {
                 console.log(
                   "[auth-file-simple] Plain-text comparison result:",
                   passwordValid
@@ -328,7 +330,7 @@ export const authOptions: NextAuthOptions = {
     // JWT callback to customize token content
     async jwt({ token, user }) {
       /* ---------- DEBUG ---------- */
-      if (process.env.NODE_ENV === "development") {
+      if (process.env["NODE_ENV"] === "development") {
         console.log(
           "[auth] JWT callback – phase:",
           user ? "initial-signin" : "refresh",
@@ -361,7 +363,7 @@ export const authOptions: NextAuthOptions = {
             token.lastName = freshUser.lastName;
             token.email = freshUser.email;
 
-            if (process.env.NODE_ENV === "development") {
+            if (process.env["NODE_ENV"] === "development") {
               console.log("[auth] JWT callback – refreshed from file:", {
                 id: token.id,
                 profileImageUrl: token.profileImageUrl,
@@ -371,7 +373,7 @@ export const authOptions: NextAuthOptions = {
         }
       } catch (err) {
         // Log in dev mode but never throw – falling back to existing token data.
-          if (process.env.NODE_ENV === "development") {
+          if (process.env["NODE_ENV"] === "development") {
             console.warn("[auth] JWT callback refresh failed:", err);
           }
       }
@@ -381,7 +383,7 @@ export const authOptions: NextAuthOptions = {
     
     // Session callback to pass data to client
     async session({ session, token }) {
-      if (process.env.NODE_ENV === "development") {
+      if (process.env["NODE_ENV"] === "development") {
         console.log("[auth] Session callback – incoming token:", {
           id: token.id,
           profileImageUrl: token.profileImageUrl,
@@ -400,7 +402,7 @@ export const authOptions: NextAuthOptions = {
         session.user.email = token.email as string;
       }
       
-      if (process.env.NODE_ENV === "development") {
+      if (process.env["NODE_ENV"] === "development") {
         console.log("[auth] Session callback – outgoing session.user:", {
           id: session.user.id,
           profileImageUrl: session.user.profileImageUrl,
@@ -432,13 +434,13 @@ export const authOptions: NextAuthOptions = {
   },
   
   // Debug mode (enable for development)
-  debug: process.env.NODE_ENV === "development",
+  debug: process.env["NODE_ENV"] === "development",
 };
 
 // Initialize by creating default users if needed
 (async () => {
   try {
-    if (process.env.NODE_ENV === "development") {
+    if (process.env["NODE_ENV"] === "development") {
       console.log("[auth-file-simple] Initializing file-based auth system");
       loadUsers();
     }

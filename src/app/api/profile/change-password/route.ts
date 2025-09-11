@@ -42,6 +42,7 @@ const passwordChangeSchema = z.object({
 // Rate limiter for password change attempts
 const limiter = rateLimit({
   interval: WINDOW_MS,
+  limit: MAX_ATTEMPTS,
   uniqueTokenPerInterval: 500,
 });
 
@@ -71,12 +72,12 @@ export async function POST(request: NextRequest) {
     
     // Apply rate limiting
     try {
-      await limiter.check(`${clientIp}_password_change`, MAX_ATTEMPTS);
+      await limiter.check(MAX_ATTEMPTS, `${clientIp}_password_change`);
     } catch (error) {
       // Create audit log entry for rate limit exceeded
       await prisma.auditLog.create({
         data: {
-          action: AuditAction.SECURITY,
+          action: AuditAction.ACCESS_DENIED,
           resourceType: "USER",
           resourceId: userId,
           description: "Password change rate limit exceeded",
@@ -107,7 +108,7 @@ export async function POST(request: NextRequest) {
       // Create audit log entry for validation failure
       await prisma.auditLog.create({
         data: {
-          action: AuditAction.SECURITY,
+          action: AuditAction.ACCESS_DENIED,
           resourceType: "USER",
           resourceId: userId,
           description: "Password change validation failed",
@@ -141,7 +142,6 @@ export async function POST(request: NextRequest) {
         id: true,
         email: true,
         passwordHash: true,
-        passwordLastChanged: true
       }
     });
     
@@ -153,13 +153,14 @@ export async function POST(request: NextRequest) {
     }
     
     // Verify current password
-    const isPasswordValid = await compare(currentPassword, user.passwordHash);
+    const isPasswordValid =
+      user.passwordHash ? await compare(currentPassword, user.passwordHash) : false;
     
     if (!isPasswordValid) {
       // Create audit log entry for incorrect password
       await prisma.auditLog.create({
         data: {
-          action: AuditAction.SECURITY,
+          action: AuditAction.ACCESS_DENIED,
           resourceType: "USER",
           resourceId: userId,
           description: "Password change failed - incorrect current password",
@@ -180,7 +181,8 @@ export async function POST(request: NextRequest) {
     }
     
     // Check if new password is same as current password
-    const isSamePassword = await compare(newPassword, user.passwordHash);
+    const isSamePassword =
+      user.passwordHash ? await compare(newPassword, user.passwordHash) : false;
     
     if (isSamePassword) {
       return NextResponse.json(
@@ -197,7 +199,6 @@ export async function POST(request: NextRequest) {
       where: { id: userId },
       data: {
         passwordHash: newPasswordHash,
-        passwordLastChanged: new Date()
       }
     });
     
@@ -242,7 +243,7 @@ export async function POST(request: NextRequest) {
     try {
       await prisma.auditLog.create({
         data: {
-          action: AuditAction.ERROR,
+          action: AuditAction.OTHER,
           resourceType: "USER_PASSWORD",
           resourceId: userId,
           description: "Password change error",

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef, TouchEvent } from "react";
+import { useState, useEffect, useRef } from "react";
+import type { TouchEvent } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
@@ -61,10 +62,14 @@ interface NavItem {
 const navItems: NavItem[] = [
   { name: "Dashboard", icon: <FiHome size={20} />, href: "/dashboard", showInMobileBar: true },
   { name: "Search Homes", icon: <FiSearch size={20} />, href: "/search", showInMobileBar: false },
+  // Marketplace (feature-flagged)
+  { name: "Marketplace", icon: <FiUsers size={20} />, href: "/marketplace", showInMobileBar: true },
   { name: "Inquiries", icon: <FiFileText size={20} />, href: "/dashboard/inquiries", showInMobileBar: false },
   { name: "Residents", icon: <FiUsers size={20} />, href: "/residents", showInMobileBar: true },
   { name: "Caregivers", icon: <FiUsers size={20} />, href: "/caregivers", showInMobileBar: false },
   { name: "Calendar", icon: <FiCalendar size={20} />, href: "/calendar", showInMobileBar: true },
+  // Shifts page
+  { name: "Shifts", icon: <FiCalendar size={20} />, href: "/shifts", showInMobileBar: true },
   // Family collaboration (visible to all)
   { name: "Family", icon: <FiUsers size={20} />, href: "/family", showInMobileBar: true },
   { name: "Finances", icon: <FiDollarSign size={20} />, href: "/finances", showInMobileBar: true },
@@ -96,6 +101,10 @@ export default function DashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
   
+  // Feature flags
+  const marketplaceEnabled =
+    process.env['NEXT_PUBLIC_MARKETPLACE_ENABLED'] !== 'false';
+
   // Responsive state
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
@@ -222,16 +231,20 @@ export default function DashboardLayout({
   
   // Touch event handlers for swipe gestures
   const handleTouchStart = (e: TouchEvent<HTMLDivElement>) => {
-    setTouchStartX(e.touches[0].clientX);
-    setTouchStartY(e.touches[0].clientY);
+    const firstTouch = e.touches?.item(0);
+    if (firstTouch) {
+      setTouchStartX(firstTouch.clientX);
+      setTouchStartY(firstTouch.clientY);
+    }
     setIsSwiping(true);
   };
   
   const handleTouchMove = (e: TouchEvent<HTMLDivElement>) => {
-    if (!isSwiping) return;
+    const firstTouch = e.touches?.item(0);
+    if (!isSwiping || !firstTouch) return;
     
-    const currentX = e.touches[0].clientX;
-    const currentY = e.touches[0].clientY;
+    const currentX = firstTouch.clientX;
+    const currentY = firstTouch.clientY;
     const deltaX = currentX - touchStartX;
     const deltaY = currentY - touchStartY;
     
@@ -364,6 +377,10 @@ export default function DashboardLayout({
               !("roleRestriction" in item) ||
               !item.roleRestriction ||
               item.roleRestriction.includes(userRole as string)
+            // Feature-flag gate for Marketplace
+            ).filter(
+              (item) =>
+                item.name !== "Marketplace" || marketplaceEnabled
           );
           return (
             <nav className="sidebar-nav mt-4" aria-label="Sidebar navigation">
@@ -690,7 +707,13 @@ export default function DashboardLayout({
             paddingBottom: 'env(safe-area-inset-bottom, 0px)' // iOS safe area
           }}
         >
-          {navItems.filter(item => item.showInMobileBar).map((item) => (
+          {navItems
+            .filter(
+              (item) =>
+                item.showInMobileBar &&
+                (item.name !== "Marketplace" || marketplaceEnabled)
+            )
+            .map((item) => (
             <Link 
               key={item.name}
               href={item.href}

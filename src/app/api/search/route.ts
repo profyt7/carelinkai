@@ -25,7 +25,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient, CareLevel } from '@prisma/client';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth-db-simple';
+import { authOptions } from '@/lib/auth';
 import { formatCurrency } from '@/lib/utils';
 
 // Initialize Prisma client
@@ -34,6 +34,25 @@ const prisma = new PrismaClient();
 // Constants
 const DEFAULT_PAGE_SIZE = 10;
 const MAX_PAGE_SIZE = 50;
+
+/**
+ * Curated exterior / home photos sourced from Unsplash (free to use)
+ * NOTE: keep the list small and static so mocks are deterministic.
+ */
+const HOME_IMAGES: string[] = [
+  '/images/homes/1.jpg',
+  '/images/homes/2.jpg',
+  '/images/homes/3.jpg',
+  '/images/homes/4.jpg',
+  '/images/homes/5.jpg',
+  '/images/homes/6.jpg',
+  '/images/homes/7.jpg',
+  '/images/homes/8.jpg',
+  '/images/homes/9.jpg',
+  '/images/homes/10.jpg',
+  '/images/homes/11.jpg',
+  '/images/homes/12.jpg',
+];
 
 /**
  * AI-based text similarity score between two strings
@@ -340,6 +359,69 @@ function sanitizeImageUrl(url: string | null): string | null {
 }
 
 /**
+ * Development-only: generate an array of mock homes so that UI
+ * continues to work when the database is unavailable or empty.
+ */
+export function generateMockHomes(count: number = 12) {
+  const careLevels: CareLevel[][] = [
+    [CareLevel.ASSISTED],
+    [CareLevel.MEMORY_CARE],
+    [CareLevel.INDEPENDENT],
+    [CareLevel.SKILLED_NURSING],
+    [CareLevel.ASSISTED, CareLevel.MEMORY_CARE],
+  ];
+  const amenitiesSamples = [
+    ['WiFi', 'Garden', 'Meals Included'],
+    ['Pet-friendly', 'Physical Therapy'],
+    ['24/7 Care', 'Transportation'],
+    ['Pool', 'Gym'],
+  ];
+  const states = ['CA', 'WA', 'TX', 'FL', 'NY'];
+  // Mock city names for deterministic seeding
+  const cities = ['San Francisco', 'Seattle', 'Austin', 'Miami', 'Albany'];
+
+  /* ------------------------------------------------------------------
+
+  /** simple currency formatter */
+  const fmt = (v: number) => formatCurrency(v);
+
+  return Array.from({ length: count }).map((_, i) => {
+    const cl = careLevels[i % careLevels.length];
+    const minPrice = 3500 + i * 50;
+    const maxPrice = minPrice + 1000;
+    return {
+      id: `mock-home-${i}`,
+      name: `Mock Home ${i + 1}`,
+      description: `A lovely community number ${i + 1} with excellent services.`,
+      address: {
+        street: `${100 + i} Main St`,
+        street2: null,
+        city: cities[i % cities.length],
+        state: states[i % states.length],
+        zipCode: `9${400 + i}`,
+        coordinates: null,
+      },
+      careLevel: cl,
+      priceRange: {
+        min: minPrice,
+        max: maxPrice,
+        formattedMin: fmt(minPrice),
+        formattedMax: fmt(maxPrice),
+      },
+      capacity: 20 + (i % 10),
+      availability: 5 + (i % 4),
+      gender: 'ALL',
+      amenities: amenitiesSamples[i % amenitiesSamples.length],
+      // Use seeded Picsum photos so each mock home gets a stable image
+      imageUrl: HOME_IMAGES[i % HOME_IMAGES.length],
+      operator: null,
+      aiMatchScore: 60 + (i * 3) % 35, // 60-95
+      isFavorited: false,
+    };
+  });
+}
+
+/**
  * GET handler for search API
  */
 export async function GET(request: NextRequest) {
@@ -484,35 +566,43 @@ export async function GET(request: NextRequest) {
       ];
     }
     
-    // Execute database query
-    const [homes, totalCount] = await Promise.all([
-      prisma.assistedLivingHome.findMany({
-        where: whereClause,
-        include: {
-          address: true,
-          operator: {
-            include: {
-              user: {
-                select: {
-                  firstName: true,
-                  lastName: true,
-                  email: true
+    // Execute database query with graceful fallback
+    let homes: any[] = [];
+    let totalCount = 0;
+    try {
+      [homes, totalCount] = await Promise.all([
+        prisma.assistedLivingHome.findMany({
+          where: whereClause,
+          include: {
+            address: true,
+            operator: {
+              include: {
+                user: {
+                  select: {
+                    firstName: true,
+                    lastName: true,
+                    email: true
+                  }
                 }
               }
+            },
+            photos: {
+              where: { isPrimary: true },
+              take: 1
             }
           },
-          photos: {
-            where: { isPrimary: true },
-            take: 1
-          }
-        },
-        skip: offset,
-        take: limit
-      }),
-      prisma.assistedLivingHome.count({
-        where: whereClause
-      })
-    ]);
+          skip: offset,
+          take: limit
+        }),
+        prisma.assistedLivingHome.count({
+          where: whereClause
+        })
+      ]);
+    } catch (dbErr) {
+      console.error('DB query failed, falling back to mocks:', dbErr);
+      homes = [];
+      totalCount = 0;
+    }
 
     // --- favourites ----
     let favoriteHomeIds: Set<string> = new Set();
@@ -543,12 +633,17 @@ export async function GET(request: NextRequest) {
       // longitude: userLongitude
     };
     
-    // Calculate match scores and format results
-    const results = homes.map(home => {
-      // Calculate AI match score
+    // Calculate match scores and format results with reliable image fallback
+    const results = homes.map((home, i) => {
+      // 1. AI Match Score
       const aiMatchScore = calculateMatchScore(home, searchCriteria);
-      
-      // Format the result
+
+      // 2. Image handling – prefer primary DB photo, else deterministic Unsplash fallback
+      const primary = sanitizeImageUrl(home.photos?.[0]?.url ?? null);
+      const fallback = HOME_IMAGES[i % HOME_IMAGES.length];
+      const imageUrl = primary ?? fallback;
+
+      // 3. Build response object
       return {
         id: home.id,
         name: home.name,
@@ -568,15 +663,14 @@ export async function GET(request: NextRequest) {
         priceRange: {
           min: home.priceMin ? Number(home.priceMin) : null,
           max: home.priceMax ? Number(home.priceMax) : null,
-          formattedMin: home.priceMin ? formatCurrency(home.priceMin) : null,
-          formattedMax: home.priceMax ? formatCurrency(home.priceMax) : null,
+          formattedMin: home.priceMin ? formatCurrency(Number(home.priceMin)) : null,
+          formattedMax: home.priceMax ? formatCurrency(Number(home.priceMax)) : null,
         },
         capacity: home.capacity,
         availability: home.capacity - home.currentOccupancy,
         gender: home.genderRestriction || 'ALL',
         amenities: home.amenities,
-        // Filter out placeholder images that point to unconfigured hosts
-        imageUrl: sanitizeImageUrl(home.photos.length > 0 ? home.photos[0].url : null),
+        imageUrl,
         operator: home.operator ? {
           name: `${home.operator.user.firstName} ${home.operator.user.lastName}`,
           email: home.operator.user.email
@@ -618,6 +712,16 @@ export async function GET(request: NextRequest) {
       );
     }
     
+    /* ------------------------------------------------------------------
+       Dev-mode fallback when no DB results
+    -------------------------------------------------------------------*/
+    if (results.length === 0 && process.env['NODE_ENV'] !== 'production') {
+      const mockHomes = generateMockHomes(limit);
+      filteredResults = mockHomes;
+    }
+
+    const totalResultsCount = filteredResults.length;
+
     // Return response
     return NextResponse.json({
       success: true,
@@ -633,19 +737,23 @@ export async function GET(request: NextRequest) {
       pagination: {
         page,
         limit,
-        totalResults: filteredResults.length,
-        totalPages: Math.ceil(filteredResults.length / limit)
+        totalResults: totalResultsCount,
+        totalPages: Math.ceil(totalResultsCount / limit)
       },
       results: filteredResults
     }, { status: 200 });
     
   } catch (error) {
     console.error('Search API error:', error);
-    
+
     return NextResponse.json({
       success: false,
       error: 'An error occurred while processing your search',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      // Safely expose message in development while satisfying TS about unknown errors
+      details:
+        process.env['NODE_ENV'] === 'development'
+          ? ((error as any)?.message ?? String(error))
+          : undefined
     }, { status: 500 });
   } finally {
     // Always disconnect from the database

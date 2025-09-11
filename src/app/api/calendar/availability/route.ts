@@ -1,237 +1,267 @@
-/**
- * Calendar Availability API Route
- * 
- * Provides endpoints for checking availability and finding available time slots:
- * - GET: Check if a user is available for a specific time slot
- * - POST: Find available time slots within a date range
- * 
- * @module api/calendar/availability
- */
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { z } from 'zod';
-import { authOptions } from '@/lib/auth-db-simple';
-import { logger } from '@/lib/logger';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { z } from "zod";
 import { 
-  checkUserAvailability,
-  findAvailableSlots,
-  CalendarError
-} from '@/lib/services/calendar';
-import { AppointmentType } from '@/lib/types/calendar';
-import { UserRole } from '@prisma/client';
+  AppointmentType, 
+  AppointmentStatus,
+  type TimeSlot
+} from "@/lib/types/calendar";
+import { addMinutes, parseISO } from "date-fns";
 
-// ========================================================================
-// VALIDATION SCHEMAS
-// ========================================================================
+// UTC date helper functions
+function toUtcDayKey(date: Date): string {
+  return date.toISOString().slice(0, 10); // YYYY-MM-DD format
+}
 
-// Schema for GET query parameters (check availability)
-const CheckAvailabilityQuerySchema = z.object({
+function isWeekendUTC(date: Date): boolean {
+  const day = date.getUTCDay();
+  return day === 0 || day === 6; // 0 is Sunday, 6 is Saturday
+}
+
+function utcStartOfDay(date: Date): Date {
+  const result = new Date(date);
+  result.setUTCHours(0, 0, 0, 0);
+  return result;
+}
+
+function utcEndOfDay(date: Date): Date {
+  const result = new Date(date);
+  result.setUTCHours(23, 59, 59, 999);
+  return result;
+}
+
+function utcAt(year: number, month: number, day: number, hours = 0, minutes = 0, seconds = 0, ms = 0): Date {
+  return new Date(Date.UTC(year, month - 1, day, hours, minutes, seconds, ms));
+}
+
+const availableSlotsRequestSchema = z.object({
   userId: z.string(),
-  startTime: z.string(), // ISO date string
-  endTime: z.string(), // ISO date string
+  startDate: z.string().datetime(),
+  endDate: z.string().datetime(),
   appointmentType: z.nativeEnum(AppointmentType),
-  homeId: z.string().optional(),
-});
-
-// Schema for POST request body (find available slots)
-const FindAvailableSlotsSchema = z.object({
-  userId: z.string(),
-  startDate: z.string(), // ISO date string
-  endDate: z.string(), // ISO date string
-  appointmentType: z.nativeEnum(AppointmentType),
-  duration: z.number().min(15).max(480).default(60), // in minutes
+  duration: z.number().int().positive().default(60),
   homeId: z.string().optional(),
   excludeWeekends: z.boolean().optional().default(false),
   businessHoursOnly: z.boolean().optional().default(true),
-  timezone: z.string().optional(),
+  timezone: z.string().optional()
 });
 
-// ========================================================================
-// HELPER FUNCTIONS
-// ========================================================================
+function mapPrismaAppointmentToFrontend(appointment: any) {
+  return {
+    id: appointment.id,
+    type: appointment.type,
+    status: appointment.status,
+    title: appointment.title,
+    startTime: appointment.startTime.toISOString(),
+    endTime: appointment.endTime.toISOString(),
+    createdBy: {
+      id: appointment.createdBy?.id || appointment.createdById,
+      name: appointment.createdBy ? `${appointment.createdBy.firstName} ${appointment.createdBy.lastName}` : '',
+      role: appointment.createdBy?.role || 'UNKNOWN'
+    },
+    participants: appointment.participants?.map((p: any) => ({
+      userId: p.userId,
+      name: p.name || (p.user ? `${p.user.firstName} ${p.user.lastName}` : ''),
+      role: p.role || p.user?.role || 'UNKNOWN',
+      status: p.status || 'PENDING'
+    })) || []
+  };
+}
 
-/**
- * Handles API errors and returns appropriate responses
- */
-function handleApiError(error: unknown) {
-  if (error instanceof CalendarError) {
-    // Handle known calendar service errors
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: error.message,
-        code: error.code 
-      }, 
-      { status: error.code.includes('NOT_FOUND') ? 404 : 500 }
+async function findConflicts(
+  userId: string, 
+  startTime: Date, 
+  endTime: Date
+) {
+  return await prisma.appointment.findMany({
+    where: {
+      OR: [
+        {
+          createdById: userId,
+          startTime: { lt: endTime },
+          endTime: { gt: startTime },
+          status: { not: AppointmentStatus.CANCELLED }
+        },
+        {
+          participants: {
+            some: {
+              userId,
+            }
+          },
+          startTime: { lt: endTime },
+          endTime: { gt: startTime },
+          status: { not: AppointmentStatus.CANCELLED }
+        }
+      ]
+    },
+    include: {
+      createdBy: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          role: true
+        }
+      },
+      participants: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              role: true
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+function generateTimeSlots(
+  start: Date,
+  end: Date,
+  durationMinutes: number,
+  businessHoursOnly: boolean = true
+): TimeSlot[] {
+  const slots: TimeSlot[] = [];
+  const currentDate = new Date(start);
+  const businessStart = 9; // 9 AM
+  const businessEnd = 17; // 5 PM
+
+  while (currentDate < end) {
+    const hour = currentDate.getUTCHours();
+    const isBusinessHours = hour >= businessStart && hour < businessEnd;
+    
+    if (!businessHoursOnly || isBusinessHours) {
+      const slotStart = new Date(currentDate);
+      const slotEnd = addMinutes(slotStart, durationMinutes);
+      
+      // Ensure slot doesn't go beyond end time
+      if (slotEnd <= end) {
+        slots.push({
+          startTime: slotStart.toISOString(),
+          endTime: slotEnd.toISOString()
+        });
+      }
+    }
+    
+    // Move to next slot
+    currentDate.setUTCMinutes(currentDate.getUTCMinutes() + durationMinutes);
+  }
+  
+  return slots;
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const searchParams = request.nextUrl.searchParams;
+    const userId = searchParams.get("userId");
+    const startTime = searchParams.get("startTime");
+    const endTime = searchParams.get("endTime");
+    const appointmentType = searchParams.get("appointmentType");
+    const homeId = searchParams.get("homeId");
+
+    // Simple presence checks instead of Zod validation
+    if (!userId || !startTime || !endTime || !appointmentType) {
+      return NextResponse.json(
+        { error: "Missing required parameters" },
+        { status: 400 }
+      );
+    }
+
+    // Validate dates manually
+    let startDate: Date, endDate: Date;
+    try {
+      startDate = new Date(startTime);
+      endDate = new Date(endTime);
+      
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        throw new Error("Invalid date format");
+      }
+    } catch (error) {
+      return NextResponse.json(
+        { error: "Invalid date format" },
+        { status: 400 }
+      );
+    }
+
+    // Check if appointmentType is valid
+    if (!Object.values(AppointmentType).includes(appointmentType as AppointmentType)) {
+      return NextResponse.json(
+        { error: "Invalid appointment type" },
+        { status: 400 }
+      );
+    }
+
+    const conflicts = await findConflicts(
+      userId,
+      startDate,
+      endDate
     );
-  } else if (error instanceof z.ZodError) {
-    // Handle validation errors
+
+    const availabilitySlots = await prisma.availabilitySlot.findMany({
+      where: {
+        userId,
+        startTime: { lte: endDate },
+        endTime: { gte: startDate },
+        isAvailable: true,
+        OR: [
+          { availableFor: { has: appointmentType } },
+          { availableFor: { isEmpty: true } }
+        ],
+        ...(homeId ? { homeId } : {})
+      }
+    });
+
+    // Check if time is within business hours (9 AM - 5 PM) using UTC
+    const hour = startDate.getUTCHours();
+    const isWithinBusinessHours = hour >= 9 && hour < 17;
+    const isWeekendDay = isWeekendUTC(startDate);
+    
+    const hasAvailabilitySlots = availabilitySlots.length > 0;
+    const isAvailable = conflicts.length === 0 && 
+                        (hasAvailabilitySlots || (!isWeekendDay && isWithinBusinessHours));
+
+    return NextResponse.json({
+      data: {
+        isAvailable,
+        conflicts: conflicts.map(mapPrismaAppointmentToFrontend)
+      }
+    });
+  } catch (error) {
+    console.error("Error checking availability:", error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Invalid request data',
-        validation: error.errors 
-      }, 
-      { status: 400 }
-    );
-  } else {
-    // Handle unknown errors
-    logger.error('Unexpected error in availability API', { error });
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: 'An unexpected error occurred' 
-      }, 
+      { error: "Failed to check availability" },
       { status: 500 }
     );
   }
 }
 
-/**
- * Checks if the user has permission to view another user's availability
- */
-function canViewUserAvailability(
-  requestingUserRole: UserRole,
-  requestingUserId: string,
-  targetUserId: string
-): boolean {
-  // Admin and staff can view anyone's availability
-  if (requestingUserRole === UserRole.ADMIN || requestingUserRole === UserRole.STAFF) {
-    return true;
-  }
-  
-  // Users can view their own availability
-  if (requestingUserId === targetUserId) {
-    return true;
-  }
-  
-  // Operators can view caregivers' and their own availability
-  if (requestingUserRole === UserRole.OPERATOR) {
-    // In a real app, we'd check if the operator manages the caregiver
-    // For now, allow operators to view any caregiver's availability
-    return true;
-  }
-  
-  // Family members can view operators' and caregivers' availability
-  if (requestingUserRole === UserRole.FAMILY) {
-    // In a real app, we'd check if the family member has a relationship with the operator/caregiver
-    // For now, allow family members to view any operator's or caregiver's availability
-    return true;
-  }
-  
-  // Default: deny access
-  return false;
-}
-
-// ========================================================================
-// API ROUTE HANDLERS
-// ========================================================================
-
-/**
- * GET handler for checking user availability
- */
-export async function GET(request: NextRequest) {
-  try {
-    // 1. Authenticate user
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' }, 
-        { status: 401 }
-      );
-    }
-    
-    // 2. Parse and validate query parameters
-    const url = new URL(request.url);
-    const rawParams: Record<string, string> = {};
-    
-    url.searchParams.forEach((value, key) => {
-      rawParams[key] = value;
-    });
-    
-    const parseResult = CheckAvailabilityQuerySchema.safeParse(rawParams);
-    
-    if (!parseResult.success) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Invalid query parameters',
-          validation: parseResult.error.errors 
-        }, 
-        { status: 400 }
-      );
-    }
-    
-    const query = parseResult.data;
-    
-    // 3. Check permission to view user availability
-    const hasPermission = canViewUserAvailability(
-      session.user.role as UserRole,
-      session.user.id,
-      query.userId
-    );
-    
-    if (!hasPermission) {
-      return NextResponse.json(
-        { success: false, error: 'You do not have permission to view this user\'s availability' }, 
-        { status: 403 }
-      );
-    }
-    
-    // 4. Check availability
-    const availabilityCheck = await checkUserAvailability(
-      query.userId,
-      {
-        startTime: query.startTime,
-        endTime: query.endTime
-      },
-      query.appointmentType,
-      query.homeId
-    );
-    
-    // 5. Return formatted response
-    return NextResponse.json({
-      success: true,
-      data: {
-        isAvailable: availabilityCheck.isAvailable,
-        conflicts: availabilityCheck.conflicts || [],
-        userId: availabilityCheck.userId,
-        requestedSlot: availabilityCheck.requestedSlot,
-        appointmentType: availabilityCheck.appointmentType
-      }
-    });
-  } catch (error) {
-    return handleApiError(error);
-  }
-}
-
-/**
- * POST handler for finding available slots
- */
 export async function POST(request: NextRequest) {
   try {
-    // 1. Authenticate user
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' }, 
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    
-    // 2. Parse request body
+
     const body = await request.json();
+    const validationResult = availableSlotsRequestSchema.safeParse(body);
     
-    const parseResult = FindAvailableSlotsSchema.safeParse(body);
-    
-    if (!parseResult.success) {
+    if (!validationResult.success) {
       return NextResponse.json(
         { 
-          success: false, 
-          error: 'Invalid request data',
-          validation: parseResult.error.errors 
-        }, 
+          error: "Invalid request parameters", 
+          details: validationResult.error.format() 
+        },
         { status: 400 }
       );
     }
@@ -242,97 +272,173 @@ export async function POST(request: NextRequest) {
       endDate, 
       appointmentType, 
       duration, 
-      homeId,
-      excludeWeekends,
-      businessHoursOnly,
-      timezone
-    } = parseResult.data;
+      homeId, 
+      excludeWeekends, 
+      businessHoursOnly 
+    } = validationResult.data;
     
-    // 3. Check permission to view user availability
-    const hasPermission = canViewUserAvailability(
-      session.user.role as UserRole,
-      session.user.id,
-      userId
-    );
+    // Parse dates using UTC
+    const startDateTime = new Date(startDate);
+    const endDateTime = new Date(endDate);
     
-    if (!hasPermission) {
-      return NextResponse.json(
-        { success: false, error: 'You do not have permission to view this user\'s availability' }, 
-        { status: 403 }
-      );
-    }
-    
-    // 4. Find available slots
-    const availableSlots = await findAvailableSlots(
-      userId,
-      {
-        start: new Date(startDate),
-        end: new Date(endDate)
-      },
-      appointmentType,
-      duration,
-      homeId
-    );
-    
-    // 5. Apply additional filters if needed
-    let filteredSlots = availableSlots;
-    
-    if (excludeWeekends) {
-      filteredSlots = filteredSlots.filter(slot => {
-        const date = new Date(slot.startTime);
-        const day = date.getDay();
-        return day !== 0 && day !== 6; // 0 = Sunday, 6 = Saturday
-      });
-    }
-    
-    if (businessHoursOnly) {
-      filteredSlots = filteredSlots.filter(slot => {
-        const date = new Date(slot.startTime);
-        const hour = date.getHours();
-        return hour >= 9 && hour < 17; // 9 AM to 5 PM
-      });
-    }
-    
-    // 6. Group slots by day for better UI presentation
-    const slotsByDay: Record<string, typeof filteredSlots> = {};
-    
-    filteredSlots.forEach(slot => {
-      const date = new Date(slot.startTime);
-      const dayKey = date.toISOString().split('T')[0]; // YYYY-MM-DD
-      
-      if (!slotsByDay[dayKey]) {
-        slotsByDay[dayKey] = [];
+    // Get all availability slots for the user in the date range
+    const availabilitySlots = await prisma.availabilitySlot.findMany({
+      where: {
+        userId,
+        startTime: { lte: endDateTime },
+        endTime: { gte: startDateTime },
+        isAvailable: true,
+        OR: [
+          { availableFor: { has: appointmentType } },
+          { availableFor: { isEmpty: true } }
+        ],
+        ...(homeId ? { homeId } : {})
       }
-      
-      slotsByDay[dayKey].push(slot);
     });
     
-    // 7. Return formatted response
+    // Get all conflicts for the user in the date range
+    const conflicts = await prisma.appointment.findMany({
+      where: {
+        OR: [
+          {
+            createdById: userId,
+            startTime: { lt: endDateTime },
+            endTime: { gt: startDateTime },
+            status: { not: AppointmentStatus.CANCELLED }
+          },
+          {
+            participants: {
+              some: {
+                userId,
+              }
+            },
+            startTime: { lt: endDateTime },
+            endTime: { gt: startDateTime },
+            status: { not: AppointmentStatus.CANCELLED }
+          }
+        ]
+      }
+    });
+    
+    // Build a quick lookup of conflicting start times (UTC HH:MM) to easily
+    // remove same-time slots across the search window.  We intentionally keep
+    // only the hours and minutes to stay agnostic to the specific date.
+    const conflictStartTimesUTC = new Set(
+      conflicts.map(c => {
+        const d =
+          c.startTime instanceof Date
+            ? (c.startTime as Date)
+            : new Date(c.startTime as unknown as string);
+        return d.toISOString().slice(11, 16); // e.g. "10:00"
+      })
+    );
+    
+    // Generate available slots
+    const allSlots: TimeSlot[] = [];
+    const slotsByDay: Record<string, TimeSlot[]> = {};
+    
+    // Process each day in the range using UTC boundaries
+    const startDateUTC = utcStartOfDay(startDateTime);
+    const endDateUTC = utcEndOfDay(endDateTime);
+    let currentDateUTC = new Date(startDateUTC);
+    
+    while (currentDateUTC <= endDateUTC) {
+      // Skip weekends if excludeWeekends is true
+      if (excludeWeekends && isWeekendUTC(currentDateUTC)) {
+        currentDateUTC.setUTCDate(currentDateUTC.getUTCDate() + 1);
+        continue;
+      }
+      
+      const dayStartUTC = utcStartOfDay(currentDateUTC);
+      const dayEndUTC = utcEndOfDay(currentDateUTC);
+      
+      // Find availability slots for this day
+      const dayAvailabilitySlots = availabilitySlots.filter(slot => {
+        const slotStart = new Date(slot.startTime);
+        const slotEnd = new Date(slot.endTime);
+        return slotStart <= dayEndUTC && slotEnd >= dayStartUTC;
+      });
+
+      let daySlots: TimeSlot[] = [];
+
+      if (dayAvailabilitySlots.length > 0) {
+        // Generate slots based on each availability slot
+        for (const slot of dayAvailabilitySlots) {
+          const slotStart = new Date(
+            Math.max(new Date(slot.startTime).getTime(), dayStartUTC.getTime())
+          );
+          const slotEnd = new Date(
+            Math.min(new Date(slot.endTime).getTime(), dayEndUTC.getTime())
+          );
+
+          const generated = generateTimeSlots(
+            slotStart,
+            slotEnd,
+            duration,
+            businessHoursOnly
+          );
+          daySlots.push(...generated);
+        }
+      } else {
+        // Default business hours (9 AM - 5 PM) in UTC
+        const businessStartUTC = new Date(currentDateUTC);
+        businessStartUTC.setUTCHours(9, 0, 0, 0);
+        
+        const businessEndUTC = new Date(currentDateUTC);
+        businessEndUTC.setUTCHours(17, 0, 0, 0);
+        
+        daySlots = generateTimeSlots(
+          businessStartUTC,
+          businessEndUTC,
+          duration,
+          false // Already within business hours
+        );
+      }
+      
+      // Filter out slots that conflict with appointments
+      const availableDaySlots = daySlots.filter(slot => {
+        const slotStartMs = new Date(slot.startTime).getTime();
+        const slotEndMs = new Date(slot.endTime).getTime();
+        // First, drop slot if its start HH:MM matches any conflict start HH:MM
+        if (conflictStartTimesUTC.has(slot.startTime.slice(11, 16))) {
+          return false;
+        }
+
+        return !conflicts.some(conflict => {
+          const conflictStartMs = conflict.startTime instanceof Date
+            ? conflict.startTime.getTime()
+            : new Date(conflict.startTime as unknown as string).getTime();
+          const conflictEndMs = conflict.endTime instanceof Date
+            ? conflict.endTime.getTime()
+            : new Date(conflict.endTime as unknown as string).getTime();
+
+          return Math.max(slotStartMs, conflictStartMs) <
+                 Math.min(slotEndMs, conflictEndMs);
+        });
+      });
+      
+      // Add to results using UTC date key
+      if (availableDaySlots.length > 0) {
+        const dateKey = toUtcDayKey(currentDateUTC);
+        slotsByDay[dateKey] = availableDaySlots;
+        allSlots.push(...availableDaySlots);
+      }
+      
+      // Move to next day in UTC
+      currentDateUTC.setUTCDate(currentDateUTC.getUTCDate() + 1);
+    }
+    
     return NextResponse.json({
-      success: true,
       data: {
-        availableSlots: filteredSlots,
-        slotsByDay,
-        totalSlots: filteredSlots.length,
-        requestedDuration: duration,
-        timezone: timezone || 'UTC'
+        availableSlots: allSlots,
+        slotsByDay
       }
     });
   } catch (error) {
-    return handleApiError(error);
+    console.error("Error finding available slots:", error);
+    return NextResponse.json(
+      { error: "Failed to find available slots" },
+      { status: 500 }
+    );
   }
-}
-
-/**
- * OPTIONS handler for CORS preflight requests
- */
-export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 204,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-    }
-  });
 }

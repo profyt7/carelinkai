@@ -29,6 +29,41 @@ enum UserStatus {
   DEACTIVATED
 }
 
+// ==================== MARKETPLACE ENUMS ====================
+
+enum CategoryType {
+  SETTING
+  CARE_TYPE
+  SERVICE
+  SPECIALTY
+}
+
+enum MarketplaceListingStatus {
+  DRAFT
+  OPEN
+  HIRED
+  CLOSED
+}
+
+enum ApplicationStatus {
+  APPLIED
+  INVITED
+  INTERVIEWING
+  OFFERED
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+}
+
+enum BackgroundCheckStatus {
+  NOT_STARTED
+  PENDING
+  CLEAR
+  CONSIDER
+  EXPIRED
+  FAILED
+}
+
 model User {
   id                String    @id @default(cuid())
   email             String    @unique
@@ -91,6 +126,9 @@ model User {
   uploadedPhotos        GalleryPhoto[]        @relation("PhotoUploader")
   activities            ActivityFeedItem[]    @relation("ActivityActor")
   
+  // Marketplace relationships
+  marketplaceListings   MarketplaceListing[]  @relation("UserListings")
+  
   // Timestamps
   createdAt         DateTime   @default(now())
   updatedAt         DateTime   @updatedAt
@@ -144,6 +182,7 @@ model Family {
   notes                FamilyNote[]
   galleries            SharedGallery[]
   activities           ActivityFeedItem[]
+  emergencyPreferences EmergencyPreference[]
   
   // Timestamps
   createdAt         DateTime  @default(now())
@@ -164,6 +203,9 @@ model Operator {
   user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   homes             AssistedLivingHome[]
   caregivers        CaregiverEmployment[]
+  
+  // Org-level settings / overrides
+  preferences       Json?
   
   // Timestamps
   createdAt         DateTime  @default(now())
@@ -189,6 +231,16 @@ model Caregiver {
   shifts            CaregiverShift[]
   reviews           CaregiverReview[]
   
+  // Compliance & marketplace fields
+  backgroundCheckStatus  BackgroundCheckStatus @default(NOT_STARTED)
+  backgroundCheckProvider String?
+  backgroundCheckReportUrl String?
+  specialties            String[]
+
+  // Marketplace relations
+  marketplaceApplications MarketplaceApplication[]
+  marketplaceHires        MarketplaceHire[]
+
   // Timestamps
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
@@ -357,6 +409,7 @@ model Resident {
   // Family collaboration relationships
   familyDocuments      FamilyDocument[]
   familyNotes          FamilyNote[]
+  emergencyPreferences EmergencyPreference[]
   
   // Timestamps
   createdAt         DateTime  @default(now())
@@ -539,6 +592,7 @@ model CaregiverShift {
   // Relationships
   home              AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
   caregiver         Caregiver? @relation(fields: [caregiverId], references: [id])
+  marketplaceHire   MarketplaceHire? @relation("ShiftHire")
   
   // Timestamps
   createdAt         DateTime  @default(now())
@@ -628,6 +682,10 @@ model Payment {
   // Relationships
   user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   booking           Booking?  @relation(fields: [bookingId], references: [id])
+  marketplaceListingId String?
+  marketplaceHireId    String?  @unique
+  marketplaceListing   MarketplaceListing? @relation(fields: [marketplaceListingId], references: [id])
+  marketplaceHire      MarketplaceHire?    @relation(fields: [marketplaceHireId], references: [id])
   
   // Timestamps
   createdAt         DateTime  @default(now())
@@ -638,6 +696,7 @@ model Payment {
   @@index([bookingId])
   @@index([status])
   @@index([type])
+  @@index([marketplaceListingId])
 }
 
 model FamilyWallet {
@@ -1358,4 +1417,132 @@ model ActivityFeedItem {
   @@index([actorId])
   @@index([type])
   @@index([createdAt])
+}
+
+/// -----------------------------------------------------
+/// Emergency escalation preferences
+/// -----------------------------------------------------
+model EmergencyPreference {
+  id               String   @id @default(cuid())
+  familyId         String
+  residentId       String?
+  escalationChain  Json     // Ordered list of contacts and methods
+  notifyMethods    String[] // e.g. ["SMS", "EMAIL", "CALL"]
+  careInstructions String?  @db.Text
+  lastConfirmedAt  DateTime?
+
+  // Relations
+  family           Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  resident         Resident? @relation(fields: [residentId], references: [id])
+
+  // Timestamps
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@unique([familyId, residentId])
+  @@index([familyId])
+  @@index([residentId])
+}
+
+// =====================================================
+// ================ MARKETPLACE MODELS =================
+// =====================================================
+
+model MarketplaceCategory {
+  id         String       @id @default(cuid())
+  name       String
+  slug       String       @unique
+  type       CategoryType
+  sortOrder  Int          @default(0)
+  isActive   Boolean      @default(true)
+
+  // Timestamps
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  @@index([type])
+  @@index([isActive])
+}
+
+model MarketplaceListing {
+  id                String       @id @default(cuid())
+  postedByUserId    String
+  title             String
+  description       String       @db.Text
+  hourlyRateMin     Decimal?     @db.Decimal(10, 2)
+  hourlyRateMax     Decimal?     @db.Decimal(10, 2)
+  setting           String?
+  careTypes         String[]
+  services          String[]
+  specialties       String[]
+  city              String?
+  state             String?
+  zipCode           String?
+  latitude          Float?
+  longitude         Float?
+  startTime         DateTime?
+  endTime           DateTime?
+  status            MarketplaceListingStatus @default(OPEN)
+
+  // Relationships
+  postedBy          User            @relation("UserListings", fields: [postedByUserId], references: [id], onDelete: Cascade)
+  applications      MarketplaceApplication[]
+  hires             MarketplaceHire[]
+  payments          Payment[]
+
+  // Timestamps
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([postedByUserId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([city, state])
+  @@index([zipCode])
+}
+
+model MarketplaceApplication {
+  id            String            @id @default(cuid())
+  listingId     String
+  caregiverId   String
+  status        ApplicationStatus @default(APPLIED)
+  note          String?           @db.Text
+
+  // Relationships
+  listing       MarketplaceListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  caregiver     Caregiver          @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+  hire          MarketplaceHire?   @relation("ApplicationHire")
+
+  // Timestamps
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@unique([listingId, caregiverId])
+  @@index([listingId])
+  @@index([caregiverId])
+  @@index([status])
+}
+
+model MarketplaceHire {
+  id             String             @id @default(cuid())
+  listingId      String
+  caregiverId    String
+  applicationId  String?            @unique
+  shiftId        String?            @unique
+  acceptedAt     DateTime           @default(now())
+
+  // Relationships
+  listing        MarketplaceListing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  caregiver      Caregiver           @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+  application    MarketplaceApplication? @relation("ApplicationHire", fields: [applicationId], references: [id])
+  shift          CaregiverShift?     @relation("ShiftHire", fields: [shiftId], references: [id])
+  payment        Payment?
+
+  // Timestamps
+  createdAt      DateTime           @default(now())
+
+  @@index([listingId])
+  @@index([caregiverId])
+  @@index([applicationId])
+  @@index([shiftId])
 }
