@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { formatDistance } from "date-fns";
 import { FiMapPin, FiDollarSign, FiCalendar, FiClock } from "react-icons/fi";
 import ListingActions from "./ListingActions";
+import RecommendedCaregivers from "@/components/marketplace/RecommendedCaregivers";
 
 export const dynamic = "force-dynamic";
 
@@ -221,6 +222,9 @@ export default async function ListingDetailPage({
             hireCount={listing._count.hires}
             status={listing.status}
           />
+
+          {/* Recommended caregivers (AI Matching) */}
+          <RecommendedCaregivers listingId={listing.id} />
         </div>
       </div>
     </div>

@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import CaregiverCard from "@/components/marketplace/CaregiverCard";
 import Image from "next/image";
+import RecommendedListings from "@/components/marketplace/RecommendedListings";
 
 type Caregiver = {
   id: string;
@@ -542,12 +543,20 @@ export default function MarketplacePage() {
                 </div>
               )
             ) : activeTab === "jobs" ? (
+              /* Jobs tab ----------------------------------------------------- */
               listingsLoading ? (
                 <div className="py-20 text-center text-gray-500">Loading jobs…</div>
               ) : listings.length === 0 ? (
                 <div className="py-20 text-center text-gray-500">No jobs found</div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
+                  {/* AI Matching – recommended jobs for caregivers */}
+                  {session?.user?.role === "CAREGIVER" && (
+                    <div className="col-span-full mb-6">
+                      <RecommendedListings />
+                      <div className="my-4" /> {/* divider margin */}
+                    </div>
+                  )}
                   {listings.map((job) => (
                     <div key={job.id} className="bg-white border rounded-md p-4">
                       <div className="flex items-start mb-2">
