@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { FiUser, FiDollarSign } from "react-icons/fi";
+import { headers } from "next/headers";
 
 type RecommendedCaregiver = {
   id: string;
@@ -28,8 +29,11 @@ export default async function RecommendedCaregivers({ listingId }: { listingId: 
   
   try {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL || "http://localhost:5000"}/api/matching/recommendations?target=caregivers&listingId=${listingId}&limit=6`,
-      { next: { revalidate: 3600 } } // Cache for 1 hour
+      `/api/matching/recommendations?target=caregivers&listingId=${listingId}&limit=6`,
+      {
+        headers: { cookie: headers().get("cookie") ?? "" },
+        cache: "no-store",
+      }
     );
     
     if (!response.ok) {
