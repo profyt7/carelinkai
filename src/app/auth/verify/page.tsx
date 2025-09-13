@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -19,25 +19,8 @@ export default function VerifyEmailPage() {
   const [email, setEmail] = useState("");
   const [countdown, setCountdown] = useState(0);
 
-  // Verify token when component mounts if token is present
-  useEffect(() => {
-    if (token) {
-      verifyToken(token);
-    }
-  }, [token]);
-
-  // Countdown timer for resend cooldown
-  useEffect(() => {
-    if (countdown > 0) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-    // Explicit undefined return to satisfy noImplicitReturns / consistent return paths
-    return;
-  }, [countdown]);
-
   // Function to verify the token
-  async function verifyToken(verificationToken: string) {
+  const verifyToken = useCallback(async (verificationToken: string) => {
     setIsVerifying(true);
     setVerificationStatus("idle");
     setMessage("");
@@ -72,7 +55,24 @@ export default function VerifyEmailPage() {
     } finally {
       setIsVerifying(false);
     }
-  }
+  }, [router]);
+
+  // Verify token when component mounts if token is present
+  useEffect(() => {
+    if (token) {
+      verifyToken(token);
+    }
+  }, [token, verifyToken]);
+
+  // Countdown timer for resend cooldown
+  useEffect(() => {
+    if (countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+    // Explicit undefined return to satisfy noImplicitReturns / consistent return paths
+    return;
+  }, [countdown]);
 
   // Function to resend verification email
   async function resendVerificationEmail(e: React.FormEvent) {
