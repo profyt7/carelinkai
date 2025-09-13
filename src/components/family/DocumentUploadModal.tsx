@@ -15,6 +15,7 @@ import {
   FiPlus,
   FiTag
 } from "react-icons/fi";
+import Image from "next/image";
 import type { FamilyDocumentType } from "@/lib/types/family";
 
 // Maximum file size in bytes (10MB)
@@ -580,11 +581,13 @@ export default function DocumentUploadModal({
                           <li key={file.id} className="flex items-center justify-between py-3 pl-3 pr-4 text-sm">
                             <div className="flex w-0 flex-1 items-center">
                               {file.preview ? (
-                                <div className="h-10 w-10 flex-shrink-0 rounded-md overflow-hidden bg-gray-100">
-                                  <img 
-                                    src={file.preview} 
-                                    alt={file.name} 
-                                    className="h-full w-full object-cover" 
+                                <div className="relative h-10 w-10 flex-shrink-0 rounded-md overflow-hidden bg-gray-100">
+                                  <Image
+                                    src={file.preview}
+                                    alt={file.name}
+                                    fill
+                                    sizes="40px"
+                                    className="object-cover"
                                   />
                                 </div>
                               ) : (

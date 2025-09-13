@@ -13,6 +13,7 @@ import {
   FiAlertCircle
 } from "react-icons/fi";
 import ApplicationActions from "./ApplicationActions";
+import Image from "next/image";
 
 export const dynamic = "force-dynamic";
 
@@ -216,12 +217,14 @@ export default async function ApplicationsPage({ params }: { params: { id: strin
                 >
                   <div className="p-4 bg-gray-50 border-b border-gray-200 flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10 bg-gray-200 rounded-full overflow-hidden">
+                      <div className="flex-shrink-0 h-10 w-10 bg-gray-200 rounded-full overflow-hidden relative">
                         {getProfileImage(application.caregiver.user.profileImageUrl) ? (
-                          <img
+                          <Image
                             src={getProfileImage(application.caregiver.user.profileImageUrl)}
                             alt={`${application.caregiver.user.firstName} ${application.caregiver.user.lastName}`}
-                            className="h-full w-full object-cover"
+                            fill
+                            sizes="40px"
+                            className="object-cover"
                           />
                         ) : (
                           <div className="h-full w-full flex items-center justify-center text-gray-500 font-medium">

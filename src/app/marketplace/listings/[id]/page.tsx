@@ -4,6 +4,7 @@ import { formatDistance } from "date-fns";
 import { FiMapPin, FiDollarSign, FiCalendar, FiClock } from "react-icons/fi";
 import ListingActions from "./ListingActions";
 import RecommendedCaregivers from "@/components/marketplace/RecommendedCaregivers";
+import Image from "next/image";
 
 export const dynamic = "force-dynamic";
 
@@ -116,12 +117,14 @@ export default async function ListingDetailPage({
           
           {/* Posted By */}
           <div className="flex items-center mt-4">
-            <div className="flex-shrink-0 h-10 w-10 bg-gray-200 rounded-full overflow-hidden">
+            <div className="flex-shrink-0 h-10 w-10 bg-gray-200 rounded-full overflow-hidden relative">
               {profileImage ? (
-                <img
+                <Image
                   src={profileImage}
                   alt={`${listing.postedBy?.firstName} ${listing.postedBy?.lastName}`}
-                  className="h-full w-full object-cover"
+                  fill
+                  sizes="40px"
+                  className="object-cover"
                 />
               ) : (
                 <div className="h-full w-full flex items-center justify-center text-gray-500">
