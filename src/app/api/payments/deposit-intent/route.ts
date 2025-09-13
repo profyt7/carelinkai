@@ -80,8 +80,8 @@ export async function POST(request: NextRequest) {
       } else {
         // Existing wallet but missing customer: create a Stripe customer
         const customer = await stripe.customers.create({
-          email: session.user.email,
-          name: session.user.name,
+          email: session.user.email ?? undefined,
+          name: session.user.name ?? undefined,
           metadata: {
             userId: session.user.id,
             familyId: family.id,
@@ -101,7 +101,8 @@ export async function POST(request: NextRequest) {
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amountInCents,
       currency,
-      customer: wallet.stripeCustomerId,
+      // Stripe typings expect `string | undefined`. Cast nullable ID accordingly.
+      customer: wallet.stripeCustomerId ?? undefined,
       metadata: {
         familyId: family.id,
         userId: session.user.id,

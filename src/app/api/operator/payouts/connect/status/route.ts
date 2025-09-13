@@ -34,10 +34,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Get current user preferences (or initialize empty object)
-    const preferences = operator.user.preferences || {};
+    const preferences = (operator.user.preferences as any) || {};
     
     // Check if user has a Connect account ID
-    const accountId = preferences.stripeConnectAccountId;
+    const accountId = (preferences as any).stripeConnectAccountId as string | undefined;
     
     // If no account exists, return default status
     if (!accountId) {

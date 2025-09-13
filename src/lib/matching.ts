@@ -75,7 +75,7 @@ export function scoreCaregiverForListing(
   
   // Calculate distance score
   const distanceScore = calculateDistanceScore(caregiver, listing, options.maxDistance);
-  result.factors.distance = {
+  result.factors['distance'] = {
     score: distanceScore.score,
     weight: normalizedWeights.distance,
     reason: distanceScore.reason,
@@ -86,7 +86,7 @@ export function scoreCaregiverForListing(
   
   // Calculate availability score
   const availabilityScore = calculateAvailabilityScore(caregiver, listing, options.caregiverAvailability);
-  result.factors.availability = {
+  result.factors['availability'] = {
     score: availabilityScore.score,
     weight: normalizedWeights.availability,
     reason: availabilityScore.reason,
@@ -97,7 +97,7 @@ export function scoreCaregiverForListing(
   
   // Calculate specialties score
   const specialtiesScore = calculateSpecialtiesScore(caregiver, listing);
-  result.factors.specialties = {
+  result.factors['specialties'] = {
     score: specialtiesScore.score,
     weight: normalizedWeights.specialties,
     reason: specialtiesScore.reason,
@@ -108,7 +108,7 @@ export function scoreCaregiverForListing(
   
   // Calculate rating score
   const ratingScore = calculateRatingScore(caregiver, options.caregiverReviews);
-  result.factors.rating = {
+  result.factors['rating'] = {
     score: ratingScore.score,
     weight: normalizedWeights.rating,
     reason: ratingScore.reason,
@@ -119,7 +119,7 @@ export function scoreCaregiverForListing(
   
   // Calculate rate fit score
   const rateFitScore = calculateRateFitScore(caregiver, listing);
-  result.factors.rateFit = {
+  result.factors['rateFit'] = {
     score: rateFitScore.score,
     weight: normalizedWeights.rateFit,
     reason: rateFitScore.reason,

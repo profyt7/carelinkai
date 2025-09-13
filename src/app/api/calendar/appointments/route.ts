@@ -473,7 +473,7 @@ export async function POST(request: NextRequest) {
             appointmentId: appointment.id,
             userId: p.userId,
             name: p.name,
-            role: p.role,
+            role: p.role as any,
             status: "PENDING"
           }))
         });
@@ -548,7 +548,7 @@ export async function POST(request: NextRequest) {
             appointmentId: appointment.id,
             userId: p.userId,
             name: p.name,
-            role: p.role,
+            role: p.role as any,
             status: p.status || "PENDING"
           }))
         });
@@ -668,7 +668,7 @@ export async function PUT(request: NextRequest) {
             appointmentId: id,
             userId: p.userId,
             name: p.name,
-            role: p.role,
+            role: p.role as any,
             status: p.status || "PENDING"
           }))
         });

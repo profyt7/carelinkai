@@ -3,7 +3,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { FiMessageSquare, FiSearch, FiMoreVertical, FiChevronLeft } from 'react-icons/fi';
-import ChatInterface, { Conversation, Message, Participant } from '@/components/messaging/ChatInterface';
+import ChatInterface, {
+  type Conversation,
+  type Message,
+  type Participant,
+} from '@/components/messaging/ChatInterface';
 import Image from 'next/image';
 
 // Types for API responses

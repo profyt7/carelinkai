@@ -148,8 +148,9 @@ export default function FamilyPage() {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
 
   // Check if Stripe is configured
-  const isStripeConfigured = typeof process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY === 'string' && 
-    process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY.length > 0;
+  const isStripeConfigured =
+    typeof process.env['NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY'] === 'string' &&
+    process.env['NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY'].length > 0;
 
   // Load DepositModal dynamically so Stripe is only imported when needed
   const DepositModal = dynamic(
@@ -172,7 +173,10 @@ export default function FamilyPage() {
     const groups: Record<string, Activity[]> = {};
     
     activities.forEach(activity => {
-      const date = new Date(activity.createdAt).toISOString().split('T')[0];
+      // Ensure the split result is treated as a definite string for object indexing
+      const date = new Date(activity.createdAt)
+        .toISOString()
+        .split('T')[0] as string;
       if (!groups[date]) {
         groups[date] = [];
       }

@@ -20,12 +20,12 @@ export async function POST(request: NextRequest) {
     let event: Stripe.Event;
     
     // Verify webhook signature if secret is set
-    if (process.env.STRIPE_WEBHOOK_SECRET && signature) {
+    if (process.env['STRIPE_WEBHOOK_SECRET'] && signature) {
       try {
         event = stripe.webhooks.constructEvent(
           rawBody,
           signature,
-          process.env.STRIPE_WEBHOOK_SECRET
+          process.env['STRIPE_WEBHOOK_SECRET']
         );
       } catch (err) {
         console.error("⚠️ Webhook signature verification failed:", err);
@@ -64,9 +64,9 @@ export async function POST(request: NextRequest) {
     const amount = paymentIntent.amount; // in cents
     const currency = paymentIntent.currency;
     const metadata = paymentIntent.metadata || {};
-    const familyId = metadata.familyId;
-    const walletId = metadata.walletId;
-    const userId = metadata.userId;
+    const familyId = (metadata as any)["familyId"];
+    const walletId = (metadata as any)["walletId"];
+    const userId = (metadata as any)["userId"];
     
     // Validate required metadata
     if (!familyId || !userId) {
@@ -137,12 +137,9 @@ export async function POST(request: NextRequest) {
       // Create payment record
       const payment = await tx.payment.create({
         data: {
-          familyId,
           userId,
           amount: amountDecimal,
-          currency,
           type: "DEPOSIT",
-          status: "SUCCEEDED",
           stripePaymentId,
         },
       });
@@ -153,8 +150,6 @@ export async function POST(request: NextRequest) {
           walletId: wallet.id,
           type: "DEPOSIT",
           amount: amountDecimal,
-          currency,
-          balanceAfter: newBalance,
         },
       });
       

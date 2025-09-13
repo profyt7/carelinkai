@@ -315,7 +315,7 @@ export default function ProfileSettings() {
     
     // Clear error for this field if exists
     if (credErrors[name]) {
-      setCredErrors((prev) => {
+      setCredErrors((prev: any) => {
         const newErrors = { ...prev };
         delete newErrors[name];
         return newErrors;
@@ -331,7 +331,7 @@ export default function ProfileSettings() {
       
       // Clear file error if exists
       if (credErrors.file) {
-        setCredErrors((prev) => {
+        setCredErrors((prev: any) => {
           const newErrors = { ...prev };
           delete newErrors.file;
           return newErrors;

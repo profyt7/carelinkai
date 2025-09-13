@@ -114,7 +114,7 @@ export default function EmergencyPreferencesPage() {
       newChain[index] = {
         ...newChain[index],
         [field]: value,
-      };
+      } as EscalationContact; // Ensure the object satisfies required fields
       return {
         ...prev,
         escalationChain: newChain,

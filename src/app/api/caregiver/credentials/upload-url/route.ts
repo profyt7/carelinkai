@@ -15,10 +15,10 @@ const uploadUrlRequestSchema = z.object({
 
 // S3 configuration
 const S3_CONFIG = {
-  region: process.env.AWS_REGION || "us-west-2",
-  bucket: process.env.AWS_S3_BUCKET || "carelinkai-credentials",
-  endpoint: process.env.AWS_S3_ENDPOINT,
-  forcePathStyle: process.env.AWS_S3_FORCE_PATH_STYLE === "true",
+  region: process.env["AWS_REGION"] || "us-west-2",
+  bucket: process.env["AWS_S3_BUCKET"] || "carelinkai-credentials",
+  endpoint: process.env["AWS_S3_ENDPOINT"],
+  forcePathStyle: process.env["AWS_S3_FORCE_PATH_STYLE"] === "true",
   presignedUrlExpiration: 3600, // 1 hour
 };
 
