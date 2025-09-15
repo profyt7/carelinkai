@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useSession, getSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -130,7 +130,7 @@ export default function ProfileSettings() {
     if (status === "authenticated") {
       fetchProfileData();
     }
-  }, [status, router]);
+  }, [status, router, fetchProfileData]);
   
   // Fetch credentials if user is a caregiver
   useEffect(() => {
@@ -140,7 +140,7 @@ export default function ProfileSettings() {
   }, [userRole]);
   
   // Fetch profile data from API
-  const fetchProfileData = async () => {
+  const fetchProfileData = useCallback(async () => {
     try {
       setLoading(true);
       const res = await fetch("/api/profile", {
@@ -209,7 +209,7 @@ export default function ProfileSettings() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
   
   // Fetch caregiver credentials
   const fetchCredentials = async () => {
