@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import DocumentUploadModal from '@/components/family/DocumentUploadModal';
@@ -96,7 +96,7 @@ export default function FamilyPage() {
   type ActivityFilter = 'ALL' | 'DOCUMENTS' | 'NOTES' | 'MEDIA' | 'MEMBERS';
   const [activityFilter, setActivityFilter] = useState<ActivityFilter>('ALL');
 
-  const isTypeInFilter = (t: string, f: ActivityFilter) => {
+  const isTypeInFilter = useCallback((t: string, f: ActivityFilter) => {
     if (f === 'ALL') return true;
     const docTypes = [
       'DOCUMENT_UPLOADED',
@@ -115,7 +115,7 @@ export default function FamilyPage() {
       ALL: [],
     };
     return maps[f].includes(t);
-  };
+  }, []);
 
   const iconForType = (t: string) => {
     if (t.startsWith('DOCUMENT')) return <FiFileText />;
@@ -131,7 +131,7 @@ export default function FamilyPage() {
   // Memoised list of activities that match the current filter
   const filteredActivities = useMemo(
     () => activities.filter((a) => isTypeInFilter(a.type, activityFilter)),
-    [activities, activityFilter]
+    [activities, activityFilter, isTypeInFilter]
   );
 
   const FAMILY_ID = 'cmdhjmp2x0000765nc52usnp7';
