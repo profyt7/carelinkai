@@ -395,11 +395,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       <div key={index} className="relative rounded-md border border-neutral-200 bg-neutral-50 p-2">
         <div className="flex items-center">
           {isImage ? (
-            <div className="h-12 w-12 overflow-hidden rounded-md bg-neutral-100">
-              <img
+            <div className="relative h-12 w-12 overflow-hidden rounded-md bg-neutral-100">
+              <Image
                 src={URL.createObjectURL(file)}
                 alt={file.name}
-                className="h-full w-full object-cover"
+                fill
+                sizes="48px"
+                className="object-cover"
+                unoptimized
               />
             </div>
           ) : (

@@ -35,10 +35,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Get current user preferences (or initialize empty object)
-    const preferences = caregiver.user.preferences || {};
+    const preferences = (caregiver.user.preferences as any) || {};
     
     // Check if user already has a Connect account ID
-    let accountId = preferences.stripeConnectAccountId;
+    let accountId = (preferences as any).stripeConnectAccountId as string | undefined;
     
     // If no account exists, create one
     if (!accountId) {
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Get the app URL from environment or default to localhost
-    const appUrl = process.env.APP_URL || 'http://localhost:3000';
+    const appUrl = process.env['APP_URL'] || 'http://localhost:3000';
     
     // Create an account link for onboarding
     const accountLink = await stripe.accountLinks.create({

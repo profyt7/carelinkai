@@ -49,15 +49,16 @@ export async function POST(request: NextRequest) {
       include: { user: true }
     });
 
+    // Return 404 if operator record is not found
     if (!operator) {
       return NextResponse.json({ error: "Operator record not found" }, { status: 404 });
     }
 
-    // Get current user preferences
-    const preferences = operator.user.preferences || {};
+    // Safely access user preferences and connected account ID
+    const preferences = (operator.user.preferences as any) || {};
+    const accountId = (preferences as any).stripeConnectAccountId as string | undefined;
     
     // Check if user has a Connect account ID
-    const accountId = preferences.stripeConnectAccountId;
     
     if (!accountId) {
       return NextResponse.json(
@@ -94,7 +95,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       transferId: transfer.id,
       amount: amount,
-      status: transfer.status,
     });
     
   } catch (error) {

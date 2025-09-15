@@ -14,7 +14,8 @@ const isProduction = process.env.NODE_ENV === 'production';
  * Initialize Stripe with proper error handling for missing keys
  */
 function initializeStripe(): Stripe {
-  const secretKey = process.env.STRIPE_SECRET_KEY;
+  // Access via bracket notation to satisfy TypeScript index signature rules
+  const secretKey = process.env['STRIPE_SECRET_KEY'];
   
   if (!secretKey) {
     if (isProduction) {

@@ -16,10 +16,11 @@ import {
   FiAlertCircle,
   FiDollarSign,
 } from "react-icons/fi";
+import type { StripeElementsOptions } from "@stripe/stripe-js";
 
 // Initialize Stripe outside component to avoid recreating the promise
 const stripePromise = loadStripe(
-  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || ""
+  process.env['NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY'] || ""
 );
 
 interface DepositModalProps {
@@ -220,7 +221,7 @@ export default function DepositModal({
   onSuccess,
 }: DepositModalProps) {
   // Options for Stripe Elements
-  const options = clientSecret
+  const options: StripeElementsOptions | undefined = clientSecret
     ? {
         clientSecret,
         appearance: {
@@ -230,7 +231,7 @@ export default function DepositModal({
           },
         },
       }
-    : { clientSecret: "" }; // Placeholder for mock mode
+    : undefined;
 
   return (
     <Transition appear show={isOpen} as={Fragment}>

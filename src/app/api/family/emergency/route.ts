@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
         familyId_residentId: {
           familyId: effectiveFamilyId,
           residentId: residentId || null,
-        }
+        } as any
       }
     });
 
@@ -185,10 +185,10 @@ export async function PUT(request: NextRequest) {
     // Upsert emergency preference
     const preference = await prisma.emergencyPreference.upsert({
       where: {
-        familyId_residentId: {
+        familyId_residentId: ({
           familyId: effectiveFamilyId,
           residentId: residentId || null,
-        }
+        } as any)
       },
       update: {
         escalationChain,

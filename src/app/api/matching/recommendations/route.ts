@@ -136,7 +136,7 @@ async function getCaregiverRecommendations(session: any, listingId: string | und
   const scoredCaregivers = await Promise.all(
     candidateCaregivers.map(async (caregiver) => {
       // Fetch availability slots that might overlap with the listing time
-      let availabilitySlots = [];
+      let availabilitySlots: any[] = [];
       if (listing.startTime && listing.endTime) {
         availabilitySlots = await prisma.availabilitySlot.findMany({
           where: {

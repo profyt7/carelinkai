@@ -27,7 +27,7 @@ const nextConfig = {
       {
         protocol: 'http',
         hostname: 'localhost',
-        port: '5000',
+        port: '3000',
         pathname: '/uploads/**',
       },
     ],
@@ -69,7 +69,7 @@ const nextConfig = {
             value: "default-src 'self'; " +
                    "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://js.stripe.com; " +
                    "connect-src 'self' https://api.stripe.com; " +
-                   "img-src 'self' data: blob: http://localhost:5000 https://carelinkai-storage.s3.amazonaws.com " +
+                   "img-src 'self' data: blob: http://localhost:3000 https://carelinkai-storage.s3.amazonaws.com " +
                    "https://picsum.photos https://randomuser.me https://placehold.co https://ui-avatars.com " +
                    "https://fastly.picsum.photos " +
                    "https://images.unsplash.com " +
