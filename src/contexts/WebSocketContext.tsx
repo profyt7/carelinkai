@@ -158,6 +158,9 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const reconnectAttemptsRef = useRef(0);
   const maxReconnectAttempts = 5;
   const baseReconnectDelay = 1000; // 1 second
+  // refs to break circular dependency between connect and scheduleReconnect
+  const connectRef = useRef<() => void>(() => {});
+  const scheduleReconnectRef = useRef<() => void>(() => {});
   
   // Connect to WebSocket server
   const connect = useCallback(() => {
@@ -185,9 +188,10 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     } catch (error) {
       console.error('WebSocket connection error:', error);
       setConnectionState('DISCONNECTED');
-      scheduleReconnect();
+      // use ref to avoid circular dependency
+      scheduleReconnectRef.current();
     }
-  }, [scheduleReconnect]);
+  }, []); // intentionally empty – uses ref to avoid dependency loop
 
   /* -------------------------------------------------------------------------- */
   /*  Reconnect with exponential back-off (moved below `connect` as required)   */
@@ -212,21 +216,27 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     reconnectTimeoutRef.current = setTimeout(() => {
       reconnectAttemptsRef.current++;
       setConnectionState('RECONNECTING');
-      connect();
+      // use ref to avoid circular dependency
+      connectRef.current();
     }, delay);
-  }, [connect]);
+  }, []); // empty deps – uses ref
   
+  // keep refs updated with latest callbacks
+  useEffect(() => {
+    connectRef.current = connect;
+    scheduleReconnectRef.current = scheduleReconnect;
+  }, [connect, scheduleReconnect]);
   // Manual reconnect
   const reconnect = useCallback(() => {
     if (connectionState === 'CONNECTED') return;
     
     reconnectAttemptsRef.current = 0;
-    connect();
-  }, [connectionState, connect]);
-  
+    reconnectAttemptsRef.current = 0;
+    connectRef.current();
+  }, [connectionState]);
   // Connect on mount and clean up on unmount
   useEffect(() => {
-    connect();
+    connectRef.current();
     
     return () => {
       if (reconnectTimeoutRef.current) {
