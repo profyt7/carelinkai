@@ -59,7 +59,7 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [lightboxOpen, activeIndex]);
+  }, [lightboxOpen, activeIndex, navigatePrev, navigateNext]);
 
   // Reset loading state when active index changes
   useEffect(() => {
