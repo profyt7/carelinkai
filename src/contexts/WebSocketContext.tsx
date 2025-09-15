@@ -159,6 +159,30 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const maxReconnectAttempts = 5;
   const baseReconnectDelay = 1000; // 1 second
   
+  // Reconnect with exponential backoff
+  const scheduleReconnect = useCallback(() => {
+    if (reconnectAttemptsRef.current >= maxReconnectAttempts) {
+      console.error('Max reconnect attempts reached');
+      return;
+    }
+    
+    // Clear any existing reconnect timeout
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+    }
+    
+    // Calculate delay with exponential backoff
+    const delay = baseReconnectDelay * Math.pow(2, reconnectAttemptsRef.current);
+    
+    console.log(`Scheduling reconnect in ${delay}ms (attempt ${reconnectAttemptsRef.current + 1})`);
+    
+    reconnectTimeoutRef.current = setTimeout(() => {
+      reconnectAttemptsRef.current++;
+      setConnectionState('RECONNECTING');
+      connect();
+    }, delay);
+  }, []);
+  
   // Connect to WebSocket server
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
@@ -187,31 +211,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       setConnectionState('DISCONNECTED');
       scheduleReconnect();
     }
-  }, []);
-  
-  // Reconnect with exponential backoff
-  const scheduleReconnect = useCallback(() => {
-    if (reconnectAttemptsRef.current >= maxReconnectAttempts) {
-      console.error('Max reconnect attempts reached');
-      return;
-    }
-    
-    // Clear any existing reconnect timeout
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
-    }
-    
-    // Calculate delay with exponential backoff
-    const delay = baseReconnectDelay * Math.pow(2, reconnectAttemptsRef.current);
-    
-    console.log(`Scheduling reconnect in ${delay}ms (attempt ${reconnectAttemptsRef.current + 1})`);
-    
-    reconnectTimeoutRef.current = setTimeout(() => {
-      reconnectAttemptsRef.current++;
-      setConnectionState('RECONNECTING');
-      connect();
-    }, delay);
-  }, [connect]);
+  }, [scheduleReconnect]);
   
   // Manual reconnect
   const reconnect = useCallback(() => {
@@ -236,9 +236,179 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, [connect]);
   
   // Helper to generate a unique ID
-  const generateId = () => {
+  const generateId = useCallback(() => {
     return 'id-' + Math.random().toString(36).substr(2, 9);
-  };
+  }, []);
+  
+  // Generate a reply based on the original message
+  const generateReplyContent = useCallback((originalContent: string, participant: Participant): string => {
+    // Simple response generation based on keywords in the original message
+    if (originalContent.toLowerCase().includes('availability')) {
+      return `Yes, we currently have a few rooms available. Would you like to schedule a tour to see them?`;
+    } else if (originalContent.toLowerCase().includes('tour')) {
+      return `We'd be happy to schedule a tour for you. What day and time works best for you?`;
+    } else if (originalContent.toLowerCase().includes('cost') || originalContent.toLowerCase().includes('price')) {
+      return `Our pricing starts at $3,500 per month for a shared room, and $4,200 for a private room. This includes all basic services and meals.`;
+    } else if (originalContent.toLowerCase().includes('medication')) {
+      return `We provide comprehensive medication management services. Our staff can handle all aspects of medication administration and monitoring.`;
+    } else {
+      return `Thank you for your message. How else can I help you with your inquiry about our care home?`;
+    }
+  }, []);
+  
+  // Update message status
+  const updateMessageStatus = useCallback((
+    conversationId: string, 
+    messageId: string, 
+    status: Message['status']
+  ) => {
+    setConversations(prev => {
+      const conversation = prev[conversationId];
+      if (!conversation) return prev;
+      
+      const updatedMessages = conversation.messages.map(msg => {
+        if (msg.id === messageId) {
+          return { ...msg, status };
+        }
+        return msg;
+      });
+      
+      return {
+        ...prev,
+        [conversationId]: {
+          ...conversation,
+          messages: updatedMessages
+        }
+      };
+    });
+  }, []);
+  
+  // Start typing indicator
+  const startTyping = useCallback((conversationId: string, userId: string) => {
+    setTypingParticipants(prev => {
+      const conversationTyping = prev[conversationId] || {};
+      return {
+        ...prev,
+        [conversationId]: {
+          ...conversationTyping,
+          [userId]: true
+        }
+      };
+    });
+    
+    // In a real implementation, we would send a typing event to the WebSocket server
+  }, []);
+  
+  // Stop typing indicator
+  const stopTyping = useCallback((conversationId: string, userId: string) => {
+    setTypingParticipants(prev => {
+      const conversationTyping = prev[conversationId] || {};
+      const { [userId]: _, ...rest } = conversationTyping;
+      return {
+        ...prev,
+        [conversationId]: rest
+      };
+    });
+    
+    // In a real implementation, we would send a stop typing event to the WebSocket server
+  }, []);
+  
+  // Upload an attachment
+  const uploadAttachment = useCallback(async (
+    file: File, 
+    onProgress?: (progress: number) => void
+  ): Promise<Attachment> => {
+    // In a real implementation, we would upload the file to a server
+    // For now, we'll simulate an upload with progress
+    
+    return new Promise((resolve) => {
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += Math.random() * 15; // Random progress increment
+        
+        if (progress >= 100) {
+          clearInterval(interval);
+          progress = 100;
+          
+          if (onProgress) {
+            onProgress(progress);
+          }
+          
+          // Generate a mock URL based on file type
+          const isImage = file.type.startsWith('image/');
+          const mockUrl = isImage 
+            ? `https://placehold.co/800x600/e9ecef/495057?text=${encodeURIComponent(file.name)}`
+            : '#';
+          
+          const thumbnailUrl = isImage 
+            ? `https://placehold.co/200x150/e9ecef/495057?text=${encodeURIComponent(file.name)}`
+            : undefined;
+          
+          resolve({
+            id: generateId(),
+            name: file.name,
+            url: mockUrl,
+            type: file.type,
+            size: file.size,
+            thumbnailUrl
+          });
+        } else if (onProgress) {
+          onProgress(progress);
+        }
+      }, 200);
+    });
+  }, [generateId]);
+  
+  // Simulate a reply from another participant
+  const simulateReply = useCallback((conversationId: string, originalMessage: Message) => {
+    const conversation = conversations[conversationId];
+    if (!conversation) return;
+    
+    // Find a participant that isn't the current user
+    const otherParticipants = conversation.participants.filter(p => p.id !== MOCK_USER_ID);
+    if (otherParticipants.length === 0) return;
+    
+    // We have already checked that `otherParticipants` length is > 0, so the
+    // random lookup is guaranteed to return a Participant. Use the non-null
+    // assertion operator to inform TypeScript of this fact.
+    const respondingParticipant =
+      otherParticipants[Math.floor(Math.random() * otherParticipants.length)]!;
+    
+    // Simulate typing indicator
+    startTyping(conversationId, respondingParticipant.id);
+    
+    // Generate a response based on the original message
+    setTimeout(() => {
+      stopTyping(conversationId, respondingParticipant.id);
+      
+      const replyContent = generateReplyContent(originalMessage.content, respondingParticipant);
+      
+      const replyMessage: Message = {
+        id: generateId(),
+        conversationId,
+        senderId: respondingParticipant.id,
+        content: replyContent,
+        timestamp: new Date().toISOString(),
+        status: 'DELIVERED'
+      };
+      
+      // Add the reply to the conversation
+      setConversations(prev => {
+        const conversation = prev[conversationId];
+        if (!conversation) return prev;
+        
+        return {
+          ...prev,
+          [conversationId]: {
+            ...conversation,
+            messages: [...conversation.messages, replyMessage],
+            lastActivity: replyMessage.timestamp,
+            unreadCount: (conversation.unreadCount || 0) + 1
+          }
+        };
+      });
+    }, 2000 + Math.random() * 5000); // Random typing time between 2-7 seconds
+  }, [conversations, startTyping, stopTyping, generateReplyContent, generateId]);
   
   // Send a message
   const sendMessage = useCallback(async (
@@ -364,131 +534,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }, 500 + Math.random() * 1000); // Random delay between 0.5-1.5 seconds
     
     return newMessage;
-  }, [connectionState]);
-  
-  // Simulate a reply from another participant
-  const simulateReply = (conversationId: string, originalMessage: Message) => {
-    const conversation = conversations[conversationId];
-    if (!conversation) return;
-    
-    // Find a participant that isn't the current user
-    const otherParticipants = conversation.participants.filter(p => p.id !== MOCK_USER_ID);
-    if (otherParticipants.length === 0) return;
-    
-    // We have already checked that `otherParticipants` length is > 0, so the
-    // random lookup is guaranteed to return a Participant. Use the non-null
-    // assertion operator to inform TypeScript of this fact.
-    const respondingParticipant =
-      otherParticipants[Math.floor(Math.random() * otherParticipants.length)]!;
-    
-    // Simulate typing indicator
-    startTyping(conversationId, respondingParticipant.id);
-    
-    // Generate a response based on the original message
-    setTimeout(() => {
-      stopTyping(conversationId, respondingParticipant.id);
-      
-      const replyContent = generateReplyContent(originalMessage.content, respondingParticipant);
-      
-      const replyMessage: Message = {
-        id: generateId(),
-        conversationId,
-        senderId: respondingParticipant.id,
-        content: replyContent,
-        timestamp: new Date().toISOString(),
-        status: 'DELIVERED'
-      };
-      
-      // Add the reply to the conversation
-      setConversations(prev => {
-        const conversation = prev[conversationId];
-        if (!conversation) return prev;
-        
-        return {
-          ...prev,
-          [conversationId]: {
-            ...conversation,
-            messages: [...conversation.messages, replyMessage],
-            lastActivity: replyMessage.timestamp,
-            unreadCount: (conversation.unreadCount || 0) + 1
-          }
-        };
-      });
-    }, 2000 + Math.random() * 5000); // Random typing time between 2-7 seconds
-  };
-  
-  // Generate a reply based on the original message
-  const generateReplyContent = (originalContent: string, participant: Participant): string => {
-    // Simple response generation based on keywords in the original message
-    if (originalContent.toLowerCase().includes('availability')) {
-      return `Yes, we currently have a few rooms available. Would you like to schedule a tour to see them?`;
-    } else if (originalContent.toLowerCase().includes('tour')) {
-      return `We'd be happy to schedule a tour for you. What day and time works best for you?`;
-    } else if (originalContent.toLowerCase().includes('cost') || originalContent.toLowerCase().includes('price')) {
-      return `Our pricing starts at $3,500 per month for a shared room, and $4,200 for a private room. This includes all basic services and meals.`;
-    } else if (originalContent.toLowerCase().includes('medication')) {
-      return `We provide comprehensive medication management services. Our staff can handle all aspects of medication administration and monitoring.`;
-    } else {
-      return `Thank you for your message. How else can I help you with your inquiry about our care home?`;
-    }
-  };
-  
-  // Update message status
-  const updateMessageStatus = useCallback((
-    conversationId: string, 
-    messageId: string, 
-    status: Message['status']
-  ) => {
-    setConversations(prev => {
-      const conversation = prev[conversationId];
-      if (!conversation) return prev;
-      
-      const updatedMessages = conversation.messages.map(msg => {
-        if (msg.id === messageId) {
-          return { ...msg, status };
-        }
-        return msg;
-      });
-      
-      return {
-        ...prev,
-        [conversationId]: {
-          ...conversation,
-          messages: updatedMessages
-        }
-      };
-    });
-  }, []);
-  
-  // Start typing indicator
-  const startTyping = useCallback((conversationId: string, userId: string) => {
-    setTypingParticipants(prev => {
-      const conversationTyping = prev[conversationId] || {};
-      return {
-        ...prev,
-        [conversationId]: {
-          ...conversationTyping,
-          [userId]: true
-        }
-      };
-    });
-    
-    // In a real implementation, we would send a typing event to the WebSocket server
-  }, []);
-  
-  // Stop typing indicator
-  const stopTyping = useCallback((conversationId: string, userId: string) => {
-    setTypingParticipants(prev => {
-      const conversationTyping = prev[conversationId] || {};
-      const { [userId]: _, ...rest } = conversationTyping;
-      return {
-        ...prev,
-        [conversationId]: rest
-      };
-    });
-    
-    // In a real implementation, we would send a stop typing event to the WebSocket server
-  }, []);
+  }, [connectionState, updateMessageStatus, uploadAttachment, simulateReply, generateId]);
   
   // Add reaction to a message
   const addReaction = useCallback((
@@ -593,52 +639,6 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     // In a real implementation, we would send a delete message event to the WebSocket server
   }, []);
   
-  // Upload an attachment
-  const uploadAttachment = useCallback(async (
-    file: File, 
-    onProgress?: (progress: number) => void
-  ): Promise<Attachment> => {
-    // In a real implementation, we would upload the file to a server
-    // For now, we'll simulate an upload with progress
-    
-    return new Promise((resolve) => {
-      let progress = 0;
-      const interval = setInterval(() => {
-        progress += Math.random() * 15; // Random progress increment
-        
-        if (progress >= 100) {
-          clearInterval(interval);
-          progress = 100;
-          
-          if (onProgress) {
-            onProgress(progress);
-          }
-          
-          // Generate a mock URL based on file type
-          const isImage = file.type.startsWith('image/');
-          const mockUrl = isImage 
-            ? `https://placehold.co/800x600/e9ecef/495057?text=${encodeURIComponent(file.name)}`
-            : '#';
-          
-          const thumbnailUrl = isImage 
-            ? `https://placehold.co/200x150/e9ecef/495057?text=${encodeURIComponent(file.name)}`
-            : undefined;
-          
-          resolve({
-            id: generateId(),
-            name: file.name,
-            url: mockUrl,
-            type: file.type,
-            size: file.size,
-            thumbnailUrl
-          });
-        } else if (onProgress) {
-          onProgress(progress);
-        }
-      }, 200);
-    });
-  }, []);
-  
   // Get a conversation by ID
   const getConversation = useCallback((conversationId: string): Conversation | undefined => {
     return conversations[conversationId];
@@ -671,7 +671,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }));
     
     return newConversation;
-  }, []);
+  }, [generateId]);
   
   // Context value
   const contextValue: WebSocketContextState = {
