@@ -130,7 +130,7 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
     
     console.log("[SimpleMap] Calculated map center:", [centerLat, centerLng]);
     return [centerLat, centerLng] as [number, number];
-  }, [validHomes, getLat, getLng]);
+  }, [validHomes, getLat, getLng, FALLBACK_CENTER]);
 
   // Create a custom icon for markers
   const createCustomIcon = (price: number | null, isSelected: boolean = false) => {
@@ -407,6 +407,8 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
     mounted,
     domReady,
     validHomes,
+    getLat,
+    getLng,
     getMapCenter,
     createPopupContent,
     onHomeSelect,
@@ -471,6 +473,8 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
     favorites,
     mounted,
     domReady,
+    getLat,
+    getLng,
     getMapCenter,
     createPopupContent,
     onHomeSelect,

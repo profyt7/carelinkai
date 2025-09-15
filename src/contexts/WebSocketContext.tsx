@@ -159,30 +159,6 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const maxReconnectAttempts = 5;
   const baseReconnectDelay = 1000; // 1 second
   
-  // Reconnect with exponential backoff
-  const scheduleReconnect = useCallback(() => {
-    if (reconnectAttemptsRef.current >= maxReconnectAttempts) {
-      console.error('Max reconnect attempts reached');
-      return;
-    }
-    
-    // Clear any existing reconnect timeout
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
-    }
-    
-    // Calculate delay with exponential backoff
-    const delay = baseReconnectDelay * Math.pow(2, reconnectAttemptsRef.current);
-    
-    console.log(`Scheduling reconnect in ${delay}ms (attempt ${reconnectAttemptsRef.current + 1})`);
-    
-    reconnectTimeoutRef.current = setTimeout(() => {
-      reconnectAttemptsRef.current++;
-      setConnectionState('RECONNECTING');
-      connect();
-    }, delay);
-  }, []);
-  
   // Connect to WebSocket server
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
@@ -212,6 +188,33 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       scheduleReconnect();
     }
   }, [scheduleReconnect]);
+
+  /* -------------------------------------------------------------------------- */
+  /*  Reconnect with exponential back-off (moved below `connect` as required)   */
+  /* -------------------------------------------------------------------------- */
+
+  const scheduleReconnect = useCallback(() => {
+    if (reconnectAttemptsRef.current >= maxReconnectAttempts) {
+      console.error('Max reconnect attempts reached');
+      return;
+    }
+
+    // Clear any existing reconnect timeout
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+    }
+
+    // Calculate delay with exponential backoff
+    const delay = baseReconnectDelay * Math.pow(2, reconnectAttemptsRef.current);
+
+    console.log(`Scheduling reconnect in ${delay}ms (attempt ${reconnectAttemptsRef.current + 1})`);
+
+    reconnectTimeoutRef.current = setTimeout(() => {
+      reconnectAttemptsRef.current++;
+      setConnectionState('RECONNECTING');
+      connect();
+    }, delay);
+  }, [connect]);
   
   // Manual reconnect
   const reconnect = useCallback(() => {
