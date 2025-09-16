@@ -59,14 +59,12 @@ export async function POST(request: NextRequest) {
     const accountId = (preferences as any).stripeConnectAccountId as string | undefined;
     
     // Check if user has a Connect account ID
-    
     if (!accountId) {
       return NextResponse.json(
         { error: "No connected account found. Please complete onboarding first." },
         { status: 400 }
       );
     }
-    
     // Retrieve the Connect account to verify status
     const account = await stripe.accounts.retrieve(accountId);
     
@@ -90,11 +88,15 @@ export async function POST(request: NextRequest) {
         description: description || 'Operator payout',
       },
     });
+    // Transfer objects don't have `status` in the Stripe TS typings, so we
+    // access it via `any` and fall back to `"pending"` if absent.
+    const transferStatus = (transfer as any).status ?? "pending";
     
     // Return the transfer ID
     return NextResponse.json({
       transferId: transfer.id,
       amount: amount,
+      status: transferStatus,
     });
     
   } catch (error) {

@@ -373,7 +373,8 @@ export async function initializeEmailService(): Promise<void> {
   console.log('✅ Email service initialized');
 }
 
-export default {
+// Named export object to satisfy eslint import/no-anonymous-default-export
+const emailService = {
   sendVerificationEmail,
   resendVerificationEmail,
   verifyEmailToken,
@@ -381,3 +382,5 @@ export default {
   createPasswordResetToken,
   initializeEmailService,
 };
+
+export default emailService;

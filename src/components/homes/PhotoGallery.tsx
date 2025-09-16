@@ -34,6 +34,15 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
+  // Navigation functions (placed before effects so they're declared when used)
+  const navigateNext = useCallback(() => {
+    setActiveIndex((prevIndex) => (prevIndex + 1) % photos.length);
+  }, [photos.length]);
+
+  const navigatePrev = useCallback(() => {
+    setActiveIndex((prevIndex) => (prevIndex - 1 + photos.length) % photos.length);
+  }, [photos.length]);
+
   // Handle keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -59,7 +68,7 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [lightboxOpen, activeIndex]);
+  }, [lightboxOpen, activeIndex, navigatePrev, navigateNext]);
 
   // Reset loading state when active index changes
   useEffect(() => {
@@ -83,15 +92,6 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
       }
     }
   };
-
-  // Navigation functions
-  const navigateNext = useCallback(() => {
-    setActiveIndex((prevIndex) => (prevIndex + 1) % photos.length);
-  }, [photos.length]);
-
-  const navigatePrev = useCallback(() => {
-    setActiveIndex((prevIndex) => (prevIndex - 1 + photos.length) % photos.length);
-  }, [photos.length]);
 
   const openLightbox = (index: number) => {
     setActiveIndex(index);

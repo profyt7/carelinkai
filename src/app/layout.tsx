@@ -4,6 +4,14 @@ import "./globals.css";
 import { Providers } from "./providers";
 // WebSocket provider for real-time messaging
 import { WebSocketProvider } from "../contexts/WebSocketContext";
+
+// Force all pages to render dynamically (disables static optimization)
+export const dynamic = "force-dynamic";
+// Disable ISR/revalidation entirely
+export const revalidate = 0;
+// Disable fetch cache globally to ensure all requests are treated as dynamic
+export const fetchCache = "force-no-store";
+
 // PWA Manager & notifications
 import PWAManager from "../components/pwa/PWAManager";
 import { Toaster } from "react-hot-toast";

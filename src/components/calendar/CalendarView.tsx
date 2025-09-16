@@ -436,7 +436,7 @@ export default function CalendarView({
     } catch (error) {
       toast.error(`Failed to ${isEditMode ? 'update' : 'create'} appointment`);
     }
-  }, [appointmentForm, isEditMode, selectedEvent, updateAppointment, createAppointment, refreshCalendar]);
+  }, [appointmentForm, isEditMode, selectedEvent, updateAppointment, createAppointment, refreshCalendar, onDataChange]);
   
   // Handle appointment cancellation
   const handleCancelAppointment = useCallback(async () => {
@@ -453,7 +453,7 @@ export default function CalendarView({
     } catch (error) {
       toast.error("Failed to cancel appointment");
     }
-  }, [selectedEvent, deleteReason, cancelAppointment, refreshCalendar]);
+  }, [selectedEvent, deleteReason, cancelAppointment, refreshCalendar, onDataChange]);
   
   // Handle appointment completion
   const handleCompleteAppointment = useCallback(async () => {
@@ -469,7 +469,7 @@ export default function CalendarView({
     } catch (error) {
       toast.error("Failed to mark appointment as completed");
     }
-  }, [selectedEvent, completeAppointment, refreshCalendar]);
+  }, [selectedEvent, completeAppointment, refreshCalendar, onDataChange]);
   
   // Handle edit button click
   const handleEditClick = useCallback(() => {

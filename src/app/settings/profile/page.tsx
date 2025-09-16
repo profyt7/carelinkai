@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useSession, getSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -119,28 +119,9 @@ export default function ProfileSettings() {
     file: null as File | null
   });
   const [credErrors, setCredErrors] = useState<any>({});
-  
-  // Fetch profile data
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/auth/login?callbackUrl=/settings/profile");
-      return;
-    }
-    
-    if (status === "authenticated") {
-      fetchProfileData();
-    }
-  }, [status, router]);
-  
-  // Fetch credentials if user is a caregiver
-  useEffect(() => {
-    if (userRole === "CAREGIVER") {
-      fetchCredentials();
-    }
-  }, [userRole]);
-  
+
   // Fetch profile data from API
-  const fetchProfileData = async () => {
+  const fetchProfileData = useCallback(async () => {
     try {
       setLoading(true);
       const res = await fetch("/api/profile", {
@@ -149,19 +130,19 @@ export default function ProfileSettings() {
           "Content-Type": "application/json",
         },
       });
-      
+
       if (!res.ok) {
         throw new Error("Failed to fetch profile data");
       }
-      
+
       const data = await res.json();
-      
+
       if (data.success) {
         setProfile(data.data.user);
         setRoleSpecificData(data.data.roleSpecificData);
         setAddresses(data.data.addresses || []);
         setUserRole(data.data.role);
-        
+
         // Initialize form data
         setFormData({
           firstName: data.data.user.firstName,
@@ -169,7 +150,7 @@ export default function ProfileSettings() {
           phone: data.data.user.phone || "",
           ...extractRoleSpecificFormData(data.data.roleSpecificData, data.data.role),
         });
-        
+
         // Initialize address data
         if (data.data.addresses && data.data.addresses.length > 0) {
           setAddressData({
@@ -190,13 +171,15 @@ export default function ProfileSettings() {
             country: "USA",
           });
         }
-        
+
         // Set photo preview if exists
         if (data.data.user.profileImageUrl) {
-          const photoUrl = typeof data.data.user.profileImageUrl === 'string' 
-            ? data.data.user.profileImageUrl 
-            : data.data.user.profileImageUrl.medium || data.data.user.profileImageUrl.thumbnail;
-          
+          const photoUrl =
+            typeof data.data.user.profileImageUrl === "string"
+              ? data.data.user.profileImageUrl
+              : data.data.user.profileImageUrl.medium ||
+                data.data.user.profileImageUrl.thumbnail;
+
           setPhotoPreview(photoUrl);
         }
       }
@@ -208,6 +191,92 @@ export default function ProfileSettings() {
       });
     } finally {
       setLoading(false);
+    }
+  }, []);
+  
+  // Fetch profile data
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/auth/login?callbackUrl=/settings/profile");
+      return;
+    }
+    
+    if (status === "authenticated") {
+      fetchProfileData();
+    }
+  }, [status, router, fetchProfileData]);
+  
+  // Fetch credentials if user is a caregiver
+  useEffect(() => {
+    if (userRole === "CAREGIVER") {
+      fetchCredentials();
+    }
+  }, [userRole]);
+  
+  /* ------------------------------ Form Actions ------------------------------ */
+
+  // Handle form submission
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!validateForm()) {
+      setMessage({
+        type: "error",
+        text: "Please correct the errors in the form.",
+      });
+      return;
+    }
+
+    try {
+      setSaving(true);
+
+      // Prepare payload
+      const profileData: any = { ...formData };
+
+      // Include address if at least one field is filled
+      const hasAddressData = Object.values(addressData).some(
+        (value) => value && value !== ""
+      );
+      if (hasAddressData) {
+        profileData.address = addressData;
+      }
+
+      const res = await fetch("/api/profile", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(profileData),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        setMessage({
+          type: "success",
+          text: "Profile updated successfully!",
+        });
+
+        // Refresh profile + session
+        fetchProfileData();
+        await getSession();
+      } else {
+        setMessage({
+          type: "error",
+          text: data.message || "Failed to update profile.",
+        });
+      }
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      setMessage({
+        type: "error",
+        text: "An error occurred while updating your profile.",
+      });
+    } finally {
+      setSaving(false);
+
+      // Auto-clear message
+      setTimeout(() => setMessage({ type: "", text: "" }), 5000);
     }
   };
   
@@ -427,77 +496,7 @@ export default function ProfileSettings() {
   };
   
   // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!validateForm()) {
-      setMessage({
-        type: "error",
-        text: "Please correct the errors in the form.",
-      });
-      return;
-    }
-    
-    try {
-      setSaving(true);
-      
-      // Prepare data for API
-      const profileData = {
-        ...formData,
-      };
-      
-      // Add address if any field is filled
-      const hasAddressData = Object.values(addressData).some(
-        (value) => value && value !== ""
-      );
-      
-      if (hasAddressData) {
-        profileData.address = addressData;
-      }
-      
-      // Send to API
-      const res = await fetch("/api/profile", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(profileData),
-      });
-      
-      const data = await res.json();
-      
-      if (data.success) {
-        setMessage({
-          type: "success",
-          text: "Profile updated successfully!",
-        });
-        
-        // Refresh profile data and session (update JWT with new image)
-        fetchProfileData();
-        await getSession();
-      } else {
-        setMessage({
-          type: "error",
-          text: data.message || "Failed to update profile.",
-        });
-      }
-    } catch (error) {
-      console.error("Error updating profile:", error);
-      setMessage({
-        type: "error",
-        text: "An error occurred while updating your profile.",
-      });
-    } finally {
-      setSaving(false);
-      
-      // Clear message after 5 seconds
-      setTimeout(() => {
-        setMessage({ type: "", text: "" });
-      }, 5000);
-    }
-  };
-  
-  // Handle credential submission
+  // (original fetchProfileData definition moved above)
   const handleCredSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   FiDollarSign, 
   FiPlus, 
@@ -82,7 +82,7 @@ const PricingCalculator: React.FC<PricingCalculatorProps> = ({
   };
 
   // Calculate totals
-  const calculateTotals = (): PricingEstimate => {
+  const calculateTotals = useCallback((): PricingEstimate => {
     const selectedRoom = pricing[selectedRoomIndex];
 
     const roomType = selectedRoom?.type ?? "";
@@ -123,7 +123,7 @@ const PricingCalculator: React.FC<PricingCalculatorProps> = ({
       totalOneTime,
       firstMonthTotal
     };
-  };
+  }, [pricing, selectedRoomIndex, selectedServices, selectedOneTimeFees, oneTimeFees]);
 
   // Handle room selection
   const handleRoomSelect = (index: number) => {
@@ -161,7 +161,7 @@ const PricingCalculator: React.FC<PricingCalculatorProps> = ({
     if (onEstimateComplete) {
       onEstimateComplete(calculateTotals());
     }
-  }, [selectedRoomIndex, selectedServices, selectedOneTimeFees]);
+  }, [calculateTotals, onEstimateComplete]);
 
   // Get the current estimate
   const estimate = calculateTotals();

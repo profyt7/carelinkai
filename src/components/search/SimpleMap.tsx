@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import L from 'leaflet';
 import { FiHeart, FiHome, FiMapPin, FiDollarSign } from 'react-icons/fi';
 import Link from 'next/link';
@@ -79,7 +79,7 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
   const isValidCoord = (n: unknown) =>
     typeof n === 'number' && !Number.isNaN(n) && Number.isFinite(n);
 
-  const getLat = (home: HomeData) => {
+  const getLat = useCallback((home: HomeData) => {
     let lat: number | undefined;
     // address may be object or string
     if (typeof home.address !== 'string') {
@@ -90,9 +90,9 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
     }
     console.log(`[SimpleMap] Home ${home.id} latitude:`, lat);
     return lat;
-  };
+  }, []);
 
-  const getLng = (home: HomeData) => {
+  const getLng = useCallback((home: HomeData) => {
     let lng: number | undefined;
     if (typeof home.address !== 'string') {
       lng = home.address.coordinates?.lng ?? home.address.longitude;
@@ -102,23 +102,26 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
     }
     console.log(`[SimpleMap] Home ${home.id} longitude:`, lng);
     return lng;
-  };
+  }, []);
 
   // Filter homes with valid coordinates
-  const validHomes = homes.filter(
-    (h) => h.address && isValidCoord(getLat(h)) && isValidCoord(getLng(h))
+  const validHomes = useMemo(
+    () =>
+      homes.filter(
+        (h) => h.address && isValidCoord(getLat(h)) && isValidCoord(getLng(h))
+      ),
+    [homes, getLat, getLng]
   );
 
   // Debug log the valid homes
   console.log("[SimpleMap] Valid homes with coordinates:", validHomes.length, validHomes);
 
   // Determine map center
-  const FALLBACK_CENTER: [number, number] = [36.7783, -119.4179]; // California
-
-  const getMapCenter = () => {
+  const getMapCenter = useCallback(() => {
     if (validHomes.length === 0) {
-      console.log("[SimpleMap] No valid homes, using fallback center:", FALLBACK_CENTER);
-      return FALLBACK_CENTER;
+      const fallback: [number, number] = [36.7783, -119.4179]; // California
+      console.log("[SimpleMap] No valid homes, using fallback center:", fallback);
+      return fallback;
     }
     
     const centerLat = validHomes.reduce((sum, h) => sum + (getLat(h) as number), 0) / validHomes.length;
@@ -126,7 +129,7 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
     
     console.log("[SimpleMap] Calculated map center:", [centerLat, centerLng]);
     return [centerLat, centerLng] as [number, number];
-  };
+  }, [validHomes, getLat, getLng]);
 
   // Create a custom icon for markers
   const createCustomIcon = (price: number | null, isSelected: boolean = false) => {
@@ -159,7 +162,7 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
   };
 
   // Create popup content for a home
-  const createPopupContent = (home: HomeData) => {
+  const createPopupContent = useCallback((home: HomeData) => {
     const isFavorite = favorites.includes(home.id);
     // Support either string or structured address object
     const addressText =
@@ -215,7 +218,7 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
         </a>
       </div>
     `;
-  };
+  }, [favorites]);
 
   // Mark component as mounted
   useEffect(() => {
@@ -399,7 +402,18 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
         markersRef.current = {};
       }
     };
-  }, [mounted, domReady]);
+  }, [
+    mounted,
+    domReady,
+    validHomes,
+    getLat,
+    getLng,
+    getMapCenter,
+    createPopupContent,
+    onHomeSelect,
+    onToggleFavorite,
+    selectedHome,
+  ]);
   
   // Update markers when homes or selectedHome changes
   useEffect(() => {
@@ -452,7 +466,18 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
     // Ensure proper sizing after (re)rendering markers
     console.log("[SimpleMap] Invalidating map size after marker updates");
     map.invalidateSize(true);
-  }, [homes, selectedHome, favorites, mounted, domReady]);
+  }, [
+    validHomes,
+    selectedHome,
+    favorites,
+    mounted,
+    domReady,
+    getLat,
+    getLng,
+    getMapCenter,
+    createPopupContent,
+    onHomeSelect,
+  ]);
 
   // Display loading state until component mounts
   if (!mounted || !domReady) {
