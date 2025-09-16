@@ -443,7 +443,7 @@ export function useDocuments({
       es.close();
       esRef.current = null;
     };
-  }, [familyId]);
+  }, [familyId, filters.sortBy, filters.sortOrder]);
 
   /**
    * Set filters and optionally fetch documents
@@ -476,23 +476,6 @@ export function useDocuments({
       return merged;
     });
   }, [familyId]);
-  
-  /**
-   * Reset filters to initial state
-   */
-  const resetFilters = useCallback(() => {
-    const resetFilters = {
-      familyId,
-      page: 1,
-      limit: 20,
-      sortBy: "createdAt" as const,
-      sortOrder: "desc" as const
-    };
-    
-    setFiltersState(resetFilters);
-    fetchDocuments(resetFilters);
-  }, [familyId]);
-  
   /**
    * Fetch documents with optional filter overrides
    */
@@ -546,8 +529,6 @@ export function useDocuments({
     };
     
     // Set loading state
-    // eslint-disable-next-line no-console
-    console.log("[useDocuments] fetchDocuments called, setting isFetching: true. Current loading state:", loading);
     setLoading(prev => ({ ...prev, isFetching: true }));
     setErrors(prev => ({ ...prev, fetchError: null }));
     
@@ -659,14 +640,26 @@ export function useDocuments({
       // Reset loading state if mounted
       if (isMounted.current) {
         // eslint-disable-next-line no-console
-        console.log(
-          "[useDocuments] fetchDocuments finally block, setting isFetching: false. Docs in state:",
-          state.documents.length
-        );
         setLoading(prev => ({ ...prev, isFetching: false }));
       }
     }
   }, [familyId, filters]);
+ 
+  /**
+   * Reset filters to initial state
+   */
+  const resetFilters = useCallback(() => {
+    const resetFilters = {
+      familyId,
+      page: 1,
+      limit: 20,
+      sortBy: "createdAt" as const,
+      sortOrder: "desc" as const
+    };
+    
+    setFiltersState(resetFilters);
+    fetchDocuments(resetFilters);
+  }, [familyId, fetchDocuments]);
   
   /**
    * Upload multiple documents with progress tracking
@@ -864,7 +857,7 @@ export function useDocuments({
         }
       }, 2000);
     }
-  }, [session, familyId]);
+  }, [session]);
   
   /**
    * Update document metadata

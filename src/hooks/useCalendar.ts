@@ -146,6 +146,102 @@ export function useCalendar(): CalendarHook {
       ...partialFilter
     }));
   }, []);
+
+  // Convert appointments to calendar events
+  const convertToEvents = useCallback((appointments: Appointment[]): CalendarEvent[] => {
+    return appointments.map(appointment => {
+      // Determine colors based on appointment type and status
+      let backgroundColor = '#e3f2fd';
+      let borderColor = '#2196f3';
+      let textColor = '#0d47a1';
+      
+      // Set colors based on appointment type
+      switch (appointment.type) {
+        case AppointmentType.CARE_EVALUATION:
+          backgroundColor = '#e3f2fd';
+          borderColor = '#2196f3';
+          textColor = '#0d47a1';
+          break;
+        case AppointmentType.FACILITY_TOUR:
+          backgroundColor = '#e8f5e9';
+          borderColor = '#4caf50';
+          textColor = '#1b5e20';
+          break;
+        case AppointmentType.CAREGIVER_SHIFT:
+          backgroundColor = '#ede7f6';
+          borderColor = '#673ab7';
+          textColor = '#311b92';
+          break;
+        case AppointmentType.FAMILY_VISIT:
+          backgroundColor = '#fff3e0';
+          borderColor = '#ff9800';
+          textColor = '#e65100';
+          break;
+        case AppointmentType.CONSULTATION:
+          backgroundColor = '#f3e5f5';
+          borderColor = '#9c27b0';
+          textColor = '#4a148c';
+          break;
+        case AppointmentType.MEDICAL_APPOINTMENT:
+          backgroundColor = '#ffebee';
+          borderColor = '#f44336';
+          textColor = '#b71c1c';
+          break;
+        case AppointmentType.ADMIN_MEETING:
+          backgroundColor = '#e0f2f1';
+          borderColor = '#009688';
+          textColor = '#004d40';
+          break;
+        case AppointmentType.SOCIAL_EVENT:
+          backgroundColor = '#f1f8e9';
+          borderColor = '#8bc34a';
+          textColor = '#33691e';
+          break;
+      }
+      
+      // Modify colors based on status
+      if (appointment.status === AppointmentStatus.CANCELLED) {
+        backgroundColor = '#f5f5f5';
+        borderColor = '#9e9e9e';
+        textColor = '#424242';
+      } else if (appointment.status === AppointmentStatus.PENDING) {
+        backgroundColor = '#fff8e1';
+        borderColor = '#ffc107';
+        textColor = '#ff6f00';
+      } else if (appointment.status === AppointmentStatus.NO_SHOW) {
+        backgroundColor = '#fafafa';
+        borderColor = '#f44336';
+        textColor = '#b71c1c';
+      }
+      
+      // Create the calendar event
+      return {
+        id: appointment.id,
+        title: appointment.title,
+        start: appointment.startTime,
+        end: appointment.endTime,
+        allDay: false,
+        color: borderColor,
+        backgroundColor,
+        borderColor,
+        textColor,
+        classNames: [
+          `appointment-type-${appointment.type.toLowerCase()}`,
+          `appointment-status-${appointment.status.toLowerCase()}`
+        ],
+        editable: appointment.status !== AppointmentStatus.CANCELLED && 
+                  appointment.status !== AppointmentStatus.COMPLETED,
+        extendedProps: {
+          appointment,
+          uiMeta: {
+            icon: getAppointmentIcon(appointment.type),
+            status: appointment.status,
+            statusColor: getStatusColor(appointment.status)
+          }
+        }
+      };
+    });
+  }, []);
   
   // Fetch appointments based on filter
   const fetchAppointments = useCallback(async (
@@ -229,8 +325,13 @@ export function useCalendar(): CalendarHook {
       toast.error(`Failed to load appointments: ${errorMessage}`);
       return [];
     }
-  }, [filter]);
+  }, [filter, convertToEvents]);
   
+  // Refresh calendar data
+  const refreshCalendar = useCallback(async () => {
+    await fetchAppointments();
+  }, [fetchAppointments]);
+
   // Get a single appointment by ID
   const getAppointment = useCallback(async (id: string): Promise<Appointment | null> => {
     try {
@@ -309,7 +410,7 @@ export function useCalendar(): CalendarHook {
       toast.error(`Failed to create appointment: ${errorMessage}`);
       return null;
     }
-  }, []);
+  }, [convertToEvents]);
   
   // Update an existing appointment
   const updateAppointment = useCallback(async (
@@ -371,7 +472,7 @@ export function useCalendar(): CalendarHook {
       toast.error(`Failed to update appointment: ${errorMessage}`);
       return null;
     }
-  }, []);
+  }, [convertToEvents, refreshCalendar]);
   
   // Cancel an appointment
   const cancelAppointment = useCallback(async (
@@ -426,7 +527,7 @@ export function useCalendar(): CalendarHook {
       toast.error(`Failed to cancel appointment: ${errorMessage}`);
       return null;
     }
-  }, []);
+  }, [convertToEvents]);
   
   // Mark an appointment as completed
   const completeAppointment = useCallback(async (
@@ -480,7 +581,7 @@ export function useCalendar(): CalendarHook {
       toast.error(`Failed to complete appointment: ${errorMessage}`);
       return null;
     }
-  }, []);
+  }, [convertToEvents]);
   
   // Book an appointment (with availability check)
   const bookAppointment = useCallback(async (
@@ -542,7 +643,7 @@ export function useCalendar(): CalendarHook {
         error: errorMessage
       };
     }
-  }, []);
+  }, [convertToEvents]);
   
   // Check if a user is available for a specific time slot
   const checkAvailability = useCallback(async (
@@ -665,11 +766,16 @@ export function useCalendar(): CalendarHook {
     }
   }, []);
   
-  // Refresh calendar data
-  const refreshCalendar = useCallback(async () => {
-    await fetchAppointments();
-  }, [fetchAppointments]);
-  
+  // Derive stable keys for effect dependencies
+  const sessionUserId = session?.user?.id;
+  const dateStart = filter.dateRange?.start;
+  const dateEnd   = filter.dateRange?.end;
+  const typesKey        = useMemo(() => (filter.appointmentTypes ?? []).join(','), [filter.appointmentTypes]);
+  const statusKey       = useMemo(() => (filter.status ?? []).join(','), [filter.status]);
+  const homeIdsKey      = useMemo(() => (filter.homeIds ?? []).join(','), [filter.homeIds]);
+  const residentIdsKey  = useMemo(() => (filter.residentIds ?? []).join(','), [filter.residentIds]);
+  const participantIdsKey = useMemo(() => (filter.participantIds ?? []).join(','), [filter.participantIds]);
+
   // Get an event by ID
   const getEventById = useCallback((eventId: string) => {
     return state.events.find(event => event.id === eventId);
@@ -680,101 +786,6 @@ export function useCalendar(): CalendarHook {
     return state.appointments.find(appointment => appointment.id === appointmentId);
   }, [state.appointments]);
   
-  // Convert appointments to calendar events
-  const convertToEvents = useCallback((appointments: Appointment[]): CalendarEvent[] => {
-    return appointments.map(appointment => {
-      // Determine colors based on appointment type and status
-      let backgroundColor = '#e3f2fd';
-      let borderColor = '#2196f3';
-      let textColor = '#0d47a1';
-      
-      // Set colors based on appointment type
-      switch (appointment.type) {
-        case AppointmentType.CARE_EVALUATION:
-          backgroundColor = '#e3f2fd';
-          borderColor = '#2196f3';
-          textColor = '#0d47a1';
-          break;
-        case AppointmentType.FACILITY_TOUR:
-          backgroundColor = '#e8f5e9';
-          borderColor = '#4caf50';
-          textColor = '#1b5e20';
-          break;
-        case AppointmentType.CAREGIVER_SHIFT:
-          backgroundColor = '#ede7f6';
-          borderColor = '#673ab7';
-          textColor = '#311b92';
-          break;
-        case AppointmentType.FAMILY_VISIT:
-          backgroundColor = '#fff3e0';
-          borderColor = '#ff9800';
-          textColor = '#e65100';
-          break;
-        case AppointmentType.CONSULTATION:
-          backgroundColor = '#f3e5f5';
-          borderColor = '#9c27b0';
-          textColor = '#4a148c';
-          break;
-        case AppointmentType.MEDICAL_APPOINTMENT:
-          backgroundColor = '#ffebee';
-          borderColor = '#f44336';
-          textColor = '#b71c1c';
-          break;
-        case AppointmentType.ADMIN_MEETING:
-          backgroundColor = '#e0f2f1';
-          borderColor = '#009688';
-          textColor = '#004d40';
-          break;
-        case AppointmentType.SOCIAL_EVENT:
-          backgroundColor = '#f1f8e9';
-          borderColor = '#8bc34a';
-          textColor = '#33691e';
-          break;
-      }
-      
-      // Modify colors based on status
-      if (appointment.status === AppointmentStatus.CANCELLED) {
-        backgroundColor = '#f5f5f5';
-        borderColor = '#9e9e9e';
-        textColor = '#424242';
-      } else if (appointment.status === AppointmentStatus.PENDING) {
-        backgroundColor = '#fff8e1';
-        borderColor = '#ffc107';
-        textColor = '#ff6f00';
-      } else if (appointment.status === AppointmentStatus.NO_SHOW) {
-        backgroundColor = '#fafafa';
-        borderColor = '#f44336';
-        textColor = '#b71c1c';
-      }
-      
-      // Create the calendar event
-      return {
-        id: appointment.id,
-        title: appointment.title,
-        start: appointment.startTime,
-        end: appointment.endTime,
-        allDay: false,
-        color: borderColor,
-        backgroundColor,
-        borderColor,
-        textColor,
-        classNames: [
-          `appointment-type-${appointment.type.toLowerCase()}`,
-          `appointment-status-${appointment.status.toLowerCase()}`
-        ],
-        editable: appointment.status !== AppointmentStatus.CANCELLED && 
-                  appointment.status !== AppointmentStatus.COMPLETED,
-        extendedProps: {
-          appointment,
-          uiMeta: {
-            icon: getAppointmentIcon(appointment.type),
-            status: appointment.status,
-            statusColor: getStatusColor(appointment.status)
-          }
-        }
-      };
-    });
-  }, []);
   
   // Format appointment time
   const formatAppointmentTime = useCallback((appointment: Appointment): string => {
@@ -875,14 +886,14 @@ export function useCalendar(): CalendarHook {
     fetchAppointments();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    session?.user?.id,
-    filter.dateRange?.start,
-    filter.dateRange?.end,
-    filter.appointmentTypes?.join(','),
-    filter.status?.join(','),
-    filter.homeIds?.join(','),
-    filter.residentIds?.join(','),
-    filter.participantIds?.join(','),
+    sessionUserId,
+    dateStart,
+    dateEnd,
+    typesKey,
+    statusKey,
+    homeIdsKey,
+    residentIdsKey,
+    participantIdsKey,
     filter.searchText
   ]);
   
