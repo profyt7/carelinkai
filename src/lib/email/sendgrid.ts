@@ -417,7 +417,8 @@ export async function sendCustomEmail(
 }
 
 // Export the email service
-export default {
+// Named constant to satisfy eslint import/no-anonymous-default-export
+const sendgridEmailProvider = {
   sendEmail,
   sendWelcomeEmail,
   sendPasswordResetEmail,
@@ -428,3 +429,5 @@ export default {
   validateEmailConfig,
   EmailTemplates
 };
+
+export default sendgridEmailProvider;

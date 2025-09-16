@@ -4,6 +4,10 @@ import "./globals.css";
 import { Providers } from "./providers";
 // WebSocket provider for real-time messaging
 import { WebSocketProvider } from "../contexts/WebSocketContext";
+
+// Force all pages to render dynamically (disables static optimization)
+export const dynamic = "force-dynamic";
+
 // PWA Manager & notifications
 import PWAManager from "../components/pwa/PWAManager";
 import { Toaster } from "react-hot-toast";

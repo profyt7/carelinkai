@@ -56,101 +56,10 @@ export default function useDocumentComments({
   // SSE EventSource ref
   const esRef = useRef<EventSource | null>(null);
 
-  // Reset state when documentId changes
-  useEffect(() => {
-    reset();
-    
-    // If autoFetch is enabled and documentId exists, fetch comments
-    if (autoFetch && documentId) {
-      fetchComments();
-    }
-    
-    return () => {
-      // Cleanup: abort any in-flight requests
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-    };
-  }, [documentId]);
-
-  // Make sure isMounted is set to true when the component mounts
-  // This is important for React StrictMode which mounts components twice
-  useEffect(() => {
-    isMounted.current = true;
-    return () => {
-      isMounted.current = false;
-      // Cleanup EventSource on unmount
-      if (esRef.current) {
-        esRef.current.close();
-      }
-    };
-  }, []);
-
-  /* ------------------------------------------------------------------
-   * Real-time subscription using Server-Sent Events (SSE)
-   * ------------------------------------------------------------------ */
-  useEffect(() => {
-    // Whenever the document ID changes, establish a fresh SSE connection
-    if (!documentId) {
-      // No document selected – close any previous connection
-      if (esRef.current) {
-        esRef.current.close();
-        esRef.current = null;
-      }
-      return;
-    }
-
-    // Close any existing connection first
-    if (esRef.current) {
-      esRef.current.close();
-    }
-
-    const url = `/api/sse?topics=${encodeURIComponent(`document:${documentId}`)}`;
-    const es = new EventSource(url);
-    esRef.current = es;
-
-    es.addEventListener('comment:created', (evt) => {
-      try {
-        const payload = JSON.parse((evt as MessageEvent).data);
-
-        if (payload.documentId !== documentId) return;
-
-        const newComment: DocumentCommentWithAuthor = payload.comment;
-
-        setComments((prev) => {
-          // Deduplicate top-level comments
-          if (!newComment.parentCommentId) {
-            if (prev.some((c) => c.id === newComment.id)) return prev;
-            return [newComment, ...prev];
-          }
-
-          // Handle replies – find parent and append if not present
-          return prev.map((c) => {
-            if (c.id !== newComment.parentCommentId) return c;
-
-            const alreadyExists =
-              c.replies?.some((r) => r.id === newComment.id) ?? false;
-            if (alreadyExists) return c;
-
-            return {
-              ...c,
-              replies: [...(c.replies || []), newComment],
-            };
-          });
-        });
-      } catch (err) {
-        console.error('[useDocumentComments] Failed to process SSE event', err);
-      }
-    });
-
-    es.onerror = (err) => {
-      console.error('[useDocumentComments] SSE connection error', err);
-    };
-
-    return () => {
-      es.close();
-    };
-  }, [documentId]);
+  // ------------------------------------------------------------------
+  // Callback helpers (declared early so subsequent effects can depend
+  // on their stable identities without triggering ESLint warnings)
+  // ------------------------------------------------------------------
 
   // Reset state
   const reset = useCallback(() => {
@@ -243,7 +152,104 @@ export default function useDocumentComments({
       }
       console.log('[useDocumentComments] Fetch completed');
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [documentId, familyId, limit, pagination.page]);
+
+  // Reset state when documentId changes
+  useEffect(() => {
+    reset();
+    
+    // If autoFetch is enabled and documentId exists, fetch comments
+    if (autoFetch && documentId) {
+      fetchComments();
+    }
+    
+    return () => {
+      // Cleanup: abort any in-flight requests
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [documentId, autoFetch, fetchComments, reset]);
+
+  // Make sure isMounted is set to true when the component mounts
+  // This is important for React StrictMode which mounts components twice
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+      // Cleanup EventSource on unmount
+      if (esRef.current) {
+        esRef.current.close();
+      }
+    };
+  }, []);
+
+  /* ------------------------------------------------------------------
+   * Real-time subscription using Server-Sent Events (SSE)
+   * ------------------------------------------------------------------ */
+  useEffect(() => {
+    // Whenever the document ID changes, establish a fresh SSE connection
+    if (!documentId) {
+      // No document selected – close any previous connection
+      if (esRef.current) {
+        esRef.current.close();
+        esRef.current = null;
+      }
+      return;
+    }
+
+    // Close any existing connection first
+    if (esRef.current) {
+      esRef.current.close();
+    }
+
+    const url = `/api/sse?topics=${encodeURIComponent(`document:${documentId}`)}`;
+    const es = new EventSource(url);
+    esRef.current = es;
+
+    es.addEventListener('comment:created', (evt) => {
+      try {
+        const payload = JSON.parse((evt as MessageEvent).data);
+
+        if (payload.documentId !== documentId) return;
+
+        const newComment: DocumentCommentWithAuthor = payload.comment;
+
+        setComments((prev) => {
+          // Deduplicate top-level comments
+          if (!newComment.parentCommentId) {
+            if (prev.some((c) => c.id === newComment.id)) return prev;
+            return [newComment, ...prev];
+          }
+
+          // Handle replies – find parent and append if not present
+          return prev.map((c) => {
+            if (c.id !== newComment.parentCommentId) return c;
+
+            const alreadyExists =
+              c.replies?.some((r) => r.id === newComment.id) ?? false;
+            if (alreadyExists) return c;
+
+            return {
+              ...c,
+              replies: [...(c.replies || []), newComment],
+            };
+          });
+        });
+      } catch (err) {
+        console.error('[useDocumentComments] Failed to process SSE event', err);
+      }
+    });
+
+    es.onerror = (err) => {
+      console.error('[useDocumentComments] SSE connection error', err);
+    };
+
+    return () => {
+      es.close();
+    };
+  }, [documentId]);
 
   // Add a new top-level comment
   const addComment = useCallback(async (content: string) => {
