@@ -139,6 +139,7 @@ export async function POST(request: NextRequest) {
         data: {
           userId,
           amount: amountDecimal,
+          status: "COMPLETED", // mark payment as successfully processed
           type: "DEPOSIT",
           stripePaymentId,
         },

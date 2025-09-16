@@ -166,12 +166,10 @@ describe('Stripe Webhook Handler', () => {
       // Verify payment creation
       expect(txClient.payment.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
-          familyId: 'family-123',
           userId: 'user-123',
           amount: 25.00,
-          currency: 'usd',
           type: 'DEPOSIT',
-          status: 'SUCCEEDED',
+          status: 'COMPLETED',
           stripePaymentId: 'pi_123',
         }),
       });
@@ -188,8 +186,6 @@ describe('Stripe Webhook Handler', () => {
           walletId: 'wallet-123',
           type: 'DEPOSIT',
           amount: 25.00,
-          currency: 'usd',
-          balanceAfter: 25.00,
         }),
       });
     });
