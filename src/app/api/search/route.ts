@@ -22,6 +22,9 @@
  * - verified: Only show verified homes (future)
  */
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient, CareLevel } from '@prisma/client';
 import { getServerSession } from 'next-auth/next';
