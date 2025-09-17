@@ -57,7 +57,12 @@ jest.mock('@/lib/prisma', () => {
         create: jest.fn(),
         findUnique: jest.fn(),
         update: jest.fn(),
-      }
+      },
+      // new mocks for transaction & hire creation
+      $transaction: jest.fn(),
+      marketplaceHire: {
+        create: jest.fn(),
+      },
     }
   };
 });
@@ -519,11 +524,16 @@ describe('Shifts API', () => {
       
       (prisma.caregiver.findUnique as jest.Mock).mockResolvedValueOnce(mockCaregiver);
       (prisma.caregiverShift.findUnique as jest.Mock).mockResolvedValueOnce(mockShift);
-      (prisma.caregiverShift.update as jest.Mock).mockResolvedValueOnce({
+      // Mock the transactional update + hire creation
+      const updatedShift = {
         ...mockShift,
         caregiverId: mockCaregiver.id,
         status: 'ASSIGNED',
-      });
+      };
+      (prisma.$transaction as jest.Mock).mockResolvedValueOnce([
+        updatedShift,
+        { id: 'hire-123' },
+      ]);
       
       const request = createMockRequestWithParams({ id: 'shift-123' });
       const response = await claimShift(request, { params: { id: 'shift-123' } });
@@ -537,16 +547,10 @@ describe('Shifts API', () => {
         homeId: mockShift.homeId,
         status: 'ASSIGNED',
       }));
+      expect(data.hireId).toBe('hire-123');
       
-      // Verify update was called with correct parameters
-      expect(prisma.caregiverShift.update).toHaveBeenCalledWith({
-        where: { id: 'shift-123' },
-        data: {
-          caregiverId: mockCaregiver.id,
-          status: 'ASSIGNED',
-        },
-        include: expect.any(Object),
-      });
+      // Verify transaction was executed
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
     });
   });
 });

@@ -52,7 +52,6 @@ const documentCreateSchema = z.object({
   title: z.string().min(1).max(255),
   description: z.string().max(1000).optional(),
   type: z.enum([
-    "CARE_PLAN",
     "MEDICAL_RECORD",
     "INSURANCE_DOCUMENT",
     "PHOTO",
@@ -71,7 +70,6 @@ const documentFilterSchema = z.object({
   familyId: z.string().cuid(),
   type: z.union([
     z.enum([
-      "CARE_PLAN",
       "MEDICAL_RECORD",
       "INSURANCE_DOCUMENT",
       "PHOTO",
@@ -82,7 +80,6 @@ const documentFilterSchema = z.object({
     ]),
     z.array(
       z.enum([
-        "CARE_PLAN",
         "MEDICAL_RECORD",
         "INSURANCE_DOCUMENT",
         "PHOTO",

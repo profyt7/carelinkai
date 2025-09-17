@@ -2,7 +2,7 @@
 // It defines the data model for the application with HIPAA compliance in mind
 
 generator client {
-  provider        = "prisma-client-js"
+  provider = "prisma-client-js"
   // No preview features currently required
 }
 
@@ -65,75 +65,75 @@ enum BackgroundCheckStatus {
 }
 
 model User {
-  id                String    @id @default(cuid())
-  email             String    @unique
-  emailVerified     DateTime?
-  passwordHash      String?   // Stored securely, never in plain text
-  firstName         String
-  lastName          String
-  phone             String?
-  role              UserRole
-  status            UserStatus @default(PENDING)
-  profileImageUrl   Json?      // Stores { thumbnail, medium, large }
-  
+  id              String     @id @default(cuid())
+  email           String     @unique
+  emailVerified   DateTime?
+  passwordHash    String? // Stored securely, never in plain text
+  firstName       String
+  lastName        String
+  phone           String?
+  role            UserRole
+  status          UserStatus @default(PENDING)
+  profileImageUrl Json? // Stores { thumbnail, medium, large }
+
   // Two-factor authentication
-  twoFactorEnabled  Boolean   @default(false)
-  twoFactorSecret   String?   @db.Text // Encrypted
-  backupCodes       Json?     // Stores array of one-time backup codes
+  twoFactorEnabled Boolean @default(false)
+  twoFactorSecret  String? @db.Text // Encrypted
+  backupCodes      Json? // Stores array of one-time backup codes
 
   // Email verification
-  verificationToken        String?   // Token sent in verification email
-  verificationTokenExpiry  DateTime? // Token expiration timestamp
+  verificationToken       String? // Token sent in verification email
+  verificationTokenExpiry DateTime? // Token expiration timestamp
 
   // Password reset
-  resetPasswordToken       String?   // Token sent in password-reset email
+  resetPasswordToken       String? // Token sent in password-reset email
   resetPasswordTokenExpiry DateTime? // Token expiration timestamp
 
   // User preferences
-  notificationPrefs Json?     // Store notification preferences
-  preferences       Json?     // General preferences (matches frontend expectations)
-  timezone          String    @default("UTC")
-  
+  notificationPrefs Json? // Store notification preferences
+  preferences       Json? // General preferences (matches frontend expectations)
+  timezone          String @default("UTC")
+
   // Relationships
-  family            Family?
-  operator          Operator?
-  caregiver         Caregiver?
-  affiliate         Affiliate?
-  
+  family    Family?
+  operator  Operator?
+  caregiver Caregiver?
+  affiliate Affiliate?
+
   // Common relationships
-  addresses         Address[]
-  sessions          Session[]
-  messages          Message[]         @relation("MessageSender")
-  receivedMessages  Message[]         @relation("MessageReceiver")
-  notifications     Notification[]
-  payments          Payment[]
-  auditLogs         AuditLog[]        @relation("UserAuditLogs")
-  actionedAuditLogs AuditLog[]        @relation("ActionedByUser")
+  addresses                 Address[]
+  sessions                  Session[]
+  messages                  Message[]                @relation("MessageSender")
+  receivedMessages          Message[]                @relation("MessageReceiver")
+  notifications             Notification[]
+  payments                  Payment[]
+  auditLogs                 AuditLog[]               @relation("UserAuditLogs")
+  actionedAuditLogs         AuditLog[]               @relation("ActionedByUser")
   // Calendar relationships
-  createdAppointments        Appointment[]           @relation
-  appointmentParticipations  AppointmentParticipant[]
-  availabilitySlots          AvailabilitySlot[]
-  scheduledNotifications     ScheduledNotification[]
-  
+  createdAppointments       Appointment[]            @relation
+  appointmentParticipations AppointmentParticipant[]
+  availabilitySlots         AvailabilitySlot[]
+  scheduledNotifications    ScheduledNotification[]
+
   // Family collaboration relationships
-  familyMembers         FamilyMember[]
-  invitedFamilyMembers  FamilyMember[]        @relation("InvitedBy")
-  uploadedDocuments     FamilyDocument[]      @relation("DocumentUploader")
-  authoredNotes         FamilyNote[]          @relation("NoteAuthor")
-  documentComments      DocumentComment[]     @relation("DocumentCommentAuthor")
-  noteComments          NoteComment[]         @relation("NoteCommentAuthor")
-  createdGalleries      SharedGallery[]       @relation("GalleryCreator")
-  uploadedPhotos        GalleryPhoto[]        @relation("PhotoUploader")
-  activities            ActivityFeedItem[]    @relation("ActivityActor")
-  
+  familyMembers        FamilyMember[]
+  invitedFamilyMembers FamilyMember[]     @relation("InvitedBy")
+  uploadedDocuments    FamilyDocument[]   @relation("DocumentUploader")
+  authoredNotes        FamilyNote[]       @relation("NoteAuthor")
+  documentComments     DocumentComment[]  @relation("DocumentCommentAuthor")
+  noteComments         NoteComment[]      @relation("NoteCommentAuthor")
+  createdGalleries     SharedGallery[]    @relation("GalleryCreator")
+  uploadedPhotos       GalleryPhoto[]     @relation("PhotoUploader")
+  activities           ActivityFeedItem[] @relation("ActivityActor")
+
   // Marketplace relationships
-  marketplaceListings   MarketplaceListing[]  @relation("UserListings")
-  
+  marketplaceListings MarketplaceListing[] @relation("UserListings")
+
   // Timestamps
-  createdAt         DateTime   @default(now())
-  updatedAt         DateTime   @updatedAt
-  lastLoginAt       DateTime?
-  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  lastLoginAt DateTime?
+
   // Indexes
   @@index([email])
   @@index([role])
@@ -152,10 +152,10 @@ model Session {
   updatedAt    DateTime @updatedAt
   ipAddress    String?
   userAgent    String?  @db.Text
-  
+
   // Relationships
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   // Indexes
   @@index([userId])
 }
@@ -163,19 +163,19 @@ model Session {
 // ==================== ROLE-SPECIFIC MODELS ====================
 
 model Family {
-  id                String    @id @default(cuid())
-  userId            String    @unique
-  emergencyContact  String?
-  emergencyPhone    String?
-  
+  id               String  @id @default(cuid())
+  userId           String  @unique
+  emergencyContact String?
+  emergencyPhone   String?
+
   // Relationships
-  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  residents         Resident[]
-  inquiries         Inquiry[]
-  bookings          Booking[]
-  wallet            FamilyWallet?
-  favorites         FavoriteHome[]
-  
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  residents Resident[]
+  inquiries Inquiry[]
+  bookings  Booking[]
+  wallet    FamilyWallet?
+  favorites FavoriteHome[]
+
   // Family collaboration relationships
   members              FamilyMember[]
   documents            FamilyDocument[]
@@ -183,88 +183,88 @@ model Family {
   galleries            SharedGallery[]
   activities           ActivityFeedItem[]
   emergencyPreferences EmergencyPreference[]
-  
+
   // Timestamps
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Indexes
   @@index([userId])
 }
 
 model Operator {
-  id                String    @id @default(cuid())
-  userId            String    @unique
-  companyName       String
-  taxId             String?   // Encrypted
-  businessLicense   String?
-  
+  id              String  @id @default(cuid())
+  userId          String  @unique
+  companyName     String
+  taxId           String? // Encrypted
+  businessLicense String?
+
   // Relationships
-  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  homes             AssistedLivingHome[]
-  caregivers        CaregiverEmployment[]
-  
+  user       User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  homes      AssistedLivingHome[]
+  caregivers CaregiverEmployment[]
+
   // Org-level settings / overrides
-  preferences       Json?
-  
+  preferences Json?
+
   // Timestamps
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Indexes
   @@index([userId])
   @@index([companyName])
 }
 
 model Caregiver {
-  id                String    @id @default(cuid())
-  userId            String    @unique
-  bio               String?   @db.Text
-  yearsExperience   Int?
-  hourlyRate        Decimal?  @db.Decimal(10, 2)
-  availability      Json?     // Store availability as JSON
-  
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  bio             String?  @db.Text
+  yearsExperience Int?
+  hourlyRate      Decimal? @db.Decimal(10, 2)
+  availability    Json? // Store availability as JSON
+
   // Relationships
-  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  credentials       Credential[]
-  employments       CaregiverEmployment[]
-  shifts            CaregiverShift[]
-  reviews           CaregiverReview[]
-  
+  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credentials Credential[]
+  employments CaregiverEmployment[]
+  shifts      CaregiverShift[]
+  reviews     CaregiverReview[]
+
   // Compliance & marketplace fields
-  backgroundCheckStatus  BackgroundCheckStatus @default(NOT_STARTED)
-  backgroundCheckProvider String?
+  backgroundCheckStatus    BackgroundCheckStatus @default(NOT_STARTED)
+  backgroundCheckProvider  String?
   backgroundCheckReportUrl String?
-  specialties            String[]
+  specialties              String[]
 
   // Marketplace relations
   marketplaceApplications MarketplaceApplication[]
   marketplaceHires        MarketplaceHire[]
 
   // Timestamps
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Indexes
   @@index([userId])
 }
 
 model Affiliate {
-  id                String    @id @default(cuid())
-  userId            String    @unique
-  affiliateCode     String    @unique
-  organization      String?
-  commissionRate    Decimal?  @db.Decimal(5, 2)
-  paymentDetails    Json?     // Encrypted payment details
-  
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  affiliateCode  String   @unique
+  organization   String?
+  commissionRate Decimal? @db.Decimal(5, 2)
+  paymentDetails Json? // Encrypted payment details
+
   // Relationships
-  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  referrals         AffiliateReferral[]
-  
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  referrals AffiliateReferral[]
+
   // Timestamps
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Indexes
   @@index([userId])
   @@index([affiliateCode])
@@ -288,38 +288,38 @@ enum CareLevel {
 }
 
 model AssistedLivingHome {
-  id                String    @id @default(cuid())
+  id                String      @id @default(cuid())
   operatorId        String
   name              String
-  description       String    @db.Text
-  status            HomeStatus @default(DRAFT)
+  description       String      @db.Text
+  status            HomeStatus  @default(DRAFT)
   careLevel         CareLevel[]
   capacity          Int
-  currentOccupancy  Int       @default(0)
-  genderRestriction String?   // "MALE", "FEMALE", or null for no restriction
-  priceMin          Decimal?  @db.Decimal(10, 2)
-  priceMax          Decimal?  @db.Decimal(10, 2)
+  currentOccupancy  Int         @default(0)
+  genderRestriction String? // "MALE", "FEMALE", or null for no restriction
+  priceMin          Decimal?    @db.Decimal(10, 2)
+  priceMax          Decimal?    @db.Decimal(10, 2)
   amenities         String[]
-  
+
   // Location
-  address           Address?
-  
+  address Address?
+
   // Relationships
-  operator          Operator  @relation(fields: [operatorId], references: [id], onDelete: Cascade)
-  photos            HomePhoto[]
-  reviews           HomeReview[]
-  inquiries         Inquiry[]
-  bookings          Booking[]
-  residents         Resident[]
-  caregiverShifts   CaregiverShift[]
-  licenses          License[]
-  inspections       Inspection[]
-  favorites         FavoriteHome[]
-  
+  operator        Operator         @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  photos          HomePhoto[]
+  reviews         HomeReview[]
+  inquiries       Inquiry[]
+  bookings        Booking[]
+  residents       Resident[]
+  caregiverShifts CaregiverShift[]
+  licenses        License[]
+  inspections     Inspection[]
+  favorites       FavoriteHome[]
+
   // Timestamps
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Indexes
   @@index([operatorId])
   @@index([status])
@@ -328,45 +328,45 @@ model AssistedLivingHome {
 }
 
 model HomePhoto {
-  id                String    @id @default(cuid())
-  homeId            String
-  url               String
-  caption           String?
-  isPrimary         Boolean   @default(false)
-  sortOrder         Int       @default(0)
-  
+  id        String  @id @default(cuid())
+  homeId    String
+  url       String
+  caption   String?
+  isPrimary Boolean @default(false)
+  sortOrder Int     @default(0)
+
   // Relationships
-  home              AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
-  
+  home AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
+
   // Timestamps
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Indexes
   @@index([homeId])
 }
 
 model Address {
-  id                String    @id @default(cuid())
-  street            String
-  street2           String?
-  city              String
-  state             String
-  zipCode           String
-  country           String    @default("USA")
-  latitude          Float?
-  longitude         Float?
-  
+  id        String  @id @default(cuid())
+  street    String
+  street2   String?
+  city      String
+  state     String
+  zipCode   String
+  country   String  @default("USA")
+  latitude  Float?
+  longitude Float?
+
   // Relationships
-  user              User?     @relation(fields: [userId], references: [id])
-  userId            String?
-  home              AssistedLivingHome? @relation(fields: [homeId], references: [id])
-  homeId            String?   @unique
-  
+  user   User?               @relation(fields: [userId], references: [id])
+  userId String?
+  home   AssistedLivingHome? @relation(fields: [homeId], references: [id])
+  homeId String?             @unique
+
   // Timestamps
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Indexes
   @@index([userId])
   @@index([homeId])
@@ -386,7 +386,7 @@ enum ResidentStatus {
 }
 
 model Resident {
-  id                String    @id @default(cuid())
+  id                String         @id @default(cuid())
   familyId          String
   homeId            String?
   firstName         String
@@ -394,29 +394,29 @@ model Resident {
   dateOfBirth       DateTime
   gender            String
   status            ResidentStatus @default(INQUIRY)
-  careNeeds         Json?     // Store care needs as JSON
-  medicalConditions String?   @db.Text // Encrypted
-  medications       String?   @db.Text // Encrypted
-  notes             String?   @db.Text // Encrypted
-  
+  careNeeds         Json? // Store care needs as JSON
+  medicalConditions String?        @db.Text // Encrypted
+  medications       String?        @db.Text // Encrypted
+  notes             String?        @db.Text // Encrypted
+
   // Relationships
-  family            Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
-  home              AssistedLivingHome? @relation(fields: [homeId], references: [id])
-  bookings          Booking[]
-  careTimeline      CareTimelineEvent[]
-  documents         Document[]
-  
+  family       Family              @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  home         AssistedLivingHome? @relation(fields: [homeId], references: [id])
+  bookings     Booking[]
+  careTimeline CareTimelineEvent[]
+  documents    Document[]
+
   // Family collaboration relationships
   familyDocuments      FamilyDocument[]
   familyNotes          FamilyNote[]
   emergencyPreferences EmergencyPreference[]
-  
+
   // Timestamps
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  admissionDate     DateTime?
-  dischargeDate     DateTime?
-  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  admissionDate DateTime?
+  dischargeDate DateTime?
+
   // Indexes
   @@index([familyId])
   @@index([homeId])
@@ -424,21 +424,21 @@ model Resident {
 }
 
 model CareTimelineEvent {
-  id                String    @id @default(cuid())
-  residentId        String
-  eventType         String    // appointment, note, medication change, etc.
-  title             String
-  description       String?   @db.Text
-  scheduledAt       DateTime?
-  completedAt       DateTime?
-  
+  id          String    @id @default(cuid())
+  residentId  String
+  eventType   String // appointment, note, medication change, etc.
+  title       String
+  description String?   @db.Text
+  scheduledAt DateTime?
+  completedAt DateTime?
+
   // Relationships
-  resident          Resident  @relation(fields: [residentId], references: [id], onDelete: Cascade)
-  
+  resident Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
+
   // Timestamps
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Indexes
   @@index([residentId])
   @@index([eventType])
@@ -458,23 +458,23 @@ enum InquiryStatus {
 }
 
 model Inquiry {
-  id                String    @id @default(cuid())
-  familyId          String
-  homeId            String
-  status            InquiryStatus @default(NEW)
-  message           String?   @db.Text
-  tourDate          DateTime?
-  aiMatchScore      Float?    // AI-generated placement likelihood score
-  
+  id           String        @id @default(cuid())
+  familyId     String
+  homeId       String
+  status       InquiryStatus @default(NEW)
+  message      String?       @db.Text
+  tourDate     DateTime?
+  aiMatchScore Float? // AI-generated placement likelihood score
+
   // Relationships
-  family            Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
-  home              AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
-  booking           Booking?
-  
+  family  Family             @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  home    AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
+  booking Booking?
+
   // Timestamps
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Indexes
   @@index([familyId])
   @@index([homeId])
@@ -490,29 +490,29 @@ enum BookingStatus {
 }
 
 model Booking {
-  id                String    @id @default(cuid())
-  familyId          String
-  homeId            String
-  residentId        String
-  inquiryId         String?   @unique
-  status            BookingStatus @default(PENDING)
-  moveInDate        DateTime
-  moveOutDate       DateTime?
-  deposit           Decimal?  @db.Decimal(10, 2)
-  monthlyRate       Decimal   @db.Decimal(10, 2)
-  notes             String?   @db.Text
-  
+  id          String        @id @default(cuid())
+  familyId    String
+  homeId      String
+  residentId  String
+  inquiryId   String?       @unique
+  status      BookingStatus @default(PENDING)
+  moveInDate  DateTime
+  moveOutDate DateTime?
+  deposit     Decimal?      @db.Decimal(10, 2)
+  monthlyRate Decimal       @db.Decimal(10, 2)
+  notes       String?       @db.Text
+
   // Relationships
-  family            Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
-  home              AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
-  resident          Resident  @relation(fields: [residentId], references: [id], onDelete: Cascade)
-  inquiry           Inquiry?  @relation(fields: [inquiryId], references: [id])
-  payments          Payment[]
-  
+  family   Family             @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  home     AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
+  resident Resident           @relation(fields: [residentId], references: [id], onDelete: Cascade)
+  inquiry  Inquiry?           @relation(fields: [inquiryId], references: [id])
+  payments Payment[]
+
   // Timestamps
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Indexes
   @@index([familyId])
   @@index([homeId])
@@ -524,23 +524,23 @@ model Booking {
 // ==================== CAREGIVER MODELS ====================
 
 model Credential {
-  id                String    @id @default(cuid())
-  caregiverId       String
-  type              String    // CPR, TB test, license, etc.
-  documentUrl       String?
-  issueDate         DateTime
-  expirationDate    DateTime
-  isVerified        Boolean   @default(false)
-  verifiedBy        String?
-  verifiedAt        DateTime?
-  
+  id             String    @id @default(cuid())
+  caregiverId    String
+  type           String // CPR, TB test, license, etc.
+  documentUrl    String?
+  issueDate      DateTime
+  expirationDate DateTime
+  isVerified     Boolean   @default(false)
+  verifiedBy     String?
+  verifiedAt     DateTime?
+
   // Relationships
-  caregiver         Caregiver @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
-  
+  caregiver Caregiver @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+
   // Timestamps
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Indexes
   @@index([caregiverId])
   @@index([type])
@@ -548,22 +548,22 @@ model Credential {
 }
 
 model CaregiverEmployment {
-  id                String    @id @default(cuid())
-  caregiverId       String
-  operatorId        String
-  startDate         DateTime
-  endDate           DateTime?
-  position          String
-  isActive          Boolean   @default(true)
-  
+  id          String    @id @default(cuid())
+  caregiverId String
+  operatorId  String
+  startDate   DateTime
+  endDate     DateTime?
+  position    String
+  isActive    Boolean   @default(true)
+
   // Relationships
-  caregiver         Caregiver @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
-  operator          Operator  @relation(fields: [operatorId], references: [id], onDelete: Cascade)
-  
+  caregiver Caregiver @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+  operator  Operator  @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+
   // Timestamps
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Indexes
   @@index([caregiverId])
   @@index([operatorId])
@@ -580,24 +580,24 @@ enum ShiftStatus {
 }
 
 model CaregiverShift {
-  id                String    @id @default(cuid())
-  homeId            String
-  caregiverId       String?
-  startTime         DateTime
-  endTime           DateTime
-  status            ShiftStatus @default(OPEN)
-  hourlyRate        Decimal   @db.Decimal(10, 2)
-  notes             String?   @db.Text
-  
+  id          String      @id @default(cuid())
+  homeId      String
+  caregiverId String?
+  startTime   DateTime
+  endTime     DateTime
+  status      ShiftStatus @default(OPEN)
+  hourlyRate  Decimal     @db.Decimal(10, 2)
+  notes       String?     @db.Text
+
   // Relationships
-  home              AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
-  caregiver         Caregiver? @relation(fields: [caregiverId], references: [id])
-  marketplaceHire   MarketplaceHire? @relation("ShiftHire")
-  
+  home            AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
+  caregiver       Caregiver?         @relation(fields: [caregiverId], references: [id])
+  marketplaceHire MarketplaceHire?   @relation("ShiftHire")
+
   // Timestamps
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Indexes
   @@index([homeId])
   @@index([caregiverId])
@@ -608,43 +608,43 @@ model CaregiverShift {
 // ==================== REVIEW MODELS ====================
 
 model HomeReview {
-  id                String    @id @default(cuid())
-  homeId            String
-  reviewerId        String
-  rating            Int       // 1-5 stars
-  title             String?
-  content           String?   @db.Text
-  isPublic          Boolean   @default(true)
-  isVerified        Boolean   @default(false)
-  
+  id         String  @id @default(cuid())
+  homeId     String
+  reviewerId String
+  rating     Int // 1-5 stars
+  title      String?
+  content    String? @db.Text
+  isPublic   Boolean @default(true)
+  isVerified Boolean @default(false)
+
   // Relationships
-  home              AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
-  
+  home AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
+
   // Timestamps
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Indexes
   @@index([homeId])
   @@index([rating])
 }
 
 model CaregiverReview {
-  id                String    @id @default(cuid())
-  caregiverId       String
-  reviewerId        String
-  rating            Int       // 1-5 stars
-  title             String?
-  content           String?   @db.Text
-  isPublic          Boolean   @default(true)
-  
+  id          String  @id @default(cuid())
+  caregiverId String
+  reviewerId  String
+  rating      Int // 1-5 stars
+  title       String?
+  content     String? @db.Text
+  isPublic    Boolean @default(true)
+
   // Relationships
-  caregiver         Caregiver @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
-  
+  caregiver Caregiver @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+
   // Timestamps
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Indexes
   @@index([caregiverId])
   @@index([rating])
@@ -669,28 +669,28 @@ enum PaymentType {
 }
 
 model Payment {
-  id                String    @id @default(cuid())
-  userId            String
-  bookingId         String?
-  amount            Decimal   @db.Decimal(10, 2)
-  status            PaymentStatus @default(PENDING)
-  type              PaymentType
-  description       String?
-  stripePaymentId   String?   @unique
-  receiptUrl        String?
-  
+  id              String        @id @default(cuid())
+  userId          String
+  bookingId       String?
+  amount          Decimal       @db.Decimal(10, 2)
+  status          PaymentStatus @default(PENDING)
+  type            PaymentType
+  description     String?
+  stripePaymentId String?       @unique
+  receiptUrl      String?
+
   // Relationships
-  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  booking           Booking?  @relation(fields: [bookingId], references: [id])
+  user                 User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  booking              Booking?            @relation(fields: [bookingId], references: [id])
   marketplaceListingId String?
-  marketplaceHireId    String?  @unique
+  marketplaceHireId    String?             @unique
   marketplaceListing   MarketplaceListing? @relation(fields: [marketplaceListingId], references: [id])
   marketplaceHire      MarketplaceHire?    @relation(fields: [marketplaceHireId], references: [id])
-  
+
   // Timestamps
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Indexes
   @@index([userId])
   @@index([bookingId])
@@ -700,19 +700,19 @@ model Payment {
 }
 
 model FamilyWallet {
-  id                String    @id @default(cuid())
-  familyId          String    @unique
-  balance           Decimal   @default(0) @db.Decimal(10, 2)
-  stripeCustomerId  String?   @unique
-  
+  id               String  @id @default(cuid())
+  familyId         String  @unique
+  balance          Decimal @default(0) @db.Decimal(10, 2)
+  stripeCustomerId String? @unique
+
   // Relationships
-  family            Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
-  transactions      WalletTransaction[]
-  
+  family       Family              @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  transactions WalletTransaction[]
+
   // Timestamps
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Indexes
   @@index([familyId])
 }
@@ -725,18 +725,18 @@ enum TransactionType {
 }
 
 model WalletTransaction {
-  id                String    @id @default(cuid())
-  walletId          String
-  amount            Decimal   @db.Decimal(10, 2)
-  type              TransactionType
-  description       String?
-  
+  id          String          @id @default(cuid())
+  walletId    String
+  amount      Decimal         @db.Decimal(10, 2)
+  type        TransactionType
+  description String?
+
   // Relationships
-  wallet            FamilyWallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
-  
+  wallet FamilyWallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
   // Timestamps
-  createdAt         DateTime  @default(now())
-  
+  createdAt DateTime @default(now())
+
   // Indexes
   @@index([walletId])
   @@index([type])
@@ -751,20 +751,20 @@ enum MessageStatus {
 }
 
 model Message {
-  id                String    @id @default(cuid())
-  senderId          String
-  receiverId        String
-  content           String    @db.Text
-  status            MessageStatus @default(SENT)
-  
+  id         String        @id @default(cuid())
+  senderId   String
+  receiverId String
+  content    String        @db.Text
+  status     MessageStatus @default(SENT)
+
   // Relationships
-  sender            User      @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
-  receiver          User      @relation("MessageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
-  
+  sender   User @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("MessageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
   // Timestamps
-  createdAt         DateTime  @default(now())
-  readAt            DateTime?
-  
+  createdAt DateTime  @default(now())
+  readAt    DateTime?
+
   // Indexes
   @@index([senderId])
   @@index([receiverId])
@@ -782,21 +782,21 @@ enum NotificationType {
 }
 
 model Notification {
-  id                String    @id @default(cuid())
-  userId            String
-  type              NotificationType
-  title             String
-  message           String
-  isRead            Boolean   @default(false)
-  data              Json?     // Additional data related to notification
-  
+  id      String           @id @default(cuid())
+  userId  String
+  type    NotificationType
+  title   String
+  message String
+  isRead  Boolean          @default(false)
+  data    Json? // Additional data related to notification
+
   // Relationships
-  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   // Timestamps
-  createdAt         DateTime  @default(now())
-  readAt            DateTime?
-  
+  createdAt DateTime  @default(now())
+  readAt    DateTime?
+
   // Indexes
   @@index([userId])
   @@index([type])
@@ -816,23 +816,23 @@ enum DocumentType {
 }
 
 model Document {
-  id                String    @id @default(cuid())
-  residentId        String?
-  type              DocumentType
-  title             String
-  description       String?
-  fileUrl           String
-  fileType          String
-  fileSize          Int
-  isEncrypted       Boolean   @default(true)
-  
+  id          String       @id @default(cuid())
+  residentId  String?
+  type        DocumentType
+  title       String
+  description String?
+  fileUrl     String
+  fileType    String
+  fileSize    Int
+  isEncrypted Boolean      @default(true)
+
   // Relationships
-  resident          Resident? @relation(fields: [residentId], references: [id])
-  
+  resident Resident? @relation(fields: [residentId], references: [id])
+
   // Timestamps
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Indexes
   @@index([residentId])
   @@index([type])
@@ -841,22 +841,22 @@ model Document {
 // ==================== COMPLIANCE MODELS ====================
 
 model License {
-  id                String    @id @default(cuid())
-  homeId            String
-  type              String
-  licenseNumber     String
-  issueDate         DateTime
-  expirationDate    DateTime
-  status            String
-  documentUrl       String?
-  
+  id             String   @id @default(cuid())
+  homeId         String
+  type           String
+  licenseNumber  String
+  issueDate      DateTime
+  expirationDate DateTime
+  status         String
+  documentUrl    String?
+
   // Relationships
-  home              AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
-  
+  home AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
+
   // Timestamps
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Indexes
   @@index([homeId])
   @@index([expirationDate])
@@ -864,22 +864,22 @@ model License {
 }
 
 model Inspection {
-  id                String    @id @default(cuid())
-  homeId            String
-  inspectionDate    DateTime
-  inspectionType    String
-  inspector         String
-  result            String
-  findings          String?   @db.Text
-  documentUrl       String?
-  
+  id             String   @id @default(cuid())
+  homeId         String
+  inspectionDate DateTime
+  inspectionType String
+  inspector      String
+  result         String
+  findings       String?  @db.Text
+  documentUrl    String?
+
   // Relationships
-  home              AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
-  
+  home AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
+
   // Timestamps
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Indexes
   @@index([homeId])
   @@index([inspectionDate])
@@ -889,22 +889,22 @@ model Inspection {
 // ==================== AFFILIATE MODELS ====================
 
 model AffiliateReferral {
-  id                String    @id @default(cuid())
-  affiliateId       String
-  referredEmail     String
-  referredUserId    String?
-  status            String
-  conversionDate    DateTime?
-  commissionAmount  Decimal?  @db.Decimal(10, 2)
-  commissionPaid    Boolean   @default(false)
-  
+  id               String    @id @default(cuid())
+  affiliateId      String
+  referredEmail    String
+  referredUserId   String?
+  status           String
+  conversionDate   DateTime?
+  commissionAmount Decimal?  @db.Decimal(10, 2)
+  commissionPaid   Boolean   @default(false)
+
   // Relationships
-  affiliate         Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
-  
+  affiliate Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+
   // Timestamps
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Indexes
   @@index([affiliateId])
   @@index([referredEmail])
@@ -928,24 +928,24 @@ enum AuditAction {
 }
 
 model AuditLog {
-  id                String    @id @default(cuid())
-  userId            String
-  actionedBy        String?
-  action            AuditAction
-  resourceType      String    // Which table/model was affected
-  resourceId        String?   // ID of the affected resource
-  description       String
-  ipAddress         String?
-  userAgent         String?   @db.Text
-  metadata          Json?     // Additional metadata about the action
-  
+  id           String      @id @default(cuid())
+  userId       String
+  actionedBy   String?
+  action       AuditAction
+  resourceType String // Which table/model was affected
+  resourceId   String? // ID of the affected resource
+  description  String
+  ipAddress    String?
+  userAgent    String?     @db.Text
+  metadata     Json? // Additional metadata about the action
+
   // Relationships
-  user              User      @relation("UserAuditLogs", fields: [userId], references: [id])
-  actionedByUser    User?     @relation("ActionedByUser", fields: [actionedBy], references: [id])
-  
+  user           User  @relation("UserAuditLogs", fields: [userId], references: [id])
+  actionedByUser User? @relation("ActionedByUser", fields: [actionedBy], references: [id])
+
   // Timestamps
-  createdAt         DateTime  @default(now())
-  
+  createdAt DateTime @default(now())
+
   // Indexes
   @@index([userId])
   @@index([actionedBy])
@@ -957,18 +957,18 @@ model AuditLog {
 // ==================== FAVORITES MODELS ====================
 
 model FavoriteHome {
-  id                String    @id @default(cuid())
-  familyId          String
-  homeId            String
-  notes             String?   @db.Text
+  id       String  @id @default(cuid())
+  familyId String
+  homeId   String
+  notes    String? @db.Text
 
   // Relationships
-  family            Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
-  home              AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
+  family Family             @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  home   AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
 
   // Timestamps
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Constraints and Indexes
   @@unique([familyId, homeId])
@@ -980,18 +980,18 @@ model FavoriteHome {
 // ==================== AI MODELS ====================
 
 model AIMatchingData {
-  id                String    @id @default(cuid())
-  homeId            String?
-  caregiverId       String?
-  residentId        String?
-  matchScore        Float
-  matchReason       String?   @db.Text
-  metadata          Json?     // Additional matching criteria
-  
+  id          String  @id @default(cuid())
+  homeId      String?
+  caregiverId String?
+  residentId  String?
+  matchScore  Float
+  matchReason String? @db.Text
+  metadata    Json? // Additional matching criteria
+
   // Timestamps
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Indexes
   @@index([homeId])
   @@index([caregiverId])
@@ -1000,21 +1000,21 @@ model AIMatchingData {
 }
 
 model AIRiskFlag {
-  id                String    @id @default(cuid())
-  entityType        String    // "caregiver", "resident", "home"
-  entityId          String
-  riskType          String    // "no_show", "health_decline", etc.
-  riskScore         Float     // 0-1 probability
-  riskReason        String?   @db.Text
-  isActive          Boolean   @default(true)
-  resolvedAt        DateTime?
-  resolvedBy        String?
-  resolutionNotes   String?   @db.Text
-  
+  id              String    @id @default(cuid())
+  entityType      String // "caregiver", "resident", "home"
+  entityId        String
+  riskType        String // "no_show", "health_decline", etc.
+  riskScore       Float // 0-1 probability
+  riskReason      String?   @db.Text
+  isActive        Boolean   @default(true)
+  resolvedAt      DateTime?
+  resolvedBy      String?
+  resolutionNotes String?   @db.Text
+
   // Timestamps
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Indexes
   @@index([entityType, entityId])
   @@index([riskType])
@@ -1048,24 +1048,24 @@ enum AppointmentStatus {
 }
 
 model Appointment {
-  id                  String             @id @default(cuid())
-  type                AppointmentType
-  status              AppointmentStatus   @default(PENDING)
-  title               String
-  description         String?             @db.Text
-  notes               String?             @db.Text
+  id          String            @id @default(cuid())
+  type        AppointmentType
+  status      AppointmentStatus @default(PENDING)
+  title       String
+  description String?           @db.Text
+  notes       String?           @db.Text
 
-  startTime           DateTime
-  endTime             DateTime
-  location            Json?
+  startTime DateTime
+  endTime   DateTime
+  location  Json?
 
   // Optional FK references
-  homeId              String?
-  residentId          String?
+  homeId     String?
+  residentId String?
 
   // Creator
-  createdById         String
-  createdBy           User                @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade)
 
   // Recurrence & metadata
   recurrence          Json?
@@ -1073,15 +1073,15 @@ model Appointment {
   customFields        Json?
   metadata            Json?
   parentAppointmentId String?
-  parentAppointment   Appointment?        @relation("ParentSeries", fields: [parentAppointmentId], references: [id])
-  recurringInstances  Appointment[]       @relation("ParentSeries")
+  parentAppointment   Appointment?  @relation("ParentSeries", fields: [parentAppointmentId], references: [id])
+  recurringInstances  Appointment[] @relation("ParentSeries")
 
   // Participants
-  participants        AppointmentParticipant[]
+  participants AppointmentParticipant[]
 
   // Timestamps
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([createdById])
   @@index([homeId])
@@ -1092,44 +1092,44 @@ model Appointment {
 }
 
 model AppointmentParticipant {
-  id            String        @id @default(cuid())
+  id            String @id @default(cuid())
   appointmentId String
   userId        String
 
-  name          String?
-  role          UserRole?
-  status        String          @default("PENDING") // ACCEPTED, DECLINED, etc.
-  notes         String?         @db.Text
+  name   String?
+  role   UserRole?
+  status String    @default("PENDING") // ACCEPTED, DECLINED, etc.
+  notes  String?   @db.Text
 
   // Relations
-  appointment   Appointment   @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
-  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Timestamps
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([appointmentId])
   @@index([userId])
 }
 
 model AvailabilitySlot {
-  id            String        @id @default(cuid())
-  userId        String
+  id     String @id @default(cuid())
+  userId String
 
-  startTime     DateTime
-  endTime       DateTime
-  isAvailable   Boolean        @default(true)
-  availableFor  String[]       // Stores enum values of AppointmentType
+  startTime    DateTime
+  endTime      DateTime
+  isAvailable  Boolean  @default(true)
+  availableFor String[] // Stores enum values of AppointmentType
 
-  homeId        String?
+  homeId String?
 
   // Relations
-  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Timestamps
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@index([homeId])
@@ -1144,22 +1144,22 @@ enum ScheduledNotificationStatus {
 }
 
 model ScheduledNotification {
-  id            String        @id @default(cuid())
-  userId        String
+  id     String @id @default(cuid())
+  userId String
 
-  type          String         // e.g., APPOINTMENT_REMINDER
-  method        String         // EMAIL, SMS, PUSH, IN_APP
-  status        ScheduledNotificationStatus @default(PENDING)
+  type   String // e.g., APPOINTMENT_REMINDER
+  method String // EMAIL, SMS, PUSH, IN_APP
+  status ScheduledNotificationStatus @default(PENDING)
 
-  scheduledFor  DateTime
-  payload       Json
+  scheduledFor DateTime
+  payload      Json
 
   // Relations
-  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Timestamps
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@index([status])
@@ -1184,7 +1184,7 @@ enum FamilyMemberStatus {
 }
 
 model FamilyMember {
-  id          String    @id @default(cuid())
+  id          String             @id @default(cuid())
   familyId    String
   userId      String
   role        FamilyMemberRole
@@ -1192,24 +1192,22 @@ model FamilyMember {
   invitedById String?
   invitedAt   DateTime?
   joinedAt    DateTime?
-  
+
   // Relationships
-  family      Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  invitedBy   User?     @relation("InvitedBy", fields: [invitedById], references: [id])
-  
+  family    Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invitedBy User?  @relation("InvitedBy", fields: [invitedById], references: [id])
+
   // Timestamps
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  
-  @@unique([familyId, userId])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([familyId])
   @@index([userId])
   @@index([status])
 }
 
 enum FamilyDocumentType {
-  CARE_PLAN
   MEDICAL_RECORD
   INSURANCE_DOCUMENT
   PHOTO
@@ -1220,34 +1218,34 @@ enum FamilyDocumentType {
 }
 
 model FamilyDocument {
-  id           String       @id @default(cuid())
-  familyId     String
-  uploaderId   String
-  residentId   String?
-  type         FamilyDocumentType
-  title        String
-  description  String?      @db.Text
-  fileUrl      String
-  fileName     String
-  fileType     String
-  fileSize     Int
-  version      Int          @default(1)
-  isEncrypted  Boolean      @default(true)
-  acl          Json?        // Access control list
-  tags         String[]     // Tags for organization
-  metadata     Json?        // Additional metadata
-  
+  id          String             @id @default(cuid())
+  familyId    String
+  uploaderId  String
+  residentId  String?
+  type        FamilyDocumentType
+  title       String
+  description String?            @db.Text
+  fileUrl     String
+  fileName    String
+  fileType    String
+  fileSize    Int
+  version     Int                @default(1)
+  isEncrypted Boolean            @default(true)
+  acl         Json? // Access control list
+  tags        String[] // Tags for organization
+  metadata    Json? // Additional metadata
+
   // Relationships
-  family       Family       @relation(fields: [familyId], references: [id], onDelete: Cascade)
-  uploader     User         @relation("DocumentUploader", fields: [uploaderId], references: [id])
-  resident     Resident?    @relation(fields: [residentId], references: [id])
-  comments     DocumentComment[]
+  family   Family            @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  uploader User              @relation("DocumentUploader", fields: [uploaderId], references: [id])
+  resident Resident?         @relation(fields: [residentId], references: [id])
+  comments DocumentComment[]
   // Activity tracking handled by ActivityFeedItem.resourceId
-  
+
   // Timestamps
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([familyId])
   @@index([uploaderId])
   @@index([residentId])
@@ -1257,27 +1255,27 @@ model FamilyDocument {
 }
 
 model FamilyNote {
-  id          String        @id @default(cuid())
-  familyId    String
-  authorId    String
-  residentId  String?
-  title       String
-  content     Json          // Rich text content
-  tags        String[]      // Tags for organization
-  acl         Json?         // Access control list
-  metadata    Json?         // Additional metadata
-  
+  id         String   @id @default(cuid())
+  familyId   String
+  authorId   String
+  residentId String?
+  title      String
+  content    Json // Rich text content
+  tags       String[] // Tags for organization
+  acl        Json? // Access control list
+  metadata   Json? // Additional metadata
+
   // Relationships
-  family      Family        @relation(fields: [familyId], references: [id], onDelete: Cascade)
-  author      User          @relation("NoteAuthor", fields: [authorId], references: [id])
-  resident    Resident?     @relation(fields: [residentId], references: [id])
-  comments    NoteComment[]
+  family   Family        @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  author   User          @relation("NoteAuthor", fields: [authorId], references: [id])
+  resident Resident?     @relation(fields: [residentId], references: [id])
+  comments NoteComment[]
   // Activity tracking handled by ActivityFeedItem.resourceId
-  
+
   // Timestamps
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([familyId])
   @@index([authorId])
   @@index([residentId])
@@ -1286,69 +1284,69 @@ model FamilyNote {
 }
 
 model DocumentComment {
-  id              String            @id @default(cuid())
+  id              String  @id @default(cuid())
   documentId      String
   authorId        String
-  content         String            @db.Text
+  content         String  @db.Text
   parentCommentId String?
-  
+
   // Relationships
-  document        FamilyDocument    @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  author          User              @relation("DocumentCommentAuthor", fields: [authorId], references: [id])
-  parentComment   DocumentComment?  @relation("CommentReplies", fields: [parentCommentId], references: [id])
-  replies         DocumentComment[] @relation("CommentReplies")
-  
+  document      FamilyDocument    @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  author        User              @relation("DocumentCommentAuthor", fields: [authorId], references: [id])
+  parentComment DocumentComment?  @relation("CommentReplies", fields: [parentCommentId], references: [id])
+  replies       DocumentComment[] @relation("CommentReplies")
+
   // Timestamps
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([documentId])
   @@index([authorId])
   @@index([parentCommentId])
 }
 
 model NoteComment {
-  id              String        @id @default(cuid())
+  id              String  @id @default(cuid())
   noteId          String
   authorId        String
-  content         String        @db.Text
+  content         String  @db.Text
   parentCommentId String?
-  
+
   // Relationships
-  note            FamilyNote    @relation(fields: [noteId], references: [id], onDelete: Cascade)
-  author          User          @relation("NoteCommentAuthor", fields: [authorId], references: [id])
-  parentComment   NoteComment?  @relation("NoteCommentReplies", fields: [parentCommentId], references: [id])
-  replies         NoteComment[] @relation("NoteCommentReplies")
-  
+  note          FamilyNote    @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  author        User          @relation("NoteCommentAuthor", fields: [authorId], references: [id])
+  parentComment NoteComment?  @relation("NoteCommentReplies", fields: [parentCommentId], references: [id])
+  replies       NoteComment[] @relation("NoteCommentReplies")
+
   // Timestamps
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([noteId])
   @@index([authorId])
   @@index([parentCommentId])
 }
 
 model SharedGallery {
-  id             String        @id @default(cuid())
-  familyId       String
-  creatorId      String
-  title          String
-  description    String?       @db.Text
-  coverPhotoUrl  String?
-  acl            Json?         // Access control list
-  tags           String[]      // Tags for organization
-  
+  id            String   @id @default(cuid())
+  familyId      String
+  creatorId     String
+  title         String
+  description   String?  @db.Text
+  coverPhotoUrl String?
+  acl           Json? // Access control list
+  tags          String[] // Tags for organization
+
   // Relationships
-  family         Family        @relation(fields: [familyId], references: [id], onDelete: Cascade)
-  creator        User          @relation("GalleryCreator", fields: [creatorId], references: [id])
-  photos         GalleryPhoto[]
+  family  Family         @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  creator User           @relation("GalleryCreator", fields: [creatorId], references: [id])
+  photos  GalleryPhoto[]
   // Activity tracking handled by ActivityFeedItem.resourceId
-  
+
   // Timestamps
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([familyId])
   @@index([creatorId])
   @@index([tags])
@@ -1356,23 +1354,23 @@ model SharedGallery {
 }
 
 model GalleryPhoto {
-  id           String        @id @default(cuid())
+  id           String  @id @default(cuid())
   galleryId    String
   uploaderId   String
   fileUrl      String
   thumbnailUrl String
-  caption      String?       @db.Text
-  metadata     Json?         // EXIF data, etc.
-  sortOrder    Int           @default(0)
-  
+  caption      String? @db.Text
+  metadata     Json? // EXIF data, etc.
+  sortOrder    Int     @default(0)
+
   // Relationships
-  gallery      SharedGallery @relation(fields: [galleryId], references: [id], onDelete: Cascade)
-  uploader     User          @relation("PhotoUploader", fields: [uploaderId], references: [id])
-  
+  gallery  SharedGallery @relation(fields: [galleryId], references: [id], onDelete: Cascade)
+  uploader User          @relation("PhotoUploader", fields: [uploaderId], references: [id])
+
   // Timestamps
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([galleryId])
   @@index([uploaderId])
   @@index([createdAt])
@@ -1397,22 +1395,22 @@ enum ActivityType {
 }
 
 model ActivityFeedItem {
-  id           String        @id @default(cuid())
+  id           String       @id @default(cuid())
   familyId     String
   actorId      String
   type         ActivityType
-  resourceType String        // "document", "note", "gallery", etc.
+  resourceType String // "document", "note", "gallery", etc.
   resourceId   String?
-  description  String        @db.Text
-  metadata     Json?         // Additional data about the activity
-  
+  description  String       @db.Text
+  metadata     Json? // Additional data about the activity
+
   // Relationships
-  family       Family        @relation(fields: [familyId], references: [id], onDelete: Cascade)
-  actor        User          @relation("ActivityActor", fields: [actorId], references: [id])
-  
+  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  actor  User   @relation("ActivityActor", fields: [actorId], references: [id])
+
   // Timestamps
-  createdAt    DateTime      @default(now())
-  
+  createdAt DateTime @default(now())
+
   @@index([familyId])
   @@index([actorId])
   @@index([type])
@@ -1423,21 +1421,21 @@ model ActivityFeedItem {
 /// Emergency escalation preferences
 /// -----------------------------------------------------
 model EmergencyPreference {
-  id               String   @id @default(cuid())
+  id               String    @id @default(cuid())
   familyId         String
   residentId       String?
-  escalationChain  Json     // Ordered list of contacts and methods
+  escalationChain  Json // Ordered list of contacts and methods
   notifyMethods    String[] // e.g. ["SMS", "EMAIL", "CALL"]
-  careInstructions String?  @db.Text
+  careInstructions String?   @db.Text
   lastConfirmedAt  DateTime?
 
   // Relations
-  family           Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
-  resident         Resident? @relation(fields: [residentId], references: [id])
+  family   Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  resident Resident? @relation(fields: [residentId], references: [id])
 
   // Timestamps
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([familyId, residentId])
   @@index([familyId])
@@ -1449,50 +1447,50 @@ model EmergencyPreference {
 // =====================================================
 
 model MarketplaceCategory {
-  id         String       @id @default(cuid())
-  name       String
-  slug       String       @unique
-  type       CategoryType
-  sortOrder  Int          @default(0)
-  isActive   Boolean      @default(true)
+  id        String       @id @default(cuid())
+  name      String
+  slug      String       @unique
+  type      CategoryType
+  sortOrder Int          @default(0)
+  isActive  Boolean      @default(true)
 
   // Timestamps
-  createdAt  DateTime     @default(now())
-  updatedAt  DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([type])
   @@index([isActive])
 }
 
 model MarketplaceListing {
-  id                String       @id @default(cuid())
-  postedByUserId    String
-  title             String
-  description       String       @db.Text
-  hourlyRateMin     Decimal?     @db.Decimal(10, 2)
-  hourlyRateMax     Decimal?     @db.Decimal(10, 2)
-  setting           String?
-  careTypes         String[]
-  services          String[]
-  specialties       String[]
-  city              String?
-  state             String?
-  zipCode           String?
-  latitude          Float?
-  longitude         Float?
-  startTime         DateTime?
-  endTime           DateTime?
-  status            MarketplaceListingStatus @default(OPEN)
+  id             String                   @id @default(cuid())
+  postedByUserId String
+  title          String
+  description    String                   @db.Text
+  hourlyRateMin  Decimal?                 @db.Decimal(10, 2)
+  hourlyRateMax  Decimal?                 @db.Decimal(10, 2)
+  setting        String?
+  careTypes      String[]
+  services       String[]
+  specialties    String[]
+  city           String?
+  state          String?
+  zipCode        String?
+  latitude       Float?
+  longitude      Float?
+  startTime      DateTime?
+  endTime        DateTime?
+  status         MarketplaceListingStatus @default(OPEN)
 
   // Relationships
-  postedBy          User            @relation("UserListings", fields: [postedByUserId], references: [id], onDelete: Cascade)
-  applications      MarketplaceApplication[]
-  hires             MarketplaceHire[]
-  payments          Payment[]
+  postedBy     User                     @relation("UserListings", fields: [postedByUserId], references: [id], onDelete: Cascade)
+  applications MarketplaceApplication[]
+  hires        MarketplaceHire[]
+  payments     Payment[]
 
   // Timestamps
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([postedByUserId])
   @@index([status])
@@ -1502,20 +1500,20 @@ model MarketplaceListing {
 }
 
 model MarketplaceApplication {
-  id            String            @id @default(cuid())
-  listingId     String
-  caregiverId   String
-  status        ApplicationStatus @default(APPLIED)
-  note          String?           @db.Text
+  id          String            @id @default(cuid())
+  listingId   String
+  caregiverId String
+  status      ApplicationStatus @default(APPLIED)
+  note        String?           @db.Text
 
   // Relationships
-  listing       MarketplaceListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  caregiver     Caregiver          @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
-  hire          MarketplaceHire?   @relation("ApplicationHire")
+  listing   MarketplaceListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  caregiver Caregiver          @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+  hire      MarketplaceHire?   @relation("ApplicationHire")
 
   // Timestamps
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([listingId, caregiverId])
   @@index([listingId])
@@ -1524,22 +1522,22 @@ model MarketplaceApplication {
 }
 
 model MarketplaceHire {
-  id             String             @id @default(cuid())
-  listingId      String
-  caregiverId    String
-  applicationId  String?            @unique
-  shiftId        String?            @unique
-  acceptedAt     DateTime           @default(now())
+  id            String   @id @default(cuid())
+  listingId     String?
+  caregiverId   String
+  applicationId String?  @unique
+  shiftId       String?  @unique
+  acceptedAt    DateTime @default(now())
 
   // Relationships
-  listing        MarketplaceListing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  caregiver      Caregiver           @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
-  application    MarketplaceApplication? @relation("ApplicationHire", fields: [applicationId], references: [id])
-  shift          CaregiverShift?     @relation("ShiftHire", fields: [shiftId], references: [id])
-  payment        Payment?
+  listing     MarketplaceListing?     @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  caregiver   Caregiver               @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+  application MarketplaceApplication? @relation("ApplicationHire", fields: [applicationId], references: [id])
+  shift       CaregiverShift?         @relation("ShiftHire", fields: [shiftId], references: [id])
+  payment     Payment?
 
   // Timestamps
-  createdAt      DateTime           @default(now())
+  createdAt DateTime @default(now())
 
   @@index([listingId])
   @@index([caregiverId])

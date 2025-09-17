@@ -39,7 +39,6 @@ export type ActivityType = PrismaActivityType;
  * Document type display names for UI
  */
 export const DOCUMENT_TYPE_LABELS: Record<FamilyDocumentType, string> = {
-  CARE_PLAN: 'Care Plan',
   MEDICAL_RECORD: 'Medical Record',
   INSURANCE_DOCUMENT: 'Insurance Document',
   PHOTO: 'Photo',
