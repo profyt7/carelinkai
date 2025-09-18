@@ -128,6 +128,7 @@ model User {
 
   // Marketplace relationships
   marketplaceListings MarketplaceListing[] @relation("UserListings")
+  approvedTimesheets  Timesheet[]
 
   // Timestamps
   createdAt   DateTime  @default(now())
@@ -230,6 +231,7 @@ model Caregiver {
   employments CaregiverEmployment[]
   shifts      CaregiverShift[]
   reviews     CaregiverReview[]
+  timesheets  Timesheet[]
 
   // Compliance & marketplace fields
   backgroundCheckStatus    BackgroundCheckStatus @default(NOT_STARTED)
@@ -579,6 +581,15 @@ enum ShiftStatus {
   NO_SHOW
 }
 
+// -------------------- TIMESHEET ENUM --------------------
+
+enum TimesheetStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
 model CaregiverShift {
   id          String      @id @default(cuid())
   homeId      String
@@ -593,6 +604,7 @@ model CaregiverShift {
   home            AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
   caregiver       Caregiver?         @relation(fields: [caregiverId], references: [id])
   marketplaceHire MarketplaceHire?   @relation("ShiftHire")
+  timesheet       Timesheet?         @relation("ShiftTimesheet")
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -603,6 +615,35 @@ model CaregiverShift {
   @@index([caregiverId])
   @@index([startTime])
   @@index([status])
+}
+
+// -------------------- TIMESHEET MODEL --------------------
+
+model Timesheet {
+  id           String          @id @default(cuid())
+  shiftId      String          @unique
+  caregiverId  String
+  startTime    DateTime
+  endTime      DateTime?
+  breakMinutes Int             @default(0)
+  status       TimesheetStatus @default(DRAFT)
+  notes        String?         @db.Text
+  approvedById String?
+  approvedAt   DateTime?
+
+  // Relationships
+  shift      CaregiverShift @relation("ShiftTimesheet", fields: [shiftId], references: [id], onDelete: Cascade)
+  caregiver  Caregiver      @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+  approvedBy User?          @relation(fields: [approvedById], references: [id])
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([caregiverId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 // ==================== REVIEW MODELS ====================
