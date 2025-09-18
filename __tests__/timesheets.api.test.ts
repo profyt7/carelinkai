@@ -57,6 +57,15 @@ jest.mock('@/lib/prisma', () => {
         create: jest.fn(),
         update: jest.fn(),
       },
+      // ✔ Added for payroll logic
+      marketplaceHire: {
+        findUnique: jest.fn(),
+      },
+      payment: {
+        findUnique: jest.fn(),
+        create: jest.fn(),
+        update: jest.fn(),
+      },
       $transaction: jest.fn(),
     }
   };
@@ -331,6 +340,10 @@ describe('Timesheets API', () => {
       (prisma.operator.findUnique as jest.Mock).mockResolvedValueOnce(mockOperator);
       (prisma.timesheet.findUnique as jest.Mock).mockResolvedValueOnce({ ...mockTimesheetSubmitted, shift: { home: { operatorId: mockOperator.id } } });
       (prisma.timesheet.update as jest.Mock).mockResolvedValueOnce(mockTimesheetApproved);
+      // Payroll-related mocks
+      (prisma.marketplaceHire.findUnique as jest.Mock).mockResolvedValueOnce({ id: 'hire-1' });
+      (prisma.payment.findUnique as jest.Mock).mockResolvedValueOnce(null);
+      (prisma.payment.create as jest.Mock).mockResolvedValueOnce({ id: 'pay-1' });
       const req = createPostRequest('https://example.com/api/timesheets/ts-1/approve', {});
       const res = await approveTimesheet(req, { params: { id: 'ts-1' } });
       expect(res.status).toBe(200);
