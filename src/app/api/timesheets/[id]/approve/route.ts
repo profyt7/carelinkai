@@ -76,6 +76,14 @@ export async function POST(
       }, { status: 409 });
     }
 
+    // Ensure caregiver has ended the shift
+    if (!timesheet.endTime) {
+      return NextResponse.json(
+        { error: "Cannot approve a timesheet that has not been ended yet" },
+        { status: 409 }
+      );
+    }
+
     // Update timesheet status to APPROVED
     const updatedTimesheet = await prisma.timesheet.update({
       where: { id },
@@ -85,6 +93,56 @@ export async function POST(
         approvedAt: new Date()
       }
     });
+
+    /** ---------------- Payroll processing ---------------- */
+    try {
+      // 1. Locate hire for this shift
+      const hire = await prisma.marketplaceHire.findUnique({
+        where: { shiftId: timesheet.shiftId ?? undefined }
+      });
+
+      if (!hire) {
+        // Hire might not exist for legacy/manual shifts; skip payroll creation
+        console.warn(
+          `Payroll warning: no MarketplaceHire found for shift ${timesheet.shiftId}. ` +
+          `Timesheet ${id} approved without generating payment.`
+        );
+        return;
+      }
+
+      // 2. Compute payable hours (rounded to nearest minute then hours)
+      const start = timesheet.startTime;
+      const end = timesheet.endTime;
+      const breakMs = (timesheet.breakMinutes ?? 0) * 60_000;
+      const durationMs = Math.max(0, end.getTime() - start.getTime() - breakMs);
+      const hoursWorked = durationMs / 3_600_000;
+
+      // 3. Calculate amount using shift hourlyRate
+      const rate = Number(timesheet.shift?.hourlyRate ?? 0);
+      const rawAmount = hoursWorked * rate;
+      const amount = parseFloat(rawAmount.toFixed(2)); // round to 2 decimals
+
+      // 4. Idempotent payment creation
+      const existingPayment = await prisma.payment.findUnique({
+        where: { marketplaceHireId: hire.id }
+      });
+
+      if (!existingPayment) {
+        await prisma.payment.create({
+          data: {
+            userId: session.user.id,
+            amount,
+            type: "CAREGIVER_PAYMENT",
+            status: "PENDING",
+            description: `Payroll for timesheet ${id}`,
+            marketplaceHireId: hire.id
+          }
+        });
+      }
+    } catch (payErr) {
+      // Log but do not fail approval if payment creation fails
+      console.error("Payroll creation error:", payErr);
+    }
 
     // Return success response with the updated timesheet
     return NextResponse.json({

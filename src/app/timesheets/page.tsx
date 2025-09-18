@@ -73,6 +73,7 @@ export default function TimesheetsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isApproving, setIsApproving] = useState<string | null>(null);
+  const [isPaying, setIsPaying] = useState<string | null>(null);
 
   // Determine if user is an operator (has timesheets to approve)
   const [isOperator, setIsOperator] = useState(false);
@@ -172,6 +173,51 @@ export default function TimesheetsPage() {
       setError(err instanceof Error ? err.message : 'Failed to approve timesheet. Please try again later.');
     } finally {
       setIsApproving(null);
+    }
+  };
+
+  // Handle paying a timesheet
+  const handlePayTimesheet = async (id: string) => {
+    if (authStatus !== 'authenticated') return;
+
+    setIsPaying(id);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/timesheets/${id}/pay`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Failed to pay timesheet: ${response.statusText}`);
+      }
+
+      // Refresh timesheets after payment
+      const timesheetsResponse = await fetch('/api/timesheets');
+      if (timesheetsResponse.ok) {
+        const data: ApiResponse = await timesheetsResponse.json();
+        const formattedTimesheets = data.timesheets.map(timesheet => ({
+          id: timesheet.id,
+          shiftId: timesheet.shiftId,
+          homeName: timesheet.shift?.home?.name || null,
+          startTime: new Date(timesheet.startTime),
+          endTime: timesheet.endTime ? new Date(timesheet.endTime) : null,
+          breakMinutes: timesheet.breakMinutes,
+          status: timesheet.status,
+          notes: timesheet.notes,
+          approvedAt: timesheet.approvedAt ? new Date(timesheet.approvedAt) : null
+        }));
+        setTimesheets(formattedTimesheets);
+      }
+    } catch (err) {
+      console.error('Error paying timesheet:', err);
+      setError(err instanceof Error ? err.message : 'Failed to pay timesheet. Please try again later.');
+    } finally {
+      setIsPaying(null);
     }
   };
 
@@ -301,6 +347,24 @@ export default function TimesheetsPage() {
                           Approve Timesheet
                           <FiCheckCircle className="ml-2" />
                         </>
+                      )}
+                    </button>
+                  )}
+
+                  {/* Pay caregiver button shown to operators after approval */}
+                  {isOperator && timesheet.status === 'APPROVED' && (
+                    <button
+                      className="mt-2 w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md transition-colors flex items-center justify-center disabled:bg-primary-400"
+                      onClick={() => handlePayTimesheet(timesheet.id)}
+                      disabled={isPaying === timesheet.id}
+                    >
+                      {isPaying === timesheet.id ? (
+                        <>
+                          <span className="mr-2 h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin"></span>
+                          Paying...
+                        </>
+                      ) : (
+                        'Pay Caregiver'
                       )}
                     </button>
                   )}
