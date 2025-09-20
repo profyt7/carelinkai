@@ -26,6 +26,7 @@ jest.mock('@/lib/prisma', () => {
       payment: {
         findFirst: jest.fn(),
         create: jest.fn(),
+        updateMany: jest.fn(),
       },
       familyWallet: {
         findUnique: jest.fn(),
@@ -348,6 +349,71 @@ describe('Stripe Webhook Handler', () => {
       
       // Verify transaction was NOT called
       expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+  });
+
+  /* -------------------------------------------------------------------
+   * Transfer event reconciliation tests
+   * ------------------------------------------------------------------*/
+  describe('transfer.* handling', () => {
+    test('updates payment status by stripePaymentId on transfer.paid', async () => {
+      const event = {
+        id: 'evt_tr_paid',
+        type: 'transfer.paid',
+        data: {
+          object: {
+            id: 'tr_123',
+            status: 'paid',
+            metadata: {},
+          },
+        },
+      };
+
+      const request = createMockRequest(event);
+
+      // First call resolves 1 update (by transferId)
+      (prisma.payment.updateMany as jest.Mock).mockResolvedValueOnce({ count: 1 });
+
+      const res = await POST(request as unknown as NextRequest);
+
+      expect(res.status).toBe(200);
+      expect(prisma.payment.updateMany).toHaveBeenCalledWith({
+        where: { stripePaymentId: 'tr_123', type: 'CAREGIVER_PAYMENT' },
+        data: { status: 'COMPLETED' },
+      });
+    });
+
+    test('falls back to hireId when no record by transferId', async () => {
+      const event = {
+        id: 'evt_tr_failed',
+        type: 'transfer.failed',
+        data: {
+          object: {
+            id: 'tr_456',
+            status: 'failed',
+            metadata: { hireId: 'hire-1' },
+          },
+        },
+      };
+
+      const request = createMockRequest(event);
+
+      // First updateMany returns 0 (no payment by transferId)
+      (prisma.payment.updateMany as jest.Mock)
+        .mockResolvedValueOnce({ count: 0 }) // by transferId
+        .mockResolvedValueOnce({ count: 2 }); // by hireId
+
+      const res = await POST(request as unknown as NextRequest);
+
+      expect(res.status).toBe(200);
+      expect(prisma.payment.updateMany).toHaveBeenNthCalledWith(1, {
+        where: { stripePaymentId: 'tr_456', type: 'CAREGIVER_PAYMENT' },
+        data: { status: 'FAILED' },
+      });
+      expect(prisma.payment.updateMany).toHaveBeenNthCalledWith(2, {
+        where: { marketplaceHireId: 'hire-1', type: 'CAREGIVER_PAYMENT' },
+        data: { status: 'FAILED', stripePaymentId: 'tr_456' },
+      });
     });
   });
 });

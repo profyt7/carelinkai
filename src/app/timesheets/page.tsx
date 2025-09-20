@@ -31,6 +31,14 @@ interface ApiTimesheet {
       id: string;
       name: string;
     };
+    marketplaceHire?: {
+      id: string;
+      payment?: {
+        id: string;
+        status: string;
+        stripePaymentId: string | null;
+      } | null;
+    };
   };
 }
 
@@ -49,6 +57,8 @@ interface Timesheet {
   status: string;
   notes: string | null;
   approvedAt: Date | null;
+  paymentStatus?: string | null;
+  transferId?: string | null;
 }
 
 // Format date and time - handle both Date objects and strings
@@ -112,7 +122,9 @@ export default function TimesheetsPage() {
           breakMinutes: timesheet.breakMinutes,
           status: timesheet.status,
           notes: timesheet.notes,
-          approvedAt: timesheet.approvedAt ? new Date(timesheet.approvedAt) : null
+          approvedAt: timesheet.approvedAt ? new Date(timesheet.approvedAt) : null,
+          paymentStatus: timesheet.shift?.marketplaceHire?.payment?.status ?? null,
+          transferId: timesheet.shift?.marketplaceHire?.payment?.stripePaymentId ?? null
         }));
         
         setTimesheets(formattedTimesheets);
@@ -163,7 +175,9 @@ export default function TimesheetsPage() {
           breakMinutes: timesheet.breakMinutes,
           status: timesheet.status,
           notes: timesheet.notes,
-          approvedAt: timesheet.approvedAt ? new Date(timesheet.approvedAt) : null
+          approvedAt: timesheet.approvedAt ? new Date(timesheet.approvedAt) : null,
+          paymentStatus: timesheet.shift?.marketplaceHire?.payment?.status ?? null,
+          transferId: timesheet.shift?.marketplaceHire?.payment?.stripePaymentId ?? null
         }));
         
         setTimesheets(formattedTimesheets);
@@ -209,7 +223,9 @@ export default function TimesheetsPage() {
           breakMinutes: timesheet.breakMinutes,
           status: timesheet.status,
           notes: timesheet.notes,
-          approvedAt: timesheet.approvedAt ? new Date(timesheet.approvedAt) : null
+          approvedAt: timesheet.approvedAt ? new Date(timesheet.approvedAt) : null,
+          paymentStatus: timesheet.shift?.marketplaceHire?.payment?.status ?? null,
+          transferId: timesheet.shift?.marketplaceHire?.payment?.stripePaymentId ?? null
         }));
         setTimesheets(formattedTimesheets);
       }
@@ -234,6 +250,20 @@ export default function TimesheetsPage() {
         return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  // Payment badge color mapping
+  const getPaymentBadgeColor = (status?: string | null) => {
+    switch (status) {
+      case 'PROCESSING':
+        return 'bg-amber-100 text-amber-800';
+      case 'COMPLETED':
+        return 'bg-green-100 text-green-800';
+      case 'FAILED':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'hidden';
     }
   };
 
@@ -301,6 +331,26 @@ export default function TimesheetsPage() {
                       {timesheet.status}
                     </span>
                   </div>
+
+                  {/* Payout status badge & transfer ID */}
+                  {timesheet.paymentStatus && (
+                    <div
+                      className={`mt-1 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getPaymentBadgeColor(
+                        timesheet.paymentStatus
+                      )}`}
+                    >
+                      {timesheet.paymentStatus === 'COMPLETED'
+                        ? 'Paid'
+                        : timesheet.paymentStatus === 'PROCESSING'
+                        ? 'Processing'
+                        : 'Failed'}
+                    </div>
+                  )}
+                  {timesheet.transferId && (
+                    <div className="mt-1 text-[11px] font-mono text-gray-500 truncate">
+                      Transfer: {timesheet.transferId}
+                    </div>
+                  )}
                   
                   <div className="flex items-start space-x-2 text-sm text-gray-500 mb-2">
                     <FiHome className="mt-0.5 flex-shrink-0" />

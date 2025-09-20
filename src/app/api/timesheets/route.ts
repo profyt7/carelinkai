@@ -40,14 +40,23 @@ export async function GET(request: NextRequest) {
         },
         include: {
           shift: {
-            select: {
-              id: true,
-              startTime: true,
-              endTime: true,
+            include: {
               home: {
                 select: {
                   id: true,
                   name: true
+                }
+              },
+              marketplaceHire: {
+                select: {
+                  id: true,
+                  payment: {
+                    select: {
+                      id: true,
+                      status: true,
+                      stripePaymentId: true
+                    }
+                  }
                 }
               }
             }
@@ -74,21 +83,30 @@ export async function GET(request: NextRequest) {
               }
             }
           },
-          include: {
-            shift: {
-              select: {
-                id: true,
-                startTime: true,
-                endTime: true,
-                home: {
-                  select: {
-                    id: true,
-                    name: true
+        include: {
+          shift: {
+            include: {
+              home: {
+                select: {
+                  id: true,
+                  name: true
+                }
+              },
+              marketplaceHire: {
+                select: {
+                  id: true,
+                  payment: {
+                    select: {
+                      id: true,
+                      status: true,
+                      stripePaymentId: true
+                    }
                   }
                 }
               }
             }
-          },
+          }
+        },
           orderBy: {
             createdAt: 'desc'
           }
