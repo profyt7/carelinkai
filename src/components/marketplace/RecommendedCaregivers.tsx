@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { FiUser, FiDollarSign } from "react-icons/fi";
 import { headers } from "next/headers";
+import InviteCaregiverButton from "@/components/marketplace/InviteCaregiverButton";
 
 type RecommendedCaregiver = {
   id: string;
@@ -165,12 +166,19 @@ export default async function RecommendedCaregivers({ listingId }: { listingId: 
               )}
               
               {/* View button placeholder */}
-              <Link
-                href={`/marketplace/caregivers/${item.id}`}
-                className="mt-auto block text-center bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
-              >
-                View
-              </Link>
+              <div className="mt-auto flex gap-2">
+                <Link
+                  href={`/marketplace/caregivers/${item.id}`}
+                  className="flex-1 text-center bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
+                >
+                  View
+                </Link>
+                {/* Invite button */}
+                <InviteCaregiverButton
+                  listingId={listingId}
+                  caregiverId={item.id}
+                />
+              </div>
             </div>
           );
         })}
