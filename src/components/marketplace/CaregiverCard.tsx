@@ -1,6 +1,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { FiUser, FiMapPin, FiCheckCircle, FiClock, FiDollarSign } from 'react-icons/fi';
+import Link from 'next/link';
 
 interface CaregiverCardProps {
   caregiver: {
@@ -206,9 +207,9 @@ const CaregiverCard: React.FC<CaregiverCardProps> = ({ caregiver }) => {
         )}
         
         {/* CTA button */}
-        <button className="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md transition-colors">
+        <Link href={`/marketplace/caregivers/${caregiver.id}`} className="block w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md transition-colors text-center">
           View Profile
-        </button>
+        </Link>
       </div>
     </div>
   );
