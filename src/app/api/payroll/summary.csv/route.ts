@@ -8,9 +8,8 @@ export const dynamic = "force-dynamic";
 
 /**
  * GET /api/payroll/summary.csv
- * 
+ *
  * Returns caregiver payments as a CSV file for the authenticated operator
- * 
  * Requires authentication and operator role
  */
 export async function GET(request: NextRequest) {
@@ -24,11 +23,14 @@ export async function GET(request: NextRequest) {
     // Find operator record for current user
     const operator = await prisma.operator.findUnique({
       where: { userId: session.user.id },
-      select: { id: true }
+      select: { id: true },
     });
 
     if (!operator) {
-      return NextResponse.json({ error: "User is not registered as an operator" }, { status: 403 });
+      return NextResponse.json(
+        { error: "User is not registered as an operator" },
+        { status: 403 }
+      );
     }
 
     // Query all caregiver payments for this operator's homes
@@ -38,10 +40,10 @@ export async function GET(request: NextRequest) {
         marketplaceHire: {
           shift: {
             home: {
-              operatorId: operator.id
-            }
-          }
-        }
+              operatorId: operator.id,
+            },
+          },
+        },
       },
       select: {
         id: true,
@@ -54,12 +56,12 @@ export async function GET(request: NextRequest) {
             caregiverId: true,
             shift: {
               select: {
-                id: true
-              }
-            }
-          }
-        }
-      }
+                id: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     // Build CSV header
@@ -68,17 +70,19 @@ export async function GET(request: NextRequest) {
     // Add data rows
     for (const payment of payments) {
       // Convert Decimal to number safely and format to 2 decimal places
-      const amount = typeof payment.amount === 'number' 
-        ? payment.amount.toFixed(2)
-        : payment.amount?.toNumber?.() 
-          ? payment.amount.toNumber().toFixed(2) 
-          : Number(payment.amount).toFixed(2);
+      const amountNum =
+        typeof payment.amount === "number"
+          ? payment.amount
+          : payment.amount?.toNumber?.()
+          ? payment.amount.toNumber()
+          : Number(payment.amount) || 0;
+      const amount = amountNum.toFixed(2);
 
       // Get related IDs
-      const hireId = payment.marketplaceHireId || '';
-      const caregiverId = payment.marketplaceHire?.caregiverId || '';
-      const shiftId = payment.marketplaceHire?.shift?.id || '';
-      const transferId = payment.stripePaymentId || '';
+      const hireId = payment.marketplaceHireId || "";
+      const caregiverId = payment.marketplaceHire?.caregiverId || "";
+      const shiftId = payment.marketplaceHire?.shift?.id || "";
+      const transferId = payment.stripePaymentId || "";
 
       // Add row to CSV
       csv += `${payment.id},${payment.status},${amount},${transferId},${hireId},${shiftId},${caregiverId}\n`;
@@ -87,11 +91,10 @@ export async function GET(request: NextRequest) {
     // Return CSV with appropriate headers
     return new NextResponse(csv, {
       headers: {
-        'Content-Type': 'text/csv; charset=utf-8',
-        'Content-Disposition': 'attachment; filename="payroll-summary.csv"'
-      }
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": 'attachment; filename="payroll-summary.csv"',
+      },
     });
-
   } catch (error) {
     console.error("Error generating payroll CSV:", error);
     return NextResponse.json(
