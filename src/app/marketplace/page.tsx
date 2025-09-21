@@ -558,7 +558,7 @@ export default function MarketplacePage() {
                     </div>
                   )}
                   {listings.map((job) => (
-                    <div key={job.id} className="bg-white border rounded-md p-4">
+                    <Link href={`/marketplace/listings/${job.id}`} key={job.id} className="block bg-white border rounded-md p-4 hover:shadow-md transition-shadow">
                       <div className="flex items-start mb-2">
                         <div className="h-12 w-12 rounded-md overflow-hidden bg-gray-100 flex-shrink-0 mr-3">
                           <Image src={`https://ui-avatars.com/api/?name=${encodeURIComponent(job.title)}&background=random&size=128`} alt={job.title} width={48} height={48} />
@@ -574,7 +574,7 @@ export default function MarketplacePage() {
                         </div>
                       )}
                       <p className="text-sm text-gray-700 line-clamp-2">{job.description}</p>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               )
