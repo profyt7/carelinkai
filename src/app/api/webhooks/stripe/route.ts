@@ -4,6 +4,25 @@ import { stripe } from "@/lib/stripe";
 import Stripe from "stripe";
 
 /**
+ * Utility: maps Stripe Transfer status strings to internal PaymentStatus values
+ */
+const mapTransferStatus = (
+  status: string | null | undefined
+): "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | undefined => {
+  switch ((status || "").toLowerCase()) {
+    case "pending":
+      return "PROCESSING";
+    case "paid":
+      return "COMPLETED";
+    case "canceled":
+    case "failed":
+      return "FAILED";
+    default:
+      return undefined;
+  }
+};
+
+/**
  * POST /api/webhooks/stripe
  * 
  * Handles Stripe webhook events, specifically payment_intent.succeeded
@@ -48,6 +67,58 @@ export async function POST(request: NextRequest) {
       }
     }
     
+    // ------------------------------------------------------------
+    // Handle transfer events for caregiver payouts reconciliation
+    // ------------------------------------------------------------
+    if (event.type && event.type.startsWith("transfer.")) {
+      const transfer = event.data.object as Stripe.Transfer;
+      const newStatus = mapTransferStatus((transfer as any).status);
+
+      if (!newStatus) {
+        return NextResponse.json(
+          {
+            received: true,
+            message: "Transfer event ignored (no status mapping)",
+          },
+          { status: 200 }
+        );
+      }
+
+      const transferId = transfer.id;
+      const metadata: any = (transfer as any).metadata || {};
+
+      // Primary update by stored stripePaymentId
+      const byId = await prisma.payment.updateMany({
+        where: {
+          stripePaymentId: transferId,
+          type: "CAREGIVER_PAYMENT",
+        },
+        data: { status: newStatus },
+      });
+
+      let updatedCount = byId.count;
+
+      // Fallback: locate by MarketplaceHire (metadata.hireId)
+      if (updatedCount === 0 && metadata.hireId) {
+        const byHire = await prisma.payment.updateMany({
+          where: {
+            marketplaceHireId: metadata.hireId,
+            type: "CAREGIVER_PAYMENT",
+          },
+          data: {
+            status: newStatus,
+            stripePaymentId: transferId,
+          },
+        });
+        updatedCount += byHire.count;
+      }
+
+      return NextResponse.json(
+        { received: true, message: "Transfer processed", updated: updatedCount },
+        { status: 200 }
+      );
+    }
+
     // Only handle payment_intent.succeeded events
     if (event.type !== "payment_intent.succeeded") {
       return NextResponse.json(
