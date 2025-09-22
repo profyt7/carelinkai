@@ -25,9 +25,10 @@ export async function GET(request: Request) {
     const state = searchParams.get('state');
     const services = searchParams.get('services')?.split(',').filter(Boolean);
     
-    // Pagination parameters
+    // Pagination and sorting parameters
     const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1;
     const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 20;
+    const sortBy = (searchParams.get('sortBy') || 'ratingDesc') as 'ratingDesc' | 'rateAsc' | 'rateDesc';
     
     // Generate mock providers
     let providers = generateMockProviders(q || '');
@@ -61,6 +62,25 @@ export async function GET(request: Request) {
       );
     }
     
+    // Apply sorting
+    if (sortBy === 'ratingDesc') {
+      providers.sort((a, b) => {
+        if (b.ratingAverage !== a.ratingAverage) return b.ratingAverage - a.ratingAverage;
+        return (b.reviewCount || 0) - (a.reviewCount || 0);
+      });
+    } else if (sortBy === 'rateAsc' || sortBy === 'rateDesc') {
+      const priceOf = (p: any) => {
+        if (typeof p.hourlyRate === 'number') return p.hourlyRate;
+        if (typeof p.perMileRate === 'number') return p.perMileRate * 20; // approximate conversion
+        return Number.POSITIVE_INFINITY;
+      };
+      providers.sort((a, b) => {
+        const av = priceOf(a);
+        const bv = priceOf(b);
+        return sortBy === 'rateAsc' ? av - bv : bv - av;
+      });
+    }
+
     // Apply pagination
     const totalCount = providers.length;
     const skip = (page - 1) * pageSize;
