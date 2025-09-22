@@ -845,7 +845,12 @@ export default function MarketplacePage() {
                         </div>
                         <div>
                           <h3 className="font-semibold text-gray-900">{p.name}</h3>
-                          <div className="text-sm text-gray-600">{[p.city, p.state].filter(Boolean).join(", ")}</div>
+                          <div className="text-sm text-gray-600">
+                            {[p.city, p.state].filter(Boolean).join(", ")}
+                            {typeof p.distanceMiles === 'number' && isFinite(p.distanceMiles) && (
+                              <span className="ml-2 text-gray-500">• {p.distanceMiles.toFixed(1)} mi</span>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div className="flex items-center text-sm mb-2">
