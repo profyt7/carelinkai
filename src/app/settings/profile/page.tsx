@@ -916,7 +916,15 @@ export default function ProfileSettings() {
             
             {/* Credentials Section */}
             <div className="col-span-6 mt-6">
-              <h3 className="text-lg font-medium text-neutral-800">Credentials</h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-neutral-800">Credentials</h3>
+                <Link
+                  href="/settings/credentials"
+                  className="text-sm font-medium text-primary-600 hover:text-primary-700"
+                >
+                  Open full page
+                </Link>
+              </div>
               <p className="mt-1 text-sm text-neutral-500">
                 Add your professional credentials, certifications, and licenses.
               </p>
