@@ -3,7 +3,6 @@ import Link from "next/link";
 import { FiUser, FiDollarSign } from "react-icons/fi";
 import { headers } from "next/headers";
 import InviteCaregiverButton from "@/components/marketplace/InviteCaregiverButton";
-
 type RecommendedCaregiver = {
   id: string;
   score: number;
@@ -27,27 +26,52 @@ type RecommendedCaregiver = {
 export default async function RecommendedCaregivers({ listingId }: { listingId: string }) {
   // Server-side fetch for recommendations
   let items: RecommendedCaregiver[] = [];
+  let applicationStatusByCaregiver: Record<string, string> = {};
   
   try {
-    const response = await fetch(
-      `/api/matching/recommendations?target=caregivers&listingId=${listingId}&limit=6`,
-      {
-        headers: { cookie: headers().get("cookie") ?? "" },
-        cache: "no-store",
-      }
-    );
+    const cookie = headers().get("cookie") ?? "";
+
+    const [recsRes, appsRes] = await Promise.all([
+      fetch(
+        `/api/matching/recommendations?target=caregivers&listingId=${listingId}&limit=6`,
+        {
+          headers: { cookie },
+          cache: "no-store",
+        }
+      ),
+      fetch(
+        `/api/marketplace/applications?listingId=${listingId}`,
+        {
+          headers: { cookie },
+          cache: "no-store",
+        }
+      ),
+    ]);
     
-    if (!response.ok) {
+    if (!recsRes.ok) {
       // Don't render anything for non-200 responses
       return null;
     }
     
-    const data = await response.json();
+    const data = await recsRes.json();
     items = data.items || [];
     
     // If no items, don't render the section
     if (items.length === 0) {
       return null;
+    }
+
+    // If applications fetch failed, we can still render without statuses
+    if (appsRes.ok) {
+      const appsData = await appsRes.json();
+      const apps: Array<{ caregiverId: string; status: string }> = (appsData.data || []).map((a: any) => ({
+        caregiverId: a.caregiverId,
+        status: a.status,
+      }));
+      applicationStatusByCaregiver = apps.reduce((acc, a) => {
+        acc[a.caregiverId] = a.status;
+        return acc;
+      }, {} as Record<string, string>);
     }
   } catch (error) {
     // On error, don't render anything
@@ -88,6 +112,14 @@ export default async function RecommendedCaregivers({ listingId }: { listingId: 
           const fullName = `${caregiver.user.firstName} ${caregiver.user.lastName}`;
           const visibleSpecialties = getVisibleSpecialties(caregiver.specialties);
           const hiddenCount = getHiddenSpecialtiesCount(caregiver.specialties);
+          const status = applicationStatusByCaregiver[item.id];
+          const hasStatus = Boolean(status);
+          const statusLabel = status ? status.charAt(0) + status.slice(1).toLowerCase() : "";
+          const statusClass = status === "INVITED"
+            ? "bg-yellow-100 text-yellow-800"
+            : status === "APPLIED"
+            ? "bg-blue-100 text-blue-800"
+            : "bg-gray-100 text-gray-800";
           
           return (
             <div key={item.id} className="bg-white border rounded-md p-4 flex flex-col">
@@ -165,19 +197,24 @@ export default async function RecommendedCaregivers({ listingId }: { listingId: 
                 </div>
               )}
               
-              {/* View button placeholder */}
-              <div className="mt-auto flex gap-2">
+              {/* Actions / Status */}
+              <div className="mt-auto flex gap-2 items-center">
                 <Link
                   href={`/marketplace/caregivers/${item.id}`}
                   className="flex-1 text-center bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
                 >
                   View
                 </Link>
-                {/* Invite button */}
-                <InviteCaregiverButton
-                  listingId={listingId}
-                  caregiverId={item.id}
-                />
+                {hasStatus ? (
+                  <span className={`px-3 py-1.5 text-sm font-medium rounded-md ${statusClass}`}>
+                    {statusLabel}
+                  </span>
+                ) : (
+                  <InviteCaregiverButton
+                    listingId={listingId}
+                    caregiverId={item.id}
+                  />
+                )}
               </div>
             </div>
           );
