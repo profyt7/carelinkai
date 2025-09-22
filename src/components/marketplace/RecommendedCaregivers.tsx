@@ -187,12 +187,18 @@ export default async function RecommendedCaregivers({ listingId }: { listingId: 
                 </div>
               )}
               
-              {/* Match score */}
+              {/* Match score + reasons */}
               {item.score > 0 && (
-                <div className="text-xs text-gray-500 mb-3">
-                  <span className="font-medium">{item.score}% match</span>
+                <div className="text-xs text-gray-600 mb-3">
+                  <div>
+                    <span className="font-medium text-gray-800">{item.score}% match</span>
+                  </div>
                   {item.reasons && item.reasons.length > 0 && (
-                    <span className="ml-1">- {item.reasons[0]}</span>
+                    <ul className="mt-1 list-disc pl-5 space-y-0.5">
+                      {item.reasons.slice(0, 2).map((r, idx) => (
+                        <li key={idx}>{r}</li>
+                      ))}
+                    </ul>
                   )}
                 </div>
               )}
