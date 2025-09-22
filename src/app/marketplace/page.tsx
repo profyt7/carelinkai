@@ -97,13 +97,17 @@ export default function MarketplacePage() {
     ratingAverage: number;
     reviewCount: number;
     badges: string[];
+    distanceMiles?: number;
   };
 
   const [providers, setProviders] = useState<Provider[]>([]);
   const [providersLoading, setProvidersLoading] = useState(false);
   const [providerPage, setProviderPage] = useState(1);
   const [providerTotal, setProviderTotal] = useState(0);
-  const [providerSort, setProviderSort] = useState<"ratingDesc" | "rateAsc" | "rateDesc">("ratingDesc");
+  const [providerSort, setProviderSort] = useState<"ratingDesc" | "rateAsc" | "rateDesc" | "distanceAsc">("ratingDesc");
+  const [prRadius, setPrRadius] = useState<string>("");
+  const [prGeoLat, setPrGeoLat] = useState<number | null>(null);
+  const [prGeoLng, setPrGeoLng] = useState<number | null>(null);
 
   useEffect(() => {
     // Load marketplace categories once
@@ -204,6 +208,11 @@ export default function MarketplacePage() {
         if (city) params.set("city", city);
         if (state) params.set("state", state);
         if (providerServices.length > 0) params.set("services", providerServices.join(","));
+        if (prRadius && prGeoLat !== null && prGeoLng !== null) {
+          params.set("radiusMiles", prRadius);
+          params.set("lat", String(prGeoLat));
+          params.set("lng", String(prGeoLng));
+        }
         params.set("page", String(providerPage));
         params.set("pageSize", String(20));
         params.set("sortBy", providerSort);
@@ -218,7 +227,7 @@ export default function MarketplacePage() {
       }
     };
     run();
-  }, [activeTab, search, city, state, providerServices, providerPage, providerSort]);
+  }, [activeTab, search, city, state, providerServices, providerPage, providerSort, prRadius, prGeoLat, prGeoLng]);
 
   const toggleSpecialty = (slug: string) => {
     setSpecialties((prev) =>
@@ -546,7 +555,38 @@ export default function MarketplacePage() {
                         <option value="ratingDesc">Rating: High to Low</option>
                         <option value="rateAsc">Price: Low to High</option>
                         <option value="rateDesc">Price: High to Low</option>
+                        <option value="distanceAsc" disabled={!prRadius || prGeoLat === null || prGeoLng === null}>Distance: Nearest</option>
                       </select>
+                    </div>
+                    <div className="mb-3">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Radius (miles)</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          min={1}
+                          step={1}
+                          value={prRadius}
+                          onChange={(e) => { setPrRadius(e.target.value); setProviderPage(1); }}
+                          placeholder="e.g. 10"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        />
+                        <button
+                          type="button"
+                          className="shrink-0 rounded-md border px-3 py-2 text-sm hover:bg-gray-50"
+                          onClick={() => {
+                            if (navigator?.geolocation) {
+                              navigator.geolocation.getCurrentPosition(
+                                (pos) => { setPrGeoLat(pos.coords.latitude); setPrGeoLng(pos.coords.longitude); setProviderPage(1); },
+                                () => {/* ignore errors */},
+                                { enableHighAccuracy: true, timeout: 8000 }
+                              );
+                            }
+                          }}
+                          title={prGeoLat && prGeoLng ? `Using: ${prGeoLat.toFixed(4)}, ${prGeoLng.toFixed(4)}` : 'Use my location'}
+                        >
+                          {prGeoLat && prGeoLng ? 'Location set' : 'Use my location'}
+                        </button>
+                      </div>
                     </div>
                     <div className="mt-4">
                       <h4 className="font-medium text-sm mb-2">Services</h4>
