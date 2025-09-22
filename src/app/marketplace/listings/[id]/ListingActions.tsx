@@ -12,6 +12,7 @@ interface ListingActionsProps {
   applicationCount: number;
   hireCount: number;
   status: string;
+  viewerApplicationStatus?: string | null;
 }
 
 export default function ListingActions({
@@ -20,6 +21,7 @@ export default function ListingActions({
   applicationCount,
   hireCount,
   status,
+  viewerApplicationStatus,
 }: ListingActionsProps) {
   const { data: session } = useSession();
   const router = useRouter();
@@ -37,6 +39,23 @@ export default function ListingActions({
   
   // Check if current user is a caregiver
   const isCaregiver = session?.user?.role === "CAREGIVER";
+  const hasExistingApplication = Boolean(viewerApplicationStatus);
+  const statusLabel = viewerApplicationStatus
+    ? viewerApplicationStatus.charAt(0) + viewerApplicationStatus.slice(1).toLowerCase()
+    : "";
+  const statusClass = viewerApplicationStatus === "INVITED"
+    ? "bg-yellow-100 text-yellow-800"
+    : viewerApplicationStatus === "APPLIED"
+    ? "bg-blue-100 text-blue-800"
+    : viewerApplicationStatus === "INTERVIEWING"
+    ? "bg-indigo-100 text-indigo-800"
+    : viewerApplicationStatus === "OFFERED"
+    ? "bg-green-100 text-green-800"
+    : viewerApplicationStatus === "REJECTED"
+    ? "bg-red-100 text-red-800"
+    : viewerApplicationStatus === "WITHDRAWN"
+    ? "bg-gray-100 text-gray-800"
+    : "bg-gray-100 text-gray-800";
 
   // Handle application submission
   const handleSubmitApplication = async (e: React.FormEvent) => {
@@ -142,6 +161,18 @@ export default function ListingActions({
                 Your application has been submitted successfully. The listing owner will be notified and may contact you.
               </p>
             </div>
+          </div>
+        </div>
+      );
+    }
+
+    // If user already has an application, show status chip
+    if (hasExistingApplication) {
+      return (
+        <div className="mt-6 border-t border-gray-200 pt-6">
+          <div className="bg-gray-50 p-4 rounded-md flex items-center justify-between">
+            <div className="text-gray-700">Your status for this listing</div>
+            <span className={`px-3 py-1.5 text-sm font-medium rounded-md ${statusClass}`}>{statusLabel}</span>
           </div>
         </div>
       );
