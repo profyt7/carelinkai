@@ -34,7 +34,7 @@ export async function GET(request: Request) {
     // Pagination and sorting
     const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1;
     const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 20;
-    const sortBy = searchParams.get('sortBy') || 'recency'; // recency (default), rateAsc, rateDesc
+    const sortBy = searchParams.get('sortBy') || 'recency'; // recency (default), rateAsc, rateDesc, distanceAsc (when using radius)
     const skip = (page - 1) * pageSize;
 
     // Build where clause for filtering
@@ -97,7 +97,8 @@ export async function GET(request: Request) {
       }));
       let filtered = withDistance.filter((l: any) => l.distanceMiles <= (radiusMiles as number));
       // sort
-      if (sortBy === 'rateAsc') filtered.sort((a: any, b: any) => (a.hourlyRateMin ?? 0) - (b.hourlyRateMin ?? 0));
+      if (sortBy === 'distanceAsc') filtered.sort((a: any, b: any) => (a.distanceMiles ?? Infinity) - (b.distanceMiles ?? Infinity));
+      else if (sortBy === 'rateAsc') filtered.sort((a: any, b: any) => (a.hourlyRateMin ?? 0) - (b.hourlyRateMin ?? 0));
       else if (sortBy === 'rateDesc') filtered.sort((a: any, b: any) => (b.hourlyRateMax ?? 0) - (a.hourlyRateMax ?? 0));
       else filtered.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       totalCount = filtered.length;
