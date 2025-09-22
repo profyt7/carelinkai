@@ -27,6 +27,9 @@ export async function GET(request: Request) {
     // Pagination parameters
     const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1;
     const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 20;
+    
+    // Sorting parameter: recency (default), rateAsc, rateDesc, experienceDesc
+    const sortBy = searchParams.get('sortBy') || 'recency';
     const skip = (page - 1) * pageSize;
     
     // Build where clause for filtering
@@ -97,9 +100,11 @@ export async function GET(request: Request) {
             }
           }
         },
-        orderBy: {
-          createdAt: 'desc'
-        },
+        orderBy:
+          sortBy === 'rateAsc' ? { hourlyRate: 'asc' } :
+          sortBy === 'rateDesc' ? { hourlyRate: 'desc' } :
+          sortBy === 'experienceDesc' ? { yearsExperience: 'desc' } :
+          { createdAt: 'desc' },
         skip,
         take: pageSize
       }),

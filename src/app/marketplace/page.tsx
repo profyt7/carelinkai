@@ -67,9 +67,15 @@ export default function MarketplacePage() {
 
   const [caregivers, setCaregivers] = useState<Caregiver[]>([]);
   const [caregiversLoading, setCaregiversLoading] = useState(false);
+  const [cgPage, setCgPage] = useState(1);
+  const [cgTotal, setCgTotal] = useState(0);
+  const [cgSort, setCgSort] = useState<"recency" | "rateAsc" | "rateDesc" | "experienceDesc">("recency");
 
   const [listings, setListings] = useState<Listing[]>([]);
   const [listingsLoading, setListingsLoading] = useState(false);
+  const [jobPage, setJobPage] = useState(1);
+  const [jobTotal, setJobTotal] = useState(0);
+  const [jobSort, setJobSort] = useState<"recency" | "rateAsc" | "rateDesc">("recency");
 
   // Providers state --------------------------------------------------------
   type Provider = {
@@ -117,9 +123,13 @@ export default function MarketplacePage() {
         if (minExperience) params.set("minExperience", minExperience);
         if (setting) params.set("setting", setting);
         if (careTypes.length > 0) params.set("careTypes", careTypes.join(","));
+        params.set("page", String(cgPage));
+        params.set("pageSize", String(20));
+        params.set("sortBy", cgSort);
         const res = await fetch(`/api/marketplace/caregivers?${params.toString()}`);
         const json = await res.json();
         setCaregivers(json?.data ?? []);
+        setCgTotal(json?.pagination?.total ?? 0);
       } catch (e) {
         setCaregivers([]);
       } finally {
@@ -127,7 +137,7 @@ export default function MarketplacePage() {
       }
     };
     run();
-  }, [activeTab, search, city, state, specialties, minRate, maxRate, minExperience, setting, careTypes]);
+  }, [activeTab, search, city, state, specialties, minRate, maxRate, minExperience, setting, careTypes, cgPage, cgSort]);
 
   useEffect(() => {
     if (activeTab !== "jobs") return;
@@ -144,9 +154,13 @@ export default function MarketplacePage() {
         if (careTypes.length > 0) params.set("careTypes", careTypes.join(","));
         if (services.length > 0) params.set("services", services.join(","));
         if (postedByMe && session?.user?.id) params.set("postedByMe", "true");
+        params.set("page", String(jobPage));
+        params.set("pageSize", String(20));
+        params.set("sortBy", jobSort);
         const res = await fetch(`/api/marketplace/listings?${params.toString()}`);
         const json = await res.json();
         setListings(json?.data ?? []);
+        setJobTotal(json?.pagination?.total ?? 0);
       } catch (e) {
         setListings([]);
       } finally {
@@ -154,7 +168,7 @@ export default function MarketplacePage() {
       }
     };
     run();
-  }, [activeTab, search, city, state, specialties, zip, setting, careTypes, services, postedByMe, session]);
+  }, [activeTab, search, city, state, specialties, zip, setting, careTypes, services, postedByMe, session, jobPage, jobSort]);
 
   /* ----------------------------------------------------------------------
      Fetch providers
@@ -239,6 +253,15 @@ export default function MarketplacePage() {
                 {activeTab === "caregivers" && (
                   <>
                     <div className="mb-3">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Sort by</label>
+                      <select value={cgSort} onChange={(e) => { setCgSort(e.target.value as any); setCgPage(1); }} className="w-full px-3 py-2 border border-gray-300 rounded-md">
+                        <option value="recency">Most recent</option>
+                        <option value="rateAsc">Rate: Low to High</option>
+                        <option value="rateDesc">Rate: High to Low</option>
+                        <option value="experienceDesc">Experience: High to Low</option>
+                      </select>
+                    </div>
+                    <div className="mb-3">
                       <label className="block text-sm font-medium text-gray-700 mb-1">Minimum Hourly Rate ($)</label>
                       <input 
                         type="number" 
@@ -312,6 +335,14 @@ export default function MarketplacePage() {
                 
                 {activeTab === "jobs" && (
                   <>
+                    <div className="mb-3">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Sort by</label>
+                      <select value={jobSort} onChange={(e) => { setJobSort(e.target.value as any); setJobPage(1); }} className="w-full px-3 py-2 border border-gray-300 rounded-md">
+                        <option value="recency">Most recent</option>
+                        <option value="rateAsc">Rate: Low to High</option>
+                        <option value="rateDesc">Rate: High to Low</option>
+                      </select>
+                    </div>
                     <div className="mb-3">
                       <label className="block text-sm font-medium text-gray-700 mb-1">ZIP Code</label>
                       <input 
@@ -420,6 +451,10 @@ export default function MarketplacePage() {
                   setServices([]); 
                   setProviderServices([]); 
                   setPostedByMe(false);
+                  setCgPage(1);
+                  setCgSort('recency');
+                  setJobPage(1);
+                  setJobSort('recency');
                 }} 
                 className="w-full rounded-md bg-gray-100 px-3 py-2 text-sm text-gray-700 hover:bg-gray-200"
               >
@@ -619,6 +654,21 @@ export default function MarketplacePage() {
                   ))}
                 </div>
               )
+            )}
+            {/* Pagination controls */}
+            {(activeTab === 'caregivers') && (
+              <div className="mt-6 flex items-center justify-between">
+                <button disabled={cgPage <= 1} onClick={() => setCgPage((p) => Math.max(1, p - 1))} className="px-3 py-2 rounded-md border disabled:opacity-50">Previous</button>
+                <div className="text-sm text-gray-600">Page {cgPage} {cgTotal ? `of ${Math.max(1, Math.ceil(cgTotal / 20))}` : ''}</div>
+                <button disabled={cgTotal !== 0 && cgPage >= Math.ceil(cgTotal / 20)} onClick={() => setCgPage((p) => p + 1)} className="px-3 py-2 rounded-md border disabled:opacity-50">Next</button>
+              </div>
+            )}
+            {(activeTab === 'jobs') && (
+              <div className="mt-6 flex items-center justify-between">
+                <button disabled={jobPage <= 1} onClick={() => setJobPage((p) => Math.max(1, p - 1))} className="px-3 py-2 rounded-md border disabled:opacity-50">Previous</button>
+                <div className="text-sm text-gray-600">Page {jobPage} {jobTotal ? `of ${Math.max(1, Math.ceil(jobTotal / 20))}` : ''}</div>
+                <button disabled={jobTotal !== 0 && jobPage >= Math.ceil(jobTotal / 20)} onClick={() => setJobPage((p) => p + 1)} className="px-3 py-2 rounded-md border disabled:opacity-50">Next</button>
+              </div>
             )}
           </div>
         </div>
