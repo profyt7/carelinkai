@@ -5,6 +5,7 @@ import Link from "next/link";
 import { FiMapPin, FiDollarSign, FiClock, FiCheckCircle } from "react-icons/fi";
 import RequestShiftForm from "@/components/marketplace/RequestShiftForm";
 import CaregiverReviewForm from "@/components/marketplace/CaregiverReviewForm";
+import CaregiverReviewsList from "@/components/marketplace/CaregiverReviewsList";
 
 export const dynamic = "force-dynamic";
 
@@ -271,7 +272,10 @@ export default async function CaregiverDetailPage({
           {/* Reviews */}
           <section className="mt-10">
             <h2 className="text-lg font-medium text-gray-900 mb-4">Reviews</h2>
-            <CaregiverReviewForm caregiverId={caregiver.id} />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <CaregiverReviewsList caregiverId={caregiver.id} />
+              <CaregiverReviewForm caregiverId={caregiver.id} />
+            </div>
           </section>
         </div>
       </div>
