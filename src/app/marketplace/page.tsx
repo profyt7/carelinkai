@@ -19,6 +19,7 @@ type Caregiver = {
   bio: string | null;
   photoUrl: string | null;
   backgroundCheckStatus: string;
+  distanceMiles?: number;
 };
 
 type Listing = {
@@ -73,7 +74,10 @@ export default function MarketplacePage() {
   const [caregiversLoading, setCaregiversLoading] = useState(false);
   const [cgPage, setCgPage] = useState(1);
   const [cgTotal, setCgTotal] = useState(0);
-  const [cgSort, setCgSort] = useState<"recency" | "rateAsc" | "rateDesc" | "experienceDesc">("recency");
+  const [cgSort, setCgSort] = useState<"recency" | "rateAsc" | "rateDesc" | "experienceDesc" | "distanceAsc">("recency");
+  const [cgRadius, setCgRadius] = useState<string>("");
+  const [cgGeoLat, setCgGeoLat] = useState<number | null>(null);
+  const [cgGeoLng, setCgGeoLng] = useState<number | null>(null);
 
   const [listings, setListings] = useState<Listing[]>([]);
   const [listingsLoading, setListingsLoading] = useState(false);
@@ -130,6 +134,11 @@ export default function MarketplacePage() {
         if (minExperience) params.set("minExperience", minExperience);
         if (setting) params.set("setting", setting);
         if (careTypes.length > 0) params.set("careTypes", careTypes.join(","));
+        if (cgRadius && cgGeoLat !== null && cgGeoLng !== null) {
+          params.set("radiusMiles", cgRadius);
+          params.set("lat", String(cgGeoLat));
+          params.set("lng", String(cgGeoLng));
+        }
         params.set("page", String(cgPage));
         params.set("pageSize", String(20));
         params.set("sortBy", cgSort);
@@ -144,7 +153,7 @@ export default function MarketplacePage() {
       }
     };
     run();
-  }, [activeTab, search, city, state, specialties, minRate, maxRate, minExperience, setting, careTypes, cgPage, cgSort]);
+  }, [activeTab, search, city, state, specialties, minRate, maxRate, minExperience, setting, careTypes, cgPage, cgSort, cgRadius, cgGeoLat, cgGeoLng]);
 
   useEffect(() => {
     if (activeTab !== "jobs") return;
@@ -306,7 +315,38 @@ export default function MarketplacePage() {
                         <option value="rateAsc">Rate: Low to High</option>
                         <option value="rateDesc">Rate: High to Low</option>
                         <option value="experienceDesc">Experience: High to Low</option>
+                        <option value="distanceAsc" disabled={!cgRadius || cgGeoLat === null || cgGeoLng === null}>Distance: Nearest</option>
                       </select>
+                    </div>
+                    <div className="mb-3">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Radius (miles)</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          min={1}
+                          step={1}
+                          value={cgRadius}
+                          onChange={(e) => { setCgRadius(e.target.value); setCgPage(1); }}
+                          placeholder="e.g. 10"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        />
+                        <button
+                          type="button"
+                          className="shrink-0 rounded-md border px-3 py-2 text-sm hover:bg-gray-50"
+                          onClick={() => {
+                            if (navigator?.geolocation) {
+                              navigator.geolocation.getCurrentPosition(
+                                (pos) => { setCgGeoLat(pos.coords.latitude); setCgGeoLng(pos.coords.longitude); setCgPage(1); },
+                                () => {/* ignore errors */},
+                                { enableHighAccuracy: true, timeout: 8000 }
+                              );
+                            }
+                          }}
+                          title={cgGeoLat && cgGeoLng ? `Using: ${cgGeoLat.toFixed(4)}, ${cgGeoLng.toFixed(4)}` : 'Use my location'}
+                        >
+                          {cgGeoLat && cgGeoLng ? 'Location set' : 'Use my location'}
+                        </button>
+                      </div>
                     </div>
                     <div className="mb-3">
                       <label className="block text-sm font-medium text-gray-700 mb-1">Minimum Hourly Rate ($)</label>
@@ -533,6 +573,9 @@ export default function MarketplacePage() {
                   setMinRate(''); 
                   setMaxRate(''); 
                   setMinExperience(''); 
+                  setCgRadius('');
+                  setCgGeoLat(null);
+                  setCgGeoLng(null);
                   setZip(''); 
                   setSetting(''); 
                   setCareTypes([]); 
@@ -575,6 +618,9 @@ export default function MarketplacePage() {
                     setMinRate('');
                     setMaxRate('');
                     setMinExperience('');
+                    setCgRadius('');
+                    setCgGeoLat(null);
+                    setCgGeoLng(null);
                     setZip('');
                     setSetting('');
                     setCareTypes([]);
