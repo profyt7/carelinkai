@@ -24,11 +24,14 @@ export async function GET(request: Request) {
     const city = searchParams.get('city');
     const state = searchParams.get('state');
     const services = searchParams.get('services')?.split(',').filter(Boolean);
+    const lat = searchParams.get('lat') ? parseFloat(searchParams.get('lat')!) : null;
+    const lng = searchParams.get('lng') ? parseFloat(searchParams.get('lng')!) : null;
+    const radiusMiles = searchParams.get('radiusMiles') ? parseFloat(searchParams.get('radiusMiles')!) : null;
     
     // Pagination and sorting parameters
     const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1;
     const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 20;
-    const sortBy = (searchParams.get('sortBy') || 'ratingDesc') as 'ratingDesc' | 'rateAsc' | 'rateDesc';
+    const sortBy = (searchParams.get('sortBy') || 'ratingDesc') as 'ratingDesc' | 'rateAsc' | 'rateDesc' | 'distanceAsc';
     
     // Generate mock providers
     let providers = generateMockProviders(q || '');
@@ -62,8 +65,21 @@ export async function GET(request: Request) {
       );
     }
     
+    // Apply optional radius filtering (dev-only mock; approximate by city center)
+    const useRadius = !!(lat !== null && lng !== null && radiusMiles !== null && !Number.isNaN(radiusMiles));
+    if (useRadius) {
+      providers = providers
+        .map((p) => ({
+          ...p,
+          distanceMiles: cityDistanceMiles(lat!, lng!, p.city, p.state)
+        }))
+        .filter((p) => p.distanceMiles <= (radiusMiles as number));
+    }
+
     // Apply sorting
-    if (sortBy === 'ratingDesc') {
+    if (sortBy === 'distanceAsc' && useRadius) {
+      providers.sort((a: any, b: any) => (a.distanceMiles ?? Infinity) - (b.distanceMiles ?? Infinity));
+    } else if (sortBy === 'ratingDesc') {
       providers.sort((a, b) => {
         if (b.ratingAverage !== a.ratingAverage) return b.ratingAverage - a.ratingAverage;
         return (b.reviewCount || 0) - (a.reviewCount || 0);
@@ -105,6 +121,37 @@ export async function GET(request: Request) {
       { status: 500 }
     );
   }
+}
+
+// Approximate city coordinates for Bay Area cities used in mock data
+const CITY_COORDS: Record<string, { lat: number; lng: number }> = {
+  'San Francisco, CA': { lat: 37.7749, lng: -122.4194 },
+  'Oakland, CA': { lat: 37.8044, lng: -122.2711 },
+  'San Jose, CA': { lat: 37.3382, lng: -121.8863 },
+  'Berkeley, CA': { lat: 37.8715, lng: -122.2730 },
+  'Palo Alto, CA': { lat: 37.4419, lng: -122.1430 },
+  'Mountain View, CA': { lat: 37.3861, lng: -122.0839 },
+  'Sunnyvale, CA': { lat: 37.3688, lng: -122.0363 },
+  'Santa Clara, CA': { lat: 37.3541, lng: -121.9552 },
+  'Fremont, CA': { lat: 37.5483, lng: -121.9886 },
+  'Hayward, CA': { lat: 37.6688, lng: -122.0808 },
+};
+
+function cityDistanceMiles(fromLat: number, fromLng: number, city: string, state: string) {
+  const key = `${city}, ${state}`;
+  const coord = CITY_COORDS[key];
+  if (!coord) return Number.POSITIVE_INFINITY;
+  return haversineMiles(fromLat, fromLng, coord.lat, coord.lng);
+}
+
+function haversineMiles(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const toRad = (v: number) => (v * Math.PI) / 180;
+  const R = 3958.8; // miles
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
 }
 
 /**
