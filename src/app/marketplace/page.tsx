@@ -30,6 +30,7 @@ type Listing = {
   hourlyRateMin: number | null;
   hourlyRateMax: number | null;
   createdAt: string;
+  distanceMiles?: number;
 };
 
 export default function MarketplacePage() {
@@ -78,7 +79,7 @@ export default function MarketplacePage() {
   const [listingsLoading, setListingsLoading] = useState(false);
   const [jobPage, setJobPage] = useState(1);
   const [jobTotal, setJobTotal] = useState(0);
-  const [jobSort, setJobSort] = useState<"recency" | "rateAsc" | "rateDesc">("recency");
+  const [jobSort, setJobSort] = useState<"recency" | "rateAsc" | "rateDesc" | "distanceAsc">("recency");
 
   // Providers state --------------------------------------------------------
   type Provider = {
@@ -387,6 +388,7 @@ export default function MarketplacePage() {
                         <option value="recency">Most recent</option>
                         <option value="rateAsc">Rate: Low to High</option>
                         <option value="rateDesc">Rate: High to Low</option>
+                        <option value="distanceAsc" disabled={!jobRadius || geoLat === null || geoLng === null}>Distance: Nearest</option>
                       </select>
                     </div>
                     <div className="mb-3">
@@ -724,7 +726,12 @@ export default function MarketplacePage() {
                         </div>
                         <div>
                           <h3 className="font-semibold text-gray-900">{job.title}</h3>
-                          <div className="text-sm text-gray-600">{[job.city, job.state].filter(Boolean).join(", ") || "Location"}</div>
+                          <div className="text-sm text-gray-600">
+                            {[job.city, job.state].filter(Boolean).join(", ") || "Location"}
+                            {typeof job.distanceMiles === 'number' && isFinite(job.distanceMiles) && (
+                              <span className="ml-2 text-gray-500">• {job.distanceMiles.toFixed(1)} mi</span>
+                            )}
+                          </div>
                         </div>
                       </div>
                       {(job.hourlyRateMin || job.hourlyRateMax) && (
