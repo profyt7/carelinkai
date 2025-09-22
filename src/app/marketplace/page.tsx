@@ -225,6 +225,37 @@ export default function MarketplacePage() {
     );
   };
 
+  const chips = useMemo(() => {
+    const list: { key: string; label: string; remove: () => void }[] = [];
+    if (search) list.push({ key: `q:${search}`, label: `Search: ${search}`, remove: () => { setSearch(""); } });
+    if (city) list.push({ key: `city:${city}`, label: `City: ${city}`, remove: () => { setCity(""); } });
+    if (state) list.push({ key: `state:${state}`, label: `State: ${state}`, remove: () => { setState(""); } });
+
+    if (activeTab === 'caregivers') {
+      if (minRate) list.push({ key: `minRate:${minRate}`, label: `Min $${minRate}/hr`, remove: () => { setMinRate(""); setCgPage(1); } });
+      if (maxRate) list.push({ key: `maxRate:${maxRate}`, label: `Max $${maxRate}/hr`, remove: () => { setMaxRate(""); setCgPage(1); } });
+      if (minExperience) list.push({ key: `minExp:${minExperience}`, label: `Min ${minExperience} yrs`, remove: () => { setMinExperience(""); setCgPage(1); } });
+      if (setting) list.push({ key: `setting:${setting}`, label: `Setting: ${setting}`, remove: () => { setSetting(""); setCgPage(1); } });
+      specialties.forEach((s) => list.push({ key: `spec:${s}`, label: (categories['SPECIALTY']?.find(x => x.slug === s)?.name) || s, remove: () => { toggleSpecialty(s); setCgPage(1); } }));
+      careTypes.forEach((c) => list.push({ key: `care:${c}`, label: (categories['CARE_TYPE']?.find(x => x.slug === c)?.name) || c, remove: () => { toggleCareType(c); setCgPage(1); } }));
+    }
+
+    if (activeTab === 'jobs') {
+      if (zip) list.push({ key: `zip:${zip}`, label: `ZIP: ${zip}`, remove: () => { setZip(""); setJobPage(1); } });
+      if (setting) list.push({ key: `setting:${setting}`, label: `Setting: ${setting}`, remove: () => { setSetting(""); setJobPage(1); } });
+      if (postedByMe) list.push({ key: `postedByMe`, label: `Posted by me`, remove: () => { setPostedByMe(false); setJobPage(1); } });
+      specialties.forEach((s) => list.push({ key: `spec:${s}`, label: (categories['SPECIALTY']?.find(x => x.slug === s)?.name) || s, remove: () => { toggleSpecialty(s); setJobPage(1); } }));
+      careTypes.forEach((c) => list.push({ key: `care:${c}`, label: (categories['CARE_TYPE']?.find(x => x.slug === c)?.name) || c, remove: () => { toggleCareType(c); setJobPage(1); } }));
+      services.forEach((srv) => list.push({ key: `svc:${srv}`, label: (categories['SERVICE']?.find(x => x.slug === srv)?.name) || srv, remove: () => { toggleService(srv); setJobPage(1); } }));
+    }
+
+    if (activeTab === 'providers') {
+      providerServices.forEach((srv) => list.push({ key: `psvc:${srv}`, label: (categories['SERVICE']?.find(x => x.slug === srv)?.name) || srv, remove: () => { toggleProviderService(srv); setProviderPage(1); } }));
+    }
+
+    return list;
+  }, [search, city, state, activeTab, minRate, maxRate, minExperience, setting, specialties, careTypes, services, providerServices, categories, zip, postedByMe]);
+
   return (
     <DashboardLayout title="Marketplace">
       <div className="px-4 md:px-6 py-4">
@@ -484,6 +515,39 @@ export default function MarketplacePage() {
 
           {/* Main content */}
           <div className="flex-1">
+            {chips.length > 0 && (
+              <div className="mb-4 flex flex-wrap items-center gap-2">
+                {chips.map((c) => (
+                  <button key={c.key} onClick={c.remove} className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-sm bg-white hover:bg-gray-50">
+                    <span>{c.label}</span>
+                    <span className="text-gray-500">×</span>
+                  </button>
+                ))}
+                <button
+                  onClick={() => {
+                    setSearch("");
+                    setCity("");
+                    setState("");
+                    setSpecialties([]);
+                    setMinRate('');
+                    setMaxRate('');
+                    setMinExperience('');
+                    setZip('');
+                    setSetting('');
+                    setCareTypes([]);
+                    setServices([]);
+                    setProviderServices([]);
+                    setPostedByMe(false);
+                    setCgPage(1);
+                    setJobPage(1);
+                    setProviderPage(1);
+                  }}
+                  className="ml-auto inline-flex items-center rounded-md bg-gray-100 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-200"
+                >
+                  Clear all
+                </button>
+              </div>
+            )}
             {/* Mobile filters */}
             <div className="mb-6 rounded-md border border-gray-200 bg-white p-3 md:hidden">
               <div className="grid grid-cols-1 gap-3">
