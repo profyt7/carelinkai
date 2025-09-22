@@ -62,6 +62,19 @@ export default async function ListingDetailPage({
     return img.medium || img.thumbnail || img.large || null;
   })();
 
+  // Compute owner-side application status breakdown
+  let statusBreakdown: Record<string, number> = {};
+  try {
+    const grouped = await (prisma as any).marketplaceApplication.groupBy({
+      by: ["status"],
+      where: { listingId: listing.id },
+      _count: { _all: true },
+    });
+    statusBreakdown = Object.fromEntries(grouped.map((g: any) => [g.status, g._count._all]));
+  } catch (e) {
+    console.error("Error loading status breakdown:", e);
+  }
+
   return (
     <div className="max-w-4xl mx-auto p-4 md:p-6">
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
@@ -224,6 +237,7 @@ export default async function ListingDetailPage({
             applicationCount={listing._count.applications}
             hireCount={listing._count.hires}
             status={listing.status}
+            statusBreakdown={statusBreakdown}
           />
 
           {/* Recommended caregivers (AI Matching) */}

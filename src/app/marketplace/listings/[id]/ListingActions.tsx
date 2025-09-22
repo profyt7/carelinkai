@@ -12,6 +12,7 @@ interface ListingActionsProps {
   applicationCount: number;
   hireCount: number;
   status: string;
+  statusBreakdown?: Record<string, number>;
 }
 
 export default function ListingActions({
@@ -20,6 +21,7 @@ export default function ListingActions({
   applicationCount,
   hireCount,
   status,
+  statusBreakdown = {},
 }: ListingActionsProps) {
   const { data: session } = useSession();
   const router = useRouter();
@@ -107,6 +109,27 @@ export default function ListingActions({
               <div className="text-2xl font-bold text-gray-800">{hireCount}</div>
               <div className="text-sm text-gray-500">Hires</div>
             </div>
+          </div>
+
+          {/* Status breakdown chips */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            {Object.entries(statusBreakdown).map(([k, v]) => (
+              <span
+                key={k}
+                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                  k === "INVITED" ? "bg-yellow-100 text-yellow-800" :
+                  k === "APPLIED" ? "bg-blue-100 text-blue-800" :
+                  k === "INTERVIEWING" ? "bg-indigo-100 text-indigo-800" :
+                  k === "OFFERED" ? "bg-green-100 text-green-800" :
+                  k === "HIRED" ? "bg-emerald-100 text-emerald-800" :
+                  k === "REJECTED" ? "bg-red-100 text-red-800" :
+                  k === "WITHDRAWN" ? "bg-gray-100 text-gray-800" :
+                  "bg-gray-100 text-gray-800"
+                }`}
+              >
+                {k.charAt(0) + k.slice(1).toLowerCase()}: {v}
+              </span>
+            ))}
           </div>
           
           <div className="flex space-x-3">
