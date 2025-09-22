@@ -21,6 +21,9 @@ export async function GET(request: Request) {
     const city = searchParams.get('city');
     const state = searchParams.get('state');
     const zip = searchParams.get('zip');
+    const lat = searchParams.get('lat') ? parseFloat(searchParams.get('lat')!) : null;
+    const lng = searchParams.get('lng') ? parseFloat(searchParams.get('lng')!) : null;
+    const radiusMiles = searchParams.get('radiusMiles') ? parseFloat(searchParams.get('radiusMiles')!) : null;
     const status = searchParams.get('status');
     const setting = searchParams.get('setting');
     const careTypes = searchParams.get('careTypes')?.split(',').filter(Boolean);
@@ -74,27 +77,57 @@ export async function GET(request: Request) {
       where.postedByUserId = session.user.id;
     }
     
-    // Fetch listings with counts + pagination
-    const [listings, totalCount] = await Promise.all([
-      (prisma as any).marketplaceListing.findMany({
+    // If radius filter is provided and we have lat/lng, perform in-memory distance filtering
+    const useRadius = !!(lat !== null && lng !== null && radiusMiles !== null && !Number.isNaN(radiusMiles));
+    let listings: any[] = [];
+    let totalCount = 0;
+    if (useRadius) {
+      // fetch a larger candidate set; limit to 500 to keep perf reasonable
+      const candidates = await (prisma as any).marketplaceListing.findMany({
         where,
-        orderBy:
-          sortBy === 'rateAsc' ? { hourlyRateMin: 'asc' } :
-          sortBy === 'rateDesc' ? { hourlyRateMax: 'desc' } :
-          { createdAt: 'desc' },
         include: {
-          _count: {
-            select: {
-              applications: true,
-              hires: true
-            }
-          }
+          _count: { select: { applications: true, hires: true } }
         },
-        skip,
-        take: pageSize
-      }),
-      (prisma as any).marketplaceListing.count({ where })
-    ]);
+        take: 500
+      });
+      // compute distance and filter
+      const withDistance = candidates.map((l: any) => ({
+        ...l,
+        distanceMiles: (l.latitude != null && l.longitude != null) ? haversineMiles(lat!, lng!, Number(l.latitude), Number(l.longitude)) : Infinity
+      }));
+      let filtered = withDistance.filter((l: any) => l.distanceMiles <= (radiusMiles as number));
+      // sort
+      if (sortBy === 'rateAsc') filtered.sort((a: any, b: any) => (a.hourlyRateMin ?? 0) - (b.hourlyRateMin ?? 0));
+      else if (sortBy === 'rateDesc') filtered.sort((a: any, b: any) => (b.hourlyRateMax ?? 0) - (a.hourlyRateMax ?? 0));
+      else filtered.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      totalCount = filtered.length;
+      // paginate
+      listings = filtered.slice(skip, skip + pageSize);
+    } else {
+      // Default DB-side pagination/sort
+      const result = await Promise.all([
+        (prisma as any).marketplaceListing.findMany({
+          where,
+          orderBy:
+            sortBy === 'rateAsc' ? { hourlyRateMin: 'asc' } :
+            sortBy === 'rateDesc' ? { hourlyRateMax: 'desc' } :
+            { createdAt: 'desc' },
+          include: {
+            _count: {
+              select: {
+                applications: true,
+                hires: true
+              }
+            }
+          },
+          skip,
+          take: pageSize
+        }),
+        (prisma as any).marketplaceListing.count({ where })
+      ]);
+      listings = result[0] as any[];
+      totalCount = result[1] as number;
+    }
     
     // Transform the data to include counts directly
     const formattedListings = listings.map((listing: any) => {
@@ -102,7 +135,8 @@ export async function GET(request: Request) {
       return {
         ...listingData,
         applicationCount: _count.applications,
-        hireCount: _count.hires
+        hireCount: _count.hires,
+        ...(useRadius ? { distanceMiles: listing.distanceMiles } : {})
       };
     });
     
@@ -128,6 +162,17 @@ export async function GET(request: Request) {
       { status: 500 }
     );
   }
+}
+
+// Haversine distance in miles between two lat/lng pairs
+function haversineMiles(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const toRad = (v: number) => (v * Math.PI) / 180;
+  const R = 3958.8; // Earth radius in miles
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
 }
 
 /**

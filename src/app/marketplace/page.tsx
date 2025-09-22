@@ -61,6 +61,9 @@ export default function MarketplacePage() {
   const [careTypes, setCareTypes] = useState<string[]>([]);
   const [services, setServices] = useState<string[]>([]);
   const [postedByMe, setPostedByMe] = useState(false);
+  const [jobRadius, setJobRadius] = useState<string>(""); // miles
+  const [geoLat, setGeoLat] = useState<number | null>(null);
+  const [geoLng, setGeoLng] = useState<number | null>(null);
 
   /* ---------------- Provider-specific filters ----------------------- */
   const [providerServices, setProviderServices] = useState<string[]>([]);
@@ -157,6 +160,11 @@ export default function MarketplacePage() {
         if (careTypes.length > 0) params.set("careTypes", careTypes.join(","));
         if (services.length > 0) params.set("services", services.join(","));
         if (postedByMe && session?.user?.id) params.set("postedByMe", "true");
+        if (jobRadius && geoLat !== null && geoLng !== null) {
+          params.set("radiusMiles", jobRadius);
+          params.set("lat", String(geoLat));
+          params.set("lng", String(geoLng));
+        }
         params.set("page", String(jobPage));
         params.set("pageSize", String(20));
         params.set("sortBy", jobSort);
@@ -171,7 +179,7 @@ export default function MarketplacePage() {
       }
     };
     run();
-  }, [activeTab, search, city, state, specialties, zip, setting, careTypes, services, postedByMe, session, jobPage, jobSort]);
+  }, [activeTab, search, city, state, specialties, zip, setting, careTypes, services, postedByMe, session, jobPage, jobSort, jobRadius, geoLat, geoLng]);
 
   /* ----------------------------------------------------------------------
      Fetch providers
@@ -392,6 +400,36 @@ export default function MarketplacePage() {
                       />
                     </div>
                     <div className="mb-3">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Radius (miles)</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          min={1}
+                          step={1}
+                          value={jobRadius}
+                          onChange={(e) => { setJobRadius(e.target.value); setJobPage(1); }}
+                          placeholder="e.g. 10"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        />
+                        <button
+                          type="button"
+                          className="shrink-0 rounded-md border px-3 py-2 text-sm hover:bg-gray-50"
+                          onClick={() => {
+                            if (navigator?.geolocation) {
+                              navigator.geolocation.getCurrentPosition(
+                                (pos) => { setGeoLat(pos.coords.latitude); setGeoLng(pos.coords.longitude); setJobPage(1); },
+                                () => {/* ignore errors */},
+                                { enableHighAccuracy: true, timeout: 8000 }
+                              );
+                            }
+                          }}
+                          title={geoLat && geoLng ? `Using: ${geoLat.toFixed(4)}, ${geoLng.toFixed(4)}` : 'Use my location'}
+                        >
+                          {geoLat && geoLng ? 'Location set' : 'Use my location'}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="mb-3">
                       <label className="block text-sm font-medium text-gray-700 mb-1">Setting</label>
                       <select 
                         value={setting} 
@@ -503,6 +541,9 @@ export default function MarketplacePage() {
                   setCgSort('recency');
                   setJobPage(1);
                   setJobSort('recency');
+                  setJobRadius('');
+                  setGeoLat(null);
+                  setGeoLng(null);
                   setProviderPage(1);
                   setProviderSort('ratingDesc');
                 }} 
