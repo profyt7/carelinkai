@@ -28,6 +28,12 @@ export async function GET(request: Request) {
     const specialties = searchParams.get('specialties')?.split(',').filter(Boolean);
     const postedByMe = searchParams.get('postedByMe') === 'true';
     
+    // Pagination and sorting
+    const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1;
+    const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 20;
+    const sortBy = searchParams.get('sortBy') || 'recency'; // recency (default), rateAsc, rateDesc
+    const skip = (page - 1) * pageSize;
+
     // Build where clause for filtering
     const where: any = {};
     
@@ -68,21 +74,27 @@ export async function GET(request: Request) {
       where.postedByUserId = session.user.id;
     }
     
-    // Fetch listings with counts
-    const listings = await (prisma as any).marketplaceListing.findMany({
-      where,
-      orderBy: {
-        createdAt: 'desc'
-      },
-      include: {
-        _count: {
-          select: {
-            applications: true,
-            hires: true
+    // Fetch listings with counts + pagination
+    const [listings, totalCount] = await Promise.all([
+      (prisma as any).marketplaceListing.findMany({
+        where,
+        orderBy:
+          sortBy === 'rateAsc' ? { hourlyRateMin: 'asc' } :
+          sortBy === 'rateDesc' ? { hourlyRateMax: 'desc' } :
+          { createdAt: 'desc' },
+        include: {
+          _count: {
+            select: {
+              applications: true,
+              hires: true
+            }
           }
-        }
-      }
-    });
+        },
+        skip,
+        take: pageSize
+      }),
+      (prisma as any).marketplaceListing.count({ where })
+    ]);
     
     // Transform the data to include counts directly
     const formattedListings = listings.map((listing: any) => {
@@ -102,11 +114,11 @@ export async function GET(request: Request) {
       process.env.NODE_ENV !== 'production'
     ) {
       const mockJobs = generateMockListings(12);
-      return NextResponse.json({ data: mockJobs }, { status: 200 });
+      return NextResponse.json({ data: mockJobs, pagination: { page, pageSize, total: mockJobs.length } }, { status: 200 });
     }
 
     return NextResponse.json(
-      { data: formattedListings },
+      { data: formattedListings, pagination: { page, pageSize, total: totalCount } },
       { status: 200 }
     );
   } catch (error) {
