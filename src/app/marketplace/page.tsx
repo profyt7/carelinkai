@@ -93,6 +93,9 @@ export default function MarketplacePage() {
 
   const [providers, setProviders] = useState<Provider[]>([]);
   const [providersLoading, setProvidersLoading] = useState(false);
+  const [providerPage, setProviderPage] = useState(1);
+  const [providerTotal, setProviderTotal] = useState(0);
+  const [providerSort, setProviderSort] = useState<"ratingDesc" | "rateAsc" | "rateDesc">("ratingDesc");
 
   useEffect(() => {
     // Load marketplace categories once
@@ -183,9 +186,13 @@ export default function MarketplacePage() {
         if (city) params.set("city", city);
         if (state) params.set("state", state);
         if (providerServices.length > 0) params.set("services", providerServices.join(","));
+        params.set("page", String(providerPage));
+        params.set("pageSize", String(20));
+        params.set("sortBy", providerSort);
         const res = await fetch(`/api/marketplace/providers?${params.toString()}`);
         const json = await res.json();
         setProviders(json?.data ?? []);
+        setProviderTotal(json?.pagination?.total ?? 0);
       } catch (e) {
         setProviders([]);
       } finally {
@@ -193,7 +200,7 @@ export default function MarketplacePage() {
       }
     };
     run();
-  }, [activeTab, search, city, state, providerServices]);
+  }, [activeTab, search, city, state, providerServices, providerPage, providerSort]);
 
   const toggleSpecialty = (slug: string) => {
     setSpecialties((prev) =>
@@ -421,19 +428,29 @@ export default function MarketplacePage() {
                 )}
                 
                 {activeTab === "providers" && (
-                  <div className="mt-4">
-                    <h4 className="font-medium text-sm mb-2">Services</h4>
-                    {(categories['SERVICE'] || []).map((service) => (
-                      <label key={service.slug} className="flex items-center gap-2 text-sm whitespace-nowrap">
-                        <input 
-                          type="checkbox" 
-                          checked={providerServices.includes(service.slug)} 
-                          onChange={() => toggleProviderService(service.slug)} 
-                        />
-                        <span>{service.name}</span>
-                      </label>
-                    ))}
-                  </div>
+                  <>
+                    <div className="mb-3">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Sort by</label>
+                      <select value={providerSort} onChange={(e) => { setProviderSort(e.target.value as any); setProviderPage(1); }} className="w-full px-3 py-2 border border-gray-300 rounded-md">
+                        <option value="ratingDesc">Rating: High to Low</option>
+                        <option value="rateAsc">Price: Low to High</option>
+                        <option value="rateDesc">Price: High to Low</option>
+                      </select>
+                    </div>
+                    <div className="mt-4">
+                      <h4 className="font-medium text-sm mb-2">Services</h4>
+                      {(categories['SERVICE'] || []).map((service) => (
+                        <label key={service.slug} className="flex items-center gap-2 text-sm whitespace-nowrap">
+                          <input 
+                            type="checkbox" 
+                            checked={providerServices.includes(service.slug)} 
+                            onChange={() => toggleProviderService(service.slug)} 
+                          />
+                          <span>{service.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </>
                 )}
               </div>
               <button 
@@ -455,6 +472,8 @@ export default function MarketplacePage() {
                   setCgSort('recency');
                   setJobPage(1);
                   setJobSort('recency');
+                  setProviderPage(1);
+                  setProviderSort('ratingDesc');
                 }} 
                 className="w-full rounded-md bg-gray-100 px-3 py-2 text-sm text-gray-700 hover:bg-gray-200"
               >
@@ -668,6 +687,13 @@ export default function MarketplacePage() {
                 <button disabled={jobPage <= 1} onClick={() => setJobPage((p) => Math.max(1, p - 1))} className="px-3 py-2 rounded-md border disabled:opacity-50">Previous</button>
                 <div className="text-sm text-gray-600">Page {jobPage} {jobTotal ? `of ${Math.max(1, Math.ceil(jobTotal / 20))}` : ''}</div>
                 <button disabled={jobTotal !== 0 && jobPage >= Math.ceil(jobTotal / 20)} onClick={() => setJobPage((p) => p + 1)} className="px-3 py-2 rounded-md border disabled:opacity-50">Next</button>
+              </div>
+            )}
+            {(activeTab === 'providers') && (
+              <div className="mt-6 flex items-center justify-between">
+                <button disabled={providerPage <= 1} onClick={() => setProviderPage((p) => Math.max(1, p - 1))} className="px-3 py-2 rounded-md border disabled:opacity-50">Previous</button>
+                <div className="text-sm text-gray-600">Page {providerPage} {providerTotal ? `of ${Math.max(1, Math.ceil(providerTotal / 20))}` : ''}</div>
+                <button disabled={providerTotal !== 0 && providerPage >= Math.ceil(providerTotal / 20)} onClick={() => setProviderPage((p) => p + 1)} className="px-3 py-2 rounded-md border disabled:opacity-50">Next</button>
               </div>
             )}
           </div>
