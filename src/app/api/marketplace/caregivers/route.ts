@@ -23,12 +23,15 @@ export async function GET(request: Request) {
     const maxRate = searchParams.get('maxRate') ? parseFloat(searchParams.get('maxRate')!) : null;
     const minExperience = searchParams.get('minExperience') ? parseInt(searchParams.get('minExperience')!, 10) : null;
     const specialties = searchParams.get('specialties')?.split(',').filter(Boolean);
+    const lat = searchParams.get('lat') ? parseFloat(searchParams.get('lat')!) : null;
+    const lng = searchParams.get('lng') ? parseFloat(searchParams.get('lng')!) : null;
+    const radiusMiles = searchParams.get('radiusMiles') ? parseFloat(searchParams.get('radiusMiles')!) : null;
     
     // Pagination parameters
     const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1;
     const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 20;
     
-    // Sorting parameter: recency (default), rateAsc, rateDesc, experienceDesc
+    // Sorting parameter: recency (default), rateAsc, rateDesc, experienceDesc, distanceAsc (when using radius)
     const sortBy = searchParams.get('sortBy') || 'recency';
     const skip = (page - 1) * pageSize;
     
@@ -85,9 +88,13 @@ export async function GET(request: Request) {
       };
     }
     
-    // Fetch caregivers with counts for pagination
-    const [caregivers, totalCount] = await Promise.all([
-      prisma.caregiver.findMany({
+    // Radius filtering support
+    const useRadius = !!(lat !== null && lng !== null && radiusMiles !== null && !Number.isNaN(radiusMiles));
+    let caregivers: any[] = [];
+    let totalCount = 0;
+    if (useRadius) {
+      // Pull a larger candidate set; include addresses for lat/lng
+      const candidates = await prisma.caregiver.findMany({
         where,
         include: {
           user: {
@@ -100,16 +107,51 @@ export async function GET(request: Request) {
             }
           }
         },
-        orderBy:
-          sortBy === 'rateAsc' ? { hourlyRate: 'asc' } :
-          sortBy === 'rateDesc' ? { hourlyRate: 'desc' } :
-          sortBy === 'experienceDesc' ? { yearsExperience: 'desc' } :
-          { createdAt: 'desc' },
-        skip,
-        take: pageSize
-      }),
-      prisma.caregiver.count({ where })
-    ]);
+        take: 500
+      });
+      const withDistance = candidates.map((c: any) => {
+        const addr = c.user?.addresses?.[0];
+        const distance = (addr?.latitude != null && addr?.longitude != null)
+          ? haversineMiles(lat!, lng!, Number(addr.latitude), Number(addr.longitude))
+          : Infinity;
+        return { ...c, distanceMiles: distance };
+      });
+      let filtered = withDistance.filter((c: any) => c.distanceMiles <= (radiusMiles as number));
+      if (sortBy === 'distanceAsc') filtered.sort((a: any, b: any) => (a.distanceMiles ?? Infinity) - (b.distanceMiles ?? Infinity));
+      else if (sortBy === 'rateAsc') filtered.sort((a: any, b: any) => (Number(a.hourlyRate ?? 0) - Number(b.hourlyRate ?? 0)));
+      else if (sortBy === 'rateDesc') filtered.sort((a: any, b: any) => (Number(b.hourlyRate ?? 0) - Number(a.hourlyRate ?? 0)));
+      else if (sortBy === 'experienceDesc') filtered.sort((a: any, b: any) => (Number(b.yearsExperience ?? 0) - Number(a.yearsExperience ?? 0)));
+      else filtered.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      totalCount = filtered.length;
+      caregivers = filtered.slice(skip, skip + pageSize);
+    } else {
+      const result = await Promise.all([
+        prisma.caregiver.findMany({
+          where,
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                profileImageUrl: true,
+                addresses: true
+              }
+            }
+          },
+          orderBy:
+            sortBy === 'rateAsc' ? { hourlyRate: 'asc' } :
+            sortBy === 'rateDesc' ? { hourlyRate: 'desc' } :
+            sortBy === 'experienceDesc' ? { yearsExperience: 'desc' } :
+            { createdAt: 'desc' },
+          skip,
+          take: pageSize
+        }),
+        prisma.caregiver.count({ where })
+      ]);
+      caregivers = result[0] as any[];
+      totalCount = result[1] as number;
+    }
     
     /* ------------------------------------------------------------------
        Pull rating aggregates (avg + count) for this result set
@@ -182,7 +224,8 @@ export async function GET(request: Request) {
           ratingInfo.count,
           caregiver.yearsExperience,
           caregiver.backgroundCheckStatus
-        )
+        ),
+        ...(useRadius ? { distanceMiles: caregiver.distanceMiles } : {})
       };
     });
     
@@ -255,6 +298,17 @@ export async function GET(request: Request) {
       { status: 500 }
     );
   }
+}
+
+// Haversine distance in miles
+function haversineMiles(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const toRad = (v: number) => (v * Math.PI) / 180;
+  const R = 3958.8; // miles
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
 }
 
 /**
