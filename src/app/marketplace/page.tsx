@@ -807,6 +807,29 @@ export default function MarketplacePage() {
               >
                 Clear Filters
               </button>
+              <button
+                onClick={() => {
+                  try {
+                    const url = window.location.href;
+                    (navigator as any)?.clipboard?.writeText(url)
+                      ?.then(() => {
+                        setLinkCopied(true);
+                        setTimeout(() => setLinkCopied(false), 1500);
+                      })
+                      ?.catch(() => {
+                        setLinkCopied(true);
+                        setTimeout(() => setLinkCopied(false), 1500);
+                      });
+                  } catch {
+                    setLinkCopied(true);
+                    setTimeout(() => setLinkCopied(false), 1500);
+                  }
+                }}
+                className="mt-2 w-full rounded-md bg-primary-600 px-3 py-2 text-sm text-white hover:bg-primary-700"
+                title="Copy shareable link"
+              >
+                {linkCopied ? 'Copied!' : 'Copy link'}
+              </button>
             </div>
           </div>
 
