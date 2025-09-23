@@ -9,6 +9,13 @@ import Image from "next/image";
 import RecommendedListings from "@/components/marketplace/RecommendedListings";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
+const LAST_TAB_KEY = "marketplace:lastTab";
+const LS_KEYS = {
+  caregivers: "marketplace:caregivers",
+  jobs: "marketplace:jobs",
+  providers: "marketplace:providers",
+} as const;
+
 type Caregiver = {
   id: string;
   name: string;
@@ -41,12 +48,6 @@ export default function MarketplacePage() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const didInitFromUrl = useRef(false);
-  const LAST_TAB_KEY = "marketplace:lastTab";
-  const LS_KEYS = {
-    caregivers: "marketplace:caregivers",
-    jobs: "marketplace:jobs",
-    providers: "marketplace:providers",
-  } as const;
 
   // Include "providers" as a valid tab option
   const [activeTab, setActiveTab] = useState<"jobs" | "caregivers" | "providers">(
