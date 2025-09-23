@@ -123,6 +123,35 @@ export default function MarketplacePage() {
   const [linkCopied, setLinkCopied] = useState(false);
   const resultsRef = useRef<HTMLDivElement | null>(null);
 
+  // Persist mobile <details> open/closed state across visits
+  const MOBILE_DETAILS_KEYS = {
+    cgSetting: 'marketplace:mobile:cg:setting:open',
+    cgCareTypes: 'marketplace:mobile:cg:careTypes:open',
+    cgSpecialties: 'marketplace:mobile:cg:specialties:open',
+    jobSetting: 'marketplace:mobile:job:setting:open',
+  } as const;
+  const [cgSettingOpen, setCgSettingOpen] = useState(false);
+  const [cgCareTypesOpen, setCgCareTypesOpen] = useState(false);
+  const [cgSpecialtiesOpen, setCgSpecialtiesOpen] = useState(false);
+  const [jobSettingOpen, setJobSettingOpen] = useState(false);
+  useEffect(() => {
+    try {
+      setCgSettingOpen(localStorage.getItem(MOBILE_DETAILS_KEYS.cgSetting) === '1' || (settings.length > 0));
+      setCgCareTypesOpen(localStorage.getItem(MOBILE_DETAILS_KEYS.cgCareTypes) === '1' || (careTypes.length > 0));
+      setCgSpecialtiesOpen(localStorage.getItem(MOBILE_DETAILS_KEYS.cgSpecialties) === '1' || (specialties.length > 0));
+      setJobSettingOpen(localStorage.getItem(MOBILE_DETAILS_KEYS.jobSetting) === '1' || (settings.length > 0));
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const handleDetailsToggle = useCallback(
+    (key: keyof typeof MOBILE_DETAILS_KEYS, setFn: (v: boolean) => void) => (e: any) => {
+      const open = (e.currentTarget as HTMLDetailsElement).open;
+      setFn(open);
+      try { localStorage.setItem(MOBILE_DETAILS_KEYS[key], open ? '1' : '0'); } catch {}
+    },
+    []
+  );
+
   // One-time: initialize tab + filters from URL with localStorage fallback
   useEffect(() => {
     if (didInitFromUrl.current) return;
@@ -983,7 +1012,7 @@ export default function MarketplacePage() {
                       placeholder="Min Experience (years)" 
                       className="w-full px-3 py-2 border border-gray-300 rounded-md"
                     />
-                    <details className="group rounded-md border border-gray-200 bg-white p-3">
+                    <details open={cgSettingOpen} onToggle={handleDetailsToggle('cgSetting', setCgSettingOpen)} className="group rounded-md border border-gray-200 bg-white p-3">
                       <summary className="flex items-center justify-between cursor-pointer text-sm font-medium">
                         <span className="flex items-center gap-2">
                           <span>Setting</span>
@@ -1004,7 +1033,7 @@ export default function MarketplacePage() {
                         ))}
                       </div>
                     </details>
-                    <details className="group rounded-md border border-gray-200 bg-white p-3">
+                    <details open={cgCareTypesOpen} onToggle={handleDetailsToggle('cgCareTypes', setCgCareTypesOpen)} className="group rounded-md border border-gray-200 bg-white p-3">
                       <summary className="flex items-center justify-between cursor-pointer text-sm font-medium">
                         <span className="flex items-center gap-2">
                           <span>Care Types</span>
@@ -1025,7 +1054,7 @@ export default function MarketplacePage() {
                         ))}
                       </div>
                     </details>
-                    <details className="group rounded-md border border-gray-200 bg-white p-3">
+                    <details open={cgSpecialtiesOpen} onToggle={handleDetailsToggle('cgSpecialties', setCgSpecialtiesOpen)} className="group rounded-md border border-gray-200 bg-white p-3">
                       <summary className="flex items-center justify-between cursor-pointer text-sm font-medium">
                         <span className="flex items-center gap-2">
                           <span>Specialties</span>
@@ -1060,7 +1089,7 @@ export default function MarketplacePage() {
                     />
                     <div>
                       <h4 className="font-medium text-sm mb-2">Setting</h4>
-                      <details className="group rounded-md border border-gray-200 bg-white p-3">
+                      <details open={jobSettingOpen} onToggle={handleDetailsToggle('jobSetting', setJobSettingOpen)} className="group rounded-md border border-gray-200 bg-white p-3">
                         <summary className="flex items-center justify-between cursor-pointer text-sm font-medium">
                           <span className="flex items-center gap-2">
                             <span>Setting</span>
