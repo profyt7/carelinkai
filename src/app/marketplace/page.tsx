@@ -984,7 +984,12 @@ export default function MarketplacePage() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md"
                     />
                     <details className="group rounded-md border border-gray-200 bg-white p-3">
-                      <summary className="cursor-pointer text-sm font-medium">Setting</summary>
+                      <summary className="flex items-center justify-between cursor-pointer text-sm font-medium">
+                        <span>Setting</span>
+                        <svg className="h-4 w-4 text-gray-500 transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                          <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.939l3.71-3.71a.75.75 0 111.06 1.061l-4.24 4.24a.75.75 0 01-1.06 0L5.25 8.29a.75.75 0 01-.02-1.06z" clipRule="evenodd" />
+                        </svg>
+                      </summary>
                       <div className="mt-2 flex flex-wrap gap-3 overflow-hidden transition-[max-height] duration-300 ease-in-out max-h-0 group-open:max-h-96">
                         {(categories['SETTING'] || []).map((item) => (
                           <label key={item.slug} className="flex items-center gap-2 text-sm whitespace-nowrap">
@@ -995,7 +1000,12 @@ export default function MarketplacePage() {
                       </div>
                     </details>
                     <details className="group rounded-md border border-gray-200 bg-white p-3">
-                      <summary className="cursor-pointer text-sm font-medium">Care Types</summary>
+                      <summary className="flex items-center justify-between cursor-pointer text-sm font-medium">
+                        <span>Care Types</span>
+                        <svg className="h-4 w-4 text-gray-500 transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                          <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.939l3.71-3.71a.75.75 0 111.06 1.061l-4.24 4.24a.75.75 0 01-1.06 0L5.25 8.29a.75.75 0 01-.02-1.06z" clipRule="evenodd" />
+                        </svg>
+                      </summary>
                       <div className="mt-2 flex flex-wrap gap-3 overflow-hidden transition-[max-height] duration-300 ease-in-out max-h-0 group-open:max-h-96">
                         {(categories['CARE_TYPE'] || []).map((careType) => (
                           <label key={careType.slug} className="flex items-center gap-2 text-sm whitespace-nowrap">
@@ -1006,7 +1016,12 @@ export default function MarketplacePage() {
                       </div>
                     </details>
                     <details className="group rounded-md border border-gray-200 bg-white p-3">
-                      <summary className="cursor-pointer text-sm font-medium">Specialties</summary>
+                      <summary className="flex items-center justify-between cursor-pointer text-sm font-medium">
+                        <span>Specialties</span>
+                        <svg className="h-4 w-4 text-gray-500 transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                          <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.939l3.71-3.71a.75.75 0 111.06 1.061l-4.24 4.24a.75.75 0 01-1.06 0L5.25 8.29a.75.75 0 01-.02-1.06z" clipRule="evenodd" />
+                        </svg>
+                      </summary>
                       <div className="mt-2 flex flex-wrap gap-3 overflow-hidden transition-[max-height] duration-300 ease-in-out max-h-0 group-open:max-h-96">
                         {(categories['SPECIALTY'] || []).map((specialty) => (
                           <label key={specialty.slug} className="flex items-center gap-2 text-sm whitespace-nowrap">
@@ -1031,7 +1046,12 @@ export default function MarketplacePage() {
                     <div>
                       <h4 className="font-medium text-sm mb-2">Setting</h4>
                       <details className="group rounded-md border border-gray-200 bg-white p-3">
-                        <summary className="cursor-pointer text-sm font-medium">Setting</summary>
+                        <summary className="flex items-center justify-between cursor-pointer text-sm font-medium">
+                          <span>Setting</span>
+                          <svg className="h-4 w-4 text-gray-500 transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.939l3.71-3.71a.75.75 0 111.06 1.061l-4.24 4.24a.75.75 0 01-1.06 0L5.25 8.29a.75.75 0 01-.02-1.06z" clipRule="evenodd" />
+                          </svg>
+                        </summary>
                         <div className="mt-2 flex flex-wrap gap-3 overflow-hidden transition-[max-height] duration-300 ease-in-out max-h-0 group-open:max-h-96">
                           {(categories['SETTING'] || []).map((item) => (
                             <label key={item.slug} className="flex items-center gap-2 text-sm whitespace-nowrap">
