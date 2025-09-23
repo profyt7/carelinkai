@@ -113,6 +113,7 @@ export default function MarketplacePage() {
   const [prRadius, setPrRadius] = useState<string>("");
   const [prGeoLat, setPrGeoLat] = useState<number | null>(null);
   const [prGeoLng, setPrGeoLng] = useState<number | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   // One-time: initialize tab + filters from URL
   useEffect(() => {
@@ -844,6 +845,29 @@ export default function MarketplacePage() {
                   className="ml-auto inline-flex items-center rounded-md bg-gray-100 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-200"
                 >
                   Clear all
+                </button>
+                <button
+                  onClick={() => {
+                    try {
+                      const url = window.location.href;
+                      (navigator as any)?.clipboard?.writeText(url)
+                        ?.then(() => {
+                          setLinkCopied(true);
+                          setTimeout(() => setLinkCopied(false), 1500);
+                        })
+                        ?.catch(() => {
+                          setLinkCopied(true);
+                          setTimeout(() => setLinkCopied(false), 1500);
+                        });
+                    } catch {
+                      setLinkCopied(true);
+                      setTimeout(() => setLinkCopied(false), 1500);
+                    }
+                  }}
+                  className="inline-flex items-center rounded-md bg-primary-600 px-3 py-1.5 text-sm text-white hover:bg-primary-700"
+                  title="Copy shareable link"
+                >
+                  {linkCopied ? 'Copied!' : 'Copy link'}
                 </button>
               </div>
             )}
