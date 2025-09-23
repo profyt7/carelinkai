@@ -23,6 +23,8 @@ export async function GET(request: Request) {
     const maxRate = searchParams.get('maxRate') ? parseFloat(searchParams.get('maxRate')!) : null;
     const minExperience = searchParams.get('minExperience') ? parseInt(searchParams.get('minExperience')!, 10) : null;
     const specialties = searchParams.get('specialties')?.split(',').filter(Boolean);
+    const settings = searchParams.get('settings')?.split(',').filter(Boolean);
+    const careTypes = searchParams.get('careTypes')?.split(',').filter(Boolean);
     const lat = searchParams.get('lat') ? parseFloat(searchParams.get('lat')!) : null;
     const lng = searchParams.get('lng') ? parseFloat(searchParams.get('lng')!) : null;
     const radiusMiles = searchParams.get('radiusMiles') ? parseFloat(searchParams.get('radiusMiles')!) : null;
@@ -85,6 +87,20 @@ export async function GET(request: Request) {
     if (specialties && specialties.length > 0) {
       where.specialties = {
         hasSome: specialties
+      };
+    }
+
+    // Settings filter
+    if (settings && settings.length > 0) {
+      where.settings = {
+        hasSome: settings
+      };
+    }
+
+    // Care types filter
+    if (careTypes && careTypes.length > 0) {
+      where.careTypes = {
+        hasSome: careTypes
       };
     }
     

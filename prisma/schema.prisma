@@ -238,6 +238,9 @@ model Caregiver {
   backgroundCheckProvider  String?
   backgroundCheckReportUrl String?
   specialties              String[]
+  // New marketplace facets
+  settings                 String[] @default([])
+  careTypes                String[] @default([])
 
   // Marketplace relations
   marketplaceApplications MarketplaceApplication[]
