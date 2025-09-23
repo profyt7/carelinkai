@@ -985,7 +985,12 @@ export default function MarketplacePage() {
                     />
                     <details className="group rounded-md border border-gray-200 bg-white p-3">
                       <summary className="flex items-center justify-between cursor-pointer text-sm font-medium">
-                        <span>Setting</span>
+                        <span className="flex items-center gap-2">
+                          <span>Setting</span>
+                          {settings.length > 0 && (
+                            <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700">{settings.length}</span>
+                          )}
+                        </span>
                         <svg className="h-4 w-4 text-gray-500 transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                           <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.939l3.71-3.71a.75.75 0 111.06 1.061l-4.24 4.24a.75.75 0 01-1.06 0L5.25 8.29a.75.75 0 01-.02-1.06z" clipRule="evenodd" />
                         </svg>
@@ -1001,7 +1006,12 @@ export default function MarketplacePage() {
                     </details>
                     <details className="group rounded-md border border-gray-200 bg-white p-3">
                       <summary className="flex items-center justify-between cursor-pointer text-sm font-medium">
-                        <span>Care Types</span>
+                        <span className="flex items-center gap-2">
+                          <span>Care Types</span>
+                          {careTypes.length > 0 && (
+                            <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700">{careTypes.length}</span>
+                          )}
+                        </span>
                         <svg className="h-4 w-4 text-gray-500 transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                           <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.939l3.71-3.71a.75.75 0 111.06 1.061l-4.24 4.24a.75.75 0 01-1.06 0L5.25 8.29a.75.75 0 01-.02-1.06z" clipRule="evenodd" />
                         </svg>
@@ -1017,7 +1027,12 @@ export default function MarketplacePage() {
                     </details>
                     <details className="group rounded-md border border-gray-200 bg-white p-3">
                       <summary className="flex items-center justify-between cursor-pointer text-sm font-medium">
-                        <span>Specialties</span>
+                        <span className="flex items-center gap-2">
+                          <span>Specialties</span>
+                          {specialties.length > 0 && (
+                            <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700">{specialties.length}</span>
+                          )}
+                        </span>
                         <svg className="h-4 w-4 text-gray-500 transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                           <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.939l3.71-3.71a.75.75 0 111.06 1.061l-4.24 4.24a.75.75 0 01-1.06 0L5.25 8.29a.75.75 0 01-.02-1.06z" clipRule="evenodd" />
                         </svg>
@@ -1047,7 +1062,12 @@ export default function MarketplacePage() {
                       <h4 className="font-medium text-sm mb-2">Setting</h4>
                       <details className="group rounded-md border border-gray-200 bg-white p-3">
                         <summary className="flex items-center justify-between cursor-pointer text-sm font-medium">
-                          <span>Setting</span>
+                          <span className="flex items-center gap-2">
+                            <span>Setting</span>
+                            {settings.length > 0 && (
+                              <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700">{settings.length}</span>
+                            )}
+                          </span>
                           <svg className="h-4 w-4 text-gray-500 transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                             <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.939l3.71-3.71a.75.75 0 111.06 1.061l-4.24 4.24a.75.75 0 01-1.06 0L5.25 8.29a.75.75 0 01-.02-1.06z" clipRule="evenodd" />
                           </svg>
