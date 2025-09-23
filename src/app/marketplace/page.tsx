@@ -41,6 +41,12 @@ export default function MarketplacePage() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const didInitFromUrl = useRef(false);
+  const LAST_TAB_KEY = "marketplace:lastTab";
+  const LS_KEYS = {
+    caregivers: "marketplace:caregivers",
+    jobs: "marketplace:jobs",
+    providers: "marketplace:providers",
+  } as const;
 
   // Include "providers" as a valid tab option
   const [activeTab, setActiveTab] = useState<"jobs" | "caregivers" | "providers">(
@@ -115,19 +121,26 @@ export default function MarketplacePage() {
   const [prGeoLng, setPrGeoLng] = useState<number | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
 
-  // One-time: initialize tab + filters from URL
+  // One-time: initialize tab + filters from URL with localStorage fallback
   useEffect(() => {
     if (didInitFromUrl.current) return;
     const sp = searchParams;
     if (!sp) return;
-    // Open on requested tab (default caregivers)
-    const tab = sp.get("tab");
-    if (tab === "caregivers" || tab === "jobs" || tab === "providers") {
-      setActiveTab(tab as any);
+    // Determine desired tab: URL > localStorage > default
+    let tab = sp.get("tab");
+    if (tab !== "caregivers" && tab !== "jobs" && tab !== "providers") {
+      try {
+        const lastTab = localStorage.getItem(LAST_TAB_KEY);
+        if (lastTab === "caregivers" || lastTab === "jobs" || lastTab === "providers") {
+          tab = lastTab;
+        }
+      } catch {}
     }
+    if (tab === "caregivers" || tab === "jobs" || tab === "providers") setActiveTab(tab as any);
 
     const valOrEmpty = (k: string) => sp.get(k) ?? "";
     const csv = (k: string) => (sp.get(k)?.split(",").filter(Boolean) ?? []);
+    const entriesCount = Array.from(sp.entries()).length;
     // Common
     setSearch(valOrEmpty("q"));
     setCity(valOrEmpty("city"));
@@ -179,6 +192,66 @@ export default function MarketplacePage() {
     setPrGeoLat(prLatFromUrl ? Number(prLatFromUrl) : null);
     setPrGeoLng(prLngFromUrl ? Number(prLngFromUrl) : null);
 
+    // If URL is effectively empty (no params or only tab), try to restore last filters for the chosen tab
+    if (entriesCount <= (tab ? 1 : 0)) {
+      try {
+        const key = (tab as any) ? LS_KEYS[tab as keyof typeof LS_KEYS] : LS_KEYS.caregivers;
+        const saved = localStorage.getItem(key);
+        if (saved) {
+          const savedParams = new URLSearchParams(saved);
+          const v = (k: string) => savedParams.get(k) ?? "";
+          const arr = (k: string) => (savedParams.get(k)?.split(",").filter(Boolean) ?? []);
+          // Common
+          setSearch(v("q"));
+          setCity(v("city"));
+          setState(v("state"));
+          // Caregivers
+          setSpecialties(arr("specialties"));
+          setSettings(arr("settings"));
+          setCareTypes(arr("careTypes"));
+          setMinRate(v("minRate"));
+          setMaxRate(v("maxRate"));
+          setMinExperience(v("minExperience"));
+          const spCgPage = parseInt(savedParams.get("page") || "1", 10);
+          if (!Number.isNaN(spCgPage) && spCgPage > 0) setCgPage(spCgPage);
+          const spCgSort = savedParams.get("sortBy") as any;
+          if (spCgSort && ["recency","rateAsc","rateDesc","experienceDesc","distanceAsc"].includes(spCgSort)) setCgSort(spCgSort);
+          const spCgRadius = savedParams.get("radiusMiles");
+          const spCgLat = savedParams.get("lat");
+          const spCgLng = savedParams.get("lng");
+          setCgRadius(spCgRadius ?? "");
+          setCgGeoLat(spCgLat ? Number(spCgLat) : null);
+          setCgGeoLng(spCgLng ? Number(spCgLng) : null);
+          // Jobs
+          setZip(v("zip"));
+          setServices(arr("services"));
+          setPostedByMe(savedParams.get("postedByMe") === "true");
+          const spJobPage = parseInt(savedParams.get("page") || "1", 10);
+          if (!Number.isNaN(spJobPage) && spJobPage > 0) setJobPage(spJobPage);
+          const spJobSort = savedParams.get("sortBy") as any;
+          if (spJobSort && ["recency","rateAsc","rateDesc","distanceAsc"].includes(spJobSort)) setJobSort(spJobSort);
+          const spJobRadius = savedParams.get("radiusMiles");
+          const spJobLat = savedParams.get("lat");
+          const spJobLng = savedParams.get("lng");
+          setJobRadius(spJobRadius ?? "");
+          setGeoLat(spJobLat ? Number(spJobLat) : null);
+          setGeoLng(spJobLng ? Number(spJobLng) : null);
+          // Providers
+          setProviderServices(arr("services"));
+          const spPrPage = parseInt(savedParams.get("page") || "1", 10);
+          if (!Number.isNaN(spPrPage) && spPrPage > 0) setProviderPage(spPrPage);
+          const spPrSort = savedParams.get("sortBy") as any;
+          if (spPrSort && ["ratingDesc","rateAsc","rateDesc","distanceAsc"].includes(spPrSort)) setProviderSort(spPrSort);
+          const spPrRadius = savedParams.get("radiusMiles");
+          const spPrLat = savedParams.get("lat");
+          const spPrLng = savedParams.get("lng");
+          setPrRadius(spPrRadius ?? "");
+          setPrGeoLat(spPrLat ? Number(spPrLat) : null);
+          setPrGeoLng(spPrLng ? Number(spPrLng) : null);
+        }
+      } catch {}
+    }
+
     didInitFromUrl.current = true;
   }, [searchParams]);
 
@@ -211,6 +284,7 @@ export default function MarketplacePage() {
       params.delete("lat");
       params.delete("lng");
     }
+    try { localStorage.setItem(LAST_TAB_KEY, "caregivers"); localStorage.setItem(LS_KEYS.caregivers, params.toString()); } catch {}
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   }, [activeTab, search, city, state, specialties, settings, careTypes, minRate, maxRate, minExperience, cgPage, cgSort, cgRadius, cgGeoLat, cgGeoLng, router, pathname, searchParams]);
 
@@ -243,6 +317,7 @@ export default function MarketplacePage() {
       params.delete("lat");
       params.delete("lng");
     }
+    try { localStorage.setItem(LAST_TAB_KEY, "jobs"); localStorage.setItem(LS_KEYS.jobs, params.toString()); } catch {}
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   }, [activeTab, search, city, state, specialties, zip, settings, careTypes, services, postedByMe, jobPage, jobSort, jobRadius, geoLat, geoLng, router, pathname, searchParams]);
 
@@ -270,6 +345,7 @@ export default function MarketplacePage() {
       params.delete("lat");
       params.delete("lng");
     }
+    try { localStorage.setItem(LAST_TAB_KEY, "providers"); localStorage.setItem(LS_KEYS.providers, params.toString()); } catch {}
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   }, [activeTab, search, city, state, providerServices, providerPage, providerSort, prRadius, prGeoLat, prGeoLng, router, pathname, searchParams]);
 
