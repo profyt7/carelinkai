@@ -547,7 +547,11 @@ export default function MarketplacePage() {
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300")
                 }
               >
-                {t === "caregivers" ? "Caregivers" : t === "jobs" ? "Jobs" : "Providers"}
+                {t === "caregivers"
+                  ? `Caregivers${cgTotal ? ` (${cgTotal})` : ""}`
+                  : t === "jobs"
+                  ? `Jobs${jobTotal ? ` (${jobTotal})` : ""}`
+                  : `Providers${providerTotal ? ` (${providerTotal})` : ""}`}
               </button>
             ))}
           </nav>
