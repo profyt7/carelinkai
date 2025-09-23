@@ -114,39 +114,69 @@ export default function MarketplacePage() {
   const [prGeoLat, setPrGeoLat] = useState<number | null>(null);
   const [prGeoLng, setPrGeoLng] = useState<number | null>(null);
 
-  // One-time: initialize caregivers tab + filters from URL
+  // One-time: initialize tab + filters from URL
   useEffect(() => {
     if (didInitFromUrl.current) return;
     const sp = searchParams;
     if (!sp) return;
-    // Prefer opening on caregivers if explicitly requested
+    // Open on requested tab (default caregivers)
     const tab = sp.get("tab");
-    if (tab === "caregivers") {
-      setActiveTab("caregivers");
+    if (tab === "caregivers" || tab === "jobs" || tab === "providers") {
+      setActiveTab(tab as any);
     }
 
-    // Seed caregivers filter state from URL
     const valOrEmpty = (k: string) => sp.get(k) ?? "";
     const csv = (k: string) => (sp.get(k)?.split(",").filter(Boolean) ?? []);
+    // Common
     setSearch(valOrEmpty("q"));
     setCity(valOrEmpty("city"));
     setState(valOrEmpty("state"));
+
+    // Caregivers
     setSpecialties(csv("specialties"));
     setSettings(csv("settings"));
     setCareTypes(csv("careTypes"));
     setMinRate(valOrEmpty("minRate"));
     setMaxRate(valOrEmpty("maxRate"));
     setMinExperience(valOrEmpty("minExperience"));
-    const pageFromUrl = parseInt(sp.get("page") || "1", 10);
-    if (!Number.isNaN(pageFromUrl) && pageFromUrl > 0) setCgPage(pageFromUrl);
-    const sortBy = sp.get("sortBy") as any;
-    if (sortBy && ["recency","rateAsc","rateDesc","experienceDesc","distanceAsc"].includes(sortBy)) setCgSort(sortBy);
-    const radius = sp.get("radiusMiles");
-    const lat = sp.get("lat");
-    const lng = sp.get("lng");
-    setCgRadius(radius ?? "");
-    setCgGeoLat(lat ? Number(lat) : null);
-    setCgGeoLng(lng ? Number(lng) : null);
+    const cgPageFromUrl = parseInt(sp.get("page") || "1", 10);
+    if (!Number.isNaN(cgPageFromUrl) && cgPageFromUrl > 0) setCgPage(cgPageFromUrl);
+    const cgSortBy = sp.get("sortBy") as any;
+    if (cgSortBy && ["recency","rateAsc","rateDesc","experienceDesc","distanceAsc"].includes(cgSortBy)) setCgSort(cgSortBy);
+    const cgRadiusFromUrl = sp.get("radiusMiles");
+    const cgLatFromUrl = sp.get("lat");
+    const cgLngFromUrl = sp.get("lng");
+    setCgRadius(cgRadiusFromUrl ?? "");
+    setCgGeoLat(cgLatFromUrl ? Number(cgLatFromUrl) : null);
+    setCgGeoLng(cgLngFromUrl ? Number(cgLngFromUrl) : null);
+
+    // Jobs
+    setZip(valOrEmpty("zip"));
+    setServices(csv("services"));
+    setPostedByMe(sp.get("postedByMe") === "true");
+    const jobPageFromUrl = parseInt(sp.get("page") || "1", 10);
+    if (!Number.isNaN(jobPageFromUrl) && jobPageFromUrl > 0) setJobPage(jobPageFromUrl);
+    const jobSortBy = sp.get("sortBy") as any;
+    if (jobSortBy && ["recency","rateAsc","rateDesc","distanceAsc"].includes(jobSortBy)) setJobSort(jobSortBy);
+    const jobRadiusFromUrl = sp.get("radiusMiles");
+    const jobLatFromUrl = sp.get("lat");
+    const jobLngFromUrl = sp.get("lng");
+    setJobRadius(jobRadiusFromUrl ?? "");
+    setGeoLat(jobLatFromUrl ? Number(jobLatFromUrl) : null);
+    setGeoLng(jobLngFromUrl ? Number(jobLngFromUrl) : null);
+
+    // Providers
+    setProviderServices(csv("services"));
+    const prPageFromUrl = parseInt(sp.get("page") || "1", 10);
+    if (!Number.isNaN(prPageFromUrl) && prPageFromUrl > 0) setProviderPage(prPageFromUrl);
+    const prSortBy = sp.get("sortBy") as any;
+    if (prSortBy && ["ratingDesc","rateAsc","rateDesc","distanceAsc"].includes(prSortBy)) setProviderSort(prSortBy);
+    const prRadiusFromUrl = sp.get("radiusMiles");
+    const prLatFromUrl = sp.get("lat");
+    const prLngFromUrl = sp.get("lng");
+    setPrRadius(prRadiusFromUrl ?? "");
+    setPrGeoLat(prLatFromUrl ? Number(prLatFromUrl) : null);
+    setPrGeoLng(prLngFromUrl ? Number(prLngFromUrl) : null);
 
     didInitFromUrl.current = true;
   }, [searchParams]);
@@ -182,6 +212,65 @@ export default function MarketplacePage() {
     }
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   }, [activeTab, search, city, state, specialties, settings, careTypes, minRate, maxRate, minExperience, cgPage, cgSort, cgRadius, cgGeoLat, cgGeoLng, router, pathname, searchParams]);
+
+  // Keep URL in sync when on jobs tab
+  useEffect(() => {
+    if (!didInitFromUrl.current) return;
+    if (activeTab !== "jobs") return;
+    const params = new URLSearchParams(Array.from((searchParams ?? new URLSearchParams()).entries()));
+    params.set("tab", "jobs");
+    const setOrDel = (k: string, v?: string) => {
+      if (v && v.length > 0) params.set(k, v); else params.delete(k);
+    };
+    setOrDel("q", search);
+    setOrDel("city", city);
+    setOrDel("state", state);
+    setOrDel("specialties", specialties.join(","));
+    setOrDel("zip", zip);
+    setOrDel("settings", settings.join(","));
+    setOrDel("careTypes", careTypes.join(","));
+    setOrDel("services", services.join(","));
+    if (postedByMe) params.set("postedByMe", "true"); else params.delete("postedByMe");
+    params.set("page", String(jobPage));
+    params.set("sortBy", jobSort);
+    if (jobRadius && geoLat !== null && geoLng !== null) {
+      params.set("radiusMiles", jobRadius);
+      params.set("lat", String(geoLat));
+      params.set("lng", String(geoLng));
+    } else {
+      params.delete("radiusMiles");
+      params.delete("lat");
+      params.delete("lng");
+    }
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }, [activeTab, search, city, state, specialties, zip, settings, careTypes, services, postedByMe, jobPage, jobSort, jobRadius, geoLat, geoLng, router, pathname, searchParams]);
+
+  // Keep URL in sync when on providers tab
+  useEffect(() => {
+    if (!didInitFromUrl.current) return;
+    if (activeTab !== "providers") return;
+    const params = new URLSearchParams(Array.from((searchParams ?? new URLSearchParams()).entries()));
+    params.set("tab", "providers");
+    const setOrDel = (k: string, v?: string) => {
+      if (v && v.length > 0) params.set(k, v); else params.delete(k);
+    };
+    setOrDel("q", search);
+    setOrDel("city", city);
+    setOrDel("state", state);
+    setOrDel("services", providerServices.join(","));
+    params.set("page", String(providerPage));
+    params.set("sortBy", providerSort);
+    if (prRadius && prGeoLat !== null && prGeoLng !== null) {
+      params.set("radiusMiles", prRadius);
+      params.set("lat", String(prGeoLat));
+      params.set("lng", String(prGeoLng));
+    } else {
+      params.delete("radiusMiles");
+      params.delete("lat");
+      params.delete("lng");
+    }
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }, [activeTab, search, city, state, providerServices, providerPage, providerSort, prRadius, prGeoLat, prGeoLng, router, pathname, searchParams]);
 
   useEffect(() => {
     // Load marketplace categories once
