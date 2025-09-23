@@ -983,9 +983,9 @@ export default function MarketplacePage() {
                       placeholder="Min Experience (years)" 
                       className="w-full px-3 py-2 border border-gray-300 rounded-md"
                     />
-                    <details className="rounded-md border border-gray-200 bg-white p-3">
+                    <details className="group rounded-md border border-gray-200 bg-white p-3">
                       <summary className="cursor-pointer text-sm font-medium">Setting</summary>
-                      <div className="mt-2 flex flex-wrap gap-3">
+                      <div className="mt-2 flex flex-wrap gap-3 overflow-hidden transition-[max-height] duration-300 ease-in-out max-h-0 group-open:max-h-96">
                         {(categories['SETTING'] || []).map((item) => (
                           <label key={item.slug} className="flex items-center gap-2 text-sm whitespace-nowrap">
                             <input type="checkbox" checked={settings.includes(item.slug)} onChange={() => toggleSetting(item.slug)} />
@@ -994,9 +994,9 @@ export default function MarketplacePage() {
                         ))}
                       </div>
                     </details>
-                    <details className="rounded-md border border-gray-200 bg-white p-3">
+                    <details className="group rounded-md border border-gray-200 bg-white p-3">
                       <summary className="cursor-pointer text-sm font-medium">Care Types</summary>
-                      <div className="mt-2 flex flex-wrap gap-3">
+                      <div className="mt-2 flex flex-wrap gap-3 overflow-hidden transition-[max-height] duration-300 ease-in-out max-h-0 group-open:max-h-96">
                         {(categories['CARE_TYPE'] || []).map((careType) => (
                           <label key={careType.slug} className="flex items-center gap-2 text-sm whitespace-nowrap">
                             <input type="checkbox" checked={careTypes.includes(careType.slug)} onChange={() => toggleCareType(careType.slug)} />
@@ -1005,9 +1005,9 @@ export default function MarketplacePage() {
                         ))}
                       </div>
                     </details>
-                    <details className="rounded-md border border-gray-200 bg-white p-3">
+                    <details className="group rounded-md border border-gray-200 bg-white p-3">
                       <summary className="cursor-pointer text-sm font-medium">Specialties</summary>
-                      <div className="mt-2 flex flex-wrap gap-3">
+                      <div className="mt-2 flex flex-wrap gap-3 overflow-hidden transition-[max-height] duration-300 ease-in-out max-h-0 group-open:max-h-96">
                         {(categories['SPECIALTY'] || []).map((specialty) => (
                           <label key={specialty.slug} className="flex items-center gap-2 text-sm whitespace-nowrap">
                             <input type="checkbox" checked={specialties.includes(specialty.slug)} onChange={() => toggleSpecialty(specialty.slug)} />
@@ -1030,9 +1030,9 @@ export default function MarketplacePage() {
                     />
                     <div>
                       <h4 className="font-medium text-sm mb-2">Setting</h4>
-                      <details className="rounded-md border border-gray-200 bg-white p-3">
+                      <details className="group rounded-md border border-gray-200 bg-white p-3">
                         <summary className="cursor-pointer text-sm font-medium">Setting</summary>
-                        <div className="mt-2 flex flex-wrap gap-3">
+                        <div className="mt-2 flex flex-wrap gap-3 overflow-hidden transition-[max-height] duration-300 ease-in-out max-h-0 group-open:max-h-96">
                           {(categories['SETTING'] || []).map((item) => (
                             <label key={item.slug} className="flex items-center gap-2 text-sm whitespace-nowrap">
                               <input type="checkbox" checked={settings.includes(item.slug)} onChange={() => toggleSetting(item.slug)} />
