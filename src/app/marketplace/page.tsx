@@ -136,8 +136,6 @@ export default function MarketplacePage() {
         if (minRate) params.set("minRate", minRate);
         if (maxRate) params.set("maxRate", maxRate);
         if (minExperience) params.set("minExperience", minExperience);
-        if (settings.length > 0) params.set("settings", settings.join(","));
-        if (careTypes.length > 0) params.set("careTypes", careTypes.join(","));
         if (cgRadius && cgGeoLat !== null && cgGeoLng !== null) {
           params.set("radiusMiles", cgRadius);
           params.set("lat", String(cgGeoLat));
@@ -157,7 +155,7 @@ export default function MarketplacePage() {
       }
     };
     run();
-  }, [activeTab, search, city, state, specialties, minRate, maxRate, minExperience, settings, careTypes, cgPage, cgSort, cgRadius, cgGeoLat, cgGeoLng]);
+  }, [activeTab, search, city, state, specialties, minRate, maxRate, minExperience, cgPage, cgSort, cgRadius, cgGeoLat, cgGeoLng]);
 
   useEffect(() => {
     if (activeTab !== "jobs") return;
@@ -269,9 +267,7 @@ export default function MarketplacePage() {
       if (minRate) list.push({ key: `minRate:${minRate}`, label: `Min $${minRate}/hr`, remove: () => { setMinRate(""); setCgPage(1); } });
       if (maxRate) list.push({ key: `maxRate:${maxRate}`, label: `Max $${maxRate}/hr`, remove: () => { setMaxRate(""); setCgPage(1); } });
       if (minExperience) list.push({ key: `minExp:${minExperience}`, label: `Min ${minExperience} yrs`, remove: () => { setMinExperience(""); setCgPage(1); } });
-      settings.forEach((s) => list.push({ key: `setting:${s}`, label: (categories['SETTING']?.find(x => x.slug === s)?.name) || s, remove: () => { toggleSetting(s); setCgPage(1); } }));
       specialties.forEach((s) => list.push({ key: `spec:${s}`, label: (categories['SPECIALTY']?.find(x => x.slug === s)?.name) || s, remove: () => { toggleSpecialty(s); setCgPage(1); } }));
-      careTypes.forEach((c) => list.push({ key: `care:${c}`, label: (categories['CARE_TYPE']?.find(x => x.slug === c)?.name) || c, remove: () => { toggleCareType(c); setCgPage(1); } }));
     }
 
     if (activeTab === 'jobs') {
@@ -393,32 +389,6 @@ export default function MarketplacePage() {
                         placeholder="Min Experience" 
                         className="w-full px-3 py-2 border border-gray-300 rounded-md"
                       />
-                    </div>
-                    <div className="mt-4">
-                      <h4 className="font-medium text-sm mb-2">Setting</h4>
-                      {(categories['SETTING'] || []).map((item) => (
-                        <label key={item.slug} className="flex items-center gap-2 text-sm whitespace-nowrap">
-                          <input
-                            type="checkbox"
-                            checked={settings.includes(item.slug)}
-                            onChange={() => toggleSetting(item.slug)}
-                          />
-                          <span>{item.name}</span>
-                        </label>
-                      ))}
-                    </div>
-                    <div className="mt-4">
-                      <h4 className="font-medium text-sm mb-2">Care Types</h4>
-                      {(categories['CARE_TYPE'] || []).map((careType) => (
-                        <label key={careType.slug} className="flex items-center gap-2 text-sm whitespace-nowrap">
-                          <input 
-                            type="checkbox" 
-                            checked={careTypes.includes(careType.slug)} 
-                            onChange={() => toggleCareType(careType.slug)} 
-                          />
-                          <span>{careType.name}</span>
-                        </label>
-                      ))}
                     </div>
                     <div className="mt-4">
                       <h4 className="font-medium text-sm mb-2">Specialties</h4>
