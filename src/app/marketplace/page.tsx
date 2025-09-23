@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import CaregiverCard from "@/components/marketplace/CaregiverCard";
 import Image from "next/image";
 import RecommendedListings from "@/components/marketplace/RecommendedListings";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 type Caregiver = {
   id: string;
@@ -36,6 +37,10 @@ type Listing = {
 
 export default function MarketplacePage() {
   const { data: session } = useSession();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const didInitFromUrl = useRef(false);
 
   // Include "providers" as a valid tab option
   const [activeTab, setActiveTab] = useState<"jobs" | "caregivers" | "providers">(
@@ -108,6 +113,75 @@ export default function MarketplacePage() {
   const [prRadius, setPrRadius] = useState<string>("");
   const [prGeoLat, setPrGeoLat] = useState<number | null>(null);
   const [prGeoLng, setPrGeoLng] = useState<number | null>(null);
+
+  // One-time: initialize caregivers tab + filters from URL
+  useEffect(() => {
+    if (didInitFromUrl.current) return;
+    const sp = searchParams;
+    if (!sp) return;
+    // Prefer opening on caregivers if explicitly requested
+    const tab = sp.get("tab");
+    if (tab === "caregivers") {
+      setActiveTab("caregivers");
+    }
+
+    // Seed caregivers filter state from URL
+    const valOrEmpty = (k: string) => sp.get(k) ?? "";
+    const csv = (k: string) => (sp.get(k)?.split(",").filter(Boolean) ?? []);
+    setSearch(valOrEmpty("q"));
+    setCity(valOrEmpty("city"));
+    setState(valOrEmpty("state"));
+    setSpecialties(csv("specialties"));
+    setSettings(csv("settings"));
+    setCareTypes(csv("careTypes"));
+    setMinRate(valOrEmpty("minRate"));
+    setMaxRate(valOrEmpty("maxRate"));
+    setMinExperience(valOrEmpty("minExperience"));
+    const pageFromUrl = parseInt(sp.get("page") || "1", 10);
+    if (!Number.isNaN(pageFromUrl) && pageFromUrl > 0) setCgPage(pageFromUrl);
+    const sortBy = sp.get("sortBy") as any;
+    if (sortBy && ["recency","rateAsc","rateDesc","experienceDesc","distanceAsc"].includes(sortBy)) setCgSort(sortBy);
+    const radius = sp.get("radiusMiles");
+    const lat = sp.get("lat");
+    const lng = sp.get("lng");
+    setCgRadius(radius ?? "");
+    setCgGeoLat(lat ? Number(lat) : null);
+    setCgGeoLng(lng ? Number(lng) : null);
+
+    didInitFromUrl.current = true;
+  }, [searchParams]);
+
+  // Keep URL in sync when on caregivers tab
+  useEffect(() => {
+    if (!didInitFromUrl.current) return;
+    if (activeTab !== "caregivers") return;
+    const params = new URLSearchParams(Array.from((searchParams ?? new URLSearchParams()).entries()));
+    params.set("tab", "caregivers");
+    const setOrDel = (k: string, v?: string) => {
+      if (v && v.length > 0) params.set(k, v); else params.delete(k);
+    };
+    setOrDel("q", search);
+    setOrDel("city", city);
+    setOrDel("state", state);
+    setOrDel("specialties", specialties.join(","));
+    setOrDel("settings", settings.join(","));
+    setOrDel("careTypes", careTypes.join(","));
+    setOrDel("minRate", minRate);
+    setOrDel("maxRate", maxRate);
+    setOrDel("minExperience", minExperience);
+    params.set("page", String(cgPage));
+    params.set("sortBy", cgSort);
+    if (cgRadius && cgGeoLat !== null && cgGeoLng !== null) {
+      params.set("radiusMiles", cgRadius);
+      params.set("lat", String(cgGeoLat));
+      params.set("lng", String(cgGeoLng));
+    } else {
+      params.delete("radiusMiles");
+      params.delete("lat");
+      params.delete("lng");
+    }
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }, [activeTab, search, city, state, specialties, settings, careTypes, minRate, maxRate, minExperience, cgPage, cgSort, cgRadius, cgGeoLat, cgGeoLng, router, pathname, searchParams]);
 
   useEffect(() => {
     // Load marketplace categories once
