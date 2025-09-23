@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -59,7 +59,7 @@ export default function MarketplacePage() {
 
   /* ---------------- Job-specific filters (place-holders) ------------ */
   const [zip, setZip] = useState("");
-  const [setting, setSetting] = useState("");
+  const [settings, setSettings] = useState<string[]>([]);
   const [careTypes, setCareTypes] = useState<string[]>([]);
   const [services, setServices] = useState<string[]>([]);
   const [postedByMe, setPostedByMe] = useState(false);
@@ -136,7 +136,7 @@ export default function MarketplacePage() {
         if (minRate) params.set("minRate", minRate);
         if (maxRate) params.set("maxRate", maxRate);
         if (minExperience) params.set("minExperience", minExperience);
-        if (setting) params.set("setting", setting);
+        if (settings.length > 0) params.set("settings", settings.join(","));
         if (careTypes.length > 0) params.set("careTypes", careTypes.join(","));
         if (cgRadius && cgGeoLat !== null && cgGeoLng !== null) {
           params.set("radiusMiles", cgRadius);
@@ -157,7 +157,7 @@ export default function MarketplacePage() {
       }
     };
     run();
-  }, [activeTab, search, city, state, specialties, minRate, maxRate, minExperience, setting, careTypes, cgPage, cgSort, cgRadius, cgGeoLat, cgGeoLng]);
+  }, [activeTab, search, city, state, specialties, minRate, maxRate, minExperience, settings, careTypes, cgPage, cgSort, cgRadius, cgGeoLat, cgGeoLng]);
 
   useEffect(() => {
     if (activeTab !== "jobs") return;
@@ -170,7 +170,7 @@ export default function MarketplacePage() {
         if (state) params.set("state", state);
         if (specialties.length > 0) params.set("specialties", specialties.join(","));
         if (zip) params.set("zip", zip);
-        if (setting) params.set("setting", setting);
+        if (settings.length > 0) params.set("settings", settings.join(","));
         if (careTypes.length > 0) params.set("careTypes", careTypes.join(","));
         if (services.length > 0) params.set("services", services.join(","));
         if (postedByMe && session?.user?.id) params.set("postedByMe", "true");
@@ -193,7 +193,7 @@ export default function MarketplacePage() {
       }
     };
     run();
-  }, [activeTab, search, city, state, specialties, zip, setting, careTypes, services, postedByMe, session, jobPage, jobSort, jobRadius, geoLat, geoLng]);
+  }, [activeTab, search, city, state, specialties, zip, settings, careTypes, services, postedByMe, session, jobPage, jobSort, jobRadius, geoLat, geoLng]);
 
   /* ----------------------------------------------------------------------
      Fetch providers
@@ -252,6 +252,13 @@ export default function MarketplacePage() {
     );
   };
 
+  const toggleSetting = useCallback((slug: string) => {
+    setSettings((prev) => (prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]));
+    if (activeTab === 'caregivers') setCgPage(1);
+    if (activeTab === 'jobs') setJobPage(1);
+    if (activeTab === 'providers') setProviderPage(1);
+  }, [activeTab]);
+
   const chips = useMemo(() => {
     const list: { key: string; label: string; remove: () => void }[] = [];
     if (search) list.push({ key: `q:${search}`, label: `Search: ${search}`, remove: () => { setSearch(""); } });
@@ -262,14 +269,14 @@ export default function MarketplacePage() {
       if (minRate) list.push({ key: `minRate:${minRate}`, label: `Min $${minRate}/hr`, remove: () => { setMinRate(""); setCgPage(1); } });
       if (maxRate) list.push({ key: `maxRate:${maxRate}`, label: `Max $${maxRate}/hr`, remove: () => { setMaxRate(""); setCgPage(1); } });
       if (minExperience) list.push({ key: `minExp:${minExperience}`, label: `Min ${minExperience} yrs`, remove: () => { setMinExperience(""); setCgPage(1); } });
-      if (setting) list.push({ key: `setting:${setting}`, label: `Setting: ${setting}`, remove: () => { setSetting(""); setCgPage(1); } });
+      settings.forEach((s) => list.push({ key: `setting:${s}`, label: (categories['SETTING']?.find(x => x.slug === s)?.name) || s, remove: () => { toggleSetting(s); setCgPage(1); } }));
       specialties.forEach((s) => list.push({ key: `spec:${s}`, label: (categories['SPECIALTY']?.find(x => x.slug === s)?.name) || s, remove: () => { toggleSpecialty(s); setCgPage(1); } }));
       careTypes.forEach((c) => list.push({ key: `care:${c}`, label: (categories['CARE_TYPE']?.find(x => x.slug === c)?.name) || c, remove: () => { toggleCareType(c); setCgPage(1); } }));
     }
 
     if (activeTab === 'jobs') {
       if (zip) list.push({ key: `zip:${zip}`, label: `ZIP: ${zip}`, remove: () => { setZip(""); setJobPage(1); } });
-      if (setting) list.push({ key: `setting:${setting}`, label: `Setting: ${setting}`, remove: () => { setSetting(""); setJobPage(1); } });
+      settings.forEach((s) => list.push({ key: `setting:${s}`, label: (categories['SETTING']?.find(x => x.slug === s)?.name) || s, remove: () => { toggleSetting(s); setJobPage(1); } }));
       if (postedByMe) list.push({ key: `postedByMe`, label: `Posted by me`, remove: () => { setPostedByMe(false); setJobPage(1); } });
       specialties.forEach((s) => list.push({ key: `spec:${s}`, label: (categories['SPECIALTY']?.find(x => x.slug === s)?.name) || s, remove: () => { toggleSpecialty(s); setJobPage(1); } }));
       careTypes.forEach((c) => list.push({ key: `care:${c}`, label: (categories['CARE_TYPE']?.find(x => x.slug === c)?.name) || c, remove: () => { toggleCareType(c); setJobPage(1); } }));
@@ -281,7 +288,7 @@ export default function MarketplacePage() {
     }
 
     return list;
-  }, [search, city, state, activeTab, minRate, maxRate, minExperience, setting, specialties, careTypes, services, providerServices, categories, zip, postedByMe]);
+  }, [search, city, state, activeTab, minRate, maxRate, minExperience, settings, specialties, careTypes, services, providerServices, categories, zip, postedByMe, toggleSetting]);
 
   return (
     <DashboardLayout title="Marketplace">
@@ -387,18 +394,18 @@ export default function MarketplacePage() {
                         className="w-full px-3 py-2 border border-gray-300 rounded-md"
                       />
                     </div>
-                    <div className="mb-3">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Setting</label>
-                      <select 
-                        value={setting} 
-                        onChange={(e) => setSetting(e.target.value)} 
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                      >
-                        <option value="">Any setting</option>
-                        {(categories['SETTING'] || []).map((item) => (
-                          <option key={item.slug} value={item.slug}>{item.name}</option>
-                        ))}
-                      </select>
+                    <div className="mt-4">
+                      <h4 className="font-medium text-sm mb-2">Setting</h4>
+                      {(categories['SETTING'] || []).map((item) => (
+                        <label key={item.slug} className="flex items-center gap-2 text-sm whitespace-nowrap">
+                          <input
+                            type="checkbox"
+                            checked={settings.includes(item.slug)}
+                            onChange={() => toggleSetting(item.slug)}
+                          />
+                          <span>{item.name}</span>
+                        </label>
+                      ))}
                     </div>
                     <div className="mt-4">
                       <h4 className="font-medium text-sm mb-2">Care Types</h4>
@@ -480,18 +487,18 @@ export default function MarketplacePage() {
                         </button>
                       </div>
                     </div>
-                    <div className="mb-3">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Setting</label>
-                      <select 
-                        value={setting} 
-                        onChange={(e) => setSetting(e.target.value)} 
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                      >
-                        <option value="">Any setting</option>
-                        {(categories['SETTING'] || []).map((item) => (
-                          <option key={item.slug} value={item.slug}>{item.name}</option>
-                        ))}
-                      </select>
+                    <div className="mt-4">
+                      <h4 className="font-medium text-sm mb-2">Setting</h4>
+                      {(categories['SETTING'] || []).map((item) => (
+                        <label key={item.slug} className="flex items-center gap-2 text-sm whitespace-nowrap">
+                          <input
+                            type="checkbox"
+                            checked={settings.includes(item.slug)}
+                            onChange={() => toggleSetting(item.slug)}
+                          />
+                          <span>{item.name}</span>
+                        </label>
+                      ))}
                     </div>
                     <div className="mt-4">
                       <h4 className="font-medium text-sm mb-2">Care Types</h4>
@@ -617,7 +624,7 @@ export default function MarketplacePage() {
                   setCgGeoLat(null);
                   setCgGeoLng(null);
                   setZip(''); 
-                  setSetting(''); 
+                  setSettings([]); 
                   setCareTypes([]); 
                   setServices([]); 
                   setProviderServices([]); 
@@ -662,7 +669,7 @@ export default function MarketplacePage() {
                     setCgGeoLat(null);
                     setCgGeoLng(null);
                     setZip('');
-                    setSetting('');
+                    setSettings([]);
                     setCareTypes([]);
                     setServices([]);
                     setProviderServices([]);
@@ -719,16 +726,21 @@ export default function MarketplacePage() {
                       placeholder="ZIP Code" 
                       className="w-full px-3 py-2 border border-gray-300 rounded-md"
                     />
-                    <select 
-                      value={setting} 
-                      onChange={(e) => setSetting(e.target.value)} 
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    >
-                      <option value="">Any setting</option>
-                      {(categories['SETTING'] || []).map((item) => (
-                        <option key={item.slug} value={item.slug}>{item.name}</option>
-                      ))}
-                    </select>
+                    <div>
+                      <h4 className="font-medium text-sm mb-2">Setting</h4>
+                      <div className="flex flex-wrap gap-3">
+                        {(categories['SETTING'] || []).map((item) => (
+                          <label key={item.slug} className="flex items-center gap-2 text-sm whitespace-nowrap">
+                            <input
+                              type="checkbox"
+                              checked={settings.includes(item.slug)}
+                              onChange={() => toggleSetting(item.slug)}
+                            />
+                            <span>{item.name}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
                   </>
                 )}
                 

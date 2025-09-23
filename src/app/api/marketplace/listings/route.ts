@@ -26,6 +26,7 @@ export async function GET(request: Request) {
     const radiusMiles = searchParams.get('radiusMiles') ? parseFloat(searchParams.get('radiusMiles')!) : null;
     const status = searchParams.get('status');
     const setting = searchParams.get('setting');
+    const settings = searchParams.get('settings')?.split(',').filter(Boolean);
     const careTypes = searchParams.get('careTypes')?.split(',').filter(Boolean);
     const services = searchParams.get('services')?.split(',').filter(Boolean);
     const specialties = searchParams.get('specialties')?.split(',').filter(Boolean);
@@ -56,8 +57,12 @@ export async function GET(request: Request) {
     // Status filter
     if (status) where.status = status;
     
-    // Setting filter
-    if (setting) where.setting = setting;
+    // Setting filter (supports legacy single 'setting' and new multi 'settings')
+    if (settings && settings.length > 0) {
+      where.setting = { in: settings };
+    } else if (setting) {
+      where.setting = setting;
+    }
     
     // Array filters
     if (careTypes && careTypes.length > 0) {
