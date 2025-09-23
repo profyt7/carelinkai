@@ -8,6 +8,7 @@ import CaregiverCard from "@/components/marketplace/CaregiverCard";
 import Image from "next/image";
 import RecommendedListings from "@/components/marketplace/RecommendedListings";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { toast } from "react-hot-toast";
 
 type Caregiver = {
   id: string;
@@ -113,7 +114,6 @@ export default function MarketplacePage() {
   const [prRadius, setPrRadius] = useState<string>("");
   const [prGeoLat, setPrGeoLat] = useState<number | null>(null);
   const [prGeoLng, setPrGeoLng] = useState<number | null>(null);
-  const [linkCopied, setLinkCopied] = useState(false);
 
   // One-time: initialize tab + filters from URL
   useEffect(() => {
@@ -812,23 +812,16 @@ export default function MarketplacePage() {
                   try {
                     const url = window.location.href;
                     (navigator as any)?.clipboard?.writeText(url)
-                      ?.then(() => {
-                        setLinkCopied(true);
-                        setTimeout(() => setLinkCopied(false), 1500);
-                      })
-                      ?.catch(() => {
-                        setLinkCopied(true);
-                        setTimeout(() => setLinkCopied(false), 1500);
-                      });
+                      ?.then(() => toast.success("Link copied"))
+                      ?.catch(() => toast.success("Link copied"));
                   } catch {
-                    setLinkCopied(true);
-                    setTimeout(() => setLinkCopied(false), 1500);
+                    toast.success("Link copied");
                   }
                 }}
                 className="mt-2 w-full rounded-md bg-primary-600 px-3 py-2 text-sm text-white hover:bg-primary-700"
                 title="Copy shareable link"
               >
-                {linkCopied ? 'Copied!' : 'Copy link'}
+                Copy link
               </button>
             </div>
           </div>
@@ -874,23 +867,16 @@ export default function MarketplacePage() {
                     try {
                       const url = window.location.href;
                       (navigator as any)?.clipboard?.writeText(url)
-                        ?.then(() => {
-                          setLinkCopied(true);
-                          setTimeout(() => setLinkCopied(false), 1500);
-                        })
-                        ?.catch(() => {
-                          setLinkCopied(true);
-                          setTimeout(() => setLinkCopied(false), 1500);
-                        });
+                        ?.then(() => toast.success("Link copied"))
+                        ?.catch(() => toast.success("Link copied"));
                     } catch {
-                      setLinkCopied(true);
-                      setTimeout(() => setLinkCopied(false), 1500);
+                      toast.success("Link copied");
                     }
                   }}
                   className="inline-flex items-center rounded-md bg-primary-600 px-3 py-1.5 text-sm text-white hover:bg-primary-700"
                   title="Copy shareable link"
                 >
-                  {linkCopied ? 'Copied!' : 'Copy link'}
+                  Copy link
                 </button>
               </div>
             )}
