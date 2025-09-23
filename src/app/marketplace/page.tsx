@@ -120,6 +120,7 @@ export default function MarketplacePage() {
   const [prGeoLat, setPrGeoLat] = useState<number | null>(null);
   const [prGeoLng, setPrGeoLng] = useState<number | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
+  const resultsRef = useRef<HTMLDivElement | null>(null);
 
   // One-time: initialize tab + filters from URL with localStorage fallback
   useEffect(() => {
@@ -891,7 +892,7 @@ export default function MarketplacePage() {
           </div>
 
           {/* Main content */}
-          <div className="flex-1">
+          <div className="flex-1" ref={resultsRef}>
             {chips.length > 0 && (
               <div className="mb-4 flex flex-wrap items-center gap-2">
                 {chips.map((c) => (
@@ -952,7 +953,7 @@ export default function MarketplacePage() {
               </div>
             )}
             {/* Mobile filters */}
-            <div className="mb-6 rounded-md border border-gray-200 bg-white p-3 md:hidden">
+            <div className="mb-6 rounded-md border border-gray-200 bg-white p-3 pb-16 md:hidden">
               <div className="grid grid-cols-1 gap-3">
                 <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search" className="w-full px-3 py-2 border border-gray-300 rounded-md" />
                 <input value={city} onChange={(e) => setCity(e.target.value)} placeholder="City" className="w-full px-3 py-2 border border-gray-300 rounded-md" />
@@ -981,6 +982,39 @@ export default function MarketplacePage() {
                       placeholder="Min Experience (years)" 
                       className="w-full px-3 py-2 border border-gray-300 rounded-md"
                     />
+                    <details className="rounded-md border border-gray-200 bg-white p-3">
+                      <summary className="cursor-pointer text-sm font-medium">Setting</summary>
+                      <div className="mt-2 flex flex-wrap gap-3">
+                        {(categories['SETTING'] || []).map((item) => (
+                          <label key={item.slug} className="flex items-center gap-2 text-sm whitespace-nowrap">
+                            <input type="checkbox" checked={settings.includes(item.slug)} onChange={() => toggleSetting(item.slug)} />
+                            <span>{item.name}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </details>
+                    <details className="rounded-md border border-gray-200 bg-white p-3">
+                      <summary className="cursor-pointer text-sm font-medium">Care Types</summary>
+                      <div className="mt-2 flex flex-wrap gap-3">
+                        {(categories['CARE_TYPE'] || []).map((careType) => (
+                          <label key={careType.slug} className="flex items-center gap-2 text-sm whitespace-nowrap">
+                            <input type="checkbox" checked={careTypes.includes(careType.slug)} onChange={() => toggleCareType(careType.slug)} />
+                            <span>{careType.name}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </details>
+                    <details className="rounded-md border border-gray-200 bg-white p-3">
+                      <summary className="cursor-pointer text-sm font-medium">Specialties</summary>
+                      <div className="mt-2 flex flex-wrap gap-3">
+                        {(categories['SPECIALTY'] || []).map((specialty) => (
+                          <label key={specialty.slug} className="flex items-center gap-2 text-sm whitespace-nowrap">
+                            <input type="checkbox" checked={specialties.includes(specialty.slug)} onChange={() => toggleSpecialty(specialty.slug)} />
+                            <span>{specialty.name}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </details>
                   </>
                 )}
                 
@@ -995,18 +1029,17 @@ export default function MarketplacePage() {
                     />
                     <div>
                       <h4 className="font-medium text-sm mb-2">Setting</h4>
-                      <div className="flex flex-wrap gap-3">
-                        {(categories['SETTING'] || []).map((item) => (
-                          <label key={item.slug} className="flex items-center gap-2 text-sm whitespace-nowrap">
-                            <input
-                              type="checkbox"
-                              checked={settings.includes(item.slug)}
-                              onChange={() => toggleSetting(item.slug)}
-                            />
-                            <span>{item.name}</span>
-                          </label>
-                        ))}
-                      </div>
+                      <details className="rounded-md border border-gray-200 bg-white p-3">
+                        <summary className="cursor-pointer text-sm font-medium">Setting</summary>
+                        <div className="mt-2 flex flex-wrap gap-3">
+                          {(categories['SETTING'] || []).map((item) => (
+                            <label key={item.slug} className="flex items-center gap-2 text-sm whitespace-nowrap">
+                              <input type="checkbox" checked={settings.includes(item.slug)} onChange={() => toggleSetting(item.slug)} />
+                              <span>{item.name}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </details>
                     </div>
                   </>
                 )}
@@ -1065,10 +1098,50 @@ export default function MarketplacePage() {
                     </label>
                   ))}
                 </div>
+            {/* Sticky Apply/Clear bar for mobile */}
+            <div className="fixed bottom-3 left-3 right-3 z-30 md:hidden">
+              <div className="rounded-md bg-white shadow-lg border border-gray-200 p-2 flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setSearch("");
+                    setCity("");
+                    setState("");
+                    setSpecialties([]);
+                    setMinRate('');
+                    setMaxRate('');
+                    setMinExperience('');
+                    setCgRadius('');
+                    setCgGeoLat(null);
+                    setCgGeoLng(null);
+                    setZip('');
+                    setSettings([]);
+                    setCareTypes([]);
+                    setServices([]);
+                    setProviderServices([]);
+                    setPostedByMe(false);
+                    setCgPage(1);
+                    setJobPage(1);
+                    setProviderPage(1);
+                  }}
+                  className="flex-1 rounded-md bg-gray-100 px-3 py-2 text-sm text-gray-800 hover:bg-gray-200"
+                >
+                  Clear
+                </button>
+                <button
+                  onClick={() => {
+                    // "Apply" is effectively a no-op since URL sync is live; scroll to results
+                    try { resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch {}
+                  }}
+                  className="flex-1 rounded-md bg-primary-600 px-3 py-2 text-sm text-white hover:bg-primary-700"
+                >
+                  Apply
+                </button>
+              </div>
+            </div>
               </div>
             </div>
 
-            {/* Caregivers CTA */}
+          {/* Results start */}
             {activeTab === "caregivers" && session?.user?.role === "CAREGIVER" && (
               <div className="mb-4">
                 <Link href="/settings/profile" className="inline-flex items-center px-4 py-2 rounded-md bg-primary-600 text-white text-sm font-medium hover:bg-primary-700">Create / Update Profile</Link>
