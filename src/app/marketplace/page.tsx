@@ -123,6 +123,22 @@ export default function MarketplacePage() {
   const [linkCopied, setLinkCopied] = useState(false);
   const resultsRef = useRef<HTMLDivElement | null>(null);
 
+  // Debounced inputs to reduce URL updates and fetch churn
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [debouncedCity, setDebouncedCity] = useState("");
+  const [debouncedState, setDebouncedState] = useState("");
+  const [debouncedMinRate, setDebouncedMinRate] = useState("");
+  const [debouncedMaxRate, setDebouncedMaxRate] = useState("");
+  const [debouncedMinExperience, setDebouncedMinExperience] = useState("");
+  const [debouncedZip, setDebouncedZip] = useState("");
+  useEffect(() => { const t = setTimeout(() => setDebouncedSearch(search), 350); return () => clearTimeout(t); }, [search]);
+  useEffect(() => { const t = setTimeout(() => setDebouncedCity(city), 350); return () => clearTimeout(t); }, [city]);
+  useEffect(() => { const t = setTimeout(() => setDebouncedState(state), 350); return () => clearTimeout(t); }, [state]);
+  useEffect(() => { const t = setTimeout(() => setDebouncedMinRate(minRate), 350); return () => clearTimeout(t); }, [minRate]);
+  useEffect(() => { const t = setTimeout(() => setDebouncedMaxRate(maxRate), 350); return () => clearTimeout(t); }, [maxRate]);
+  useEffect(() => { const t = setTimeout(() => setDebouncedMinExperience(minExperience), 350); return () => clearTimeout(t); }, [minExperience]);
+  useEffect(() => { const t = setTimeout(() => setDebouncedZip(zip), 350); return () => clearTimeout(t); }, [zip]);
+
   // Persist mobile <details> open/closed state across visits
   const MOBILE_DETAILS_KEYS = {
     cgSetting: 'marketplace:mobile:cg:setting:open',
@@ -286,7 +302,7 @@ export default function MarketplacePage() {
     didInitFromUrl.current = true;
   }, [searchParams]);
 
-  // Keep URL in sync when on caregivers tab
+  // Keep URL in sync when on caregivers tab (debounced inputs)
   useEffect(() => {
     if (!didInitFromUrl.current) return;
     if (activeTab !== "caregivers") return;
@@ -295,15 +311,15 @@ export default function MarketplacePage() {
     const setOrDel = (k: string, v?: string) => {
       if (v && v.length > 0) params.set(k, v); else params.delete(k);
     };
-    setOrDel("q", search);
-    setOrDel("city", city);
-    setOrDel("state", state);
+    setOrDel("q", debouncedSearch);
+    setOrDel("city", debouncedCity);
+    setOrDel("state", debouncedState);
     setOrDel("specialties", specialties.join(","));
     setOrDel("settings", settings.join(","));
     setOrDel("careTypes", careTypes.join(","));
-    setOrDel("minRate", minRate);
-    setOrDel("maxRate", maxRate);
-    setOrDel("minExperience", minExperience);
+    setOrDel("minRate", debouncedMinRate);
+    setOrDel("maxRate", debouncedMaxRate);
+    setOrDel("minExperience", debouncedMinExperience);
     params.set("page", String(cgPage));
     params.set("sortBy", cgSort);
     if (cgRadius && cgGeoLat !== null && cgGeoLng !== null) {
@@ -317,9 +333,9 @@ export default function MarketplacePage() {
     }
     try { localStorage.setItem(LAST_TAB_KEY, "caregivers"); localStorage.setItem(LS_KEYS.caregivers, params.toString()); } catch {}
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  }, [activeTab, search, city, state, specialties, settings, careTypes, minRate, maxRate, minExperience, cgPage, cgSort, cgRadius, cgGeoLat, cgGeoLng, router, pathname, searchParams]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, settings, careTypes, debouncedMinRate, debouncedMaxRate, debouncedMinExperience, cgPage, cgSort, cgRadius, cgGeoLat, cgGeoLng, router, pathname, searchParams]);
 
-  // Keep URL in sync when on jobs tab
+  // Keep URL in sync when on jobs tab (debounced inputs)
   useEffect(() => {
     if (!didInitFromUrl.current) return;
     if (activeTab !== "jobs") return;
@@ -328,11 +344,11 @@ export default function MarketplacePage() {
     const setOrDel = (k: string, v?: string) => {
       if (v && v.length > 0) params.set(k, v); else params.delete(k);
     };
-    setOrDel("q", search);
-    setOrDel("city", city);
-    setOrDel("state", state);
+    setOrDel("q", debouncedSearch);
+    setOrDel("city", debouncedCity);
+    setOrDel("state", debouncedState);
     setOrDel("specialties", specialties.join(","));
-    setOrDel("zip", zip);
+    setOrDel("zip", debouncedZip);
     setOrDel("settings", settings.join(","));
     setOrDel("careTypes", careTypes.join(","));
     setOrDel("services", services.join(","));
@@ -350,9 +366,9 @@ export default function MarketplacePage() {
     }
     try { localStorage.setItem(LAST_TAB_KEY, "jobs"); localStorage.setItem(LS_KEYS.jobs, params.toString()); } catch {}
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  }, [activeTab, search, city, state, specialties, zip, settings, careTypes, services, postedByMe, jobPage, jobSort, jobRadius, geoLat, geoLng, router, pathname, searchParams]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, debouncedZip, settings, careTypes, services, postedByMe, jobPage, jobSort, jobRadius, geoLat, geoLng, router, pathname, searchParams]);
 
-  // Keep URL in sync when on providers tab
+  // Keep URL in sync when on providers tab (debounced inputs)
   useEffect(() => {
     if (!didInitFromUrl.current) return;
     if (activeTab !== "providers") return;
@@ -361,9 +377,9 @@ export default function MarketplacePage() {
     const setOrDel = (k: string, v?: string) => {
       if (v && v.length > 0) params.set(k, v); else params.delete(k);
     };
-    setOrDel("q", search);
-    setOrDel("city", city);
-    setOrDel("state", state);
+    setOrDel("q", debouncedSearch);
+    setOrDel("city", debouncedCity);
+    setOrDel("state", debouncedState);
     setOrDel("services", providerServices.join(","));
     params.set("page", String(providerPage));
     params.set("sortBy", providerSort);
@@ -378,7 +394,7 @@ export default function MarketplacePage() {
     }
     try { localStorage.setItem(LAST_TAB_KEY, "providers"); localStorage.setItem(LS_KEYS.providers, params.toString()); } catch {}
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  }, [activeTab, search, city, state, providerServices, providerPage, providerSort, prRadius, prGeoLat, prGeoLng, router, pathname, searchParams]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, providerServices, providerPage, providerSort, prRadius, prGeoLat, prGeoLng, router, pathname, searchParams]);
 
   useEffect(() => {
     // Load marketplace categories once
@@ -400,15 +416,15 @@ export default function MarketplacePage() {
       setCaregiversLoading(true);
       try {
         const params = new URLSearchParams();
-        if (search) params.set("q", search);
-        if (city) params.set("city", city);
-        if (state) params.set("state", state);
+        if (debouncedSearch) params.set("q", debouncedSearch);
+        if (debouncedCity) params.set("city", debouncedCity);
+        if (debouncedState) params.set("state", debouncedState);
         if (specialties.length > 0) params.set("specialties", specialties.join(","));
         if (settings.length > 0) params.set("settings", settings.join(","));
         if (careTypes.length > 0) params.set("careTypes", careTypes.join(","));
-        if (minRate) params.set("minRate", minRate);
-        if (maxRate) params.set("maxRate", maxRate);
-        if (minExperience) params.set("minExperience", minExperience);
+        if (debouncedMinRate) params.set("minRate", debouncedMinRate);
+        if (debouncedMaxRate) params.set("maxRate", debouncedMaxRate);
+        if (debouncedMinExperience) params.set("minExperience", debouncedMinExperience);
         if (cgRadius && cgGeoLat !== null && cgGeoLng !== null) {
           params.set("radiusMiles", cgRadius);
           params.set("lat", String(cgGeoLat));
@@ -428,7 +444,7 @@ export default function MarketplacePage() {
       }
     };
     run();
-  }, [activeTab, search, city, state, specialties, settings, careTypes, minRate, maxRate, minExperience, cgPage, cgSort, cgRadius, cgGeoLat, cgGeoLng]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, settings, careTypes, debouncedMinRate, debouncedMaxRate, debouncedMinExperience, cgPage, cgSort, cgRadius, cgGeoLat, cgGeoLng]);
 
   useEffect(() => {
     if (activeTab !== "jobs") return;
@@ -436,11 +452,11 @@ export default function MarketplacePage() {
       setListingsLoading(true);
       try {
         const params = new URLSearchParams();
-        if (search) params.set("q", search);
-        if (city) params.set("city", city);
-        if (state) params.set("state", state);
+        if (debouncedSearch) params.set("q", debouncedSearch);
+        if (debouncedCity) params.set("city", debouncedCity);
+        if (debouncedState) params.set("state", debouncedState);
         if (specialties.length > 0) params.set("specialties", specialties.join(","));
-        if (zip) params.set("zip", zip);
+        if (debouncedZip) params.set("zip", debouncedZip);
         if (settings.length > 0) params.set("settings", settings.join(","));
         if (careTypes.length > 0) params.set("careTypes", careTypes.join(","));
         if (services.length > 0) params.set("services", services.join(","));
@@ -464,7 +480,7 @@ export default function MarketplacePage() {
       }
     };
     run();
-  }, [activeTab, search, city, state, specialties, zip, settings, careTypes, services, postedByMe, session, jobPage, jobSort, jobRadius, geoLat, geoLng]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, debouncedZip, settings, careTypes, services, postedByMe, session, jobPage, jobSort, jobRadius, geoLat, geoLng]);
 
   /* ----------------------------------------------------------------------
      Fetch providers
@@ -475,9 +491,9 @@ export default function MarketplacePage() {
       setProvidersLoading(true);
       try {
         const params = new URLSearchParams();
-        if (search) params.set("q", search);
-        if (city) params.set("city", city);
-        if (state) params.set("state", state);
+        if (debouncedSearch) params.set("q", debouncedSearch);
+        if (debouncedCity) params.set("city", debouncedCity);
+        if (debouncedState) params.set("state", debouncedState);
         if (providerServices.length > 0) params.set("services", providerServices.join(","));
         if (prRadius && prGeoLat !== null && prGeoLng !== null) {
           params.set("radiusMiles", prRadius);
@@ -498,7 +514,7 @@ export default function MarketplacePage() {
       }
     };
     run();
-  }, [activeTab, search, city, state, providerServices, providerPage, providerSort, prRadius, prGeoLat, prGeoLng]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, providerServices, providerPage, providerSort, prRadius, prGeoLat, prGeoLng]);
 
   const toggleSpecialty = (slug: string) => {
     setSpecialties((prev) =>
