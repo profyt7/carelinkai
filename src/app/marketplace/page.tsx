@@ -16,6 +16,14 @@ const LS_KEYS = {
   providers: "marketplace:providers",
 } as const;
 
+// Persist mobile <details> open/closed state across visits (hoisted to module scope)
+const MOBILE_DETAILS_KEYS = {
+  cgSetting: 'marketplace:mobile:cg:setting:open',
+  cgCareTypes: 'marketplace:mobile:cg:careTypes:open',
+  cgSpecialties: 'marketplace:mobile:cg:specialties:open',
+  jobSetting: 'marketplace:mobile:job:setting:open',
+} as const;
+
 type Caregiver = {
   id: string;
   name: string;
@@ -139,13 +147,6 @@ export default function MarketplacePage() {
   useEffect(() => { const t = setTimeout(() => setDebouncedMinExperience(minExperience), 350); return () => clearTimeout(t); }, [minExperience]);
   useEffect(() => { const t = setTimeout(() => setDebouncedZip(zip), 350); return () => clearTimeout(t); }, [zip]);
 
-  // Persist mobile <details> open/closed state across visits
-  const MOBILE_DETAILS_KEYS = {
-    cgSetting: 'marketplace:mobile:cg:setting:open',
-    cgCareTypes: 'marketplace:mobile:cg:careTypes:open',
-    cgSpecialties: 'marketplace:mobile:cg:specialties:open',
-    jobSetting: 'marketplace:mobile:job:setting:open',
-  } as const;
   const [cgSettingOpen, setCgSettingOpen] = useState(false);
   const [cgCareTypesOpen, setCgCareTypesOpen] = useState(false);
   const [cgSpecialtiesOpen, setCgSpecialtiesOpen] = useState(false);
@@ -412,6 +413,7 @@ export default function MarketplacePage() {
 
   useEffect(() => {
     if (activeTab !== "caregivers") return;
+    const controller = new AbortController();
     const run = async () => {
       setCaregiversLoading(true);
       try {
@@ -433,21 +435,26 @@ export default function MarketplacePage() {
         params.set("page", String(cgPage));
         params.set("pageSize", String(20));
         params.set("sortBy", cgSort);
-        const res = await fetch(`/api/marketplace/caregivers?${params.toString()}`);
+        const res = await fetch(`/api/marketplace/caregivers?${params.toString()}` , { signal: controller.signal });
         const json = await res.json();
         setCaregivers(json?.data ?? []);
         setCgTotal(json?.pagination?.total ?? 0);
-      } catch (e) {
+      } catch (e: any) {
+        if (e?.name === 'AbortError') return;
         setCaregivers([]);
       } finally {
         setCaregiversLoading(false);
       }
     };
     run();
+    return () => {
+      controller.abort();
+    };
   }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, settings, careTypes, debouncedMinRate, debouncedMaxRate, debouncedMinExperience, cgPage, cgSort, cgRadius, cgGeoLat, cgGeoLng]);
 
   useEffect(() => {
     if (activeTab !== "jobs") return;
+    const controller = new AbortController();
     const run = async () => {
       setListingsLoading(true);
       try {
@@ -469,17 +476,21 @@ export default function MarketplacePage() {
         params.set("page", String(jobPage));
         params.set("pageSize", String(20));
         params.set("sortBy", jobSort);
-        const res = await fetch(`/api/marketplace/listings?${params.toString()}`);
+        const res = await fetch(`/api/marketplace/listings?${params.toString()}` , { signal: controller.signal });
         const json = await res.json();
         setListings(json?.data ?? []);
         setJobTotal(json?.pagination?.total ?? 0);
-      } catch (e) {
+      } catch (e: any) {
+        if (e?.name === 'AbortError') return;
         setListings([]);
       } finally {
         setListingsLoading(false);
       }
     };
     run();
+    return () => {
+      controller.abort();
+    };
   }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, debouncedZip, settings, careTypes, services, postedByMe, session, jobPage, jobSort, jobRadius, geoLat, geoLng]);
 
   /* ----------------------------------------------------------------------
@@ -487,6 +498,7 @@ export default function MarketplacePage() {
   ----------------------------------------------------------------------*/
   useEffect(() => {
     if (activeTab !== "providers") return;
+    const controller = new AbortController();
     const run = async () => {
       setProvidersLoading(true);
       try {
@@ -503,17 +515,21 @@ export default function MarketplacePage() {
         params.set("page", String(providerPage));
         params.set("pageSize", String(20));
         params.set("sortBy", providerSort);
-        const res = await fetch(`/api/marketplace/providers?${params.toString()}`);
+        const res = await fetch(`/api/marketplace/providers?${params.toString()}` , { signal: controller.signal });
         const json = await res.json();
         setProviders(json?.data ?? []);
         setProviderTotal(json?.pagination?.total ?? 0);
-      } catch (e) {
+      } catch (e: any) {
+        if (e?.name === 'AbortError') return;
         setProviders([]);
       } finally {
         setProvidersLoading(false);
       }
     };
     run();
+    return () => {
+      controller.abort();
+    };
   }, [activeTab, debouncedSearch, debouncedCity, debouncedState, providerServices, providerPage, providerSort, prRadius, prGeoLat, prGeoLng]);
 
   const toggleSpecialty = (slug: string) => {
