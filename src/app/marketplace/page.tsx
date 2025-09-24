@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import CaregiverCard from "@/components/marketplace/CaregiverCard";
 import Image from "next/image";
+import { getBlurDataURL } from "@/lib/imageBlur";
 import RecommendedListings from "@/components/marketplace/RecommendedListings";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
@@ -1282,7 +1283,16 @@ export default function MarketplacePage() {
                     <Link href={`/marketplace/listings/${job.id}`} key={job.id} className="block bg-white border rounded-md p-4 hover:shadow-md transition-shadow">
                       <div className="flex items-start mb-2">
                         <div className="h-12 w-12 rounded-md overflow-hidden bg-gray-100 flex-shrink-0 mr-3">
-                          <Image src={`https://ui-avatars.com/api/?name=${encodeURIComponent(job.title)}&background=random&size=128`} alt={job.title} width={48} height={48} />
+                          <Image
+                            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(job.title)}&background=random&size=128`}
+                            alt={job.title}
+                            width={48}
+                            height={48}
+                            placeholder="blur"
+                            blurDataURL={getBlurDataURL(48, 48)}
+                            sizes="48px"
+                            loading="lazy"
+                          />
                         </div>
                         <div>
                           <h3 className="font-semibold text-gray-900">{job.title}</h3>
@@ -1315,7 +1325,16 @@ export default function MarketplacePage() {
                     <div key={p.id} className="bg-white border rounded-md p-4">
                       <div className="flex items-start mb-2">
                         <div className="h-12 w-12 rounded-full overflow-hidden bg-gray-100 flex-shrink-0 mr-3">
-                          <Image src={`https://ui-avatars.com/api/?name=${encodeURIComponent(p.name)}&background=random&size=128`} alt={p.name} width={48} height={48} />
+                          <Image
+                            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(p.name)}&background=random&size=128`}
+                            alt={p.name}
+                            width={48}
+                            height={48}
+                            placeholder="blur"
+                            blurDataURL={getBlurDataURL(48, 48)}
+                            sizes="48px"
+                            loading="lazy"
+                          />
                         </div>
                         <div>
                           <h3 className="font-semibold text-gray-900">{p.name}</h3>
