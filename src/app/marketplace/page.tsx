@@ -94,6 +94,7 @@ export default function MarketplacePage() {
   const [careTypes, setCareTypes] = useState<string[]>([]);
   const [services, setServices] = useState<string[]>([]);
   const [postedByMe, setPostedByMe] = useState(false);
+  const [hideClosed, setHideClosed] = useState(false);
   const [jobRadius, setJobRadius] = useState<string>(""); // miles
   const [geoLat, setGeoLat] = useState<number | null>(null);
   const [geoLng, setGeoLng] = useState<number | null>(null);
@@ -274,6 +275,7 @@ export default function MarketplacePage() {
     setZip(valOrEmpty("zip"));
     setServices(csv("services"));
     setPostedByMe(sp.get("postedByMe") === "true");
+    setHideClosed(sp.get("status") === "OPEN");
     const jobPageFromUrl = parseInt(sp.get("page") || "1", 10);
     if (!Number.isNaN(jobPageFromUrl) && jobPageFromUrl > 0) setJobPage(jobPageFromUrl);
     const jobSortBy = sp.get("sortBy") as any;
@@ -332,6 +334,7 @@ export default function MarketplacePage() {
           setZip(v("zip"));
           setServices(arr("services"));
           setPostedByMe(savedParams.get("postedByMe") === "true");
+    setHideClosed(savedParams.get("status") === "OPEN");
           const spJobPage = parseInt(savedParams.get("page") || "1", 10);
           if (!Number.isNaN(spJobPage) && spJobPage > 0) setJobPage(spJobPage);
           const spJobSort = savedParams.get("sortBy") as any;
@@ -412,6 +415,7 @@ export default function MarketplacePage() {
     setOrDel("careTypes", careTypes.join(","));
     setOrDel("services", services.join(","));
     if (postedByMe) params.set("postedByMe", "true"); else params.delete("postedByMe");
+    if (hideClosed) params.set("status", "OPEN"); else params.delete("status");
     params.set("page", String(jobPage));
     params.set("sortBy", jobSort);
     if (jobRadius && geoLat !== null && geoLng !== null) {
@@ -425,7 +429,7 @@ export default function MarketplacePage() {
     }
     try { localStorage.setItem(LAST_TAB_KEY, "jobs"); localStorage.setItem(LS_KEYS.jobs, params.toString()); } catch {}
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, debouncedZip, settings, careTypes, services, postedByMe, jobPage, jobSort, jobRadius, geoLat, geoLng, router, pathname, searchParams]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, debouncedZip, settings, careTypes, services, postedByMe, hideClosed, jobPage, jobSort, jobRadius, geoLat, geoLng, router, pathname, searchParams]);
 
   // Keep URL in sync when on providers tab (debounced inputs)
   useEffect(() => {
@@ -738,6 +742,7 @@ export default function MarketplacePage() {
       if (zip) list.push({ key: `zip:${zip}`, label: `ZIP: ${zip}`, remove: () => { setZip(""); setJobPage(1); } });
       settings.forEach((s) => list.push({ key: `setting:${s}`, label: (categories['SETTING']?.find(x => x.slug === s)?.name) || s, remove: () => { toggleSetting(s); setJobPage(1); } }));
       if (postedByMe) list.push({ key: `postedByMe`, label: `Posted by me`, remove: () => { setPostedByMe(false); setJobPage(1); } });
+      if (hideClosed) list.push({ key: `status:OPEN`, label: `Open only`, remove: () => { setHideClosed(false); setJobPage(1); } });
       specialties.forEach((s) => list.push({ key: `spec:${s}`, label: (categories['SPECIALTY']?.find(x => x.slug === s)?.name) || s, remove: () => { toggleSpecialty(s); setJobPage(1); } }));
       careTypes.forEach((c) => list.push({ key: `care:${c}`, label: (categories['CARE_TYPE']?.find(x => x.slug === c)?.name) || c, remove: () => { toggleCareType(c); setJobPage(1); } }));
       services.forEach((srv) => list.push({ key: `svc:${srv}`, label: (categories['SERVICE']?.find(x => x.slug === srv)?.name) || srv, remove: () => { toggleService(srv); setJobPage(1); } }));
@@ -748,7 +753,7 @@ export default function MarketplacePage() {
     }
 
     return list;
-  }, [search, city, state, activeTab, minRate, maxRate, minExperience, settings, specialties, careTypes, services, providerServices, categories, zip, postedByMe, toggleSetting]);
+  }, [search, city, state, activeTab, minRate, maxRate, minExperience, settings, specialties, careTypes, services, providerServices, categories, zip, postedByMe, hideClosed, toggleSetting]);
 
   return (
     <DashboardLayout title="Marketplace">
@@ -1015,6 +1020,16 @@ export default function MarketplacePage() {
                         </label>
                       </div>
                     )}
+                    <div className="mt-2">
+                      <label className="flex items-center gap-2 text-sm whitespace-nowrap">
+                        <input
+                          type="checkbox"
+                          checked={hideClosed}
+                          onChange={(e) => { setHideClosed(e.target.checked); setJobPage(1); }}
+                        />
+                        <span>Hide closed/filled</span>
+                      </label>
+                    </div>
                   </>
                 )}
                 
@@ -1253,6 +1268,16 @@ export default function MarketplacePage() {
                           ))}
                         </div>
                       </details>
+                      <div className="mt-3">
+                        <label className="flex items-center gap-2 text-sm whitespace-nowrap">
+                          <input
+                            type="checkbox"
+                            checked={hideClosed}
+                            onChange={(e) => { setHideClosed(e.target.checked); setJobPage(1); }}
+                          />
+                          <span>Hide closed/filled</span>
+                        </label>
+                      </div>
                     </div>
                   </>
                 )}
