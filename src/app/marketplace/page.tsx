@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef, forwardRef } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -10,6 +10,7 @@ import { getBlurDataURL } from "@/lib/imageBlur";
 import RecommendedListings from "@/components/marketplace/RecommendedListings";
 import { fetchJsonCached } from "@/lib/fetchCache";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { VirtuosoGrid } from "react-virtuoso";
 
 const LAST_TAB_KEY = "marketplace:lastTab";
 const LS_KEYS = {
@@ -138,9 +139,6 @@ export default function MarketplacePage() {
   const [linkCopied, setLinkCopied] = useState(false);
   const resultsRef = useRef<HTMLDivElement | null>(null);
   const scrollRaf = useRef<number | null>(null);
-  const cgSentinelRef = useRef<HTMLDivElement | null>(null);
-  const jobSentinelRef = useRef<HTMLDivElement | null>(null);
-  const prSentinelRef = useRef<HTMLDivElement | null>(null);
 
   // Restore per-tab scroll position when switching tabs or on mount
   useEffect(() => {
@@ -638,52 +636,26 @@ export default function MarketplacePage() {
     }
   }, [prQueryKey, activeTab]);
 
-  // Infinite scroll observers
+  // Infinite scroll flags
   const cgHasMore = cgTotal === 0 ? false : caregivers.length < cgTotal;
   const jobHasMore = jobTotal === 0 ? false : listings.length < jobTotal;
   const prHasMore = providerTotal === 0 ? false : providers.length < providerTotal;
 
-  useEffect(() => {
-    const el = cgSentinelRef.current;
-    if (!el) return;
-    if (activeTab !== 'caregivers') return;
-    const obs = new IntersectionObserver((entries) => {
-      const entry = entries[0];
-      if (entry && entry.isIntersecting && !caregiversLoading && cgHasMore) {
-        setCgPage((p) => p + 1);
-      }
-    }, { rootMargin: '200px' });
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [activeTab, caregiversLoading, cgHasMore]);
-
-  useEffect(() => {
-    const el = jobSentinelRef.current;
-    if (!el) return;
-    if (activeTab !== 'jobs') return;
-    const obs = new IntersectionObserver((entries) => {
-      const entry = entries[0];
-      if (entry && entry.isIntersecting && !listingsLoading && jobHasMore) {
-        setJobPage((p) => p + 1);
-      }
-    }, { rootMargin: '200px' });
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [activeTab, listingsLoading, jobHasMore]);
-
-  useEffect(() => {
-    const el = prSentinelRef.current;
-    if (!el) return;
-    if (activeTab !== 'providers') return;
-    const obs = new IntersectionObserver((entries) => {
-      const entry = entries[0];
-      if (entry && entry.isIntersecting && !providersLoading && prHasMore) {
-        setProviderPage((p) => p + 1);
-      }
-    }, { rootMargin: '200px' });
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [activeTab, providersLoading, prHasMore]);
+  // Virtualized grid components (react-virtuoso)
+  const GridList = useMemo(() => {
+    const C = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>((props, ref) => (
+      <div ref={ref} {...props} className={(props.className ? props.className + " " : "") + "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4"} />
+    ));
+    C.displayName = 'VirtualGridList';
+    return C;
+  }, []);
+  const GridItem = useMemo(() => {
+    const C = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>((props, ref) => (
+      <div ref={ref} {...props} className={(props.className ? props.className + " " : "") + "contents"} />
+    ));
+    C.displayName = 'VirtualGridItem';
+    return C;
+  }, []);
 
   const toggleSpecialty = (slug: string) => {
     setSpecialties((prev) =>
@@ -1405,76 +1377,92 @@ export default function MarketplacePage() {
 
             {/* Tab bodies */}
             {activeTab === "caregivers" ? (
-              caregiversLoading ? (
+              caregiversLoading && caregivers.length === 0 ? (
                 <div className="py-20 text-center text-gray-500">Loading caregivers…</div>
               ) : caregivers.length === 0 ? (
                 <div className="py-20 text-center text-gray-500">No caregivers found</div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
-                  {caregivers.map((cg) => (
-                    <CaregiverCard key={cg.id} caregiver={cg} />
-                  ))}
-                </div>
+                <VirtuosoGrid
+                  useWindowScroll
+                  totalCount={caregivers.length}
+                  data={caregivers}
+                  endReached={() => { if (cgHasMore && !caregiversLoading) setCgPage((p) => p + 1); }}
+                  overscan={200}
+                  components={{ List: GridList as any, Item: GridItem as any }}
+                  itemContent={(_, cg) => (<CaregiverCard key={cg.id} caregiver={cg} />)}
+                />
               )
             ) : activeTab === "jobs" ? (
-              /* Jobs tab ----------------------------------------------------- */
-              listingsLoading ? (
+              listingsLoading && listings.length === 0 ? (
                 <div className="py-20 text-center text-gray-500">Loading jobs…</div>
               ) : listings.length === 0 ? (
                 <div className="py-20 text-center text-gray-500">No jobs found</div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
-                  {/* AI Matching – recommended jobs for caregivers */}
+                <>
                   {session?.user?.role === "CAREGIVER" && (
-                    <div className="col-span-full mb-6">
+                    <div className="mb-6">
                       <RecommendedListings />
-                      <div className="my-4" /> {/* divider margin */}
+                      <div className="my-4" />
                     </div>
                   )}
-                  {listings.map((job) => (
-                    <Link href={`/marketplace/listings/${job.id}`} key={job.id} className="block bg-white border rounded-md p-4 hover:shadow-md transition-shadow">
-                      <div className="flex items-start mb-2">
-                        <div className="h-12 w-12 rounded-md overflow-hidden bg-gray-100 flex-shrink-0 mr-3">
-                          <Image
-                            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(job.title)}&background=random&size=128`}
-                            alt={job.title}
-                            width={48}
-                            height={48}
-                            placeholder="blur"
-                            blurDataURL={getBlurDataURL(48, 48)}
-                            sizes="48px"
-                            loading="lazy"
-                          />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-900">{job.title}</h3>
-                          <div className="text-sm text-gray-600">
-                            {[job.city, job.state].filter(Boolean).join(", ") || "Location"}
-                            {typeof job.distanceMiles === 'number' && isFinite(job.distanceMiles) && (
-                              <span className="ml-2 text-gray-500">• {job.distanceMiles.toFixed(1)} mi</span>
-                            )}
+                  <VirtuosoGrid
+                    useWindowScroll
+                    totalCount={listings.length}
+                    data={listings}
+                    endReached={() => { if (jobHasMore && !listingsLoading) setJobPage((p) => p + 1); }}
+                    overscan={200}
+                    components={{ List: GridList as any, Item: GridItem as any }}
+                    itemContent={(_, job) => (
+                      <Link href={`/marketplace/listings/${job.id}`} className="block bg-white border rounded-md p-4 hover:shadow-md transition-shadow">
+                        <div className="flex items-start mb-2">
+                          <div className="h-12 w-12 rounded-md overflow-hidden bg-gray-100 flex-shrink-0 mr-3">
+                            <Image
+                              src={`https://ui-avatars.com/api/?name=${encodeURIComponent(job.title)}&background=random&size=128`}
+                              alt={job.title}
+                              width={48}
+                              height={48}
+                              placeholder="blur"
+                              blurDataURL={getBlurDataURL(48, 48)}
+                              sizes="48px"
+                              loading="lazy"
+                            />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-gray-900">{job.title}</h3>
+                            <div className="text-sm text-gray-600">
+                              {[job.city, job.state].filter(Boolean).join(", ") || "Location"}
+                              {typeof job.distanceMiles === 'number' && isFinite(job.distanceMiles) && (
+                                <span className="ml-2 text-gray-500">• {job.distanceMiles.toFixed(1)} mi</span>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      {(job.hourlyRateMin || job.hourlyRateMax) && (
-                        <div className="text-sm text-gray-800 mb-2">
-                          {job.hourlyRateMin && job.hourlyRateMax ? `$${job.hourlyRateMin} - $${job.hourlyRateMax}/hr` : job.hourlyRateMin ? `From $${job.hourlyRateMin}/hr` : `Up to $${job.hourlyRateMax}/hr`}
-                        </div>
-                      )}
-                      <p className="text-sm text-gray-700 line-clamp-2">{job.description}</p>
-                    </Link>
-                  ))}
-                </div>
+                        {(job.hourlyRateMin || job.hourlyRateMax) && (
+                          <div className="text-sm text-gray-800 mb-2">
+                            {job.hourlyRateMin && job.hourlyRateMax ? `$${job.hourlyRateMin} - $${job.hourlyRateMax}/hr` : job.hourlyRateMin ? `From $${job.hourlyRateMin}/hr` : `Up to $${job.hourlyRateMax}/hr`}
+                          </div>
+                        )}
+                        <p className="text-sm text-gray-700 line-clamp-2">{job.description}</p>
+                      </Link>
+                    )}
+                  />
+                </>
               )
             ) : (
-              providersLoading ? (
+              providersLoading && providers.length === 0 ? (
                 <div className="py-20 text-center text-gray-500">Loading providers…</div>
               ) : providers.length === 0 ? (
                 <div className="py-20 text-center text-gray-500">No providers found</div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
-                  {providers.map((p) => (
-                    <div key={p.id} className="bg-white border rounded-md p-4">
+                <VirtuosoGrid
+                  useWindowScroll
+                  totalCount={providers.length}
+                  data={providers}
+                  endReached={() => { if (prHasMore && !providersLoading) setProviderPage((p) => p + 1); }}
+                  overscan={200}
+                  components={{ List: GridList as any, Item: GridItem as any }}
+                  itemContent={(_, p) => (
+                    <div className="bg-white border rounded-md p-4">
                       <div className="flex items-start mb-2">
                         <div className="h-12 w-12 rounded-full overflow-hidden bg-gray-100 flex-shrink-0 mr-3">
                           <Image
@@ -1507,7 +1495,7 @@ export default function MarketplacePage() {
                         <span className="text-gray-600">{p.ratingAverage.toFixed(1)} ({p.reviewCount})</span>
                       </div>
                       <div className="flex flex-wrap gap-2 mb-2">
-                        {p.services.slice(0, 4).map((s) => (
+                        {p.services.slice(0, 4).map((s: string) => (
                           <span key={s} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">{s.replace(/-/g, " ")}</span>
                         ))}
                         {p.services.length > 4 && (
@@ -1518,26 +1506,9 @@ export default function MarketplacePage() {
                         <div className="text-sm text-gray-800 mb-2">{p.hourlyRate !== null ? `$${p.hourlyRate}/hr` : `$${p.perMileRate?.toFixed(2)}/mi`}</div>
                       )}
                     </div>
-                  ))}
-                </div>
+                  )}
+                />
               )
-            )}
-            {/* Infinite scroll sentinels */}
-            <div className="h-8" />
-            {activeTab === 'caregivers' && (
-              <div ref={cgSentinelRef} className="w-full py-4 text-center text-sm text-gray-500">
-                {caregiversLoading ? 'Loading more…' : (cgHasMore ? 'Scroll to load more' : 'End of results')}
-              </div>
-            )}
-            {activeTab === 'jobs' && (
-              <div ref={jobSentinelRef} className="w-full py-4 text-center text-sm text-gray-500">
-                {listingsLoading ? 'Loading more…' : (jobHasMore ? 'Scroll to load more' : 'End of results')}
-              </div>
-            )}
-            {activeTab === 'providers' && (
-              <div ref={prSentinelRef} className="w-full py-4 text-center text-sm text-gray-500">
-                {providersLoading ? 'Loading more…' : (prHasMore ? 'Scroll to load more' : 'End of results')}
-              </div>
             )}
           </div>
         </div>
