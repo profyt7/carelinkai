@@ -12,6 +12,7 @@ interface ListingActionsProps {
   applicationCount: number;
   hireCount: number;
   status: string;
+  appliedByMe?: boolean;
 }
 
 export default function ListingActions({
@@ -20,6 +21,7 @@ export default function ListingActions({
   applicationCount,
   hireCount,
   status,
+  appliedByMe = false,
 }: ListingActionsProps) {
   const { data: session } = useSession();
   const router = useRouter();
@@ -130,8 +132,8 @@ export default function ListingActions({
 
   // Caregiver view
   if (isCaregiver) {
-    // Show success message if application submitted
-    if (submitSuccess) {
+    // Show success or already-applied message
+    if (submitSuccess || appliedByMe) {
       return (
         <div className="mt-6 border-t border-gray-200 pt-6">
           <div className="bg-green-50 p-4 rounded-md flex items-start">

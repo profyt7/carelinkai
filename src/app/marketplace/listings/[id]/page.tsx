@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import authOptions from "@/lib/auth";
 import { formatDistance } from "date-fns";
 import { FiMapPin, FiDollarSign, FiCalendar, FiClock } from "react-icons/fi";
 import ListingActions from "./ListingActions";
@@ -41,7 +43,10 @@ export default async function ListingDetailPage({
 }: {
   params: { id: string };
 }) {
-  const listing = await getListingById(params.id);
+  const [session, listing] = await Promise.all([
+    getServerSession(authOptions),
+    getListingById(params.id)
+  ]);
 
   if (!listing) {
     notFound();
@@ -224,6 +229,20 @@ export default async function ListingDetailPage({
             applicationCount={listing._count.applications}
             hireCount={listing._count.hires}
             status={listing.status}
+            appliedByMe={await (async () => {
+              try {
+                if (!session?.user?.id) return false;
+                const caregiver = await (prisma as any).caregiver.findUnique({ where: { userId: session.user.id } });
+                if (!caregiver) return false;
+                const app = await (prisma as any).marketplaceApplication.findUnique({
+                  where: { listingId_caregiverId: { listingId: listing.id, caregiverId: caregiver.id } },
+                  select: { id: true }
+                });
+                return !!app;
+              } catch {
+                return false;
+              }
+            })()}
           />
 
           {/* Recommended caregivers (AI Matching) */}
