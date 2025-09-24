@@ -16,6 +16,11 @@ const LS_KEYS = {
   jobs: "marketplace:jobs",
   providers: "marketplace:providers",
 } as const;
+const SCROLL_KEYS = {
+  caregivers: 'marketplace:scroll:caregivers',
+  jobs: 'marketplace:scroll:jobs',
+  providers: 'marketplace:scroll:providers',
+} as const;
 
 // Persist mobile <details> open/closed state across visits (hoisted to module scope)
 const MOBILE_DETAILS_KEYS = {
@@ -131,6 +136,53 @@ export default function MarketplacePage() {
   const [prGeoLng, setPrGeoLng] = useState<number | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
   const resultsRef = useRef<HTMLDivElement | null>(null);
+  const scrollRaf = useRef<number | null>(null);
+
+  // Restore per-tab scroll position when switching tabs or on mount
+  useEffect(() => {
+    try {
+      const key = SCROLL_KEYS[activeTab];
+      const y = Number(sessionStorage.getItem(key) || '0');
+      if (!Number.isNaN(y) && y > 0) {
+        window.scrollTo({ top: y, behavior: 'auto' });
+      }
+    } catch {}
+  }, [activeTab]);
+
+  // Persist per-tab scroll position (throttled via rAF)
+  useEffect(() => {
+    const onScroll = () => {
+      if (scrollRaf.current) cancelAnimationFrame(scrollRaf.current);
+      scrollRaf.current = requestAnimationFrame(() => {
+        try { sessionStorage.setItem(SCROLL_KEYS[activeTab], String(window.scrollY || 0)); } catch {}
+      });
+    };
+    window.addEventListener('scroll', onScroll, { passive: true } as any);
+    return () => {
+      window.removeEventListener('scroll', onScroll as any);
+      if (scrollRaf.current) cancelAnimationFrame(scrollRaf.current);
+    };
+  }, [activeTab]);
+
+  // Auto-scroll to results container when changing pages
+  useEffect(() => {
+    const scrollToResults = () => {
+      try { resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch {}
+    };
+    if (activeTab === 'caregivers') scrollToResults();
+  }, [activeTab, cgPage]);
+  useEffect(() => {
+    const scrollToResults = () => {
+      try { resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch {}
+    };
+    if (activeTab === 'jobs') scrollToResults();
+  }, [activeTab, jobPage]);
+  useEffect(() => {
+    const scrollToResults = () => {
+      try { resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch {}
+    };
+    if (activeTab === 'providers') scrollToResults();
+  }, [activeTab, providerPage]);
 
   // Debounced inputs to reduce URL updates and fetch churn
   const [debouncedSearch, setDebouncedSearch] = useState("");
