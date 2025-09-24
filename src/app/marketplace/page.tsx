@@ -59,6 +59,7 @@ type Listing = {
   applicationCount?: number;
   hireCount?: number;
   distanceMiles?: number;
+  appliedByMe?: boolean;
 };
 
 export default function MarketplacePage() {
@@ -116,6 +117,7 @@ export default function MarketplacePage() {
   const [jobPage, setJobPage] = useState(1);
   const [jobTotal, setJobTotal] = useState(0);
   const [jobSort, setJobSort] = useState<"recency" | "rateAsc" | "rateDesc" | "distanceAsc">("recency");
+  const [applying, setApplying] = useState<Record<string, boolean>>({});
 
   // Providers state --------------------------------------------------------
   type Provider = {
@@ -547,6 +549,7 @@ export default function MarketplacePage() {
         if (careTypes.length > 0) params.set("careTypes", careTypes.join(","));
         if (services.length > 0) params.set("services", services.join(","));
         if (postedByMe && session?.user?.id) params.set("postedByMe", "true");
+        if (hideClosed) params.set("status", "OPEN");
         if (jobRadius && geoLat !== null && geoLng !== null) {
           params.set("radiusMiles", jobRadius);
           params.set("lat", String(geoLat));
@@ -569,15 +572,15 @@ export default function MarketplacePage() {
     return () => {
       controller.abort();
     };
-  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, debouncedZip, settings, careTypes, services, postedByMe, session, jobPage, jobSort, jobRadius, geoLat, geoLng]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, debouncedZip, settings, careTypes, services, postedByMe, hideClosed, session, jobPage, jobSort, jobRadius, geoLat, geoLng]);
 
   // Reset jobs list when non-page filters change
   const jobQueryKey = useMemo(() => JSON.stringify({
     tab: activeTab,
     q: debouncedSearch, city: debouncedCity, state: debouncedState,
     specialties, zip: debouncedZip, settings, careTypes, services,
-    postedByMe, radius: jobRadius, lat: geoLat, lng: geoLng, sort: jobSort
-  }), [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, debouncedZip, settings, careTypes, services, postedByMe, jobRadius, geoLat, geoLng, jobSort]);
+    postedByMe, hideClosed, radius: jobRadius, lat: geoLat, lng: geoLng, sort: jobSort
+  }), [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, debouncedZip, settings, careTypes, services, postedByMe, hideClosed, jobRadius, geoLat, geoLng, jobSort]);
   const jobPrevKeyRef = useRef<string>(jobQueryKey);
   useEffect(() => {
     if (activeTab !== 'jobs') return;
@@ -1454,7 +1457,49 @@ export default function MarketplacePage() {
                             {typeof job.hireCount === 'number' && <span>{job.hireCount} hires</span>}
                           </div>
                         )}
-                        <p className="text-sm text-gray-700 line-clamp-2">{job.description}</p>
+                        <p className="text-sm text-gray-700 line-clamp-2 mb-3">{job.description}</p>
+
+                        {session?.user?.role === 'CAREGIVER' && job.status === 'OPEN' && (
+                          <div className="flex justify-end">
+                            {job.appliedByMe ? (
+                              <span className="inline-flex items-center rounded-md bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700">
+                                Applied
+                              </span>
+                            ) : (
+                              <button
+                                className="inline-flex items-center rounded-md bg-primary-600 px-3 py-1.5 text-sm text-white hover:bg-primary-700"
+                                onClick={async (e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  if (applying[job.id]) return;
+                                  setApplying((m) => ({ ...m, [job.id]: true }));
+                                  try {
+                                    const res = await fetch('/api/marketplace/applications', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ listingId: job.id })
+                                    });
+                                    if (!res.ok) {
+                                      // Try to extract error
+                                      let msg = 'Failed to apply';
+                                      try { const j = await res.json(); if (j?.error) msg = j.error; } catch {}
+                                      throw new Error(msg);
+                                    }
+                                    // Optimistically mark as applied and increment count
+                                    setListings((prev) => prev.map((l) => l.id === job.id ? ({ ...l, appliedByMe: true, applicationCount: (typeof l.applicationCount === 'number' ? l.applicationCount + 1 : 1) }) : l));
+                                  } catch (err) {
+                                    // noop UI error; could add toast
+                                  } finally {
+                                    setApplying((m) => ({ ...m, [job.id]: false }));
+                                  }
+                                }}
+                                disabled={!!applying[job.id]}
+                              >
+                                {applying[job.id] ? 'Applying…' : 'Quick apply'}
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </Link>
                     )}
                   />
