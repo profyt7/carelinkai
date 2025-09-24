@@ -8,6 +8,7 @@ import CaregiverCard from "@/components/marketplace/CaregiverCard";
 import Image from "next/image";
 import { getBlurDataURL } from "@/lib/imageBlur";
 import RecommendedListings from "@/components/marketplace/RecommendedListings";
+import { fetchJsonCached } from "@/lib/fetchCache";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 const LAST_TAB_KEY = "marketplace:lastTab";
@@ -488,8 +489,7 @@ export default function MarketplacePage() {
         params.set("page", String(cgPage));
         params.set("pageSize", String(20));
         params.set("sortBy", cgSort);
-        const res = await fetch(`/api/marketplace/caregivers?${params.toString()}` , { signal: controller.signal });
-        const json = await res.json();
+        const json = await fetchJsonCached(`/api/marketplace/caregivers?${params.toString()}`, { signal: controller.signal }, 15000);
         setCaregivers(json?.data ?? []);
         setCgTotal(json?.pagination?.total ?? 0);
       } catch (e: any) {
@@ -529,8 +529,7 @@ export default function MarketplacePage() {
         params.set("page", String(jobPage));
         params.set("pageSize", String(20));
         params.set("sortBy", jobSort);
-        const res = await fetch(`/api/marketplace/listings?${params.toString()}` , { signal: controller.signal });
-        const json = await res.json();
+        const json = await fetchJsonCached(`/api/marketplace/listings?${params.toString()}`, { signal: controller.signal }, 15000);
         setListings(json?.data ?? []);
         setJobTotal(json?.pagination?.total ?? 0);
       } catch (e: any) {
@@ -568,8 +567,7 @@ export default function MarketplacePage() {
         params.set("page", String(providerPage));
         params.set("pageSize", String(20));
         params.set("sortBy", providerSort);
-        const res = await fetch(`/api/marketplace/providers?${params.toString()}` , { signal: controller.signal });
-        const json = await res.json();
+        const json = await fetchJsonCached(`/api/marketplace/providers?${params.toString()}`, { signal: controller.signal }, 15000);
         setProviders(json?.data ?? []);
         setProviderTotal(json?.pagination?.total ?? 0);
       } catch (e: any) {
