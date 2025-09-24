@@ -55,6 +55,9 @@ type Listing = {
   hourlyRateMin: number | null;
   hourlyRateMax: number | null;
   createdAt: string;
+  status?: string;
+  applicationCount?: number;
+  hireCount?: number;
   distanceMiles?: number;
 };
 
@@ -1413,7 +1416,13 @@ export default function MarketplacePage() {
                     overscan={200}
                     components={{ List: GridList as any, Item: GridItem as any }}
                     itemContent={(_, job) => (
-                      <Link href={`/marketplace/listings/${job.id}`} className="block bg-white border rounded-md p-4 hover:shadow-md transition-shadow">
+                      <Link href={`/marketplace/listings/${job.id}`} className={`relative block bg-white border rounded-md p-4 transition-shadow ${job.status === 'CLOSED' || job.status === 'HIRED' ? 'opacity-80' : 'hover:shadow-md'}`}>
+                        {/* Status badge */}
+                        {job.status && (
+                          <span className={`absolute right-3 top-3 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${job.status === 'OPEN' ? 'bg-green-100 text-green-800' : job.status === 'HIRED' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-700'}`}>
+                            {job.status}
+                          </span>
+                        )}
                         <div className="flex items-start mb-2">
                           <div className="h-12 w-12 rounded-md overflow-hidden bg-gray-100 flex-shrink-0 mr-3">
                             <Image
@@ -1440,6 +1449,13 @@ export default function MarketplacePage() {
                         {(job.hourlyRateMin || job.hourlyRateMax) && (
                           <div className="text-sm text-gray-800 mb-2">
                             {job.hourlyRateMin && job.hourlyRateMax ? `$${job.hourlyRateMin} - $${job.hourlyRateMax}/hr` : job.hourlyRateMin ? `From $${job.hourlyRateMin}/hr` : `Up to $${job.hourlyRateMax}/hr`}
+                          </div>
+                        )}
+                        {(typeof job.applicationCount === 'number' || typeof job.hireCount === 'number') && (
+                          <div className="mb-2 text-xs text-gray-600">
+                            {typeof job.applicationCount === 'number' && <span>{job.applicationCount} appl</span>}
+                            {typeof job.applicationCount === 'number' && typeof job.hireCount === 'number' && <span className="mx-1">•</span>}
+                            {typeof job.hireCount === 'number' && <span>{job.hireCount} hires</span>}
                           </div>
                         )}
                         <p className="text-sm text-gray-700 line-clamp-2">{job.description}</p>
