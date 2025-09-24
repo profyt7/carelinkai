@@ -11,6 +11,7 @@ import RecommendedListings from "@/components/marketplace/RecommendedListings";
 import { fetchJsonCached } from "@/lib/fetchCache";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { VirtuosoGrid } from "react-virtuoso";
+import { FiChevronUp } from "react-icons/fi";
 
 const LAST_TAB_KEY = "marketplace:lastTab";
 const LS_KEYS = {
@@ -139,6 +140,13 @@ export default function MarketplacePage() {
   const [linkCopied, setLinkCopied] = useState(false);
   const resultsRef = useRef<HTMLDivElement | null>(null);
   const scrollRaf = useRef<number | null>(null);
+  const [showTop, setShowTop] = useState(false);
+  const [cgError, setCgError] = useState<string | null>(null);
+  const [jobError, setJobError] = useState<string | null>(null);
+  const [prError, setPrError] = useState<string | null>(null);
+  const [cgReload, setCgReload] = useState(0);
+  const [jobReload, setJobReload] = useState(0);
+  const [prReload, setPrReload] = useState(0);
 
   // Restore per-tab scroll position when switching tabs or on mount
   useEffect(() => {
@@ -157,9 +165,11 @@ export default function MarketplacePage() {
       if (scrollRaf.current) cancelAnimationFrame(scrollRaf.current);
       scrollRaf.current = requestAnimationFrame(() => {
         try { sessionStorage.setItem(SCROLL_KEYS[activeTab], String(window.scrollY || 0)); } catch {}
+        setShowTop((window.scrollY || 0) > 400);
       });
     };
     window.addEventListener('scroll', onScroll, { passive: true } as any);
+    onScroll();
     return () => {
       window.removeEventListener('scroll', onScroll as any);
       if (scrollRaf.current) cancelAnimationFrame(scrollRaf.current);
@@ -471,6 +481,7 @@ export default function MarketplacePage() {
     const controller = new AbortController();
     const run = async () => {
       setCaregiversLoading(true);
+      setCgError(null);
       try {
         const params = new URLSearchParams();
         if (debouncedSearch) params.set("q", debouncedSearch);
@@ -495,6 +506,7 @@ export default function MarketplacePage() {
         setCgTotal(json?.pagination?.total ?? 0);
       } catch (e: any) {
         if (e?.name === 'AbortError') return;
+        setCgError(e?.message || 'Failed to load caregivers');
         if (cgPage === 1) setCaregivers([]);
       } finally {
         setCaregiversLoading(false);
@@ -504,7 +516,7 @@ export default function MarketplacePage() {
     return () => {
       controller.abort();
     };
-  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, settings, careTypes, debouncedMinRate, debouncedMaxRate, debouncedMinExperience, cgPage, cgSort, cgRadius, cgGeoLat, cgGeoLng]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, settings, careTypes, debouncedMinRate, debouncedMaxRate, debouncedMinExperience, cgPage, cgSort, cgRadius, cgGeoLat, cgGeoLng, cgReload]);
 
   // Reset caregivers list when non-page filters change
   const cgQueryKey = useMemo(() => JSON.stringify({
@@ -529,6 +541,7 @@ export default function MarketplacePage() {
     const controller = new AbortController();
     const run = async () => {
       setListingsLoading(true);
+      setJobError(null);
       try {
         const params = new URLSearchParams();
         if (debouncedSearch) params.set("q", debouncedSearch);
@@ -553,6 +566,7 @@ export default function MarketplacePage() {
         setJobTotal(json?.pagination?.total ?? 0);
       } catch (e: any) {
         if (e?.name === 'AbortError') return;
+        setJobError(e?.message || 'Failed to load jobs');
         if (jobPage === 1) setListings([]);
       } finally {
         setListingsLoading(false);
@@ -562,7 +576,7 @@ export default function MarketplacePage() {
     return () => {
       controller.abort();
     };
-  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, debouncedZip, settings, careTypes, services, postedByMe, session, jobPage, jobSort, jobRadius, geoLat, geoLng]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, debouncedZip, settings, careTypes, services, postedByMe, session, jobPage, jobSort, jobRadius, geoLat, geoLng, jobReload]);
 
   // Reset jobs list when non-page filters change
   const jobQueryKey = useMemo(() => JSON.stringify({
@@ -589,6 +603,7 @@ export default function MarketplacePage() {
     const controller = new AbortController();
     const run = async () => {
       setProvidersLoading(true);
+      setPrError(null);
       try {
         const params = new URLSearchParams();
         if (debouncedSearch) params.set("q", debouncedSearch);
@@ -608,6 +623,7 @@ export default function MarketplacePage() {
         setProviderTotal(json?.pagination?.total ?? 0);
       } catch (e: any) {
         if (e?.name === 'AbortError') return;
+        setPrError(e?.message || 'Failed to load providers');
         if (providerPage === 1) setProviders([]);
       } finally {
         setProvidersLoading(false);
@@ -617,7 +633,7 @@ export default function MarketplacePage() {
     return () => {
       controller.abort();
     };
-  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, providerServices, providerPage, providerSort, prRadius, prGeoLat, prGeoLng]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, providerServices, providerPage, providerSort, prRadius, prGeoLat, prGeoLng, prReload]);
 
   // Reset providers list when non-page filters change
   const prQueryKey = useMemo(() => JSON.stringify({
@@ -1379,6 +1395,11 @@ export default function MarketplacePage() {
             {activeTab === "caregivers" ? (
               caregiversLoading && caregivers.length === 0 ? (
                 <div className="py-20 text-center text-gray-500">Loading caregivers…</div>
+              ) : cgError && caregivers.length === 0 ? (
+                <div className="py-20 text-center">
+                  <div className="text-gray-700 mb-3">{cgError}</div>
+                  <button onClick={() => setCgReload((n) => n + 1)} className="inline-flex items-center rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700">Retry</button>
+                </div>
               ) : caregivers.length === 0 ? (
                 <div className="py-20 text-center text-gray-500">No caregivers found</div>
               ) : (
@@ -1395,6 +1416,11 @@ export default function MarketplacePage() {
             ) : activeTab === "jobs" ? (
               listingsLoading && listings.length === 0 ? (
                 <div className="py-20 text-center text-gray-500">Loading jobs…</div>
+              ) : jobError && listings.length === 0 ? (
+                <div className="py-20 text-center">
+                  <div className="text-gray-700 mb-3">{jobError}</div>
+                  <button onClick={() => setJobReload((n) => n + 1)} className="inline-flex items-center rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700">Retry</button>
+                </div>
               ) : listings.length === 0 ? (
                 <div className="py-20 text-center text-gray-500">No jobs found</div>
               ) : (
@@ -1451,6 +1477,11 @@ export default function MarketplacePage() {
             ) : (
               providersLoading && providers.length === 0 ? (
                 <div className="py-20 text-center text-gray-500">Loading providers…</div>
+              ) : prError && providers.length === 0 ? (
+                <div className="py-20 text-center">
+                  <div className="text-gray-700 mb-3">{prError}</div>
+                  <button onClick={() => setPrReload((n) => n + 1)} className="inline-flex items-center rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700">Retry</button>
+                </div>
               ) : providers.length === 0 ? (
                 <div className="py-20 text-center text-gray-500">No providers found</div>
               ) : (
@@ -1513,6 +1544,16 @@ export default function MarketplacePage() {
           </div>
         </div>
       </div>
+            {/* Back to top button */}
+            {showTop && (
+              <button
+                onClick={() => { try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch {} }}
+                className="fixed bottom-6 right-6 z-40 rounded-full bg-primary-600 p-3 text-white shadow-lg hover:bg-primary-700"
+                aria-label="Back to top"
+              >
+                <FiChevronUp className="h-5 w-5" />
+              </button>
+            )}
     </DashboardLayout>
   );
 }
