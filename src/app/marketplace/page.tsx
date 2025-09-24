@@ -138,6 +138,9 @@ export default function MarketplacePage() {
   const [linkCopied, setLinkCopied] = useState(false);
   const resultsRef = useRef<HTMLDivElement | null>(null);
   const scrollRaf = useRef<number | null>(null);
+  const cgSentinelRef = useRef<HTMLDivElement | null>(null);
+  const jobSentinelRef = useRef<HTMLDivElement | null>(null);
+  const prSentinelRef = useRef<HTMLDivElement | null>(null);
 
   // Restore per-tab scroll position when switching tabs or on mount
   useEffect(() => {
@@ -490,11 +493,11 @@ export default function MarketplacePage() {
         params.set("pageSize", String(20));
         params.set("sortBy", cgSort);
         const json = await fetchJsonCached(`/api/marketplace/caregivers?${params.toString()}`, { signal: controller.signal }, 15000);
-        setCaregivers(json?.data ?? []);
+        setCaregivers((prev) => (cgPage > 1 ? [...prev, ...(json?.data ?? [])] : (json?.data ?? [])));
         setCgTotal(json?.pagination?.total ?? 0);
       } catch (e: any) {
         if (e?.name === 'AbortError') return;
-        setCaregivers([]);
+        if (cgPage === 1) setCaregivers([]);
       } finally {
         setCaregiversLoading(false);
       }
@@ -504,6 +507,24 @@ export default function MarketplacePage() {
       controller.abort();
     };
   }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, settings, careTypes, debouncedMinRate, debouncedMaxRate, debouncedMinExperience, cgPage, cgSort, cgRadius, cgGeoLat, cgGeoLng]);
+
+  // Reset caregivers list when non-page filters change
+  const cgQueryKey = useMemo(() => JSON.stringify({
+    tab: activeTab,
+    q: debouncedSearch, city: debouncedCity, state: debouncedState,
+    specialties, settings, careTypes,
+    minRate: debouncedMinRate, maxRate: debouncedMaxRate, minExp: debouncedMinExperience,
+    radius: cgRadius, lat: cgGeoLat, lng: cgGeoLng, sort: cgSort
+  }), [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, settings, careTypes, debouncedMinRate, debouncedMaxRate, debouncedMinExperience, cgRadius, cgGeoLat, cgGeoLng, cgSort]);
+  const cgPrevKeyRef = useRef<string>(cgQueryKey);
+  useEffect(() => {
+    if (activeTab !== 'caregivers') return;
+    if (cgPrevKeyRef.current !== cgQueryKey) {
+      cgPrevKeyRef.current = cgQueryKey;
+      setCaregivers([]);
+      setCgPage(1);
+    }
+  }, [cgQueryKey, activeTab]);
 
   useEffect(() => {
     if (activeTab !== "jobs") return;
@@ -530,11 +551,11 @@ export default function MarketplacePage() {
         params.set("pageSize", String(20));
         params.set("sortBy", jobSort);
         const json = await fetchJsonCached(`/api/marketplace/listings?${params.toString()}`, { signal: controller.signal }, 15000);
-        setListings(json?.data ?? []);
+        setListings((prev) => (jobPage > 1 ? [...prev, ...(json?.data ?? [])] : (json?.data ?? [])));
         setJobTotal(json?.pagination?.total ?? 0);
       } catch (e: any) {
         if (e?.name === 'AbortError') return;
-        setListings([]);
+        if (jobPage === 1) setListings([]);
       } finally {
         setListingsLoading(false);
       }
@@ -544,6 +565,23 @@ export default function MarketplacePage() {
       controller.abort();
     };
   }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, debouncedZip, settings, careTypes, services, postedByMe, session, jobPage, jobSort, jobRadius, geoLat, geoLng]);
+
+  // Reset jobs list when non-page filters change
+  const jobQueryKey = useMemo(() => JSON.stringify({
+    tab: activeTab,
+    q: debouncedSearch, city: debouncedCity, state: debouncedState,
+    specialties, zip: debouncedZip, settings, careTypes, services,
+    postedByMe, radius: jobRadius, lat: geoLat, lng: geoLng, sort: jobSort
+  }), [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, debouncedZip, settings, careTypes, services, postedByMe, jobRadius, geoLat, geoLng, jobSort]);
+  const jobPrevKeyRef = useRef<string>(jobQueryKey);
+  useEffect(() => {
+    if (activeTab !== 'jobs') return;
+    if (jobPrevKeyRef.current !== jobQueryKey) {
+      jobPrevKeyRef.current = jobQueryKey;
+      setListings([]);
+      setJobPage(1);
+    }
+  }, [jobQueryKey, activeTab]);
 
   /* ----------------------------------------------------------------------
      Fetch providers
@@ -568,11 +606,11 @@ export default function MarketplacePage() {
         params.set("pageSize", String(20));
         params.set("sortBy", providerSort);
         const json = await fetchJsonCached(`/api/marketplace/providers?${params.toString()}`, { signal: controller.signal }, 15000);
-        setProviders(json?.data ?? []);
+        setProviders((prev) => (providerPage > 1 ? [...prev, ...(json?.data ?? [])] : (json?.data ?? [])));
         setProviderTotal(json?.pagination?.total ?? 0);
       } catch (e: any) {
         if (e?.name === 'AbortError') return;
-        setProviders([]);
+        if (providerPage === 1) setProviders([]);
       } finally {
         setProvidersLoading(false);
       }
@@ -582,6 +620,70 @@ export default function MarketplacePage() {
       controller.abort();
     };
   }, [activeTab, debouncedSearch, debouncedCity, debouncedState, providerServices, providerPage, providerSort, prRadius, prGeoLat, prGeoLng]);
+
+  // Reset providers list when non-page filters change
+  const prQueryKey = useMemo(() => JSON.stringify({
+    tab: activeTab,
+    q: debouncedSearch, city: debouncedCity, state: debouncedState,
+    services: providerServices,
+    radius: prRadius, lat: prGeoLat, lng: prGeoLng, sort: providerSort
+  }), [activeTab, debouncedSearch, debouncedCity, debouncedState, providerServices, prRadius, prGeoLat, prGeoLng, providerSort]);
+  const prPrevKeyRef = useRef<string>(prQueryKey);
+  useEffect(() => {
+    if (activeTab !== 'providers') return;
+    if (prPrevKeyRef.current !== prQueryKey) {
+      prPrevKeyRef.current = prQueryKey;
+      setProviders([]);
+      setProviderPage(1);
+    }
+  }, [prQueryKey, activeTab]);
+
+  // Infinite scroll observers
+  const cgHasMore = cgTotal === 0 ? false : caregivers.length < cgTotal;
+  const jobHasMore = jobTotal === 0 ? false : listings.length < jobTotal;
+  const prHasMore = providerTotal === 0 ? false : providers.length < providerTotal;
+
+  useEffect(() => {
+    const el = cgSentinelRef.current;
+    if (!el) return;
+    if (activeTab !== 'caregivers') return;
+    const obs = new IntersectionObserver((entries) => {
+      const entry = entries[0];
+      if (entry.isIntersecting && !caregiversLoading && cgHasMore) {
+        setCgPage((p) => p + 1);
+      }
+    }, { rootMargin: '200px' });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [activeTab, caregiversLoading, cgHasMore]);
+
+  useEffect(() => {
+    const el = jobSentinelRef.current;
+    if (!el) return;
+    if (activeTab !== 'jobs') return;
+    const obs = new IntersectionObserver((entries) => {
+      const entry = entries[0];
+      if (entry.isIntersecting && !listingsLoading && jobHasMore) {
+        setJobPage((p) => p + 1);
+      }
+    }, { rootMargin: '200px' });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [activeTab, listingsLoading, jobHasMore]);
+
+  useEffect(() => {
+    const el = prSentinelRef.current;
+    if (!el) return;
+    if (activeTab !== 'providers') return;
+    const obs = new IntersectionObserver((entries) => {
+      const entry = entries[0];
+      if (entry.isIntersecting && !providersLoading && prHasMore) {
+        setProviderPage((p) => p + 1);
+      }
+    }, { rootMargin: '200px' });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [activeTab, providersLoading, prHasMore]);
 
   const toggleSpecialty = (slug: string) => {
     setSpecialties((prev) =>
@@ -1420,26 +1522,21 @@ export default function MarketplacePage() {
                 </div>
               )
             )}
-            {/* Pagination controls */}
-            {(activeTab === 'caregivers') && (
-              <div className="mt-6 flex items-center justify-between">
-                <button disabled={cgPage <= 1} onClick={() => setCgPage((p) => Math.max(1, p - 1))} className="px-3 py-2 rounded-md border disabled:opacity-50">Previous</button>
-                <div className="text-sm text-gray-600">Page {cgPage} {cgTotal ? `of ${Math.max(1, Math.ceil(cgTotal / 20))}` : ''}</div>
-                <button disabled={cgTotal !== 0 && cgPage >= Math.ceil(cgTotal / 20)} onClick={() => setCgPage((p) => p + 1)} className="px-3 py-2 rounded-md border disabled:opacity-50">Next</button>
+            {/* Infinite scroll sentinels */}
+            <div className="h-8" />
+            {activeTab === 'caregivers' && (
+              <div ref={cgSentinelRef} className="w-full py-4 text-center text-sm text-gray-500">
+                {caregiversLoading ? 'Loading more…' : (cgHasMore ? 'Scroll to load more' : 'End of results')}
               </div>
             )}
-            {(activeTab === 'jobs') && (
-              <div className="mt-6 flex items-center justify-between">
-                <button disabled={jobPage <= 1} onClick={() => setJobPage((p) => Math.max(1, p - 1))} className="px-3 py-2 rounded-md border disabled:opacity-50">Previous</button>
-                <div className="text-sm text-gray-600">Page {jobPage} {jobTotal ? `of ${Math.max(1, Math.ceil(jobTotal / 20))}` : ''}</div>
-                <button disabled={jobTotal !== 0 && jobPage >= Math.ceil(jobTotal / 20)} onClick={() => setJobPage((p) => p + 1)} className="px-3 py-2 rounded-md border disabled:opacity-50">Next</button>
+            {activeTab === 'jobs' && (
+              <div ref={jobSentinelRef} className="w-full py-4 text-center text-sm text-gray-500">
+                {listingsLoading ? 'Loading more…' : (jobHasMore ? 'Scroll to load more' : 'End of results')}
               </div>
             )}
-            {(activeTab === 'providers') && (
-              <div className="mt-6 flex items-center justify-between">
-                <button disabled={providerPage <= 1} onClick={() => setProviderPage((p) => Math.max(1, p - 1))} className="px-3 py-2 rounded-md border disabled:opacity-50">Previous</button>
-                <div className="text-sm text-gray-600">Page {providerPage} {providerTotal ? `of ${Math.max(1, Math.ceil(providerTotal / 20))}` : ''}</div>
-                <button disabled={providerTotal !== 0 && providerPage >= Math.ceil(providerTotal / 20)} onClick={() => setProviderPage((p) => p + 1)} className="px-3 py-2 rounded-md border disabled:opacity-50">Next</button>
+            {activeTab === 'providers' && (
+              <div ref={prSentinelRef} className="w-full py-4 text-center text-sm text-gray-500">
+                {providersLoading ? 'Loading more…' : (prHasMore ? 'Scroll to load more' : 'End of results')}
               </div>
             )}
           </div>
