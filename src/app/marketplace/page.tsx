@@ -690,6 +690,35 @@ export default function MarketplacePage() {
     if (activeTab === 'providers') setProviderPage(1);
   }, [activeTab]);
 
+  // Clear all filters across tabs
+  const clearAllFilters = useCallback(() => {
+    setSearch("");
+    setCity("");
+    setState("");
+    setSpecialties([]);
+    setMinRate('');
+    setMaxRate('');
+    setMinExperience('');
+    setCgRadius('');
+    setCgGeoLat(null);
+    setCgGeoLng(null);
+    setZip('');
+    setSettings([]);
+    setCareTypes([]);
+    setServices([]);
+    setProviderServices([]);
+    setPostedByMe(false);
+    setCgPage(1);
+    setCgSort('recency');
+    setJobPage(1);
+    setJobSort('recency');
+    setJobRadius('');
+    setGeoLat(null);
+    setGeoLng(null);
+    setProviderPage(1);
+    setProviderSort('ratingDesc');
+  }, []);
+
   const chips = useMemo(() => {
     const list: { key: string; label: string; remove: () => void }[] = [];
     if (search) list.push({ key: `q:${search}`, label: `Search: ${search}`, remove: () => { setSearch(""); } });
@@ -1047,33 +1076,7 @@ export default function MarketplacePage() {
                 )}
               </div>
               <button 
-                onClick={() => { 
-                  setSearch(""); 
-                  setCity(""); 
-                  setState(""); 
-                  setSpecialties([]); 
-                  setMinRate(''); 
-                  setMaxRate(''); 
-                  setMinExperience(''); 
-                  setCgRadius('');
-                  setCgGeoLat(null);
-                  setCgGeoLng(null);
-                  setZip(''); 
-                  setSettings([]); 
-                  setCareTypes([]); 
-                  setServices([]); 
-                  setProviderServices([]); 
-                  setPostedByMe(false);
-                  setCgPage(1);
-                  setCgSort('recency');
-                  setJobPage(1);
-                  setJobSort('recency');
-                  setJobRadius('');
-                  setGeoLat(null);
-                  setGeoLng(null);
-                  setProviderPage(1);
-                  setProviderSort('ratingDesc');
-                }} 
+                onClick={clearAllFilters} 
                 className="w-full rounded-md bg-gray-100 px-3 py-2 text-sm text-gray-700 hover:bg-gray-200"
               >
                 Clear Filters
@@ -1092,27 +1095,7 @@ export default function MarketplacePage() {
                   </button>
                 ))}
                 <button
-                  onClick={() => {
-                    setSearch("");
-                    setCity("");
-                    setState("");
-                    setSpecialties([]);
-                    setMinRate('');
-                    setMaxRate('');
-                    setMinExperience('');
-                    setCgRadius('');
-                    setCgGeoLat(null);
-                    setCgGeoLng(null);
-                    setZip('');
-                    setSettings([]);
-                    setCareTypes([]);
-                    setServices([]);
-                    setProviderServices([]);
-                    setPostedByMe(false);
-                    setCgPage(1);
-                    setJobPage(1);
-                    setProviderPage(1);
-                  }}
+                  onClick={clearAllFilters}
                   className="ml-auto inline-flex items-center rounded-md bg-gray-100 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-200"
                 >
                   Clear all
@@ -1332,27 +1315,7 @@ export default function MarketplacePage() {
             <div className="fixed bottom-3 left-3 right-3 z-30 md:hidden">
               <div className="rounded-md bg-white shadow-lg border border-gray-200 p-2 flex items-center gap-2">
                 <button
-                  onClick={() => {
-                    setSearch("");
-                    setCity("");
-                    setState("");
-                    setSpecialties([]);
-                    setMinRate('');
-                    setMaxRate('');
-                    setMinExperience('');
-                    setCgRadius('');
-                    setCgGeoLat(null);
-                    setCgGeoLng(null);
-                    setZip('');
-                    setSettings([]);
-                    setCareTypes([]);
-                    setServices([]);
-                    setProviderServices([]);
-                    setPostedByMe(false);
-                    setCgPage(1);
-                    setJobPage(1);
-                    setProviderPage(1);
-                  }}
+                  onClick={clearAllFilters}
                   className="flex-1 rounded-md bg-gray-100 px-3 py-2 text-sm text-gray-800 hover:bg-gray-200"
                 >
                   Clear
@@ -1383,7 +1346,11 @@ export default function MarketplacePage() {
               caregiversLoading && caregivers.length === 0 ? (
                 <div className="py-20 text-center text-gray-500">Loading caregivers…</div>
               ) : caregivers.length === 0 ? (
-                <div className="py-20 text-center text-gray-500">No caregivers found</div>
+                <div className="py-16 text-center">
+                  <div className="text-lg font-medium text-gray-900 mb-1">No caregivers found</div>
+                  <div className="text-sm text-gray-600 mb-4">Try adjusting your filters or search terms.</div>
+                  <button onClick={clearAllFilters} className="inline-flex items-center rounded-md bg-gray-100 px-3 py-2 text-sm text-gray-800 hover:bg-gray-200">Reset filters</button>
+                </div>
               ) : (
                 <VirtuosoGrid
                   useWindowScroll
@@ -1391,7 +1358,7 @@ export default function MarketplacePage() {
                   data={caregivers}
                   endReached={() => { if (cgHasMore && !caregiversLoading) setCgPage((p) => p + 1); }}
                   overscan={200}
-                  components={{ List: GridList as any, Item: GridItem as any }}
+                  components={{ List: GridList as any, Item: GridItem as any, Footer: () => (!cgHasMore && caregivers.length > 0 ? <div className="py-6 text-center text-gray-400">End of results</div> : null) as any }}
                   itemContent={(_, cg) => (<CaregiverCard key={cg.id} caregiver={cg} />)}
                 />
               )
@@ -1399,7 +1366,11 @@ export default function MarketplacePage() {
               listingsLoading && listings.length === 0 ? (
                 <div className="py-20 text-center text-gray-500">Loading jobs…</div>
               ) : listings.length === 0 ? (
-                <div className="py-20 text-center text-gray-500">No jobs found</div>
+                <div className="py-16 text-center">
+                  <div className="text-lg font-medium text-gray-900 mb-1">No jobs found</div>
+                  <div className="text-sm text-gray-600 mb-4">Try different keywords or clear all filters.</div>
+                  <button onClick={clearAllFilters} className="inline-flex items-center rounded-md bg-gray-100 px-3 py-2 text-sm text-gray-800 hover:bg-gray-200">Reset filters</button>
+                </div>
               ) : (
                 <>
                   {session?.user?.role === "CAREGIVER" && (
@@ -1414,7 +1385,7 @@ export default function MarketplacePage() {
                     data={listings}
                     endReached={() => { if (jobHasMore && !listingsLoading) setJobPage((p) => p + 1); }}
                     overscan={200}
-                    components={{ List: GridList as any, Item: GridItem as any }}
+                    components={{ List: GridList as any, Item: GridItem as any, Footer: () => (!jobHasMore && listings.length > 0 ? <div className="py-6 text-center text-gray-400">End of results</div> : null) as any }}
                     itemContent={(_, job) => (
                       <Link href={`/marketplace/listings/${job.id}`} className={`relative block bg-white border rounded-md p-4 transition-shadow ${job.status === 'CLOSED' || job.status === 'HIRED' ? 'opacity-80' : 'hover:shadow-md'}`}>
                         {/* Status badge */}
@@ -1468,7 +1439,11 @@ export default function MarketplacePage() {
               providersLoading && providers.length === 0 ? (
                 <div className="py-20 text-center text-gray-500">Loading providers…</div>
               ) : providers.length === 0 ? (
-                <div className="py-20 text-center text-gray-500">No providers found</div>
+                <div className="py-16 text-center">
+                  <div className="text-lg font-medium text-gray-900 mb-1">No providers found</div>
+                  <div className="text-sm text-gray-600 mb-4">Try broadening your search or clearing filters.</div>
+                  <button onClick={clearAllFilters} className="inline-flex items-center rounded-md bg-gray-100 px-3 py-2 text-sm text-gray-800 hover:bg-gray-200">Reset filters</button>
+                </div>
               ) : (
                 <VirtuosoGrid
                   useWindowScroll
@@ -1476,7 +1451,7 @@ export default function MarketplacePage() {
                   data={providers}
                   endReached={() => { if (prHasMore && !providersLoading) setProviderPage((p) => p + 1); }}
                   overscan={200}
-                  components={{ List: GridList as any, Item: GridItem as any }}
+                  components={{ List: GridList as any, Item: GridItem as any, Footer: () => (!prHasMore && providers.length > 0 ? <div className="py-6 text-center text-gray-400">End of results</div> : null) as any }}
                   itemContent={(_, p) => (
                     <div className="bg-white border rounded-md p-4">
                       <div className="flex items-start mb-2">
