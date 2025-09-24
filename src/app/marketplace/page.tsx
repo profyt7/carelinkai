@@ -649,7 +649,7 @@ export default function MarketplacePage() {
     if (activeTab !== 'caregivers') return;
     const obs = new IntersectionObserver((entries) => {
       const entry = entries[0];
-      if (entry.isIntersecting && !caregiversLoading && cgHasMore) {
+      if (entry && entry.isIntersecting && !caregiversLoading && cgHasMore) {
         setCgPage((p) => p + 1);
       }
     }, { rootMargin: '200px' });
@@ -663,7 +663,7 @@ export default function MarketplacePage() {
     if (activeTab !== 'jobs') return;
     const obs = new IntersectionObserver((entries) => {
       const entry = entries[0];
-      if (entry.isIntersecting && !listingsLoading && jobHasMore) {
+      if (entry && entry.isIntersecting && !listingsLoading && jobHasMore) {
         setJobPage((p) => p + 1);
       }
     }, { rootMargin: '200px' });
@@ -677,7 +677,7 @@ export default function MarketplacePage() {
     if (activeTab !== 'providers') return;
     const obs = new IntersectionObserver((entries) => {
       const entry = entries[0];
-      if (entry.isIntersecting && !providersLoading && prHasMore) {
+      if (entry && entry.isIntersecting && !providersLoading && prHasMore) {
         setProviderPage((p) => p + 1);
       }
     }, { rootMargin: '200px' });
