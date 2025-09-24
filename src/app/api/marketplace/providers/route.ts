@@ -112,7 +112,7 @@ export async function GET(request: Request) {
           totalPages: Math.ceil(totalCount / pageSize)
         }
       },
-      { status: 200 }
+      { status: 200, headers: { 'Cache-Control': 'public, max-age=15, s-maxage=15, stale-while-revalidate=60' } }
     );
   } catch (error) {
     console.error('Error fetching providers:', error);
