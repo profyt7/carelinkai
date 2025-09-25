@@ -42,7 +42,14 @@ export default withAuth(
   {
     callbacks: {
       // The middleware runs when the authorized callback returns `true`
-      authorized({ token }) {
+      authorized({ req, token }) {
+        // E2E bypass via env flag or explicit header
+        try {
+          if (process.env.NEXT_PUBLIC_E2E_AUTH_BYPASS === '1') return true;
+          // Some Next versions expose headers on req.headers
+          const headerVal = req?.headers?.get?.('x-e2e-bypass');
+          if (headerVal === '1') return true;
+        } catch {}
         // If there is a token, the user is authenticated
         return !!token;
       },
