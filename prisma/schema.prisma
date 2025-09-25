@@ -245,6 +245,7 @@ model Caregiver {
   // Marketplace relations
   marketplaceApplications MarketplaceApplication[]
   marketplaceHires        MarketplaceHire[]
+  favoriteListings        FavoriteListing[]
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -1531,6 +1532,7 @@ model MarketplaceListing {
   applications MarketplaceApplication[]
   hires        MarketplaceHire[]
   payments     Payment[]
+  favoritedBy  FavoriteListing[]
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -1587,4 +1589,24 @@ model MarketplaceHire {
   @@index([caregiverId])
   @@index([applicationId])
   @@index([shiftId])
+}
+
+/// Favorites for marketplace listings (per caregiver)
+model FavoriteListing {
+  id          String   @id @default(cuid())
+  caregiverId String
+  listingId   String
+
+  // Relations
+  caregiver Caregiver           @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+  listing   MarketplaceListing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Constraints and Indexes
+  @@unique([caregiverId, listingId])
+  @@index([caregiverId])
+  @@index([listingId])
 }

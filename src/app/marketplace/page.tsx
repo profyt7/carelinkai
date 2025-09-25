@@ -143,28 +143,69 @@ export default function MarketplacePage() {
   const [prGeoLat, setPrGeoLat] = useState<number | null>(null);
   const [prGeoLng, setPrGeoLng] = useState<number | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
-  // Job favorites (local, per-browser)
+  // Job favorites (server for caregivers, local fallback for guests/others)
   const JOB_FAV_KEY = 'marketplace:job-favorites:v1';
   const [jobFavorites, setJobFavorites] = useState<Set<string>>(new Set());
+  // Initial load
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(JOB_FAV_KEY);
-      if (raw) setJobFavorites(new Set(JSON.parse(raw)));
-    } catch {}
-  }, []);
+    const load = async () => {
+      // Caregivers: load from server
+      if (session?.user?.role === 'CAREGIVER') {
+        try {
+          const res = await fetch('/api/marketplace/favorites', { cache: 'no-store' });
+          if (res.ok) {
+            const j = await res.json();
+            const ids = new Set<string>((j?.data || []).map((f: any) => f.listingId));
+            setJobFavorites(ids);
+            // Mirror to local for quick UI restore
+            try { localStorage.setItem(JOB_FAV_KEY, JSON.stringify(Array.from(ids))); } catch {}
+            return;
+          }
+        } catch {}
+      }
+      // Fallback: local
+      try {
+        const raw = localStorage.getItem(JOB_FAV_KEY);
+        if (raw) setJobFavorites(new Set(JSON.parse(raw)));
+      } catch {}
+    };
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.role]);
   const persistJobFavs = useCallback((ids: Set<string>) => {
     setJobFavorites(new Set(ids));
     try { localStorage.setItem(JOB_FAV_KEY, JSON.stringify(Array.from(ids))); } catch {}
   }, []);
-  const toggleJobFavorite = useCallback((listingId: string) => {
+  const toggleJobFavorite = useCallback(async (listingId: string) => {
+    // Optimistically update UI
     setJobFavorites((prev) => {
       const next = new Set(prev);
       if (next.has(listingId)) next.delete(listingId); else next.add(listingId);
-      // persist
       try { localStorage.setItem(JOB_FAV_KEY, JSON.stringify(Array.from(next))); } catch {}
       return next;
     });
-  }, []);
+    // Server sync for caregivers
+    if (session?.user?.role === 'CAREGIVER') {
+      try {
+        if (jobFavorites.has(listingId)) {
+          // was favorited before optimistic toggle -> now unfavoriting
+          const res = await fetch(`/api/marketplace/favorites?listingId=${encodeURIComponent(listingId)}`, { method: 'DELETE' });
+          if (!res.ok) throw new Error('unfav failed');
+        } else {
+          const res = await fetch('/api/marketplace/favorites', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ listingId }) });
+          if (!res.ok) throw new Error('fav failed');
+        }
+      } catch {
+        // rollback on error
+        setJobFavorites((prev) => {
+          const next = new Set(prev);
+          if (next.has(listingId)) next.delete(listingId); else next.add(listingId);
+          try { localStorage.setItem(JOB_FAV_KEY, JSON.stringify(Array.from(next))); } catch {}
+          return next;
+        });
+      }
+    }
+  }, [session?.user?.role, jobFavorites]);
   // Saved searches (local, per-browser)
   type SavedSearch = { id: string; name: string; query: string; createdAt: number };
   const SAVED_KEY = 'marketplace:saved-searches:v1';
@@ -1522,7 +1563,7 @@ export default function MarketplacePage() {
                     components={{ List: GridList as any, Item: GridItem as any, Footer: () => (!jobHasMore && listings.length > 0 ? <div className="py-6 text-center text-gray-400">End of results</div> : null) as any }}
                     itemContent={(_, job) => (
                       <Link href={`/marketplace/listings/${job.id}`} className={`relative block bg-white border rounded-md p-4 transition-shadow ${job.status === 'CLOSED' || job.status === 'HIRED' ? 'opacity-80' : 'hover:shadow-md'}`}>
-                        {/* Favorite toggle (local) */}
+                        {/* Favorite toggle */}
                         <button
                           onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleJobFavorite(job.id); }}
                           aria-label={jobFavorites.has(job.id) ? 'Unfavorite job' : 'Favorite job'}
