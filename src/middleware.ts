@@ -7,7 +7,7 @@ export default withAuth(
   function middleware(req) {
     try {
       // Allow unauthenticated access during E2E runs
-      if (process.env.NEXT_PUBLIC_E2E_AUTH_BYPASS === '1') {
+      if (process.env['NEXT_PUBLIC_E2E_AUTH_BYPASS'] === '1') {
         return NextResponse.next();
       }
       // Or via explicit header for test runners
@@ -45,7 +45,7 @@ export default withAuth(
       authorized({ req, token }) {
         // E2E bypass via env flag or explicit header
         try {
-          if (process.env.NEXT_PUBLIC_E2E_AUTH_BYPASS === '1') return true;
+          if (process.env['NEXT_PUBLIC_E2E_AUTH_BYPASS'] === '1') return true;
           // Some Next versions expose headers on req.headers
           const headerVal = req?.headers?.get?.('x-e2e-bypass');
           if (headerVal === '1') return true;

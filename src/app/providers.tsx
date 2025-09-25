@@ -347,7 +347,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     []
   );
 
-  const e2eBypass = process.env.NEXT_PUBLIC_E2E_AUTH_BYPASS === '1';
+  const e2eBypass = process.env['NEXT_PUBLIC_E2E_AUTH_BYPASS'] === '1';
   const mockSession = e2eBypass
     ? {
         user: {
