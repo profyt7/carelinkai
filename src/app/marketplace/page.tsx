@@ -143,6 +143,28 @@ export default function MarketplacePage() {
   const [prGeoLat, setPrGeoLat] = useState<number | null>(null);
   const [prGeoLng, setPrGeoLng] = useState<number | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
+  // Job favorites (local, per-browser)
+  const JOB_FAV_KEY = 'marketplace:job-favorites:v1';
+  const [jobFavorites, setJobFavorites] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(JOB_FAV_KEY);
+      if (raw) setJobFavorites(new Set(JSON.parse(raw)));
+    } catch {}
+  }, []);
+  const persistJobFavs = useCallback((ids: Set<string>) => {
+    setJobFavorites(new Set(ids));
+    try { localStorage.setItem(JOB_FAV_KEY, JSON.stringify(Array.from(ids))); } catch {}
+  }, []);
+  const toggleJobFavorite = useCallback((listingId: string) => {
+    setJobFavorites((prev) => {
+      const next = new Set(prev);
+      if (next.has(listingId)) next.delete(listingId); else next.add(listingId);
+      // persist
+      try { localStorage.setItem(JOB_FAV_KEY, JSON.stringify(Array.from(next))); } catch {}
+      return next;
+    });
+  }, []);
   // Saved searches (local, per-browser)
   type SavedSearch = { id: string; name: string; query: string; createdAt: number };
   const SAVED_KEY = 'marketplace:saved-searches:v1';
@@ -1500,6 +1522,17 @@ export default function MarketplacePage() {
                     components={{ List: GridList as any, Item: GridItem as any, Footer: () => (!jobHasMore && listings.length > 0 ? <div className="py-6 text-center text-gray-400">End of results</div> : null) as any }}
                     itemContent={(_, job) => (
                       <Link href={`/marketplace/listings/${job.id}`} className={`relative block bg-white border rounded-md p-4 transition-shadow ${job.status === 'CLOSED' || job.status === 'HIRED' ? 'opacity-80' : 'hover:shadow-md'}`}>
+                        {/* Favorite toggle (local) */}
+                        <button
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleJobFavorite(job.id); }}
+                          aria-label={jobFavorites.has(job.id) ? 'Unfavorite job' : 'Favorite job'}
+                          className="absolute left-3 top-3 z-10 inline-flex items-center justify-center h-8 w-8 rounded-full bg-white/90 border hover:bg-white"
+                          title={jobFavorites.has(job.id) ? 'Unfavorite' : 'Favorite'}
+                        >
+                          <svg viewBox="0 0 24 24" className={`h-5 w-5 ${jobFavorites.has(job.id) ? 'text-rose-600' : 'text-gray-400'}`} fill={jobFavorites.has(job.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" />
+                          </svg>
+                        </button>
                         {/* Status badge */}
                         {job.status && (
                           <span className={`absolute right-3 top-3 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${job.status === 'OPEN' ? 'bg-green-100 text-green-800' : job.status === 'HIRED' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-700'}`}>
