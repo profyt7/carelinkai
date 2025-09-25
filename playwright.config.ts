@@ -24,7 +24,7 @@ export default defineConfig({
   webServer: {
     command: process.env.PLAYWRIGHT_WEB_SERVER_CMD || 'cross-env NEXT_PUBLIC_E2E_AUTH_BYPASS=1 npm run dev',
     url: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     timeout: 120_000,
   },
 });
