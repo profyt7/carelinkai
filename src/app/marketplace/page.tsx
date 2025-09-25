@@ -1562,7 +1562,7 @@ export default function MarketplacePage() {
                   endReached={() => { if (cgHasMore && !caregiversLoading) setCgPage((p) => p + 1); }}
                   overscan={200}
                   components={{ List: GridList as any, Item: GridItem as any, Footer: () => (!cgHasMore && caregivers.length > 0 ? <div className="py-6 text-center text-gray-400">End of results</div> : null) as any }}
-                  itemContent={(_, cg) => (<CaregiverCard key={cg.id} caregiver={cg} />)}
+                  itemContent={(_, cg) => (cg ? <CaregiverCard key={cg.id} caregiver={cg} /> : null)}
                 />
               )
             ) : activeTab === "jobs" ? (
@@ -1590,7 +1590,7 @@ export default function MarketplacePage() {
                     endReached={() => { if (jobHasMoreRender && !listingsLoading) setJobPage((p) => p + 1); }}
                     overscan={200}
                     components={{ List: GridList as any, Item: GridItem as any, Footer: () => (!jobHasMoreRender && jobsToRender.length > 0 ? <div className="py-6 text-center text-gray-400">End of results</div> : null) as any }}
-                    itemContent={(_, job) => (
+                    itemContent={(_, job) => (job ? (
                       <Link href={`/marketplace/listings/${job.id}`} className={`relative block bg-white border rounded-md p-4 transition-shadow ${job.status === 'CLOSED' || job.status === 'HIRED' ? 'opacity-80' : 'hover:shadow-md'}`}>
                         {/* Favorite toggle */}
                         <button
@@ -1708,7 +1708,7 @@ export default function MarketplacePage() {
                           </div>
                         )}
                       </Link>
-                    )}
+                    ) : null)}
                   />
                 </>
               )
@@ -1730,7 +1730,7 @@ export default function MarketplacePage() {
                   endReached={() => { if (prHasMore && !providersLoading) setProviderPage((p) => p + 1); }}
                   overscan={200}
                   components={{ List: GridList as any, Item: GridItem as any, Footer: () => (!prHasMore && providers.length > 0 ? <div className="py-6 text-center text-gray-400">End of results</div> : null) as any }}
-                  itemContent={(_, p) => (
+                  itemContent={(_, p) => (p ? (
                     <div className="bg-white border rounded-md p-4">
                       <div className="flex items-start mb-2">
                         <div className="h-12 w-12 rounded-full overflow-hidden bg-gray-100 flex-shrink-0 mr-3">
@@ -1775,7 +1775,7 @@ export default function MarketplacePage() {
                         <div className="text-sm text-gray-800 mb-2">{p.hourlyRate !== null ? `$${p.hourlyRate}/hr` : `$${p.perMileRate?.toFixed(2)}/mi`}</div>
                       )}
                     </div>
-                  )}
+                  ) : null)}
                 />
               )
             )}
