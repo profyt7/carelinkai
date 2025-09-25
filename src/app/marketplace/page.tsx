@@ -1558,6 +1558,7 @@ export default function MarketplacePage() {
                   useWindowScroll
                   totalCount={caregivers.length}
                   data={caregivers}
+                  initialItemCount={20}
                   endReached={() => { if (cgHasMore && !caregiversLoading) setCgPage((p) => p + 1); }}
                   overscan={200}
                   components={{ List: GridList as any, Item: GridItem as any, Footer: () => (!cgHasMore && caregivers.length > 0 ? <div className="py-6 text-center text-gray-400">End of results</div> : null) as any }}
@@ -1585,6 +1586,7 @@ export default function MarketplacePage() {
                     useWindowScroll
                     totalCount={jobsToRender.length}
                     data={jobsToRender}
+                    initialItemCount={20}
                     endReached={() => { if (jobHasMoreRender && !listingsLoading) setJobPage((p) => p + 1); }}
                     overscan={200}
                     components={{ List: GridList as any, Item: GridItem as any, Footer: () => (!jobHasMoreRender && jobsToRender.length > 0 ? <div className="py-6 text-center text-gray-400">End of results</div> : null) as any }}
@@ -1724,6 +1726,7 @@ export default function MarketplacePage() {
                   useWindowScroll
                   totalCount={providers.length}
                   data={providers}
+                  initialItemCount={20}
                   endReached={() => { if (prHasMore && !providersLoading) setProviderPage((p) => p + 1); }}
                   overscan={200}
                   components={{ List: GridList as any, Item: GridItem as any, Footer: () => (!prHasMore && providers.length > 0 ? <div className="py-6 text-center text-gray-400">End of results</div> : null) as any }}
