@@ -241,8 +241,57 @@ export function PATCH() {
   return methodNotAllowed();
 }
 
-export function DELETE() {
-  return methodNotAllowed();
+export async function DELETE(request: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    const { searchParams } = new URL(request.url);
+    const listingId = searchParams.get('listingId');
+    if (!listingId) {
+      return NextResponse.json(
+        { error: 'listingId is required' },
+        { status: 400 }
+      );
+    }
+
+    // Resolve caregiver for current user
+    const caregiver = await (prisma as any).caregiver.findUnique({ where: { userId: session.user.id } });
+    if (!caregiver) {
+      return NextResponse.json(
+        { error: 'Only caregivers can withdraw applications' },
+        { status: 403 }
+      );
+    }
+
+    // Find existing application via composite key
+    const existing = await (prisma as any).marketplaceApplication.findUnique({
+      where: { listingId_caregiverId: { listingId, caregiverId: caregiver.id } },
+      select: { id: true }
+    });
+
+    if (!existing) {
+      return NextResponse.json(
+        { error: 'Application not found' },
+        { status: 404 }
+      );
+    }
+
+    await (prisma as any).marketplaceApplication.delete({ where: { id: existing.id } });
+
+    return NextResponse.json({ success: true }, { status: 200 });
+  } catch (error) {
+    console.error('Error withdrawing application:', error);
+    return NextResponse.json(
+      { error: 'Failed to withdraw application' },
+      { status: 500 }
+    );
+  }
 }
 
 /**

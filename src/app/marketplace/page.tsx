@@ -1462,9 +1462,29 @@ export default function MarketplacePage() {
                         {session?.user?.role === 'CAREGIVER' && job.status === 'OPEN' && (
                           <div className="flex justify-end">
                             {job.appliedByMe ? (
-                              <span className="inline-flex items-center rounded-md bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700">
-                                Applied
-                              </span>
+                              <div className="flex items-center gap-2">
+                                <span className="inline-flex items-center rounded-md bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700">Applied</span>
+                                <button
+                                  className="inline-flex items-center rounded-md bg-white px-2.5 py-1 text-xs text-gray-700 border border-gray-300 hover:bg-gray-50"
+                                  onClick={async (e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    if (applying[job.id]) return;
+                                    setApplying((m) => ({ ...m, [job.id]: true }));
+                                    try {
+                                      const res = await fetch(`/api/marketplace/applications?listingId=${encodeURIComponent(job.id)}`, { method: 'DELETE' });
+                                      if (!res.ok) throw new Error('Failed to withdraw');
+                                      setListings((prev) => prev.map((l) => l.id === job.id ? ({ ...l, appliedByMe: false, applicationCount: (typeof l.applicationCount === 'number' ? Math.max(0, l.applicationCount - 1) : 0) }) : l));
+                                    } catch {
+                                      // noop
+                                    } finally {
+                                      setApplying((m) => ({ ...m, [job.id]: false }));
+                                    }
+                                  }}
+                                >
+                                  Withdraw
+                                </button>
+                              </div>
                             ) : (
                               <button
                                 className="inline-flex items-center rounded-md bg-primary-600 px-3 py-1.5 text-sm text-white hover:bg-primary-700"

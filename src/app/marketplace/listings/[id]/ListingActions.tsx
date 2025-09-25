@@ -136,14 +136,30 @@ export default function ListingActions({
     if (submitSuccess || appliedByMe) {
       return (
         <div className="mt-6 border-t border-gray-200 pt-6">
-          <div className="bg-green-50 p-4 rounded-md flex items-start">
+          <div className="bg-green-50 p-4 rounded-md flex items-start justify-between">
             <FiCheckCircle className="text-green-500 mt-0.5 mr-3 flex-shrink-0" size={20} />
-            <div>
+            <div className="flex-1">
               <h3 className="text-green-800 font-medium">Application Submitted</h3>
               <p className="text-green-700 mt-1">
                 Your application has been submitted successfully. The listing owner will be notified and may contact you.
               </p>
             </div>
+            <button
+              className="ml-4 inline-flex items-center rounded-md bg-white px-3 py-1.5 text-sm text-green-700 border border-green-300 hover:bg-green-100"
+              onClick={async () => {
+                try {
+                  const res = await fetch(`/api/marketplace/applications?listingId=${encodeURIComponent(listingId)}`, { method: 'DELETE' });
+                  if (!res.ok) throw new Error('Failed to withdraw');
+                  setSubmitSuccess(false);
+                  // Trigger a refresh to update counts and state
+                  router.refresh();
+                } catch {
+                  // swallow error for now or add toast
+                }
+              }}
+            >
+              Withdraw
+            </button>
           </div>
         </div>
       );
