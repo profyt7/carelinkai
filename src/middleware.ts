@@ -6,6 +6,10 @@ export default withAuth(
   // `withAuth` augments your Request with the user's token
   function middleware(req) {
     try {
+      // Allow unauthenticated access during E2E runs
+      if (process.env.NEXT_PUBLIC_E2E_AUTH_BYPASS === '1') {
+        return NextResponse.next();
+      }
       const { pathname } = req.nextUrl;
 
       /* ------------------------------------------------------------------
