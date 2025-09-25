@@ -143,6 +143,11 @@ export default function MarketplacePage() {
   const [prGeoLat, setPrGeoLat] = useState<number | null>(null);
   const [prGeoLng, setPrGeoLng] = useState<number | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
+  // Saved searches (local, per-browser)
+  type SavedSearch = { id: string; name: string; query: string; createdAt: number };
+  const SAVED_KEY = 'marketplace:saved-searches:v1';
+  const [savedOpen, setSavedOpen] = useState(false);
+  const [saved, setSaved] = useState<SavedSearch[]>([]);
   const resultsRef = useRef<HTMLDivElement | null>(null);
   const scrollRaf = useRef<number | null>(null);
 
@@ -474,6 +479,42 @@ export default function MarketplacePage() {
     };
     loadCategories();
   }, []);
+
+  // Saved searches: load/save helpers
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(SAVED_KEY);
+      if (raw) setSaved(JSON.parse(raw));
+    } catch {}
+  }, []);
+  const persistSaved = useCallback((next: SavedSearch[]) => {
+    setSaved(next);
+    try { localStorage.setItem(SAVED_KEY, JSON.stringify(next)); } catch {}
+  }, []);
+  const saveCurrentSearch = useCallback(() => {
+    try {
+      const name = window.prompt('Name this search');
+      if (!name) return;
+      const qs = typeof window !== 'undefined' ? (window.location.search.startsWith('?') ? window.location.search.slice(1) : window.location.search) : '';
+      const entry: SavedSearch = { id: String(Date.now()), name: name.trim(), query: qs, createdAt: Date.now() };
+      const next = [entry, ...saved].slice(0, 50);
+      persistSaved(next);
+      setSavedOpen(true);
+    } catch {}
+  }, [persistSaved, saved]);
+  const loadSavedSearch = useCallback((entry: SavedSearch) => {
+    try {
+      const base = typeof window !== 'undefined' ? window.location.pathname : pathname;
+      window.location.href = `${base}?${entry.query}`;
+    } catch {
+      // as a fallback, use router
+      router.replace(`${pathname}?${entry.query}`);
+    }
+  }, [pathname, router]);
+  const deleteSavedSearch = useCallback((id: string) => {
+    const next = saved.filter(s => s.id !== id);
+    persistSaved(next);
+  }, [persistSaved, saved]);
 
   useEffect(() => {
     if (activeTab !== "caregivers") return;
@@ -1141,6 +1182,49 @@ export default function MarketplacePage() {
                 >
                   {linkCopied ? 'Copied!' : 'Copy link'}
                 </button>
+                <button
+                  onClick={saveCurrentSearch}
+                  className="inline-flex items-center rounded-md bg-white border px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+                  title="Save this search locally"
+                >
+                  Save search
+                </button>
+                <div className="relative">
+                  <button
+                    onClick={() => setSavedOpen((v) => !v)}
+                    className="inline-flex items-center rounded-md bg-white border px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+                    title="View saved searches"
+                  >
+                    Saved ({saved.length})
+                    <svg className="ml-1 h-4 w-4 text-gray-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.25 8.29a.75.75 0 01-.02-1.08z" clipRule="evenodd" /></svg>
+                  </button>
+                  {savedOpen && (
+                    <div className="absolute right-0 mt-2 w-72 rounded-md border bg-white shadow-md z-10">
+                      <div className="max-h-64 overflow-auto p-2">
+                        {saved.length === 0 ? (
+                          <div className="p-3 text-sm text-gray-500">No saved searches yet.</div>
+                        ) : saved.map((s) => (
+                          <div key={s.id} className="group flex items-center justify-between gap-2 rounded-md px-2 py-1.5 hover:bg-gray-50">
+                            <button
+                              onClick={() => loadSavedSearch(s)}
+                              className="truncate text-left text-sm text-gray-800 hover:underline flex-1"
+                              title={s.name}
+                            >
+                              {s.name}
+                            </button>
+                            <button
+                              onClick={() => deleteSavedSearch(s.id)}
+                              className="opacity-60 hover:opacity-100 text-gray-500 text-sm"
+                              title="Remove"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
             {/* Mobile filters */}
