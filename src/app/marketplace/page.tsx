@@ -503,7 +503,7 @@ export default function MarketplacePage() {
     }
     try { localStorage.setItem(LAST_TAB_KEY, "jobs"); localStorage.setItem(LS_KEYS.jobs, params.toString()); } catch {}
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, debouncedZip, settings, careTypes, services, postedByMe, hideClosed, jobPage, jobSort, jobRadius, geoLat, geoLng, router, pathname, searchParams]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, debouncedZip, settings, careTypes, services, postedByMe, hideClosed, favoritesOnly, jobPage, jobSort, jobRadius, geoLat, geoLng, router, pathname, searchParams]);
 
   // Keep URL in sync when on providers tab (debounced inputs)
   useEffect(() => {
@@ -867,7 +867,7 @@ export default function MarketplacePage() {
     }
 
     return list;
-  }, [search, city, state, activeTab, minRate, maxRate, minExperience, settings, specialties, careTypes, services, providerServices, categories, zip, postedByMe, hideClosed, toggleSetting]);
+  }, [search, city, state, activeTab, minRate, maxRate, minExperience, settings, specialties, careTypes, services, providerServices, categories, zip, postedByMe, hideClosed, favoritesOnly, toggleSetting]);
 
   return (
     <DashboardLayout title="Marketplace">
