@@ -76,8 +76,8 @@ test.describe('Marketplace favorites (guest, localStorage fallback)', () => {
     });
 
     await page.goto('/marketplace?tab=jobs');
-    // Wait for page to settle and layout to render
-    await expect(page.getByRole('heading', { name: 'Marketplace' })).toBeVisible();
+    // Wait for marketplace tabs to render
+    await page.waitForSelector('nav[aria-label="Tabs"]', { timeout: 15000 });
 
     // Two job cards should render
     const cards = page.locator('a[href^="/marketplace/listings/"]');
