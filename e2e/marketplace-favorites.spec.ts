@@ -43,6 +43,10 @@ test.describe('Marketplace favorites (guest, localStorage fallback)', () => {
 
     await page.goto('/marketplace?tab=jobs');
 
+    // Ensure Jobs tab is active (robust to initial render state)
+    const jobsTab = page.getByRole('button', { name: /Jobs/ });
+    await jobsTab.click();
+
     // Two job cards should render
     const cards = page.locator('a[href^="/marketplace/listings/"]');
     await expect(cards).toHaveCount(2);
