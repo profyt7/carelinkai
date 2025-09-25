@@ -118,6 +118,7 @@ export default function MarketplacePage() {
   const [jobTotal, setJobTotal] = useState(0);
   const [jobSort, setJobSort] = useState<"recency" | "rateAsc" | "rateDesc" | "distanceAsc">("recency");
   const [applying, setApplying] = useState<Record<string, boolean>>({});
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
 
   // Providers state --------------------------------------------------------
   type Provider = {
@@ -346,6 +347,7 @@ export default function MarketplacePage() {
     setServices(csv("services"));
     setPostedByMe(sp.get("postedByMe") === "true");
     setHideClosed(sp.get("status") === "OPEN");
+    setFavoritesOnly(sp.get("favorites") === "1");
     const jobPageFromUrl = parseInt(sp.get("page") || "1", 10);
     if (!Number.isNaN(jobPageFromUrl) && jobPageFromUrl > 0) setJobPage(jobPageFromUrl);
     const jobSortBy = sp.get("sortBy") as any;
@@ -404,7 +406,8 @@ export default function MarketplacePage() {
           setZip(v("zip"));
           setServices(arr("services"));
           setPostedByMe(savedParams.get("postedByMe") === "true");
-    setHideClosed(savedParams.get("status") === "OPEN");
+          setHideClosed(savedParams.get("status") === "OPEN");
+          setFavoritesOnly(savedParams.get("favorites") === "1");
           const spJobPage = parseInt(savedParams.get("page") || "1", 10);
           if (!Number.isNaN(spJobPage) && spJobPage > 0) setJobPage(spJobPage);
           const spJobSort = savedParams.get("sortBy") as any;
@@ -486,6 +489,7 @@ export default function MarketplacePage() {
     setOrDel("services", services.join(","));
     if (postedByMe) params.set("postedByMe", "true"); else params.delete("postedByMe");
     if (hideClosed) params.set("status", "OPEN"); else params.delete("status");
+    if (favoritesOnly) params.set("favorites", "1"); else params.delete("favorites");
     params.set("page", String(jobPage));
     params.set("sortBy", jobSort);
     if (jobRadius && geoLat !== null && geoLng !== null) {
@@ -753,6 +757,8 @@ export default function MarketplacePage() {
   // Infinite scroll flags
   const cgHasMore = cgTotal === 0 ? false : caregivers.length < cgTotal;
   const jobHasMore = jobTotal === 0 ? false : listings.length < jobTotal;
+  const jobsToRender = useMemo(() => (favoritesOnly ? listings.filter(l => jobFavorites.has(l.id)) : listings), [favoritesOnly, listings, jobFavorites]);
+  const jobHasMoreRender = favoritesOnly ? false : jobHasMore;
   const prHasMore = providerTotal === 0 ? false : providers.length < providerTotal;
 
   // Virtualized grid components (react-virtuoso)
@@ -850,6 +856,7 @@ export default function MarketplacePage() {
       settings.forEach((s) => list.push({ key: `setting:${s}`, label: (categories['SETTING']?.find(x => x.slug === s)?.name) || s, remove: () => { toggleSetting(s); setJobPage(1); } }));
       if (postedByMe) list.push({ key: `postedByMe`, label: `Posted by me`, remove: () => { setPostedByMe(false); setJobPage(1); } });
       if (hideClosed) list.push({ key: `status:OPEN`, label: `Open only`, remove: () => { setHideClosed(false); setJobPage(1); } });
+      if (favoritesOnly) list.push({ key: `favoritesOnly`, label: `Favorites only`, remove: () => { setFavoritesOnly(false); } });
       specialties.forEach((s) => list.push({ key: `spec:${s}`, label: (categories['SPECIALTY']?.find(x => x.slug === s)?.name) || s, remove: () => { toggleSpecialty(s); setJobPage(1); } }));
       careTypes.forEach((c) => list.push({ key: `care:${c}`, label: (categories['CARE_TYPE']?.find(x => x.slug === c)?.name) || c, remove: () => { toggleCareType(c); setJobPage(1); } }));
       services.forEach((srv) => list.push({ key: `svc:${srv}`, label: (categories['SERVICE']?.find(x => x.slug === srv)?.name) || srv, remove: () => { toggleService(srv); setJobPage(1); } }));
@@ -1135,6 +1142,16 @@ export default function MarketplacePage() {
                           onChange={(e) => { setHideClosed(e.target.checked); setJobPage(1); }}
                         />
                         <span>Hide closed/filled</span>
+                      </label>
+                    </div>
+                    <div className="mt-2">
+                      <label className="flex items-center gap-2 text-sm whitespace-nowrap">
+                        <input
+                          type="checkbox"
+                          checked={favoritesOnly}
+                          onChange={(e) => { setFavoritesOnly(e.target.checked); }}
+                        />
+                        <span>Favorites only</span>
                       </label>
                     </div>
                   </>
@@ -1428,6 +1445,16 @@ export default function MarketplacePage() {
                           <span>Hide closed/filled</span>
                         </label>
                       </div>
+                      <div className="mt-2">
+                        <label className="flex items-center gap-2 text-sm whitespace-nowrap">
+                          <input
+                            type="checkbox"
+                            checked={favoritesOnly}
+                            onChange={(e) => { setFavoritesOnly(e.target.checked); }}
+                          />
+                          <span>Favorites only</span>
+                        </label>
+                      </div>
                     </div>
                   </>
                 )}
@@ -1540,7 +1567,7 @@ export default function MarketplacePage() {
             ) : activeTab === "jobs" ? (
               listingsLoading && listings.length === 0 ? (
                 <div className="py-20 text-center text-gray-500">Loading jobs…</div>
-              ) : listings.length === 0 ? (
+              ) : jobsToRender.length === 0 ? (
                 <div className="py-16 text-center">
                   <div className="text-lg font-medium text-gray-900 mb-1">No jobs found</div>
                   <div className="text-sm text-gray-600 mb-4">Try different keywords or clear all filters.</div>
@@ -1556,11 +1583,11 @@ export default function MarketplacePage() {
                   )}
                   <VirtuosoGrid
                     useWindowScroll
-                    totalCount={listings.length}
-                    data={listings}
-                    endReached={() => { if (jobHasMore && !listingsLoading) setJobPage((p) => p + 1); }}
+                    totalCount={jobsToRender.length}
+                    data={jobsToRender}
+                    endReached={() => { if (jobHasMoreRender && !listingsLoading) setJobPage((p) => p + 1); }}
                     overscan={200}
-                    components={{ List: GridList as any, Item: GridItem as any, Footer: () => (!jobHasMore && listings.length > 0 ? <div className="py-6 text-center text-gray-400">End of results</div> : null) as any }}
+                    components={{ List: GridList as any, Item: GridItem as any, Footer: () => (!jobHasMoreRender && jobsToRender.length > 0 ? <div className="py-6 text-center text-gray-400">End of results</div> : null) as any }}
                     itemContent={(_, job) => (
                       <Link href={`/marketplace/listings/${job.id}`} className={`relative block bg-white border rounded-md p-4 transition-shadow ${job.status === 'CLOSED' || job.status === 'HIRED' ? 'opacity-80' : 'hover:shadow-md'}`}>
                         {/* Favorite toggle */}
