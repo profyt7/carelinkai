@@ -198,9 +198,10 @@ export default function DashboardLayout({
     }
   }, [showMobileSearch]);
 
-  // Redirect to login if not authenticated (must be before any early returns)
+  // Redirect to login if not authenticated (skip during e2e to allow mocking)
   useEffect(() => {
-    if (status === "unauthenticated") {
+    const bypass = process.env['NEXT_PUBLIC_E2E_AUTH_BYPASS'] === '1';
+    if (!bypass && status === "unauthenticated") {
       router.push("/auth/login");
     }
   }, [status, router]);
@@ -312,7 +313,8 @@ export default function DashboardLayout({
     );
   }
 
-  if (status === "unauthenticated") {
+  const e2eBypass = process.env['NEXT_PUBLIC_E2E_AUTH_BYPASS'] === '1';
+  if (!e2eBypass && status === "unauthenticated") {
     return null;
   }
 
