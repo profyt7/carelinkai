@@ -313,7 +313,8 @@ export default function DashboardLayout({
     );
   }
 
-  if (status === "unauthenticated") {
+  const e2eBypass = process.env.NEXT_PUBLIC_E2E_AUTH_BYPASS === '1';
+  if (!e2eBypass && status === "unauthenticated") {
     return null;
   }
 
