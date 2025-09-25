@@ -198,9 +198,9 @@ export default function DashboardLayout({
     }
   }, [showMobileSearch]);
 
-  // Redirect to login if not authenticated (skip during e2e to allow mocking)
+  // Redirect to login if not authenticated (skip during e2e to allow mocking; never in production)
   useEffect(() => {
-    const bypass = process.env['NEXT_PUBLIC_E2E_AUTH_BYPASS'] === '1';
+    const bypass = process.env['NODE_ENV'] !== 'production' && process.env['NEXT_PUBLIC_E2E_AUTH_BYPASS'] === '1';
     if (!bypass && status === "unauthenticated") {
       router.push("/auth/login");
     }
@@ -313,7 +313,7 @@ export default function DashboardLayout({
     );
   }
 
-  const e2eBypass = process.env['NEXT_PUBLIC_E2E_AUTH_BYPASS'] === '1';
+  const e2eBypass = process.env['NODE_ENV'] !== 'production' && process.env['NEXT_PUBLIC_E2E_AUTH_BYPASS'] === '1';
   if (!e2eBypass && status === "unauthenticated") {
     return null;
   }
