@@ -6,6 +6,9 @@ dist/
 coverage/
 .turbo/
 .cache/
+test-results/
+playwright-report/
+playwright/.cache/
 
 # Env and logs
 .env
