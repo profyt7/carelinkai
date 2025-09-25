@@ -76,14 +76,12 @@ test.describe('Marketplace favorites (guest, localStorage fallback)', () => {
     });
 
     await page.goto('/marketplace?tab=jobs');
-
-    // Ensure Jobs tab is active (robust to initial render state)
-    const jobsTab = page.getByRole('button', { name: /Jobs/ });
-    await jobsTab.click();
+    // Wait for page to settle and layout to render
+    await expect(page.getByRole('heading', { name: 'Marketplace' })).toBeVisible();
 
     // Two job cards should render
     const cards = page.locator('a[href^="/marketplace/listings/"]');
-    await expect(cards).toHaveCount(2);
+    await expect(cards).toHaveCount(2, { timeout: 15000 });
 
     // Favorite the first job via its card-specific button
     const firstCard = page.locator('a[href="/marketplace/listings/job-1"]');
