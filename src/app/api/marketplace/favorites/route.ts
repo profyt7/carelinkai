@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth/next';
 import authOptions from '@/lib/auth';
 import { z } from 'zod';
-import { rateLimit, getClientIp } from '@/lib/rateLimit';
+import { rateLimitAsync, getClientIp } from '@/lib/rateLimit';
 
 // GET: list caregiver's favorite listings (IDs + basic listing data)
 export async function GET(request: Request) {
@@ -11,7 +11,7 @@ export async function GET(request: Request) {
     // Rate limit: 60 requests/min per user or IP
     const session = await getServerSession(authOptions);
     const key = session?.user?.id || getClientIp(request);
-    const rr = rateLimit({ name: 'favorites:GET', key, limit: 60, windowMs: 60_000 });
+    const rr = await rateLimitAsync({ name: 'favorites:GET', key, limit: 60, windowMs: 60_000 });
     if (!rr.allowed) {
       return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429, headers: { 'Retry-After': String(Math.ceil(rr.resetMs / 1000)) } });
     }
@@ -63,7 +63,7 @@ export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
     const key = session?.user?.id || getClientIp(request);
-    const rr = rateLimit({ name: 'favorites:POST', key, limit: 30, windowMs: 60_000 });
+    const rr = await rateLimitAsync({ name: 'favorites:POST', key, limit: 30, windowMs: 60_000 });
     if (!rr.allowed) {
       return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429, headers: { 'Retry-After': String(Math.ceil(rr.resetMs / 1000)) } });
     }
@@ -118,7 +118,7 @@ export async function DELETE(request: Request) {
   try {
     const session = await getServerSession(authOptions);
     const key = session?.user?.id || getClientIp(request);
-    const rr = rateLimit({ name: 'favorites:DELETE', key, limit: 30, windowMs: 60_000 });
+    const rr = await rateLimitAsync({ name: 'favorites:DELETE', key, limit: 30, windowMs: 60_000 });
     if (!rr.allowed) {
       return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429, headers: { 'Retry-After': String(Math.ceil(rr.resetMs / 1000)) } });
     }
