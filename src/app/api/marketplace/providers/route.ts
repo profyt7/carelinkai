@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { rateLimitAsync, getClientIp } from '@/lib/rateLimit';
+import { rateLimitAsync, getClientIp, buildRateLimitHeaders } from '@/lib/rateLimit';
 
 /**
  * GET /api/marketplace/providers
@@ -22,13 +22,15 @@ export async function GET(request: Request) {
     // Rate limit: 60 req/min per IP
     {
       const key = getClientIp(request);
-      const rr = await rateLimitAsync({ name: 'providers:GET', key, limit: 60, windowMs: 60_000 });
+      const limit = 60;
+      const rr = await rateLimitAsync({ name: 'providers:GET', key, limit, windowMs: 60_000 });
       if (!rr.allowed) {
         return NextResponse.json(
           { error: 'Rate limit exceeded' },
-          { status: 429, headers: { 'Retry-After': String(Math.ceil(rr.resetMs / 1000)) } }
+          { status: 429, headers: { ...buildRateLimitHeaders(rr, limit), 'Retry-After': String(Math.ceil(rr.resetMs / 1000)) } }
         );
       }
+      var __rl_providers_get = { rr, limit };
     }
     
     // Extract filter parameters
@@ -124,7 +126,7 @@ export async function GET(request: Request) {
           totalPages: Math.ceil(totalCount / pageSize)
         }
       },
-      { status: 200, headers: { 'Cache-Control': 'public, max-age=15, s-maxage=15, stale-while-revalidate=60' } }
+      { status: 200, headers: { 'Cache-Control': 'public, max-age=15, s-maxage=15, stale-while-revalidate=60', ...(typeof __rl_providers_get !== 'undefined' ? buildRateLimitHeaders(__rl_providers_get.rr, __rl_providers_get.limit) : {}) } }
     );
   } catch (error) {
     console.error('Error fetching providers:', error);

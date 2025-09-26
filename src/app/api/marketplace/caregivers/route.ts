@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth/next';
 import authOptions from '@/lib/auth';
 import { Prisma } from '@prisma/client';
-import { rateLimitAsync, getClientIp } from '@/lib/rateLimit';
+import { rateLimitAsync, getClientIp, buildRateLimitHeaders } from '@/lib/rateLimit';
 
 /**
  * GET /api/marketplace/caregivers
@@ -18,13 +18,15 @@ export async function GET(request: Request) {
     // Rate limit: 60 req/min per IP
     {
       const key = getClientIp(request);
-      const rr = await rateLimitAsync({ name: 'caregivers:GET', key, limit: 60, windowMs: 60_000 });
+      const limit = 60;
+      const rr = await rateLimitAsync({ name: 'caregivers:GET', key, limit, windowMs: 60_000 });
       if (!rr.allowed) {
         return NextResponse.json(
           { error: 'Rate limit exceeded' },
-          { status: 429, headers: { 'Retry-After': String(Math.ceil(rr.resetMs / 1000)) } }
+          { status: 429, headers: { ...buildRateLimitHeaders(rr, limit), 'Retry-After': String(Math.ceil(rr.resetMs / 1000)) } }
         );
       }
+      var __rl_caregivers_get = { rr, limit };
     }
     
     // Extract filter parameters
@@ -299,7 +301,7 @@ export async function GET(request: Request) {
           total: totalCount
         }
       },
-      { status: 200, headers: { 'Cache-Control': 'public, max-age=15, s-maxage=15, stale-while-revalidate=60' } }
+      { status: 200, headers: { 'Cache-Control': 'public, max-age=15, s-maxage=15, stale-while-revalidate=60', ...(typeof __rl_caregivers_get !== 'undefined' ? buildRateLimitHeaders(__rl_caregivers_get.rr, __rl_caregivers_get.limit) : {}) } }
     );
   } catch (error) {
     console.error('Error fetching caregivers:', error);
