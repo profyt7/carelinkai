@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { rateLimitAsync, getClientIp } from '@/lib/rateLimit';
 
 /**
  * GET /api/marketplace/providers
@@ -18,6 +19,17 @@ export async function GET(request: Request) {
   
   try {
     const { searchParams } = new URL(request.url);
+    // Rate limit: 60 req/min per IP
+    {
+      const key = getClientIp(request);
+      const rr = await rateLimitAsync({ name: 'providers:GET', key, limit: 60, windowMs: 60_000 });
+      if (!rr.allowed) {
+        return NextResponse.json(
+          { error: 'Rate limit exceeded' },
+          { status: 429, headers: { 'Retry-After': String(Math.ceil(rr.resetMs / 1000)) } }
+        );
+      }
+    }
     
     // Extract filter parameters
     const q = searchParams.get('q');

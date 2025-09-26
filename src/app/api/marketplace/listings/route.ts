@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth/next';
 import authOptions from '@/lib/auth';
 import { z, ZodError } from 'zod';
+import { rateLimitAsync, getClientIp } from '@/lib/rateLimit';
 import { Prisma } from '@prisma/client';
 
 /**
@@ -15,6 +16,17 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const session = await getServerSession(authOptions);
+    // Rate limit: 60 req/min per user or IP
+    {
+      const key = session?.user?.id || getClientIp(request);
+      const rr = await rateLimitAsync({ name: 'listings:GET', key, limit: 60, windowMs: 60_000 });
+      if (!rr.allowed) {
+        return NextResponse.json(
+          { error: 'Rate limit exceeded' },
+          { status: 429, headers: { 'Retry-After': String(Math.ceil(rr.resetMs / 1000)) } }
+        );
+      }
+    }
     
     // Extract filter parameters
     const q = searchParams.get('q');
@@ -33,8 +45,12 @@ export async function GET(request: Request) {
     const postedByMe = searchParams.get('postedByMe') === 'true';
     
     // Pagination and sorting
-    const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1;
-    const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 20;
+    const pageRaw = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1;
+    const pageSizeRaw = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 20;
+    const PageSchema = z.object({ page: z.number().int().min(1).default(1), pageSize: z.number().int().min(1).max(100).default(20) });
+    const { page, pageSize } = PageSchema.safeParse({ page: pageRaw, pageSize: pageSizeRaw }).success
+      ? (PageSchema.parse({ page: pageRaw, pageSize: pageSizeRaw }))
+      : { page: Math.max(1, pageRaw || 1), pageSize: Math.min(100, Math.max(1, pageSizeRaw || 20)) };
     const sortBy = searchParams.get('sortBy') || 'recency'; // recency (default), rateAsc, rateDesc, distanceAsc (when using radius)
     const skip = (page - 1) * pageSize;
 
@@ -220,6 +236,18 @@ export async function POST(request: Request) {
       );
     }
     
+    // Rate limit: 30 req/min per user (or IP if unauthenticated)
+    {
+      const key = session?.user?.id || getClientIp(request);
+      const rr = await rateLimitAsync({ name: 'listings:POST', key, limit: 30, windowMs: 60_000 });
+      if (!rr.allowed) {
+        return NextResponse.json(
+          { error: 'Rate limit exceeded' },
+          { status: 429, headers: { 'Retry-After': String(Math.ceil(rr.resetMs / 1000)) } }
+        );
+      }
+    }
+
     // ------------------ Validation ------------------
     const ListingSchema = z.object({
       title: z.string().min(1, 'Title is required'),
