@@ -24,17 +24,11 @@ type Provider = {
 
 async function getProviderById(id: string): Promise<Provider | null> {
   try {
-    // Use id as the seed (q) so the mock API returns a deterministic list
     const cookie = headers().get("cookie") ?? "";
-    const res = await fetch(
-      `/api/marketplace/providers?q=${encodeURIComponent(id)}&pageSize=50`,
-      { headers: { cookie }, cache: "no-store" }
-    );
+    const res = await fetch(`/api/marketplace/providers/${encodeURIComponent(id)}`, { headers: { cookie }, cache: 'no-store' });
     if (!res.ok) return null;
     const json = await res.json();
-    const items: Provider[] = json.data || [];
-    const found = items.find((p) => p.id === id) || null;
-    return found;
+    return (json?.data as Provider) || null;
   } catch (e) {
     console.error("Error fetching provider:", e);
     return null;

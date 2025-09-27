@@ -143,6 +143,54 @@ export default function MarketplacePage() {
   const [prGeoLat, setPrGeoLat] = useState<number | null>(null);
   const [prGeoLng, setPrGeoLng] = useState<number | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
+  // Caregiver favorites (for families)
+  const CG_FAV_KEY = 'marketplace:caregiver-favorites:v1';
+  const [caregiverFavorites, setCaregiverFavorites] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    const load = async () => {
+      if (session?.user?.role === 'FAMILY') {
+        try {
+          const res = await fetch('/api/marketplace/caregiver-favorites', { cache: 'no-store' });
+          if (res.ok) {
+            const j = await res.json();
+            const ids = new Set<string>(j?.data || []);
+            setCaregiverFavorites(ids);
+            try { localStorage.setItem(CG_FAV_KEY, JSON.stringify(Array.from(ids))); } catch {}
+            return;
+          }
+        } catch {}
+      }
+      try { const raw = localStorage.getItem(CG_FAV_KEY); if (raw) setCaregiverFavorites(new Set(JSON.parse(raw))); } catch {}
+    };
+    load();
+  }, [session?.user?.role]);
+  const toggleCaregiverFavorite = useCallback(async (caregiverId: string) => {
+    setCaregiverFavorites((prev) => {
+      const next = new Set(prev);
+      if (next.has(caregiverId)) next.delete(caregiverId); else next.add(caregiverId);
+      try { localStorage.setItem(CG_FAV_KEY, JSON.stringify(Array.from(next))); } catch {}
+      return next;
+    });
+    if (session?.user?.role === 'FAMILY') {
+      try {
+        if (caregiverFavorites.has(caregiverId)) {
+          const res = await fetch(`/api/marketplace/caregiver-favorites?caregiverId=${encodeURIComponent(caregiverId)}`, { method: 'DELETE' });
+          if (!res.ok) throw new Error('unfav failed');
+        } else {
+          const res = await fetch('/api/marketplace/caregiver-favorites', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ caregiverId }) });
+          if (!res.ok) throw new Error('fav failed');
+        }
+      } catch {
+        // rollback
+        setCaregiverFavorites((prev) => {
+          const next = new Set(prev);
+          if (next.has(caregiverId)) next.delete(caregiverId); else next.add(caregiverId);
+          try { localStorage.setItem(CG_FAV_KEY, JSON.stringify(Array.from(next))); } catch {}
+          return next;
+        });
+      }
+    }
+  }, [session?.user?.role, caregiverFavorites]);
   // Job favorites (server for caregivers, local fallback for guests/others)
   const JOB_FAV_KEY = 'marketplace:job-favorites:v1';
   const [jobFavorites, setJobFavorites] = useState<Set<string>>(new Set());
@@ -1560,7 +1608,24 @@ export default function MarketplacePage() {
                   endReached={() => { if (cgHasMore && !caregiversLoading) setCgPage((p) => p + 1); }}
                   overscan={200}
                   components={{ List: GridList as any, Item: GridItem as any, Footer: () => (!cgHasMore && caregivers.length > 0 ? <div className="py-6 text-center text-gray-400">End of results</div> : null) as any }}
-                  itemContent={(_, cg) => (cg ? <CaregiverCard key={cg.id} caregiver={cg} /> : null)}
+                  itemContent={(_, cg) => (cg ? (
+                    <div className="relative">
+                      {/* Favorite for families */}
+                      {session?.user?.role === 'FAMILY' && (
+                        <button
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleCaregiverFavorite(cg.id); }}
+                          aria-label={caregiverFavorites.has(cg.id) ? 'Remove from shortlist' : 'Add to shortlist'}
+                          className="absolute right-3 top-3 z-10 inline-flex items-center justify-center h-8 w-8 rounded-full bg-white/90 border hover:bg-white"
+                          title={caregiverFavorites.has(cg.id) ? 'Shortlisted' : 'Shortlist'}
+                        >
+                          <svg viewBox="0 0 24 24" className={`h-5 w-5 ${caregiverFavorites.has(cg.id) ? 'text-rose-600' : 'text-gray-400'}`} fill={caregiverFavorites.has(cg.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" />
+                          </svg>
+                        </button>
+                      )}
+                      <CaregiverCard key={cg.id} caregiver={cg} />
+                    </div>
+                  ) : null)}
                 />
               )
             ) : activeTab === "jobs" ? (
@@ -1594,7 +1659,7 @@ export default function MarketplacePage() {
                         <button
                           onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleJobFavorite(job.id); }}
                           aria-label={jobFavorites.has(job.id) ? 'Unfavorite job' : 'Favorite job'}
-                          className="absolute left-3 top-3 z-10 inline-flex items-center justify-center h-8 w-8 rounded-full bg-white/90 border hover:bg-white"
+                          className="absolute right-3 bottom-3 z-10 inline-flex items-center justify-center h-8 w-8 rounded-full bg-white/90 border hover:bg-white"
                           title={jobFavorites.has(job.id) ? 'Unfavorite' : 'Favorite'}
                         >
                           <svg viewBox="0 0 24 24" className={`h-5 w-5 ${jobFavorites.has(job.id) ? 'text-rose-600' : 'text-gray-400'}`} fill={jobFavorites.has(job.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
