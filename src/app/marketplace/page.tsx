@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState, useCallback, useRef, forwardRef } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import DashboardLayout from "@/components/layout/DashboardLayout";
 import CaregiverCard from "@/components/marketplace/CaregiverCard";
 import Image from "next/image";
 import { getBlurDataURL } from "@/lib/imageBlur";
@@ -870,7 +869,6 @@ export default function MarketplacePage() {
   }, [search, city, state, activeTab, minRate, maxRate, minExperience, settings, specialties, careTypes, services, providerServices, categories, zip, postedByMe, hideClosed, favoritesOnly, toggleSetting]);
 
   return (
-    <DashboardLayout title="Marketplace">
       <div className="px-4 md:px-6 py-4">
         {/* Tabs */}
         <div className="mb-4 border-b border-gray-200">
@@ -1731,7 +1729,7 @@ export default function MarketplacePage() {
                   overscan={200}
                   components={{ List: GridList as any, Item: GridItem as any, Footer: () => (!prHasMore && providers.length > 0 ? <div className="py-6 text-center text-gray-400">End of results</div> : null) as any }}
                   itemContent={(_, p) => (p ? (
-                    <div className="bg-white border rounded-md p-4">
+                    <Link href={`/marketplace/providers/${p.id}`} className="block bg-white border rounded-md p-4 hover:shadow-md transition-shadow">
                       <div className="flex items-start mb-2">
                         <div className="h-12 w-12 rounded-full overflow-hidden bg-gray-100 flex-shrink-0 mr-3">
                           <Image
@@ -1774,7 +1772,7 @@ export default function MarketplacePage() {
                       {(p.hourlyRate !== null || p.perMileRate !== null) && (
                         <div className="text-sm text-gray-800 mb-2">{p.hourlyRate !== null ? `$${p.hourlyRate}/hr` : `$${p.perMileRate?.toFixed(2)}/mi`}</div>
                       )}
-                    </div>
+                    </Link>
                   ) : null)}
                 />
               )
@@ -1782,6 +1780,5 @@ export default function MarketplacePage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
   );
 }
