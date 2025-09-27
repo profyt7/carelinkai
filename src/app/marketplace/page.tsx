@@ -143,7 +143,7 @@ export default function MarketplacePage() {
   const [prGeoLat, setPrGeoLat] = useState<number | null>(null);
   const [prGeoLng, setPrGeoLng] = useState<number | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
-  // Caregiver favorites (for families)
+  // Caregiver favorites (for families; local fallback for others)
   const CG_FAV_KEY = 'marketplace:caregiver-favorites:v1';
   const [caregiverFavorites, setCaregiverFavorites] = useState<Set<string>>(new Set());
   useEffect(() => {
@@ -191,6 +191,20 @@ export default function MarketplacePage() {
       }
     }
   }, [session?.user?.role, caregiverFavorites]);
+  // Provider favorites (local-only for now)
+  const PR_FAV_KEY = 'marketplace:provider-favorites:v1';
+  const [providerFavorites, setProviderFavorites] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    try { const raw = localStorage.getItem(PR_FAV_KEY); if (raw) setProviderFavorites(new Set(JSON.parse(raw))); } catch {}
+  }, []);
+  const toggleProviderFavorite = useCallback((providerId: string) => {
+    setProviderFavorites((prev) => {
+      const next = new Set(prev);
+      if (next.has(providerId)) next.delete(providerId); else next.add(providerId);
+      try { localStorage.setItem(PR_FAV_KEY, JSON.stringify(Array.from(next))); } catch {}
+      return next;
+    });
+  }, []);
   // Job favorites (server for caregivers, local fallback for guests/others)
   const JOB_FAV_KEY = 'marketplace:job-favorites:v1';
   const [jobFavorites, setJobFavorites] = useState<Set<string>>(new Set());
@@ -1610,8 +1624,7 @@ export default function MarketplacePage() {
                   components={{ List: GridList as any, Item: GridItem as any, Footer: () => (!cgHasMore && caregivers.length > 0 ? <div className="py-6 text-center text-gray-400">End of results</div> : null) as any }}
                   itemContent={(_, cg) => (cg ? (
                     <div className="relative">
-                      {/* Favorite for families */}
-                      {session?.user?.role === 'FAMILY' && (
+                      {/* Favorite (always visible; server-sync when FAMILY) */}
                         <button
                           onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleCaregiverFavorite(cg.id); }}
                           aria-label={caregiverFavorites.has(cg.id) ? 'Remove from shortlist' : 'Add to shortlist'}
@@ -1622,7 +1635,6 @@ export default function MarketplacePage() {
                             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" />
                           </svg>
                         </button>
-                      )}
                       <CaregiverCard key={cg.id} caregiver={cg} />
                     </div>
                   ) : null)}
@@ -1794,7 +1806,18 @@ export default function MarketplacePage() {
                   overscan={200}
                   components={{ List: GridList as any, Item: GridItem as any, Footer: () => (!prHasMore && providers.length > 0 ? <div className="py-6 text-center text-gray-400">End of results</div> : null) as any }}
                   itemContent={(_, p) => (p ? (
-                    <Link href={`/marketplace/providers/${p.id}`} className="block bg-white border rounded-md p-4 hover:shadow-md transition-shadow">
+                    <Link href={`/marketplace/providers/${p.id}`} className="relative block bg-white border rounded-md p-4 hover:shadow-md transition-shadow">
+                      {/* Favorite (local) */}
+                      <button
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleProviderFavorite(p.id); }}
+                        aria-label={providerFavorites.has(p.id) ? 'Unfavorite provider' : 'Favorite provider'}
+                        className="absolute right-3 bottom-3 z-10 inline-flex items-center justify-center h-8 w-8 rounded-full bg-white/90 border hover:bg-white"
+                        title={providerFavorites.has(p.id) ? 'Unfavorite' : 'Favorite'}
+                      >
+                        <svg viewBox="0 0 24 24" className={`h-5 w-5 ${providerFavorites.has(p.id) ? 'text-rose-600' : 'text-gray-400'}`} fill={providerFavorites.has(p.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" />
+                        </svg>
+                      </button>
                       <div className="flex items-start mb-2">
                         <div className="h-12 w-12 rounded-full overflow-hidden bg-gray-100 flex-shrink-0 mr-3">
                           <Image
