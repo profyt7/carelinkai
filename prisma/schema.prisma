@@ -176,6 +176,7 @@ model Family {
   bookings  Booking[]
   wallet    FamilyWallet?
   favorites FavoriteHome[]
+  caregiverShortlists FavoriteCaregiver[]
 
   // Family collaboration relationships
   members              FamilyMember[]
@@ -246,6 +247,7 @@ model Caregiver {
   marketplaceApplications MarketplaceApplication[]
   marketplaceHires        MarketplaceHire[]
   favoriteListings        FavoriteListing[]
+  shortlistedByFamilies   FavoriteCaregiver[]
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -1609,4 +1611,24 @@ model FavoriteListing {
   @@unique([caregiverId, listingId])
   @@index([caregiverId])
   @@index([listingId])
+}
+
+/// Families can favorite Caregivers to build shortlists
+model FavoriteCaregiver {
+  id         String   @id @default(cuid())
+  familyId   String
+  caregiverId String
+
+  // Relations
+  family    Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  caregiver Caregiver @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Constraints and Indexes
+  @@unique([familyId, caregiverId])
+  @@index([familyId])
+  @@index([caregiverId])
 }
