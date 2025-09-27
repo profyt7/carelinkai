@@ -24,8 +24,13 @@ type Provider = {
 
 async function getProviderById(id: string): Promise<Provider | null> {
   try {
-    const cookie = headers().get("cookie") ?? "";
-    const res = await fetch(`/api/marketplace/providers/${encodeURIComponent(id)}`, { headers: { cookie }, cache: 'no-store' });
+    const h = headers();
+    const cookie = h.get("cookie") ?? "";
+    const host = h.get("x-forwarded-host") ?? h.get("host");
+    const proto = h.get("x-forwarded-proto") ?? "http";
+    const base = host ? `${proto}://${host}` : (process.env["NEXT_PUBLIC_APP_URL"] || "http://localhost:3000");
+    const url = `${base}/api/marketplace/providers/${encodeURIComponent(id)}`;
+    const res = await fetch(url, { headers: { cookie }, cache: 'no-store' });
     if (!res.ok) return null;
     const json = await res.json();
     return (json?.data as Provider) || null;
