@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { FiUser, FiDollarSign } from "react-icons/fi";
 import { headers } from "next/headers";
+import { getOriginFromHeaders } from "@/lib/http";
 import InviteCaregiverButton from "@/components/marketplace/InviteCaregiverButton";
 type RecommendedCaregiver = {
   id: string;
@@ -31,9 +32,7 @@ export default async function RecommendedCaregivers({ listingId }: { listingId: 
   try {
     const hdrs = headers();
     const cookie = hdrs.get("cookie") ?? "";
-    const proto = hdrs.get("x-forwarded-proto") ?? "http";
-    const host = hdrs.get("x-forwarded-host") ?? hdrs.get("host");
-    const origin = host ? `${proto}://${host}` : "";
+    const origin = getOriginFromHeaders(hdrs as any);
 
     const [recsRes, appsRes] = await Promise.all([
       fetch(
