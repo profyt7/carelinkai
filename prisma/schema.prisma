@@ -141,6 +141,9 @@ model User {
   @@index([status])
   @@index([verificationToken])
   @@index([resetPasswordToken])
+  // Performance: accelerate marketplace search by first/last name
+  @@index([firstName])
+  @@index([lastName])
 }
 
 model Session {
@@ -170,12 +173,12 @@ model Family {
   emergencyPhone   String?
 
   // Relationships
-  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  residents Resident[]
-  inquiries Inquiry[]
-  bookings  Booking[]
-  wallet    FamilyWallet?
-  favorites FavoriteHome[]
+  user                User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  residents           Resident[]
+  inquiries           Inquiry[]
+  bookings            Booking[]
+  wallet              FamilyWallet?
+  favorites           FavoriteHome[]
   caregiverShortlists FavoriteCaregiver[]
 
   // Family collaboration relationships
@@ -240,8 +243,8 @@ model Caregiver {
   backgroundCheckReportUrl String?
   specialties              String[]
   // New marketplace facets
-  settings                 String[] @default([])
-  careTypes                String[] @default([])
+  settings                 String[]              @default([])
+  careTypes                String[]              @default([])
 
   // Marketplace relations
   marketplaceApplications MarketplaceApplication[]
@@ -255,6 +258,10 @@ model Caregiver {
 
   // Indexes
   @@index([userId])
+  // Performance: common filters/sorts
+  @@index([hourlyRate])
+  @@index([yearsExperience])
+  @@index([createdAt])
 }
 
 model Affiliate {
@@ -1595,13 +1602,13 @@ model MarketplaceHire {
 
 /// Favorites for marketplace listings (per caregiver)
 model FavoriteListing {
-  id          String   @id @default(cuid())
+  id          String @id @default(cuid())
   caregiverId String
   listingId   String
 
   // Relations
-  caregiver Caregiver           @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
-  listing   MarketplaceListing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  caregiver Caregiver          @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+  listing   MarketplaceListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -1615,8 +1622,8 @@ model FavoriteListing {
 
 /// Families can favorite Caregivers to build shortlists
 model FavoriteCaregiver {
-  id         String   @id @default(cuid())
-  familyId   String
+  id          String @id @default(cuid())
+  familyId    String
   caregiverId String
 
   // Relations
