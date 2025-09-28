@@ -29,18 +29,22 @@ export default async function RecommendedCaregivers({ listingId }: { listingId: 
   let applicationStatusByCaregiver: Record<string, string> = {};
   
   try {
-    const cookie = headers().get("cookie") ?? "";
+    const hdrs = headers();
+    const cookie = hdrs.get("cookie") ?? "";
+    const proto = hdrs.get("x-forwarded-proto") ?? "http";
+    const host = hdrs.get("x-forwarded-host") ?? hdrs.get("host");
+    const origin = host ? `${proto}://${host}` : "";
 
     const [recsRes, appsRes] = await Promise.all([
       fetch(
-        `/api/matching/recommendations?target=caregivers&listingId=${listingId}&limit=6`,
+        `${origin}/api/matching/recommendations?target=caregivers&listingId=${listingId}&limit=6`,
         {
           headers: { cookie },
           cache: "no-store",
         }
       ),
       fetch(
-        `/api/marketplace/applications?listingId=${listingId}`,
+        `${origin}/api/marketplace/applications?listingId=${listingId}`,
         {
           headers: { cookie },
           cache: "no-store",
