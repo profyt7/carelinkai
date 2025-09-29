@@ -112,7 +112,7 @@ function applySecurityHeaders(req: Request, res: NextResponse) {
     ].join(', ')
   );
 
-  // Content-Security-Policy (relaxed in development to avoid tooling issues)
+  // Content-Security-Policy (only enable in production to avoid dev tooling issues)
   const cspParts = [
     "default-src 'self'",
     // Allow Next.js inline styles; tighten in prod if hashed
@@ -141,7 +141,7 @@ function applySecurityHeaders(req: Request, res: NextResponse) {
   const url = new URL((req as any).url);
   const path = url.pathname;
   const skipCsp = path.startsWith('/_next') || path.startsWith('/api');
-  if (!skipCsp) {
+  if (isProd && !skipCsp) {
     res.headers.set('Content-Security-Policy', cspParts.join('; '));
   }
 
