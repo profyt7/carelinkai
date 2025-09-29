@@ -188,11 +188,19 @@ async function getCaregiverRecommendations(session: any, listingId: string | und
         take: 10,
       });
 
+      // Fetch caregiver's primary address to compute distance if available
+      const address = await prisma.address.findFirst({
+        where: { userId: caregiver.userId, latitude: { not: null }, longitude: { not: null } },
+        orderBy: { createdAt: 'asc' },
+      });
+
       // Calculate match score
       const matchScore = scoreCaregiverForListing(caregiver, listing, {
         ...scoringOptions,
         caregiverAvailability: availabilitySlots,
         caregiverReviews: reviews,
+        caregiverLocation: address ? { lat: address.latitude as number, lng: address.longitude as number } : undefined,
+        listingLocation: (listing.latitude != null && listing.longitude != null) ? { lat: listing.latitude as number, lng: listing.longitude as number } : undefined,
       });
 
       return {
@@ -247,6 +255,12 @@ async function getListingRecommendations(session: any, limit: number, scoringOpt
     );
   }
 
+  // Fetch caregiver's address for distance calculations
+  const cgAddress = await prisma.address.findFirst({
+    where: { userId: session.user.id, latitude: { not: null }, longitude: { not: null } },
+    orderBy: { createdAt: 'asc' },
+  });
+
   // Fetch open listings not posted by the current user (limit to 50 for performance)
   const candidateListings = await prisma.marketplaceListing.findMany({
     where: {
@@ -293,6 +307,8 @@ async function getListingRecommendations(session: any, limit: number, scoringOpt
       ...scoringOptions,
       caregiverAvailability: availabilitySlots,
       caregiverReviews: reviews,
+      caregiverLocation: cgAddress ? { lat: cgAddress.latitude as number, lng: cgAddress.longitude as number } : undefined,
+      listingLocation: (listing.latitude != null && listing.longitude != null) ? { lat: listing.latitude as number, lng: listing.longitude as number } : undefined,
     });
 
     return {

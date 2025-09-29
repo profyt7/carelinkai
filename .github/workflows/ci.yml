@@ -17,6 +17,9 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm test --silent
+      - name: Run Prisma migrations (if DATABASE_URL provided)
+        if: env.DATABASE_URL != ''
+        run: npx prisma migrate deploy
       - run: npm run build
       - name: Install Playwright (Chromium only)
         run: npx playwright install --with-deps chromium

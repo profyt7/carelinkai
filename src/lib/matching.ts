@@ -41,6 +41,9 @@ export interface ScoringOptions {
   maxDistance?: number; // miles
   caregiverAvailability?: AvailabilitySlot[];
   caregiverReviews?: CaregiverReview[];
+  // Optional coordinates to compute real distance
+  caregiverLocation?: { lat: number; lng: number };
+  listingLocation?: { lat: number; lng: number };
 }
 
 /**
@@ -74,7 +77,7 @@ export function scoreCaregiverForListing(
   };
   
   // Calculate distance score
-  const distanceScore = calculateDistanceScore(caregiver, listing, options.maxDistance);
+  const distanceScore = calculateDistanceScore(caregiver, listing, options.maxDistance, options.caregiverLocation, options.listingLocation);
   result.factors['distance'] = {
     score: distanceScore.score,
     weight: normalizedWeights.distance,
@@ -179,37 +182,42 @@ export function scoreListingForCaregiver(
 function calculateDistanceScore(
   caregiver: Caregiver,
   listing: MarketplaceListing,
-  maxDistance: number = 25 // Default max distance in miles
+  maxDistance: number = 25, // Default max distance in miles
+  caregiverLocation?: { lat: number; lng: number },
+  listingLocation?: { lat: number; lng: number },
 ): { score: number; reason?: string } {
-  // Check if we have coordinates for both
-  if (!listing.latitude || !listing.longitude) {
-    return { 
-      score: 50, // Neutral score if no listing location
-      reason: "Location information unavailable for listing"
+  const listLat = listingLocation?.lat ?? (listing.latitude ?? undefined);
+  const listLng = listingLocation?.lng ?? (listing.longitude ?? undefined);
+  if (listLat === undefined || listLng === undefined) {
+    return {
+      score: 50,
+      reason: 'Location information unavailable for listing',
     };
   }
-  
-  // For now, we'll assume caregiver coordinates are stored in user preferences
-  // In a real implementation, we would look up the caregiver's address
-  // Since this is a pure function, we'll return a neutral score
-  
-  // Simulating distance calculation - in a real implementation,
-  // we would use the caregiver's address coordinates
-  const distance = 0; // Placeholder
-  
+
+  const careLat = caregiverLocation?.lat;
+  const careLng = caregiverLocation?.lng;
+  if (careLat === undefined || careLng === undefined) {
+    // No caregiver coordinates -> neutral score
+    return {
+      score: 50,
+      reason: 'Location information unavailable for caregiver',
+    };
+  }
+
+  const distance = calculateDistance(careLat, careLng, listLat, listLng);
+
   // Score decreases as distance increases
   if (distance <= maxDistance) {
-    const score = 100 - ((distance / maxDistance) * 80);
+    const score = Math.max(0, Math.min(100, 100 - ((distance / maxDistance) * 80)));
     return {
       score,
-      reason: distance === 0 
-        ? "Location information unavailable for comparison" 
-        : `${Math.round(distance)} miles from listing location (within ${maxDistance} mile radius)`
+      reason: `${Math.round(distance)} miles from listing location (within ${maxDistance} mile radius)`,
     };
   } else {
     return {
       score: Math.max(0, 20 - ((distance - maxDistance) / 10)),
-      reason: `${Math.round(distance)} miles from listing location (outside preferred ${maxDistance} mile radius)`
+      reason: `${Math.round(distance)} miles from listing location (outside preferred ${maxDistance} mile radius)`,
     };
   }
 }
