@@ -111,6 +111,9 @@ export default function MarketplacePage() {
   const [cgGeoLat, setCgGeoLat] = useState<number | null>(null);
   const [cgGeoLng, setCgGeoLng] = useState<number | null>(null);
   const [cgShortlistOnly, setCgShortlistOnly] = useState(false);
+  // Server-driven pagination (cursor)
+  const [cgCursor, setCgCursor] = useState<string | null>(null);
+  const [cgHasMoreSvr, setCgHasMoreSvr] = useState<boolean | null>(null);
 
   const [listings, setListings] = useState<Listing[]>([]);
   const [listingsLoading, setListingsLoading] = useState(false);
@@ -675,9 +678,15 @@ export default function MarketplacePage() {
         params.set("page", String(cgPage));
         params.set("pageSize", String(20));
         params.set("sortBy", cgSort);
+        // Use cursor when available and not using radius search
+        if (!(cgRadius && cgGeoLat !== null && cgGeoLng !== null) && cgCursor) {
+          params.set('cursor', cgCursor);
+        }
         const json = await fetchJsonCached(`/api/marketplace/caregivers?${params.toString()}`, { signal: controller.signal }, 15000);
         setCaregivers((prev) => (cgPage > 1 ? [...prev, ...(json?.data ?? [])] : (json?.data ?? [])));
         setCgTotal(json?.pagination?.total ?? 0);
+        setCgHasMoreSvr(typeof json?.pagination?.hasMore === 'boolean' ? json.pagination.hasMore : null);
+        setCgCursor(json?.pagination?.cursor ?? null);
       } catch (e: any) {
         if (e?.name === 'AbortError') return;
         if (cgPage === 1) setCaregivers([]);
@@ -689,7 +698,7 @@ export default function MarketplacePage() {
     return () => {
       controller.abort();
     };
-  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, settings, careTypes, debouncedMinRate, debouncedMaxRate, debouncedMinExperience, cgPage, cgSort, cgRadius, cgGeoLat, cgGeoLng]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, settings, careTypes, debouncedMinRate, debouncedMaxRate, debouncedMinExperience, cgPage, cgSort, cgRadius, cgGeoLat, cgGeoLng, cgCursor]);
 
   // Reset caregivers list when non-page filters change
   const cgQueryKey = useMemo(() => JSON.stringify({
@@ -706,6 +715,8 @@ export default function MarketplacePage() {
       cgPrevKeyRef.current = cgQueryKey;
       setCaregivers([]);
       setCgPage(1);
+      setCgCursor(null);
+      setCgHasMoreSvr(null);
     }
   }, [cgQueryKey, activeTab]);
 
@@ -823,7 +834,10 @@ export default function MarketplacePage() {
   }, [prQueryKey, activeTab]);
 
   // Infinite scroll flags
-  const cgHasMore = cgTotal === 0 ? false : caregivers.length < cgTotal;
+  // Prefer server-provided hasMore when available (cursor pagination)
+  const cgHasMore = (cgHasMoreSvr !== null)
+    ? cgHasMoreSvr
+    : (cgTotal === 0 ? false : caregivers.length < cgTotal);
   const caregiversToRender = useMemo(() => (cgShortlistOnly ? caregivers.filter(c => caregiverFavorites.has(c.id)) : caregivers), [cgShortlistOnly, caregivers, caregiverFavorites]);
   const cgHasMoreRender = cgShortlistOnly ? false : cgHasMore;
   const jobHasMore = jobTotal === 0 ? false : listings.length < jobTotal;
