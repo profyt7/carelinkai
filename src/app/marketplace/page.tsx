@@ -122,6 +122,9 @@ export default function MarketplacePage() {
   const [jobSort, setJobSort] = useState<"recency" | "rateAsc" | "rateDesc" | "distanceAsc">("recency");
   const [applying, setApplying] = useState<Record<string, boolean>>({});
   const [favoritesOnly, setFavoritesOnly] = useState(false);
+  // Server-driven pagination (cursor)
+  const [jobCursor, setJobCursor] = useState<string | null>(null);
+  const [jobHasMoreSvr, setJobHasMoreSvr] = useState<boolean | null>(null);
 
   // Providers state --------------------------------------------------------
   type Provider = {
@@ -745,9 +748,15 @@ export default function MarketplacePage() {
         params.set("page", String(jobPage));
         params.set("pageSize", String(20));
         params.set("sortBy", jobSort);
+        // Use cursor when available and not using radius search
+        if (!(jobRadius && geoLat !== null && geoLng !== null) && jobCursor) {
+          params.set('cursor', jobCursor);
+        }
         const json = await fetchJsonCached(`/api/marketplace/listings?${params.toString()}`, { signal: controller.signal }, 15000);
         setListings((prev) => (jobPage > 1 ? [...prev, ...(json?.data ?? [])] : (json?.data ?? [])));
         setJobTotal(json?.pagination?.total ?? 0);
+        setJobHasMoreSvr(typeof json?.pagination?.hasMore === 'boolean' ? json.pagination.hasMore : null);
+        setJobCursor(json?.pagination?.cursor ?? null);
       } catch (e: any) {
         if (e?.name === 'AbortError') return;
         if (jobPage === 1) setListings([]);
@@ -759,7 +768,7 @@ export default function MarketplacePage() {
     return () => {
       controller.abort();
     };
-  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, debouncedZip, settings, careTypes, services, postedByMe, hideClosed, session, jobPage, jobSort, jobRadius, geoLat, geoLng]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, debouncedZip, settings, careTypes, services, postedByMe, hideClosed, session, jobPage, jobSort, jobRadius, geoLat, geoLng, jobCursor]);
 
   // Reset jobs list when non-page filters change
   const jobQueryKey = useMemo(() => JSON.stringify({
@@ -775,6 +784,8 @@ export default function MarketplacePage() {
       jobPrevKeyRef.current = jobQueryKey;
       setListings([]);
       setJobPage(1);
+      setJobCursor(null);
+      setJobHasMoreSvr(null);
     }
   }, [jobQueryKey, activeTab]);
 
@@ -840,7 +851,9 @@ export default function MarketplacePage() {
     : (cgTotal === 0 ? false : caregivers.length < cgTotal);
   const caregiversToRender = useMemo(() => (cgShortlistOnly ? caregivers.filter(c => caregiverFavorites.has(c.id)) : caregivers), [cgShortlistOnly, caregivers, caregiverFavorites]);
   const cgHasMoreRender = cgShortlistOnly ? false : cgHasMore;
-  const jobHasMore = jobTotal === 0 ? false : listings.length < jobTotal;
+  const jobHasMore = (jobHasMoreSvr !== null)
+    ? jobHasMoreSvr
+    : (jobTotal === 0 ? false : listings.length < jobTotal);
   const jobsToRender = useMemo(() => (favoritesOnly ? listings.filter(l => jobFavorites.has(l.id)) : listings), [favoritesOnly, listings, jobFavorites]);
   const jobHasMoreRender = favoritesOnly ? false : jobHasMore;
   const prHasMore = providerTotal === 0 ? false : providers.length < providerTotal;
