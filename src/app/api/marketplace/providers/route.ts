@@ -45,6 +45,7 @@ export async function GET(request: Request) {
     // Pagination and sorting parameters
     const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1;
     const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 20;
+    const cursor = searchParams.get('cursor');
     const sortBy = (searchParams.get('sortBy') || 'ratingDesc') as 'ratingDesc' | 'rateAsc' | 'rateDesc' | 'distanceAsc';
     
     // Generate mock providers
@@ -111,19 +112,28 @@ export async function GET(request: Request) {
       });
     }
 
-    // Apply pagination
+    // Apply pagination (prefer cursor-style for deterministic infinite scroll)
     const totalCount = providers.length;
-    const skip = (page - 1) * pageSize;
-    const paginatedProviders = providers.slice(skip, skip + pageSize);
-    
+    let startIdx = (page - 1) * pageSize;
+    if (cursor) {
+      const curIdx = providers.findIndex(p => p.id === cursor);
+      startIdx = curIdx >= 0 ? curIdx + 1 : 0;
+    }
+    const slice = providers.slice(startIdx, startIdx + pageSize + 1);
+    const data = slice.slice(0, pageSize);
+    const nextCursor = slice[pageSize]?.id ?? null;
+    const hasMore = Boolean(nextCursor);
+
     return NextResponse.json(
       { 
-        data: paginatedProviders,
+        data,
         pagination: {
           page,
           pageSize,
           total: totalCount,
-          totalPages: Math.ceil(totalCount / pageSize)
+          totalPages: Math.ceil(totalCount / pageSize),
+          hasMore,
+          cursor: nextCursor,
         }
       },
       { status: 200, headers: { 'Cache-Control': 'public, max-age=15, s-maxage=15, stale-while-revalidate=60', ...(typeof __rl_providers_get !== 'undefined' ? buildRateLimitHeaders(__rl_providers_get.rr, __rl_providers_get.limit) : {}) } }

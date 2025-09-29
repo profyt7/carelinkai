@@ -147,6 +147,9 @@ export default function MarketplacePage() {
   const [providerTotal, setProviderTotal] = useState(0);
   const [providerSort, setProviderSort] = useState<"ratingDesc" | "rateAsc" | "rateDesc" | "distanceAsc">("ratingDesc");
   const [prRadius, setPrRadius] = useState<string>("");
+  // Server-driven pagination (cursor)
+  const [providerCursor, setProviderCursor] = useState<string | null>(null);
+  const [providerHasMoreSvr, setProviderHasMoreSvr] = useState<boolean | null>(null);
   const [prGeoLat, setPrGeoLat] = useState<number | null>(null);
   const [prGeoLng, setPrGeoLng] = useState<number | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
@@ -811,9 +814,14 @@ export default function MarketplacePage() {
         params.set("page", String(providerPage));
         params.set("pageSize", String(20));
         params.set("sortBy", providerSort);
+        if (!(prRadius && prGeoLat !== null && prGeoLng !== null) && providerCursor) {
+          params.set('cursor', providerCursor);
+        }
         const json = await fetchJsonCached(`/api/marketplace/providers?${params.toString()}`, { signal: controller.signal }, 15000);
         setProviders((prev) => (providerPage > 1 ? [...prev, ...(json?.data ?? [])] : (json?.data ?? [])));
         setProviderTotal(json?.pagination?.total ?? 0);
+        setProviderHasMoreSvr(typeof json?.pagination?.hasMore === 'boolean' ? json.pagination.hasMore : null);
+        setProviderCursor(json?.pagination?.cursor ?? null);
       } catch (e: any) {
         if (e?.name === 'AbortError') return;
         if (providerPage === 1) setProviders([]);
@@ -825,7 +833,7 @@ export default function MarketplacePage() {
     return () => {
       controller.abort();
     };
-  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, providerServices, providerPage, providerSort, prRadius, prGeoLat, prGeoLng]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, providerServices, providerPage, providerSort, prRadius, prGeoLat, prGeoLng, providerCursor]);
 
   // Reset providers list when non-page filters change
   const prQueryKey = useMemo(() => JSON.stringify({
@@ -841,6 +849,8 @@ export default function MarketplacePage() {
       prPrevKeyRef.current = prQueryKey;
       setProviders([]);
       setProviderPage(1);
+      setProviderCursor(null);
+      setProviderHasMoreSvr(null);
     }
   }, [prQueryKey, activeTab]);
 
@@ -856,7 +866,9 @@ export default function MarketplacePage() {
     : (jobTotal === 0 ? false : listings.length < jobTotal);
   const jobsToRender = useMemo(() => (favoritesOnly ? listings.filter(l => jobFavorites.has(l.id)) : listings), [favoritesOnly, listings, jobFavorites]);
   const jobHasMoreRender = favoritesOnly ? false : jobHasMore;
-  const prHasMore = providerTotal === 0 ? false : providers.length < providerTotal;
+  const prHasMore = (providerHasMoreSvr !== null)
+    ? providerHasMoreSvr
+    : (providerTotal === 0 ? false : providers.length < providerTotal);
 
   // Virtualized grid components (react-virtuoso)
   const GridList = useMemo(() => {
