@@ -9,11 +9,13 @@ import { rateLimitAsync, getClientIp, buildRateLimitHeaders } from '@/lib/rateLi
  * Supports pagination with page and pageSize parameters
  */
 export async function GET(request: Request) {
-  // In production, return 501 Not Implemented
-  if (process.env.NODE_ENV === 'production') {
+  // Feature flag: allow disabling providers in any environment via env
+  // Default: enabled in all environments
+  const providersEnabled = process.env['NEXT_PUBLIC_PROVIDERS_ENABLED'] !== 'false';
+  if (!providersEnabled) {
     return NextResponse.json(
-      { error: 'Providers API not implemented in production' },
-      { status: 501 }
+      { data: [], pagination: { page: 1, pageSize: 0, total: 0, totalPages: 0, hasMore: false, cursor: null } },
+      { status: 200 }
     );
   }
   

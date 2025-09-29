@@ -8,11 +8,13 @@ export default withAuth(
     try {
       // Allow unauthenticated access during E2E runs (never in production)
       if (process.env['NODE_ENV'] !== 'production' && process.env['NEXT_PUBLIC_E2E_AUTH_BYPASS'] === '1') {
-        return NextResponse.next();
+        const res = NextResponse.next();
+        return applySecurityHeaders(req, res);
       }
       // Or via explicit header for test runners
       if (process.env['NODE_ENV'] !== 'production' && req.headers.get('x-e2e-bypass') === '1') {
-        return NextResponse.next();
+        const res = NextResponse.next();
+        return applySecurityHeaders(req, res);
       }
       const { pathname } = req.nextUrl;
 
@@ -27,16 +29,19 @@ export default withAuth(
       ];
 
       if (publicPaths.includes(pathname)) {
-        return NextResponse.next();
+        const res = NextResponse.next();
+        return applySecurityHeaders(req, res);
       }
 
       // (Any other custom logic could live here)
-      return NextResponse.next();
+      const res = NextResponse.next();
+      return applySecurityHeaders(req, res);
     } catch (err) {
       /* istanbul ignore next */
       console.error('Middleware error:', err);
       // On error let the request continue instead of crashing
-      return NextResponse.next();
+      const res = NextResponse.next();
+      return applySecurityHeaders(req, res);
     }
   },
   {
@@ -76,3 +81,69 @@ export const config = {
     '/((?!api|_next|static|public|favicon\\.ico|auth|sw\\.js|manifest\\.json|offline\\.html).+)',
   ],
 };
+
+/**
+ * Apply security headers (CSP, HSTS, etc.)
+ */
+function applySecurityHeaders(req: Request, res: NextResponse) {
+  const isProd = process.env['NODE_ENV'] === 'production';
+
+  // Strict-Transport-Security (HSTS) - only in production
+  if (isProd) {
+    res.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+  }
+
+  // Common security headers
+  res.headers.set('X-Content-Type-Options', 'nosniff');
+  res.headers.set('X-Frame-Options', 'DENY');
+  res.headers.set('Referrer-Policy', 'no-referrer');
+  res.headers.set(
+    'Permissions-Policy',
+    [
+      "geolocation=(self)",
+      "camera=()",
+      "microphone=()",
+      "payment=(self)",
+      "fullscreen=(self)",
+      "accelerometer=()",
+      "autoplay=(self)",
+      "clipboard-read=(self)",
+      "clipboard-write=(self)",
+    ].join(', ')
+  );
+
+  // Content-Security-Policy (only enable in production to avoid dev tooling issues)
+  const cspParts = [
+    "default-src 'self'",
+    // Allow Next.js inline styles; tighten in prod if hashed
+    isProd ? "style-src 'self' 'unsafe-inline'" : "style-src 'self' 'unsafe-inline'",
+    // Scripts: allow self; allow unsafe-eval in dev for React Refresh
+    isProd ? "script-src 'self'" : "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+    // Images from self, data URIs, and https
+    "img-src 'self' data: blob: https:",
+    // Fonts
+    "font-src 'self' data: https:",
+    // Connections (API, websockets for dev)
+    isProd ? "connect-src 'self' https:" : "connect-src 'self' ws: wss: http: https:",
+    // Media
+    "media-src 'self'",
+    // Frames
+    "frame-ancestors 'none'",
+    // Workers
+    "worker-src 'self' blob:",
+    // Base URI
+    "base-uri 'self'",
+    // Form actions
+    "form-action 'self'"
+  ];
+
+  // Do not set CSP for Next.js assets routes to avoid duplication issues
+  const url = new URL((req as any).url);
+  const path = url.pathname;
+  const skipCsp = path.startsWith('/_next') || path.startsWith('/api');
+  if (isProd && !skipCsp) {
+    res.headers.set('Content-Security-Policy', cspParts.join('; '));
+  }
+
+  return res;
+}
