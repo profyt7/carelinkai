@@ -134,7 +134,7 @@ export default function FamilyPage() {
     [activities, activityFilter, isTypeInFilter]
   );
 
-  const FAMILY_ID = 'cmdhjmp2x0000765nc52usnp7';
+  const [familyId, setFamilyId] = useState<string | null>(null);
 
   /* ------------------------------------------------------------------
      Billing state
@@ -187,18 +187,19 @@ export default function FamilyPage() {
   };
 
   /* ------------------------------------------------------------------
-     Fetch membership role
+     Fetch membership role & familyId
   ------------------------------------------------------------------*/
   useEffect(() => {
     const fetchMembership = async () => {
       try {
-        const res = await fetch(`/api/family/membership?familyId=${FAMILY_ID}`);
+        const res = await fetch(`/api/family/membership`);
         if (res.ok) {
           const data = await res.json();
           setRole(data.role);
+          setFamilyId(data.familyId);
         }
       } catch (err) {
-        console.error('Failed to fetch membership role:', err);
+        console.error('Failed to fetch membership:', err);
       }
     };
     fetchMembership();
@@ -307,7 +308,7 @@ export default function FamilyPage() {
         setLoading(true);
         setError(null);
         const params = new URLSearchParams({
-          familyId: FAMILY_ID,
+          familyId: familyId || '',
           limit: '12',
           sortBy: 'createdAt',
           sortOrder: 'desc',
@@ -330,20 +331,21 @@ export default function FamilyPage() {
     };
 
     // Only fetch when Documents tab is active
-    if (activeTab === 'documents') {
+    if (activeTab === 'documents' && familyId) {
       fetchDocs();
       return () => controller.abort();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     return () => controller.abort();
-  }, [search, docType, activeTab]);
+  }, [search, docType, activeTab, familyId]);
 
   /* ------------------------------------------------------------------
      Real-time updates via SSE
   ------------------------------------------------------------------*/
   useEffect(() => {
+    if (!familyId) return;
     const es = new EventSource(
-      `/api/sse?topics=${encodeURIComponent(`family:${FAMILY_ID}`)}`
+      `/api/sse?topics=${encodeURIComponent(`family:${familyId}`)}`
     );
 
     const parseData = (e: MessageEvent<any>) => {
@@ -381,20 +383,20 @@ export default function FamilyPage() {
       es.close();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [familyId]);
 
   /* ------------------------------------------------------------------
      Timeline fetch + SSE
   ------------------------------------------------------------------*/
   useEffect(() => {
-    if (activeTab !== 'timeline') return;
+    if (activeTab !== 'timeline' || !familyId) return;
 
     const controller = new AbortController();
     const load = async () => {
       try {
         setTimelineLoading(true);
         const res = await fetch(
-          `/api/family/activity?familyId=${FAMILY_ID}&limit=50`,
+          `/api/family/activity?familyId=${familyId}&limit=50`,
           { signal: controller.signal }
         );
         if (!res.ok) throw new Error('Failed to load activity');
@@ -411,7 +413,7 @@ export default function FamilyPage() {
     load();
 
     const es = new EventSource(
-      `/api/sse?topics=${encodeURIComponent(`family:${FAMILY_ID}`)}`
+      `/api/sse?topics=${encodeURIComponent(`family:${familyId}`)}`
     );
     es.addEventListener('activity:created', (e) => {
       try {
@@ -428,7 +430,7 @@ export default function FamilyPage() {
       controller.abort();
       es.close();
     };
-  }, [activeTab]);
+  }, [activeTab, familyId]);
 
   /* ------------------------------------------------------------------
      Fetch wallet & payments
@@ -437,8 +439,8 @@ export default function FamilyPage() {
     try {
       setBillingLoading(true);
       const [walletRes, payRes] = await Promise.all([
-        fetch(`/api/billing/wallet?familyId=${FAMILY_ID}`),
-        fetch(`/api/billing/payments?familyId=${FAMILY_ID}`),
+        fetch(`/api/billing/wallet?familyId=${familyId}`),
+        fetch(`/api/billing/payments?familyId=${familyId}`),
       ]);
       if (walletRes.ok) {
         const json = await walletRes.json();
@@ -458,11 +460,11 @@ export default function FamilyPage() {
 
   // Trigger load when billing tab active
   useEffect(() => {
-    if (activeTab === 'billing') {
+    if (activeTab === 'billing' && familyId) {
       loadBilling();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab]);
+  }, [activeTab, familyId]);
 
   /* ------------------------------------------------------------------
      Deposit flow
@@ -475,7 +477,7 @@ export default function FamilyPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           amountCents: Math.round(depositAmount * 100),
-          familyId: FAMILY_ID,
+          familyId: familyId,
         }),
       });
       if (!res.ok) throw new Error('Failed to initiate deposit');
@@ -788,6 +790,12 @@ export default function FamilyPage() {
                       <span className="text-xs text-gray-600">
                         {doc.uploader.firstName} {doc.uploader.lastName}
                       </span>
+                      <a
+                        href={`/api/family/documents/${doc.id}/download`}
+                        className="ml-auto inline-flex items-center rounded-md border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                      >
+                        Download
+                      </a>
                     </div>
                   </div>
                 ))}
@@ -1073,7 +1081,7 @@ export default function FamilyPage() {
           setPrefillFiles([]);
         }}
         onUpload={handleUpload}
-        familyId={FAMILY_ID}
+        familyId={familyId ?? ''}
         initialFiles={prefillFiles}
       />
       {/* Deposit modal */}

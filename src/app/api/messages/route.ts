@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { publish } from "@/lib/server/sse";
+import { rateLimitAsync, getClientIp, buildRateLimitHeaders } from "@/lib/rateLimit";
+import { createAuditLogFromRequest } from "@/lib/audit";
 
 // Validate message creation input
 const messageCreateSchema = z.object({
@@ -25,6 +27,18 @@ const messageCreateSchema = z.object({
  */
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit: 20 req/min per IP for sending messages
+    {
+      const key = getClientIp(request);
+      const limit = 20;
+      const rr = await rateLimitAsync({ name: 'messages:POST', key, limit, windowMs: 60_000 });
+      if (!rr.allowed) {
+        return NextResponse.json(
+          { error: "Rate limit exceeded" },
+          { status: 429, headers: { ...buildRateLimitHeaders(rr, limit), 'Retry-After': String(Math.ceil(rr.resetMs / 1000)) } }
+        );
+      }
+    }
     // Get session and verify authentication
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -67,6 +81,16 @@ export async function POST(request: NextRequest) {
         status: "SENT"
       }
     });
+
+    // Audit log
+    await createAuditLogFromRequest(
+      request,
+      "CREATE" as any,
+      "Message",
+      message.id,
+      `Message sent to user ${receiverId}`,
+      { length: content.length }
+    );
     
     // Publish SSE event to receiver's notification channel
     publish(`notifications:${receiverId}`, "message:created", {
@@ -104,6 +128,18 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
+    // Rate limit: 60 req/min per IP for reading messages
+    {
+      const key = getClientIp(request);
+      const limit = 60;
+      const rr = await rateLimitAsync({ name: 'messages:GET', key, limit, windowMs: 60_000 });
+      if (!rr.allowed) {
+        return NextResponse.json(
+          { error: "Rate limit exceeded" },
+          { status: 429, headers: { ...buildRateLimitHeaders(rr, limit), 'Retry-After': String(Math.ceil(rr.resetMs / 1000)) } }
+        );
+      }
+    }
     // Get session and verify authentication
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -182,6 +218,16 @@ export async function GET(request: NextRequest) {
       });
     }
     
+    // Audit log (read access)
+    await createAuditLogFromRequest(
+      request,
+      "READ" as any,
+      "Message",
+      otherUserId || null,
+      otherUserId ? `Retrieved conversation with ${otherUserId}` : "Retrieved inbox messages",
+      { limit }
+    );
+
     // Return messages
     return NextResponse.json({
       messages,
