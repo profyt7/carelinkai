@@ -790,6 +790,12 @@ export default function FamilyPage() {
                       <span className="text-xs text-gray-600">
                         {doc.uploader.firstName} {doc.uploader.lastName}
                       </span>
+                      <a
+                        href={`/api/family/documents/${doc.id}/download`}
+                        className="ml-auto inline-flex items-center rounded-md border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                      >
+                        Download
+                      </a>
                     </div>
                   </div>
                 ))}
