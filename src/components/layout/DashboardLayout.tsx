@@ -64,6 +64,7 @@ const navItems: NavItem[] = [
   { name: "Search Homes", icon: <FiSearch size={20} />, href: "/search", showInMobileBar: false },
   // Marketplace (feature-flagged)
   { name: "Marketplace", icon: <FiUsers size={20} />, href: "/marketplace", showInMobileBar: true },
+  { name: "Operator", icon: <FiHome size={20} />, href: "/operator", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN"] },
   { name: "Inquiries", icon: <FiFileText size={20} />, href: "/dashboard/inquiries", showInMobileBar: false },
   { name: "Residents", icon: <FiUsers size={20} />, href: "/residents", showInMobileBar: true },
   { name: "Caregivers", icon: <FiUsers size={20} />, href: "/caregivers", showInMobileBar: false },
