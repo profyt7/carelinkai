@@ -66,7 +66,6 @@ export default async function OperatorShiftsPage() {
                             onClick={async () => {
                               await fetch(`/api/operator/shifts/${s.id}/assign`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ caregiverId: null }) });
                               // Simple server navigation refresh pattern
-                              // @ts-expect-error next/compat
                               location.reload();
                             }}
                           >
