@@ -19,7 +19,7 @@ export default async function OperatorShiftsPage() {
 
   const shifts = await prisma.caregiverShift.findMany({
     where,
-    include: { home: { select: { id: true, name: true } } },
+    include: { home: { select: { id: true, name: true } }, caregiver: { include: { user: true } } },
     orderBy: { startTime: 'desc' },
   });
 
@@ -38,7 +38,9 @@ export default async function OperatorShiftsPage() {
                 <th className="py-2 pr-4">Start</th>
                 <th className="py-2 pr-4">End</th>
                 <th className="py-2 pr-4">Rate</th>
+                <th className="py-2 pr-4">Caregiver</th>
                 <th className="py-2 pr-4">Status</th>
+                <th className="py-2 pr-4"></th>
               </tr>
             </thead>
             <tbody>
@@ -48,12 +50,37 @@ export default async function OperatorShiftsPage() {
                   <td className="py-2 pr-4">{s.startTime.toLocaleString()}</td>
                   <td className="py-2 pr-4">{s.endTime.toLocaleString()}</td>
                   <td className="py-2 pr-4">${'{'}Number(s.hourlyRate).toFixed(2){'}'}</td>
+                  <td className="py-2 pr-4">{s.caregiver ? `${s.caregiver.user.firstName} ${s.caregiver.user.lastName}` : '—'}</td>
                   <td className="py-2 pr-4">{s.status}</td>
+                  <td className="py-2 pr-4 text-right">
+                    <div className="flex gap-2 justify-end">
+                      <Link href={`/operator/shifts/${s.id}/assign`} className="btn btn-sm">{s.caregiver ? 'Reassign' : 'Assign'}</Link>
+                      {s.caregiver && (
+                        <form action={`/api/operator/shifts/${s.id}/assign`} method="post" onSubmit={(e) => {
+                          // Convert POST form to PATCH via fetch for consistency
+                          e.preventDefault();
+                        }}>
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-secondary"
+                            onClick={async () => {
+                              await fetch(`/api/operator/shifts/${s.id}/assign`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ caregiverId: null }) });
+                              // Simple server navigation refresh pattern
+                              // @ts-expect-error next/compat
+                              location.reload();
+                            }}
+                          >
+                            Unassign
+                          </button>
+                        </form>
+                      )}
+                    </div>
+                  </td>
                 </tr>
               ))}
               {shifts.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="py-6 text-center text-neutral-500">No shifts yet</td>
+                  <td colSpan={7} className="py-6 text-center text-neutral-500">No shifts yet</td>
                 </tr>
               )}
             </tbody>
