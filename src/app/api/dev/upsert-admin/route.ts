@@ -10,8 +10,8 @@ export async function POST(request: NextRequest) {
   const prisma = new PrismaClient();
   try {
     const body = await request.json().catch(() => ({}));
-    const email = (body.email as string) || process.env.ADMIN_EMAIL || 'admin@carelinkai.com';
-    const rawPassword = (body.password as string) || process.env.ADMIN_PASSWORD || 'Admin123!';
+    const email = (body.email as string) || process.env['ADMIN_EMAIL'] || 'admin@carelinkai.com';
+    const rawPassword = (body.password as string) || process.env['ADMIN_PASSWORD'] || 'Admin123!';
 
     const passwordHash = await bcrypt.hash(rawPassword, 10);
 

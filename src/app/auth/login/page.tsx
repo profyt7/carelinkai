@@ -73,7 +73,8 @@ export default function LoginPage() {
       setError(null);
 
       const result = await signIn("credentials", {
-        redirect: false,
+        redirect: true,
+        callbackUrl: "/dashboard",
         email: data.email,
         password: data.password,
       });
@@ -91,15 +92,8 @@ export default function LoginPage() {
         return;
       }
 
-      /* --------------------------------------------------------------------
-       * We’ve authenticated successfully.  Send the user straight to the
-       * dashboard (single source of truth for post-login experience) rather
-       * than relying on a potentially stale callbackUrl.
-       * ------------------------------------------------------------------ */
-      router.push("/dashboard");
-
-      // Ensure any server components that depend on the session revalidate.
-      router.refresh();
+      // If redirect is handled by NextAuth, result will be undefined or contain a URL
+      // No manual navigation is needed.
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error("Unhandled sign-in exception:", error);
