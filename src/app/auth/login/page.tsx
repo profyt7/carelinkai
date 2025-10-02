@@ -73,7 +73,8 @@ export default function LoginPage() {
       setError(null);
 
       const result = await signIn("credentials", {
-        redirect: false,
+        redirect: true,
+        callbackUrl: "/dashboard",
         email: data.email,
         password: data.password,
       });
@@ -91,20 +92,7 @@ export default function LoginPage() {
         return;
       }
 
-      // Wait until NextAuth session is established before navigating
-      const end = Date.now() + 15000;
-      while (Date.now() < end) {
-        try {
-          const resp = await fetch('/api/auth/session', { cache: 'no-store' });
-          if (resp.ok) {
-            const s = await resp.json();
-            if (s?.user?.email) break;
-          }
-        } catch {}
-        await new Promise(r => setTimeout(r, 250));
-      }
-
-      router.push('/dashboard');
+      // If redirect is handled by NextAuth, no manual navigation is needed.
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error("Unhandled sign-in exception:", error);
