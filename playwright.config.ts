@@ -16,7 +16,7 @@ if (!process.env['CI']) {
       // Override default bypass header in this project
       extraHTTPHeaders: {},
     } as any),
-    testMatch: /.*(auth-credentials|credentials-upload)\.spec\.ts/,
+    grep: /\[non-bypass\]/,
   });
 }
 

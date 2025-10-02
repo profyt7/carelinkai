@@ -4,7 +4,7 @@ import path from 'path';
 // This spec performs a real login (non-bypass) and completes the caregiver credential upload flow.
 // It relies on dev-only endpoints and a mock S3 upload URL returned by the app in non-production.
 
-test.describe('Credentials: Caregiver credential upload (real flow)', () => {
+test.describe('[non-bypass] Credentials: Caregiver credential upload (real flow)', () => {
   // Skip in CI for now; this uses real login and dev-only endpoints
   test.skip(!!process.env.CI, 'Run locally only');
 
