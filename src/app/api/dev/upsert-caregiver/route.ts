@@ -3,8 +3,8 @@ import { PrismaClient, UserRole, UserStatus } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 export async function POST(request: NextRequest) {
-  // Dev-only safety gate
-  if (process.env.NODE_ENV !== 'development') {
+  // Dev-only safety gate (allow override for e2e in built server)
+  if (process.env.NODE_ENV !== 'development' && process.env['ALLOW_DEV_ENDPOINTS'] !== '1') {
     return NextResponse.json({ success: false, message: 'Only available in development mode' }, { status: 403 });
   }
 

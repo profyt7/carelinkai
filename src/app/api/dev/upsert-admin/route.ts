@@ -3,7 +3,7 @@ import { PrismaClient, UserRole, UserStatus } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 export async function POST(request: NextRequest) {
-  if (process.env.NODE_ENV !== 'development') {
+  if (process.env.NODE_ENV !== 'development' && process.env['ALLOW_DEV_ENDPOINTS'] !== '1') {
     return NextResponse.json({ success: false, message: 'Only available in development mode' }, { status: 403 });
   }
 
