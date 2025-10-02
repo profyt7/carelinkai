@@ -21,6 +21,14 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      name: 'chromium-no-bypass',
+      use: {
+        ...devices['Desktop Chrome'],
+        extraHTTPHeaders: {},
+      },
+      testMatch: /.*auth-credentials\.spec\.ts/,
+    },
   ],
   webServer: {
     command:
