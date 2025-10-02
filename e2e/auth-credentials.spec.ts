@@ -24,14 +24,14 @@ test.describe('Auth: Credentials login (real flow)', () => {
     // Wait until we land on dashboard (login page manually pushes after session is ready)
     await expect(page).toHaveURL(/.*dashboard/, { timeout: 20000 });
 
-    // Verify session is actually established via API (source of truth)
+    // Verify session is actually established via server-side API (more reliable in dev)
     const sessionDeadline = Date.now() + 20000;
     let sessionOk = false;
     while (Date.now() < sessionDeadline) {
-      const s = await page.request.get('/api/auth/session');
+      const s = await page.request.get('/api/dev/whoami');
       if (s.ok()) {
         const body = await s.json();
-        if (body?.user?.email) { sessionOk = true; break; }
+        if (body?.session?.user?.email) { sessionOk = true; break; }
       }
       await page.waitForTimeout(200);
     }
