@@ -26,7 +26,7 @@ test.describe('Auth: Credentials login (real flow)', () => {
     const loading = page.getByText('Loading...');
     await loading.waitFor({ state: 'detached', timeout: 15000 }).catch(() => undefined);
 
-    // Assert a stable dashboard marker: title heading or welcome text
-    await expect(page.getByText(/Welcome back/i)).toBeVisible({ timeout: 15000 });
+    // Assert a stable dashboard marker: header title "Dashboard"
+    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible({ timeout: 15000 });
   });
 });
