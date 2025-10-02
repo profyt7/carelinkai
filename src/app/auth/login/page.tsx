@@ -91,7 +91,19 @@ export default function LoginPage() {
         return;
       }
 
-      // Manual navigation after successful sign-in to ensure deterministic test behavior
+      // Wait until NextAuth session is established before navigating
+      const end = Date.now() + 15000;
+      while (Date.now() < end) {
+        try {
+          const resp = await fetch('/api/auth/session', { cache: 'no-store' });
+          if (resp.ok) {
+            const s = await resp.json();
+            if (s?.user?.email) break;
+          }
+        } catch {}
+        await new Promise(r => setTimeout(r, 250));
+      }
+
       router.push('/dashboard');
     } catch (error) {
       // eslint-disable-next-line no-console
