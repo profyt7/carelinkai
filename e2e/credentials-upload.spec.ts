@@ -36,6 +36,21 @@ test.describe('[non-bypass] Credentials: Caregiver credential upload (real flow)
     // Expect to land on dashboard
     await expect(page).toHaveURL(/.*dashboard/, { timeout: 20000 });
 
+    // Ensure server-side session is established
+    {
+      const deadline = Date.now() + 20000;
+      let ok = false;
+      while (Date.now() < deadline) {
+        const r = await page.request.get('/api/dev/whoami');
+        if (r.ok()) {
+          const body = await r.json();
+          if (body?.session?.user?.email) { ok = true; break; }
+        }
+        await page.waitForTimeout(200);
+      }
+      expect(ok).toBeTruthy();
+    }
+
     // Navigate to Profile Settings
     await page.goto('/settings/profile');
     await page.waitForLoadState('networkidle');
