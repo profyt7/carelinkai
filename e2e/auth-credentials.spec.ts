@@ -19,21 +19,8 @@ test.describe('Auth: Credentials login (real flow)', () => {
     await page.getByLabel('Password').fill(process.env.ADMIN_PASSWORD || 'Admin123!');
     await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 
-    // Wait for NextAuth cookie to appear (dev: next-auth.session-token; prod: __Secure-next-auth.session-token)
-    const cookieDeadline = Date.now() + 20000;
-    let haveSessionCookie = false;
-    while (Date.now() < cookieDeadline) {
-      const cookies = await context.cookies('http://localhost:3000');
-      if (cookies.some(c => c.name.includes('next-auth.session-token'))) {
-        haveSessionCookie = true;
-        break;
-      }
-      await page.waitForTimeout(200);
-    }
-    expect(haveSessionCookie).toBeTruthy();
-
-    // Ensure we end up on dashboard
-    await expect(page).toHaveURL(/.*dashboard/);
+    // Wait until we land on dashboard (login page manually pushes after session is ready)
+    await expect(page).toHaveURL(/.*dashboard/, { timeout: 20000 });
 
     // Wait for any loading state to clear (DashboardLayout shows "Loading..." while hydrating)
     const loading = page.getByText('Loading...');
