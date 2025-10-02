@@ -9,6 +9,7 @@ export default function EditHomePage() {
   const router = useRouter();
   const params = useParams() as Record<string, string>;
   const id = params['id'];
+  const operatorId = (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('operatorId') : null);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({
     name: '',
@@ -57,7 +58,7 @@ export default function EditHomePage() {
       const res = await fetch(`/api/operator/homes/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       if (!res.ok) throw new Error('Failed to update');
       toast.success('Home updated');
-      router.push(`/operator/homes/${id}`);
+      router.push(`/operator/homes/${id}${operatorId ? `?operatorId=${operatorId}` : ''}`);
       router.refresh();
     } catch (e: any) {
       toast.error(e.message || 'Update failed');

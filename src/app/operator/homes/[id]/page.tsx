@@ -12,14 +12,15 @@ export const revalidate = 0;
 
 const prisma = new PrismaClient();
 
-export default async function OperatorHomeManagePage({ params }: { params: { id: string } }) {
+export default async function OperatorHomeManagePage({ params, searchParams }: { params: { id: string }, searchParams?: { operatorId?: string } }) {
   const session = await getServerSession(authOptions);
   const email = session?.user?.email ?? null;
   const user = email ? await prisma.user.findUnique({ where: { email } }) : null;
   const op = user?.role === UserRole.OPERATOR ? await prisma.operator.findUnique({ where: { userId: user.id } }) : null;
+  const operatorOverrideId = user?.role === UserRole.ADMIN ? (searchParams?.operatorId || null) : null;
 
   const home = await prisma.assistedLivingHome.findUnique({
-    where: { id: params.id, ...(op ? { operatorId: op.id } : {}) },
+    where: { id: params.id, ...(operatorOverrideId ? { operatorId: operatorOverrideId } : (op ? { operatorId: op.id } : {})) },
     include: { address: true, photos: { orderBy: { isPrimary: 'desc' } } },
   });
   if (!home) {
@@ -46,7 +47,7 @@ export default async function OperatorHomeManagePage({ params }: { params: { id:
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold">{home.name}</h2>
           <div className="flex gap-2">
-            <Link href={`/operator/homes/${home.id}/edit`} className="btn btn-primary">Edit</Link>
+            <Link href={`/operator/homes/${home.id}/edit${operatorOverrideId ? `?operatorId=${operatorOverrideId}` : ''}`} className="btn btn-primary">Edit</Link>
           </div>
         </div>
 

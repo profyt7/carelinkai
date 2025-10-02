@@ -9,14 +9,15 @@ export const revalidate = 0;
 
 const prisma = new PrismaClient();
 
-export default async function OperatorHomesPage() {
+export default async function OperatorHomesPage({ searchParams }: { searchParams?: { operatorId?: string } }) {
   const session = await getServerSession(authOptions);
   const email = session?.user?.email ?? null;
   const user = email ? await prisma.user.findUnique({ where: { email } }) : null;
   const op = user?.role === UserRole.OPERATOR ? await prisma.operator.findUnique({ where: { userId: user.id } }) : null;
+  const operatorOverrideId = user?.role === UserRole.ADMIN ? (searchParams?.operatorId || null) : null;
 
   const homes = await prisma.assistedLivingHome.findMany({
-    where: op ? { operatorId: op.id } : {},
+    where: operatorOverrideId ? { operatorId: operatorOverrideId } : (op ? { operatorId: op.id } : {}),
     include: { address: true },
     orderBy: { createdAt: 'desc' },
   });
@@ -26,7 +27,7 @@ export default async function OperatorHomesPage() {
       <div className="p-4 sm:p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold">Your Homes</h2>
-          <Link href="/operator/homes/new" className="btn btn-primary">Add Home</Link>
+          <Link href={`/operator/homes/new${operatorOverrideId ? `?operatorId=${operatorOverrideId}` : ''}`} className="btn btn-primary">Add Home</Link>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {homes.map((h) => (
