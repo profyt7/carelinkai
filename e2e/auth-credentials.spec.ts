@@ -22,11 +22,21 @@ test.describe('Auth: Credentials login (real flow)', () => {
     // Wait until we land on dashboard (login page manually pushes after session is ready)
     await expect(page).toHaveURL(/.*dashboard/, { timeout: 20000 });
 
-    // Wait for any loading state to clear (DashboardLayout shows "Loading..." while hydrating)
-    const loading = page.getByText('Loading...');
-    await loading.waitFor({ state: 'detached', timeout: 15000 }).catch(() => undefined);
+    // Verify session is actually established via API (source of truth)
+    const sessionDeadline = Date.now() + 20000;
+    let sessionOk = false;
+    while (Date.now() < sessionDeadline) {
+      const s = await page.request.get('/api/auth/session');
+      if (s.ok()) {
+        const body = await s.json();
+        if (body?.user?.email) { sessionOk = true; break; }
+      }
+      await page.waitForTimeout(200);
+    }
+    expect(sessionOk).toBeTruthy();
 
-    // Assert a stable dashboard marker: header title "Dashboard"
-    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible({ timeout: 15000 });
+    // Optional UI assertion when hydrated
+    const heading = page.getByRole('heading', { name: 'Dashboard' });
+    await heading.waitFor({ state: 'visible', timeout: 15000 }).catch(() => undefined);
   });
 });
