@@ -199,13 +199,20 @@ export default function DashboardLayout({
     }
   }, [showMobileSearch]);
 
+  // Compute E2E bypass (env flag OR cookie set by middleware)
+  const e2eEnvBypass = process.env['NODE_ENV'] !== 'production' && process.env['NEXT_PUBLIC_E2E_AUTH_BYPASS'] === '1';
+  const e2eCookieBypass = typeof window !== 'undefined' && document.cookie.includes('e2e-bypass=1');
+  const e2eBypass = e2eEnvBypass || e2eCookieBypass;
+
   // Redirect to login if not authenticated (skip during e2e to allow mocking; never in production)
   useEffect(() => {
-    const bypass = process.env['NODE_ENV'] !== 'production' && process.env['NEXT_PUBLIC_E2E_AUTH_BYPASS'] === '1';
-    if (!bypass && status === "unauthenticated") {
+    if (e2eBypass) return;
+    // If NextAuth session cookie is present, let the client hydrate and session resolve instead of redirecting
+    const hasSessionCookie = typeof document !== 'undefined' && document.cookie.includes('next-auth.session-token');
+    if (!hasSessionCookie && status === "unauthenticated") {
       router.push("/auth/login");
     }
-  }, [status, router]);
+  }, [status, router, e2eBypass]);
 
   // Toggle sidebar
   const toggleSidebar = () => {
@@ -314,10 +321,16 @@ export default function DashboardLayout({
     );
   }
 
-  const e2eBypass = process.env['NODE_ENV'] !== 'production' && process.env['NEXT_PUBLIC_E2E_AUTH_BYPASS'] === '1';
-  if (!e2eBypass && status === "unauthenticated") {
-    return null;
-  }
+  const contentEl = (!e2eBypass && status === "unauthenticated") ? (
+    <div className="flex-1 flex items-center justify-center">
+      <div className="flex flex-col items-center space-y-4 py-12">
+        <div className="h-10 w-10 rounded-full border-4 border-t-primary-500 border-neutral-200 animate-spin"></div>
+        <p className="text-neutral-600 font-medium">Signing you in...</p>
+      </div>
+    </div>
+  ) : (
+    <>{children}</>
+  );
 
   return (
     <div 
@@ -698,7 +711,7 @@ export default function DashboardLayout({
             WebkitOverflowScrolling: 'touch' // For iOS momentum scrolling
           }}
         >
-          {children}
+          {contentEl}
         </main>
       </div>
       

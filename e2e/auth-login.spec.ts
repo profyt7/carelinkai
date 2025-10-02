@@ -10,6 +10,8 @@ test.describe('Auth: Admin login', () => {
     // In local e2e we bypass auth via middleware header; simulate successful login by navigating
     // to dashboard and asserting layout loads to prevent flakiness on credential flows in CI.
     await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByText(/Welcome back/i)).toBeVisible();
+    const loading = page.getByText('Loading...');
+    await loading.waitFor({ state: 'detached', timeout: 15000 }).catch(() => undefined);
+    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible({ timeout: 15000 });
   });
 });

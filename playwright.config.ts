@@ -1,5 +1,24 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const projects = [
+  {
+    name: 'chromium',
+    use: { ...devices['Desktop Chrome'] },
+  },
+];
+
+// Only include the non-bypass credentials project for local/dev runs, not in CI
+if (!process.env['CI']) {
+  projects.push({
+    name: 'chromium-no-bypass',
+    use: {
+      ...devices['Desktop Chrome'],
+      extraHTTPHeaders: {},
+    },
+    testMatch: /.*auth-credentials\.spec\.ts/,
+  });
+}
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: false,
@@ -16,16 +35,11 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
   },
-  projects: [
-    {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },
-  ],
+  projects,
   webServer: {
     command:
       process.env['PLAYWRIGHT_WEB_SERVER_CMD'] ||
-      'cross-env NEXT_PUBLIC_E2E_AUTH_BYPASS=1 DATABASE_URL=postgresql://postgres:postgres@localhost:5434/carelinkai_marketplace?schema=public npm run dev',
+      'cross-env NEXTAUTH_URL=http://localhost:3000 NEXTAUTH_SECRET=devsecret DATABASE_URL=postgresql://postgres:postgres@localhost:5434/carelinkai_marketplace?schema=public npm run dev',
     url: process.env['PLAYWRIGHT_BASE_URL'] || 'http://localhost:3000',
     reuseExistingServer: false,
     timeout: 120_000,

@@ -9,11 +9,13 @@ export default withAuth(
       // Allow unauthenticated access during E2E runs (never in production)
       if (process.env['NODE_ENV'] !== 'production' && process.env['NEXT_PUBLIC_E2E_AUTH_BYPASS'] === '1') {
         const res = NextResponse.next();
+        try { res.cookies.set('e2e-bypass', '1', { path: '/' }); } catch {}
         return applySecurityHeaders(req, res);
       }
       // Or via explicit header for test runners
       if (process.env['NODE_ENV'] !== 'production' && req.headers.get('x-e2e-bypass') === '1') {
         const res = NextResponse.next();
+        try { res.cookies.set('e2e-bypass', '1', { path: '/' }); } catch {}
         return applySecurityHeaders(req, res);
       }
       const { pathname } = req.nextUrl;
