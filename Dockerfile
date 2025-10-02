@@ -43,5 +43,7 @@ COPY --from=builder /app/prisma ./prisma
 ENV PORT=3000 HOST=0.0.0.0
 EXPOSE 3000
 
-# Optionally run migrations on startup if DATABASE_URL is provided
-CMD ["sh", "-c", "npx prisma migrate deploy || true; node node_modules/next/dist/bin/next start -p $PORT"]
+# Generate Prisma client in the runtime image to ensure @prisma/client is initialized
+# and then attempt to run migrations (ignored if no DATABASE_URL / permissions).
+# Finally start Next.js.
+CMD ["sh", "-c", "npx prisma generate && npx prisma migrate deploy || true; node node_modules/next/dist/bin/next start -p $PORT"]

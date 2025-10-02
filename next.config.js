@@ -96,8 +96,13 @@ const nextConfig = {
       },
     ];
   },
-  // Redirect from HTTP to HTTPS for HIPAA compliance
+  // Redirect from HTTP to HTTPS for HIPAA compliance in production only.
+  // In local Docker / dev, unconditional redirects can create invalid URL patterns
+  // (e.g. https://:host/__ESC_COLON_path*) and break NextAuth.
   async redirects() {
+    if (process.env.NODE_ENV !== 'production') {
+      return [];
+    }
     return [
       {
         source: '/:path*',
