@@ -11,10 +11,11 @@ const projects = [
 if (!process.env['CI']) {
   projects.push({
     name: 'chromium-no-bypass',
-    use: {
+    use: ({
       ...devices['Desktop Chrome'],
+      // Override default bypass header in this project
       extraHTTPHeaders: {},
-    },
+    } as any),
     testMatch: /.*(auth-credentials|credentials-upload)\.spec\.ts/,
   });
 }
