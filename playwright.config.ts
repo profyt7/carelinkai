@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const projects = [
+// Loosen project typing to avoid Next.js type-checker conflicts during app build
+const projects: any[] = [
   {
     name: 'chromium',
     use: { ...devices['Desktop Chrome'] },
@@ -17,7 +18,7 @@ if (!process.env['CI']) {
       extraHTTPHeaders: {},
     } as any),
     grep: /\[non-bypass\]/,
-  });
+  } as any);
 }
 
 // For non-bypass (local only), optionally run against built server to improve stability
