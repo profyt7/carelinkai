@@ -19,6 +19,12 @@ if (!process.env['CI']) {
   });
 }
 
+// For non-bypass (local only), optionally run against built server to improve stability
+const webCommand = process.env['PW_USE_START'] === '1'
+  ? 'npm run start:e2e'
+  : (process.env['PLAYWRIGHT_WEB_SERVER_CMD'] ||
+     'cross-env NEXTAUTH_URL=http://localhost:3000 NEXTAUTH_SECRET=devsecret DATABASE_URL=postgresql://postgres:postgres@localhost:5434/carelinkai_marketplace?schema=public npm run dev');
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: false,
@@ -37,9 +43,7 @@ export default defineConfig({
   },
   projects,
   webServer: {
-    command:
-      process.env['PLAYWRIGHT_WEB_SERVER_CMD'] ||
-      'cross-env NEXTAUTH_URL=http://localhost:3000 NEXTAUTH_SECRET=devsecret DATABASE_URL=postgresql://postgres:postgres@localhost:5434/carelinkai_marketplace?schema=public npm run dev',
+    command: webCommand,
     url: process.env['PLAYWRIGHT_BASE_URL'] || 'http://localhost:3000',
     reuseExistingServer: false,
     timeout: 120_000,
