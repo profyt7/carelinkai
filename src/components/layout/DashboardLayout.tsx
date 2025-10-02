@@ -375,11 +375,12 @@ export default function DashboardLayout({
           Items without a roleRestriction are always shown.
         */}
         {(() => {
+          const normalizedRole = String(userRole || '').toUpperCase();
           const visibleNavItems = navItems.filter(
             (item) =>
               !("roleRestriction" in item) ||
               !item.roleRestriction ||
-              item.roleRestriction.includes(userRole as string)
+              item.roleRestriction.map(r => r.toUpperCase()).includes(normalizedRole)
             // Feature-flag gate for Marketplace
             ).filter(
               (item) =>
