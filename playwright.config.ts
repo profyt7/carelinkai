@@ -1,5 +1,24 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const projects = [
+  {
+    name: 'chromium',
+    use: { ...devices['Desktop Chrome'] },
+  },
+];
+
+// Only include the non-bypass credentials project for local/dev runs, not in CI
+if (!process.env['CI']) {
+  projects.push({
+    name: 'chromium-no-bypass',
+    use: {
+      ...devices['Desktop Chrome'],
+      extraHTTPHeaders: {},
+    },
+    testMatch: /.*auth-credentials\.spec\.ts/,
+  });
+}
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: false,
@@ -16,20 +35,7 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
   },
-  projects: [
-    {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },
-    {
-      name: 'chromium-no-bypass',
-      use: {
-        ...devices['Desktop Chrome'],
-        extraHTTPHeaders: {},
-      },
-      testMatch: /.*auth-credentials\.spec\.ts/,
-    },
-  ],
+  projects,
   webServer: {
     command:
       process.env['PLAYWRIGHT_WEB_SERVER_CMD'] ||
