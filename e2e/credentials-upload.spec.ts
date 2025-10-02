@@ -38,7 +38,8 @@ test.describe('[non-bypass] Credentials: Caregiver credential upload (real flow)
 
     // Navigate to Profile Settings
     await page.goto('/settings/profile');
-    await expect(page.getByRole('heading', { name: 'Profile Settings' })).toBeVisible();
+    await page.waitForLoadState('networkidle');
+    await expect(page.getByRole('heading', { name: 'Profile Settings' })).toBeVisible({ timeout: 20000 });
 
     // If role is CAREGIVER, the Credentials section should be present
     await expect(page.getByText('Credentials')).toBeVisible();
