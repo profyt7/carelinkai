@@ -15,7 +15,7 @@ if (!process.env['CI']) {
       ...devices['Desktop Chrome'],
       extraHTTPHeaders: {},
     },
-    testMatch: /.*auth-credentials\.spec\.ts/,
+    testMatch: /.*(auth-credentials|credentials-upload)\.spec\.ts/,
   });
 }
 
