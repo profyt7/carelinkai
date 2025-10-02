@@ -12,6 +12,6 @@ test.describe('Auth: Admin login', () => {
     await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
     const loading = page.getByText('Loading...');
     await loading.waitFor({ state: 'detached', timeout: 15000 }).catch(() => undefined);
-    await expect(page.getByText(/Welcome back/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible({ timeout: 15000 });
   });
 });
