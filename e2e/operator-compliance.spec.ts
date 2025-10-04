@@ -7,7 +7,7 @@ test.describe('[non-bypass] Operator Compliance: upload license and inspection (
   const OP_EMAIL = process.env.OP_EMAIL || 'operator+e2e@carelinkai.com';
   const OP_PASSWORD = process.env.OP_PASSWORD || 'Operator123!';
 
-  test('seed operator, login, create license and inspection, and verify UI', async ({ page, context }) => {
+  test('seed operator, login, create license and inspection, verify download + delete flows', async ({ page, context }) => {
     await context.setExtraHTTPHeaders({});
 
     // Seed operator + home
@@ -65,6 +65,8 @@ test.describe('[non-bypass] Operator Compliance: upload license and inspection (
       } as any,
     });
     expect(form.ok()).toBeTruthy();
+    const licJson = await form.json();
+    const licenseId: string = licJson.licenseId;
 
     // Create an Inspection via API (multipart)
     const insp = await page.request.fetch(`/api/operator/homes/${homeId}/inspections`, {
@@ -79,6 +81,8 @@ test.describe('[non-bypass] Operator Compliance: upload license and inspection (
       } as any,
     });
     expect(insp.ok()).toBeTruthy();
+    const inspJson = await insp.json();
+    const inspectionId: string = inspJson.inspectionId;
 
     // Reload the page and verify the entries appear
     await page.reload();
@@ -86,8 +90,27 @@ test.describe('[non-bypass] Operator Compliance: upload license and inspection (
 
     // Verify license appears in the expiring list
     await expect(page.getByText('E2E-12345')).toBeVisible({ timeout: 10000 });
+    // Verify download link exists and responds with redirect (no follow)
+    await expect(page.locator(`a[href="/api/operator/homes/${homeId}/licenses/${licenseId}/download"]`)).toBeVisible();
+    const licDl = await page.request.get(`/api/operator/homes/${homeId}/licenses/${licenseId}/download`, { maxRedirects: 0 } as any);
+    expect(licDl.status()).toBe(302);
 
     // Verify inspection appears in list
     await expect(page.getByText('State Inspector')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator(`a[href="/api/operator/homes/${homeId}/inspections/${inspectionId}/download"]`)).toBeVisible();
+    const inspDl = await page.request.get(`/api/operator/homes/${homeId}/inspections/${inspectionId}/download`, { maxRedirects: 0 } as any);
+    expect(inspDl.status()).toBe(302);
+
+    // Delete license via UI and confirm dialog
+    page.once('dialog', d => d.accept());
+    await page.locator('div', { hasText: 'License #E2E-12345' }).locator('button:has-text("Delete")').click();
+    await page.waitForLoadState('networkidle');
+    await expect(page.getByText('E2E-12345')).toHaveCount(0);
+
+    // Delete inspection via UI and confirm dialog
+    page.once('dialog', d => d.accept());
+    await page.locator('div', { hasText: 'State Inspector' }).locator('button:has-text("Delete")').click();
+    await page.waitForLoadState('networkidle');
+    await expect(page.getByText('State Inspector')).toHaveCount(0);
   });
 });
