@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     // Ensure at least one home exists for this operator
     let home = await prisma.assistedLivingHome.findFirst({ where: { operatorId: operator.id } });
     if (!home) {
-      home = await prisma.assistedLivingHome.create({
+      const createdHome = await prisma.assistedLivingHome.create({
         data: {
           operatorId: operator.id,
           name: 'E2E Test Home',
@@ -63,10 +63,11 @@ export async function POST(request: NextRequest) {
           amenities: ['WiFi', 'Garden'],
         },
         select: { id: true, name: true }
-      }) as any;
+      });
+      home = createdHome as any;
     }
 
-    return NextResponse.json({ success: true, userId: user.id, operatorId: operator.id, homeId: home.id, email, password: rawPassword });
+    return NextResponse.json({ success: true, userId: user.id, operatorId: operator.id, homeId: (home as any).id, email, password: rawPassword });
   } catch (e) {
     console.error('upsert-operator failed', e);
     return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
