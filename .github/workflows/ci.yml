@@ -83,7 +83,7 @@ jobs:
       - name: Seed demo data (marketplace)
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5434/carelinkai_marketplace?schema=public
-        run: npm run seed:marketplace-demo
+        run: npx tsx prisma/seed-marketplace-demo.ts
 
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps chromium
