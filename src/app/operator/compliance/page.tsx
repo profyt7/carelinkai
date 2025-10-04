@@ -101,13 +101,19 @@ export default async function OperatorCompliancePage({ searchParams }: { searchP
           <div className="font-medium mb-3">Licenses (expiring soon)</div>
           <div className="divide-y">
             {licenses.filter(l => new Date(l.expirationDate) <= soon).map((l) => (
-              <div key={l.id} className="py-3 flex items-center justify-between">
-                <div>
-                  <div className="font-medium">{l.home.name} · {l.type}</div>
-                  <div className="text-sm text-neutral-500">License #{l.licenseNumber}</div>
+              <div key={l.id} className="py-3 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="font-medium truncate">{l.home.name} · {l.type}</div>
+                  <div className="text-sm text-neutral-500 truncate">License #{l.licenseNumber}</div>
                 </div>
-                <div className={`text-sm ${new Date(l.expirationDate) < today ? 'text-red-600' : 'text-amber-600'}`}>
-                  Expires {new Date(l.expirationDate).toLocaleDateString()}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <a className="btn btn-secondary btn-sm" href={`/api/operator/homes/${l.homeId}/licenses/${l.id}/download`}>Download</a>
+                  <form action={`/api/operator/homes/${l.homeId}/licenses/${l.id}`} method="post" onSubmit={(e) => { if (!confirm('Delete this license?')) e.preventDefault(); }}>
+                    <button className="btn btn-danger btn-sm" type="submit">Delete</button>
+                  </form>
+                  <div className={`text-sm ${new Date(l.expirationDate) < today ? 'text-red-600' : 'text-amber-600'}`}>
+                    {new Date(l.expirationDate).toLocaleDateString()}
+                  </div>
                 </div>
               </div>
             ))}
@@ -121,13 +127,21 @@ export default async function OperatorCompliancePage({ searchParams }: { searchP
           <div className="font-medium mb-3">Recent Inspections</div>
           <div className="divide-y">
             {inspections.map((i) => (
-              <div key={i.id} className="py-3 flex items-center justify-between">
-                <div>
-                  <div className="font-medium">{i.home.name} · {i.inspectionType}</div>
-                  <div className="text-sm text-neutral-500">By {i.inspector}</div>
+              <div key={i.id} className="py-3 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="font-medium truncate">{i.home.name} · {i.inspectionType}</div>
+                  <div className="text-sm text-neutral-500 truncate">By {i.inspector}</div>
                 </div>
-                <div className="text-sm text-neutral-700">
-                  {new Date(i.inspectionDate).toLocaleDateString()} · {i.result}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {i.documentUrl ? (
+                    <a className="btn btn-secondary btn-sm" href={`/api/operator/homes/${i.homeId}/licenses/${i.id}/download`}>Download</a>
+                  ) : null}
+                  <form action={`/api/operator/homes/${i.homeId}/inspections/${i.id}`} method="post" onSubmit={(e) => { if (!confirm('Delete this inspection?')) e.preventDefault(); }}>
+                    <button className="btn btn-danger btn-sm" type="submit">Delete</button>
+                  </form>
+                  <div className="text-sm text-neutral-700">
+                    {new Date(i.inspectionDate).toLocaleDateString()} · {i.result}
+                  </div>
                 </div>
               </div>
             ))}
