@@ -134,7 +134,7 @@ export default async function OperatorCompliancePage({ searchParams }: { searchP
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   {i.documentUrl ? (
-                    <a className="btn btn-secondary btn-sm" href={`/api/operator/homes/${i.homeId}/licenses/${i.id}/download`}>Download</a>
+                    <a className="btn btn-secondary btn-sm" href={`/api/operator/homes/${i.homeId}/inspections/${i.id}/download`}>Download</a>
                   ) : null}
                   <form action={`/api/operator/homes/${i.homeId}/inspections/${i.id}`} method="post" onSubmit={(e) => { if (!confirm('Delete this inspection?')) e.preventDefault(); }}>
                     <button className="btn btn-danger btn-sm" type="submit">Delete</button>
