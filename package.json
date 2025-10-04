@@ -13,8 +13,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
-    "seed": "ts-node --transpile-only prisma/seed.ts",
-    "seed:marketplace-demo": "ts-node --transpile-only prisma/seed-marketplace-demo.ts",
+    "seed": "tsx prisma/seed.ts",
+    "seed:marketplace-demo": "tsx prisma/seed-marketplace-demo.ts",
     "generate:vapid": "node scripts/generate-vapid.js --update-env",
     "generate:icons": "node scripts/generate-pwa-icons.js",
     "test:pwa": "node scripts/test-pwa.js",
@@ -24,7 +24,7 @@
     "cron:run": "node scripts/run-cron.js"
   },
   "prisma": {
-    "seed": "ts-node --transpile-only prisma/seed.ts"
+    "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.859.0",
@@ -114,7 +114,8 @@
     "tailwindcss": "^3.3.5",
     "ts-jest": "^29.4.1",
     "ts-node": "^10.9.1",
-    "typescript": "^5.3.2"
+    "typescript": "^5.3.2",
+    "tsx": "^4.19.2"
   },
   "engines": {
     "node": ">=18.0.0"
