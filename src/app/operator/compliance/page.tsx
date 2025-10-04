@@ -47,6 +47,36 @@ export default async function OperatorCompliancePage({ searchParams }: { searchP
   return (
     <DashboardLayout title="Compliance" showSearch={false}>
       <div className="p-4 sm:p-6 space-y-6">
+        {/* Quick create forms for licenses and inspections */}
+        <div className="card">
+          <div className="font-medium mb-3">Quick Actions</div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <form action={`/api/operator/homes/${licenses[0]?.homeId || inspections[0]?.homeId || ''}/licenses`} method="post" encType="multipart/form-data" className="space-y-2">
+              <div className="text-sm font-medium">Add License</div>
+              <div className="grid grid-cols-2 gap-2">
+                <input name="type" placeholder="Type" className="form-input" required />
+                <input name="licenseNumber" placeholder="License #" className="form-input" required />
+                <input name="issueDate" type="date" className="form-input" required />
+                <input name="expirationDate" type="date" className="form-input" required />
+                <input name="status" placeholder="Status" className="form-input" defaultValue="ACTIVE" />
+                <input name="file" type="file" accept="application/pdf,image/*" className="form-input col-span-2" />
+              </div>
+              <button className="btn btn-primary" type="submit">Create License</button>
+            </form>
+            <form action={`/api/operator/homes/${licenses[0]?.homeId || inspections[0]?.homeId || ''}/inspections`} method="post" encType="multipart/form-data" className="space-y-2">
+              <div className="text-sm font-medium">Add Inspection</div>
+              <div className="grid grid-cols-2 gap-2">
+                <input name="inspectionType" placeholder="Type" className="form-input" required />
+                <input name="inspector" placeholder="Inspector" className="form-input" required />
+                <input name="inspectionDate" type="date" className="form-input" required />
+                <input name="result" placeholder="Result" className="form-input" defaultValue="PASSED" />
+                <input name="findings" placeholder="Findings (optional)" className="form-input col-span-2" />
+                <input name="file" type="file" accept="application/pdf,image/*" className="form-input col-span-2" />
+              </div>
+              <button className="btn btn-primary" type="submit">Create Inspection</button>
+            </form>
+          </div>
+        </div>
         {isAdmin && (
           <div className="card">
             <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
