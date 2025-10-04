@@ -37,7 +37,21 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
   }
 }
 
-// Support HTML form POST for delete (since forms don't support method=DELETE)
-export async function POST(req: NextRequest, ctx: { params: { id: string; licenseId: string } }) {
-  return DELETE(req, ctx);
+// Support HTML form POST for delete with redirect back to UI
+export async function POST(req: NextRequest, { params }: { params: { id: string; licenseId: string } }) {
+  try {
+    const { status } = await ensureAuthAndOwnership(req, params.id);
+    if (status !== 200) return NextResponse.redirect('/operator/compliance', 303);
+    const lic = await prisma.license.findUnique({ where: { id: params.licenseId } });
+    if (lic && lic.homeId === params.id) {
+      if (lic.documentUrl) {
+        const s3 = parseS3Url(lic.documentUrl);
+        if (s3) await s3Delete({ bucket: s3.bucket, key: s3.key });
+      }
+      await prisma.license.delete({ where: { id: params.licenseId } });
+    }
+    return NextResponse.redirect('/operator/compliance', 303);
+  } finally {
+    await prisma.$disconnect();
+  }
 }
