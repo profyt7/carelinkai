@@ -80,6 +80,11 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5434/carelinkai_marketplace?schema=public
         run: npx prisma migrate deploy
 
+      - name: Seed demo data (marketplace)
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5434/carelinkai_marketplace?schema=public
+        run: npm run seed:marketplace-demo
+
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps chromium
 
@@ -89,4 +94,6 @@ jobs:
           PLAYWRIGHT_WEB_SERVER_CMD: NEXT_PUBLIC_E2E_AUTH_BYPASS=1 npm run dev
           NEXT_PUBLIC_E2E_AUTH_BYPASS: '1'
           DATABASE_URL: postgresql://postgres:postgres@localhost:5434/carelinkai_marketplace?schema=public
+          NEXTAUTH_URL: http://localhost:3000
+          NEXTAUTH_SECRET: devsecret
         run: npx playwright test --reporter=line

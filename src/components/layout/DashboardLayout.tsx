@@ -207,9 +207,7 @@ export default function DashboardLayout({
   // Redirect to login if not authenticated (skip during e2e to allow mocking; never in production)
   useEffect(() => {
     if (e2eBypass) return;
-    // If NextAuth session cookie is present, let the client hydrate and session resolve instead of redirecting
-    const hasSessionCookie = typeof document !== 'undefined' && document.cookie.includes('next-auth.session-token');
-    if (!hasSessionCookie && status === "unauthenticated") {
+    if (status === "unauthenticated") {
       router.push("/auth/login");
     }
   }, [status, router, e2eBypass]);

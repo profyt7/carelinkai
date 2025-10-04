@@ -47,6 +47,36 @@ export default async function OperatorCompliancePage({ searchParams }: { searchP
   return (
     <DashboardLayout title="Compliance" showSearch={false}>
       <div className="p-4 sm:p-6 space-y-6">
+        {/* Quick create forms for licenses and inspections */}
+        <div className="card">
+          <div className="font-medium mb-3">Quick Actions</div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <form action={`/api/operator/homes/${licenses[0]?.homeId || inspections[0]?.homeId || ''}/licenses`} method="post" encType="multipart/form-data" className="space-y-2">
+              <div className="text-sm font-medium">Add License</div>
+              <div className="grid grid-cols-2 gap-2">
+                <input name="type" placeholder="Type" className="form-input" required />
+                <input name="licenseNumber" placeholder="License #" className="form-input" required />
+                <input name="issueDate" type="date" className="form-input" required />
+                <input name="expirationDate" type="date" className="form-input" required />
+                <input name="status" placeholder="Status" className="form-input" defaultValue="ACTIVE" />
+                <input name="file" type="file" accept="application/pdf,image/*" className="form-input col-span-2" />
+              </div>
+              <button className="btn btn-primary" type="submit">Create License</button>
+            </form>
+            <form action={`/api/operator/homes/${licenses[0]?.homeId || inspections[0]?.homeId || ''}/inspections`} method="post" encType="multipart/form-data" className="space-y-2">
+              <div className="text-sm font-medium">Add Inspection</div>
+              <div className="grid grid-cols-2 gap-2">
+                <input name="inspectionType" placeholder="Type" className="form-input" required />
+                <input name="inspector" placeholder="Inspector" className="form-input" required />
+                <input name="inspectionDate" type="date" className="form-input" required />
+                <input name="result" placeholder="Result" className="form-input" defaultValue="PASSED" />
+                <input name="findings" placeholder="Findings (optional)" className="form-input col-span-2" />
+                <input name="file" type="file" accept="application/pdf,image/*" className="form-input col-span-2" />
+              </div>
+              <button className="btn btn-primary" type="submit">Create Inspection</button>
+            </form>
+          </div>
+        </div>
         {isAdmin && (
           <div className="card">
             <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
@@ -71,13 +101,19 @@ export default async function OperatorCompliancePage({ searchParams }: { searchP
           <div className="font-medium mb-3">Licenses (expiring soon)</div>
           <div className="divide-y">
             {licenses.filter(l => new Date(l.expirationDate) <= soon).map((l) => (
-              <div key={l.id} className="py-3 flex items-center justify-between">
-                <div>
-                  <div className="font-medium">{l.home.name} · {l.type}</div>
-                  <div className="text-sm text-neutral-500">License #{l.licenseNumber}</div>
+              <div key={l.id} className="py-3 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="font-medium truncate">{l.home.name} · {l.type}</div>
+                  <div className="text-sm text-neutral-500 truncate">License #{l.licenseNumber}</div>
                 </div>
-                <div className={`text-sm ${new Date(l.expirationDate) < today ? 'text-red-600' : 'text-amber-600'}`}>
-                  Expires {new Date(l.expirationDate).toLocaleDateString()}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <a className="btn btn-secondary btn-sm" href={`/api/operator/homes/${l.homeId}/licenses/${l.id}/download`}>Download</a>
+                  <form action={`/api/operator/homes/${l.homeId}/licenses/${l.id}`} method="post" onSubmit={(e) => { if (!confirm('Delete this license?')) e.preventDefault(); }}>
+                    <button className="btn btn-danger btn-sm" type="submit">Delete</button>
+                  </form>
+                  <div className={`text-sm ${new Date(l.expirationDate) < today ? 'text-red-600' : 'text-amber-600'}`}>
+                    {new Date(l.expirationDate).toLocaleDateString()}
+                  </div>
                 </div>
               </div>
             ))}
@@ -91,13 +127,21 @@ export default async function OperatorCompliancePage({ searchParams }: { searchP
           <div className="font-medium mb-3">Recent Inspections</div>
           <div className="divide-y">
             {inspections.map((i) => (
-              <div key={i.id} className="py-3 flex items-center justify-between">
-                <div>
-                  <div className="font-medium">{i.home.name} · {i.inspectionType}</div>
-                  <div className="text-sm text-neutral-500">By {i.inspector}</div>
+              <div key={i.id} className="py-3 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="font-medium truncate">{i.home.name} · {i.inspectionType}</div>
+                  <div className="text-sm text-neutral-500 truncate">By {i.inspector}</div>
                 </div>
-                <div className="text-sm text-neutral-700">
-                  {new Date(i.inspectionDate).toLocaleDateString()} · {i.result}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {i.documentUrl ? (
+                    <a className="btn btn-secondary btn-sm" href={`/api/operator/homes/${i.homeId}/inspections/${i.id}/download`}>Download</a>
+                  ) : null}
+                  <form action={`/api/operator/homes/${i.homeId}/inspections/${i.id}`} method="post" onSubmit={(e) => { if (!confirm('Delete this inspection?')) e.preventDefault(); }}>
+                    <button className="btn btn-danger btn-sm" type="submit">Delete</button>
+                  </form>
+                  <div className="text-sm text-neutral-700">
+                    {new Date(i.inspectionDate).toLocaleDateString()} · {i.result}
+                  </div>
                 </div>
               </div>
             ))}
