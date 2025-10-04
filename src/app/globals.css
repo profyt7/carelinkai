@@ -239,6 +239,30 @@
   .mobile-tab-item-active {
     @apply text-primary-500;
   }
+
+  /* Table styles */
+  .table {
+    @apply w-full border-separate border-spacing-0 text-sm;
+  }
+  .table thead th {
+    @apply bg-neutral-50 text-neutral-600 font-medium text-left sticky top-0 z-10;
+  }
+  .table th,
+  .table td {
+    @apply px-3 py-2 align-middle border-b border-neutral-200;
+  }
+  .table tbody tr:hover {
+    @apply bg-neutral-50;
+  }
+  .table .cell-right {
+    @apply text-right;
+  }
+  .table .cell-center {
+    @apply text-center;
+  }
+  .table-empty {
+    @apply text-center text-neutral-600 py-6;
+  }
 }
 
 /* Utility styles */

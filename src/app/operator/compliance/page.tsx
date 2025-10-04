@@ -69,41 +69,63 @@ export default async function OperatorCompliancePage({ searchParams }: { searchP
         )}
         <div className="card">
           <div className="font-medium mb-3">Licenses (expiring soon)</div>
-          <div className="divide-y">
-            {licenses.filter(l => new Date(l.expirationDate) <= soon).map((l) => (
-              <div key={l.id} className="py-3 flex items-center justify-between">
-                <div>
-                  <div className="font-medium">{l.home.name} · {l.type}</div>
-                  <div className="text-sm text-neutral-500">License #{l.licenseNumber}</div>
-                </div>
-                <div className={`text-sm ${new Date(l.expirationDate) < today ? 'text-red-600' : 'text-amber-600'}`}>
-                  Expires {new Date(l.expirationDate).toLocaleDateString()}
-                </div>
-              </div>
-            ))}
-            {licenses.filter(l => new Date(l.expirationDate) <= soon).length === 0 && (
-              <div className="py-3 text-neutral-600">No upcoming expirations.</div>
-            )}
+          <div className="overflow-x-auto">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Home</th>
+                  <th>Type</th>
+                  <th>Number</th>
+                  <th>Expires</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {licenses.filter(l => new Date(l.expirationDate) <= soon).map((l) => (
+                  <tr key={l.id}>
+                    <td>{l.home.name}</td>
+                    <td>{l.type}</td>
+                    <td>{l.licenseNumber}</td>
+                    <td className={new Date(l.expirationDate) < today ? 'text-red-600' : 'text-amber-600'}>{new Date(l.expirationDate).toLocaleDateString()}</td>
+                    <td>{l.status}</td>
+                  </tr>
+                ))}
+                {licenses.filter(l => new Date(l.expirationDate) <= soon).length === 0 && (
+                  <tr><td className="table-empty" colSpan={5}>No upcoming expirations.</td></tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
 
         <div className="card">
           <div className="font-medium mb-3">Recent Inspections</div>
-          <div className="divide-y">
-            {inspections.map((i) => (
-              <div key={i.id} className="py-3 flex items-center justify-between">
-                <div>
-                  <div className="font-medium">{i.home.name} · {i.inspectionType}</div>
-                  <div className="text-sm text-neutral-500">By {i.inspector}</div>
-                </div>
-                <div className="text-sm text-neutral-700">
-                  {new Date(i.inspectionDate).toLocaleDateString()} · {i.result}
-                </div>
-              </div>
-            ))}
-            {inspections.length === 0 && (
-              <div className="py-3 text-neutral-600">No inspections on record.</div>
-            )}
+          <div className="overflow-x-auto">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Home</th>
+                  <th>Type</th>
+                  <th>Inspector</th>
+                  <th>Date</th>
+                  <th>Result</th>
+                </tr>
+              </thead>
+              <tbody>
+                {inspections.map((i) => (
+                  <tr key={i.id}>
+                    <td>{i.home.name}</td>
+                    <td>{i.inspectionType}</td>
+                    <td>{i.inspector}</td>
+                    <td>{new Date(i.inspectionDate).toLocaleDateString()}</td>
+                    <td>{i.result}</td>
+                  </tr>
+                ))}
+                {inspections.length === 0 && (
+                  <tr><td className="table-empty" colSpan={5}>No inspections on record.</td></tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
