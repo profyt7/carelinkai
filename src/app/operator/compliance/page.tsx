@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import ComplianceQuickActions from "@/components/operator/ComplianceQuickActions";
 import { PrismaClient, UserRole } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -49,51 +50,7 @@ export default async function OperatorCompliancePage({ searchParams }: { searchP
     <DashboardLayout title="Compliance" showSearch={false}>
       <div className="p-4 sm:p-6 space-y-6">
         {/* Quick create forms for licenses and inspections with Home selection */}
-        <div className="card">
-          <div className="font-medium mb-3">Quick Actions</div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <form method="post" encType="multipart/form-data" className="space-y-2" onSubmit={undefined as any}>
-              <div className="text-sm font-medium">Add License</div>
-              <div className="grid grid-cols-2 gap-2">
-                <select name="__homeId" className="form-select col-span-2">
-                  {homes.map(h => (<option key={h.id} value={h.id}>{h.name}</option>))}
-                </select>
-                <input name="type" placeholder="Type" className="form-input" required />
-                <input name="licenseNumber" placeholder="License #" className="form-input" required />
-                <input name="issueDate" type="date" className="form-input" required />
-                <input name="expirationDate" type="date" className="form-input" required />
-                <input name="status" placeholder="Status" className="form-input" defaultValue="ACTIVE" />
-                <input name="file" type="file" accept="application/pdf,image/*" className="form-input col-span-2" />
-              </div>
-              <button className="btn btn-primary" formAction={async (formData: FormData) => {
-                'use server';
-                const homeId = String(formData.get('__homeId') || '');
-                formData.delete('__homeId');
-                await fetch(`${process.env.NEXTAUTH_URL || ''}/api/operator/homes/${homeId}/licenses`, { method: 'POST', body: formData as any } as any);
-              }} type="submit">Create License</button>
-            </form>
-            <form method="post" encType="multipart/form-data" className="space-y-2" onSubmit={undefined as any}>
-              <div className="text-sm font-medium">Add Inspection</div>
-              <div className="grid grid-cols-2 gap-2">
-                <select name="__homeId" className="form-select col-span-2">
-                  {homes.map(h => (<option key={h.id} value={h.id}>{h.name}</option>))}
-                </select>
-                <input name="inspectionType" placeholder="Type" className="form-input" required />
-                <input name="inspector" placeholder="Inspector" className="form-input" required />
-                <input name="inspectionDate" type="date" className="form-input" required />
-                <input name="result" placeholder="Result" className="form-input" defaultValue="PASSED" />
-                <input name="findings" placeholder="Findings (optional)" className="form-input col-span-2" />
-                <input name="file" type="file" accept="application/pdf,image/*" className="form-input col-span-2" />
-              </div>
-              <button className="btn btn-primary" formAction={async (formData: FormData) => {
-                'use server';
-                const homeId = String(formData.get('__homeId') || '');
-                formData.delete('__homeId');
-                await fetch(`${process.env.NEXTAUTH_URL || ''}/api/operator/homes/${homeId}/inspections`, { method: 'POST', body: formData as any } as any);
-              }} type="submit">Create Inspection</button>
-            </form>
-          </div>
-        </div>
+        <ComplianceQuickActions homes={homes} />
         {isAdmin && (
           <div className="card">
             <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
