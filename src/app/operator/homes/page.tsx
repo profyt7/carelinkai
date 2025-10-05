@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { PrismaClient, UserRole } from "@prisma/client";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -11,6 +12,11 @@ const prisma = new PrismaClient();
 
 export default async function OperatorHomesPage({ searchParams }: { searchParams?: { operatorId?: string } }) {
   const session = await getServerSession(authOptions);
+  // Hard guard: if no session, redirect on the server to avoid client-side spinner loops
+  if (!session) {
+    const cb = "/operator/homes" + (searchParams?.operatorId ? `?operatorId=${encodeURIComponent(searchParams.operatorId)}` : "");
+    redirect(`/auth/login?callbackUrl=${encodeURIComponent(cb)}`);
+  }
   const email = session?.user?.email ?? null;
   const user = email ? await prisma.user.findUnique({ where: { email } }) : null;
   const op = user?.role === UserRole.OPERATOR ? await prisma.operator.findUnique({ where: { userId: user.id } }) : null;
