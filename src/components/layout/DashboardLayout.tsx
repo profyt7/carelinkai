@@ -307,17 +307,9 @@ export default function DashboardLayout({
     console.log("[DashboardLayout] resolved profileImage:", profileImage);
   }
 
-  // Show loading state when session is loading
-  if (status === "loading" || !mounted) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-neutral-50">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="h-12 w-12 rounded-full border-4 border-t-primary-500 border-neutral-200 animate-spin"></div>
-          <p className="text-neutral-600 font-medium">Loading...</p>
-        </div>
-      </div>
-    );
-  }
+  // Do not hard-block rendering on client session loading to avoid infinite spinner UX.
+  // We still guard unauthenticated users below via contentEl and server-side redirects on pages.
+  const isLoadingSession = status === "loading" || !mounted;
 
   const contentEl = (!e2eBypass && status === "unauthenticated") ? (
     <div className="flex-1 flex items-center justify-center">
