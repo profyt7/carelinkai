@@ -47,7 +47,7 @@ export default defineConfig({
   webServer: {
     command: webCommand,
     url: process.env['PLAYWRIGHT_BASE_URL'] || 'http://localhost:3000',
-    reuseExistingServer: false,
+    reuseExistingServer: !process.env['CI'],
     timeout: 120_000,
   },
 });
