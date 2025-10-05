@@ -5,11 +5,11 @@
 
 // Cache names with versioning for better cache management
 const CACHE_NAMES = {
-  static: 'carelink-static-v1',
-  dynamic: 'carelink-dynamic-v1',
-  pages: 'carelink-pages-v1',
-  images: 'carelink-images-v1',
-  api: 'carelink-api-v1'
+  static: 'carelink-static-v2',
+  dynamic: 'carelink-dynamic-v2',
+  pages: 'carelink-pages-v2',
+  images: 'carelink-images-v2',
+  api: 'carelink-api-v2'
 };
 
 // Maximum entries per cache to avoid uncontrolled growth
@@ -724,4 +724,4 @@ self.addEventListener('message', event => {
 });
 
 // Log service worker version for debugging
-console.log('[Service Worker] Version 1.0.0 loaded');
+console.log('[Service Worker] Version 1.0.1 loaded');

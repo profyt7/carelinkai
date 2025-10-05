@@ -34,55 +34,51 @@ const nextConfig = {
   },
   // Removed experimental features to avoid dependency issues
   async headers() {
+    const isProd = process.env.NODE_ENV === 'production';
     return [
       {
-        // Apply these headers to all routes
         source: '/:path*',
         headers: [
-          {
-            key: 'X-DNS-Prefetch-Control',
-            value: 'on',
-          },
-          {
-            key: 'Strict-Transport-Security',
-            value: 'max-age=63072000; includeSubDomains; preload',
-          },
-          {
-            key: 'X-XSS-Protection',
-            value: '1; mode=block',
-          },
-          {
-            key: 'X-Frame-Options',
-            value: 'SAMEORIGIN',
-          },
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          {
-            key: 'Referrer-Policy',
-            value: 'origin-when-cross-origin',
-          },
-          {
-            // Content Security Policy for HIPAA compliance
-            key: 'Content-Security-Policy',
-            value: "default-src 'self'; " +
-                   "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://js.stripe.com; " +
-                   "connect-src 'self' https://api.stripe.com; " +
-                   "img-src 'self' data: blob: http://localhost:3000 https://carelinkai-storage.s3.amazonaws.com " +
-                   "https://picsum.photos https://randomuser.me https://placehold.co https://ui-avatars.com " +
-                   "https://fastly.picsum.photos " +
-                   "https://images.unsplash.com " +
-                   "https://a.tile.openstreetmap.org https://b.tile.openstreetmap.org https://c.tile.openstreetmap.org; " +
-                   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-                   "font-src 'self' data: https://fonts.gstatic.com; " +
-                   "frame-src 'self' https://js.stripe.com https://hooks.stripe.com;",
-          },
-          {
-            // HIPAA requires secure cookies
-            key: 'Set-Cookie',
-            value: 'Path=/; HttpOnly; Secure; SameSite=Strict',
-          },
+          { key: 'X-DNS-Prefetch-Control', value: 'on' },
+          // Only set HSTS in production
+          ...(isProd
+            ? [{ key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' }]
+            : []),
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          { key: 'Referrer-Policy', value: 'origin-when-cross-origin' },
+          // Align CSP with src/middleware.ts and avoid Google Fonts
+          // Apply CSP only in production (middleware also applies CSP in prod)
+          ...(isProd
+            ? [{
+                key: 'Content-Security-Policy',
+                value: [
+                  "default-src 'self'",
+                  "style-src 'self' 'unsafe-inline'",
+                  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com",
+                  "connect-src 'self' ws: wss: http: https:",
+                  [
+                    "img-src 'self' data: blob:",
+                    'http://localhost:3000',
+                    'https://carelinkai-storage.s3.amazonaws.com',
+                    'https://picsum.photos',
+                    'https://randomuser.me',
+                    'https://placehold.co',
+                    'https://ui-avatars.com',
+                    'https://fastly.picsum.photos',
+                    'https://images.unsplash.com',
+                    'https://a.tile.openstreetmap.org',
+                    'https://b.tile.openstreetmap.org',
+                    'https://c.tile.openstreetmap.org'
+                  ].join(' '),
+                  "font-src 'self' data: https:",
+                  "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
+                  "worker-src 'self' blob:",
+                  "base-uri 'self'",
+                  "form-action 'self'",
+                ].join('; '),
+              }]
+            : []),
         ],
       },
     ];
