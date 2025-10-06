@@ -47,38 +47,6 @@ const nextConfig = {
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
           { key: 'Referrer-Policy', value: 'origin-when-cross-origin' },
-          // Align CSP with src/middleware.ts and avoid Google Fonts
-          // Apply CSP only in production (middleware also applies CSP in prod)
-          ...(isProd
-            ? [{
-                key: 'Content-Security-Policy',
-                value: [
-                  "default-src 'self'",
-                  "style-src 'self' 'unsafe-inline'",
-                  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com",
-                  "connect-src 'self' ws: wss: http: https:",
-                  [
-                    "img-src 'self' data: blob:",
-                    'http://localhost:3000',
-                    'https://carelinkai-storage.s3.amazonaws.com',
-                    'https://picsum.photos',
-                    'https://randomuser.me',
-                    'https://placehold.co',
-                    'https://ui-avatars.com',
-                    'https://fastly.picsum.photos',
-                    'https://images.unsplash.com',
-                    'https://a.tile.openstreetmap.org',
-                    'https://b.tile.openstreetmap.org',
-                    'https://c.tile.openstreetmap.org'
-                  ].join(' '),
-                  "font-src 'self' data: https:",
-                  "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
-                  "worker-src 'self' blob:",
-                  "base-uri 'self'",
-                  "form-action 'self'",
-                ].join('; '),
-              }]
-            : []),
         ],
       },
     ];

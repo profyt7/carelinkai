@@ -119,8 +119,10 @@ function applySecurityHeaders(req: Request, res: NextResponse) {
     "default-src 'self'",
     // Styles
     "style-src 'self' 'unsafe-inline'",
+    "style-src-elem 'self' 'unsafe-inline'",
     // Scripts: allow Next inline bootstrap and Stripe
     "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com",
+    "script-src-elem 'self' https://js.stripe.com",
     // Images from self, data URIs, and https
     "img-src 'self' data: blob: https:",
     // Fonts
