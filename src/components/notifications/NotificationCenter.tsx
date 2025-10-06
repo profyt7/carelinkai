@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useSession } from 'next-auth/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { 
   FiBell, 
@@ -264,11 +265,57 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
   const [filter, setFilter] = useState<NotificationType | 'ALL'>('ALL');
   const dropdownRef = useRef<HTMLDivElement>(null);
   
-  // Get WebSocket context
-  // In a real implementation, we would use the WebSocket context
-  // For now, we'll just simulate it
-  // const { connectionState } = useWebSocket();
-  const connectionState = 'CONNECTED';
+  // Session for user ID
+  const { data: session } = useSession();
+  const userId = (session as any)?.user?.id as string | undefined;
+  const [connectionState, setConnectionState] = useState<'CONNECTED' | 'DISCONNECTED'>('DISCONNECTED');
+
+  // SSE subscription
+  useEffect(() => {
+    // Determine topics
+    const topics: string[] = [];
+    if (userId) topics.push(`notifications:${userId}`);
+    // E2E bypass fallback
+    const e2eBypass = typeof document !== 'undefined' && document.cookie.includes('e2e-bypass=1');
+    if (!userId && e2eBypass) topics.push('notifications:test');
+
+    if (topics.length === 0) return;
+
+    const url = `/api/sse?topics=${encodeURIComponent(topics.join(','))}`;
+    const es = new EventSource(url);
+    es.onopen = () => setConnectionState('CONNECTED');
+    es.onerror = () => setConnectionState('DISCONNECTED');
+
+    const handleEvent = (ev: MessageEvent) => {
+      try {
+        const data = ev.data ? JSON.parse(ev.data) : {};
+        const title = data.title || 'Notification';
+        const message = data.message || 'You have a new notification';
+        const id = `sse-${Date.now()}-${Math.floor(Math.random()*1000)}`;
+        const n: Notification = {
+          id,
+          type: 'SYSTEM',
+          title,
+          message,
+          timestamp: new Date().toISOString(),
+          isRead: false,
+          priority: 'MEDIUM',
+          metadata: data,
+        };
+        showToast(n);
+      } catch {
+        // ignore
+      }
+    };
+
+    es.addEventListener('shift-assigned', handleEvent as any);
+    es.addEventListener('shift-unassigned', handleEvent as any);
+    es.addEventListener('notify', handleEvent as any);
+
+    return () => {
+      es.close();
+    };
+  }, [userId, showToast]);
   
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -386,29 +433,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
   };
   
   // Simulate receiving a new notification
-  useEffect(() => {
-    const interval = setInterval(() => {
-      // 10% chance of receiving a new notification every 30 seconds
-      if (Math.random() < 0.1 && connectionState === 'CONNECTED') {
-        const types: NotificationType[] = ['MESSAGE', 'INQUIRY_UPDATE', 'TOUR_REMINDER', 'DOCUMENT_SHARED', 'STATUS_CHANGE'];
-        const randomType = types[Math.floor(Math.random() * types.length)] as NotificationType;
-        
-        const newNotification: Notification = {
-          id: `notif-${Date.now()}`,
-          type: randomType,
-          title: `New ${randomType.toLowerCase().replace('_', ' ')}`,
-          message: `This is a simulated ${randomType.toLowerCase().replace('_', ' ')} notification.`,
-          timestamp: new Date().toISOString(),
-          isRead: false,
-          priority: Math.random() > 0.7 ? 'HIGH' : Math.random() > 0.4 ? 'MEDIUM' : 'LOW'
-        };
-        
-        showToast(newNotification);
-      }
-    }, 30000); // Check every 30 seconds
-    
-    return () => clearInterval(interval);
-  }, [connectionState, showToast]);
+  // Disable random mock generation now that SSE is wired
   
   // For testing: show a toast notification on mount
   useEffect(() => {
