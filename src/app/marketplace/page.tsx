@@ -704,7 +704,7 @@ export default function MarketplacePage() {
     return () => {
       controller.abort();
     };
-  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, settings, careTypes, debouncedMinRate, debouncedMaxRate, debouncedMinExperience, cgPage, cgSort, cgRadius, cgGeoLat, cgGeoLng, cgCursor]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, settings, careTypes, debouncedMinRate, debouncedMaxRate, debouncedMinExperience, cgPage, cgSort, cgRadius, cgGeoLat, cgGeoLng]);
 
   // Reset caregivers list when non-page filters change
   const cgQueryKey = useMemo(() => JSON.stringify({
@@ -771,7 +771,7 @@ export default function MarketplacePage() {
     return () => {
       controller.abort();
     };
-  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, debouncedZip, settings, careTypes, services, postedByMe, hideClosed, session, jobPage, jobSort, jobRadius, geoLat, geoLng, jobCursor]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, debouncedZip, settings, careTypes, services, postedByMe, hideClosed, session, jobPage, jobSort, jobRadius, geoLat, geoLng]);
 
   // Reset jobs list when non-page filters change
   const jobQueryKey = useMemo(() => JSON.stringify({
@@ -833,7 +833,7 @@ export default function MarketplacePage() {
     return () => {
       controller.abort();
     };
-  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, providerServices, providerPage, providerSort, prRadius, prGeoLat, prGeoLng, providerCursor]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, providerServices, providerPage, providerSort, prRadius, prGeoLat, prGeoLng]);
 
   // Reset providers list when non-page filters change
   const prQueryKey = useMemo(() => JSON.stringify({
