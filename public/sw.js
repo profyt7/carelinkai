@@ -288,6 +288,10 @@ self.addEventListener('activate', event => {
  * Fetch event - handle network requests with appropriate strategies
  */
 self.addEventListener('fetch', event => {
+  // Only handle GET requests; skip POST/PUT/PATCH/DELETE to avoid Cache.put errors
+  if (event.request.method !== 'GET') {
+    return;
+  }
   // Skip cross-origin requests
   if (!event.request.url.startsWith(self.location.origin)) {
     return;

@@ -117,11 +117,14 @@ export default function PWAManager({ children }: PWAManagerProps) {
         }
 
         // Register sw.js in the public root
-        const reg = await navigator.serviceWorker.register("/sw.js");
+        const reg = await navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" });
         console.log("[PWAManager] Service-Worker registered:", reg);
 
         // Save registration so other hooks can use it
         setRegistration(reg);
+
+        // Immediately check for an updated SW
+        try { await reg.update(); } catch {}
 
         // If there is already a waiting worker, an update is ready
         if (reg.waiting) {
