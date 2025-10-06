@@ -3,6 +3,7 @@ import { authOptions } from '@/lib/auth';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { PrismaClient, UserRole } from '@prisma/client';
 import Link from 'next/link';
+import UnassignShiftButton from '@/components/operator/UnassignShiftButton';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -56,22 +57,7 @@ export default async function OperatorShiftsPage() {
                     <div className="flex gap-2 justify-end">
                       <Link href={`/operator/shifts/${s.id}/assign`} className="btn btn-sm">{s.caregiver ? 'Reassign' : 'Assign'}</Link>
                       {s.caregiver && (
-                        <form action={`/api/operator/shifts/${s.id}/assign`} method="post" onSubmit={(e) => {
-                          // Convert POST form to PATCH via fetch for consistency
-                          e.preventDefault();
-                        }}>
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-secondary"
-                            onClick={async () => {
-                              await fetch(`/api/operator/shifts/${s.id}/assign`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ caregiverId: null }) });
-                              // Simple server navigation refresh pattern
-                              location.reload();
-                            }}
-                          >
-                            Unassign
-                          </button>
-                        </form>
+                        <UnassignShiftButton shiftId={s.id} className="btn btn-sm btn-secondary" />
                       )}
                     </div>
                   </td>
