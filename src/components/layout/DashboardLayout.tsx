@@ -62,6 +62,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { name: "Dashboard", icon: <FiHome size={20} />, href: "/dashboard", showInMobileBar: true },
   { name: "Search Homes", icon: <FiSearch size={20} />, href: "/search", showInMobileBar: false },
+  { name: "AI Match", icon: <FiSearch size={20} />, href: "/homes/match", showInMobileBar: false, roleRestriction: ["FAMILY", "OPERATOR", "ADMIN"] },
   // Marketplace (feature-flagged)
   { name: "Marketplace", icon: <FiUsers size={20} />, href: "/marketplace", showInMobileBar: true },
   { name: "Operator", icon: <FiHome size={20} />, href: "/operator", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN"] },
