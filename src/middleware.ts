@@ -114,6 +114,14 @@ function applySecurityHeaders(req: Request, res: NextResponse) {
     ].join(', ')
   );
 
+  // Optional one-shot cache nuke for debugging stale SW/assets
+  try {
+    const u = new URL((req as any).url);
+    if (u.searchParams.get('__nuke') === '1') {
+      res.headers.set('Clear-Site-Data', '"cache", "cookies", "storage", "executionContexts"');
+    }
+  } catch {}
+
   // Content-Security-Policy (only enable in production to avoid dev tooling issues)
   const cspParts = [
     "default-src 'self'",
