@@ -29,7 +29,10 @@ export default async function OperatorShiftsPage() {
       <div className="p-4 sm:p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold">Shifts</h2>
-          <Link href="/operator/shifts/new" className="btn btn-primary">Create Shift</Link>
+          <div className="flex gap-2">
+            <Link href="/operator/shifts/calendar" className="btn">Calendar</Link>
+            <Link href="/operator/shifts/new" className="btn btn-primary">Create Shift</Link>
+          </div>
         </div>
         <div className="overflow-x-auto card">
           <table className="min-w-full text-sm">
