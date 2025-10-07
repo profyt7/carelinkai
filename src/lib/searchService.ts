@@ -92,6 +92,15 @@ export interface SearchResultItem {
     social: number;
     medical: number;
   };
+  aiMatchWeights?: {
+    careLevel: number;
+    budget: number;
+    location: number;
+    amenities: number;
+    gender: number;
+    social: number;
+    medical: number;
+  };
   /** Indicates whether the currently-logged-in family has favorited this home */
   isFavorited?: boolean;
 }

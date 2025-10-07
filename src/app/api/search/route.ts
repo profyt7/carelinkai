@@ -421,6 +421,7 @@ export function generateMockHomes(count: number = 12) {
       operator: null,
       aiMatchScore: 60 + (i * 3) % 35, // 60-95
       aiMatchFactors: undefined,
+      aiMatchWeights: undefined,
       isFavorited: false,
     };
   });
@@ -654,11 +655,13 @@ export async function GET(request: NextRequest) {
       // 1. AI Match Score
       let aiMatchScore = 0;
       let aiMatchFactors: any | undefined = undefined;
+      let aiMatchWeights: any | undefined = undefined;
       if (residentProfile) {
         try {
           const breakdown = await calculateAIMatchBreakdown(home, residentProfile);
           aiMatchScore = breakdown.score;
           aiMatchFactors = breakdown.factors;
+          aiMatchWeights = breakdown.weights;
         } catch {
           aiMatchScore = calculateMatchScore(home, searchCriteria);
         }
@@ -705,6 +708,7 @@ export async function GET(request: NextRequest) {
         } : null,
         aiMatchScore,
         aiMatchFactors,
+        aiMatchWeights,
         isFavorited: favoriteHomeIds.has(home.id)
       };
     }));

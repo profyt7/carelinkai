@@ -182,6 +182,16 @@ export default function SearchPage() {
   const handleFilterChange = (name: string, value: any) => {
     setFilters(prev => ({ ...prev, [name]: value }));
   };
+
+  const track = async (event: string, properties?: Record<string, any>) => {
+    try {
+      await fetch('/api/analytics/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ event, properties })
+      });
+    } catch {}
+  };
   
   // Handle care level selection (multiple selection)
   const handleCareLevelChange = (level: CareLevel) => {
@@ -382,6 +392,22 @@ export default function SearchPage() {
       }
     } catch {}
 
+    // Attempt to load resident profile from server preferences
+    (async () => {
+      try {
+        if (!filters.residentProfile && !searchParams.get("residentProfile")) {
+          const res = await fetch('/api/profile/preferences');
+          if (res.ok) {
+            const data = await res.json();
+            const rp = data?.data?.preferences?.search?.residentProfile;
+            if (rp) {
+              setFilters(prev => ({ ...prev, residentProfile: rp }));
+            }
+          }
+        }
+      } catch {}
+    })();
+
     // Apply filters on initial load
     applyFilters();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -430,9 +456,55 @@ export default function SearchPage() {
     }
     setFilters(prev => ({ ...prev, residentProfile: rp, page: 1 }));
     try { localStorage.setItem("carelink_resident_profile", JSON.stringify(rp)); } catch {}
+    (async () => {
+      try {
+        await fetch('/api/profile/preferences', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ search: { residentProfile: rp } })
+        });
+      } catch {}
+    })();
+    track('personalization_applied');
     setShowPersonalize(false);
     // Trigger search with new resident profile
     applyFilters();
+  };
+
+  const [showExplain, setShowExplain] = useState(false);
+  const [explainHome, setExplainHome] = useState<SearchResultItem | null>(null);
+
+  const openExplain = (home: SearchResultItem) => {
+    setExplainHome(home);
+    setShowExplain(true);
+    track('explain_match_opened', { homeId: home.id });
+  };
+
+  const closeExplain = () => {
+    setShowExplain(false);
+    setExplainHome(null);
+  };
+
+  const factorEntries = (home?: SearchResultItem | null) => {
+    if (!home?.aiMatchFactors) return [] as Array<{ key: string; label: string; score: number; weight?: number; suggestion?: string }>;
+    const w = home.aiMatchWeights || {} as any;
+    const rp: any = filters.residentProfile || {};
+    const suggest = (k: string, score: number) => {
+      if (score >= 80) return undefined;
+      switch (k) {
+        case 'budget': return 'Consider adjusting budget or filter more affordable homes.';
+        case 'location': return 'Try widening the search radius or selecting a nearby area.';
+        case 'amenities': return 'Relax amenity preferences or explore similar homes with more features.';
+        case 'careLevel': return 'Ensure care needs match offered levels; include more suitable care levels.';
+        case 'medical': return 'Filter for homes listing the required medical services.';
+        case 'social': return 'Look for communities with more activities or different community size.';
+        case 'gender': return 'Check gender policy or clear gender preference.';
+        default: return undefined;
+      }
+    };
+    return Object.entries(home.aiMatchFactors)
+      .map(([key, score]) => ({ key, label: AI_FACTOR_LABELS[key] || key, score: Math.round(score as number), weight: w[key], suggestion: suggest(key, score as number) }))
+      .sort((a,b) => b.score - a.score);
   };
   
   return (
@@ -700,7 +772,7 @@ export default function SearchPage() {
             {/* Personalization status */}
             {filters.residentProfile && (
               <div className="mb-3 rounded-md border border-primary-200 bg-primary-50 px-3 py-2 text-xs text-primary-800">
-                AI personalization enabled. <button onClick={openPersonalize} className="underline hover:no-underline">Edit profile</button> or <button onClick={() => { try { localStorage.removeItem("carelink_resident_profile"); } catch {}; setFilters(prev => ({ ...prev, residentProfile: undefined })); applyFilters(); }} className="underline hover:no-underline">clear</button>.
+                AI personalization enabled. <button onClick={openPersonalize} className="underline hover:no-underline">Edit profile</button> or <button onClick={() => { try { localStorage.removeItem("carelink_resident_profile"); } catch {}; setFilters(prev => ({ ...prev, residentProfile: undefined })); applyFilters(); track('personalization_cleared'); }} className="underline hover:no-underline">clear</button>.
               </div>
             )}
             {/* Results summary */}
@@ -887,6 +959,9 @@ export default function SearchPage() {
                               >
                                 View Listing
                               </button>
+                              {home.aiMatchFactors && (
+                                <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openExplain(home); }} className="rounded-md border border-neutral-300 px-3 py-1.5 text-xs text-neutral-700 hover:bg-neutral-50">Explain</button>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -1046,6 +1121,11 @@ export default function SearchPage() {
                               <button className="rounded-md bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600">
                                 View Listing
                               </button>
+                              {home.aiMatchFactors && (
+                                <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openExplain(home); }} className="rounded-md border border-neutral-300 px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50">
+                                  Explain
+                                </button>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -1320,6 +1400,42 @@ export default function SearchPage() {
             <div className="mt-4 flex justify-end gap-2 border-t pt-3">
               <button onClick={() => setShowPersonalize(false)} className="rounded-md border border-neutral-300 px-4 py-1.5 text-sm">Cancel</button>
               <button onClick={applyPersonalize} className="rounded-md bg-primary-600 px-4 py-1.5 text-sm text-white hover:bg-primary-700">Apply</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Explain Match Drawer */}
+      {showExplain && explainHome && (
+        <div className="fixed inset-0 z-40 flex items-end md:items-center md:justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={closeExplain} />
+          <div className="relative w-full rounded-t-2xl bg-white p-4 shadow-xl md:w-[720px] md:rounded-2xl">
+            <div className="mb-3 flex items-center justify-between border-b pb-2">
+              <h3 className="text-base font-semibold text-neutral-800">Why this match</h3>
+              <button onClick={closeExplain} className="rounded p-1 hover:bg-neutral-100"><FiX /></button>
+            </div>
+            <div className="mb-3">
+              <div className="text-sm font-medium text-neutral-800">{explainHome.name}</div>
+              <div className="text-xs text-neutral-500">AI Match Score: {Math.round(explainHome.aiMatchScore)}%</div>
+            </div>
+            <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+              {factorEntries(explainHome).map((f) => (
+                <div key={f.key} className="rounded-md border p-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="font-medium text-neutral-800">{f.label}</div>
+                    <div className="text-neutral-600">{f.score}/100{typeof f.weight === 'number' ? ` · wt ${Math.round(f.weight)}%` : ''}</div>
+                  </div>
+                  <div className="mt-2 h-2 w-full overflow-hidden rounded bg-neutral-100">
+                    <div className="h-2 bg-primary-500" style={{ width: `${Math.max(0, Math.min(100, f.score))}%` }} />
+                  </div>
+                  {f.suggestion && (
+                    <div className="mt-2 text-xs text-neutral-600">{f.suggestion}</div>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 flex justify-end gap-2 border-t pt-3">
+              <button onClick={closeExplain} className="rounded-md border border-neutral-300 px-4 py-1.5 text-sm">Close</button>
             </div>
           </div>
         </div>
