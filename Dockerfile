@@ -1,49 +1,37 @@
 # syntax=docker/dockerfile:1
-# Multi-stage Dockerfile for CareLinkAI (Next.js 14 + Prisma)
 
-ARG NODE_VERSION=20-alpine
-
-FROM node:${NODE_VERSION} AS base
+# --- Base image ---
+FROM node:18-bullseye-slim AS base
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1
 WORKDIR /app
 
-# 1) Install deps in a clean layer
+# --- Dependencies ---
 FROM base AS deps
-RUN apk add --no-cache libc6-compat openssl
-COPY package.json package-lock.json ./
-RUN npm ci --omit=dev
-
-# 2) Build stage with dev deps
-FROM base AS builder
-RUN apk add --no-cache libc6-compat openssl
 COPY package.json package-lock.json ./
 RUN npm ci
+
+# --- Build ---
+FROM base AS build
+ENV NODE_ENV=development
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-# Generate Prisma client and build Next.js
-RUN npx prisma generate && npm run build
+RUN npm run build
 
-# 3) Runtime image
-FROM base AS runner
-RUN apk add --no-cache libc6-compat openssl
-
-# Create non-root user
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
-
+# --- Production runtime ---
+FROM node:18-bullseye-slim AS runner
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    PORT=3000 \
+    HOSTNAME=0.0.0.0
 WORKDIR /app
 
-# Copy necessary artifacts from builder/deps
+# Only copy necessary files
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/prisma ./prisma
+COPY --from=build /app/.next ./.next
+COPY --from=build /app/public ./public
+COPY package.json ./package.json
 
-# Expose port and start
-ENV PORT=3000 HOST=0.0.0.0
 EXPOSE 3000
-
-# Generate Prisma client in the runtime image to ensure @prisma/client is initialized
-# and then attempt to run migrations (ignored if no DATABASE_URL / permissions).
-# Finally start Next.js.
-CMD ["sh", "-c", "npx prisma generate && npx prisma migrate deploy || true; node node_modules/next/dist/bin/next start -p $PORT"]
+CMD ["npm", "start"]
