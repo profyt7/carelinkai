@@ -65,6 +65,10 @@ export async function POST(request: NextRequest) {
         select: { id: true, name: true }
       }) as any;
     }
+    // Ensure non-null for TypeScript
+    if (!home) {
+      throw new Error('Failed to find or create operator home');
+    }
 
     return NextResponse.json({ success: true, userId: user.id, operatorId: operator.id, homeId: home.id, email, password: rawPassword });
   } catch (e) {
