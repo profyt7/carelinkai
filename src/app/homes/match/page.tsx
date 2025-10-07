@@ -284,7 +284,7 @@ export default function ResidentMatchPage() {
                         <FiDollarSign className="mr-1" />
                         {formatCurrency(item.priceMin)}
                         {item.priceMax ? ` - ${formatCurrency(item.priceMax)}` : ""}
-                        {" "/}per month
+                        {" "}per month
                       </div>
                     )}
 

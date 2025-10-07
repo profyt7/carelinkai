@@ -91,10 +91,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Handle development environment without Stripe keys
-    if (
-      process.env.NODE_ENV !== "production" &&
-      !process.env["STRIPE_SECRET_KEY"]
-    ) {
+    if (process.env.NODE_ENV !== 'production' && !process.env['STRIPE_SECRET_KEY']) {
       console.log('Using mock Stripe response in development');
       return NextResponse.json({
         clientSecret: null,

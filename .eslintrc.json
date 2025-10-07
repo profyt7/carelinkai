@@ -1,17 +1,13 @@
 {
   "extends": ["next", "next/core-web-vitals"],
-
-  /* Ensure TypeScript-aware linting */
   "parser": "@typescript-eslint/parser",
   "plugins": ["@typescript-eslint"],
-
-  "ignorePatterns": ["src/unused/**", "src/lib/services/calendar-backup.ts"],
-
+  "ignorePatterns": [
+    "src/unused/**",
+    "src/lib/services/calendar-backup.ts"
+  ],
   "rules": {
-    /* Keep adjustments minimal; can be expanded later */
     "react/no-unescaped-entities": "off",
-
-    /* Disable rule that fails due to missing type info / commonjs requires */
     "@typescript-eslint/no-var-requires": "off"
   }
 }
