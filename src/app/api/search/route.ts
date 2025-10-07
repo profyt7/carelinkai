@@ -30,6 +30,7 @@ import { PrismaClient, CareLevel } from '@prisma/client';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { formatCurrency } from '@/lib/utils';
+import { calculateAIMatchScore } from '@/lib/ai-matching';
 
 // Initialize Prisma client
 const prisma = new PrismaClient();
@@ -621,6 +622,17 @@ export async function GET(request: NextRequest) {
       }
     }
     
+    // Parse resident profile for AI personalization (optional)
+    let residentProfile: any | null = null;
+    const residentProfileParam = searchParams.get('residentProfile');
+    if (residentProfileParam) {
+      try {
+        residentProfile = JSON.parse(residentProfileParam);
+      } catch {
+        residentProfile = null;
+      }
+    }
+
     // Process and score results
     const searchCriteria = {
       query,
@@ -637,9 +649,18 @@ export async function GET(request: NextRequest) {
     };
     
     // Calculate match scores and format results with reliable image fallback
-    const results = homes.map((home, i) => {
+    const results = await Promise.all(homes.map(async (home, i) => {
       // 1. AI Match Score
-      const aiMatchScore = calculateMatchScore(home, searchCriteria);
+      let aiMatchScore = 0;
+      if (residentProfile) {
+        try {
+          aiMatchScore = await calculateAIMatchScore(home, residentProfile);
+        } catch {
+          aiMatchScore = calculateMatchScore(home, searchCriteria);
+        }
+      } else {
+        aiMatchScore = calculateMatchScore(home, searchCriteria);
+      }
 
       // 2. Image handling – prefer primary DB photo, else deterministic Unsplash fallback
       const primary = sanitizeImageUrl(home.photos?.[0]?.url ?? null);
@@ -681,7 +702,7 @@ export async function GET(request: NextRequest) {
         aiMatchScore,
         isFavorited: favoriteHomeIds.has(home.id)
       };
-    });
+    }));
     
     // Phase-1 enhanced sorting
     switch (sortBy) {

@@ -23,7 +23,7 @@ import {
   FiMessageCircle
 } from "react-icons/fi";
 import { CareLevel } from "@prisma/client";
-import { 
+import {
   searchHomes, 
   getCareLevelName, 
   parseNaturalLanguageQuery,
@@ -97,6 +97,11 @@ export default function SearchPage() {
     sortBy: searchParams.get("sortBy") as "relevance" | "price_low" | "price_high" | "distance" | "rating" || "relevance",
     page: parseInt(searchParams.get("page") || "1"),
     limit: 10,
+    residentProfile: (() => {
+      const rp = searchParams.get("residentProfile");
+      if (!rp) return undefined;
+      try { return JSON.parse(rp); } catch { return undefined; }
+    })(),
   });
   
   // State for search results
@@ -274,6 +279,9 @@ export default function SearchPage() {
     if (params.radius) queryParams.set("radius", params.radius.toString());
     if (params.sortBy) queryParams.set("sortBy", params.sortBy);
     if (params.page && params.page > 1) queryParams.set("page", params.page.toString());
+    if (params.residentProfile) {
+      try { queryParams.set("residentProfile", JSON.stringify(params.residentProfile)); } catch {}
+    }
     
     router.push(`/search?${queryParams.toString()}`);
   };
@@ -308,6 +316,7 @@ export default function SearchPage() {
       sortBy: "relevance",
       page: 1,
       limit: 10,
+      residentProfile: undefined,
     });
     
     router.push("/search");
@@ -358,6 +367,50 @@ export default function SearchPage() {
 
   // Get search results
   const searchResults = searchResponse?.results || [];
+
+  // Personalization modal state
+  const [showPersonalize, setShowPersonalize] = useState(false);
+  const [profileDraft, setProfileDraft] = useState<any>(() => filters.residentProfile || {
+    gender: "",
+    careLevelNeeded: [],
+    budget: { max: "" },
+    preferredAmenities: [],
+    petFriendly: undefined,
+    socialEngagement: 3,
+    communitySize: { preferred: "medium", importance: 3 }
+  });
+
+  const openPersonalize = () => {
+    setProfileDraft(filters.residentProfile || {
+      gender: "",
+      careLevelNeeded: [],
+      budget: { max: "" },
+      preferredAmenities: [],
+      petFriendly: undefined,
+      socialEngagement: 3,
+      communitySize: { preferred: "medium", importance: 3 }
+    });
+    setShowPersonalize(true);
+  };
+
+  const applyPersonalize = () => {
+    // Normalize draft values
+    const rp: any = { ...profileDraft };
+    if (rp.budget && typeof rp.budget.max === 'string') {
+      const n = parseInt(rp.budget.max.replace(/[^\d]/g, ''), 10);
+      if (!Number.isNaN(n)) rp.budget.max = n; else delete rp.budget.max;
+    }
+    if (typeof rp.preferredAmenities === 'string') {
+      rp.preferredAmenities = rp.preferredAmenities
+        .split(',')
+        .map((s: string) => s.trim())
+        .filter(Boolean);
+    }
+    setFilters(prev => ({ ...prev, residentProfile: rp, page: 1 }));
+    setShowPersonalize(false);
+    // Trigger search with new resident profile
+    applyFilters();
+  };
   
   return (
     <DashboardLayout title="Search Homes" showSearch={false}>
@@ -567,6 +620,14 @@ export default function SearchPage() {
               <FiFilter className="mr-1" />
               Filters
             </button>
+            {/* Personalize button */}
+            <button
+              onClick={openPersonalize}
+              className="hidden items-center rounded-md border border-primary-200 bg-white px-3 py-1.5 text-sm font-medium text-primary-700 hover:bg-primary-50 md:flex"
+            >
+              <FiAward className="mr-1" />
+              Personalize
+            </button>
           </div>
         </div>
         
@@ -613,6 +674,12 @@ export default function SearchPage() {
           
           {/* Main content area */}
           <div className="flex-1">
+            {/* Personalization status */}
+            {filters.residentProfile && (
+              <div className="mb-3 rounded-md border border-primary-200 bg-primary-50 px-3 py-2 text-xs text-primary-800">
+                AI personalization enabled. <button onClick={openPersonalize} className="underline hover:no-underline">Edit profile</button> or <button onClick={() => { setFilters(prev => ({ ...prev, residentProfile: undefined })); applyFilters(); }} className="underline hover:no-underline">clear</button>.
+              </div>
+            )}
             {/* Results summary */}
             <div className="mb-4 flex items-center justify-between">
               <p className="text-sm text-neutral-600">
@@ -1045,6 +1112,130 @@ export default function SearchPage() {
           </div>
         </div>
       </div>
+
+      {/* Personalize Modal */}
+      {showPersonalize && (
+        <div className="fixed inset-0 z-40 flex items-end md:items-center md:justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setShowPersonalize(false)} />
+          <div className="relative w-full rounded-t-2xl bg-white p-4 shadow-xl md:w-[720px] md:rounded-2xl">
+            <div className="mb-3 flex items-center justify-between border-b pb-2">
+              <h3 className="text-base font-semibold text-neutral-800">Personalize Results</h3>
+              <button onClick={() => setShowPersonalize(false)} className="rounded p-1 hover:bg-neutral-100"><FiX /></button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-neutral-600">Gender</label>
+                <select
+                  value={profileDraft.gender || ''}
+                  onChange={(e) => setProfileDraft((p: any) => ({ ...p, gender: e.target.value }))}
+                  className="w-full rounded border border-neutral-300 px-2 py-1.5 text-sm"
+                >
+                  <option value="">No preference</option>
+                  <option value="MALE">Male</option>
+                  <option value="FEMALE">Female</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-medium text-neutral-600">Max Budget (USD/mo)</label>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  value={profileDraft.budget?.max || ''}
+                  onChange={(e) => setProfileDraft((p: any) => ({ ...p, budget: { ...(p.budget||{}), max: e.target.value } }))}
+                  className="w-full rounded border border-neutral-300 px-2 py-1.5 text-sm"
+                  placeholder="5000"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="mb-1 block text-xs font-medium text-neutral-600">Care Needs</label>
+                <div className="flex flex-wrap gap-2">
+                  {CARE_LEVELS.map(({ id, label }) => (
+                    <label key={id} className="flex items-center gap-1 text-xs">
+                      <input
+                        type="checkbox"
+                        checked={Array.isArray(profileDraft.careLevelNeeded) && profileDraft.careLevelNeeded.includes(id)}
+                        onChange={(e) => setProfileDraft((p: any) => {
+                          const arr = new Set([...(p.careLevelNeeded||[])]);
+                          if (e.target.checked) arr.add(id); else arr.delete(id);
+                          return { ...p, careLevelNeeded: Array.from(arr) };
+                        })}
+                      />
+                      <span>{label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-medium text-neutral-600">Preferred Amenities (comma-separated)</label>
+                <input
+                  type="text"
+                  value={Array.isArray(profileDraft.preferredAmenities) ? profileDraft.preferredAmenities.join(', ') : (profileDraft.preferredAmenities || '')}
+                  onChange={(e) => setProfileDraft((p: any) => ({ ...p, preferredAmenities: e.target.value }))}
+                  className="w-full rounded border border-neutral-300 px-2 py-1.5 text-sm"
+                  placeholder="Garden, Private Rooms, Transportation"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-medium text-neutral-600">Pet Friendly</label>
+                <select
+                  value={profileDraft.petFriendly === undefined ? '' : (profileDraft.petFriendly ? 'yes' : 'no')}
+                  onChange={(e) => setProfileDraft((p: any) => ({ ...p, petFriendly: e.target.value === '' ? undefined : e.target.value === 'yes' }))}
+                  className="w-full rounded border border-neutral-300 px-2 py-1.5 text-sm"
+                >
+                  <option value="">No preference</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-medium text-neutral-600">Social Engagement</label>
+                <input
+                  type="range"
+                  min={1}
+                  max={5}
+                  value={profileDraft.socialEngagement || 3}
+                  onChange={(e) => setProfileDraft((p: any) => ({ ...p, socialEngagement: parseInt(e.target.value, 10) }))}
+                  className="w-full"
+                />
+                <div className="mt-1 text-[11px] text-neutral-500">{profileDraft.socialEngagement || 3} / 5</div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-medium text-neutral-600">Community Size</label>
+                <div className="flex gap-2">
+                  <select
+                    value={profileDraft.communitySize?.preferred || 'medium'}
+                    onChange={(e) => setProfileDraft((p: any) => ({ ...p, communitySize: { ...(p.communitySize||{}), preferred: e.target.value } }))}
+                    className="w-full rounded border border-neutral-300 px-2 py-1.5 text-sm"
+                  >
+                    <option value="small">Small</option>
+                    <option value="medium">Medium</option>
+                    <option value="large">Large</option>
+                  </select>
+                  <select
+                    value={profileDraft.communitySize?.importance || 3}
+                    onChange={(e) => setProfileDraft((p: any) => ({ ...p, communitySize: { ...(p.communitySize||{}), importance: parseInt(e.target.value, 10) } }))}
+                    className="w-32 rounded border border-neutral-300 px-2 py-1.5 text-sm"
+                  >
+                    {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 flex justify-end gap-2 border-t pt-3">
+              <button onClick={() => setShowPersonalize(false)} className="rounded-md border border-neutral-300 px-4 py-1.5 text-sm">Cancel</button>
+              <button onClick={applyPersonalize} className="rounded-md bg-primary-600 px-4 py-1.5 text-sm text-white hover:bg-primary-700">Apply</button>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

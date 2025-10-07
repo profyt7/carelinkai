@@ -28,6 +28,9 @@ export interface SearchParams {
   sortBy?: 'relevance' | 'price_low' | 'price_high' | 'distance' | 'rating';
   minAvailability?: number;    // Minimum availability required
   verified?: boolean;          // Only show verified homes
+
+  /* ---- AI matching ---- */
+  residentProfile?: any;       // Resident profile to personalize AI matching
 }
 
 /**
@@ -149,6 +152,14 @@ function formatSearchParams(params: SearchParams): URLSearchParams {
   if (params.radius) searchParams.set('radius', params.radius.toString());
   if (params.sortBy) searchParams.set('sortBy', params.sortBy);
   if (params.verified !== undefined) searchParams.set('verified', params.verified.toString());
+
+  // Add resident profile for AI matching (JSON string)
+  if (params.residentProfile) {
+    try {
+      const encoded = JSON.stringify(params.residentProfile);
+      searchParams.set('residentProfile', encoded);
+    } catch {}
+  }
   
   // Add amenities (comma-separated)
   if (params.amenities && params.amenities.length > 0) {
