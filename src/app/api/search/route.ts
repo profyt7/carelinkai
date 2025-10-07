@@ -30,7 +30,7 @@ import { PrismaClient, CareLevel } from '@prisma/client';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { formatCurrency } from '@/lib/utils';
-import { calculateAIMatchScore } from '@/lib/ai-matching';
+import { calculateAIMatchScore, calculateAIMatchBreakdown } from '@/lib/ai-matching';
 
 // Initialize Prisma client
 const prisma = new PrismaClient();
@@ -420,6 +420,7 @@ export function generateMockHomes(count: number = 12) {
       imageUrl: HOME_IMAGES[i % HOME_IMAGES.length],
       operator: null,
       aiMatchScore: 60 + (i * 3) % 35, // 60-95
+      aiMatchFactors: undefined,
       isFavorited: false,
     };
   });
@@ -652,9 +653,12 @@ export async function GET(request: NextRequest) {
     const results = await Promise.all(homes.map(async (home, i) => {
       // 1. AI Match Score
       let aiMatchScore = 0;
+      let aiMatchFactors: any | undefined = undefined;
       if (residentProfile) {
         try {
-          aiMatchScore = await calculateAIMatchScore(home, residentProfile);
+          const breakdown = await calculateAIMatchBreakdown(home, residentProfile);
+          aiMatchScore = breakdown.score;
+          aiMatchFactors = breakdown.factors;
         } catch {
           aiMatchScore = calculateMatchScore(home, searchCriteria);
         }
@@ -700,6 +704,7 @@ export async function GET(request: NextRequest) {
           email: home.operator.user.email
         } : null,
         aiMatchScore,
+        aiMatchFactors,
         isFavorited: favoriteHomeIds.has(home.id)
       };
     }));

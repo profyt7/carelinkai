@@ -59,6 +59,17 @@ const CARE_LEVELS = [
   { id: CareLevel.SKILLED_NURSING, label: "Skilled Nursing" }
 ];
 
+// Human labels for AI factor keys
+const AI_FACTOR_LABELS: Record<string, string> = {
+  careLevel: "Care Level",
+  budget: "Budget",
+  location: "Location",
+  amenities: "Amenities",
+  gender: "Gender",
+  social: "Social",
+  medical: "Medical",
+};
+
 // Gender options for filtering
 const GENDER_OPTIONS = [
   { id: "ALL", label: "All Genders" },
@@ -360,7 +371,18 @@ export default function SearchPage() {
       }));
     }
     
-    // Always apply filters on initial load
+    // Load resident profile from localStorage if not provided via URL
+    try {
+      if (!filters.residentProfile && !searchParams.get("residentProfile")) {
+        const raw = localStorage.getItem("carelink_resident_profile");
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          setFilters(prev => ({ ...prev, residentProfile: parsed }));
+        }
+      }
+    } catch {}
+
+    // Apply filters on initial load
     applyFilters();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -407,6 +429,7 @@ export default function SearchPage() {
         .filter(Boolean);
     }
     setFilters(prev => ({ ...prev, residentProfile: rp, page: 1 }));
+    try { localStorage.setItem("carelink_resident_profile", JSON.stringify(rp)); } catch {}
     setShowPersonalize(false);
     // Trigger search with new resident profile
     applyFilters();
@@ -677,7 +700,7 @@ export default function SearchPage() {
             {/* Personalization status */}
             {filters.residentProfile && (
               <div className="mb-3 rounded-md border border-primary-200 bg-primary-50 px-3 py-2 text-xs text-primary-800">
-                AI personalization enabled. <button onClick={openPersonalize} className="underline hover:no-underline">Edit profile</button> or <button onClick={() => { setFilters(prev => ({ ...prev, residentProfile: undefined })); applyFilters(); }} className="underline hover:no-underline">clear</button>.
+                AI personalization enabled. <button onClick={openPersonalize} className="underline hover:no-underline">Edit profile</button> or <button onClick={() => { try { localStorage.removeItem("carelink_resident_profile"); } catch {}; setFilters(prev => ({ ...prev, residentProfile: undefined })); applyFilters(); }} className="underline hover:no-underline">clear</button>.
               </div>
             )}
             {/* Results summary */}
@@ -795,6 +818,19 @@ export default function SearchPage() {
                               {home.aiMatchScore}% Match
                             </div>
                           </div>
+                          {/* Why this match - top factors (grid card) */}
+                          {home.aiMatchFactors && (
+                            <div className="absolute left-2 bottom-2 flex flex-wrap gap-1">
+                              {Object.entries(home.aiMatchFactors)
+                                .sort((a,b) => b[1]-a[1])
+                                .slice(0,3)
+                                .map(([k,v]) => (
+                                  <span key={k} className="rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-medium text-neutral-700 shadow">
+                                    {AI_FACTOR_LABELS[k] || k}: {Math.round(v)}
+                                  </span>
+                                ))}
+                            </div>
+                          )}
                           
                           {/* Availability badge */}
                           {home.availability > 0 ? (
@@ -911,6 +947,19 @@ export default function SearchPage() {
                               {home.aiMatchScore}% Match
                             </div>
                           </div>
+                          {/* Why this match - top factors (list card) */}
+                          {home.aiMatchFactors && (
+                            <div className="absolute left-2 bottom-2 flex flex-wrap gap-1">
+                              {Object.entries(home.aiMatchFactors)
+                                .sort((a,b) => b[1]-a[1])
+                                .slice(0,3)
+                                .map(([k,v]) => (
+                                  <span key={k} className="rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-medium text-neutral-700 shadow">
+                                    {AI_FACTOR_LABELS[k] || k}: {Math.round(v)}
+                                  </span>
+                                ))}
+                            </div>
+                          )}
                           
                           {/* Availability badge */}
                           {home.availability > 0 ? (
@@ -1124,6 +1173,45 @@ export default function SearchPage() {
             </div>
 
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              {/* Quick presets */}
+              <div className="md:col-span-2">
+                <div className="mb-1 text-xs font-medium text-neutral-600">Quick presets</div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setProfileDraft({
+                      gender: "",
+                      careLevelNeeded: [CareLevel.MEMORY_CARE],
+                      budget: { max: 7000 },
+                      preferredAmenities: ["Secure Memory Wing", "24/7 Care"],
+                      socialEngagement: 3,
+                      communitySize: { preferred: "medium", importance: 4 }
+                    })}
+                    className="rounded-full border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-50"
+                  >Memory Care</button>
+                  <button
+                    onClick={() => setProfileDraft({
+                      gender: "",
+                      careLevelNeeded: [CareLevel.ASSISTED],
+                      budget: { max: 4000 },
+                      preferredAmenities: ["Housekeeping", "Transportation"],
+                      socialEngagement: 3,
+                      communitySize: { preferred: "small", importance: 3 }
+                    })}
+                    className="rounded-full border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-50"
+                  >Budget Focus</button>
+                  <button
+                    onClick={() => setProfileDraft({
+                      gender: "",
+                      careLevelNeeded: [CareLevel.INDEPENDENT],
+                      budget: { max: 5000 },
+                      preferredAmenities: ["Activity Room", "Garden/Patio", "Community Events"],
+                      socialEngagement: 5,
+                      communitySize: { preferred: "large", importance: 4 }
+                    })}
+                    className="rounded-full border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-50"
+                  >Highly Social</button>
+                </div>
+              </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-neutral-600">Gender</label>
                 <select
