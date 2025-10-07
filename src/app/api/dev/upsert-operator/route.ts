@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     // Ensure at least one home exists for this operator
     let home = await prisma.assistedLivingHome.findFirst({ where: { operatorId: operator.id } });
     if (!home) {
-      const createdHome = await prisma.assistedLivingHome.create({
+      home = await prisma.assistedLivingHome.create({
         data: {
           operatorId: operator.id,
           name: 'E2E Test Home',
@@ -63,11 +63,14 @@ export async function POST(request: NextRequest) {
           amenities: ['WiFi', 'Garden'],
         },
         select: { id: true, name: true }
-      });
-      home = createdHome as any;
+      }) as any;
+    }
+    // Ensure non-null for TypeScript
+    if (!home) {
+      throw new Error('Failed to find or create operator home');
     }
 
-    return NextResponse.json({ success: true, userId: user.id, operatorId: operator.id, homeId: (home as any).id, email, password: rawPassword });
+    return NextResponse.json({ success: true, userId: user.id, operatorId: operator.id, homeId: home.id, email, password: rawPassword });
   } catch (e) {
     console.error('upsert-operator failed', e);
     return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
