@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: carelinkai
+    env: docker
+    autoDeploy: false
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: NEXTAUTH_URL
+        value: https://your-domain
+      - key: NEXTAUTH_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: carelinkai-db
+          property: connectionString
+
+databases:
+  - name: carelinkai-db
+    plan: starter
