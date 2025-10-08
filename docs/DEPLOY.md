@@ -30,6 +30,18 @@ Run:
     -e DATABASE_URL=postgresql://... \
     ghcr.io/OWNER/REPO:latest
 
-## Render (optional)
+## Render (staging)
 
-Provide a Postgres and a Web Service. Example spec in render.yaml
+Use the provided render.yaml (Blueprint deploy):
+1) On Render: New → Blueprint → Connect this repo → Select render.yaml
+2) It will create:
+   - Postgres (carelinkai-db)
+   - Web Service (Docker) using our Dockerfile
+   - NEXTAUTH_SECRET will be generated automatically
+   - DATABASE_URL is injected from the DB
+3) After the first deploy, set NEXTAUTH_URL to your Render URL (Service → Environment)
+4) Redeploy.
+
+Notes:
+- The container runs `npx prisma migrate deploy && npm start` on boot to apply DB migrations.
+- For non-PHI staging only (Render does not sign a BAA).

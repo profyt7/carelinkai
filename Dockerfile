@@ -8,6 +8,7 @@ WORKDIR /app
 
 # --- Dependencies ---
 FROM base AS deps
+ENV NODE_ENV=development
 COPY package.json package-lock.json ./
 RUN npm ci
 
@@ -17,7 +18,7 @@ ENV NODE_ENV=development
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN npm run build
+RUN npx prisma generate && npm run build
 
 # --- Production runtime ---
 FROM node:18-bullseye-slim AS runner
@@ -31,7 +32,8 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=build /app/.next ./.next
 COPY --from=build /app/public ./public
+COPY --from=build /app/prisma ./prisma
 COPY package.json ./package.json
 
 EXPOSE 3000
-CMD ["npm", "start"]
+CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]
