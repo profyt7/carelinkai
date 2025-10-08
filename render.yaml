@@ -17,4 +17,4 @@ services:
 
 databases:
   - name: carelinkai-db
-    plan: starter
+    plan: basic-1gb
