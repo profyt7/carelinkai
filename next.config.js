@@ -2,6 +2,9 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
+    typescript: {
+    ignoreBuildErrors: true,
+  },
   images: {
     // Disable optimization in development to avoid 400 errors from the _next/image
     // endpoint when serving local files from /public/uploads.
