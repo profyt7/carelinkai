@@ -29,7 +29,8 @@ ENV NODE_ENV=production \
 WORKDIR /app
 
 # Only copy necessary files
-COPY --from=deps /app/node_modules ./node_modules
+# Use node_modules from the build stage to include generated Prisma client artifacts
+COPY --from=build /app/node_modules ./node_modules
 # Ensure Prisma Client generated artifacts are present in the runtime image
 # Copy both the generated JS client and the native engines
 COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
