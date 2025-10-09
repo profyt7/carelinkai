@@ -30,6 +30,10 @@ WORKDIR /app
 
 # Only copy necessary files
 COPY --from=deps /app/node_modules ./node_modules
+# Ensure Prisma Client generated artifacts are present in the runtime image
+# Copy both the generated JS client and the native engines
+COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=build /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=build /app/.next ./.next
 COPY --from=build /app/public ./public
 COPY --from=build /app/prisma ./prisma
