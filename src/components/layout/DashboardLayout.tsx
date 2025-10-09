@@ -117,6 +117,7 @@ export default function DashboardLayout({
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [mounted, setMounted] = useState(false);
+  const [sessionStall, setSessionStall] = useState(false);
   
   // Touch gesture handling
   const [touchStartX, setTouchStartX] = useState(0);
@@ -205,20 +206,31 @@ export default function DashboardLayout({
   const e2eCookieBypass = typeof window !== 'undefined' && document.cookie.includes('e2e-bypass=1');
   const e2eBypass = e2eEnvBypass || e2eCookieBypass;
 
-  // Heuristic: if a session cookie exists, avoid indefinite loading
-  const hasSessionCookie = typeof window !== 'undefined' && (
-    document.cookie.includes('__Secure-next-auth.session-token=') ||
-    document.cookie.includes('next-auth.session-token=')
-  );
+  // Note: NextAuth session cookies are HttpOnly in production, so client JS cannot read them.
+  // Instead of relying on cookies, add a short timeout fallback to prevent indefinite spinners.
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    if (status === 'loading') {
+      timer = setTimeout(() => setSessionStall(true), 2000);
+    } else if (status === 'unauthenticated') {
+      timer = setTimeout(() => setSessionStall(true), 2500);
+    } else {
+      // Reset stall when authenticated
+      setSessionStall(false);
+    }
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [status]);
 
-  // Redirect to login if not authenticated (skip during e2e to allow mocking; never in production)
+  // Redirect to login if not authenticated (skip during e2e to allow mocking; add short grace period)
   useEffect(() => {
     if (e2eBypass) return;
-    // Only redirect if truly unauthenticated and no session cookie present
-    if (status === "unauthenticated" && !hasSessionCookie) {
+    // Only redirect if unauthenticated and we've waited past the stall window
+    if (status === "unauthenticated" && !sessionStall) {
       router.push("/auth/login");
     }
-  }, [status, router, e2eBypass, hasSessionCookie]);
+  }, [status, router, e2eBypass, sessionStall]);
 
   // Toggle sidebar
   const toggleSidebar = () => {
@@ -316,7 +328,7 @@ export default function DashboardLayout({
   }
 
   // Show loading state when session is loading
-  if ((status === "loading" && !hasSessionCookie) || !mounted) {
+  if ((status === "loading" && !sessionStall) || !mounted) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-neutral-50">
         <div className="flex flex-col items-center space-y-4">
@@ -327,7 +339,7 @@ export default function DashboardLayout({
     );
   }
 
-  const contentEl = (!e2eBypass && status === "unauthenticated" && !hasSessionCookie) ? (
+  const contentEl = (!e2eBypass && status === "unauthenticated" && !sessionStall) ? (
     <div className="flex-1 flex items-center justify-center">
       <div className="flex flex-col items-center space-y-4 py-12">
         <div className="h-10 w-10 rounded-full border-4 border-t-primary-500 border-neutral-200 animate-spin"></div>
