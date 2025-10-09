@@ -118,19 +118,21 @@ function applySecurityHeaders(req: Request, res: NextResponse) {
   const cspParts = [
     "default-src 'self'",
     // Allow Next.js inline styles; tighten in prod if hashed
-    isProd ? "style-src 'self' 'unsafe-inline'" : "style-src 'self' 'unsafe-inline'",
+    isProd ? "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com" : "style-src 'self' 'unsafe-inline'",
     // Scripts: allow self; allow unsafe-eval in dev for React Refresh
-    isProd ? "script-src 'self'" : "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+    isProd ? "script-src 'self' 'unsafe-inline' https://js.stripe.com" : "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
     // Images from self, data URIs, and https
     "img-src 'self' data: blob: https:",
     // Fonts
-    "font-src 'self' data: https:",
+    "font-src 'self' data: https: https://fonts.gstatic.com",
     // Connections (API, websockets for dev)
-    isProd ? "connect-src 'self' https:" : "connect-src 'self' ws: wss: http: https:",
+    isProd ? "connect-src 'self' https: https://js.stripe.com https://api.stripe.com" : "connect-src 'self' ws: wss: http: https:",
     // Media
     "media-src 'self'",
     // Frames
     "frame-ancestors 'none'",
+    // Allow Stripe iframes
+    "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
     // Workers
     "worker-src 'self' blob:",
     // Base URI
