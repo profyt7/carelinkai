@@ -209,16 +209,18 @@ export default function DashboardLayout({
   // Note: NextAuth session cookies are HttpOnly in production, so client JS cannot read them.
   // Instead of relying on cookies, add a short timeout fallback to prevent indefinite spinners.
   useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
     if (status === 'loading') {
-      const t = setTimeout(() => setSessionStall(true), 2000);
-      return () => clearTimeout(t);
+      timer = setTimeout(() => setSessionStall(true), 2000);
+    } else if (status === 'unauthenticated') {
+      timer = setTimeout(() => setSessionStall(true), 2500);
+    } else {
+      // Reset stall when authenticated
+      setSessionStall(false);
     }
-    if (status === 'unauthenticated') {
-      const t = setTimeout(() => setSessionStall(true), 2500);
-      return () => clearTimeout(t);
-    }
-    // Reset stall when authenticated
-    setSessionStall(false);
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
   }, [status]);
 
   // Redirect to login if not authenticated (skip during e2e to allow mocking; add short grace period)
