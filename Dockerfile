@@ -39,8 +39,10 @@ COPY --from=build /app/public ./public
 COPY --from=build /app/prisma ./prisma
 COPY package.json ./package.json
 
-# Regenerate Prisma Client in the runtime image to guarantee presence
-RUN npx prisma generate
+# Force-regenerate Prisma Client in the runtime image using a pinned CLI
+# This does not rely on devDependencies being present
+RUN npx -y prisma@5.22.0 generate --schema=./prisma/schema.prisma \
+  && node -e "require('fs').accessSync('node_modules/.prisma/client/default.js'); console.log('Prisma client present')"
 
 EXPOSE 3000
 CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]
