@@ -39,5 +39,8 @@ COPY --from=build /app/public ./public
 COPY --from=build /app/prisma ./prisma
 COPY package.json ./package.json
 
+# Regenerate Prisma Client in the runtime image to guarantee presence
+RUN npx prisma generate
+
 EXPOSE 3000
 CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]
