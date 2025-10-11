@@ -327,8 +327,8 @@ export default function DashboardLayout({
     console.log("[DashboardLayout] resolved profileImage:", profileImage);
   }
 
-  // Show loading state when session is loading
-  if ((status === "loading" && !sessionStall) || !mounted) {
+  // Only gate on mount to avoid indefinite spinner; SSR guard handles auth
+  if (!mounted) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-neutral-50">
         <div className="flex flex-col items-center space-y-4">
@@ -339,16 +339,7 @@ export default function DashboardLayout({
     );
   }
 
-  const contentEl = (!e2eBypass && status === "unauthenticated" && !sessionStall) ? (
-    <div className="flex-1 flex items-center justify-center">
-      <div className="flex flex-col items-center space-y-4 py-12">
-        <div className="h-10 w-10 rounded-full border-4 border-t-primary-500 border-neutral-200 animate-spin"></div>
-        <p className="text-neutral-600 font-medium">Signing you in...</p>
-      </div>
-    </div>
-  ) : (
-    <>{children}</>
-  );
+  const contentEl = (<>{children}</>);
 
   return (
     <div 
