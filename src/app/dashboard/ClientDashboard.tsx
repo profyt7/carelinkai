@@ -104,6 +104,11 @@ export default function ClientDashboard() {
   const displayName =
     session?.user?.firstName || session?.user?.name?.split(" ")[0] || "User";
 
+  // Environment-gated mock data toggle
+  const showMock = ["1", "true", "yes", "on"].includes(
+    String(process.env.NEXT_PUBLIC_SHOW_MOCK_DASHBOARD || "").toLowerCase()
+  );
+
   const expensesChartData = {
     labels: mockData.expenses.breakdown.map((item) => item.label),
     datasets: [
@@ -165,6 +170,7 @@ export default function ClientDashboard() {
 
   return (
     <DashboardLayout title="Dashboard">
+      {showMock ? (
       <div className="p-4 md:p-6">
         <div className="mb-6 flex flex-wrap items-center justify-between">
           <div>
@@ -528,6 +534,38 @@ export default function ClientDashboard() {
           </section>
         </div>
       </div>
+      ) : (
+        <div className="p-4 md:p-6">
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-neutral-800">Welcome</h2>
+            <p className="text-neutral-500 mt-1">
+              Your dashboard is connected. To show demo widgets and charts,
+              set <code>NEXT_PUBLIC_SHOW_MOCK_DASHBOARD=1</code> in the environment
+              and redeploy.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="card">
+              <h3 className="text-lg font-semibold mb-2">Getting started</h3>
+              <ul className="list-disc list-inside text-sm text-neutral-600 space-y-1">
+                <li>Add real data sources or enable demo content.</li>
+                <li>Invite team members from Settings → Account.</li>
+                <li>Explore Operator, Residents, and Shifts pages.</li>
+              </ul>
+            </div>
+            <div className="card">
+              <h3 className="text-lg font-semibold mb-2">Enable demo data</h3>
+              <p className="text-sm text-neutral-600">
+                To preview charts and sample metrics without production data,
+                enable the flag and redeploy:
+              </p>
+              <pre className="mt-3 rounded bg-neutral-50 p-3 text-xs text-neutral-700 overflow-auto">
+NEXT_PUBLIC_SHOW_MOCK_DASHBOARD=1
+              </pre>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }
