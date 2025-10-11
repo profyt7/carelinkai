@@ -34,6 +34,7 @@ const nextConfig = {
   },
   // Removed experimental features to avoid dependency issues
   async headers() {
+    const enableCsp = process.env.NEXT_PUBLIC_ENABLE_CSP === '1';
     return [
       {
         // Apply these headers to all routes
@@ -63,21 +64,26 @@ const nextConfig = {
             key: 'Referrer-Policy',
             value: 'origin-when-cross-origin',
           },
-          {
-            // Content Security Policy for HIPAA compliance
-            key: 'Content-Security-Policy',
-            value: "default-src 'self'; " +
-                   "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://js.stripe.com; " +
-                   "connect-src 'self' https://api.stripe.com; " +
-                   "img-src 'self' data: blob: http://localhost:3000 https://carelinkai-storage.s3.amazonaws.com " +
-                   "https://picsum.photos https://randomuser.me https://placehold.co https://ui-avatars.com " +
-                   "https://fastly.picsum.photos " +
-                   "https://images.unsplash.com " +
-                   "https://a.tile.openstreetmap.org https://b.tile.openstreetmap.org https://c.tile.openstreetmap.org; " +
-                   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-                   "font-src 'self' data: https://fonts.gstatic.com; " +
-                   "frame-src 'self' https://js.stripe.com https://hooks.stripe.com;",
-          },
+          ...(
+            enableCsp
+              ? [{
+                  // Content Security Policy (enable via NEXT_PUBLIC_ENABLE_CSP=1)
+                  key: 'Content-Security-Policy',
+                  value:
+                    "default-src 'self'; " +
+                    "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://js.stripe.com; " +
+                    "connect-src 'self' https://api.stripe.com; " +
+                    "img-src 'self' data: blob: http://localhost:3000 https://carelinkai-storage.s3.amazonaws.com " +
+                    "https://picsum.photos https://randomuser.me https://placehold.co https://ui-avatars.com " +
+                    "https://fastly.picsum.photos " +
+                    "https://images.unsplash.com " +
+                    "https://a.tile.openstreetmap.org https://b.tile.openstreetmap.org https://c.tile.openstreetmap.org; " +
+                    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+                    "font-src 'self' data: https://fonts.gstatic.com; " +
+                    "frame-src 'self' https://js.stripe.com https://hooks.stripe.com;",
+                }]
+              : []
+          ),
           {
             // HIPAA requires secure cookies
             key: 'Set-Cookie',

@@ -89,6 +89,7 @@ export const config = {
  */
 function applySecurityHeaders(req: Request, res: NextResponse) {
   const isProd = process.env['NODE_ENV'] === 'production';
+  const enableCsp = process.env['NEXT_PUBLIC_ENABLE_CSP'] === '1';
 
   // Strict-Transport-Security (HSTS) - only in production
   if (isProd) {
@@ -145,7 +146,7 @@ function applySecurityHeaders(req: Request, res: NextResponse) {
   const url = new URL((req as any).url);
   const path = url.pathname;
   const skipCsp = path.startsWith('/_next') || path.startsWith('/api');
-  if (isProd && !skipCsp) {
+  if (isProd && enableCsp && !skipCsp) {
     res.headers.set('Content-Security-Policy', cspParts.join('; '));
   }
 
