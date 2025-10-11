@@ -68,10 +68,22 @@ export default function MarketplacePage() {
   const searchParams = useSearchParams();
   const didInitFromUrl = useRef(false);
 
-  // Environment-gated mock data toggle (reuse dashboard flag)
-  const showMock = ["1", "true", "yes", "on"].includes(
-    String(process.env.NEXT_PUBLIC_SHOW_MOCK_DASHBOARD || "").toLowerCase()
-  );
+  // Runtime mock toggle fetched from API (works in Docker/runtime envs)
+  const [showMock, setShowMock] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/runtime/mocks', { cache: 'no-store' });
+        if (!res.ok) return;
+        const j = await res.json();
+        if (!cancelled) setShowMock(!!j?.show);
+      } catch {
+        if (!cancelled) setShowMock(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   // Include "providers" as a valid tab option
   const [activeTab, setActiveTab] = useState<"jobs" | "caregivers" | "providers">(

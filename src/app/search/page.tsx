@@ -81,10 +81,22 @@ export default function SearchPage() {
   // Search params and router for query handling
   const searchParams = useSearchParams();
   const router = useRouter();
-  // Environment-gated mock data toggle (reuse dashboard flag)
-  const showMock = ["1", "true", "yes", "on"].includes(
-    String(process.env.NEXT_PUBLIC_SHOW_MOCK_DASHBOARD || "").toLowerCase()
-  );
+  // Runtime mock toggle fetched from API
+  const [showMock, setShowMock] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/runtime/mocks', { cache: 'no-store' });
+        if (!res.ok) return;
+        const j = await res.json();
+        if (!cancelled) setShowMock(!!j?.show);
+      } catch {
+        if (!cancelled) setShowMock(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
   
   // State for view type (map or list)
   const [viewType, setViewType] = useState<"list" | "grid" | "map">("grid");
