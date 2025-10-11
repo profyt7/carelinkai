@@ -81,6 +81,10 @@ export default function SearchPage() {
   // Search params and router for query handling
   const searchParams = useSearchParams();
   const router = useRouter();
+  // Environment-gated mock data toggle (reuse dashboard flag)
+  const showMock = ["1", "true", "yes", "on"].includes(
+    String(process.env.NEXT_PUBLIC_SHOW_MOCK_DASHBOARD || "").toLowerCase()
+  );
   
   // State for view type (map or list)
   const [viewType, setViewType] = useState<"list" | "grid" | "map">("grid");
@@ -177,6 +181,61 @@ export default function SearchPage() {
 
   // Ref for suggestions dropdown
   const suggestionsRef = useRef<HTMLDivElement>(null);
+
+  // Mock homes for demo mode
+  const MOCK_HOMES: SearchResultItem[] = [
+    {
+      id: "home_1",
+      name: "Sunrise Memory Care",
+      description: "Specialized memory care community with secure gardens and art therapy.",
+      address: { street: "123 Maple St", city: "San Francisco", state: "CA", zipCode: "94109" },
+      careLevel: [CareLevel.MEMORY_CARE],
+      priceRange: { min: 5500, max: 7200, formattedMin: "$5,500", formattedMax: "$7,200" },
+      capacity: 80,
+      availability: 5,
+      gender: "ALL",
+      amenities: ["Secure Memory Wing", "Garden/Patio", "Art Therapy"],
+      imageUrl: "https://placehold.co/1200x800?text=Sunrise",
+      operator: { name: "Sunrise Care", email: "info@sunrise.example" },
+      aiMatchScore: 92,
+      aiMatchFactors: { careLevel: 95, budget: 80, location: 88, amenities: 90, gender: 100, social: 85, medical: 90 },
+      aiMatchWeights: { careLevel: 30, budget: 20, location: 20, amenities: 15, gender: 5, social: 5, medical: 5 },
+    },
+    {
+      id: "home_2",
+      name: "Bayview Assisted Living",
+      description: "Waterfront views, transportation, and daily activities.",
+      address: { street: "200 Ocean Ave", city: "San Francisco", state: "CA", zipCode: "94112" },
+      careLevel: [CareLevel.ASSISTED, CareLevel.INDEPENDENT],
+      priceRange: { min: 3800, max: 5200, formattedMin: "$3,800", formattedMax: "$5,200" },
+      capacity: 120,
+      availability: 12,
+      gender: "ALL",
+      amenities: ["Transportation", "Activity Room", "Garden/Patio"],
+      imageUrl: "https://placehold.co/1200x800?text=Bayview",
+      operator: { name: "Bayview Communities", email: "hello@bayview.example" },
+      aiMatchScore: 86,
+      aiMatchFactors: { careLevel: 85, budget: 88, location: 82, amenities: 80, gender: 100, social: 90, medical: 70 },
+      aiMatchWeights: { careLevel: 25, budget: 25, location: 20, amenities: 15, gender: 5, social: 5, medical: 5 },
+    },
+    {
+      id: "home_3",
+      name: "Cedar Grove Senior Living",
+      description: "Cozy community with private rooms and pet-friendly policy.",
+      address: { street: "50 Cedar Ln", city: "Oakland", state: "CA", zipCode: "94610" },
+      careLevel: [CareLevel.INDEPENDENT, CareLevel.ASSISTED],
+      priceRange: { min: 3200, max: 4600, formattedMin: "$3,200", formattedMax: "$4,600" },
+      capacity: 60,
+      availability: 2,
+      gender: "ALL",
+      amenities: ["Private Rooms", "Pet Friendly", "Housekeeping"],
+      imageUrl: "https://placehold.co/1200x800?text=Cedar+Grove",
+      operator: { name: "Cedar Grove Ops", email: "contact@cedar.example" },
+      aiMatchScore: 78,
+      aiMatchFactors: { careLevel: 75, budget: 84, location: 70, amenities: 76, gender: 100, social: 72, medical: 60 },
+      aiMatchWeights: { careLevel: 25, budget: 25, location: 20, amenities: 15, gender: 5, social: 5, medical: 5 },
+    },
+  ];
 
   // Handle filter changes
   const handleFilterChange = (name: string, value: any) => {
@@ -312,6 +371,34 @@ export default function SearchPage() {
     setIsLoading(true);
     
     try {
+      if (showMock) {
+        const page = params.page || 1;
+        const limit = params.limit || 10;
+        const start = (page - 1) * limit;
+        const slice = MOCK_HOMES.slice(start, start + limit);
+        setSearchResponse({
+          success: true,
+          query: {
+            text: params.query || '',
+            location: params.location || null,
+            careLevels: params.careLevels || null,
+            priceRange: params.priceMin || params.priceMax
+              ? { min: params.priceMin?.toString() || null, max: params.priceMax?.toString() || null }
+              : null,
+            gender: params.gender || 'ALL',
+            availability: !!params.availability,
+            amenities: params.amenities || null,
+          },
+          pagination: {
+            page,
+            limit,
+            totalResults: MOCK_HOMES.length,
+            totalPages: Math.max(1, Math.ceil(MOCK_HOMES.length / limit)),
+          },
+          results: slice,
+        });
+        return;
+      }
       const response = await searchHomes(params);
       setSearchResponse(response);
     } catch (error) {
