@@ -84,11 +84,6 @@ const nextConfig = {
                 }]
               : []
           ),
-          {
-            // HIPAA requires secure cookies
-            key: 'Set-Cookie',
-            value: 'Path=/; HttpOnly; Secure; SameSite=Strict',
-          },
         ],
       },
     ];
