@@ -6,6 +6,10 @@ export default withAuth(
   // `withAuth` augments your Request with the user's token
   function middleware(req) {
     try {
+      // Runtime mock toggle (honor env at request time)
+      const rawMock = (process.env['SHOW_SITE_MOCKS'] || process.env['NEXT_PUBLIC_SHOW_MOCK_DASHBOARD'] || '').toString().toLowerCase();
+      const showMocks = ['1', 'true', 'yes', 'on'].includes(rawMock);
+
       // Allow unauthenticated access during E2E runs (never in production)
       if (process.env['NODE_ENV'] !== 'production' && process.env['NEXT_PUBLIC_E2E_AUTH_BYPASS'] === '1') {
         const res = NextResponse.next();
@@ -30,7 +34,10 @@ export default withAuth(
         '/search',                  // public search page
       ];
 
-      if (publicPaths.includes(pathname)) {
+      // In mock mode, also allow marketplace and search to be publicly viewable
+      const mockPublicPrefixes = ['/marketplace', '/search'];
+
+      if (publicPaths.includes(pathname) || (showMocks && mockPublicPrefixes.some(p => pathname === p || pathname.startsWith(p + '/')))) {
         const res = NextResponse.next();
         return applySecurityHeaders(req, res);
       }
@@ -50,6 +57,17 @@ export default withAuth(
     callbacks: {
       // The middleware runs when the authorized callback returns `true`
       authorized({ req, token }) {
+        // Allow public access to selected routes when runtime mock mode is enabled
+        try {
+          const rawMock = (process.env['SHOW_SITE_MOCKS'] || process.env['NEXT_PUBLIC_SHOW_MOCK_DASHBOARD'] || '').toString().toLowerCase();
+          const showMocks = ['1', 'true', 'yes', 'on'].includes(rawMock);
+          if (showMocks) {
+            const pathname = req?.nextUrl?.pathname || '';
+            if (pathname === '/' || pathname === '/search' || pathname.startsWith('/marketplace')) {
+              return true;
+            }
+          }
+        } catch {}
         // E2E bypass via env flag or explicit header
         try {
           if (process.env['NODE_ENV'] !== 'production' && process.env['NEXT_PUBLIC_E2E_AUTH_BYPASS'] === '1') return true;
