@@ -6,12 +6,15 @@ export default withAuth(
   // `withAuth` augments your Request with the user's token
   function middleware(req) {
     try {
-      // Runtime mock toggle (honor env at request time)
+      // Runtime mock toggle: cookie takes precedence, then env
+      const cookieRaw = req.cookies?.get?.('carelink_mock_mode')?.value?.toString().trim().toLowerCase() || '';
+      const cookieOn = ['1', 'true', 'yes', 'on'].includes(cookieRaw);
       const rawMock = (process.env['SHOW_SITE_MOCKS'] || process.env['NEXT_PUBLIC_SHOW_MOCK_DASHBOARD'] || '')
         .toString()
         .trim()
         .toLowerCase();
-      const showMocks = ['1', 'true', 'yes', 'on'].includes(rawMock);
+      const envOn = ['1', 'true', 'yes', 'on'].includes(rawMock);
+      const showMocks = cookieOn || envOn;
 
       // Allow unauthenticated access during E2E runs (never in production)
       if (process.env['NODE_ENV'] !== 'production' && process.env['NEXT_PUBLIC_E2E_AUTH_BYPASS'] === '1') {
@@ -62,11 +65,14 @@ export default withAuth(
       authorized({ req, token }) {
         // Allow public access to selected routes when runtime mock mode is enabled
         try {
+          const cookieRaw = req?.cookies?.get?.('carelink_mock_mode')?.value?.toString().trim().toLowerCase() || '';
+          const cookieOn = ['1', 'true', 'yes', 'on'].includes(cookieRaw);
           const rawMock = (process.env['SHOW_SITE_MOCKS'] || process.env['NEXT_PUBLIC_SHOW_MOCK_DASHBOARD'] || '')
             .toString()
             .trim()
             .toLowerCase();
-          const showMocks = ['1', 'true', 'yes', 'on'].includes(rawMock);
+          const envOn = ['1', 'true', 'yes', 'on'].includes(rawMock);
+          const showMocks = cookieOn || envOn;
           if (showMocks) {
             const pathname = req?.nextUrl?.pathname || '';
             if (pathname === '/' || pathname === '/search' || pathname.startsWith('/marketplace')) {
