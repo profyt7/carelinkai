@@ -7,7 +7,10 @@ export default withAuth(
   function middleware(req) {
     try {
       // Runtime mock toggle (honor env at request time)
-      const rawMock = (process.env['SHOW_SITE_MOCKS'] || process.env['NEXT_PUBLIC_SHOW_MOCK_DASHBOARD'] || '').toString().toLowerCase();
+      const rawMock = (process.env['SHOW_SITE_MOCKS'] || process.env['NEXT_PUBLIC_SHOW_MOCK_DASHBOARD'] || '')
+        .toString()
+        .trim()
+        .toLowerCase();
       const showMocks = ['1', 'true', 'yes', 'on'].includes(rawMock);
 
       // Allow unauthenticated access during E2E runs (never in production)
@@ -59,7 +62,10 @@ export default withAuth(
       authorized({ req, token }) {
         // Allow public access to selected routes when runtime mock mode is enabled
         try {
-          const rawMock = (process.env['SHOW_SITE_MOCKS'] || process.env['NEXT_PUBLIC_SHOW_MOCK_DASHBOARD'] || '').toString().toLowerCase();
+          const rawMock = (process.env['SHOW_SITE_MOCKS'] || process.env['NEXT_PUBLIC_SHOW_MOCK_DASHBOARD'] || '')
+            .toString()
+            .trim()
+            .toLowerCase();
           const showMocks = ['1', 'true', 'yes', 'on'].includes(rawMock);
           if (showMocks) {
             const pathname = req?.nextUrl?.pathname || '';
