@@ -74,7 +74,7 @@ export default function MarketplacePage() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/runtime/mocks', { cache: 'no-store' });
+        const res = await fetch('/api/runtime/mocks', { cache: 'no-store', credentials: 'include' as RequestCredentials });
         if (!res.ok) return;
         const j = await res.json();
         if (!cancelled) setShowMock(!!j?.show);
