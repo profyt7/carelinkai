@@ -23,6 +23,23 @@ export default withAuth(
 
       // If query string explicitly toggles mock, set cookie and strip the param
       if (qsOn || qsOff) {
+        // Clean the URL (remove the mock param) while preserving path
+        try {
+          const clean = new URL(req.url);
+          clean.searchParams.delete('mock');
+          const redirectRes = NextResponse.redirect(clean);
+          try {
+            redirectRes.cookies.set('carelink_mock_mode', qsOn ? '1' : '0', {
+              httpOnly: true,
+              sameSite: 'lax',
+              secure: process.env['NODE_ENV'] === 'production',
+              path: '/',
+              maxAge: qsOn ? 60 * 60 * 24 * 7 : 0,
+            });
+          } catch {}
+          return applySecurityHeaders(req, redirectRes);
+        } catch {}
+        // Fallback: no redirect possible, just set cookie and continue
         const res = NextResponse.next();
         try {
           res.cookies.set('carelink_mock_mode', qsOn ? '1' : '0', {
@@ -32,12 +49,6 @@ export default withAuth(
             path: '/',
             maxAge: qsOn ? 60 * 60 * 24 * 7 : 0,
           });
-        } catch {}
-        // Clean the URL (remove the mock param) while preserving path
-        try {
-          const clean = new URL(req.url);
-          clean.searchParams.delete('mock');
-          return applySecurityHeaders(req, NextResponse.redirect(clean));
         } catch {}
         return applySecurityHeaders(req, res);
       }
