@@ -1,4 +1,5 @@
 import { getServerSession } from "next-auth";
+import { cookies } from "next/headers";
 import { authOptions } from "@/lib/auth";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { PrismaClient, UserRole } from "@prisma/client";
@@ -52,8 +53,13 @@ export default async function OperatorDashboardPage({ searchParams }: { searchPa
 
   // If ADMIN, allow scoping by operatorId from query; otherwise ignore
   const user = email ? await prisma.user.findUnique({ where: { email } }) : null;
+  // Runtime mock toggle via cookie (set by /api/mock-mode or ?mock=1)
+  const mockCookie = cookies().get("carelink_mock_mode")?.value?.toString().trim().toLowerCase() || "";
+  const showMock = ["1","true","yes","on"].includes(mockCookie);
 
-  const summary = await getSummary(email, user?.role === UserRole.ADMIN ? operatorId : null);
+  const summary = showMock
+    ? { homes: 12, inquiries: 7, activeResidents: 38, occupancyRate: 82 }
+    : await getSummary(email, user?.role === UserRole.ADMIN ? operatorId : null);
 
   // Load operators for admin filter UI
   const operators = user?.role === UserRole.ADMIN
@@ -69,7 +75,7 @@ export default async function OperatorDashboardPage({ searchParams }: { searchPa
     <DashboardLayout title="Operator Dashboard" showSearch={false}>
       <div className="p-4 sm:p-6 space-y-6">
         {/* Admin operator scope selector */}
-        {user?.role === UserRole.ADMIN && (
+        {!showMock && user?.role === UserRole.ADMIN && (
           <div className="card">
             <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
               <div>

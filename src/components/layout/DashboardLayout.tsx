@@ -67,16 +67,16 @@ const navItems: NavItem[] = [
   { name: "Marketplace", icon: <FiUsers size={20} />, href: "/marketplace", showInMobileBar: true },
   { name: "Operator", icon: <FiHome size={20} />, href: "/operator", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN"] },
   { name: "Inquiries", icon: <FiFileText size={20} />, href: "/dashboard/inquiries", showInMobileBar: false },
-  { name: "Residents", icon: <FiUsers size={20} />, href: "/residents", showInMobileBar: true },
-  { name: "Caregivers", icon: <FiUsers size={20} />, href: "/caregivers", showInMobileBar: false },
+  { name: "Residents", icon: <FiUsers size={20} />, href: "/family", showInMobileBar: true },
+  { name: "Caregivers", icon: <FiUsers size={20} />, href: "/marketplace?tab=caregivers", showInMobileBar: false },
   { name: "Calendar", icon: <FiCalendar size={20} />, href: "/calendar", showInMobileBar: true },
   // Shifts page
   { name: "Shifts", icon: <FiCalendar size={20} />, href: "/shifts", showInMobileBar: true },
   // Family collaboration (visible to all)
   { name: "Family", icon: <FiUsers size={20} />, href: "/family", showInMobileBar: true },
-  { name: "Finances", icon: <FiDollarSign size={20} />, href: "/finances", showInMobileBar: true },
+  { name: "Finances", icon: <FiDollarSign size={20} />, href: "/settings/payouts", showInMobileBar: true },
   { name: "Messages", icon: <FiMessageSquare size={20} />, href: "/messages", showInMobileBar: true },
-  { name: "Settings", icon: <FiSettings size={20} />, href: "/settings", showInMobileBar: false },
+  { name: "Settings", icon: <FiSettings size={20} />, href: "/settings/profile", showInMobileBar: false },
   // Admin-only tools section
   { 
     name: "Admin Tools", 
