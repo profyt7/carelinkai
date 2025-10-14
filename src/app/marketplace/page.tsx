@@ -172,7 +172,7 @@ export default function MarketplacePage() {
   const [linkCopied, setLinkCopied] = useState(false);
 
   // Mock data (only used when showMock is true)
-  const MOCK_CATEGORIES: Record<string, { slug: string; name: string }[]> = {
+  const MOCK_CATEGORIES = useMemo<Record<string, { slug: string; name: string }[]>>(() => ({
     SERVICE: [
       { slug: "transportation", name: "Transportation" },
       { slug: "meal-prep", name: "Meal Prep" },
@@ -193,9 +193,9 @@ export default function MarketplacePage() {
       { slug: "facility", name: "Facility" },
       { slug: "respite", name: "Respite" },
     ],
-  };
+  }), []);
 
-  const MOCK_CAREGIVERS: Caregiver[] = [
+  const MOCK_CAREGIVERS = useMemo<Caregiver[]>(() => [
     {
       id: "cg_1",
       name: "Ava Johnson",
@@ -235,9 +235,9 @@ export default function MarketplacePage() {
       backgroundCheckStatus: "CLEAR",
       distanceMiles: 12.1,
     },
-  ];
+  ], []);
 
-  const MOCK_LISTINGS: Listing[] = [
+  const MOCK_LISTINGS = useMemo<Listing[]>(() => [
     {
       id: "job_1",
       title: "Evening Companion Needed",
@@ -283,9 +283,9 @@ export default function MarketplacePage() {
       distanceMiles: 6.0,
       appliedByMe: false,
     },
-  ];
+  ], []);
 
-  const MOCK_PROVIDERS: Provider[] = [
+  const MOCK_PROVIDERS = useMemo<Provider[]>(() => [
     {
       id: "pr_1",
       name: "CarePlus Transport",
@@ -312,7 +312,7 @@ export default function MarketplacePage() {
       badges: ["Background Checked"],
       distanceMiles: 11.3,
     },
-  ];
+  ], []);
   // Caregiver favorites (for families; local fallback for others)
   const CG_FAV_KEY = 'marketplace:caregiver-favorites:v1';
   const [caregiverFavorites, setCaregiverFavorites] = useState<Set<string>>(new Set());
@@ -786,7 +786,7 @@ export default function MarketplacePage() {
       }
     };
     loadCategories();
-  }, [showMock]);
+  }, [showMock, MOCK_CATEGORIES]);
 
   // Saved searches: load/save helpers
   useEffect(() => {
@@ -875,7 +875,7 @@ export default function MarketplacePage() {
     return () => {
       controller.abort();
     };
-  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, settings, careTypes, debouncedMinRate, debouncedMaxRate, debouncedMinExperience, cgPage, cgSort, cgRadius, cgGeoLat, cgGeoLng, cgCursor, showMock]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, settings, careTypes, debouncedMinRate, debouncedMaxRate, debouncedMinExperience, cgPage, cgSort, cgRadius, cgGeoLat, cgGeoLng, cgCursor, showMock, MOCK_CAREGIVERS]);
 
   // Reset caregivers list when non-page filters change
   const cgQueryKey = useMemo(() => JSON.stringify({
@@ -949,7 +949,7 @@ export default function MarketplacePage() {
     return () => {
       controller.abort();
     };
-  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, debouncedZip, settings, careTypes, services, postedByMe, hideClosed, session, jobPage, jobSort, jobRadius, geoLat, geoLng, jobCursor, showMock]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, debouncedZip, settings, careTypes, services, postedByMe, hideClosed, session, jobPage, jobSort, jobRadius, geoLat, geoLng, jobCursor, showMock, MOCK_LISTINGS]);
 
   // Reset jobs list when non-page filters change
   const jobQueryKey = useMemo(() => JSON.stringify({
@@ -1018,7 +1018,7 @@ export default function MarketplacePage() {
     return () => {
       controller.abort();
     };
-  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, providerServices, providerPage, providerSort, prRadius, prGeoLat, prGeoLng, providerCursor, showMock]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, providerServices, providerPage, providerSort, prRadius, prGeoLat, prGeoLng, providerCursor, showMock, MOCK_PROVIDERS]);
 
   // Reset providers list when non-page filters change
   const prQueryKey = useMemo(() => JSON.stringify({

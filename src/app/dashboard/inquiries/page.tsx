@@ -240,13 +240,41 @@ export default function InquiriesDashboard() {
   const router = useRouter();
   
   // State for inquiries and filters
-  const [inquiries, setInquiries] = useState<Inquiry[]>(MOCK_INQUIRIES);
-  const [filteredInquiries, setFilteredInquiries] = useState<Inquiry[]>(MOCK_INQUIRIES);
+  const [inquiries, setInquiries] = useState<Inquiry[]>([]);
+  const [filteredInquiries, setFilteredInquiries] = useState<Inquiry[]>([]);
   const [statusFilter, setStatusFilter] = useState<InquiryStatus | 'ALL'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'date' | 'priority' | 'name'>('date');
   const [isLoading, setIsLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+
+  // Runtime mock toggle fetched from API
+  const [showMock, setShowMock] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/runtime/mocks', { cache: 'no-store', credentials: 'include' as RequestCredentials });
+        if (!res.ok) return;
+        const j = await res.json();
+        if (!cancelled) setShowMock(!!j?.show);
+      } catch {
+        if (!cancelled) setShowMock(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Seed mock inquiries when mock mode is on
+  useEffect(() => {
+    if (showMock) {
+      setInquiries(MOCK_INQUIRIES);
+      setFilteredInquiries(MOCK_INQUIRIES);
+    } else {
+      setInquiries([]);
+      setFilteredInquiries([]);
+    }
+  }, [showMock]);
 
   // Effect to handle filtering and sorting
   useEffect(() => {

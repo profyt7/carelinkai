@@ -295,18 +295,37 @@ export default function HomeDetailPage() {
   const contactRef = useRef<HTMLDivElement>(null);
   const bookingRef = useRef<HTMLDivElement>(null);
   
-  // Fetch home data
+  // Runtime mock toggle fetched from API
+  const [showMock, setShowMock] = useState(false);
   useEffect(() => {
-    // In a real app, we would fetch the home data from the API
-    // For now, we're using mock data
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/runtime/mocks', { cache: 'no-store', credentials: 'include' as RequestCredentials });
+        if (!res.ok) return;
+        const j = await res.json();
+        if (!cancelled) setShowMock(!!j?.show);
+      } catch {
+        if (!cancelled) setShowMock(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Fetch home data (mock only when toggle enabled)
+  useEffect(() => {
     setIsLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
+    if (!showMock) {
+      setIsLoading(false);
+      return;
+    }
+    // Simulate API call for mock data
+    const t = setTimeout(() => {
       setHome(MOCK_HOME);
       setIsLoading(false);
     }, 500);
-  }, [id]);
+    return () => clearTimeout(t);
+  }, [id, showMock]);
   
   // Set initial selected date for activities
   useEffect(() => {
@@ -434,6 +453,21 @@ export default function HomeDetailPage() {
       <div className="flex h-screen items-center justify-center">
         <div className="h-12 w-12 animate-spin rounded-full border-4 border-neutral-200 border-t-primary-500"></div>
       </div>
+    );
+  }
+
+  // When mock mode is disabled, show a simple placeholder instead of demo content
+  if (!showMock) {
+    return (
+      <DashboardLayout title="Home Details">
+        <div className="p-4 md:p-6">
+          <div className="rounded-lg border border-neutral-200 bg-white p-6">
+            <h2 className="text-xl font-semibold text-neutral-800 mb-2">Listing details</h2>
+            <p className="text-neutral-600">This demo listing is hidden because mock mode is off.</p>
+            <p className="mt-3 text-sm text-neutral-600">Enable runtime mock mode to preview this page with sample data.</p>
+          </div>
+        </div>
+      </DashboardLayout>
     );
   }
   

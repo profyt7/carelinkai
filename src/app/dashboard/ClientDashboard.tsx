@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useSession } from "next-auth/react";
 import {
@@ -104,10 +104,22 @@ export default function ClientDashboard() {
   const displayName =
     session?.user?.firstName || session?.user?.name?.split(" ")[0] || "User";
 
-  // Environment-gated mock data toggle
-  const showMock = ["1", "true", "yes", "on"].includes(
-    String(process.env.NEXT_PUBLIC_SHOW_MOCK_DASHBOARD || "").toLowerCase()
-  );
+  // Runtime mock toggle fetched from API
+  const [showMock, setShowMock] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/runtime/mocks', { cache: 'no-store', credentials: 'include' as RequestCredentials });
+        if (!res.ok) return;
+        const j = await res.json();
+        if (!cancelled) setShowMock(!!j?.show);
+      } catch {
+        if (!cancelled) setShowMock(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const expensesChartData = {
     labels: mockData.expenses.breakdown.map((item) => item.label),
