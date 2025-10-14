@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
 
   // 2) Fallback to environment variables (robust to whitespace)
   const value = (
-    process.env.SHOW_SITE_MOCKS ?? process.env.NEXT_PUBLIC_SHOW_MOCK_DASHBOARD ?? ""
+    process.env["SHOW_SITE_MOCKS"] ?? process.env["NEXT_PUBLIC_SHOW_MOCK_DASHBOARD"] ?? ""
   )
     .toString()
     .trim()
