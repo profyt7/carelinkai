@@ -551,9 +551,7 @@ export default function ClientDashboard() {
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-neutral-800">Welcome</h2>
             <p className="text-neutral-500 mt-1">
-              Your dashboard is connected. To show demo widgets and charts,
-              set <code>NEXT_PUBLIC_SHOW_MOCK_DASHBOARD=1</code> in the environment
-              and redeploy.
+              Your dashboard is connected. Demo widgets and charts are controlled by a runtime mock toggle (no redeploy needed).
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -568,11 +566,12 @@ export default function ClientDashboard() {
             <div className="card">
               <h3 className="text-lg font-semibold mb-2">Enable demo data</h3>
               <p className="text-sm text-neutral-600">
-                To preview charts and sample metrics without production data,
-                enable the flag and redeploy:
+                To preview charts and sample metrics without production data, enable Runtime Mock Mode using the admin endpoint:
               </p>
               <pre className="mt-3 rounded bg-neutral-50 p-3 text-xs text-neutral-700 overflow-auto">
-NEXT_PUBLIC_SHOW_MOCK_DASHBOARD=1
+GET /api/mock-mode?enable=1
+# to disable:
+GET /api/mock-mode?disable=1
               </pre>
             </div>
           </div>
