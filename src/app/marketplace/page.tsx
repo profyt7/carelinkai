@@ -10,6 +10,7 @@ import RecommendedListings from "@/components/marketplace/RecommendedListings";
 import { fetchJsonCached } from "@/lib/fetchCache";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { VirtuosoGrid } from "react-virtuoso";
+import { MOCK_CATEGORIES as SHARED_MOCK_CATEGORIES, MOCK_CAREGIVERS as SHARED_MOCK_CAREGIVERS, MOCK_LISTINGS as SHARED_MOCK_LISTINGS, MOCK_PROVIDERS as SHARED_MOCK_PROVIDERS } from "@/lib/mock/marketplace";
 
 const LAST_TAB_KEY = "marketplace:lastTab";
 const LS_KEYS = {
@@ -172,147 +173,13 @@ export default function MarketplacePage() {
   const [linkCopied, setLinkCopied] = useState(false);
 
   // Mock data (only used when showMock is true)
-  const MOCK_CATEGORIES = useMemo<Record<string, { slug: string; name: string }[]>>(() => ({
-    SERVICE: [
-      { slug: "transportation", name: "Transportation" },
-      { slug: "meal-prep", name: "Meal Prep" },
-      { slug: "housekeeping", name: "Housekeeping" },
-    ],
-    CARE_TYPE: [
-      { slug: "assisted-living", name: "Assisted Living" },
-      { slug: "memory-care", name: "Memory Care" },
-      { slug: "skilled-nursing", name: "Skilled Nursing" },
-    ],
-    SPECIALTY: [
-      { slug: "dementia", name: "Dementia" },
-      { slug: "medication-management", name: "Medication Management" },
-      { slug: "companionship", name: "Companionship" },
-    ],
-    SETTING: [
-      { slug: "in-home", name: "In-Home" },
-      { slug: "facility", name: "Facility" },
-      { slug: "respite", name: "Respite" },
-    ],
-  }), []);
+  const MOCK_CATEGORIES = useMemo<Record<string, { slug: string; name: string }[]>>(() => SHARED_MOCK_CATEGORIES, []);
 
-  const MOCK_CAREGIVERS = useMemo<Caregiver[]>(() => [
-    {
-      id: "cg_1",
-      name: "Ava Johnson",
-      city: "Seattle",
-      state: "WA",
-      hourlyRate: 28,
-      yearsExperience: 5,
-      specialties: ["dementia", "medication-management", "companionship"],
-      bio: "Experienced caregiver focused on dignity and independence.",
-      photoUrl: null,
-      backgroundCheckStatus: "CLEAR",
-      distanceMiles: 2.3,
-    },
-    {
-      id: "cg_2",
-      name: "Noah Williams",
-      city: "Bellevue",
-      state: "WA",
-      hourlyRate: 25,
-      yearsExperience: 3,
-      specialties: ["companionship"],
-      bio: "Friendly and reliable with flexible evenings/weekends.",
-      photoUrl: null,
-      backgroundCheckStatus: "PENDING",
-      distanceMiles: 7.8,
-    },
-    {
-      id: "cg_3",
-      name: "Sophia Martinez",
-      city: "Redmond",
-      state: "WA",
-      hourlyRate: 32,
-      yearsExperience: 7,
-      specialties: ["memory-care", "dementia"],
-      bio: "Memory care specialist with a calm, supportive approach.",
-      photoUrl: null,
-      backgroundCheckStatus: "CLEAR",
-      distanceMiles: 12.1,
-    },
-  ], []);
+  const MOCK_CAREGIVERS = useMemo<Caregiver[]>(() => SHARED_MOCK_CAREGIVERS as Caregiver[], []);
 
-  const MOCK_LISTINGS = useMemo<Listing[]>(() => [
-    {
-      id: "job_1",
-      title: "Evening Companion Needed",
-      description: "Seeking a kind caregiver for light conversation, walks, and meal prep.",
-      city: "Seattle",
-      state: "WA",
-      hourlyRateMin: 22,
-      hourlyRateMax: 28,
-      createdAt: new Date().toISOString(),
-      status: "OPEN",
-      applicationCount: 3,
-      hireCount: 0,
-      distanceMiles: 3.4,
-      appliedByMe: false,
-    },
-    {
-      id: "job_2",
-      title: "Overnight Care (Fri-Sun)",
-      description: "Provide overnight support and safety checks for an elder with mild dementia.",
-      city: "Kirkland",
-      state: "WA",
-      hourlyRateMin: 25,
-      hourlyRateMax: 30,
-      createdAt: new Date().toISOString(),
-      status: "OPEN",
-      applicationCount: 8,
-      hireCount: 1,
-      distanceMiles: 9.1,
-      appliedByMe: false,
-    },
-    {
-      id: "job_3",
-      title: "Transportation to Appointments",
-      description: "Help with weekly appointments and occasional errands.",
-      city: "Bellevue",
-      state: "WA",
-      hourlyRateMin: 20,
-      hourlyRateMax: 24,
-      createdAt: new Date().toISOString(),
-      status: "OPEN",
-      applicationCount: 1,
-      hireCount: 0,
-      distanceMiles: 6.0,
-      appliedByMe: false,
-    },
-  ], []);
+  const MOCK_LISTINGS = useMemo<Listing[]>(() => SHARED_MOCK_LISTINGS as Listing[], []);
 
-  const MOCK_PROVIDERS = useMemo<Provider[]>(() => [
-    {
-      id: "pr_1",
-      name: "CarePlus Transport",
-      city: "Seattle",
-      state: "WA",
-      services: ["transportation"],
-      hourlyRate: 40,
-      perMileRate: 1.5,
-      ratingAverage: 4.7,
-      reviewCount: 58,
-      badges: ["Licensed", "Insured"],
-      distanceMiles: 4.2,
-    },
-    {
-      id: "pr_2",
-      name: "Comfort Meals Co.",
-      city: "Redmond",
-      state: "WA",
-      services: ["meal-prep", "housekeeping"],
-      hourlyRate: 35,
-      perMileRate: null,
-      ratingAverage: 4.5,
-      reviewCount: 31,
-      badges: ["Background Checked"],
-      distanceMiles: 11.3,
-    },
-  ], []);
+  const MOCK_PROVIDERS = useMemo<Provider[]>(() => SHARED_MOCK_PROVIDERS as Provider[], []);
   // Caregiver favorites (for families; local fallback for others)
   const CG_FAV_KEY = 'marketplace:caregiver-favorites:v1';
   const [caregiverFavorites, setCaregiverFavorites] = useState<Set<string>>(new Set());

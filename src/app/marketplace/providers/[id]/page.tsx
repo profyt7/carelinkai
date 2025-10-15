@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
-import { headers } from "next/headers";
+import { headers, cookies } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
+import { getMockProviderById } from "@/lib/mock/marketplace";
 
 export const dynamic = "force-dynamic";
 
@@ -41,7 +42,42 @@ async function getProviderById(id: string): Promise<Provider | null> {
 }
 
 export default async function ProviderDetailPage({ params }: { params: { id: string } }) {
-  const provider = await getProviderById(params.id);
+  // Detect runtime mock mode
+  const showMock = (() => {
+    try {
+      const c = cookies().get('carelink_mock_mode')?.value?.toString().trim().toLowerCase() || '';
+      const cookieOn = ['1','true','yes','on'].includes(c);
+      const raw = (process.env['SHOW_SITE_MOCKS'] || process.env['NEXT_PUBLIC_SHOW_MOCK_DASHBOARD'] || '')
+        .toString().trim().toLowerCase();
+      const envOn = ['1','true','yes','on'].includes(raw);
+      return cookieOn || envOn;
+    } catch { return false; }
+  })();
+  const isMockId = params.id?.startsWith('pr_');
+
+  let provider: Provider | (Provider & { badges: string[] }) | null = null;
+  if (showMock && isMockId) {
+    const mock = getMockProviderById(params.id);
+    if (!mock) notFound();
+    provider = {
+      id: mock.id,
+      name: mock.name,
+      type: (mock.services?.[0] || 'service').replace(/-/g, ' '),
+      city: mock.city,
+      state: mock.state,
+      services: mock.services,
+      description: mock.description || '',
+      hourlyRate: mock.hourlyRate ?? null,
+      perMileRate: mock.perMileRate ?? null,
+      ratingAverage: mock.ratingAverage,
+      reviewCount: mock.reviewCount,
+      badges: mock.badges || [],
+      coverageRadius: mock.coverageRadius,
+      availableHours: mock.availableHours,
+    };
+  } else {
+    provider = await getProviderById(params.id);
+  }
   if (!provider) notFound();
 
   const location = [provider.city, provider.state].filter(Boolean).join(", ");
