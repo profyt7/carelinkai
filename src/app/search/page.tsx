@@ -137,6 +137,8 @@ export default function SearchPage() {
   
   // State for loading status
   const [isLoading, setIsLoading] = useState(false);
+  // Guard against stale async responses overwriting newer results
+  const latestRequestId = useRef(0);
 
   // ---- Favorites -----------------------------------------------------------------
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
@@ -328,14 +330,16 @@ export default function SearchPage() {
   
   // Perform search with given parameters
   const performSearch = async (params: SearchParams) => {
+    const requestId = ++latestRequestId.current;
     setIsLoading(true);
-    
+
     try {
       if (showMock) {
         const page = params.page || 1;
         const limit = params.limit || 10;
         const start = (page - 1) * limit;
         const slice = MOCK_HOMES.slice(start, start + limit);
+        if (requestId !== latestRequestId.current) return; // stale
         setSearchResponse({
           success: true,
           query: {
@@ -360,11 +364,12 @@ export default function SearchPage() {
         return;
       }
       const response = await searchHomes(params);
+      if (requestId !== latestRequestId.current) return; // stale
       setSearchResponse(response);
     } catch (error) {
       console.error("Search error:", error);
     } finally {
-      setIsLoading(false);
+      if (requestId === latestRequestId.current) setIsLoading(false);
     }
   };
 
