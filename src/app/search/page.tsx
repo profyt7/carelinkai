@@ -367,6 +367,13 @@ export default function SearchPage() {
       setIsLoading(false);
     }
   };
+
+  // Re-run search when runtime mock toggle resolves so mock homes populate automatically
+  useEffect(() => {
+    // Avoid double-fire on initial mount: this only reacts when showMock changes from its initial value
+    performSearch({ ...filters });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showMock]);
   
   // Reset filters
   const resetFilters = () => {
