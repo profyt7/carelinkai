@@ -410,22 +410,27 @@ export default function DashboardLayout({
           );
           return (
             <nav className="sidebar-nav mt-4" aria-label="Sidebar navigation">
-              {visibleNavItems.map((item) => (
+              {visibleNavItems.map((item) => {
+                const computedHref = (item.name === 'Caregivers' && String(userRole).toUpperCase() === 'CAREGIVER')
+                  ? '/settings/profile'
+                  : item.href;
+                return (
             <Link
               key={item.name}
-              href={item.href}
+              href={computedHref}
               className={`sidebar-nav-item ${
-                pathname === item.href || pathname?.startsWith(`${item.href}/`) 
+                pathname === computedHref || pathname?.startsWith(`${computedHref}/`) 
                   ? "sidebar-nav-item-active" 
                   : ""
               }`}
               onClick={() => isMobile && setSidebarOpen(false)}
-              aria-current={pathname === item.href ? "page" : undefined}
+              aria-current={pathname === computedHref ? "page" : undefined}
             >
               <span className="mr-3">{item.icon}</span>
               {item.name}
             </Link>
-              ))}
+                );
+              })}
             </nav>
           );
         })()}

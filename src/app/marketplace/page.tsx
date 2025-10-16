@@ -1794,7 +1794,7 @@ export default function MarketplacePage() {
                           onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleJobFavorite(job.id); }}
                           aria-label={jobFavorites.has(job.id) ? 'Unfavorite job' : 'Favorite job'}
                           aria-pressed={jobFavorites.has(job.id)}
-                          className="absolute right-3 bottom-3 z-10 inline-flex items-center justify-center h-8 w-8 rounded-full bg-white/90 border hover:bg-white"
+                          className="absolute left-3 bottom-3 z-10 inline-flex items-center justify-center h-8 w-8 rounded-full bg-white/90 border hover:bg-white"
                           title={jobFavorites.has(job.id) ? 'Unfavorite' : 'Favorite'}
                         >
                           <svg viewBox="0 0 24 24" className={`h-5 w-5 ${jobFavorites.has(job.id) ? 'text-rose-600' : 'text-gray-400'}`} fill={jobFavorites.has(job.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
