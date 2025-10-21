@@ -488,12 +488,10 @@ export async function checkFamilyMembership(
   }
 
   try {
-    const member = await prisma.familyMember.findUnique({
+    const member = await prisma.familyMember.findFirst({
       where: {
-        familyId_userId: {
-          familyId,
-          userId
-        }
+        familyId,
+        userId
       }
     });
     
@@ -524,12 +522,10 @@ export async function hasPermissionToViewDocuments(
   }
 
   try {
-    const member = await prisma.familyMember.findUnique({
+    const member = await prisma.familyMember.findFirst({
       where: {
-        familyId_userId: {
-          familyId,
-          userId
-        }
+        familyId,
+        userId
       }
     });
 
@@ -560,12 +556,10 @@ export async function hasPermissionToUploadDocuments(
   }
 
   try {
-    const member = await prisma.familyMember.findUnique({
+    const member = await prisma.familyMember.findFirst({
       where: {
-        familyId_userId: {
-          familyId,
-          userId
-        }
+        familyId,
+        userId
       }
     });
     
@@ -602,12 +596,10 @@ export async function hasPermissionToEditDocument(
     
     // Check ACL if present
     if (document.acl && document.acl.length > 0) {
-      const member = await prisma.familyMember.findUnique({
+      const member = await prisma.familyMember.findFirst({
         where: {
-          familyId_userId: {
-            familyId: document.familyId,
-            userId
-          }
+          familyId: document.familyId,
+          userId
         }
       });
       
@@ -622,12 +614,10 @@ export async function hasPermissionToEditDocument(
     }
     
     // Check role-based permissions
-    const member = await prisma.familyMember.findUnique({
+    const member = await prisma.familyMember.findFirst({
       where: {
-        familyId_userId: {
-          familyId: document.familyId,
-          userId
-        }
+        familyId: document.familyId,
+        userId
       }
     });
     
@@ -1536,12 +1526,10 @@ export async function deleteFamilyDocument(
     
     if (!isUploader) {
       // Check if user has delete permission via ACL
-      const member = await prisma.familyMember.findUnique({
+      const member = await prisma.familyMember.findFirst({
         where: {
-          familyId_userId: {
-            familyId,
-            userId
-          }
+          familyId,
+          userId
         }
       });
       

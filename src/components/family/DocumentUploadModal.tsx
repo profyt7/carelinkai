@@ -16,7 +16,7 @@ import {
   FiTag
 } from "react-icons/fi";
 import Image from "next/image";
-import type { FamilyDocumentType } from "@/lib/types/family";
+import { FamilyDocumentType } from "@/lib/types/family";
 
 // Maximum file size in bytes (10MB)
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -45,13 +45,12 @@ const ALLOWED_FILE_TYPES = [
 
 // Document type options
 const DOCUMENT_TYPES = [
-  { id: "CARE_PLAN", name: "Care Plan" },
   { id: "MEDICAL_RECORD", name: "Medical Record" },
   { id: "INSURANCE_DOCUMENT", name: "Insurance Document" },
+  { id: "PHOTO", name: "Photo" },
+  { id: "VIDEO", name: "Video" },
   { id: "LEGAL_DOCUMENT", name: "Legal Document" },
-  { id: "FINANCIAL_DOCUMENT", name: "Financial Document" },
-  { id: "MEDICATION_LIST", name: "Medication List" },
-  { id: "CONTACT_INFO", name: "Contact Information" },
+  { id: "PERSONAL_DOCUMENT", name: "Personal Document" },
   { id: "OTHER", name: "Other" }
 ];
 
@@ -95,7 +94,7 @@ export default function DocumentUploadModal({
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [documentType, setDocumentType] = useState<FamilyDocumentType>("CARE_PLAN");
+  const [documentType, setDocumentType] = useState<FamilyDocumentType>(FamilyDocumentType.PERSONAL_DOCUMENT);
   // track if user manually changed document type
   const [userTouchedType, setUserTouchedType] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
@@ -118,10 +117,10 @@ export default function DocumentUploadModal({
      Helpers
   ------------------------------------------------------------------*/
   const guessType = (incoming: File[]): FamilyDocumentType => {
-    if (incoming.some((f) => f.type.startsWith("image/"))) return "PHOTO";
-    if (incoming.some((f) => f.type.startsWith("video/"))) return "VIDEO";
-    if (incoming.some((f) => f.type === "application/pdf")) return "OTHER";
-    return "OTHER";
+    if (incoming.some((f) => f.type.startsWith("image/"))) return FamilyDocumentType.PHOTO;
+    if (incoming.some((f) => f.type.startsWith("video/"))) return FamilyDocumentType.VIDEO;
+    if (incoming.some((f) => f.type === "application/pdf")) return FamilyDocumentType.OTHER;
+    return FamilyDocumentType.OTHER;
   };
 
   /* ------------------------------------------------------------------
@@ -166,7 +165,7 @@ export default function DocumentUploadModal({
       setFiles([]);
       setTitle("");
       setDescription("");
-      setDocumentType("CARE_PLAN");
+      setDocumentType(FamilyDocumentType.PERSONAL_DOCUMENT);
       setTags([]);
       setCurrentTag("");
       setIsEncrypted(true);
@@ -672,7 +671,7 @@ export default function DocumentUploadModal({
                       <Listbox
                         value={documentType}
                         onChange={(val) => {
-                          setDocumentType(val);
+                          setDocumentType(val as FamilyDocumentType);
                           setUserTouchedType(true);
                         }}
                         disabled={isUploading}
