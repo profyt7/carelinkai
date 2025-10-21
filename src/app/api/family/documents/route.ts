@@ -297,13 +297,16 @@ export async function GET(request: NextRequest) {
         totalCount === 0 &&
         process.env["NODE_ENV"] !== "production"
       ) {
+        const typesFilter: FamilyDocumentType[] | undefined =
+          filters.type
+            ? (Array.isArray(filters.type)
+                ? (filters.type as FamilyDocumentType[])
+                : [filters.type as FamilyDocumentType])
+            : undefined;
+
         const mockAll = generateMockDocuments(filters.familyId, session.user.id, undefined, {
           search: filters.search,
-          types: Array.isArray(filters.type)
-            ? filters.type
-            : filters.type
-            ? [filters.type]
-            : undefined,
+          types: typesFilter,
           tags: filters.tags
             ? Array.isArray(filters.tags)
               ? filters.tags
@@ -486,7 +489,7 @@ export async function POST(request: NextRequest) {
         fileName: file.name,
         fileType: file.type,
         fileSize: file.size,
-        type: metadata.type,
+        type: metadata.type as FamilyDocumentType,
         version: 1,
         isEncrypted: metadata.isEncrypted,
         tags: metadata.tags || []
