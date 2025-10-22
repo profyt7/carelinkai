@@ -1,3 +1,4 @@
+import { rateLimit } from '@/lib/rate-limit';
 /**
  * Reset Password API Endpoint for CareLinkAI
  * 
@@ -46,6 +47,12 @@ const resetPasswordSchema = z.object({
  * POST handler for password reset
  */
 export async function POST(request: NextRequest) {
+  // Basic per-IP rate limiting to prevent abuse
+  {
+    const ip = (request.headers.get('x-forwarded-for') || (request as any).ip || 'unknown').split(',')[0].trim();
+    const limiter = rateLimit({ interval: 60_000, limit: 8, uniqueTokenPerInterval: 5000 });
+    await limiter.check(8, 'rp:' + ip);
+  }
   try {
     // Parse request body
     const body = await request.json();

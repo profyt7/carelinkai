@@ -1,3 +1,4 @@
+const { withSentryConfig } = require('@sentry/nextjs');
 /** @type {import('next').NextConfig} */
 const isProd = process.env.NODE_ENV === 'production';
 
@@ -95,4 +96,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+module.exports = withSentryConfig(nextConfig, { silent: true }, { hideSourceMaps: true });

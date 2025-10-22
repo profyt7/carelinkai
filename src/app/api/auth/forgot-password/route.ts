@@ -1,3 +1,4 @@
+import { rateLimit } from '@/lib/rate-limit';
 /**
  * Forgot Password API Endpoint for CareLinkAI
  * 
@@ -180,6 +181,12 @@ The CareLinkAI Security Team
  * POST handler for forgot password requests
  */
 export async function POST(request: NextRequest) {
+  // Basic per-IP rate limiting to prevent abuse
+  {
+    const ip = (request.headers.get('x-forwarded-for') || (request as any).ip || 'unknown').split(',')[0].trim();
+    const limiter = rateLimit({ interval: 60_000, limit: 5, uniqueTokenPerInterval: 5000 });
+    await limiter.check(5, 'fp:' + ip);
+  }
   try {
     // Parse request body
     const body = await request.json();
