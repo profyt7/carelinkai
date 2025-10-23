@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
 import Stripe from "stripe";
-import { logger } from "@/lib/logger";
+import { bindRequestLogger } from "@/lib/logger";
 
 /**
  * Utility: maps Stripe Transfer status strings to internal PaymentStatus values
@@ -29,6 +29,7 @@ const mapTransferStatus = (
  * Handles Stripe webhook events, including payment_intent.succeeded and transfer.*
  */
 export async function POST(request: NextRequest) {
+  const logger = bindRequestLogger(request);
   try {
     const rawBody = await request.text();
     const signature = request.headers.get("stripe-signature");
