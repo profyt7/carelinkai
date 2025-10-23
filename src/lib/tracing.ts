@@ -32,13 +32,28 @@ export function initTracing() {
 
     const traceExporter = new OTLPTraceExporter({ url: endpoint, headers });
 
+    // Instrumentations (loaded lazily; safe if packages missing)
+    let instrumentations: any[] = [];
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { PrismaInstrumentation } = require('@prisma/instrumentation');
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { HttpInstrumentation } = require('@opentelemetry/instrumentation-http');
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { UndiciInstrumentation } = require('@opentelemetry/instrumentation-undici');
+      instrumentations = [
+        new PrismaInstrumentation(),
+        new HttpInstrumentation(),
+        new UndiciInstrumentation(),
+      ];
+    } catch {}
+
     const sdk = new NodeSDK({
       resource: new Resource({
         [SemanticResourceAttributes.SERVICE_NAME]: serviceName,
       }),
       traceExporter,
-      // Add instrumentations later as needed
-      instrumentations: [],
+      instrumentations,
     });
 
     sdk.start().then(() => {
