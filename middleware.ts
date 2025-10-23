@@ -19,7 +19,11 @@ export async function middleware(req: NextRequest) {
 
   try {
     await limiter.check(limit, `${pathname}:${ip}`);
-    return NextResponse.next();
+    // Attach/propagate a request ID header
+    const reqId = req.headers.get('x-request-id') || (globalThis as any).crypto?.randomUUID?.() || Math.random().toString(36).slice(2);
+    const res = NextResponse.next();
+    if (reqId) res.headers.set('x-request-id', reqId);
+    return res;
   } catch {
     return new NextResponse(
       JSON.stringify({ error: 'Too Many Requests' }),
