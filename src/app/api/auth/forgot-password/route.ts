@@ -222,22 +222,6 @@ export async function POST(request: NextRequest) {
     // SECURITY: Always return success even if email not found
     // This prevents email enumeration attacks
     if (!user) {
-      // Still log the attempt for security monitoring
-      await prisma.auditLog.create({
-        data: {
-          action: AuditAction.ACCESS_DENIED,
-          resourceType: "PASSWORD_RESET",
-          description: "Password reset requested for non-existent email",
-          ipAddress: clientIp,
-          metadata: {
-            email: normalizedEmail,
-            reason: "EMAIL_NOT_FOUND"
-          },
-          // Use a system user ID since this user doesn't exist
-          userId: "system",
-          actionedBy: "system"
-        }
-      });
       
       // Return success to prevent email enumeration
       return NextResponse.json({
