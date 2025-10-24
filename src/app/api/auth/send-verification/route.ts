@@ -13,6 +13,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient, AuditAction, UserStatus } from "@prisma/client";
+import { rateLimit } from "@/lib/rate-limit";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { randomBytes } from "crypto";
@@ -161,6 +162,7 @@ async function sendVerificationEmail(email: string, token: string, isResend: boo
 /**
  * POST handler to send verification email
  */
+const verifyLimiter = rateLimit({ interval: RATE_LIMIT_WINDOW_MS, limit: MAX_VERIFICATION_ATTEMPTS, uniqueTokenPerInterval: 5000 });
 export async function POST(request: NextRequest) {
   try {
     // Get client IP for rate limiting and audit logging
@@ -190,7 +192,9 @@ export async function POST(request: NextRequest) {
     
     // Apply rate limiting by IP + email
     const rateLimitKey = `verify-email:${clientIp}:${normalizedEmail}`;
-    if (isRateLimited(rateLimitKey)) {
+    try {
+      await verifyLimiter.check(MAX_VERIFICATION_ATTEMPTS, rateLimitKey);
+    } catch {
       // Create audit log entry for rate limit
       
       return NextResponse.json(
