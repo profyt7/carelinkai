@@ -51,7 +51,11 @@ export async function POST(request: NextRequest) {
   {
     const ip = (request.headers.get('x-forwarded-for') || (request as any).ip || 'unknown').split(',')[0].trim();
     const limiter = rateLimit({ interval: 60_000, limit: 8, uniqueTokenPerInterval: 5000 });
-    await limiter.check(8, 'rp:' + ip);
+    try {
+      await limiter.check(8, 'rp:' + ip);
+    } catch {
+      return NextResponse.json({ success: false, message: 'Too many requests' }, { status: 429 });
+    }
   }
   try {
     // Parse request body
