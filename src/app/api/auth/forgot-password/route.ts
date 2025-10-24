@@ -185,16 +185,12 @@ export async function POST(request: NextRequest) {
   {
     const ip = (request.headers.get('x-forwarded-for') || (request as any).ip || 'unknown').split(',')[0].trim();
     const limiter = rateLimit({ interval: 60_000, limit: 5, uniqueTokenPerInterval: 5000 });
-    try {
-      try {
+    const usage = await limiter.getUsage('fp:' + ip);
+    if (usage && usage.count >= 5) {
+      return NextResponse.json({ success: false, message: 'Too many requests' }, { status: 429 });
+    }
     try {
       await limiter.check(5, 'fp:' + ip);
-    } catch {
-      return NextResponse.json({ success: false, message: 'Too many requests' }, { status: 429 });
-    }
-    } catch {
-      return NextResponse.json({ success: false, message: 'Too many requests' }, { status: 429 });
-    }
     } catch {
       return NextResponse.json({ success: false, message: 'Too many requests' }, { status: 429 });
     }
