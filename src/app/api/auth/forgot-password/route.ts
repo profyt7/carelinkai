@@ -89,7 +89,7 @@ async function sendResetEmail(userId: string): Promise<boolean> {
     }
     
     // Generate reset link with token
-    const resetLink = ${APP_URL}/auth/reset-password?token=;
+    const resetLink = `${APP_URL}/auth/reset-password?token=${user.resetPasswordToken}`;
     if (process.env['NODE_ENV'] === 'production' && !(process.env['SMTP_HOST'] && process.env['SMTP_USER'] && process.env['SMTP_PASS'])) {
       console.warn('SMTP not configured in production; skipping password reset email send.');
       return true;
@@ -170,7 +170,7 @@ The CareLinkAI Security Team
     });
     
     // Log email details in development
-    console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â§ Password reset email sent:');
+    console.log('ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒâ€šÃ‚Â§ Password reset email sent:');
     console.log('- To:', user.email);
     console.log('- Preview URL:', nodemailer.getTestMessageUrl(info));
     
