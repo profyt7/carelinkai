@@ -12,6 +12,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { getLogger } from "@/lib/logger";
 import { PrismaClient, AuditAction, UserStatus } from "@prisma/client";
 import { rateLimit } from "@/lib/rate-limit";
 import { getServerSession } from "next-auth/next";
@@ -194,6 +195,7 @@ export async function POST(request: NextRequest) {
     const rateLimitKey = 'sv:' + ((clientIp.split(',')[0] || clientIp).trim());
     try {
       await verifyLimiter.check(MAX_VERIFICATION_ATTEMPTS, rateLimitKey);
+      try { const u = await verifyLimiter.getUsage(rateLimitKey); console.log('[sv rl]', { key: rateLimitKey, u }); } catch {}
     } catch {
       // Create audit log entry for rate limit
       
