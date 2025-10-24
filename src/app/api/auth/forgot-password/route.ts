@@ -89,7 +89,7 @@ async function sendResetEmail(userId: string): Promise<boolean> {
     }
     
     // Generate reset link with token
-    const resetLink = `${APP_URL}/auth/reset-password?token=${user.resetPasswordToken}`;
+    const\ resetLink\ =\ `\$\{APP_URL}/auth/reset-password\?token=\$\{user\.resetPasswordToken}`;\r\n\ \ \ \ if\ \(process\.env\['NODE_ENV']\ ===\ 'production'\ &&\ !\(process\.env\['SMTP_HOST']\ &&\ process\.env\['SMTP_USER']\ &&\ process\.env\['SMTP_PASS']\)\)\ \{\r\n\ \ \ \ \ \ console\.warn\('SMTP\ not\ configured\ in\ production;\ skipping\ password\ reset\ email\ send\.'\);\r\n\ \ \ \ \ \ return\ true;\r\n\ \ \ \ }
     
     // Create test account for development
     const testAccount = await nodemailer.createTestAccount();
