@@ -66,11 +66,14 @@ async function createResetToken(userId: string): Promise<string> {
 /**
  * Send a password reset email using nodemailer
  */
+/**
+ * Send a password reset email using nodemailer
+ */
 async function sendResetEmail(userId: string): Promise<boolean> {
   try {
     // Use a dedicated Prisma instance to avoid connection issues
     const localPrisma = new PrismaClient();
-    
+
     // Get user information
     const user = await localPrisma.user.findUnique({
       where: { id: userId },
@@ -80,51 +83,62 @@ async function sendResetEmail(userId: string): Promise<boolean> {
         resetPasswordToken: true,
       },
     });
-    
-    await localPrisma.$disconnect();
-    
+
+    await localPrisma.();
+
     if (!user || !user.resetPasswordToken) {
       console.error('Cannot send reset email: User not found or missing reset token');
       return false;
     }
-    
+
     // Generate reset link with token
-    const resetLink = `${APP_URL}/auth/reset-password?token=${user.resetPasswordToken}`;
-    
-    // Create test account for development
-    const testAccount = await nodemailer.createTestAccount();
-    
-    // Create reusable transporter
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.ethereal.email',
-      port: 587,
-      secure: false,
-      auth: {
-        user: testAccount.user,
-        pass: testAccount.pass,
-      },
-    });
-    
+    const resetLink = ${APP_URL}/auth/reset-password?token=;
+
+    // Prefer real SMTP in any environment; fall back to Ethereal only in non-production
+    const host = process.env['SMTP_HOST'];
+    const port = process.env['SMTP_PORT'] ? parseInt(process.env['SMTP_PORT'] as string, 10) : 587;
+    const smtpUser = process.env['SMTP_USER'];
+    const smtpPass = process.env['SMTP_PASS'];
+    const secure = (process.env['SMTP_SECURE'] || 'false').toString().toLowerCase() === 'true';
+
+    let transporter: nodemailer.Transporter | null = null;
+
+    if (host && smtpUser && smtpPass) {
+      transporter = nodemailer.createTransport({ host, port, secure, auth: { user: smtpUser, pass: smtpPass } });
+    } else if (process.env['NODE_ENV'] !== 'production') {
+      const testAccount = await nodemailer.createTestAccount();
+      transporter = nodemailer.createTransport({
+        host: 'smtp.ethereal.email',
+        port: 587,
+        secure: false,
+        auth: { user: testAccount.user, pass: testAccount.pass },
+      });
+    } else {
+      // In production without SMTP configured, skip sending but do not error
+      console.warn('SMTP not configured in production; skipping password reset email send.');
+      return true;
+    }
+
     // Send email
     const info = await transporter.sendMail({
       from: '"CareLinkAI Security" <security@carelinkai.com>',
       to: user.email,
-      subject: "Reset Your CareLinkAI Password",
-      text: `
-Hello ${user.firstName},
+      subject: 'Reset Your CareLinkAI Password',
+      text: 
+Hello ,
 
 We received a request to reset your CareLinkAI password. To reset your password, please click the link below:
 
-${resetLink}
 
-This link will expire in ${TOKEN_EXPIRY_HOURS} hour${TOKEN_EXPIRY_HOURS > 1 ? 's' : ''}.
+
+This link will expire in  hour.
 
 If you did not request a password reset, please ignore this email or contact support if you have concerns.
 
 Best regards,
 The CareLinkAI Security Team
-      `.trim(),
-      html: `
+      .trim(),
+      html: 
 <!DOCTYPE html>
 <html>
 <head>
@@ -139,37 +153,39 @@ The CareLinkAI Security Team
     .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #6b7280; }
     .warning { color: #b91c1c; font-size: 13px; margin-top: 20px; }
   </style>
-</head>
-<body>
-  <div class="header">
-    <h2 style="color: white; margin: 0;">CareLinkAI Security</h2>
-  </div>
-  <div class="content">
-    <h2>Password Reset Request</h2>
-    <p>Hello ${user.firstName},</p>
-    <p>We received a request to reset your CareLinkAI password. To create a new password, please click the button below:</p>
-    
-    <a href="${resetLink}" class="button">Reset Password</a>
-    
-    <p>This link will expire in ${TOKEN_EXPIRY_HOURS} hour${TOKEN_EXPIRY_HOURS > 1 ? 's' : ''}.</p>
-    <p class="warning">If you did not request a password reset, please ignore this email or contact support if you have concerns about your account security.</p>
-    <p>Best regards,<br>The CareLinkAI Security Team</p>
-    
-    <div class="footer">
-      <p>If you're having trouble clicking the button, copy and paste the URL below into your web browser:</p>
-      <p><a href="${resetLink}">${resetLink}</a></p>
+  </head>
+  <body>
+    <div class="header">
+      <h2 style="color: white; margin: 0;">CareLinkAI Security</h2>
     </div>
-  </div>
-</body>
-</html>
-      `,
+    <div class="content">
+      <h2>Password Reset Request</h2>
+      <p>Hello ,</p>
+      <p>We received a request to reset your CareLinkAI password. To create a new password, please click the button below:</p>
+      
+      <a href="" class="button">Reset Password</a>
+      
+      <p>This link will expire in  hour.</p>
+      <p class="warning">If you did not request a password reset, please ignore this email or contact support if you have concerns about your account security.</p>
+      <p>Best regards,<br>The CareLinkAI Security Team</p>
+      
+      <div class="footer">
+        <p>If you're having trouble clicking the button, copy and paste the URL below into your web browser:</p>
+        <p><a href=""></a></p>
+      </div>
+    </div>
+  </body>
+  </html>
+      ,
     });
-    
-    // Log email details in development
-    console.log('📧 Password reset email sent:');
-    console.log('- To:', user.email);
-    console.log('- Preview URL:', nodemailer.getTestMessageUrl(info));
-    
+
+    if (process.env['NODE_ENV'] !== 'production') {
+      // Log preview link for dev/test only
+      console.log('Password reset email sent (dev)');
+      console.log('- To:', user.email);
+      console.log('- Preview URL:', nodemailer.getTestMessageUrl(info));
+    }
+
     return true;
   } catch (error) {
     console.error('Failed to send password reset email:', error);
