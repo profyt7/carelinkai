@@ -192,20 +192,6 @@ export async function POST(request: NextRequest) {
     const rateLimitKey = `verify-email:${clientIp}:${normalizedEmail}`;
     if (isRateLimited(rateLimitKey)) {
       // Create audit log entry for rate limit
-      await prisma.auditLog.create({
-        data: {
-          userId: "anonymous", // We don't know the user ID yet
-          action: AuditAction.ACCESS_DENIED,
-          resourceType: "EMAIL_VERIFICATION",
-          resourceId: null,
-          description: "Email verification rate limit exceeded",
-          ipAddress: clientIp,
-          metadata: {
-            email: normalizedEmail,
-            reason: "RATE_LIMIT"
-          }
-        }
-      });
       
       return NextResponse.json(
         { 
@@ -236,19 +222,6 @@ export async function POST(request: NextRequest) {
       // So we return a success message even if the email doesn't exist
       
       // Log the attempt
-      await prisma.auditLog.create({
-        data: {
-          userId: "anonymous",
-          action: AuditAction.OTHER,
-          resourceType: "EMAIL_VERIFICATION",
-          resourceId: null,
-          description: "Verification email requested for non-existent account",
-          ipAddress: clientIp,
-          metadata: {
-            email: normalizedEmail
-          }
-        }
-      });
       
       return NextResponse.json({
         success: true,
@@ -259,19 +232,6 @@ export async function POST(request: NextRequest) {
     // Check if email is already verified
     if (user.emailVerified) {
       // Log the attempt
-      await prisma.auditLog.create({
-        data: {
-          userId: user.id,
-          action: AuditAction.OTHER,
-          resourceType: "EMAIL_VERIFICATION",
-          resourceId: user.id,
-          description: "Verification email requested for already verified account",
-          ipAddress: clientIp,
-          metadata: {
-            email: normalizedEmail
-          }
-        }
-      });
       
       return NextResponse.json({
         success: false,
@@ -300,21 +260,6 @@ export async function POST(request: NextRequest) {
     const emailSent = await sendVerificationEmail(normalizedEmail, token, isResend);
     
     // Log the attempt
-    await prisma.auditLog.create({
-      data: {
-        userId: user.id,
-        action: AuditAction.CREATE,
-        resourceType: "EMAIL_VERIFICATION",
-        resourceId: user.id,
-        description: isResend ? "Verification email resent" : "Verification email sent",
-        ipAddress: clientIp,
-        metadata: {
-          email: normalizedEmail,
-          emailSent: emailSent,
-          tokenExpiry: tokenExpiry.toISOString()
-        }
-      }
-    });
     
     // Return success response
     return NextResponse.json({
