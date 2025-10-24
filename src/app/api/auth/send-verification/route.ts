@@ -191,7 +191,7 @@ export async function POST(request: NextRequest) {
     const normalizedEmail = email.toLowerCase().trim();
     
     // Apply rate limiting by IP + email
-    const rateLimitKey = 'sv:' + clientIp;
+    const rateLimitKey = 'sv:' + ((clientIp.split(',')[0] || clientIp).trim());
     try {
       await verifyLimiter.check(MAX_VERIFICATION_ATTEMPTS, rateLimitKey);
     } catch {
