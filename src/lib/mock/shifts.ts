@@ -22,7 +22,7 @@ const HOMES = [
   { id: 'home_2', name: 'Bayview Lodge', addr: '42 Bay St, Bellevue, WA' },
   { id: 'home_3', name: 'Cedar Grove', addr: '77 Cedar Ave, Redmond, WA' },
   { id: 'home_4', name: 'Maple Care', addr: '9 Maple Rd, Kirkland, WA' },
-];
+] as const;
 
 export function getMockOpenShifts(): MockShift[] {
   return [
@@ -38,3 +38,4 @@ export function getMockMyShifts(): MockShift[] {
     { id: 'shift_m2', homeId: HOMES[0].id, homeName: HOMES[0].name, address: HOMES[0].addr, startTime: isoAt(-10), endTime: isoAt(-2), hourlyRate: 28, status: 'COMPLETED' },
   ];
 }
+

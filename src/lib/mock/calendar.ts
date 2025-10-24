@@ -1,4 +1,4 @@
-import { Appointment, AppointmentStatus, AppointmentType, CalendarFilter } from "@/lib/types/calendar";
+import type { Appointment, AppointmentStatus, AppointmentType, CalendarFilter } from "@/lib/types/calendar";
 import { UserRole } from "@prisma/client";
 
 // Generate relative ISO times
@@ -117,3 +117,4 @@ export function filterMockAppointments(all: Appointment[], filter?: Partial<Cale
   }
   return res;
 }
+
