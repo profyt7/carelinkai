@@ -170,7 +170,7 @@ The CareLinkAI Security Team
     });
     
     // Log email details in development
-    console.log('Ã°Å¸â€œÂ§ Password reset email sent:');
+    console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â§ Password reset email sent:');
     console.log('- To:', user.email);
     console.log('- Preview URL:', nodemailer.getTestMessageUrl(info));
     
