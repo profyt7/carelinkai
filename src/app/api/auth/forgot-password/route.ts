@@ -185,7 +185,7 @@ export async function POST(request: NextRequest) {
   {
     const ip = (request.headers.get('x-forwarded-for') || (request as any).ip || 'unknown').split(',')[0].trim();
     const limiter = rateLimit({ interval: 60_000, limit: 5, uniqueTokenPerInterval: 5000 });
-    await limiter.check(5, 'fp:' + ip);
+    try {\r\n      try {\r\n      await limiter.check(5, 'fp:' + ip);\r\n    } catch {\r\n      return NextResponse.json({ success: false, message: 'Too many requests' }, { status: 429 });\r\n    }\r\n    } catch {\r\n      return NextResponse.json({ success: false, message: 'Too many requests' }, { status: 429 });\r\n    }
   }
   try {
     // Parse request body
@@ -275,3 +275,5 @@ export async function POST(request: NextRequest) {
     await prisma.$disconnect();
   }
 }
+
+
