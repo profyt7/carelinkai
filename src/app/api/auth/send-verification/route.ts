@@ -167,10 +167,9 @@ const verifyLimiter = rateLimit({ interval: RATE_LIMIT_WINDOW_MS, limit: MAX_VER
 export async function POST(request: NextRequest) {
   try {
     // Get client IP for rate limiting and audit logging
-    const clientIp = request.headers.get("x-forwarded-for") || 
-                    // @ts-ignore - `ip` exists only in Node runtime requests
-                    (request as any).ip || 
-                    "unknown";
+        const xff = request.headers.get("x-forwarded-for") || "";
+    const xri = request.headers.get("x-real-ip") || "";
+    const clientIp = (xff.split(',')[0]?.trim()) || xri || "unknown";
     
     // Parse request body
     const body = await request.json();
