@@ -1,3 +1,4 @@
+import { rateLimit } from '@/lib/rate-limit';
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -26,6 +27,13 @@ const messageCreateSchema = z.object({
  * Requires authentication
  */
 export async function POST(request: NextRequest) {
+  // Rate limit: 30 messages/min per user
+  {
+    const session = await getServerSession(authOptions);
+    const userId = session?.user?.id || 'anon';
+    const limiter = rateLimit({ interval: 60_000, limit: 30, uniqueTokenPerInterval: 20000 });
+    await limiter.check(30, 'msg:send:' + userId);
+  }
   try {
     // Rate limit: 20 req/min per IP for sending messages
     {
@@ -127,6 +135,13 @@ export async function POST(request: NextRequest) {
  * Requires authentication
  */
 export async function GET(request: NextRequest) {
+  // Rate limit: 120 fetches/min per user
+  {
+    const session = await getServerSession(authOptions);
+    const userId = session?.user?.id || 'anon';
+    const limiter = rateLimit({ interval: 60_000, limit: 120, uniqueTokenPerInterval: 20000 });
+    await limiter.check(120, 'msg:get:' + userId);
+  }
   try {
     // Rate limit: 60 req/min per IP for reading messages
     {

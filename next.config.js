@@ -1,4 +1,25 @@
+const { withSentryConfig } = require('@sentry/nextjs');
 /** @type {import('next').NextConfig} */
+const isProd = process.env.NODE_ENV === 'production';
+
+const cspBase = [
+  "default-src 'self'",
+  // Scripts: disallow inline/eval in production; allow Stripe
+  isProd
+    ? "script-src 'self' https://js.stripe.com"
+    : "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://js.stripe.com",
+  // Connections: self + Stripe APIs
+  "connect-src 'self' https://api.stripe.com",
+  // Images: self + data/blob and known hosts
+  "img-src 'self' data: blob: http://localhost:3000 https://carelinkai-storage.s3.amazonaws.com https://picsum.photos https://randomuser.me https://placehold.co https://ui-avatars.com https://fastly.picsum.photos https://images.unsplash.com https://a.tile.openstreetmap.org https://b.tile.openstreetmap.org https://c.tile.openstreetmap.org",
+  // Styles: allow inline for Tailwind runtime classes; restrict to fonts domain
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  // Fonts
+  "font-src 'self' data: https://fonts.gstatic.com",
+  // Frames
+  "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
+].join('; ');
+
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
@@ -43,50 +64,17 @@ const nextConfig = {
         // Apply these headers to all routes
         source: '/:path*',
         headers: [
+          { key: 'X-DNS-Prefetch-Control', value: 'on' },
+          { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+          { key: 'X-XSS-Protection', value: '1; mode=block' },
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'Referrer-Policy', value: 'origin-when-cross-origin' },
           {
-            key: 'X-DNS-Prefetch-Control',
-            value: 'on',
+            // Content Security Policy for HIPAA compliance
+            key: 'Content-Security-Policy',
+            value: cspBase,
           },
-          {
-            key: 'Strict-Transport-Security',
-            value: 'max-age=63072000; includeSubDomains; preload',
-          },
-          {
-            key: 'X-XSS-Protection',
-            value: '1; mode=block',
-          },
-          {
-            key: 'X-Frame-Options',
-            value: 'SAMEORIGIN',
-          },
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          {
-            key: 'Referrer-Policy',
-            value: 'origin-when-cross-origin',
-          },
-          ...(
-            enableCsp
-              ? [{
-                  // Content Security Policy (enable via NEXT_PUBLIC_ENABLE_CSP=1)
-                  key: 'Content-Security-Policy',
-                  value:
-                    "default-src 'self'; " +
-                    "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://js.stripe.com; " +
-                    "connect-src 'self' https://api.stripe.com; " +
-                    "img-src 'self' data: blob: http://localhost:3000 https://carelinkai-storage.s3.amazonaws.com " +
-                    "https://picsum.photos https://randomuser.me https://placehold.co https://ui-avatars.com " +
-                    "https://fastly.picsum.photos " +
-                    "https://images.unsplash.com " +
-                    "https://a.tile.openstreetmap.org https://b.tile.openstreetmap.org https://c.tile.openstreetmap.org; " +
-                    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-                    "font-src 'self' data: https://fonts.gstatic.com; " +
-                    "frame-src 'self' https://js.stripe.com https://hooks.stripe.com;",
-                }]
-              : []
-          ),
         ],
       },
     ];
@@ -94,10 +82,7 @@ const nextConfig = {
   // Rewrite so that requests to /uploads/* are served statically in dev/prod
   async rewrites() {
     return [
-      {
-        source: '/uploads/:path*',
-        destination: '/uploads/:path*',
-      },
+      { source: '/uploads/:path*', destination: '/uploads/:path*' },
     ];
   },
   // Redirect from HTTP to HTTPS for HIPAA compliance in production only.
@@ -111,11 +96,7 @@ const nextConfig = {
       {
         source: '/:path*',
         has: [
-          {
-            type: 'header',
-            key: 'x-forwarded-proto',
-            value: 'http',
-          },
+          { type: 'header', key: 'x-forwarded-proto', value: 'http' },
         ],
         permanent: true,
         destination: 'https://:host/:path*',
@@ -124,4 +105,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+module.exports = withSentryConfig(nextConfig, { silent: true }, { hideSourceMaps: true });

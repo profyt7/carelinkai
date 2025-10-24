@@ -91,6 +91,7 @@ export async function POST(request: NextRequest) {
       Bucket: S3_CONFIG.bucket,
       Key: key,
       ContentType: contentType,
+      ServerSideEncryption: 'AES256',
       Metadata: {
         userId: session.user.id,
         caregiverId: caregiver.id,
