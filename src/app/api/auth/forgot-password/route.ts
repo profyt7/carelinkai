@@ -191,12 +191,12 @@ export async function POST(request: NextRequest) {
     const limiter = rateLimit({ interval: 60_000, limit: 5, uniqueTokenPerInterval: 5000 });
     const usage = await limiter.getUsage('fp:' + ip);
     if (usage && usage.count >= 5) {
-      return NextResponse.json({ success: false, message: 'Too many requests' }, { status: 429 });
+      const __rl_reset = Math.ceil(((usage?.resetIn as number) ?? 60000) / 1000); return NextResponse.json({ success: false, message: 'Too many requests' }, { status: 429, headers: { 'Retry-After': String(__rl_reset), 'X-RateLimit-Limit': '5', 'X-RateLimit-Reset': String(__rl_reset) } })
     }
     try {
       await limiter.check(5, 'fp:' + ip);
     } catch {
-      return NextResponse.json({ success: false, message: 'Too many requests' }, { status: 429 });
+      const __rl_reset = Math.ceil(((usage?.resetIn as number) ?? 60000) / 1000); return NextResponse.json({ success: false, message: 'Too many requests' }, { status: 429, headers: { 'Retry-After': String(__rl_reset), 'X-RateLimit-Limit': '5', 'X-RateLimit-Reset': String(__rl_reset) } })
     }
   }
   try {
@@ -287,6 +287,8 @@ export async function POST(request: NextRequest) {
     await prisma.$disconnect();
   }
 }
+
+
 
 
 
