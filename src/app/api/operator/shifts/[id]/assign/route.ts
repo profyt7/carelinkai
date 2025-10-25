@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
+import { requireOperatorOrAdmin } from '@/lib/rbac';
 import { PrismaClient, ShiftStatus, UserRole } from '@prisma/client';
 
 const prisma = new PrismaClient();

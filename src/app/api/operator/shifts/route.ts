@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
+import { requireOperatorOrAdmin } from '@/lib/rbac';
 import { PrismaClient, UserRole } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
