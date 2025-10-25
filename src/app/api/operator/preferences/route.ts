@@ -1,4 +1,4 @@
-/**
+import { requireAnyRole } from "@/lib/rbac";`r`n/**
  * Operator Preferences API for CareLinkAI
  * 
  * This API handles organization-level preferences operations:
@@ -14,8 +14,6 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth-db-simple";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
@@ -74,7 +72,7 @@ function deepMerge(target: any, source: any): any {
 export async function GET(request: NextRequest) {
   try {
     // Verify user is authenticated via session
-    const session = await getServerSession(authOptions);
+    const { session, error } = await requireAnyRole(["OPERATOR" as any]);`r`n    if (error) return error;
     
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -141,7 +139,7 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     // Verify user is authenticated via session
-    const session = await getServerSession(authOptions);
+    const { session, error } = await requireAnyRole(["OPERATOR" as any]);`r`n    if (error) return error;
     
     if (!session?.user?.id) {
       return NextResponse.json(
