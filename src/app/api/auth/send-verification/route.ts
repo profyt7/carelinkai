@@ -29,7 +29,8 @@ const TOKEN_EXPIRY_HOURS = 24; // Verification tokens expire after 24 hours
 const TOKEN_LENGTH = 32; // 32 bytes = 256 bits of entropy
 const MAX_VERIFICATION_ATTEMPTS = 5; // Maximum verification attempts per time window
 const RATE_LIMIT_WINDOW_MS = 30 * 60 * 1000; // 30 minutes rate limit window
-const BLOCK_DURATION_MS = 60 * 60 * 1000; // 1 hour block after too many attempts
+
+const hasRedis = !!(process.env[''REDIS_URL''] || process.env[''REDIS_TLS_URL'']); // 1 hour block after too many attempts
 
 // Email validation schema
 const emailSchema = z.object({
@@ -232,7 +233,7 @@ export async function POST(request: NextRequest) {
 { const res = NextResponse.json({
       success: true,
       message: "Verification email sent successfully [sv-v2]. Please check your inbox."
-    }); res.headers.set('X-RateLimit-Limit', String(MAX_VERIFICATION_ATTEMPTS)); res.headers.set('X-RateLimit-Key', rateLimitKey); return res; }
+    }); res.headers.set('X-RateLimit-Limit', String(MAX_VERIFICATION_ATTEMPTS)); res.headers.set('X-RateLimit-Key', rateLimitKey); res.headers.set('X-Client-IP', clientIp); res.headers.set('X-Redis', String(hasRedis)); return res; }
     }
     
     // Check if email is already verified
