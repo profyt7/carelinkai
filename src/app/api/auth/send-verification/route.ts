@@ -192,23 +192,23 @@ export async function POST(request: NextRequest) {
     const normalizedEmail = email.toLowerCase().trim();
     
     // Apply rate limiting by IP + email
+        // Apply rate limiting by IP only (per security policy)
     const rateLimitKey = 'sv:' + ((clientIp.split(',')[0] || clientIp).trim());
     try {
       await verifyLimiter.check(MAX_VERIFICATION_ATTEMPTS, rateLimitKey);
-      try { const u = await verifyLimiter.getUsage(rateLimitKey); console.log('[sv rl]', { key: rateLimitKey, u }); } catch {}
     } catch {
-      // Create audit log entry for rate limit
-      
+      const usage = await verifyLimiter.getUsage(rateLimitKey);
+      const resetSec = usage ? Math.ceil((usage.resetIn || RATE_LIMIT_WINDOW_MS) / 1000) : Math.ceil(RATE_LIMIT_WINDOW_MS / 1000);
       return NextResponse.json(
-        { 
-          success: false, 
-          message: "Too many verification attempts. Please try again later.",
+        {
+          success: false,
+          message: 'Too many verification attempts. Please try again later.',
           rateLimit: true
-        }, 
-        { status: 429 }
+        },
+        { status: 429, headers: { 'Retry-After': String(resetSec), 'X-RateLimit-Limit': String(MAX_VERIFICATION_ATTEMPTS), 'X-RateLimit-Reset': String(resetSec), 'X-RateLimit-Key': rateLimitKey } }
       );
     }
-    
+
     // Check if user exists
     const user = await prisma.user.findUnique({
       where: { email: normalizedEmail },
