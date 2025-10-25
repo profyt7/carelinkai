@@ -30,7 +30,7 @@ const TOKEN_LENGTH = 32; // 32 bytes = 256 bits of entropy
 const MAX_VERIFICATION_ATTEMPTS = 5; // Maximum verification attempts per time window
 const RATE_LIMIT_WINDOW_MS = 30 * 60 * 1000; // 30 minutes rate limit window
 
-const hasRedis = !!(process.env[''REDIS_URL''] || process.env[''REDIS_TLS_URL'']); // 1 hour block after too many attempts
+const hasRedis = Boolean(process.env.REDIS_URL || process.env.REDIS_TLS_URL); // 1 hour block after too many attempts
 
 // Email validation schema
 const emailSchema = z.object({
@@ -349,4 +349,5 @@ export async function GET(request: NextRequest) {
     await prisma.$disconnect();
   }
 }
+
 
