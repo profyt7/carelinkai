@@ -1,7 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { PrismaClient, UserRole } from '@prisma/client';
+﻿import { NextRequest, NextResponse } from "next/server";
+import { PrismaClient, UserRole } from "@prisma/client";
+import { requireOperatorOrAdmin, requireAnyRole } from "@/lib/rbac";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -9,25 +8,29 @@ export const revalidate = 0;
 const prisma = new PrismaClient();
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-  const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+  const { session, error } = await requireOperatorOrAdmin();
+  if (error) return error;
+
+  const user = await prisma.user.findUnique({ where: { email: session!.user!.email! } });
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const op = user.role === UserRole.OPERATOR ? await prisma.operator.findUnique({ where: { userId: user.id } }) : null;
-  const where = op ? { operatorId: op.id } : {};
+
+  let where: any = {};
+  if (user.role === UserRole.OPERATOR) {
+    const op = await prisma.operator.findUnique({ where: { userId: user.id } });
+    if (!op) return NextResponse.json({ error: 'Operator profile missing' }, { status: 400 });
+    where = { operatorId: op.id };
+  }
+
   const homes = await prisma.assistedLivingHome.findMany({ where, include: { address: true }, orderBy: { createdAt: 'desc' } });
   return NextResponse.json({ homes });
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+    const { session, error } = await requireAnyRole(["OPERATOR" as any]);
+    if (error) return error;
+
+    const user = await prisma.user.findUnique({ where: { email: session!.user!.email! } });
     if (!user || user.role !== UserRole.OPERATOR) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
