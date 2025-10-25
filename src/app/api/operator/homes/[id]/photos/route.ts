@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
+import { requireOperatorOrAdmin } from '@/lib/rbac';
 import { PrismaClient, UserRole } from '@prisma/client';
 import { getS3Client, getBucket, toS3Url } from '@/lib/storage';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
