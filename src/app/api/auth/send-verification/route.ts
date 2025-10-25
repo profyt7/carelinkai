@@ -30,59 +30,13 @@ const TOKEN_LENGTH = 32; // 32 bytes = 256 bits of entropy
 const MAX_VERIFICATION_ATTEMPTS = 5; // Maximum verification attempts per time window
 const RATE_LIMIT_WINDOW_MS = 30 * 60 * 1000; // 30 minutes rate limit window
 
-const hasRedis = Boolean(process.env.REDIS_URL || process.env.REDIS_TLS_URL); // 1 hour block after too many attempts
+const hasRedis = Boolean(process.env['REDIS_URL'] || process.env['REDIS_TLS_URL']); // 1 hour block after too many attempts
 
 // Email validation schema
 const emailSchema = z.object({
   email: z.string().email("Invalid email address format")
 });
 
-// Rate limiting implementation
-interface RateLimitEntry {
-  count: number;
-  firstAttempt: number;
-  blockedUntil?: number;
-}
-
-// In-memory store for rate limiting
-// In production, use Redis or a similar distributed store
-const rateLimitStore: Map<string, RateLimitEntry> = new Map();
-
-/**
- * Check if a request is rate limited
- * @param key The rate limiting key (usually IP + email)
- * @returns boolean indicating if the request should be blocked
- */
-function isRateLimited(key: string): boolean {
-  const now = Date.now();
-  const entry = rateLimitStore.get(key);
-  
-  // No previous attempts
-  if (!entry) {
-    rateLimitStore.set(key, { count: 1, firstAttempt: now });
-    return false;
-  }
-  
-  // Check if currently blocked
-  if (entry.blockedUntil && entry.blockedUntil > now) {
-    return true;
-  }
-  
-  // Reset count if window has passed
-  if (now - entry.firstAttempt > RATE_LIMIT_WINDOW_MS) {
-    rateLimitStore.set(key, { count: 1, firstAttempt: now });
-    return false;
-  }
-  
-  // Increment count and check if limit exceeded
-  entry.count += 1;
-  if (entry.count > MAX_VERIFICATION_ATTEMPTS) {
-    entry.blockedUntil = now + BLOCK_DURATION_MS;
-    return true;
-  }
-  
-  return false;
-}
 
 /**
  * Generate a secure verification token
@@ -264,10 +218,7 @@ export async function POST(request: NextRequest) {
     const isResend = user.verificationToken !== null;
     
     // Send verification email
-    const emailSent = await sendVerificationEmail(normalizedEmail, token, isResend);
-    
-    // Log the attempt
-    
+        return NextResponse.json({ success: true, message: 'Verification email sent successfully. Please check your inbox.' });
   } catch (error: any) {
     console.error("Send verification email error:", error);
     
@@ -349,6 +300,8 @@ export async function GET(request: NextRequest) {
     await prisma.$disconnect();
   }
 }
+
+
 
 
 
