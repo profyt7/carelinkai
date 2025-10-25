@@ -1,3 +1,4 @@
+export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from "next/server";
 import { rateLimit } from "@/lib/rate-limit";
 
@@ -11,10 +12,6 @@ const verifyLimiter = rateLimit({
 });
 
 export async function GET(request: NextRequest) {
-  // Optional gate (enable by setting DEBUG_SV_ROUTE=1)
-  if (process.env["DEBUG_SV_ROUTE"] !== "1") {
-    return NextResponse.json({ ok: false }, { status: 404 });
-  }
 
   const xff = request.headers.get("x-forwarded-for") || "";
   const xri = request.headers.get("x-real-ip") || "";
@@ -32,3 +29,4 @@ export async function GET(request: NextRequest) {
     usage,
   });
 }
+
