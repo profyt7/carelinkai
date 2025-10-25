@@ -233,7 +233,7 @@ export async function POST(request: NextRequest) {
 { const res = NextResponse.json({
       success: true,
       message: "Verification email sent successfully [sv-v2]. Please check your inbox."
-    }); res.headers.set('X-RateLimit-Limit', String(MAX_VERIFICATION_ATTEMPTS)); res.headers.set('X-RateLimit-Key', rateLimitKey); res.headers.set('X-Client-IP', clientIp); res.headers.set('X-Redis', String(hasRedis)); return res; }
+    }); res.headers.set('X-RateLimit-Limit', String(MAX_VERIFICATION_ATTEMPTS)); return res; }
     }
     
     // Check if email is already verified
@@ -349,5 +349,6 @@ export async function GET(request: NextRequest) {
     await prisma.$disconnect();
   }
 }
+
 
 
