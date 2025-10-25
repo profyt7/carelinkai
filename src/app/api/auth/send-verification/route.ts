@@ -267,12 +267,6 @@ export async function POST(request: NextRequest) {
     
     // Log the attempt
     
-    // Return success response
-    return NextResponse.json({
-      success: true,
-      message: "Verification email sent successfully. Please check your inbox."
-    });
-    
   } catch (error: any) {
     console.error("Send verification email error:", error);
     
