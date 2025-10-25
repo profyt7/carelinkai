@@ -1,3 +1,4 @@
+export const runtime = 'nodejs';
 /**
  * Email Verification API Endpoint for CareLinkAI
  * 
