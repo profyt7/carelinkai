@@ -229,10 +229,10 @@ export async function POST(request: NextRequest) {
       
       // Log the attempt
       
-      return NextResponse.json({
-        success: true,
-        message: "If your email is registered, a verification link has been sent."
-      });
+{ const res = NextResponse.json({
+      success: true,
+      message: "Verification email sent successfully. Please check your inbox."
+    }); res.headers.set('X-RateLimit-Limit', String(MAX_VERIFICATION_ATTEMPTS)); res.headers.set('X-RateLimit-Key', rateLimitKey); return res; }
     }
     
     // Check if email is already verified
