@@ -9,11 +9,12 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const { session, error } = await requireOperatorOrAdmin();
+    if (error) return error;
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+    const user = await prisma.user.findUnique({ where: { email: session!.user!.email! } });
     if (!user || (user.role !== UserRole.OPERATOR && user.role !== UserRole.ADMIN)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
