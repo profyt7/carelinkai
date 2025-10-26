@@ -21,7 +21,8 @@ export async function GET(request: NextRequest, { params }: { params: { document
       }
     }
 
-    const { session, error } = await requireAnyRole(["FAMILY"] as any);`r`n    if (error) return error;
+    const { session, error } = await requireAnyRole(["FAMILY"] as any);
+      if (error) return error;
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

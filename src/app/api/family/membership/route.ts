@@ -16,7 +16,8 @@ import { prisma } from "@/lib/prisma";
 export async function GET(request: NextRequest) {
   try {
     // Get session and verify authentication
-    const { session, error } = await requireAnyRole(["FAMILY"] as any);`r`n    if (error) return error;
+    const { session, error } = await requireAnyRole(["FAMILY"] as any);
+      if (error) return error;
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
