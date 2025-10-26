@@ -1,15 +1,14 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
+﻿import { NextResponse } from 'next/server';
+import { requireOperatorOrAdmin } from '@/lib/rbac';
 import { PrismaClient, UserRole } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+    const { session, error } = await requireOperatorOrAdmin();
+    if (error) return error;
+    const user = await prisma.user.findUnique({ where: { email: session!.user!.email! } });
     if (!user || (user.role !== UserRole.OPERATOR && user.role !== UserRole.ADMIN)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }

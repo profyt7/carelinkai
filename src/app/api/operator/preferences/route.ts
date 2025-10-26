@@ -1,62 +1,26 @@
-/**
- * Operator Preferences API for CareLinkAI
- * 
- * This API handles organization-level preferences operations:
- * - GET: Retrieve operator preferences
- * - PUT: Update operator preferences
- * 
- * Features:
- * - Authentication and role verification (OPERATOR only)
- * - Notification preferences for reminders
- * - Deep merging of preferences
- * - Input validation with Zod
- * - Error handling
- */
-
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth-db-simple";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { requireAnyRole } from "@/lib/rbac";
+import type { UserRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
-// Reminder preferences schema
-const reminderPrefsSchema = z.object({
-  channels: z.object({
-    email: z.boolean().optional(),
-    push: z.boolean().optional(),
-    sms: z.boolean().optional(),
-  }).optional(),
+// Basic preferences shape; all fields optional
+const PreferencesSchema = z.object({
+  notifications: z
+    .object({
+      email: z.boolean().optional(),
+      push: z.boolean().optional(),
+      sms: z.boolean().optional(),
+    })
+    .optional(),
   offsets: z.array(z.number().positive()).optional(),
-});
+}).partial();
 
-// Notification preferences schema
-const notificationPrefsSchema = z.object({
-  reminders: reminderPrefsSchema.optional(),
-});
-
-// Overall preferences schema
-const preferencesSchema = z.object({
-  notifications: notificationPrefsSchema.optional(),
-});
-
-/**
- * Deep merge helper for preferences objects
- */
-function deepMerge(target: any, source: any): any {
-  // If either is not an object, prefer the source value
-  if (
-    target === null ||
-    source === null ||
-    typeof target !== "object" ||
-    typeof source !== "object" ||
-    Array.isArray(target) ||
-    Array.isArray(source)
-  ) {
-    return source;
+function deepMerge<T extends Record<string, any>>(target: T, source: T): T {
+  if (target == null || source == null || typeof target !== "object" || typeof source !== "object" || Array.isArray(target) || Array.isArray(source)) {
+    return source as T;
   }
-
   const result: Record<string, any> = { ...target };
-  
   for (const key of Object.keys(source)) {
     if (key in target) {
       result[key] = deepMerge(target[key], source[key]);
@@ -64,174 +28,71 @@ function deepMerge(target: any, source: any): any {
       result[key] = source[key];
     }
   }
-  
-  return result;
+  return result as T;
 }
 
-/**
- * GET handler to retrieve operator preferences
- */
+// GET: retrieve operator preferences
 export async function GET(request: NextRequest) {
   try {
-    // Verify user is authenticated via session
-    const session = await getServerSession(authOptions);
-    
+    const { session, error } = await requireAnyRole(["OPERATOR" as UserRole]);
+    if (error) return error;
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, message: "Authentication required" },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, message: "Authentication required" }, { status: 401 });
     }
-    
-    // Verify user is an operator
-    if (session.user.role !== "OPERATOR") {
-      return NextResponse.json(
-        { success: false, message: "Access denied: Operator role required" },
-        { status: 403 }
-      );
-    }
-    
-    // Get user ID from session
+
     const userId = session.user.id;
-    
-    // Find operator by user ID
     const operator = await prisma.operator.findUnique({
       where: { userId },
-      select: {
-        id: true,
-        companyName: true,
-        preferences: true
-      }
+      select: { id: true, companyName: true, user: { select: { preferences: true } } },
     });
-    
     if (!operator) {
-      return NextResponse.json(
-        { success: false, message: "Operator not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, message: "Operator not found" }, { status: 404 });
     }
-    
-    // Return preferences data
+
     return NextResponse.json({
       success: true,
       data: {
-        preferences: operator.preferences || {},
+        preferences: operator.user.preferences || {},
         operatorId: operator.id,
-        companyName: operator.companyName
-      }
+        companyName: operator.companyName,
+      },
     });
-    
   } catch (error: any) {
     console.error("Operator preferences retrieval error:", error);
-    
-    return NextResponse.json(
-      { 
-        success: false, 
-        message: "Failed to retrieve operator preferences", 
-        error: process.env['NODE_ENV'] === "development" ? error.message : undefined 
-      }, 
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, message: "Failed to retrieve operator preferences", error: process.env['NODE_ENV'] === "development" ? error.message : undefined }, { status: 500 });
   }
 }
 
-/**
- * PUT handler to update operator preferences
- */
+// PUT: update operator preferences
 export async function PUT(request: NextRequest) {
   try {
-    // Verify user is authenticated via session
-    const session = await getServerSession(authOptions);
-    
+    const { session, error } = await requireAnyRole(["OPERATOR" as UserRole]);
+    if (error) return error;
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, message: "Authentication required" },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, message: "Authentication required" }, { status: 401 });
     }
-    
-    // Verify user is an operator
-    if (session.user.role !== "OPERATOR") {
-      return NextResponse.json(
-        { success: false, message: "Access denied: Operator role required" },
-        { status: 403 }
-      );
-    }
-    
-    // Get user ID from session
+
     const userId = session.user.id;
-    
-    // Find operator by user ID
-    const operator = await prisma.operator.findUnique({
-      where: { userId },
-      select: {
-        id: true,
-        preferences: true
-      }
-    });
-    
+    const operator = await prisma.operator.findUnique({ where: { userId }, select: { id: true, user: { select: { preferences: true } } } });
     if (!operator) {
-      return NextResponse.json(
-        { success: false, message: "Operator not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, message: "Operator not found" }, { status: 404 });
     }
-    
-    // Parse and validate request body
-    const body = await request.json();
-    const validationResult = preferencesSchema.safeParse(body);
-    
-    if (!validationResult.success) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          message: "Invalid preferences data", 
-          errors: validationResult.error.flatten().fieldErrors 
-        }, 
-        { status: 400 }
-      );
+
+    const body = await request.json().catch(() => ({}));
+    const parsed = PreferencesSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ success: false, message: "Invalid request data", details: parsed.error.format() }, { status: 400 });
     }
-    
-    const validatedData = validationResult.data;
-    
-    // Get existing preferences or initialize empty object
-    const existingPreferences = operator.preferences || {};
-    
-    // Deep merge the preferences
-    const updatedPreferences = deepMerge(existingPreferences, validatedData);
-    
-    // Update operator record with new preferences
-    await prisma.operator.update({
-      where: { id: operator.id },
-      data: { preferences: updatedPreferences }
-    });
-    
-    // Return success response
-    return NextResponse.json({
-      success: true,
-      message: "Preferences updated successfully",
-      data: {
-        preferences: updatedPreferences
-      }
-    });
-    
+
+    const current = (operator.user.preferences as any) || {};
+    const incoming = parsed.data as any;
+    const merged = deepMerge(current, incoming);
+
+    await prisma.user.update({ where: { id: userId }, data: { preferences: merged } });
+
+    return NextResponse.json({ success: true, data: { preferences: merged, operatorId: operator.id } });
   } catch (error: any) {
     console.error("Operator preferences update error:", error);
-    
-    return NextResponse.json(
-      { 
-        success: false, 
-        message: "Failed to update operator preferences", 
-        error: process.env['NODE_ENV'] === "development" ? error.message : undefined 
-      }, 
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, message: "Failed to update operator preferences", error: process.env['NODE_ENV'] === "development" ? error.message : undefined }, { status: 500 });
   }
-}
-
-/**
- * PATCH handler - alias to PUT for partial updates
- */
-export async function PATCH(request: NextRequest) {
-  return PUT(request);
 }
