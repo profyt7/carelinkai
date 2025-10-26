@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireAnyRole } from "@/lib/rbac";
 import { z } from "zod";
 import fs from "fs";
 import path from "path";
@@ -170,7 +169,7 @@ export async function GET(request: NextRequest) {
         }
       }
       // Get session and verify authentication
-      const session = await getServerSession(authOptions);
+      const { session, error } = await requireAnyRole(["FAMILY"] as any);`r`n      if (error) return error;
       if (!session?.user) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
@@ -405,7 +404,7 @@ export async function POST(request: NextRequest) {
       }
     }
     // Get session and verify authentication
-    const session = await getServerSession(authOptions);
+    const { session, error } = await requireAnyRole(["FAMILY"] as any);`r`n      if (error) return error;
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -603,7 +602,7 @@ export async function PUT(request: NextRequest) {
       }
     }
     // Get session and verify authentication
-    const session = await getServerSession(authOptions);
+    const { session, error } = await requireAnyRole(["FAMILY"] as any);`r`n      if (error) return error;
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -762,7 +761,7 @@ export async function DELETE(request: NextRequest) {
       }
     }
     // Get session and verify authentication
-    const session = await getServerSession(authOptions);
+    const { session, error } = await requireAnyRole(["FAMILY"] as any);`r`n      if (error) return error;
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
