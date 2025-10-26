@@ -64,7 +64,6 @@ enum BackgroundCheckStatus {
   FAILED
 }
 
-
   residentNotesAuthored ResidentNote[]
 
   // Marketplace relationships
@@ -341,12 +340,11 @@ enum ResidentStatus {
   DECEASED
 }
 
-
   assessments        AssessmentResult[]
   incidents          ResidentIncident[]
   complianceRecords  ComplianceRecord[]
   admissionFitScores AdmissionFitScore[]
-  notes              ResidentNote[]
+  operatorNotes      ResidentNote[]
 
   // Timestamps
   createdAt     DateTime  @default(now())
