@@ -1639,3 +1639,80 @@ model FavoriteCaregiver {
   @@index([familyId])
   @@index([caregiverId])
 }
+
+// ==================== RESIDENTS MODULE (Operator) ====================
+
+model AssessmentResult {
+  id          String   @id @default(cuid())
+  residentId  String
+  type        String   // ADL|FallRisk|Behavior|Custom
+  payload     Json
+  score       Float?
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  resident    Resident @relation(fields: [residentId], references: [id])
+
+  @@index([residentId, type, createdAt])
+}
+
+model ResidentIncident {
+  id            String   @id @default(cuid())
+  residentId    String
+  occurredAt    DateTime
+  category      String   // Fall|Medication|Behavior|Injury|Other
+  severity      String   // Low|Med|High|Critical
+  description   String
+  capaOwnerId   String?
+  capaStatus    String?  // Open|InProgress|Closed
+  attachments   Json?
+  createdById   String?
+  createdAt     DateTime @default(now())
+
+  resident      Resident @relation(fields: [residentId], references: [id])
+
+  @@index([residentId, occurredAt])
+}
+
+model ComplianceRecord {
+  id           String   @id @default(cuid())
+  residentId   String?
+  facilityId   String?
+  type         String   // e.g., ConsentForm|CarePlan|PhysicianOrder
+  dueDate      DateTime?
+  completedAt  DateTime?
+  status       String   @default("Open") // Open|DueSoon|Overdue|Closed
+  notes        String?
+  createdAt    DateTime @default(now())
+
+  resident     Resident? @relation(fields: [residentId], references: [id])
+  @@index([facilityId, status, dueDate])
+}
+
+model AdmissionFitScore {
+  id          String   @id @default(cuid())
+  residentId  String
+  leadId      String?
+  facilityId  String
+  score       Float
+  marginUsd   Float?
+  factors     Json
+  createdAt   DateTime @default(now())
+
+  resident    Resident @relation(fields: [residentId], references: [id])
+
+  @@index([facilityId, createdAt])
+}
+
+model ResidentNote {
+  id          String   @id @default(cuid())
+  residentId  String
+  authorId    String
+  content     String   @db.Text
+  createdAt   DateTime @default(now())
+
+  resident    Resident @relation(fields: [residentId], references: [id])
+  author      User     @relation(fields: [authorId], references: [id])
+
+  @@index([residentId, createdAt])
+}
