@@ -64,7 +64,67 @@ enum BackgroundCheckStatus {
   FAILED
 }
 
-  residentNotesAuthored ResidentNote[]
+model User {
+  id              String     @id @default(cuid())
+  email           String     @unique
+  emailVerified   DateTime?
+  passwordHash    String? // Stored securely, never in plain text
+  firstName       String
+  lastName        String
+  phone           String?
+  role            UserRole
+  status          UserStatus @default(PENDING)
+  profileImageUrl Json? // Stores { thumbnail, medium, large }
+
+  // Two-factor authentication
+  twoFactorEnabled Boolean @default(false)
+  twoFactorSecret  String? @db.Text // Encrypted
+  backupCodes      Json? // Stores array of one-time backup codes
+
+  // Email verification
+  verificationToken       String? // Token sent in verification email
+  verificationTokenExpiry DateTime? // Token expiration timestamp
+
+  // Password reset
+  resetPasswordToken       String? // Token sent in password-reset email
+  resetPasswordTokenExpiry DateTime? // Token expiration timestamp
+
+  // User preferences
+  notificationPrefs Json? // Store notification preferences
+  preferences       Json? // General preferences (matches frontend expectations)
+  timezone          String @default("UTC")
+
+  // Relationships
+  family    Family?
+  operator  Operator?
+  caregiver Caregiver?
+  affiliate Affiliate?
+
+  // Common relationships
+  addresses                 Address[]
+  sessions                  Session[]
+  messages                  Message[]                @relation("MessageSender")
+  receivedMessages          Message[]                @relation("MessageReceiver")
+  notifications             Notification[]
+  payments                  Payment[]
+  auditLogs                 AuditLog[]               @relation("UserAuditLogs")
+  actionedAuditLogs         AuditLog[]               @relation("ActionedByUser")
+  // Calendar relationships
+  createdAppointments       Appointment[]            @relation
+  appointmentParticipations AppointmentParticipant[]
+  availabilitySlots         AvailabilitySlot[]
+  scheduledNotifications    ScheduledNotification[]
+
+  // Family collaboration relationships
+  familyMembers        FamilyMember[]
+  invitedFamilyMembers FamilyMember[]     @relation("InvitedBy")
+  uploadedDocuments    FamilyDocument[]   @relation("DocumentUploader")
+  authoredNotes        FamilyNote[]       @relation("NoteAuthor")
+  documentComments     DocumentComment[]  @relation("DocumentCommentAuthor")
+  noteComments         NoteComment[]      @relation("NoteCommentAuthor")
+  createdGalleries     SharedGallery[]    @relation("GalleryCreator")
+  uploadedPhotos       GalleryPhoto[]     @relation("PhotoUploader")
+  activities           ActivityFeedItem[] @relation("ActivityActor")
 
   // Marketplace relationships
   marketplaceListings MarketplaceListing[] @relation("UserListings")
@@ -340,11 +400,31 @@ enum ResidentStatus {
   DECEASED
 }
 
-  assessments        AssessmentResult[]
-  incidents          ResidentIncident[]
-  complianceRecords  ComplianceRecord[]
-  admissionFitScores AdmissionFitScore[]
-  operatorNotes      ResidentNote[]
+model Resident {
+  id                String         @id @default(cuid())
+  familyId          String
+  homeId            String?
+  firstName         String
+  lastName          String
+  dateOfBirth       DateTime
+  gender            String
+  status            ResidentStatus @default(INQUIRY)
+  careNeeds         Json? // Store care needs as JSON
+  medicalConditions String?        @db.Text // Encrypted
+  medications       String?        @db.Text // Encrypted
+  notes             String?        @db.Text // Encrypted
+
+  // Relationships
+  family       Family              @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  home         AssistedLivingHome? @relation(fields: [homeId], references: [id])
+  bookings     Booking[]
+  careTimeline CareTimelineEvent[]
+  documents    Document[]
+
+  // Family collaboration relationships
+  familyDocuments      FamilyDocument[]
+  familyNotes          FamilyNote[]
+  emergencyPreferences EmergencyPreference[]
 
   // Timestamps
   createdAt     DateTime  @default(now())
@@ -1558,81 +1638,4 @@ model FavoriteCaregiver {
   @@unique([familyId, caregiverId])
   @@index([familyId])
   @@index([caregiverId])
-}
-
-// ==================== RESIDENTS MODULE (Operator) ====================
-
-model AssessmentResult {
-  id          String   @id @default(cuid())
-  residentId  String
-  type        String   // ADL|FallRisk|Behavior|Custom
-  payload     Json
-  score       Float?
-  createdById String?
-  createdAt   DateTime @default(now())
-
-  resident    Resident @relation(fields: [residentId], references: [id])
-
-  @@index([residentId, type, createdAt])
-}
-
-model ResidentIncident {
-  id            String   @id @default(cuid())
-  residentId    String
-  occurredAt    DateTime
-  category      String   // Fall|Medication|Behavior|Injury|Other
-  severity      String   // Low|Med|High|Critical
-  description   String
-  capaOwnerId   String?
-  capaStatus    String?  // Open|InProgress|Closed
-  attachments   Json?
-  createdById   String?
-  createdAt     DateTime @default(now())
-
-  resident      Resident @relation(fields: [residentId], references: [id])
-
-  @@index([residentId, occurredAt])
-}
-
-model ComplianceRecord {
-  id           String   @id @default(cuid())
-  residentId   String?
-  facilityId   String?
-  type         String   // e.g., ConsentForm|CarePlan|PhysicianOrder
-  dueDate      DateTime?
-  completedAt  DateTime?
-  status       String   @default("Open") // Open|DueSoon|Overdue|Closed
-  notes        String?
-  createdAt    DateTime @default(now())
-
-  resident     Resident? @relation(fields: [residentId], references: [id])
-  @@index([facilityId, status, dueDate])
-}
-
-model AdmissionFitScore {
-  id          String   @id @default(cuid())
-  residentId  String
-  leadId      String?
-  facilityId  String
-  score       Float
-  marginUsd   Float?
-  factors     Json
-  createdAt   DateTime @default(now())
-
-  resident    Resident @relation(fields: [residentId], references: [id])
-
-  @@index([facilityId, createdAt])
-}
-
-model ResidentNote {
-  id          String   @id @default(cuid())
-  residentId  String
-  authorId    String
-  content     String   @db.Text
-  createdAt   DateTime @default(now())
-
-  resident    Resident @relation(fields: [residentId], references: [id])
-  author      User     @relation(fields: [authorId], references: [id])
-
-  @@index([residentId, createdAt])
 }
