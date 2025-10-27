@@ -1,4 +1,4 @@
-﻿import { notFound } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import Link from 'next/link';
 
 async function fetchResidents() {
@@ -8,7 +8,7 @@ async function fetchResidents() {
 }
 
 export default async function ResidentsPage() {
-  if (process.env.NEXT_PUBLIC_RESIDENTS_ENABLED !== 'true') return notFound();
+  if (process.env['NEXT_PUBLIC_RESIDENTS_ENABLED'] !== 'true') return notFound();
   const data = await fetchResidents();
   const items: Array<{ id: string; firstName: string; lastName: string; status: string }> = data.items ?? [];
   return (
@@ -42,3 +42,4 @@ export default async function ResidentsPage() {
     </div>
   );
 }
+

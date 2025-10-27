@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { requireOperatorOrAdmin } from "@/lib/rbac";
 
@@ -14,7 +14,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       where: { residentId: params.id },
       orderBy: { occurredAt: "desc" },
       take: limit,
-      select: { id: true, type: true, severity: true, notes: true, occurredAt: true },
+      select: { id: true, type: true, severity: true, description: true, occurredAt: true },
     });
     return NextResponse.json({ items });
   } catch (e) {
@@ -30,9 +30,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     const { error } = await requireOperatorOrAdmin();
     if (error) return error;
     const body = await req.json().catch(() => ({}));
-    const { type, severity, notes, occurredAt } = body || {};
+    const { type, severity, description, occurredAt } = body || {};
     if (!type || !severity || !occurredAt) return NextResponse.json({ error: "type, severity, occurredAt required" }, { status: 400 });
-    const created = await prisma.residentIncident.create({ data: { residentId: params.id, type, severity, notes: notes ?? null, occurredAt: new Date(occurredAt) }, select: { id: true } });
+    const created = await prisma.residentIncident.create({ data: { residentId: params.id, type, severity, description: description ?? null, occurredAt: new Date(occurredAt) }, select: { id: true } });
     return NextResponse.json({ success: true, id: created.id }, { status: 201 });
   } catch (e) {
     console.error("Incidents create error", e);
@@ -41,3 +41,4 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     await prisma.$disconnect();
   }
 }
+

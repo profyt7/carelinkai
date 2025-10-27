@@ -47,7 +47,8 @@ export async function GET(req: NextRequest) {
     });
     const hasNext = items.length > limit;
     const page = hasNext ? items.slice(0, -1) : items;
-    const nextCursor = hasNext ? items[items.length - 1].id : null;
+    const last = items[items.length - 1];
+    const nextCursor = hasNext && last ? last.id : null;
     return NextResponse.json({ items: page, nextCursor });
   } catch (e) {
     console.error('Residents list error', e);
@@ -100,3 +101,5 @@ export async function POST(req: NextRequest) {
     await prisma.$disconnect();
   }
 }
+
+

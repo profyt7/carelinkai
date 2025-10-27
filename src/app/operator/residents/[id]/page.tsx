@@ -1,4 +1,4 @@
-﻿import { notFound } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import Link from 'next/link';
 
 async function fetchResident(id: string) {
@@ -15,7 +15,7 @@ async function fetchSection(id: string, section: 'assessments' | 'incidents' | '
 }
 
 export default async function ResidentDetail({ params }: { params: { id: string } }) {
-  if (process.env.NEXT_PUBLIC_RESIDENTS_ENABLED !== 'true') return notFound();
+  if (process.env['NEXT_PUBLIC_RESIDENTS_ENABLED'] !== 'true') return notFound();
   const data = await fetchResident(params.id);
   if (!data?.resident) return notFound();
   const { resident } = data;
@@ -59,3 +59,4 @@ export default async function ResidentDetail({ params }: { params: { id: string 
     </div>
   );
 }
+
