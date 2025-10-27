@@ -51,7 +51,7 @@ export default async function ResidentDetail({ params }: { params: { id: string 
           <h2 className="font-semibold mb-2">Notes</h2>
           <ul className="text-sm list-disc ml-4">
             {(notes.items ?? []).map((n: any) => (
-              <li key={n.id}>{n.title}</li>
+              <li key={n.id}>{n.content}</li>
             ))}
           </ul>
         </section>

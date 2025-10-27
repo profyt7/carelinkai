@@ -14,7 +14,13 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       where: { residentId: params.id },
       orderBy: { createdAt: "desc" },
       take: limit,
-      select: { id: true, title: true, content: true, createdAt: true, createdBy: { select: { id: true, name: true, email: true } } },
+      select: {
+        id: true,
+        content: true,
+        visibility: true,
+        createdAt: true,
+        createdBy: { select: { id: true, firstName: true, lastName: true, email: true } },
+      },
     });
     return NextResponse.json({ items });
   } catch (e) {
@@ -32,9 +38,14 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     const me = await prisma.user.findUnique({ where: { email: session!.user!.email! } });
     if (!me) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const body = await req.json().catch(() => ({}));
-    const { title, content } = body || {};
-    if (!title) return NextResponse.json({ error: "title required" }, { status: 400 });
-    const created = await prisma.residentNote.create({ data: { residentId: params.id, title, content: content ?? null, createdByUserId: me.id }, select: { id: true } });
+    const { content, visibility } = body || {};
+    if (!content) return NextResponse.json({ error: "content required" }, { status: 400 });
+    const allowed = new Set(["INTERNAL", "CARE_TEAM", "FAMILY"]);
+    const data: any = { residentId: params.id, content, createdByUserId: me.id };
+    if (visibility && allowed.has(String(visibility))) {
+      data.visibility = visibility;
+    }
+    const created = await prisma.residentNote.create({ data, select: { id: true } });
     return NextResponse.json({ success: true, id: created.id }, { status: 201 });
   } catch (e) {
     console.error("Notes create error", e);
