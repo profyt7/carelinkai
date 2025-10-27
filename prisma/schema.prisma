@@ -116,6 +116,7 @@ model User {
   scheduledNotifications    ScheduledNotification[]
 
   // Family collaboration relationships
+  residentNotes ResidentNote[]
   familyMembers        FamilyMember[]
   invitedFamilyMembers FamilyMember[]     @relation("InvitedBy")
   uploadedDocuments    FamilyDocument[]   @relation("DocumentUploader")
@@ -420,6 +421,12 @@ model Resident {
   bookings     Booking[]
   careTimeline CareTimelineEvent[]
   documents    Document[]
+  assessmentResults AssessmentResult[]
+  incidents          ResidentIncident[]
+  complianceRecords  ComplianceRecord[]
+  admissionFitScores AdmissionFitScore[]
+  residentNotes      ResidentNote[]
+
 
   // Family collaboration relationships
   familyDocuments      FamilyDocument[]
@@ -1747,3 +1754,5 @@ model ResidentNote {
   @@index([createdByUserId])
   @@index([visibility])
 }
+
+
