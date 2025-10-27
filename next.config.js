@@ -6,7 +6,7 @@ const cspBase = [
   "default-src 'self'",
   // Scripts: disallow inline/eval in production; allow Stripe
   isProd
-    ? "script-src 'self' https://js.stripe.com"
+    ? "script-src 'self' 'unsafe-inline' https://js.stripe.com"
     : "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://js.stripe.com",
   // Connections: self + Stripe APIs
   "connect-src 'self' https://api.stripe.com",
