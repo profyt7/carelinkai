@@ -67,7 +67,7 @@ const navItems: NavItem[] = [
   { name: "Marketplace", icon: <FiUsers size={20} />, href: "/marketplace", showInMobileBar: true },
   { name: "Operator", icon: <FiHome size={20} />, href: "/operator", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN"] },
   { name: "Inquiries", icon: <FiFileText size={20} />, href: "/dashboard/inquiries", showInMobileBar: false },
-  { name: "Residents", icon: <FiUsers size={20} />, href: "/family", showInMobileBar: true },
+  { name: "Residents", icon: <FiUsers size={20} />, href: "/operator/residents", showInMobileBar: true, roleRestriction: ["OPERATOR", "ADMIN"] },
   { name: "Caregivers", icon: <FiUsers size={20} />, href: "/marketplace?tab=caregivers", showInMobileBar: false },
   { name: "Calendar", icon: <FiCalendar size={20} />, href: "/calendar", showInMobileBar: true },
   // Shifts page
@@ -738,13 +738,20 @@ export default function DashboardLayout({
             paddingBottom: 'env(safe-area-inset-bottom, 0px)' // iOS safe area
           }}
         >
-          {navItems
-            .filter(
-              (item) =>
-                item.showInMobileBar &&
-                (item.name !== "Marketplace" || marketplaceEnabled)
-            )
-            .map((item) => (
+          {(() => {
+            const normalizedRole = String(userRole || '').toUpperCase();
+            const visibleNavItems = navItems
+              .filter(
+                (item) =>
+                  item.showInMobileBar &&
+                  (
+                    !("roleRestriction" in item) ||
+                    !item.roleRestriction ||
+                    item.roleRestriction.map(r => r.toUpperCase()).includes(normalizedRole)
+                  )
+              )
+              .filter((item) => item.name !== "Marketplace" || marketplaceEnabled);
+            return visibleNavItems.map((item) => (
             <Link 
               key={item.name}
               href={item.href}
@@ -758,7 +765,8 @@ export default function DashboardLayout({
               {item.icon}
               <span className="mt-1">{item.name}</span>
             </Link>
-          ))}
+            ));
+          })()}
           
           {/* More menu button */}
           <button

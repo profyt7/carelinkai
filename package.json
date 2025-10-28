@@ -129,6 +129,10 @@
     "jest": {
         "preset": "ts-jest",
         "testEnvironment": "node",
+    "testPathIgnorePatterns": [
+      "<rootDir>/e2e/",
+      "<rootDir>/.next/"
+    ],
         "moduleNameMapper": {
             "^@/(.*)$": "<rootDir>/src/$1"
         }

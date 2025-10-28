@@ -13,7 +13,7 @@ import { stripe } from "@/lib/stripe";
  */
 export async function GET(request: NextRequest) {
   try {
-    const { session, error } = await requireAnyRole(["OPERATOR"] as any);
+    const { session, error } = await requireAnyRole(["OPERATOR"] as any, { forbiddenMessage: "Only operators can access payout features" });
     if (error) return error;
 
     const operator = await prisma.operator.findUnique({

@@ -12,7 +12,7 @@ const payoutRequestSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const { session, error } = await requireAnyRole(["CAREGIVER"] as any);
+    const { session, error } = await requireAnyRole(["CAREGIVER"] as any, { forbiddenMessage: "Only caregivers can request payouts" });
     if (error) return error;
 
     const body = await request.json().catch(() => ({}));

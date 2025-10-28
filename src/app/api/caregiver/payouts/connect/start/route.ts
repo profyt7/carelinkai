@@ -11,7 +11,7 @@ import { stripe } from "@/lib/stripe";
  */
 export async function POST(request: NextRequest) {
   try {
-    const { session, error } = await requireAnyRole(["CAREGIVER"] as any);
+    const { session, error } = await requireAnyRole(["CAREGIVER"] as any, { forbiddenMessage: "Only caregivers can access payout features" });
     if (error) return error;
 
     const caregiver = await prisma.caregiver.findUnique({

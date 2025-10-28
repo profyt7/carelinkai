@@ -8,7 +8,7 @@ import { stripe } from "@/lib/stripe";
 
 export async function GET(request: NextRequest) {
   try {
-    const { session, error } = await requireAnyRole(["CAREGIVER"] as any);
+    const { session, error } = await requireAnyRole(["CAREGIVER"] as any, { forbiddenMessage: "Only caregivers can access payout features" });
     if (error) return error;
 
     const caregiver = await prisma.caregiver.findUnique({
@@ -21,12 +21,7 @@ export async function GET(request: NextRequest) {
     const accountId = (preferences as any).stripeConnectAccountId as string | undefined;
 
     if (!accountId) {
-      return NextResponse.json({
-        connected: false,
-        detailsSubmitted: false,
-        chargesEnabled: false,
-        payoutsEnabled: false,
-      });
+      return NextResponse.json({ connected: false });
     }
 
     const account = await stripe.accounts.retrieve(accountId);

@@ -15,7 +15,7 @@ async function fetchSection(id: string, section: 'assessments' | 'incidents' | '
 }
 
 export default async function ResidentDetail({ params }: { params: { id: string } }) {
-  if (process.env['NEXT_PUBLIC_RESIDENTS_ENABLED'] !== 'true') return notFound();
+  if (process.env['NEXT_PUBLIC_RESIDENTS_ENABLED'] === 'false') return notFound();
   const data = await fetchResident(params.id);
   if (!data?.resident) return notFound();
   const { resident } = data;
@@ -51,7 +51,7 @@ export default async function ResidentDetail({ params }: { params: { id: string 
           <h2 className="font-semibold mb-2">Notes</h2>
           <ul className="text-sm list-disc ml-4">
             {(notes.items ?? []).map((n: any) => (
-              <li key={n.id}>{n.title}</li>
+              <li key={n.id}>{n.content}</li>
             ))}
           </ul>
         </section>
