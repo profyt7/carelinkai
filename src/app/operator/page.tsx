@@ -1,7 +1,6 @@
 import { getServerSession } from "next-auth";
 import { cookies } from "next/headers";
 import { authOptions } from "@/lib/auth";
-import DashboardLayout from "@/components/layout/DashboardLayout";
 import { PrismaClient, UserRole } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -72,8 +71,7 @@ export default async function OperatorDashboardPage({ searchParams }: { searchPa
   const selectedName = selected ? operators.find(o => o.id === selected)?.companyName || 'Unknown Operator' : 'All Operators';
 
   return (
-    <DashboardLayout title="Operator Dashboard" showSearch={false}>
-      <div className="p-4 sm:p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-6">
         {/* Admin operator scope selector */}
         {!showMock && user?.role === UserRole.ADMIN && (
           <div className="card">
@@ -135,6 +133,6 @@ export default async function OperatorDashboardPage({ searchParams }: { searchPa
           </a>
         </div>
       </div>
-    </DashboardLayout>
+    </div>
   );
 }
