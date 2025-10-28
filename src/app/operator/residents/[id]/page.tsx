@@ -1,15 +1,24 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import { cookies } from 'next/headers';
 
 async function fetchResident(id: string) {
-  const res = await fetch(`${process.env.NEXTAUTH_URL ?? ''}/api/residents/${id}`, { cache: 'no-store' });
+  const cookieHeader = cookies().toString();
+  const res = await fetch(`${process.env.NEXTAUTH_URL ?? ''}/api/residents/${id}`, {
+    cache: 'no-store',
+    headers: { cookie: cookieHeader },
+  });
   if (res.status === 404) return null;
   if (!res.ok) throw new Error('Failed to load resident');
   return res.json();
 }
 
 async function fetchSection(id: string, section: 'assessments' | 'incidents' | 'notes') {
-  const res = await fetch(`${process.env.NEXTAUTH_URL ?? ''}/api/residents/${id}/${section}?limit=5`, { cache: 'no-store' });
+  const cookieHeader = cookies().toString();
+  const res = await fetch(`${process.env.NEXTAUTH_URL ?? ''}/api/residents/${id}/${section}?limit=5`, {
+    cache: 'no-store',
+    headers: { cookie: cookieHeader },
+  });
   if (!res.ok) return { items: [] };
   return res.json();
 }
