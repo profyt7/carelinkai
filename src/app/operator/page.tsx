@@ -133,6 +133,5 @@ export default async function OperatorDashboardPage({ searchParams }: { searchPa
           </a>
         </div>
       </div>
-    </div>
   );
 }
