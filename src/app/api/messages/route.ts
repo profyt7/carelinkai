@@ -27,9 +27,10 @@ const messageCreateSchema = z.object({
  * Requires authentication
  */
 export async function POST(request: NextRequest) {
-  // Rate limit: 30 messages/min per user
+  // Fetch session ONCE and reuse
+  const session = await getServerSession(authOptions);
+  // Rate limit: 30 messages/min per user (falls back to anon)
   {
-    const session = await getServerSession(authOptions);
     const userId = session?.user?.id || 'anon';
     const limiter = rateLimit({ interval: 60_000, limit: 30, uniqueTokenPerInterval: 20000 });
     await limiter.check(30, 'msg:send:' + userId);
@@ -47,8 +48,7 @@ export async function POST(request: NextRequest) {
         );
       }
     }
-    // Get session and verify authentication
-    const session = await getServerSession(authOptions);
+    // Verify authentication using fetched session
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -135,9 +135,10 @@ export async function POST(request: NextRequest) {
  * Requires authentication
  */
 export async function GET(request: NextRequest) {
+  // Fetch session ONCE and reuse
+  const session = await getServerSession(authOptions);
   // Rate limit: 120 fetches/min per user
   {
-    const session = await getServerSession(authOptions);
     const userId = session?.user?.id || 'anon';
     const limiter = rateLimit({ interval: 60_000, limit: 120, uniqueTokenPerInterval: 20000 });
     await limiter.check(120, 'msg:get:' + userId);
@@ -155,8 +156,7 @@ export async function GET(request: NextRequest) {
         );
       }
     }
-    // Get session and verify authentication
-    const session = await getServerSession(authOptions);
+    // Verify authentication using fetched session
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

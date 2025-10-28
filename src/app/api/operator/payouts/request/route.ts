@@ -16,7 +16,7 @@ const requestSchema = z.object({
  */
 export async function POST(request: NextRequest) {
   try {
-    const { session, error } = await requireAnyRole(["OPERATOR"] as any);
+    const { session, error } = await requireAnyRole(["OPERATOR"] as any, { forbiddenMessage: "Only operators can request payouts" });
     if (error) return error;
 
     const body = await request.json();

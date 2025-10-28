@@ -8,7 +8,7 @@ async function fetchResidents() {
 }
 
 export default async function ResidentsPage() {
-  if (process.env['NEXT_PUBLIC_RESIDENTS_ENABLED'] !== 'true') return notFound();
+  if (process.env['NEXT_PUBLIC_RESIDENTS_ENABLED'] === 'false') return notFound();
   const data = await fetchResidents();
   const items: Array<{ id: string; firstName: string; lastName: string; status: string }> = data.items ?? [];
   return (

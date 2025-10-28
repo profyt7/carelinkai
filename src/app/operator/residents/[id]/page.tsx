@@ -15,7 +15,7 @@ async function fetchSection(id: string, section: 'assessments' | 'incidents' | '
 }
 
 export default async function ResidentDetail({ params }: { params: { id: string } }) {
-  if (process.env['NEXT_PUBLIC_RESIDENTS_ENABLED'] !== 'true') return notFound();
+  if (process.env['NEXT_PUBLIC_RESIDENTS_ENABLED'] === 'false') return notFound();
   const data = await fetchResident(params.id);
   if (!data?.resident) return notFound();
   const { resident } = data;
