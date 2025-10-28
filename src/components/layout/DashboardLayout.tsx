@@ -408,23 +408,30 @@ export default function DashboardLayout({
               (item) =>
                 item.name !== "Marketplace" || marketplaceEnabled
           );
+          // Determine the most specific (longest) matching href for current pathname
+          const hrefs = visibleNavItems.map((i) => (
+            i.name === 'Caregivers' && String(userRole).toUpperCase() === 'CAREGIVER'
+              ? '/settings/profile'
+              : i.href
+          ));
+          const longestMatch = hrefs
+            .filter((h) => pathname === h || pathname?.startsWith(`${h}/`))
+            .sort((a, b) => b.length - a.length)[0];
+
           return (
             <nav className="sidebar-nav mt-4" aria-label="Sidebar navigation">
               {visibleNavItems.map((item) => {
                 const computedHref = (item.name === 'Caregivers' && String(userRole).toUpperCase() === 'CAREGIVER')
                   ? '/settings/profile'
                   : item.href;
+                const isActive = computedHref === longestMatch || pathname === computedHref;
                 return (
             <Link
               key={item.name}
               href={computedHref}
-              className={`sidebar-nav-item ${
-                pathname === computedHref || pathname?.startsWith(`${computedHref}/`) 
-                  ? "sidebar-nav-item-active" 
-                  : ""
-              }`}
+              className={`sidebar-nav-item ${isActive ? "sidebar-nav-item-active" : ""}`}
               onClick={() => isMobile && setSidebarOpen(false)}
-              aria-current={pathname === computedHref ? "page" : undefined}
+              aria-current={isActive ? "page" : undefined}
             >
               <span className="mr-3">{item.icon}</span>
               {item.name}
@@ -751,21 +758,25 @@ export default function DashboardLayout({
                   )
               )
               .filter((item) => item.name !== "Marketplace" || marketplaceEnabled);
-            return visibleNavItems.map((item) => (
-            <Link 
-              key={item.name}
-              href={item.href}
-              className={`mobile-tab-item ${
-                pathname === item.href || pathname?.startsWith(`${item.href}/`) 
-                  ? 'mobile-tab-item-active' 
-                  : ''
-              }`}
-              aria-current={pathname === item.href ? "page" : undefined}
-            >
-              {item.icon}
-              <span className="mt-1">{item.name}</span>
-            </Link>
-            ));
+            const hrefs = visibleNavItems.map(i => i.href);
+            const longestMatch = hrefs
+              .filter((h) => pathname === h || pathname?.startsWith(`${h}/`))
+              .sort((a, b) => b.length - a.length)[0];
+
+            return visibleNavItems.map((item) => {
+              const isActive = item.href === longestMatch || pathname === item.href;
+              return (
+              <Link 
+                key={item.name}
+                href={item.href}
+                className={`mobile-tab-item ${isActive ? 'mobile-tab-item-active' : ''}`}
+                aria-current={isActive ? "page" : undefined}
+              >
+                {item.icon}
+                <span className="mt-1">{item.name}</span>
+              </Link>
+              );
+            });
           })()}
           
           {/* More menu button */}

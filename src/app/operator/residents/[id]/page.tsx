@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { cookies, headers } from 'next/headers';
+import { getMockResident, getMockAssessments, getMockIncidents, getMockNotes } from '@/lib/mock/residents';
 
 async function fetchResident(id: string) {
   const cookieHeader = cookies().toString();
@@ -33,14 +34,29 @@ async function fetchSection(id: string, section: 'assessments' | 'incidents' | '
 
 export default async function ResidentDetail({ params }: { params: { id: string } }) {
   if (process.env['NEXT_PUBLIC_RESIDENTS_ENABLED'] === 'false') return notFound();
-  const data = await fetchResident(params.id);
-  if (!data?.resident) return notFound();
-  const { resident } = data;
-  const [assessments, incidents, notes] = await Promise.all([
-    fetchSection(resident.id, 'assessments'),
-    fetchSection(resident.id, 'incidents'),
-    fetchSection(resident.id, 'notes'),
-  ]);
+  const mockCookie = cookies().get('carelink_mock_mode')?.value?.toString().trim().toLowerCase() || '';
+  const showMock = ['1','true','yes','on'].includes(mockCookie);
+  let resident: any;
+  let assessments: any = { items: [] };
+  let incidents: any = { items: [] };
+  let notes: any = { items: [] };
+  if (showMock) {
+    const r = getMockResident(params.id);
+    if (!r) return notFound();
+    resident = r;
+    assessments = getMockAssessments(r.id);
+    incidents = getMockIncidents(r.id);
+    notes = getMockNotes(r.id);
+  } else {
+    const data = await fetchResident(params.id);
+    if (!data?.resident) return notFound();
+    resident = data.resident;
+    [assessments, incidents, notes] = await Promise.all([
+      fetchSection(resident.id, 'assessments'),
+      fetchSection(resident.id, 'incidents'),
+      fetchSection(resident.id, 'notes'),
+    ]);
+  }
   return (
     <div className="p-4 sm:p-6">
       <Link href="/operator/residents" className="text-sm text-neutral-600 hover:underline">Back</Link>

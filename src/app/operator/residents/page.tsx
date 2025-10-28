@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { cookies, headers } from 'next/headers';
+import { MOCK_RESIDENTS } from '@/lib/mock/residents';
 
 async function fetchResidents() {
   const cookieHeader = cookies().toString();
@@ -18,8 +19,11 @@ async function fetchResidents() {
 
 export default async function ResidentsPage() {
   if (process.env['NEXT_PUBLIC_RESIDENTS_ENABLED'] === 'false') return notFound();
-  const data = await fetchResidents();
-  const items: Array<{ id: string; firstName: string; lastName: string; status: string }> = data.items ?? [];
+  const mockCookie = cookies().get('carelink_mock_mode')?.value?.toString().trim().toLowerCase() || '';
+  const showMock = ['1','true','yes','on'].includes(mockCookie);
+  const items: Array<{ id: string; firstName: string; lastName: string; status: string }> = showMock
+    ? MOCK_RESIDENTS
+    : (await fetchResidents()).items ?? [];
   return (
     <div className="p-4 sm:p-6">
       <div className="flex items-center justify-between">
