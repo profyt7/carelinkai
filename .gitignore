@@ -31,3 +31,4 @@ uploads/
  
 # Local backup artifacts
 node_modules.bak*/
+tsconfig.tsbuildinfo
