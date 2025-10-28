@@ -1,8 +1,13 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import { cookies } from 'next/headers';
 
 async function fetchResidents() {
-  const res = await fetch(`${process.env.NEXTAUTH_URL ?? ''}/api/residents?limit=50`, { cache: 'no-store' });
+  const cookieHeader = cookies().toString();
+  const res = await fetch(`${process.env.NEXTAUTH_URL ?? ''}/api/residents?limit=50`, {
+    cache: 'no-store',
+    headers: { cookie: cookieHeader },
+  });
   if (!res.ok) throw new Error('Failed to load residents');
   return res.json();
 }
