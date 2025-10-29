@@ -4,9 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { FiMapPin, FiDollarSign, FiClock, FiCheckCircle } from "react-icons/fi";
 import RequestShiftForm from "@/components/marketplace/RequestShiftForm";
-import CaregiverReviewForm from "@/components/marketplace/CaregiverReviewForm";
-import { cookies } from "next/headers";
-import { getMockCaregiverById } from "@/lib/mock/marketplace";
 
 export const dynamic = "force-dynamic";
 
@@ -293,37 +290,27 @@ export default async function CaregiverDetailPage({
             )}
           </div>
           
-          {/* CTA Buttons / Forms */}
-          {!isMock ? (
-            <>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Link 
-                  href="/messages" 
-                  className="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md transition-colors text-center"
-                >
-                  Message
-                </Link>
-                <Link 
-                  href={`/dashboard/inquiries?caregiverId=${caregiver.id}`}
-                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2 px-4 rounded-md transition-colors text-center"
-                >
-                  Request interview/shift
-                </Link>
-              </div>
-              <section className="mt-10">
-                <h2 className="text-lg font-medium text-gray-900 mb-4">Book a per-diem shift</h2>
-                <RequestShiftForm caregiverUserId={caregiver.userId} caregiverId={caregiver.id} />
-              </section>
-              <section className="mt-10">
-                <h2 className="text-lg font-medium text-gray-900 mb-4">Reviews</h2>
-                <CaregiverReviewForm caregiverId={caregiver.id} />
-              </section>
-            </>
-          ) : (
-            <div className="mt-8 p-4 rounded-md border border-gray-200 bg-gray-50 text-sm text-gray-700">
-              Messaging and booking are disabled in demo mode.
-            </div>
-          )}
+          {/* CTA Buttons */}
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Link 
+              href="/messages" 
+              className="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md transition-colors text-center"
+            >
+              Message
+            </Link>
+            <Link 
+              href={`/dashboard/inquiries?caregiverId=${caregiver.id}`}
+              className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2 px-4 rounded-md transition-colors text-center"
+            >
+              Request interview/shift
+            </Link>
+          </div>
+
+          {/* Per-diem shift booking */}
+          <section className="mt-10">
+            <h2 className="text-lg font-medium text-gray-900 mb-4">Book a per-diem shift</h2>
+            <RequestShiftForm caregiverUserId={caregiver.userId} caregiverId={caregiver.id} />
+          </section>
         </div>
       </div>
     </div>
