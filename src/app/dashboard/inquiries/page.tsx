@@ -240,13 +240,41 @@ export default function InquiriesDashboard() {
   const router = useRouter();
   
   // State for inquiries and filters
-  const [inquiries, setInquiries] = useState<Inquiry[]>(MOCK_INQUIRIES);
-  const [filteredInquiries, setFilteredInquiries] = useState<Inquiry[]>(MOCK_INQUIRIES);
+  const [inquiries, setInquiries] = useState<Inquiry[]>([]);
+  const [filteredInquiries, setFilteredInquiries] = useState<Inquiry[]>([]);
   const [statusFilter, setStatusFilter] = useState<InquiryStatus | 'ALL'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'date' | 'priority' | 'name'>('date');
   const [isLoading, setIsLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+
+  // Runtime mock toggle fetched from API
+  const [showMock, setShowMock] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/runtime/mocks', { cache: 'no-store', credentials: 'include' as RequestCredentials });
+        if (!res.ok) return;
+        const j = await res.json();
+        if (!cancelled) setShowMock(!!j?.show);
+      } catch {
+        if (!cancelled) setShowMock(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Seed mock inquiries when mock mode is on
+  useEffect(() => {
+    if (showMock) {
+      setInquiries(MOCK_INQUIRIES);
+      setFilteredInquiries(MOCK_INQUIRIES);
+    } else {
+      setInquiries([]);
+      setFilteredInquiries([]);
+    }
+  }, [showMock]);
 
   // Effect to handle filtering and sorting
   useEffect(() => {
@@ -360,7 +388,7 @@ export default function InquiriesDashboard() {
               </button>
               
               <Link
-                href="/search"
+                href="/dashboard/inquiries/new"
                 className="flex items-center justify-center rounded-md bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600"
               >
                 <FiPlus className="mr-2 h-4 w-4" />
@@ -444,7 +472,7 @@ export default function InquiriesDashboard() {
                 : "You haven't made any inquiries yet."}
             </p>
             <Link
-              href="/search"
+              href="/dashboard/inquiries/new"
               className="inline-flex items-center rounded-md bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600"
             >
               <FiPlus className="mr-2 h-4 w-4" />
