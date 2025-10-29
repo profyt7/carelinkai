@@ -122,3 +122,12 @@ export function getClientIp(req: Request): string {
   } catch {}
   return 'unknown';
 }
+
+// Helper to build standard rate limit headers
+export function buildRateLimitHeaders(result: RateLimitResult, limit: number): Record<string, string> {
+  return {
+    'X-RateLimit-Limit': String(limit),
+    'X-RateLimit-Remaining': String(Math.max(0, result.remaining)),
+    'X-RateLimit-Reset': String(Math.ceil(result.resetMs / 1000)),
+  };
+}

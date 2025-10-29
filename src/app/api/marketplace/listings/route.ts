@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth/next';
 import authOptions from '@/lib/auth';
 import { z, ZodError } from 'zod';
-import { rateLimitAsync, getClientIp } from '@/lib/rateLimit';
+import { rateLimitAsync, getClientIp, buildRateLimitHeaders } from '@/lib/rateLimit';
 import { Prisma } from '@prisma/client';
 
 /**
@@ -19,13 +19,16 @@ export async function GET(request: Request) {
     // Rate limit: 60 req/min per user or IP
     {
       const key = session?.user?.id || getClientIp(request);
-      const rr = await rateLimitAsync({ name: 'listings:GET', key, limit: 60, windowMs: 60_000 });
+      const limit = 60;
+      const rr = await rateLimitAsync({ name: 'listings:GET', key, limit, windowMs: 60_000 });
       if (!rr.allowed) {
         return NextResponse.json(
           { error: 'Rate limit exceeded' },
-          { status: 429, headers: { 'Retry-After': String(Math.ceil(rr.resetMs / 1000)) } }
+          { status: 429, headers: { ...buildRateLimitHeaders(rr, limit), 'Retry-After': String(Math.ceil(rr.resetMs / 1000)) } }
         );
       }
+      // attach headers on success responses below
+      var __rl_listings_get = { rr, limit };
     }
     
     // Extract filter parameters
@@ -51,6 +54,7 @@ export async function GET(request: Request) {
     const { page, pageSize } = PageSchema.safeParse({ page: pageRaw, pageSize: pageSizeRaw }).success
       ? (PageSchema.parse({ page: pageRaw, pageSize: pageSizeRaw }))
       : { page: Math.max(1, pageRaw || 1), pageSize: Math.min(100, Math.max(1, pageSizeRaw || 20)) };
+    const cursor = searchParams.get('cursor');
     const sortBy = searchParams.get('sortBy') || 'recency'; // recency (default), rateAsc, rateDesc, distanceAsc (when using radius)
     const skip = (page - 1) * pageSize;
 
@@ -126,29 +130,44 @@ export async function GET(request: Request) {
       // paginate
       listings = filtered.slice(skip, skip + pageSize);
     } else {
-      // Default DB-side pagination/sort
-      const result = await Promise.all([
-        (prisma as any).marketplaceListing.findMany({
+      // Default DB-side pagination/sort (prefer cursor-based when possible)
+      const orderBy = (
+        sortBy === 'rateAsc' ? [{ hourlyRateMin: 'asc' as const }, { id: 'asc' as const }] :
+        sortBy === 'rateDesc' ? [{ hourlyRateMax: 'desc' as const }, { id: 'asc' as const }] :
+        [{ createdAt: 'desc' as const }, { id: 'asc' as const }]
+      );
+
+      if (cursor) {
+        const rows = await (prisma as any).marketplaceListing.findMany({
           where,
-          orderBy:
-            sortBy === 'rateAsc' ? { hourlyRateMin: 'asc' } :
-            sortBy === 'rateDesc' ? { hourlyRateMax: 'desc' } :
-            { createdAt: 'desc' },
+          orderBy,
           include: {
-            _count: {
-              select: {
-                applications: true,
-                hires: true
-              }
-            }
+            _count: { select: { applications: true, hires: true } }
           },
-          skip,
-          take: pageSize
-        }),
-        (prisma as any).marketplaceListing.count({ where })
-      ]);
-      listings = result[0] as any[];
-      totalCount = result[1] as number;
+          cursor: { id: cursor },
+          skip: 1,
+          take: pageSize + 1,
+        });
+        listings = rows.slice(0, pageSize) as any[];
+        totalCount = await (prisma as any).marketplaceListing.count({ where });
+        (listings as any).__nextCursor = rows[pageSize]?.id ?? null;
+      } else {
+        const [rows, count] = await Promise.all([
+          (prisma as any).marketplaceListing.findMany({
+            where,
+            orderBy,
+            include: {
+              _count: { select: { applications: true, hires: true } }
+            },
+            skip,
+            take: pageSize + 1,
+          }),
+          (prisma as any).marketplaceListing.count({ where })
+        ]);
+        listings = rows.slice(0, pageSize) as any[];
+        totalCount = count as number;
+        (listings as any).__nextCursor = rows[pageSize]?.id ?? null;
+      }
     }
 
     // If caregiver is logged in, annotate whether they have applied to each returned listing
@@ -189,14 +208,18 @@ export async function GET(request: Request) {
     ) {
       const mockJobs = generateMockListings(12);
       return NextResponse.json(
-        { data: mockJobs, pagination: { page, pageSize, total: mockJobs.length } },
+        { data: mockJobs, pagination: { page, pageSize, total: mockJobs.length, hasMore: false, cursor: null } },
         { status: 200, headers: { 'Cache-Control': 'public, max-age=15, s-maxage=15, stale-while-revalidate=60' } }
       );
     }
 
+    // next-cursor + hasMore (for non-radius path)
+    const nextCursor = !useRadius ? ((listings as any).__nextCursor ?? null) : null;
+    const hasMore = !useRadius ? Boolean(nextCursor) : (totalCount > skip + pageSize);
+
     return NextResponse.json(
-      { data: formattedListings, pagination: { page, pageSize, total: totalCount } },
-      { status: 200, headers: { 'Cache-Control': 'public, max-age=15, s-maxage=15, stale-while-revalidate=60' } }
+      { data: formattedListings, pagination: { page, pageSize, total: totalCount, hasMore, cursor: nextCursor } },
+      { status: 200, headers: { 'Cache-Control': 'public, max-age=15, s-maxage=15, stale-while-revalidate=60', ...(typeof __rl_listings_get !== 'undefined' ? buildRateLimitHeaders(__rl_listings_get.rr, __rl_listings_get.limit) : {}) } }
     );
   } catch (error) {
     console.error('Error fetching marketplace listings:', error);
@@ -239,13 +262,15 @@ export async function POST(request: Request) {
     // Rate limit: 30 req/min per user (or IP if unauthenticated)
     {
       const key = session?.user?.id || getClientIp(request);
-      const rr = await rateLimitAsync({ name: 'listings:POST', key, limit: 30, windowMs: 60_000 });
+      const limit = 30;
+      const rr = await rateLimitAsync({ name: 'listings:POST', key, limit, windowMs: 60_000 });
       if (!rr.allowed) {
         return NextResponse.json(
           { error: 'Rate limit exceeded' },
-          { status: 429, headers: { 'Retry-After': String(Math.ceil(rr.resetMs / 1000)) } }
+          { status: 429, headers: { ...buildRateLimitHeaders(rr, limit), 'Retry-After': String(Math.ceil(rr.resetMs / 1000)) } }
         );
       }
+      var __rl_listings_post = { rr, limit };
     }
 
     // ------------------ Validation ------------------
@@ -294,7 +319,7 @@ export async function POST(request: Request) {
     
     return NextResponse.json(
       { data: listing },
-      { status: 201 }
+      { status: 201, headers: typeof __rl_listings_post !== 'undefined' ? buildRateLimitHeaders(__rl_listings_post.rr, __rl_listings_post.limit) : {} }
     );
   } catch (error: any) {
     // Validation errors

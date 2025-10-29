@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth/next';
 import authOptions from '@/lib/auth';
 import { z } from 'zod';
-import { rateLimitAsync, getClientIp } from '@/lib/rateLimit';
+import { rateLimitAsync, getClientIp, buildRateLimitHeaders } from '@/lib/rateLimit';
 
 // GET: list caregiver's favorite listings (IDs + basic listing data)
 export async function GET(request: Request) {
@@ -11,9 +11,13 @@ export async function GET(request: Request) {
     // Rate limit: 60 requests/min per user or IP
     const session = await getServerSession(authOptions);
     const key = session?.user?.id || getClientIp(request);
-    const rr = await rateLimitAsync({ name: 'favorites:GET', key, limit: 60, windowMs: 60_000 });
+    const limit = 60;
+    const rr = await rateLimitAsync({ name: 'favorites:GET', key, limit, windowMs: 60_000 });
     if (!rr.allowed) {
-      return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429, headers: { 'Retry-After': String(Math.ceil(rr.resetMs / 1000)) } });
+      return NextResponse.json(
+        { error: 'Rate limit exceeded' },
+        { status: 429, headers: { ...buildRateLimitHeaders(rr, limit), 'Retry-After': String(Math.ceil(rr.resetMs / 1000)) } }
+      );
     }
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
@@ -51,7 +55,10 @@ export async function GET(request: Request) {
       createdAt: f.createdAt,
       listing: f.listing,
     }));
-    return NextResponse.json({ data }, { status: 200 });
+    return NextResponse.json(
+      { data },
+      { status: 200, headers: buildRateLimitHeaders(rr, limit) }
+    );
   } catch (err) {
     console.error('GET /api/marketplace/favorites failed', err);
     return NextResponse.json({ error: 'Failed to fetch favorites' }, { status: 500 });
@@ -63,9 +70,13 @@ export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
     const key = session?.user?.id || getClientIp(request);
-    const rr = await rateLimitAsync({ name: 'favorites:POST', key, limit: 30, windowMs: 60_000 });
+    const limit = 30;
+    const rr = await rateLimitAsync({ name: 'favorites:POST', key, limit, windowMs: 60_000 });
     if (!rr.allowed) {
-      return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429, headers: { 'Retry-After': String(Math.ceil(rr.resetMs / 1000)) } });
+      return NextResponse.json(
+        { error: 'Rate limit exceeded' },
+        { status: 429, headers: { ...buildRateLimitHeaders(rr, limit), 'Retry-After': String(Math.ceil(rr.resetMs / 1000)) } }
+      );
     }
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
@@ -75,11 +86,8 @@ export async function POST(request: Request) {
     const Schema = z.object({ listingId: z.string().min(1) });
     const parsed = Schema.safeParse(body);
     if (!parsed.success) {
-      const flat = parsed.error.flatten();
-      if (flat.fieldErrors?.listingId) {
-        return NextResponse.json({ error: 'listingId is required' }, { status: 400 });
-      }
-      return NextResponse.json({ error: 'Invalid request', details: flat }, { status: 400 });
+      // Maintain backward-compatible error shape expected by tests
+      return NextResponse.json({ error: 'listingId is required' }, { status: 400 });
     }
     const { listingId } = parsed.data;
 
@@ -106,7 +114,10 @@ export async function POST(request: Request) {
     const created = await (prisma as any).favoriteListing.create({
       data: { caregiverId: caregiver.id, listingId }
     });
-    return NextResponse.json({ data: { id: created.id, listingId } }, { status: 201 });
+    return NextResponse.json(
+      { data: { id: created.id, listingId } },
+      { status: 201, headers: buildRateLimitHeaders(rr, limit) }
+    );
   } catch (err) {
     console.error('POST /api/marketplace/favorites failed', err);
     return NextResponse.json({ error: 'Failed to add favorite' }, { status: 500 });
@@ -118,9 +129,13 @@ export async function DELETE(request: Request) {
   try {
     const session = await getServerSession(authOptions);
     const key = session?.user?.id || getClientIp(request);
-    const rr = await rateLimitAsync({ name: 'favorites:DELETE', key, limit: 30, windowMs: 60_000 });
+    const limit = 30;
+    const rr = await rateLimitAsync({ name: 'favorites:DELETE', key, limit, windowMs: 60_000 });
     if (!rr.allowed) {
-      return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429, headers: { 'Retry-After': String(Math.ceil(rr.resetMs / 1000)) } });
+      return NextResponse.json(
+        { error: 'Rate limit exceeded' },
+        { status: 429, headers: { ...buildRateLimitHeaders(rr, limit), 'Retry-After': String(Math.ceil(rr.resetMs / 1000)) } }
+      );
     }
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
@@ -131,11 +146,8 @@ export async function DELETE(request: Request) {
     const Schema = z.object({ listingId: z.string().min(1) });
     const parsed = Schema.safeParse({ listingId });
     if (!parsed.success) {
-      const flat = parsed.error.flatten();
-      if (flat.fieldErrors?.listingId) {
-        return NextResponse.json({ error: 'listingId is required' }, { status: 400 });
-      }
-      return NextResponse.json({ error: 'Invalid request', details: flat }, { status: 400 });
+      // Maintain backward-compatible error shape expected by tests
+      return NextResponse.json({ error: 'listingId is required' }, { status: 400 });
     }
 
     const caregiver = await (prisma as any).caregiver.findUnique({ where: { userId: session.user.id } });
@@ -152,7 +164,10 @@ export async function DELETE(request: Request) {
     }
 
     await (prisma as any).favoriteListing.delete({ where: { id: existing.id } });
-    return NextResponse.json({ success: true }, { status: 200 });
+    return NextResponse.json(
+      { success: true },
+      { status: 200, headers: buildRateLimitHeaders(rr, limit) }
+    );
   } catch (err) {
     console.error('DELETE /api/marketplace/favorites failed', err);
     return NextResponse.json({ error: 'Failed to remove favorite' }, { status: 500 });
