@@ -1798,7 +1798,7 @@ export default function MarketplacePage() {
                       <p className="text-sm text-gray-700 line-clamp-2">{job.description}</p>
                     </Link>
                   ))}
-                </div>
+                </>
               )
             ) : (
               providersLoading && providers.length === 0 ? (
