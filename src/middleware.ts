@@ -6,13 +6,64 @@ export default withAuth(
   // `withAuth` augments your Request with the user's token
   function middleware(req) {
     try {
+      const urlObj = req.nextUrl
+      const qsMock = urlObj?.searchParams?.get?.('mock')?.toString().trim().toLowerCase() || '';
+      const qsOn = ['1','true','yes','on'].includes(qsMock);
+      const qsOff = ['0','false','no','off'].includes(qsMock);
+
+      // Runtime mock toggle: cookie takes precedence, then env
+      const cookieRaw = req.cookies?.get?.('carelink_mock_mode')?.value?.toString().trim().toLowerCase() || '';
+      const cookieOn = ['1', 'true', 'yes', 'on'].includes(cookieRaw);
+      const rawMock = (process.env['SHOW_SITE_MOCKS'] || process.env['NEXT_PUBLIC_SHOW_MOCK_DASHBOARD'] || '')
+        .toString()
+        .trim()
+        .toLowerCase();
+      const envOn = ['1', 'true', 'yes', 'on'].includes(rawMock);
+      let showMocks = cookieOn || envOn || qsOn;
+
+      // If query string explicitly toggles mock, set cookie and strip the param
+      if (qsOn || qsOff) {
+        // Clean the URL (remove the mock param) while preserving path
+        try {
+          const clean = new URL(req.url);
+          clean.searchParams.delete('mock');
+          const redirectRes = NextResponse.redirect(clean);
+          try {
+            redirectRes.cookies.set('carelink_mock_mode', qsOn ? '1' : '0', {
+              httpOnly: true,
+              sameSite: 'lax',
+              secure: process.env['NODE_ENV'] === 'production',
+              path: '/',
+              maxAge: qsOn ? 60 * 60 * 24 * 7 : 0,
+            });
+          } catch {}
+          return applySecurityHeaders(req, redirectRes);
+        } catch {}
+        // Fallback: no redirect possible, just set cookie and continue
+        const res = NextResponse.next();
+        try {
+          res.cookies.set('carelink_mock_mode', qsOn ? '1' : '0', {
+            httpOnly: true,
+            sameSite: 'lax',
+            secure: process.env['NODE_ENV'] === 'production',
+            path: '/',
+            maxAge: qsOn ? 60 * 60 * 24 * 7 : 0,
+          });
+        } catch {}
+        return applySecurityHeaders(req, res);
+      }
+
       // Allow unauthenticated access during E2E runs (never in production)
       if (process.env['NODE_ENV'] !== 'production' && process.env['NEXT_PUBLIC_E2E_AUTH_BYPASS'] === '1') {
-        return NextResponse.next();
+        const res = NextResponse.next();
+        try { res.cookies.set('e2e-bypass', '1', { path: '/' }); } catch {}
+        return applySecurityHeaders(req, res);
       }
       // Or via explicit header for test runners
       if (process.env['NODE_ENV'] !== 'production' && req.headers.get('x-e2e-bypass') === '1') {
-        return NextResponse.next();
+        const res = NextResponse.next();
+        try { res.cookies.set('e2e-bypass', '1', { path: '/' }); } catch {}
+        return applySecurityHeaders(req, res);
       }
       const { pathname } = req.nextUrl;
 
@@ -26,23 +77,48 @@ export default withAuth(
         '/search',                  // public search page
       ];
 
-      if (publicPaths.includes(pathname)) {
-        return NextResponse.next();
+      // In mock mode, also allow marketplace and search to be publicly viewable
+      const mockPublicPrefixes = ['/marketplace', '/search'];
+
+      if (publicPaths.includes(pathname) || (showMocks && mockPublicPrefixes.some(p => pathname === p || pathname.startsWith(p + '/')))) {
+        const res = NextResponse.next();
+        return applySecurityHeaders(req, res);
       }
 
       // (Any other custom logic could live here)
-      return NextResponse.next();
+      const res = NextResponse.next();
+      return applySecurityHeaders(req, res);
     } catch (err) {
       /* istanbul ignore next */
       console.error('Middleware error:', err);
       // On error let the request continue instead of crashing
-      return NextResponse.next();
+      const res = NextResponse.next();
+      return applySecurityHeaders(req, res);
     }
   },
   {
     callbacks: {
       // The middleware runs when the authorized callback returns `true`
       authorized({ req, token }) {
+        // Allow public access to selected routes when runtime mock mode is enabled
+        try {
+          const cookieRaw = req?.cookies?.get?.('carelink_mock_mode')?.value?.toString().trim().toLowerCase() || '';
+          const cookieOn = ['1', 'true', 'yes', 'on'].includes(cookieRaw);
+          const qsMock = req?.nextUrl?.searchParams?.get?.('mock')?.toString().trim().toLowerCase() || '';
+          const qsOn = ['1','true','yes','on'].includes(qsMock);
+          const rawMock = (process.env['SHOW_SITE_MOCKS'] || process.env['NEXT_PUBLIC_SHOW_MOCK_DASHBOARD'] || '')
+            .toString()
+            .trim()
+            .toLowerCase();
+          const envOn = ['1', 'true', 'yes', 'on'].includes(rawMock);
+          const showMocks = cookieOn || envOn || qsOn;
+          if (showMocks) {
+            const pathname = req?.nextUrl?.pathname || '';
+            if (pathname === '/' || pathname === '/search' || pathname.startsWith('/marketplace')) {
+              return true;
+            }
+          }
+        } catch {}
         // E2E bypass via env flag or explicit header
         try {
           if (process.env['NODE_ENV'] !== 'production' && process.env['NEXT_PUBLIC_E2E_AUTH_BYPASS'] === '1') return true;
@@ -76,3 +152,72 @@ export const config = {
     '/((?!api|_next|static|public|favicon\\.ico|auth|sw\\.js|manifest\\.json|offline\\.html).+)',
   ],
 };
+
+/**
+ * Apply security headers (CSP, HSTS, etc.)
+ */
+function applySecurityHeaders(req: Request, res: NextResponse) {
+  const isProd = process.env['NODE_ENV'] === 'production';
+  const enableCsp = process.env['NEXT_PUBLIC_ENABLE_CSP'] === '1';
+
+  // Strict-Transport-Security (HSTS) - only in production
+  if (isProd) {
+    res.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+  }
+
+  // Common security headers
+  res.headers.set('X-Content-Type-Options', 'nosniff');
+  res.headers.set('X-Frame-Options', 'DENY');
+  res.headers.set('Referrer-Policy', 'no-referrer');
+  res.headers.set(
+    'Permissions-Policy',
+    [
+      "geolocation=(self)",
+      "camera=()",
+      "microphone=()",
+      "payment=(self)",
+      "fullscreen=(self)",
+      "accelerometer=()",
+      "autoplay=(self)",
+      "clipboard-read=(self)",
+      "clipboard-write=(self)",
+    ].join(', ')
+  );
+
+  // Content-Security-Policy (only enable in production to avoid dev tooling issues)
+  const cspParts = [
+    "default-src 'self'",
+    // Allow Next.js inline styles; tighten in prod if hashed
+    isProd ? "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com" : "style-src 'self' 'unsafe-inline'",
+    // Scripts: allow self; allow unsafe-eval in dev for React Refresh
+    isProd ? "script-src 'self' 'unsafe-inline' https://js.stripe.com" : "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+    // Images from self, data URIs, and https
+    "img-src 'self' data: blob: https:",
+    // Fonts
+    "font-src 'self' data: https: https://fonts.gstatic.com",
+    // Connections (API, websockets for dev)
+    isProd ? "connect-src 'self' https: https://js.stripe.com https://api.stripe.com" : "connect-src 'self' ws: wss: http: https:",
+    // Media
+    "media-src 'self'",
+    // Frames
+    "frame-ancestors 'none'",
+    // Allow Stripe iframes
+    "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
+    // Workers
+    "worker-src 'self' blob:",
+    // Base URI
+    "base-uri 'self'",
+    // Form actions
+    "form-action 'self'"
+  ];
+
+  // Do not set CSP for Next.js assets routes to avoid duplication issues
+  const url = new URL((req as any).url);
+  const path = url.pathname;
+  const skipCsp = path.startsWith('/_next') || path.startsWith('/api');
+  if (isProd && enableCsp && !skipCsp) {
+    res.headers.set('Content-Security-Policy', cspParts.join('; '));
+  }
+
+  return res;
+}

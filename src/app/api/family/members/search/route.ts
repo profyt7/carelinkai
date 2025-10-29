@@ -2,8 +2,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireAnyRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { checkFamilyMembership } from "@/lib/services/family";
@@ -11,7 +10,8 @@ import { checkFamilyMembership } from "@/lib/services/family";
 export async function GET(request: NextRequest) {
   try {
     // Get session and verify authentication
-    const session = await getServerSession(authOptions);
+    const { session, error } = await requireAnyRole(["FAMILY"] as any);
+      if (error) return error;
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
