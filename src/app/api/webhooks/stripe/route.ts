@@ -67,7 +67,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
       }
     }
-
     // Handle transfer.* events for caregiver payouts reconciliation
     if (event.type && event.type.startsWith("transfer.")) {
       const transfer = event.data.object as Stripe.Transfer;
