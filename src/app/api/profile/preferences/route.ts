@@ -108,6 +108,9 @@ const preferencesSchema = z.object({
   privacy: privacySettingsSchema.optional(),
   accessibility: accessibilityOptionsSchema.optional(),
   display: displayPrefsSchema.optional(),
+  search: z.object({
+    residentProfile: z.any().optional(),
+  }).optional(),
   roleSpecific: z.union([
     familyPrefsSchema,
     operatorPrefsSchema,
@@ -256,7 +259,7 @@ export async function PUT(request: NextRequest) {
     const validatedData = validationResult.data;
     
     // Extract different types of preferences
-    const { notifications, privacy, accessibility, display, roleSpecific } = validatedData;
+    const { notifications, privacy, accessibility, display, search, roleSpecific } = validatedData;
     
     // Update base user preferences
     const existingPreferences = (user.preferences as any) || {};
@@ -265,6 +268,7 @@ export async function PUT(request: NextRequest) {
       privacy: privacy || existingPreferences.privacy,
       accessibility: accessibility || existingPreferences.accessibility,
       display: display || existingPreferences.display,
+      search: search || existingPreferences.search,
       // Persist any roleSpecific section inside the main preferences JSON
       roleSpecific: roleSpecific || existingPreferences.roleSpecific
     };
