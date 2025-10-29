@@ -259,10 +259,32 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
 }) => {
   // State
   const [isOpen, setIsOpen] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [activeToasts, setActiveToasts] = useState<Notification[]>([]);
   const [filter, setFilter] = useState<NotificationType | 'ALL'>('ALL');
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Runtime mock toggle fetched from API
+  const [showMock, setShowMock] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/runtime/mocks', { cache: 'no-store', credentials: 'include' as RequestCredentials });
+        if (!res.ok) return;
+        const j = await res.json();
+        if (!cancelled) setShowMock(!!j?.show);
+      } catch {
+        if (!cancelled) setShowMock(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Seed notifications based on mock toggle
+  useEffect(() => {
+    setNotifications(showMock ? MOCK_NOTIFICATIONS : []);
+  }, [showMock]);
   
   // Get WebSocket context
   // In a real implementation, we would use the WebSocket context
@@ -387,6 +409,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
   
   // Simulate receiving a new notification
   useEffect(() => {
+    if (!showMock) return; // only simulate when mock mode is on
     const interval = setInterval(() => {
       // 10% chance of receiving a new notification every 30 seconds
       if (Math.random() < 0.1 && connectionState === 'CONNECTED') {
@@ -408,10 +431,11 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
     }, 30000); // Check every 30 seconds
     
     return () => clearInterval(interval);
-  }, [connectionState, showToast]);
+  }, [connectionState, showToast, showMock]);
   
   // For testing: show a toast notification on mount
   useEffect(() => {
+    if (!showMock) return; // only show test toast in mock mode
     const testNotification: Notification = {
       id: `notif-test-${Date.now()}`,
       type: 'MESSAGE',
@@ -428,7 +452,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
     }, 2000);
     
     return () => clearTimeout(timer);
-  }, [showToast]);
+  }, [showToast, showMock]);
   
   return (
     <>

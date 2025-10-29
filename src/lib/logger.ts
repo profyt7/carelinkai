@@ -1,149 +1,58 @@
-/**
- * CareLinkAI Logger Utility
- * 
- * A simple, universal logger that works in both browser and Node.js environments.
- * Features:
- * - Different log levels (debug, info, warn, error)
- * - Timestamps for all logs
- * - Environment-aware (only shows debug in development)
- * - Consistent formatting
- * - Object and multi-parameter support
- */
+import pino from 'pino';
 
-// Determine if we're in a browser or Node.js environment
-const isBrowser = typeof window !== 'undefined';
-const isDevelopment = process.env["NODE_ENV"] === 'development';
-
-// Log level definitions
-export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
-
-// ANSI color codes for Node.js console
-const colors = {
-  reset: '\x1b[0m',
-  debug: '\x1b[36m', // Cyan
-  info: '\x1b[32m',  // Green
-  warn: '\x1b[33m',  // Yellow
-  error: '\x1b[31m', // Red
-  timestamp: '\x1b[90m' // Gray
+const redact = {
+  paths: [
+    'req.headers.authorization',
+    'req.headers.cookie',
+    'request.headers.authorization',
+    'request.headers.cookie',
+    'user.password',
+    'user.ssn',
+    'metadata.*',
+  ],
+  censor: '[Redacted]'
 };
 
-/**
- * Format timestamp for logs
- * @returns {string} Formatted timestamp [HH:MM:SS.mmm]
- */
-function getTimestamp(): string {
-  const now = new Date();
-  const iso = now.toISOString();
-  // Split ISO string to safely extract the time portion without risking
-  // undefined access when using strict optional checks.
-  const parts = iso.split('T');
-  const part1 = parts.length > 1 ? parts[1] : '';
-  const time = part1 ? part1.slice(0, -1) : iso;
-  return `[${time}]`;
-}
+const baseLogger: any = pino({
+  level: process.env['LOG_LEVEL'] || 'info',
+  transport: process.env['NODE_ENV'] === 'development' ? { target: 'pino-pretty' } : undefined,
+  redact,
+  base: undefined,
+});
 
-/**
- * Format log arguments into a string
- * @param args - Arguments to format
- * @returns {string} Formatted string
- */
-function formatArgs(args: any[]): string {
-  return args.map(arg => {
-    if (typeof arg === 'object' && arg !== null) {
-      try {
-        return JSON.stringify(arg, null, 2);
-      } catch (e) {
-        return String(arg);
-      }
-    }
-    return String(arg);
-  }).join(' ');
-}
-
-/**
- * Log a message with the specified level
- * @param level - Log level
- * @param args - Arguments to log
- */
-function log(level: LogLevel, ...args: any[]): void {
-  // Skip debug logs in production
-  if (level === 'debug' && !isDevelopment) {
-    return;
-  }
-
-  const timestamp = getTimestamp();
-  const formattedArgs = formatArgs(args);
-
-  if (isBrowser) {
-    // Browser logging with console styling
-    const styles = {
-      debug: 'color: #00b3e6',
-      info: 'color: #00cc66',
-      warn: 'color: #ffcc00',
-      error: 'color: #ff3300',
-      timestamp: 'color: #888888'
-    };
-
-    console[level === 'debug' ? 'log' : level](
-      `%c${timestamp} %c[${level.toUpperCase()}]`, 
-      styles.timestamp, 
-      styles[level], 
-      ...args
-    );
-  } else {
-    // Node.js logging with ANSI colors
-    const colorCode = colors[level];
-    const message = `${colors.timestamp}${timestamp}${colors.reset} ${colorCode}[${level.toUpperCase()}]${colors.reset} ${formattedArgs}`;
-    console[level === 'debug' ? 'log' : level](message);
-  }
-}
-
-/**
- * Logger interface with methods for each log level
- */
-export const logger = {
-  /**
-   * Log debug message (only in development)
-   * @param args - Arguments to log
-   */
-  debug: (...args: any[]): void => log('debug', ...args),
-
-  /**
-   * Log informational message
-   * @param args - Arguments to log
-   */
-  info: (...args: any[]): void => log('info', ...args),
-
-  /**
-   * Log warning message
-   * @param args - Arguments to log
-   */
-  warn: (...args: any[]): void => log('warn', ...args),
-
-  /**
-   * Log error message
-   * @param args - Arguments to log
-   */
-  error: (...args: any[]): void => log('error', ...args),
-
-  /**
-   * Log a message with a custom level
-   * @param level - Log level
-   * @param args - Arguments to log
-   */
-  log: (level: LogLevel, ...args: any[]): void => log(level, ...args),
-
-  /**
-   * Create a scoped logger that prefixes all logs with a scope name
-   * @param scope - Scope name to prefix logs with
-   * @returns Scoped logger instance
-   */
-  scope: (scope: string) => ({
-    debug: (...args: any[]): void => log('debug', `[${scope}]`, ...args),
-    info: (...args: any[]): void => log('info', `[${scope}]`, ...args),
-    warn: (...args: any[]): void => log('warn', `[${scope}]`, ...args),
-    error: (...args: any[]): void => log('error', `[${scope}]`, ...args),
-  })
+// Backward-compatible wrapper (keeps existing call sites working)
+const wrapper = {
+  debug: (...args: any[]) => baseLogger.debug(...(args as any)),
+  info: (...args: any[]) => baseLogger.info(...(args as any)),
+  warn: (...args: any[]) => baseLogger.warn(...(args as any)),
+  error: (...args: any[]) => baseLogger.error(...(args as any)),
 };
 
-export default logger;
+// Structured child logger with context bindings
+export function getLogger(bindings?: Record<string, any>) {
+  return bindings ? baseLogger.child(bindings) : baseLogger;
+}
+
+// Create a child logger bound to request and tracing context
+export function bindRequestLogger(req: Request | { headers: Headers }) {
+  let reqId: string | undefined;
+  try { reqId = (req as any)?.headers?.get?.('x-request-id') || undefined; } catch {}
+
+  let traceId: string | undefined;
+  try {
+    // Lazy import to avoid bundling issues in edge/client
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const api = require('@opentelemetry/api');
+    const span = api.trace.getSpan(api.context.active());
+    const ctx = span && (span.context?.() || span.spanContext?.());
+    traceId = ctx?.traceId;
+  } catch {}
+
+  const bindings: Record<string, any> = {};
+  if (reqId) bindings['reqId'] = reqId;
+  if (traceId) bindings['traceId'] = traceId;
+  return getLogger(bindings);
+}
+
+export const logger = wrapper;
+export default wrapper;
