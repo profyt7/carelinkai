@@ -8,46 +8,112 @@ export const revalidate = 0;
 
 const prisma = new PrismaClient();
 
-export default async function OperatorCompliancePage() {
+export default async function OperatorCompliancePage({ searchParams }: { searchParams?: { operatorId?: string } }) {
   const session = await getServerSession(authOptions);
   const email = session?.user?.email ?? null;
   const user = email ? await prisma.user.findUnique({ where: { email } }) : null;
+  const isAdmin = user?.role === UserRole.ADMIN;
+  const operatorOverrideId = isAdmin ? (searchParams?.operatorId || null) : null;
   const op = user?.role === UserRole.OPERATOR ? await prisma.operator.findUnique({ where: { userId: user.id } }) : null;
-  const whereHome = op ? { operatorId: op.id } : {};
+  const effectiveOperatorId = operatorOverrideId || op?.id || null;
 
-  const [licenses, inspections] = await Promise.all([
+  const homeFilter = effectiveOperatorId ? { operatorId: effectiveOperatorId } : {};
+
+  const [licenses, inspections, operators] = await Promise.all([
     prisma.license.findMany({
-      where: { home: whereHome },
+      where: { home: homeFilter },
       orderBy: { expirationDate: 'asc' },
       take: 20,
       include: { home: { select: { name: true } } },
     }),
     prisma.inspection.findMany({
-      where: { home: whereHome },
+      where: { home: homeFilter },
       orderBy: { inspectionDate: 'desc' },
       take: 20,
       include: { home: { select: { name: true } } },
     }),
+    isAdmin ? prisma.operator.findMany({ orderBy: { companyName: 'asc' }, select: { id: true, companyName: true } }) : Promise.resolve([] as any[]),
   ]);
 
   const today = new Date();
   const soon = new Date();
   soon.setMonth(soon.getMonth() + 2);
 
+  const selected = effectiveOperatorId || "";
+  const selectedName = selected
+    ? operators.find((o: any) => o.id === selected)?.companyName || 'Unknown Operator'
+    : 'All Operators';
+
   return (
     <DashboardLayout title="Compliance" showSearch={false}>
       <div className="p-4 sm:p-6 space-y-6">
+        {/* Quick create forms for licenses and inspections */}
+        <div className="card">
+          <div className="font-medium mb-3">Quick Actions</div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <form action={`/api/operator/homes/${licenses[0]?.homeId || inspections[0]?.homeId || ''}/licenses`} method="post" encType="multipart/form-data" className="space-y-2">
+              <div className="text-sm font-medium">Add License</div>
+              <div className="grid grid-cols-2 gap-2">
+                <input name="type" placeholder="Type" className="form-input" required />
+                <input name="licenseNumber" placeholder="License #" className="form-input" required />
+                <input name="issueDate" type="date" className="form-input" required />
+                <input name="expirationDate" type="date" className="form-input" required />
+                <input name="status" placeholder="Status" className="form-input" defaultValue="ACTIVE" />
+                <input name="file" type="file" accept="application/pdf,image/*" className="form-input col-span-2" />
+              </div>
+              <button className="btn btn-primary" type="submit">Create License</button>
+            </form>
+            <form action={`/api/operator/homes/${licenses[0]?.homeId || inspections[0]?.homeId || ''}/inspections`} method="post" encType="multipart/form-data" className="space-y-2">
+              <div className="text-sm font-medium">Add Inspection</div>
+              <div className="grid grid-cols-2 gap-2">
+                <input name="inspectionType" placeholder="Type" className="form-input" required />
+                <input name="inspector" placeholder="Inspector" className="form-input" required />
+                <input name="inspectionDate" type="date" className="form-input" required />
+                <input name="result" placeholder="Result" className="form-input" defaultValue="PASSED" />
+                <input name="findings" placeholder="Findings (optional)" className="form-input col-span-2" />
+                <input name="file" type="file" accept="application/pdf,image/*" className="form-input col-span-2" />
+              </div>
+              <button className="btn btn-primary" type="submit">Create Inspection</button>
+            </form>
+          </div>
+        </div>
+        {isAdmin && (
+          <div className="card">
+            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+              <div>
+                <div className="text-sm text-neutral-500">Viewing scope</div>
+                <div className="text-lg font-medium">{selectedName}</div>
+              </div>
+              <form method="GET" className="flex items-center gap-2">
+                <label className="text-sm text-neutral-600" htmlFor="operatorId">Operator</label>
+                <select id="operatorId" name="operatorId" defaultValue={selected} className="form-select">
+                  <option value="">All Operators</option>
+                  {operators.map((o: any) => (
+                    <option key={o.id} value={o.id}>{o.companyName}</option>
+                  ))}
+                </select>
+                <button className="btn btn-secondary" type="submit">Apply</button>
+              </form>
+            </div>
+          </div>
+        )}
         <div className="card">
           <div className="font-medium mb-3">Licenses (expiring soon)</div>
           <div className="divide-y">
             {licenses.filter(l => new Date(l.expirationDate) <= soon).map((l) => (
-              <div key={l.id} className="py-3 flex items-center justify-between">
-                <div>
-                  <div className="font-medium">{l.home.name} · {l.type}</div>
-                  <div className="text-sm text-neutral-500">License #{l.licenseNumber}</div>
+              <div key={l.id} className="py-3 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="font-medium truncate">{l.home.name} · {l.type}</div>
+                  <div className="text-sm text-neutral-500 truncate">License #{l.licenseNumber}</div>
                 </div>
-                <div className={`text-sm ${new Date(l.expirationDate) < today ? 'text-red-600' : 'text-amber-600'}`}>
-                  Expires {new Date(l.expirationDate).toLocaleDateString()}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <a className="btn btn-secondary btn-sm" href={`/api/operator/homes/${l.homeId}/licenses/${l.id}/download`}>Download</a>
+                  <form action={`/api/operator/homes/${l.homeId}/licenses/${l.id}`} method="post" onSubmit={(e) => { if (!confirm('Delete this license?')) e.preventDefault(); }}>
+                    <button className="btn btn-danger btn-sm" type="submit">Delete</button>
+                  </form>
+                  <div className={`text-sm ${new Date(l.expirationDate) < today ? 'text-red-600' : 'text-amber-600'}`}>
+                    {new Date(l.expirationDate).toLocaleDateString()}
+                  </div>
                 </div>
               </div>
             ))}
@@ -61,13 +127,21 @@ export default async function OperatorCompliancePage() {
           <div className="font-medium mb-3">Recent Inspections</div>
           <div className="divide-y">
             {inspections.map((i) => (
-              <div key={i.id} className="py-3 flex items-center justify-between">
-                <div>
-                  <div className="font-medium">{i.home.name} · {i.inspectionType}</div>
-                  <div className="text-sm text-neutral-500">By {i.inspector}</div>
+              <div key={i.id} className="py-3 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="font-medium truncate">{i.home.name} · {i.inspectionType}</div>
+                  <div className="text-sm text-neutral-500 truncate">By {i.inspector}</div>
                 </div>
-                <div className="text-sm text-neutral-700">
-                  {new Date(i.inspectionDate).toLocaleDateString()} · {i.result}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {i.documentUrl ? (
+                    <a className="btn btn-secondary btn-sm" href={`/api/operator/homes/${i.homeId}/inspections/${i.id}/download`}>Download</a>
+                  ) : null}
+                  <form action={`/api/operator/homes/${i.homeId}/inspections/${i.id}`} method="post" onSubmit={(e) => { if (!confirm('Delete this inspection?')) e.preventDefault(); }}>
+                    <button className="btn btn-danger btn-sm" type="submit">Delete</button>
+                  </form>
+                  <div className="text-sm text-neutral-700">
+                    {new Date(i.inspectionDate).toLocaleDateString()} · {i.result}
+                  </div>
                 </div>
               </div>
             ))}

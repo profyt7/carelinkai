@@ -1,4 +1,4 @@
-﻿-- CreateTable
+-- CreateTable
 CREATE TABLE "FavoriteListing" (
     "id" TEXT NOT NULL,
     "caregiverId" TEXT NOT NULL,
