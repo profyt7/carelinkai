@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { UserRole } from "@prisma/client";
 import EmailDemo from "@/components/email/EmailDemo";
-import { FiMail, FiSettings, FiUsers, FiDatabase, FiShield } from "react-icons/fi";
+import { FiMail, FiSettings, FiUsers, FiDatabase, FiShield, FiToggleLeft, FiToggleRight } from "react-icons/fi";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 
 // Admin Tools Page - Restricted to admin and staff users
@@ -14,6 +14,11 @@ export default function AdminToolsPage() {
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const isAdmin = (session?.user?.role as UserRole | undefined) === UserRole.ADMIN;
+  // Mock mode state
+  const [mockLoading, setMockLoading] = useState(false);
+  const [mockEnabled, setMockEnabled] = useState<boolean | null>(null);
+  const [mockError, setMockError] = useState<string | null>(null);
 
   // Check authorization
   useEffect(() => {
@@ -38,6 +43,49 @@ export default function AdminToolsPage() {
     }
   }, [session, status, router]);
 
+  // Load current mock mode status (admin endpoint)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        setMockLoading(true);
+        setMockError(null);
+        const res = await fetch("/api/mock-mode", { cache: "no-store", credentials: "include" as RequestCredentials });
+        if (!res.ok) {
+          const text = (await res.text()) || "Failed to load mock mode status";
+          if (!cancelled) setMockError(res.status === 403 ? "Admin privilege required" : text);
+          return;
+        }
+        const j = await res.json();
+        if (!cancelled) setMockEnabled(!!j?.show);
+      } catch (e: any) {
+        if (!cancelled) setMockError("Unable to load mock mode status");
+      } finally {
+        if (!cancelled) setMockLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const setMock = async (on: boolean) => {
+    try {
+      setMockLoading(true);
+      setMockError(null);
+      const res = await fetch(`/api/mock-mode?on=${on ? "1" : "0"}`, { method: "GET", cache: "no-store", credentials: "include" as RequestCredentials });
+      if (!res.ok) {
+        const text = (await res.text()) || "Failed to toggle";
+        setMockError(res.status === 403 ? "Admin privilege required" : text);
+        return;
+      }
+      const j = await res.json();
+      setMockEnabled(!!j?.show);
+    } catch (e: any) {
+      setMockError("Unable to toggle mock mode");
+    } finally {
+      setMockLoading(false);
+    }
+  };
+
   // Loading state
   if (isLoading) {
     return (
@@ -54,6 +102,49 @@ export default function AdminToolsPage() {
 
   // Available admin tools configuration
   const adminTools = [
+    {
+      id: "mock-mode",
+      title: "Demo Data (Mock Mode)",
+      description: "Enable demo data across the app for product walkthroughs.",
+      icon: mockEnabled ? <FiToggleRight size={24} /> : <FiToggleLeft size={24} />,
+      component: (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm text-neutral-600">Current status</div>
+              <div className="text-lg font-medium">
+                {mockLoading ? "Checking…" : mockEnabled ? "Enabled" : mockEnabled === false ? "Disabled" : "—"}
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setMock(true)}
+                disabled={!isAdmin || mockLoading}
+                className="rounded-md bg-primary-600 px-3 py-2 text-sm text-white hover:bg-primary-700 disabled:opacity-50"
+              >
+                Enable
+              </button>
+              <button
+                onClick={() => setMock(false)}
+                disabled={!isAdmin || mockLoading}
+                className="rounded-md border px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+              >
+                Disable
+              </button>
+            </div>
+          </div>
+          {mockError && (
+            <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+              {mockError}
+            </div>
+          )}
+          <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3 text-xs text-neutral-700">
+            Tip: You can also toggle via URL by appending <code>?mock=1</code> to any page. Status is stored in an HttpOnly cookie for 7 days.
+          </div>
+        </div>
+      ),
+      isActive: true,
+    },
     {
       id: "email-notifications",
       title: "Email Notifications",

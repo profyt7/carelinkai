@@ -2,8 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { FiUser, FiDollarSign } from "react-icons/fi";
 import { headers } from "next/headers";
-import { getOriginFromHeaders } from "@/lib/http";
 import InviteCaregiverButton from "@/components/marketplace/InviteCaregiverButton";
+
 type RecommendedCaregiver = {
   id: string;
   score: number;
@@ -193,8 +193,14 @@ export default async function RecommendedCaregivers({ listingId }: { listingId: 
               {/* Match score + reasons */}
               {item.score > 0 && (
                 <div className="text-xs text-gray-600 mb-3">
-                  <div>
+                  <div className="flex items-center justify-between">
                     <span className="font-medium text-gray-800">{item.score}% match</span>
+                    <ExplainMatchTrigger
+                      title={`${caregiver.user.firstName} ${caregiver.user.lastName}`}
+                      score={item.score}
+                      reasons={item.reasons}
+                      className="text-[11px] px-2 py-1 border rounded-md text-neutral-700 hover:bg-neutral-50"
+                    />
                   </div>
                   {item.reasons && item.reasons.length > 0 && (
                     <ul className="mt-1 list-disc pl-5 space-y-0.5">
@@ -206,24 +212,19 @@ export default async function RecommendedCaregivers({ listingId }: { listingId: 
                 </div>
               )}
               
-              {/* Actions / Status */}
-              <div className="mt-auto flex gap-2 items-center">
+              {/* View button placeholder */}
+              <div className="mt-auto flex gap-2">
                 <Link
                   href={`/marketplace/caregivers/${item.id}`}
                   className="flex-1 text-center bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
                 >
                   View
                 </Link>
-                {hasStatus ? (
-                  <span className={`px-3 py-1.5 text-sm font-medium rounded-md ${statusClass}`}>
-                    {statusLabel}
-                  </span>
-                ) : (
-                  <InviteCaregiverButton
-                    listingId={listingId}
-                    caregiverId={item.id}
-                  />
-                )}
+                {/* Invite button */}
+                <InviteCaregiverButton
+                  listingId={listingId}
+                  caregiverId={item.id}
+                />
               </div>
             </div>
           );

@@ -10,6 +10,7 @@ import RecommendedListings from "@/components/marketplace/RecommendedListings";
 import { fetchJsonCached } from "@/lib/fetchCache";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { VirtuosoGrid } from "react-virtuoso";
+import { MOCK_CATEGORIES as SHARED_MOCK_CATEGORIES, MOCK_CAREGIVERS as SHARED_MOCK_CAREGIVERS, MOCK_LISTINGS as SHARED_MOCK_LISTINGS, MOCK_PROVIDERS as SHARED_MOCK_PROVIDERS } from "@/lib/mock/marketplace";
 
 const LAST_TAB_KEY = "marketplace:lastTab";
 const LS_KEYS = {
@@ -67,6 +68,23 @@ export default function MarketplacePage() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const didInitFromUrl = useRef(false);
+
+  // Runtime mock toggle fetched from API (works in Docker/runtime envs)
+  const [showMock, setShowMock] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/runtime/mocks', { cache: 'no-store', credentials: 'include' as RequestCredentials });
+        if (!res.ok) return;
+        const j = await res.json();
+        if (!cancelled) setShowMock(!!j?.show);
+      } catch {
+        if (!cancelled) setShowMock(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   // Include "providers" as a valid tab option
   const [activeTab, setActiveTab] = useState<"jobs" | "caregivers" | "providers">(
@@ -153,6 +171,15 @@ export default function MarketplacePage() {
   const [prGeoLat, setPrGeoLat] = useState<number | null>(null);
   const [prGeoLng, setPrGeoLng] = useState<number | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
+
+  // Mock data (only used when showMock is true)
+  const MOCK_CATEGORIES = useMemo<Record<string, { slug: string; name: string }[]>>(() => SHARED_MOCK_CATEGORIES, []);
+
+  const MOCK_CAREGIVERS = useMemo<Caregiver[]>(() => SHARED_MOCK_CAREGIVERS as Caregiver[], []);
+
+  const MOCK_LISTINGS = useMemo<Listing[]>(() => SHARED_MOCK_LISTINGS as Listing[], []);
+
+  const MOCK_PROVIDERS = useMemo<Provider[]>(() => SHARED_MOCK_PROVIDERS as Provider[], []);
   // Caregiver favorites (for families; local fallback for others)
   const CG_FAV_KEY = 'marketplace:caregiver-favorites:v1';
   const [caregiverFavorites, setCaregiverFavorites] = useState<Set<string>>(new Set());
@@ -613,6 +640,10 @@ export default function MarketplacePage() {
   useEffect(() => {
     // Load marketplace categories once
     const loadCategories = async () => {
+      if (showMock) {
+        setCategories(MOCK_CATEGORIES);
+        return;
+      }
       try {
         const res = await fetch("/api/marketplace/categories");
         const json = await res.json();
@@ -622,7 +653,7 @@ export default function MarketplacePage() {
       }
     };
     loadCategories();
-  }, []);
+  }, [showMock, MOCK_CATEGORIES]);
 
   // Saved searches: load/save helpers
   useEffect(() => {
@@ -666,6 +697,13 @@ export default function MarketplacePage() {
     const run = async () => {
       setCaregiversLoading(true);
       try {
+        if (showMock) {
+          setCaregivers(MOCK_CAREGIVERS);
+          setCgTotal(MOCK_CAREGIVERS.length);
+          setCgHasMoreSvr(false);
+          setCgCursor(null);
+          return;
+        }
         const params = new URLSearchParams();
         if (debouncedSearch) params.set("q", debouncedSearch);
         if (debouncedCity) params.set("city", debouncedCity);
@@ -704,7 +742,7 @@ export default function MarketplacePage() {
     return () => {
       controller.abort();
     };
-  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, settings, careTypes, debouncedMinRate, debouncedMaxRate, debouncedMinExperience, cgPage, cgSort, cgRadius, cgGeoLat, cgGeoLng, cgCursor]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, settings, careTypes, debouncedMinRate, debouncedMaxRate, debouncedMinExperience, cgPage, cgSort, cgRadius, cgGeoLat, cgGeoLng, cgCursor, showMock, MOCK_CAREGIVERS]);
 
   // Reset caregivers list when non-page filters change
   const cgQueryKey = useMemo(() => JSON.stringify({
@@ -732,6 +770,13 @@ export default function MarketplacePage() {
     const run = async () => {
       setListingsLoading(true);
       try {
+        if (showMock) {
+          setListings(MOCK_LISTINGS);
+          setJobTotal(MOCK_LISTINGS.length);
+          setJobHasMoreSvr(false);
+          setJobCursor(null);
+          return;
+        }
         const params = new URLSearchParams();
         if (debouncedSearch) params.set("q", debouncedSearch);
         if (debouncedCity) params.set("city", debouncedCity);
@@ -771,7 +816,7 @@ export default function MarketplacePage() {
     return () => {
       controller.abort();
     };
-  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, debouncedZip, settings, careTypes, services, postedByMe, hideClosed, session, jobPage, jobSort, jobRadius, geoLat, geoLng, jobCursor]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, debouncedZip, settings, careTypes, services, postedByMe, hideClosed, session, jobPage, jobSort, jobRadius, geoLat, geoLng, jobCursor, showMock, MOCK_LISTINGS]);
 
   // Reset jobs list when non-page filters change
   const jobQueryKey = useMemo(() => JSON.stringify({
@@ -801,6 +846,13 @@ export default function MarketplacePage() {
     const run = async () => {
       setProvidersLoading(true);
       try {
+        if (showMock) {
+          setProviders(MOCK_PROVIDERS);
+          setProviderTotal(MOCK_PROVIDERS.length);
+          setProviderHasMoreSvr(false);
+          setProviderCursor(null);
+          return;
+        }
         const params = new URLSearchParams();
         if (debouncedSearch) params.set("q", debouncedSearch);
         if (debouncedCity) params.set("city", debouncedCity);
@@ -833,7 +885,7 @@ export default function MarketplacePage() {
     return () => {
       controller.abort();
     };
-  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, providerServices, providerPage, providerSort, prRadius, prGeoLat, prGeoLng, providerCursor]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, providerServices, providerPage, providerSort, prRadius, prGeoLat, prGeoLng, providerCursor, showMock, MOCK_PROVIDERS]);
 
   // Reset providers list when non-page filters change
   const prQueryKey = useMemo(() => JSON.stringify({
@@ -1721,142 +1773,32 @@ export default function MarketplacePage() {
                 </div>
               ) : (
                 <>
-                  {session?.user?.role === "CAREGIVER" && (
+                  {!showMock && session?.user?.role === "CAREGIVER" && (
                     <div className="mb-6">
                       <RecommendedListings />
                       <div className="my-4" />
                     </div>
                   )}
-                  <VirtuosoGrid
-                    useWindowScroll
-                    totalCount={jobsToRender.length}
-                    data={jobsToRender}
-                    initialItemCount={20}
-                    endReached={() => { if (jobHasMoreRender && !listingsLoading) setJobPage((p) => p + 1); }}
-                    overscan={200}
-                    components={{ List: GridList as any, Item: GridItem as any, Footer: () => (!jobHasMoreRender && jobsToRender.length > 0 ? <div className="py-6 text-center text-gray-400">End of results</div> : null) as any }}
-                    itemContent={(_, job) => (job ? (
-                      <Link href={`/marketplace/listings/${job.id}`} className={`relative block bg-white border rounded-md p-4 transition-shadow ${job.status === 'CLOSED' || job.status === 'HIRED' ? 'opacity-80' : 'hover:shadow-md'}`}>
-                        {/* Favorite toggle */}
-                        <button
-                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleJobFavorite(job.id); }}
-                          aria-label={jobFavorites.has(job.id) ? 'Unfavorite job' : 'Favorite job'}
-                          aria-pressed={jobFavorites.has(job.id)}
-                          className="absolute right-3 bottom-3 z-10 inline-flex items-center justify-center h-8 w-8 rounded-full bg-white/90 border hover:bg-white"
-                          title={jobFavorites.has(job.id) ? 'Unfavorite' : 'Favorite'}
-                        >
-                          <svg viewBox="0 0 24 24" className={`h-5 w-5 ${jobFavorites.has(job.id) ? 'text-rose-600' : 'text-gray-400'}`} fill={jobFavorites.has(job.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" />
-                          </svg>
-                        </button>
-                        {/* Status badge */}
-                        {job.status && (
-                          <span className={`absolute right-3 top-3 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${job.status === 'OPEN' ? 'bg-green-100 text-green-800' : job.status === 'HIRED' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-700'}`}>
-                            {job.status}
-                          </span>
-                        )}
-                        <div className="flex items-start mb-2">
-                          <div className="h-12 w-12 rounded-md overflow-hidden bg-gray-100 flex-shrink-0 mr-3">
-                            <Image
-                              src={`https://ui-avatars.com/api/?name=${encodeURIComponent(job.title)}&background=random&size=128`}
-                              alt={job.title}
-                              width={48}
-                              height={48}
-                              placeholder="blur"
-                              blurDataURL={getBlurDataURL(48, 48)}
-                              sizes="48px"
-                              loading="lazy"
-                            />
-                          </div>
-                          <div>
-                            <h3 className="font-semibold text-gray-900">{job.title}</h3>
-                            <div className="text-sm text-gray-600">
-                              {[job.city, job.state].filter(Boolean).join(", ") || "Location"}
-                              {typeof job.distanceMiles === 'number' && isFinite(job.distanceMiles) && (
-                                <span className="ml-2 text-gray-500">• {job.distanceMiles.toFixed(1)} mi</span>
-                              )}
-                            </div>
-                          </div>
+                  {listings.map((job) => (
+                    <Link href={`/marketplace/listings/${job.id}`} key={job.id} className="block bg-white border rounded-md p-4 hover:shadow-md transition-shadow">
+                      <div className="flex items-start mb-2">
+                        <div className="h-12 w-12 rounded-md overflow-hidden bg-gray-100 flex-shrink-0 mr-3">
+                          <Image src={`https://ui-avatars.com/api/?name=${encodeURIComponent(job.title)}&background=random&size=128`} alt={job.title} width={48} height={48} />
                         </div>
-                        {(job.hourlyRateMin || job.hourlyRateMax) && (
-                          <div className="text-sm text-gray-800 mb-2">
-                            {job.hourlyRateMin && job.hourlyRateMax ? `$${job.hourlyRateMin} - $${job.hourlyRateMax}/hr` : job.hourlyRateMin ? `From $${job.hourlyRateMin}/hr` : `Up to $${job.hourlyRateMax}/hr`}
-                          </div>
-                        )}
-                        {(typeof job.applicationCount === 'number' || typeof job.hireCount === 'number') && (
-                          <div className="mb-2 text-xs text-gray-600">
-                            {typeof job.applicationCount === 'number' && <span>{job.applicationCount} appl</span>}
-                            {typeof job.applicationCount === 'number' && typeof job.hireCount === 'number' && <span className="mx-1">•</span>}
-                            {typeof job.hireCount === 'number' && <span>{job.hireCount} hires</span>}
-                          </div>
-                        )}
-                        <p className="text-sm text-gray-700 line-clamp-2 mb-3">{job.description}</p>
-
-                        {session?.user?.role === 'CAREGIVER' && job.status === 'OPEN' && (
-                          <div className="flex justify-end">
-                            {job.appliedByMe ? (
-                              <div className="flex items-center gap-2">
-                                <span className="inline-flex items-center rounded-md bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700">Applied</span>
-                                <button
-                                  className="inline-flex items-center rounded-md bg-white px-2.5 py-1 text-xs text-gray-700 border border-gray-300 hover:bg-gray-50"
-                                  onClick={async (e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    if (applying[job.id]) return;
-                                    setApplying((m) => ({ ...m, [job.id]: true }));
-                                    try {
-                                      const res = await fetch(`/api/marketplace/applications?listingId=${encodeURIComponent(job.id)}`, { method: 'DELETE' });
-                                      if (!res.ok) throw new Error('Failed to withdraw');
-                                      setListings((prev) => prev.map((l) => l.id === job.id ? ({ ...l, appliedByMe: false, applicationCount: (typeof l.applicationCount === 'number' ? Math.max(0, l.applicationCount - 1) : 0) }) : l));
-                                    } catch {
-                                      // noop
-                                    } finally {
-                                      setApplying((m) => ({ ...m, [job.id]: false }));
-                                    }
-                                  }}
-                                >
-                                  Withdraw
-                                </button>
-                              </div>
-                            ) : (
-                              <button
-                                className="inline-flex items-center rounded-md bg-primary-600 px-3 py-1.5 text-sm text-white hover:bg-primary-700"
-                                onClick={async (e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  if (applying[job.id]) return;
-                                  setApplying((m) => ({ ...m, [job.id]: true }));
-                                  try {
-                                    const res = await fetch('/api/marketplace/applications', {
-                                      method: 'POST',
-                                      headers: { 'Content-Type': 'application/json' },
-                                      body: JSON.stringify({ listingId: job.id })
-                                    });
-                                    if (!res.ok) {
-                                      // Try to extract error
-                                      let msg = 'Failed to apply';
-                                      try { const j = await res.json(); if (j?.error) msg = j.error; } catch {}
-                                      throw new Error(msg);
-                                    }
-                                    // Optimistically mark as applied and increment count
-                                    setListings((prev) => prev.map((l) => l.id === job.id ? ({ ...l, appliedByMe: true, applicationCount: (typeof l.applicationCount === 'number' ? l.applicationCount + 1 : 1) }) : l));
-                                  } catch (err) {
-                                    // noop UI error; could add toast
-                                  } finally {
-                                    setApplying((m) => ({ ...m, [job.id]: false }));
-                                  }
-                                }}
-                                disabled={!!applying[job.id]}
-                              >
-                                {applying[job.id] ? 'Applying…' : 'Quick apply'}
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </Link>
-                    ) : null)}
-                  />
-                </>
+                        <div>
+                          <h3 className="font-semibold text-gray-900">{job.title}</h3>
+                          <div className="text-sm text-gray-600">{[job.city, job.state].filter(Boolean).join(", ") || "Location"}</div>
+                        </div>
+                      </div>
+                      {(job.hourlyRateMin || job.hourlyRateMax) && (
+                        <div className="text-sm text-gray-800 mb-2">
+                          {job.hourlyRateMin && job.hourlyRateMax ? `$${job.hourlyRateMin} - $${job.hourlyRateMax}/hr` : job.hourlyRateMin ? `From $${job.hourlyRateMin}/hr` : `Up to $${job.hourlyRateMax}/hr`}
+                        </div>
+                      )}
+                      <p className="text-sm text-gray-700 line-clamp-2">{job.description}</p>
+                    </Link>
+                  ))}
+                </div>
               )
             ) : (
               providersLoading && providers.length === 0 ? (
