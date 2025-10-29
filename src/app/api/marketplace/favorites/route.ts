@@ -86,11 +86,8 @@ export async function POST(request: Request) {
     const Schema = z.object({ listingId: z.string().min(1) });
     const parsed = Schema.safeParse(body);
     if (!parsed.success) {
-      const flat = parsed.error.flatten();
-      if (flat.fieldErrors?.listingId) {
-        return NextResponse.json({ error: 'listingId is required' }, { status: 400 });
-      }
-      return NextResponse.json({ error: 'Invalid request', details: flat }, { status: 400 });
+      // Maintain backward-compatible error shape expected by tests
+      return NextResponse.json({ error: 'listingId is required' }, { status: 400 });
     }
     const { listingId } = parsed.data;
 
@@ -149,11 +146,8 @@ export async function DELETE(request: Request) {
     const Schema = z.object({ listingId: z.string().min(1) });
     const parsed = Schema.safeParse({ listingId });
     if (!parsed.success) {
-      const flat = parsed.error.flatten();
-      if (flat.fieldErrors?.listingId) {
-        return NextResponse.json({ error: 'listingId is required' }, { status: 400 });
-      }
-      return NextResponse.json({ error: 'Invalid request', details: flat }, { status: 400 });
+      // Maintain backward-compatible error shape expected by tests
+      return NextResponse.json({ error: 'listingId is required' }, { status: 400 });
     }
 
     const caregiver = await (prisma as any).caregiver.findUnique({ where: { userId: session.user.id } });
