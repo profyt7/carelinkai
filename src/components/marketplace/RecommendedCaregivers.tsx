@@ -3,6 +3,8 @@ import Link from "next/link";
 import { FiUser, FiDollarSign } from "react-icons/fi";
 import { headers } from "next/headers";
 import InviteCaregiverButton from "@/components/marketplace/InviteCaregiverButton";
+import ExplainMatchTrigger from "@/components/marketplace/ExplainMatchTrigger";
+import { getOriginFromHeaders } from "@/lib/http";
 
 type RecommendedCaregiver = {
   id: string;
