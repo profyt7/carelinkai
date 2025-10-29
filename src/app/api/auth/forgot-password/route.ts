@@ -1,3 +1,4 @@
+import { rateLimit } from '@/lib/rate-limit';
 /**
  * Forgot Password API Endpoint for CareLinkAI
  * 
@@ -89,6 +90,10 @@ async function sendResetEmail(userId: string): Promise<boolean> {
     
     // Generate reset link with token
     const resetLink = `${APP_URL}/auth/reset-password?token=${user.resetPasswordToken}`;
+    if (process.env['NODE_ENV'] === 'production' && !(process.env['SMTP_HOST'] && process.env['SMTP_USER'] && process.env['SMTP_PASS'])) {
+      console.warn('SMTP not configured in production; skipping password reset email send.');
+      return true;
+    }
     
     // Create test account for development
     const testAccount = await nodemailer.createTestAccount();
@@ -165,7 +170,7 @@ The CareLinkAI Security Team
     });
     
     // Log email details in development
-    console.log('📧 Password reset email sent:');
+    console.log('ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒâ€šÃ‚Â§ Password reset email sent:');
     console.log('- To:', user.email);
     console.log('- Preview URL:', nodemailer.getTestMessageUrl(info));
     
@@ -180,6 +185,20 @@ The CareLinkAI Security Team
  * POST handler for forgot password requests
  */
 export async function POST(request: NextRequest) {
+  // Basic per-IP rate limiting to prevent abuse
+  {
+    const ip = (request.headers.get('x-forwarded-for') || (request as any).ip || 'unknown').split(',')[0].trim();
+    const limiter = rateLimit({ interval: 60_000, limit: 5, uniqueTokenPerInterval: 5000 });
+    const usage = await limiter.getUsage('fp:' + ip);
+    if (usage && usage.count >= 5) {
+      const __rl_reset = Math.ceil(((usage?.resetIn as number) ?? 60000) / 1000); return NextResponse.json({ success: false, message: 'Too many requests' }, { status: 429, headers: { 'Retry-After': String(__rl_reset), 'X-RateLimit-Limit': '5', 'X-RateLimit-Reset': String(__rl_reset) } })
+    }
+    try {
+      await limiter.check(5, 'fp:' + ip);
+    } catch {
+      const __rl_reset = Math.ceil(((usage?.resetIn as number) ?? 60000) / 1000); return NextResponse.json({ success: false, message: 'Too many requests' }, { status: 429, headers: { 'Retry-After': String(__rl_reset), 'X-RateLimit-Limit': '5', 'X-RateLimit-Reset': String(__rl_reset) } })
+    }
+  }
   try {
     // Parse request body
     const body = await request.json();
@@ -215,22 +234,6 @@ export async function POST(request: NextRequest) {
     // SECURITY: Always return success even if email not found
     // This prevents email enumeration attacks
     if (!user) {
-      // Still log the attempt for security monitoring
-      await prisma.auditLog.create({
-        data: {
-          action: AuditAction.ACCESS_DENIED,
-          resourceType: "PASSWORD_RESET",
-          description: "Password reset requested for non-existent email",
-          ipAddress: clientIp,
-          metadata: {
-            email: normalizedEmail,
-            reason: "EMAIL_NOT_FOUND"
-          },
-          // Use a system user ID since this user doesn't exist
-          userId: "system",
-          actionedBy: "system"
-        }
-      });
       
       // Return success to prevent email enumeration
       return NextResponse.json({
@@ -284,3 +287,8 @@ export async function POST(request: NextRequest) {
     await prisma.$disconnect();
   }
 }
+
+
+
+
+

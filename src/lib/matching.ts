@@ -77,7 +77,13 @@ export function scoreCaregiverForListing(
   };
   
   // Calculate distance score
-  const distanceScore = calculateDistanceScore(caregiver, listing, options.maxDistance, options.caregiverLocation, options.listingLocation);
+  const distanceScore = calculateDistanceScore(
+    caregiver,
+    listing,
+    options.maxDistance,
+    options.caregiverLocation,
+    options.listingLocation
+  );
   result.factors['distance'] = {
     score: distanceScore.score,
     weight: normalizedWeights.distance,
