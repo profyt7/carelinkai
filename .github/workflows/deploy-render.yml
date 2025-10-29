@@ -23,7 +23,7 @@ jobs:
           echo "RENDER_STAGING_SERVICE_ID set: ${{ secrets.RENDER_STAGING_SERVICE_ID != '' }}"
 
       - name: Trigger Render via Deploy Hook (RENDER_DEPLOY_HOOK_URL)
-        if: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        if: ${{ secrets.RENDER_DEPLOY_HOOK_URL != '' }}
         env:
           RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
         run: |
@@ -33,7 +33,7 @@ jobs:
           echo "Deploy hook triggered (generic)."
 
       - name: Trigger Render via Deploy Hook (RENDER_STAGING_DEPLOY_HOOK_URL)
-        if: ${{ !secrets.RENDER_DEPLOY_HOOK_URL && secrets.RENDER_STAGING_DEPLOY_HOOK_URL }}
+        if: ${{ (secrets.RENDER_DEPLOY_HOOK_URL == '') && (secrets.RENDER_STAGING_DEPLOY_HOOK_URL != '') }}
         env:
           RENDER_STAGING_DEPLOY_HOOK_URL: ${{ secrets.RENDER_STAGING_DEPLOY_HOOK_URL }}
         run: |
@@ -43,7 +43,7 @@ jobs:
           echo "Deploy hook triggered (staging)."
 
       - name: Trigger Render via API (RENDER_API_KEY + RENDER_SERVICE_ID)
-        if: ${{ (!secrets.RENDER_DEPLOY_HOOK_URL && !secrets.RENDER_STAGING_DEPLOY_HOOK_URL) && (secrets.RENDER_API_KEY && secrets.RENDER_SERVICE_ID) }}
+        if: ${{ (secrets.RENDER_DEPLOY_HOOK_URL == '' && secrets.RENDER_STAGING_DEPLOY_HOOK_URL == '') && (secrets.RENDER_API_KEY != '' && secrets.RENDER_SERVICE_ID != '') }}
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
           RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
@@ -59,7 +59,7 @@ jobs:
           echo "API deploy triggered (generic)."
 
       - name: Trigger Render via API (RENDER_STAGING_API_KEY + RENDER_STAGING_SERVICE_ID)
-        if: ${{ (!secrets.RENDER_DEPLOY_HOOK_URL && !secrets.RENDER_STAGING_DEPLOY_HOOK_URL) && (!secrets.RENDER_API_KEY || !secrets.RENDER_SERVICE_ID) && (secrets.RENDER_STAGING_API_KEY && secrets.RENDER_STAGING_SERVICE_ID) }}
+        if: ${{ (secrets.RENDER_DEPLOY_HOOK_URL == '' && secrets.RENDER_STAGING_DEPLOY_HOOK_URL == '') && ((secrets.RENDER_API_KEY == '' || secrets.RENDER_SERVICE_ID == '')) && (secrets.RENDER_STAGING_API_KEY != '' && secrets.RENDER_STAGING_SERVICE_ID != '') }}
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_STAGING_API_KEY }}
           RENDER_SERVICE_ID: ${{ secrets.RENDER_STAGING_SERVICE_ID }}
