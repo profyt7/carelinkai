@@ -13,14 +13,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Detect available secrets (presence only)
-        run: |
-          echo "RENDER_DEPLOY_HOOK_URL set: ${{ secrets.RENDER_DEPLOY_HOOK_URL != '' }}"
-          echo "RENDER_STAGING_DEPLOY_HOOK_URL set: ${{ secrets.RENDER_STAGING_DEPLOY_HOOK_URL != '' }}"
-          echo "RENDER_API_KEY set: ${{ secrets.RENDER_API_KEY != '' }}"
-          echo "RENDER_SERVICE_ID set: ${{ secrets.RENDER_SERVICE_ID != '' }}"
-          echo "RENDER_STAGING_API_KEY set: ${{ secrets.RENDER_STAGING_API_KEY != '' }}"
-          echo "RENDER_STAGING_SERVICE_ID set: ${{ secrets.RENDER_STAGING_SERVICE_ID != '' }}"
+      # Intentionally no secret introspection here to avoid expression parsing issues
 
       - name: Trigger Render via Deploy Hook (RENDER_DEPLOY_HOOK_URL)
         if: ${{ secrets.RENDER_DEPLOY_HOOK_URL != '' }}
