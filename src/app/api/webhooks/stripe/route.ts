@@ -24,25 +24,6 @@ const mapTransferStatus = (
 };
 
 /**
- * Utility: maps Stripe Transfer status strings to internal PaymentStatus values
- */
-const mapTransferStatus = (
-  status: string | null | undefined
-): "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | undefined => {
-  switch ((status || "").toLowerCase()) {
-    case "pending":
-      return "PROCESSING";
-    case "paid":
-      return "COMPLETED";
-    case "canceled":
-    case "failed":
-      return "FAILED";
-    default:
-      return undefined;
-  }
-};
-
-/**
  * POST /api/webhooks/stripe
  *
  * Handles Stripe webhook events, including payment_intent.succeeded and transfer.*
@@ -86,20 +67,14 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
       }
     }
-    
-    // ------------------------------------------------------------
-    // Handle transfer events for caregiver payouts reconciliation
-    // ------------------------------------------------------------
+    // Handle transfer.* events for caregiver payouts reconciliation
     if (event.type && event.type.startsWith("transfer.")) {
       const transfer = event.data.object as Stripe.Transfer;
       const newStatus = mapTransferStatus((transfer as any).status);
 
       if (!newStatus) {
         return NextResponse.json(
-          {
-            received: true,
-            message: "Transfer event ignored (no status mapping)",
-          },
+          { received: true, message: "Transfer event ignored (no status mapping)" },
           { status: 200 }
         );
       }
@@ -107,12 +82,9 @@ export async function POST(request: NextRequest) {
       const transferId = transfer.id;
       const metadata: any = (transfer as any).metadata || {};
 
-      // Primary update by stored stripePaymentId
+      // Update by stored stripePaymentId
       const byId = await prisma.payment.updateMany({
-        where: {
-          stripePaymentId: transferId,
-          type: "CAREGIVER_PAYMENT",
-        },
+        where: { stripePaymentId: transferId, type: "CAREGIVER_PAYMENT" },
         data: { status: newStatus },
       });
 
@@ -121,22 +93,14 @@ export async function POST(request: NextRequest) {
       // Fallback: locate by MarketplaceHire (metadata.hireId)
       if (updatedCount === 0 && metadata.hireId) {
         const byHire = await prisma.payment.updateMany({
-          where: {
-            marketplaceHireId: metadata.hireId,
-            type: "CAREGIVER_PAYMENT",
-          },
-          data: {
-            status: newStatus,
-            stripePaymentId: transferId,
-          },
+          where: { marketplaceHireId: metadata.hireId, type: "CAREGIVER_PAYMENT" },
+          data: { status: newStatus, stripePaymentId: transferId },
         });
         updatedCount += byHire.count;
       }
 
-      return NextResponse.json(
-        { received: true, message: "Transfer processed", updated: updatedCount },
-        { status: 200 }
-      );
+      logger.info({ msg: "Stripe transfer processed", transferId, updatedCount });
+      return NextResponse.json({ received: true, message: "Transfer processed", updated: updatedCount }, { status: 200 });
     }
 
     // Only handle payment_intent.succeeded events
