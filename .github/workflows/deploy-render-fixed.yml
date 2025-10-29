@@ -1,0 +1,66 @@
+name: Deploy to Render Fixed
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Trigger Render via Deploy Hook (RENDER_DEPLOY_HOOK_URL)
+        if: ${{ secrets.RENDER_DEPLOY_HOOK_URL != '' }}
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          set -e
+          echo "Triggering Render via Deploy Hook (generic)"
+          curl -fsSL -X POST "$RENDER_DEPLOY_HOOK_URL"
+          echo "Deploy hook triggered (generic)."
+
+      - name: Trigger Render via Deploy Hook (RENDER_STAGING_DEPLOY_HOOK_URL)
+        if: ${{ (secrets.RENDER_DEPLOY_HOOK_URL == '') && (secrets.RENDER_STAGING_DEPLOY_HOOK_URL != '') }}
+        env:
+          RENDER_STAGING_DEPLOY_HOOK_URL: ${{ secrets.RENDER_STAGING_DEPLOY_HOOK_URL }}
+        run: |
+          set -e
+          echo "Triggering Render via Deploy Hook (staging)"
+          curl -fsSL -X POST "$RENDER_STAGING_DEPLOY_HOOK_URL"
+          echo "Deploy hook triggered (staging)."
+
+      - name: Trigger Render via API (RENDER_API_KEY + RENDER_SERVICE_ID)
+        if: ${{ (secrets.RENDER_DEPLOY_HOOK_URL == '' && secrets.RENDER_STAGING_DEPLOY_HOOK_URL == '') && (secrets.RENDER_API_KEY != '' && secrets.RENDER_SERVICE_ID != '') }}
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+        run: |
+          set -e
+          echo "Triggering Render via API for service ${RENDER_SERVICE_ID}"
+          curl -fsSL \
+            -X POST "https://api.render.com/v1/services/${RENDER_SERVICE_ID}/deploys" \
+            -H "Authorization: Bearer ${RENDER_API_KEY}" \
+            -H "Accept: application/json" \
+            -H "Content-Type: application/json" \
+            -d '{"clearCache": false}'
+          echo "API deploy triggered (generic)."
+
+      - name: Trigger Render via API (RENDER_STAGING_API_KEY + RENDER_STAGING_SERVICE_ID)
+        if: ${{ (secrets.RENDER_DEPLOY_HOOK_URL == '' && secrets.RENDER_STAGING_DEPLOY_HOOK_URL == '') && ((secrets.RENDER_API_KEY == '' || secrets.RENDER_SERVICE_ID == '')) && (secrets.RENDER_STAGING_API_KEY != '' && secrets.RENDER_STAGING_SERVICE_ID != '') }}
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_STAGING_API_KEY }}
+          RENDER_SERVICE_ID: ${{ secrets.RENDER_STAGING_SERVICE_ID }}
+        run: |
+          set -e
+          echo "Triggering Render via API for STAGING service ${RENDER_SERVICE_ID}"
+          curl -fsSL \
+            -X POST "https://api.render.com/v1/services/${RENDER_SERVICE_ID}/deploys" \
+            -H "Authorization: Bearer ${RENDER_API_KEY}" \
+            -H "Accept: application/json" \
+            -H "Content-Type: application/json" \
+            -d '{"clearCache": false}'
+          echo "API deploy triggered (staging)."

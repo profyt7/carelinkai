@@ -18,20 +18,18 @@ function initializeStripe(): Stripe {
   const secretKey = process.env['STRIPE_SECRET_KEY'];
   
   if (!secretKey) {
-    if (isProduction) {
-      throw new Error(
-        'STRIPE_SECRET_KEY is missing. Please add it to your environment variables.'
-      );
-    } else {
-      console.warn(
-        '\x1b[33m%s\x1b[0m', // Yellow text
-        'WARNING: STRIPE_SECRET_KEY is missing. Using dummy key for development. ' +
-        'Real Stripe API calls will fail. Set the key in .env.local to use Stripe.'
-      );
-      return new Stripe(DUMMY_KEY, {
-        apiVersion: STRIPE_API_VERSION,
-      });
-    }
+    // Do NOT throw at import time — this breaks Next.js builds in CI when secrets
+    // are not provided. Instead, initialize with a known dummy key and log a clear
+    // warning. Routes should still guard at runtime if real Stripe is required.
+    console.warn(
+      '\x1b[33m%s\x1b[0m', // Yellow text
+      (isProduction
+        ? 'WARNING: STRIPE_SECRET_KEY is missing in production build. Initializing Stripe with a dummy key so the build can proceed. Runtime API calls will fail unless the key is provided at runtime.'
+        : 'WARNING: STRIPE_SECRET_KEY is missing. Using dummy key for development. Real Stripe API calls will fail until a valid key is provided.')
+    );
+    return new Stripe(DUMMY_KEY, {
+      apiVersion: STRIPE_API_VERSION,
+    });
   }
   
   return new Stripe(secretKey, {
