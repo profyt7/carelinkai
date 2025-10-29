@@ -101,50 +101,10 @@ export default async function CaregiverDetailPage({
 }: {
   params: { id: string };
 }) {
-  // Detect runtime mock mode from cookie/env
-  const showMock = (() => {
-    try {
-      const c = cookies().get('carelink_mock_mode')?.value?.toString().trim().toLowerCase() || '';
-      const cookieOn = ['1','true','yes','on'].includes(c);
-      const raw = (process.env['SHOW_SITE_MOCKS'] || process.env['NEXT_PUBLIC_SHOW_MOCK_DASHBOARD'] || '')
-        .toString().trim().toLowerCase();
-      const envOn = ['1','true','yes','on'].includes(raw);
-      return cookieOn || envOn;
-    } catch { return false; }
-  })();
-  const isMockId = params.id?.startsWith('cg_');
+  const caregiver = await getCaregiverById(params.id);
 
-  let caregiver: any = null;
-  let isMock = false;
-  if (showMock && isMockId) {
-    const mock = getMockCaregiverById(params.id);
-    if (!mock) notFound();
-    const ratingAverage = 4.6;
-    const reviewCount = 24;
-    const badges: string[] = [];
-    if (mock.backgroundCheckStatus === 'CLEAR') badges.push('Background Check Clear');
-    if ((mock.yearsExperience || 0) >= 5) badges.push('Experienced');
-    if (reviewCount >= 5 && ratingAverage >= 4.5) badges.push('Top Rated');
-    caregiver = {
-      id: mock.id,
-      userId: 'mock-user',
-      name: mock.name,
-      city: mock.city,
-      state: mock.state,
-      hourlyRate: mock.hourlyRate,
-      yearsExperience: mock.yearsExperience,
-      specialties: mock.specialties,
-      bio: mock.bio,
-      backgroundCheckStatus: mock.backgroundCheckStatus,
-      photoUrl: mock.photoUrl,
-      ratingAverage,
-      reviewCount,
-      badges,
-    };
-    isMock = true;
-  } else {
-    caregiver = await getCaregiverById(params.id);
-    if (!caregiver) notFound();
+  if (!caregiver) {
+    notFound();
   }
 
   // Format location
@@ -192,11 +152,6 @@ export default async function CaregiverDetailPage({
             </div>
             <div className="ml-6">
               <h1 className="text-2xl font-bold text-gray-900 mb-2">{caregiver.name}</h1>
-              {isMock && (
-                <div className="mb-2 inline-flex items-center rounded-md bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800 border border-amber-200">
-                  Demo profile (mock mode)
-                </div>
-              )}
               
               {location && (
                 <div className="flex items-center text-gray-500 mb-2">
@@ -215,7 +170,7 @@ export default async function CaregiverDetailPage({
               </div>
               
               <div className="flex flex-wrap gap-2 mt-3">
-                {caregiver.badges.map((badge: string, index: number) => (
+                {caregiver.badges.map((badge, index) => (
                   <span 
                     key={index} 
                     className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -281,7 +236,7 @@ export default async function CaregiverDetailPage({
               <div className="mb-6">
                 <h2 className="text-lg font-medium text-gray-900 mb-2">Specialties</h2>
                 <div className="flex flex-wrap gap-2">
-                  {caregiver.specialties.map((specialty: string, index: number) => (
+                  {caregiver.specialties.map((specialty, index) => (
                     <span 
                       key={index} 
                       className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800"
@@ -312,8 +267,13 @@ export default async function CaregiverDetailPage({
 
           {/* Per-diem shift booking */}
           <section className="mt-10">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Book a per-diem shift</h2>
-            <RequestShiftForm caregiverUserId={caregiver.userId} caregiverId={caregiver.id} />
+            <h2 className="text-lg font-medium text-gray-900 mb-4">
+              Book a per-diem shift
+            </h2>
+            <RequestShiftForm
+              caregiverUserId={caregiver.userId}
+              caregiverId={caregiver.id}
+            />
           </section>
 
           {/* Reviews */}
@@ -329,4 +289,3 @@ export default async function CaregiverDetailPage({
     </div>
   );
 }
-
