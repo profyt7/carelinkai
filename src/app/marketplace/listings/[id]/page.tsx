@@ -7,6 +7,8 @@ import { FiMapPin, FiDollarSign, FiCalendar, FiClock } from "react-icons/fi";
 import ListingActions from "./ListingActions";
 import RecommendedCaregivers from "@/components/marketplace/RecommendedCaregivers";
 import Image from "next/image";
+import { cookies } from "next/headers";
+import { getMockListingById } from "@/lib/mock/marketplace";
 
 export const dynamic = "force-dynamic";
 
@@ -43,13 +45,51 @@ export default async function ListingDetailPage({
 }: {
   params: { id: string };
 }) {
-  const [session, listing] = await Promise.all([
-    getServerSession(authOptions),
-    getListingById(params.id)
-  ]);
+  const showMock = (() => {
+    try {
+      const c = cookies().get('carelink_mock_mode')?.value?.toString().trim().toLowerCase() || '';
+      const cookieOn = ['1','true','yes','on'].includes(c);
+      const raw = (process.env['SHOW_SITE_MOCKS'] || process.env['NEXT_PUBLIC_SHOW_MOCK_DASHBOARD'] || '')
+        .toString().trim().toLowerCase();
+      const envOn = ['1','true','yes','on'].includes(raw);
+      return cookieOn || envOn;
+    } catch { return false; }
+  })();
+  const isMockId = params.id?.startsWith('job_');
 
-  if (!listing) {
-    notFound();
+  let session = await getServerSession(authOptions);
+  let listing: any = null;
+  let isMock = false;
+  if (showMock && isMockId) {
+    const mock = getMockListingById(params.id);
+    if (!mock) notFound();
+    listing = {
+      id: mock.id,
+      title: mock.title,
+      description: mock.description,
+      city: mock.city,
+      state: mock.state,
+      hourlyRateMin: mock.hourlyRateMin,
+      hourlyRateMax: mock.hourlyRateMax,
+      createdAt: mock.createdAt,
+      status: mock.status || 'OPEN',
+      postedBy: { firstName: 'Demo', lastName: 'Family', profileImageUrl: null },
+      postedByUserId: 'mock-user',
+      _count: { applications: mock.applicationCount ?? 0, hires: mock.hireCount ?? 0 },
+      setting: 'in-home',
+      careTypes: ['in-home-care'],
+      services: ['companionship'],
+      specialties: [],
+    };
+    isMock = true;
+  } else {
+    const [sess, real] = await Promise.all([
+      getServerSession(authOptions),
+      getListingById(params.id)
+    ]);
+    session = sess;
+    listing = real;
+    if (!listing) notFound();
   }
 
   // Format the posted date
@@ -73,6 +113,11 @@ export default async function ListingDetailPage({
         {/* Header */}
         <div className="p-6 border-b border-gray-200">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">{listing.title}</h1>
+          {isMock && (
+            <div className="mb-2 inline-flex items-center rounded-md bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800 border border-amber-200">
+              Demo listing (mock mode)
+            </div>
+          )}
           
           <div className="flex flex-wrap items-center text-sm text-gray-500 gap-4 mb-4">
             {/* Location */}
@@ -223,30 +268,33 @@ export default async function ListingDetailPage({
           </div>
           
           {/* Actions */}
-          <ListingActions 
-            listingId={listing.id} 
-            postedByUserId={listing.postedByUserId}
-            applicationCount={listing._count.applications}
-            hireCount={listing._count.hires}
-            status={listing.status}
-            appliedByMe={await (async () => {
-              try {
-                if (!session?.user?.id) return false;
-                const caregiver = await (prisma as any).caregiver.findUnique({ where: { userId: session.user.id } });
-                if (!caregiver) return false;
-                const app = await (prisma as any).marketplaceApplication.findUnique({
-                  where: { listingId_caregiverId: { listingId: listing.id, caregiverId: caregiver.id } },
-                  select: { id: true }
-                });
-                return !!app;
-              } catch {
-                return false;
-              }
-            })()}
-          />
-
-          {/* Recommended caregivers (AI Matching) */}
-          <RecommendedCaregivers listingId={listing.id} />
+          {!isMock && (
+            <>
+              <ListingActions 
+                listingId={listing.id} 
+                postedByUserId={listing.postedByUserId}
+                applicationCount={listing._count.applications}
+                hireCount={listing._count.hires}
+                status={listing.status}
+                appliedByMe={await (async () => {
+                  try {
+                    if (!session?.user?.id) return false;
+                    const caregiver = await (prisma as any).caregiver.findUnique({ where: { userId: session.user.id } });
+                    if (!caregiver) return false;
+                    const app = await (prisma as any).marketplaceApplication.findUnique({
+                      where: { listingId_caregiverId: { listingId: listing.id, caregiverId: caregiver.id } },
+                      select: { id: true }
+                    });
+                    return !!app;
+                  } catch {
+                    return false;
+                  }
+                })()}
+              />
+              {/* Recommended caregivers (AI Matching) */}
+              <RecommendedCaregivers listingId={listing.id} />
+            </>
+          )}
         </div>
       </div>
     </div>

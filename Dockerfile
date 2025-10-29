@@ -1,47 +1,49 @@
 # syntax=docker/dockerfile:1
-# Multi-stage Dockerfile for CareLinkAI (Next.js 14 + Prisma)
 
-ARG NODE_VERSION=20-alpine
-
-FROM node:${NODE_VERSION} AS base
+# --- Base image ---
+FROM node:18-bullseye-slim AS base
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1
 WORKDIR /app
 
-# 1) Install deps in a clean layer
+# --- Dependencies ---
 FROM base AS deps
-RUN apk add --no-cache libc6-compat openssl
+ENV NODE_ENV=development
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev
+RUN npm ci --ignore-scripts
 
-# 2) Build stage with dev deps
-FROM base AS builder
-RUN apk add --no-cache libc6-compat openssl
-COPY package.json package-lock.json ./
-RUN npm ci
+# --- Build ---
+FROM base AS build
+ENV NODE_ENV=production
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-# Generate Prisma client and build Next.js
 RUN npx prisma generate && npm run build
 
-# 3) Runtime image
-FROM base AS runner
-RUN apk add --no-cache libc6-compat openssl
-
-# Create non-root user
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
-
+# --- Production runtime ---
+FROM node:18-bullseye-slim AS runner
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    PORT=3000 \
+    HOSTNAME=0.0.0.0
 WORKDIR /app
 
-# Copy necessary artifacts from builder/deps
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/prisma ./prisma
+# Only copy necessary files
+# Use node_modules from the build stage to include generated Prisma client artifacts
+COPY --from=build /app/node_modules ./node_modules
+# Ensure Prisma Client generated artifacts are present in the runtime image
+# Copy both the generated JS client and the native engines
+COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=build /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=build /app/.next ./.next
+COPY --from=build /app/public ./public
+COPY --from=build /app/prisma ./prisma
+COPY package.json ./package.json
 
-# Expose port and start
-ENV PORT=3000 HOST=0.0.0.0
+# Force-regenerate Prisma Client in the runtime image using a pinned CLI
+# This does not rely on devDependencies being present
+RUN npx -y prisma@5.22.0 generate --schema=./prisma/schema.prisma \
+  && node -e "require('fs').accessSync('node_modules/.prisma/client/default.js'); console.log('Prisma client present')"
+
 EXPOSE 3000
-
-# Optionally run migrations on startup if DATABASE_URL is provided
-CMD ["sh", "-c", "npx prisma migrate deploy || true; node node_modules/next/dist/bin/next start -p $PORT"]
+CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]

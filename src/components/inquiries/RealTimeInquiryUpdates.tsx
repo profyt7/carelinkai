@@ -134,17 +134,43 @@ const RealTimeInquiryUpdates: React.FC<RealTimeInquiryUpdatesProps> = ({
   const router = useRouter();
   const { connectionState } = useWebSocket();
   
+  // Runtime mock toggle fetched from API
+  const [showMock, setShowMock] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/runtime/mocks', { cache: 'no-store', credentials: 'include' as RequestCredentials });
+        if (!res.ok) return;
+        const j = await res.json();
+        if (!cancelled) setShowMock(!!j?.show);
+      } catch {
+        if (!cancelled) setShowMock(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+  
   // State
-  const [updates, setUpdates] = useState<InquiryUpdate[]>(
-    inquiryId 
-      ? MOCK_UPDATES.filter(update => update.inquiryId === inquiryId)
-      : MOCK_UPDATES
-  );
+  const [updates, setUpdates] = useState<InquiryUpdate[]>([]);
   const [filteredUpdates, setFilteredUpdates] = useState<InquiryUpdate[]>(updates);
   const [activeFilter, setActiveFilter] = useState<UpdateType | 'ALL'>('ALL');
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [newUpdateAlert, setNewUpdateAlert] = useState(false);
+
+  // Seed mock updates only when runtime mock mode is enabled
+  useEffect(() => {
+    if (showMock) {
+      setUpdates(
+        inquiryId
+          ? MOCK_UPDATES.filter(update => update.inquiryId === inquiryId)
+          : MOCK_UPDATES
+      );
+    } else {
+      setUpdates([]);
+    }
+  }, [showMock, inquiryId]);
   
   // Format timestamp
   const formatTimestamp = (timestamp: string): string => {
@@ -214,7 +240,8 @@ const RealTimeInquiryUpdates: React.FC<RealTimeInquiryUpdatesProps> = ({
     setTimeout(() => {
       // In a real app, we would fetch updates from the API
       setIsLoading(false);
-      
+      if (!showMock) return; // only demo-add when mock mode is on
+
       // For demo purposes, add a new update
       const newUpdate: InquiryUpdate = {
         id: `update-${Date.now()}`,
@@ -334,7 +361,7 @@ const RealTimeInquiryUpdates: React.FC<RealTimeInquiryUpdatesProps> = ({
   
   // WebSocket event simulation for demo purposes
   useEffect(() => {
-    if (connectionState !== 'CONNECTED') return;
+    if (connectionState !== 'CONNECTED' || !showMock) return; // only simulate when connected and mock mode is on
     
     const interval = setInterval(() => {
       // 15% chance of receiving a new update every 45 seconds
@@ -420,7 +447,7 @@ const RealTimeInquiryUpdates: React.FC<RealTimeInquiryUpdatesProps> = ({
     }, 45000); // Check every 45 seconds
     
     return () => clearInterval(interval);
-  }, [connectionState, inquiryId]);
+  }, [connectionState, inquiryId, showMock]);
   
   // If there are no updates
   if (filteredUpdates.length === 0) {

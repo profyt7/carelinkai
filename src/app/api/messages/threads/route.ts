@@ -1,3 +1,4 @@
+import { rateLimit } from '@/lib/rate-limit';
 // Ensure this route is always treated as dynamic (never statically optimized)
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -19,6 +20,11 @@ export async function GET(request: NextRequest) {
   try {
     // Get session and verify authentication
     const session = await getServerSession(authOptions);
+    {
+      const userId = session?.user?.id || 'anon';
+      const limiter = rateLimit({ interval: 60_000, limit: 60, uniqueTokenPerInterval: 20000 });
+      await limiter.check(60, 'msg:threads:' + userId);
+    }
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

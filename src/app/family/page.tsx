@@ -51,6 +51,23 @@ export default function FamilyPage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const isGuest = role === 'GUEST';
 
+  // Runtime mock toggle
+  const [showMock, setShowMock] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/runtime/mocks', { cache: 'no-store', credentials: 'include' as RequestCredentials });
+        if (!res.ok) return;
+        const j = await res.json();
+        if (!cancelled) setShowMock(!!j?.show);
+      } catch {
+        if (!cancelled) setShowMock(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   /* ------------------------------------------------------------------
      Router and URL state
   ------------------------------------------------------------------*/
@@ -192,6 +209,11 @@ export default function FamilyPage() {
   useEffect(() => {
     const fetchMembership = async () => {
       try {
+        if (showMock) {
+          setRole('ADMIN');
+          setFamilyId('demo-family');
+          return;
+        }
         const res = await fetch(`/api/family/membership`);
         if (res.ok) {
           const data = await res.json();
@@ -203,7 +225,7 @@ export default function FamilyPage() {
       }
     };
     fetchMembership();
-  }, []);
+  }, [showMock]);
 
   /* ------------------------------------------------------------------
      Fetch documents
@@ -219,6 +241,11 @@ export default function FamilyPage() {
   useEffect(() => {
     (async () => {
       try {
+        if (showMock) {
+          setCurrentUserId('demo-user');
+          setUnreadCount(3);
+          return;
+        }
         const res = await fetch('/api/profile');
         if (res.ok) {
           const json = await res.json();
@@ -229,9 +256,10 @@ export default function FamilyPage() {
         /* ignore */
       }
     })();
-  }, []);
+  }, [showMock]);
 
   useEffect(() => {
+    if (showMock) return; // fixed demo count in mock mode
     let timer: NodeJS.Timeout;
     const fetchUnread = async () => {
       try {
@@ -247,10 +275,11 @@ export default function FamilyPage() {
     fetchUnread();
     timer = setInterval(fetchUnread, 30000);
     return () => clearInterval(timer);
-  }, []);
+  }, [showMock]);
 
   // Refresh unread count when switching to Messages tab
   useEffect(() => {
+    if (showMock) return;
     if (activeTab === 'messages') {
       (async () => {
         try {
@@ -264,7 +293,7 @@ export default function FamilyPage() {
         }
       })();
     }
-  }, [activeTab]);
+  }, [activeTab, showMock]);
 
   /* ------------------------------------------------------------------
      Fetch documents
@@ -307,6 +336,17 @@ export default function FamilyPage() {
       try {
         setLoading(true);
         setError(null);
+        if (showMock) {
+          const now = Date.now();
+          const mockDocs: Doc[] = [
+            { id: 'doc-1', title: 'Care Plan', type: 'CARE_PLAN', fileSize: 250_000, createdAt: new Date(now - 86400000).toISOString(), tags: ['plan','medical'], uploader: { firstName: 'Ava', lastName: 'Johnson' } },
+            { id: 'doc-2', title: 'Medical Records Summary', type: 'MEDICAL_RECORD', fileSize: 512_000, createdAt: new Date(now - 2*86400000).toISOString(), tags: ['records'], uploader: { firstName: 'Noah', lastName: 'Williams' } },
+            { id: 'doc-3', title: 'Insurance Policy', type: 'INSURANCE_DOCUMENT', fileSize: 780_000, createdAt: new Date(now - 3*86400000).toISOString(), tags: ['insurance'], uploader: { firstName: 'Sophia', lastName: 'Martinez' } },
+            { id: 'doc-4', title: 'Facility Photos', type: 'PHOTO', fileSize: 1_200_000, createdAt: new Date(now - 4*86400000).toISOString(), tags: ['photos'], uploader: { firstName: 'Oliver', lastName: 'Brown' } },
+          ];
+          setDocs(mockDocs);
+          return;
+        }
         const params = new URLSearchParams({
           familyId: familyId || '',
           limit: '12',
@@ -331,19 +371,19 @@ export default function FamilyPage() {
     };
 
     // Only fetch when Documents tab is active
-    if (activeTab === 'documents' && familyId) {
+    if (activeTab === 'documents' && (familyId || showMock)) {
       fetchDocs();
       return () => controller.abort();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     return () => controller.abort();
-  }, [search, docType, activeTab, familyId]);
+  }, [search, docType, activeTab, familyId, showMock]);
 
   /* ------------------------------------------------------------------
      Real-time updates via SSE
   ------------------------------------------------------------------*/
   useEffect(() => {
-    if (!familyId) return;
+    if (showMock || !familyId) return;
     const es = new EventSource(
       `/api/sse?topics=${encodeURIComponent(`family:${familyId}`)}`
     );
@@ -383,13 +423,26 @@ export default function FamilyPage() {
       es.close();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [familyId]);
+  }, [familyId, showMock]);
 
   /* ------------------------------------------------------------------
      Timeline fetch + SSE
   ------------------------------------------------------------------*/
   useEffect(() => {
-    if (activeTab !== 'timeline' || !familyId) return;
+    if (activeTab !== 'timeline') return;
+    if (showMock) {
+      setTimelineLoading(true);
+      const now = Date.now();
+      const mockActs: Activity[] = [
+        { id: 'act-1', description: 'Uploaded Care Plan', type: 'DOCUMENT_UPLOADED', createdAt: new Date(now - 2*3600_000).toISOString(), actor: { firstName: 'Ava', lastName: 'Johnson' } },
+        { id: 'act-2', description: 'Added emergency contact', type: 'MEMBER_ROLE_CHANGED', createdAt: new Date(now - 4*3600_000).toISOString(), actor: { firstName: 'Noah', lastName: 'Williams' } },
+        { id: 'act-3', description: 'Left a note on Medical Records', type: 'NOTE_CREATED', createdAt: new Date(now - 26*3600_000).toISOString(), actor: { firstName: 'Sophia', lastName: 'Martinez' } },
+      ];
+      setActivities(mockActs);
+      setTimelineLoading(false);
+      return;
+    }
+    if (!familyId) return;
 
     const controller = new AbortController();
     const load = async () => {
@@ -430,7 +483,7 @@ export default function FamilyPage() {
       controller.abort();
       es.close();
     };
-  }, [activeTab, familyId]);
+  }, [activeTab, familyId, showMock]);
 
   /* ------------------------------------------------------------------
      Fetch wallet & payments
@@ -438,6 +491,19 @@ export default function FamilyPage() {
   const loadBilling = async () => {
     try {
       setBillingLoading(true);
+      if (showMock) {
+        setWalletBalance(125.0);
+        setTransactions([
+          { id: 'tx-1', type: 'DEPOSIT', amount: 100, currency: 'USD', createdAt: new Date(Date.now() - 3*86400000).toISOString() },
+          { id: 'tx-2', type: 'PAYMENT', amount: 75, currency: 'USD', createdAt: new Date(Date.now() - 2*86400000).toISOString() },
+          { id: 'tx-3', type: 'DEPOSIT', amount: 100, currency: 'USD', createdAt: new Date(Date.now() - 1*86400000).toISOString() },
+        ]);
+        setPayments([
+          { id: 'p-1', amount: 75, createdAt: new Date(Date.now() - 2*86400000).toISOString() },
+          { id: 'p-2', amount: 49, createdAt: new Date(Date.now() - 10*86400000).toISOString() },
+        ]);
+        return;
+      }
       const [walletRes, payRes] = await Promise.all([
         fetch(`/api/billing/wallet?familyId=${familyId}`),
         fetch(`/api/billing/payments?familyId=${familyId}`),
@@ -460,11 +526,11 @@ export default function FamilyPage() {
 
   // Trigger load when billing tab active
   useEffect(() => {
-    if (activeTab === 'billing' && familyId) {
+    if (activeTab === 'billing' && (familyId || showMock)) {
       loadBilling();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, familyId]);
+  }, [activeTab, familyId, showMock]);
 
   /* ------------------------------------------------------------------
      Deposit flow
