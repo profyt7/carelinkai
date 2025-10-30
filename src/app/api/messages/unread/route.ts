@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { rateLimit } from "@/lib/rate-limit";
 
 /**
  * GET /api/messages/unread
@@ -20,6 +21,13 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Per-user rate limiting
+    {
+      const userId = session.user.id;
+      const limiter = rateLimit({ interval: 60_000, limit: 60, uniqueTokenPerInterval: 20000 });
+      await limiter.check(60, 'msg:unread:' + userId);
     }
 
     // Count unread messages for the current user
