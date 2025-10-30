@@ -5,7 +5,7 @@ import { headers } from "next/headers";
 import InviteCaregiverButton from "@/components/marketplace/InviteCaregiverButton";
 import ExplainMatchTrigger from "@/components/marketplace/ExplainMatchTrigger";
 import { getOriginFromHeaders } from "@/lib/http";
-
+ 
 type RecommendedCaregiver = {
   id: string;
   score: number;
@@ -214,19 +214,24 @@ export default async function RecommendedCaregivers({ listingId }: { listingId: 
                 </div>
               )}
               
-              {/* View button placeholder */}
-              <div className="mt-auto flex gap-2">
+              {/* Actions / Status */}
+              <div className="mt-auto flex gap-2 items-center">
                 <Link
                   href={`/marketplace/caregivers/${item.id}`}
                   className="flex-1 text-center bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
                 >
                   View
                 </Link>
-                {/* Invite button */}
-                <InviteCaregiverButton
-                  listingId={listingId}
-                  caregiverId={item.id}
-                />
+                {hasStatus ? (
+                  <span className={`px-3 py-1.5 text-sm font-medium rounded-md ${statusClass}`}>
+                    {statusLabel}
+                  </span>
+                ) : (
+                  <InviteCaregiverButton
+                    listingId={listingId}
+                    caregiverId={item.id}
+                  />
+                )}
               </div>
             </div>
           );
