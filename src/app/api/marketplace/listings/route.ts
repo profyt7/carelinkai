@@ -187,22 +187,6 @@ export async function GET(request: Request) {
       appliedSet = null;
     }
 
-    // If caregiver is logged in, annotate whether they have applied to each returned listing
-    let appliedSet: Set<string> | null = null;
-    try {
-      if (session?.user?.id) {
-        const caregiver = await (prisma as any).caregiver.findUnique({ where: { userId: session.user.id } });
-        if (caregiver && listings.length > 0) {
-          const apps = await (prisma as any).marketplaceApplication.findMany({
-            where: { caregiverId: caregiver.id, listingId: { in: listings.map((l: any) => l.id) } },
-            select: { listingId: true }
-          });
-          appliedSet = new Set(apps.map((a: any) => a.listingId));
-        }
-      }
-    } catch {
-      appliedSet = null;
-    }
     
     // Transform the data to include counts directly
     const formattedListings = listings.map((listing: any) => {
