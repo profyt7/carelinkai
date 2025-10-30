@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireAnyRole } from "@/lib/rbac";
 import { z } from "zod";
 import fs from "fs";
 import path from "path";
@@ -170,7 +169,8 @@ export async function GET(request: NextRequest) {
         }
       }
       // Get session and verify authentication
-      const session = await getServerSession(authOptions);
+      const { session, error } = await requireAnyRole(["FAMILY"] as any);
+      if (error) return error;
       if (!session?.user) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
@@ -309,13 +309,16 @@ export async function GET(request: NextRequest) {
         totalCount === 0 &&
         process.env["NODE_ENV"] !== "production"
       ) {
+        const typesFilter: FamilyDocumentType[] | undefined =
+          filters.type
+            ? (Array.isArray(filters.type)
+                ? (filters.type as FamilyDocumentType[])
+                : [filters.type as FamilyDocumentType])
+            : undefined;
+
         const mockAll = generateMockDocuments(filters.familyId, session.user.id, undefined, {
           search: filters.search,
-          types: Array.isArray(filters.type)
-            ? filters.type
-            : filters.type
-            ? [filters.type]
-            : undefined,
+          types: typesFilter,
           tags: filters.tags
             ? Array.isArray(filters.tags)
               ? filters.tags
@@ -405,7 +408,8 @@ export async function POST(request: NextRequest) {
       }
     }
     // Get session and verify authentication
-    const session = await getServerSession(authOptions);
+    const { session, error } = await requireAnyRole(["FAMILY"] as any);
+      if (error) return error;
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -510,7 +514,7 @@ export async function POST(request: NextRequest) {
         fileName: file.name,
         fileType: file.type,
         fileSize: file.size,
-        type: metadata.type,
+        type: metadata.type as FamilyDocumentType,
         version: 1,
         isEncrypted: metadata.isEncrypted,
         tags: metadata.tags || []
@@ -603,7 +607,8 @@ export async function PUT(request: NextRequest) {
       }
     }
     // Get session and verify authentication
-    const session = await getServerSession(authOptions);
+    const { session, error } = await requireAnyRole(["FAMILY"] as any);
+      if (error) return error;
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -762,7 +767,8 @@ export async function DELETE(request: NextRequest) {
       }
     }
     // Get session and verify authentication
-    const session = await getServerSession(authOptions);
+    const { session, error } = await requireAnyRole(["FAMILY"] as any);
+      if (error) return error;
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
