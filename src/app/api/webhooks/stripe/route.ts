@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
 import Stripe from "stripe";
+import { bindRequestLogger } from "@/lib/logger";
 
 /**
  * Utility: maps Stripe Transfer status strings to internal PaymentStatus values
@@ -24,62 +25,56 @@ const mapTransferStatus = (
 
 /**
  * POST /api/webhooks/stripe
- * 
- * Handles Stripe webhook events, specifically payment_intent.succeeded
- * Updates wallet balance and creates payment records
+ *
+ * Handles Stripe webhook events, including payment_intent.succeeded and transfer.*
  */
 export async function POST(request: NextRequest) {
+  const logger = bindRequestLogger(request);
   try {
-    // Get the raw body as text
     const rawBody = await request.text();
-    
-    // Get the signature header
     const signature = request.headers.get("stripe-signature");
-    
+
     let event: Stripe.Event;
-    
-    // Verify webhook signature if secret is set
-    if (process.env['STRIPE_WEBHOOK_SECRET'] && signature) {
+
+    const secret = process.env["STRIPE_WEBHOOK_SECRET"];
+
+    if (process.env["NODE_ENV"] === "production") {
+      if (!secret) {
+        logger.error("Stripe webhook secret not configured in production");
+        return NextResponse.json({ error: "Server misconfiguration" }, { status: 500 });
+      }
+      if (!signature) {
+        logger.warn("Missing stripe-signature header");
+        return NextResponse.json({ error: "Bad Request" }, { status: 400 });
+      }
       try {
-        event = stripe.webhooks.constructEvent(
-          rawBody,
-          signature,
-          process.env['STRIPE_WEBHOOK_SECRET']
-        );
+        event = stripe.webhooks.constructEvent(rawBody, signature, secret);
       } catch (err) {
-        console.error("⚠️ Webhook signature verification failed:", err);
-        return NextResponse.json(
-          { error: "Webhook signature verification failed" },
-          { status: 400 }
-        );
+        logger.error({ msg: "Webhook signature verification failed", err: err instanceof Error ? err.message : err });
+        return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
       }
     } else {
-      // In development, bypass signature verification
+      // dev/test: allow JSON without signature for local testing
       try {
-        event = JSON.parse(rawBody) as Stripe.Event;
-        console.log("⚠️ Webhook signature verification bypassed (development mode)");
+        event = secret && signature
+          ? stripe.webhooks.constructEvent(rawBody, signature, secret)
+          : (JSON.parse(rawBody) as Stripe.Event);
+        if (!secret || !signature) {
+          logger.info({ msg: "Webhook signature bypassed (non-production)" });
+        }
       } catch (err) {
-        console.error("⚠️ Invalid webhook payload:", err);
-        return NextResponse.json(
-          { error: "Invalid webhook payload" },
-          { status: 400 }
-        );
+        logger.error({ msg: "Invalid webhook payload", err: err instanceof Error ? err.message : err });
+        return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
       }
     }
-    
-    // ------------------------------------------------------------
-    // Handle transfer events for caregiver payouts reconciliation
-    // ------------------------------------------------------------
+    // Handle transfer.* events for caregiver payouts reconciliation
     if (event.type && event.type.startsWith("transfer.")) {
       const transfer = event.data.object as Stripe.Transfer;
       const newStatus = mapTransferStatus((transfer as any).status);
 
       if (!newStatus) {
         return NextResponse.json(
-          {
-            received: true,
-            message: "Transfer event ignored (no status mapping)",
-          },
+          { received: true, message: "Transfer event ignored (no status mapping)" },
           { status: 200 }
         );
       }
@@ -87,12 +82,9 @@ export async function POST(request: NextRequest) {
       const transferId = transfer.id;
       const metadata: any = (transfer as any).metadata || {};
 
-      // Primary update by stored stripePaymentId
+      // Update by stored stripePaymentId
       const byId = await prisma.payment.updateMany({
-        where: {
-          stripePaymentId: transferId,
-          type: "CAREGIVER_PAYMENT",
-        },
+        where: { stripePaymentId: transferId, type: "CAREGIVER_PAYMENT" },
         data: { status: newStatus },
       });
 
@@ -101,36 +93,23 @@ export async function POST(request: NextRequest) {
       // Fallback: locate by MarketplaceHire (metadata.hireId)
       if (updatedCount === 0 && metadata.hireId) {
         const byHire = await prisma.payment.updateMany({
-          where: {
-            marketplaceHireId: metadata.hireId,
-            type: "CAREGIVER_PAYMENT",
-          },
-          data: {
-            status: newStatus,
-            stripePaymentId: transferId,
-          },
+          where: { marketplaceHireId: metadata.hireId, type: "CAREGIVER_PAYMENT" },
+          data: { status: newStatus, stripePaymentId: transferId },
         });
         updatedCount += byHire.count;
       }
 
-      return NextResponse.json(
-        { received: true, message: "Transfer processed", updated: updatedCount },
-        { status: 200 }
-      );
+      logger.info({ msg: "Stripe transfer processed", transferId, updatedCount });
+      return NextResponse.json({ received: true, message: "Transfer processed", updated: updatedCount }, { status: 200 });
     }
 
     // Only handle payment_intent.succeeded events
     if (event.type !== "payment_intent.succeeded") {
-      return NextResponse.json(
-        { received: true, message: "Ignored event type" },
-        { status: 200 }
-      );
+      return NextResponse.json({ received: true, message: "Ignored event type" }, { status: 200 });
     }
-    
-    // Cast the event data to PaymentIntent
+
     const paymentIntent = event.data.object as Stripe.PaymentIntent;
-    
-    // Extract payment details
+
     const stripePaymentId = paymentIntent.id;
     const amount = paymentIntent.amount; // in cents
     const currency = paymentIntent.currency;
@@ -138,111 +117,63 @@ export async function POST(request: NextRequest) {
     const familyId = (metadata as any)["familyId"];
     const walletId = (metadata as any)["walletId"];
     const userId = (metadata as any)["userId"];
-    
-    // Validate required metadata
+
     if (!familyId || !userId) {
-      console.error("⚠️ Missing required metadata:", { familyId, userId });
-      return NextResponse.json(
-        { error: "Missing required metadata" },
-        { status: 400 }
-      );
+      logger.warn({ msg: "Missing required metadata", stripePaymentId, hasFamilyId: !!familyId, hasUserId: !!userId });
+      return NextResponse.json({ error: "Missing required metadata" }, { status: 400 });
     }
-    
-    // Check for idempotency - if payment already processed, return success
-    const existingPayment = await prisma.payment.findFirst({
-      where: { stripePaymentId },
-    });
-    
+
+    // Idempotency: skip if already processed
+    const existingPayment = await prisma.payment.findFirst({ where: { stripePaymentId } });
     if (existingPayment) {
-      console.log(`✅ Payment ${stripePaymentId} already processed, skipping`);
-      return NextResponse.json(
-        { received: true, message: "Payment already processed" },
-        { status: 200 }
-      );
+      logger.info({ msg: "Payment already processed", stripePaymentId });
+      return NextResponse.json({ received: true, message: "Payment already processed" }, { status: 200 });
     }
-    
-    // Process the payment in a transaction
-    const result = await prisma.$transaction(async (tx) => {
-      // Find or create wallet
-      let wallet;
-      
+
+    // Process atomically
+    await prisma.$transaction(async (tx: any) => {
+      let wallet = null as any;
+
       if (walletId) {
-        wallet = await tx.familyWallet.findUnique({
-          where: { id: walletId },
-        });
-        
+        wallet = await tx.familyWallet.findUnique({ where: { id: walletId } });
         if (!wallet) {
-          console.log(`⚠️ Wallet ${walletId} not found, looking up by familyId`);
+          logger.warn({ msg: "Wallet not found by id; falling back to familyId", walletId, familyId });
         }
       }
-      
-      // If wallet not found by ID, try to find by familyId
+
       if (!wallet) {
-        wallet = await tx.familyWallet.findFirst({
-          where: { familyId },
-        });
+        wallet = await tx.familyWallet.findFirst({ where: { familyId } });
       }
-      
-      // If still no wallet, create one
+
       if (!wallet) {
-        console.log(`⚠️ No wallet found for family ${familyId}, creating new wallet`);
-        wallet = await tx.familyWallet.create({
-          data: {
-            familyId,
-            balance: 0, // Will be updated below
-          },
-        });
+        wallet = await tx.familyWallet.create({ data: { familyId, balance: 0 } });
+        logger.info({ msg: "Created wallet for family", familyId, walletId: wallet.id });
       }
-      
-      // Convert amount from cents to dollars for storage
+
       const amountDecimal = amount / 100;
-      
-      // Update wallet balance
       const newBalance = parseFloat(wallet.balance.toString()) + amountDecimal;
-      
-      const updatedWallet = await tx.familyWallet.update({
-        where: { id: wallet.id },
-        data: { balance: newBalance },
-      });
-      
-      // Create payment record
-      const payment = await tx.payment.create({
+
+      await tx.familyWallet.update({ where: { id: wallet.id }, data: { balance: newBalance } });
+
+      await tx.payment.create({
         data: {
           userId,
           amount: amountDecimal,
-          status: "COMPLETED", // mark payment as successfully processed
+          status: "COMPLETED",
           type: "DEPOSIT",
-          stripePaymentId,
+          stripePaymentId
         },
       });
-      
-      // Create wallet transaction record
-      const transaction = await tx.walletTransaction.create({
-        data: {
-          walletId: wallet.id,
-          type: "DEPOSIT",
-          amount: amountDecimal,
-        },
+
+      await tx.walletTransaction.create({
+        data: { walletId: wallet.id, type: "DEPOSIT", amount: amountDecimal },
       });
-      
-      return {
-        payment,
-        wallet: updatedWallet,
-        transaction,
-      };
     });
-    
-    console.log(`✅ Payment processed: ${stripePaymentId}, wallet updated`);
-    
-    return NextResponse.json(
-      { received: true, success: true },
-      { status: 200 }
-    );
+
+    logger.info({ msg: "Payment processed", stripePaymentId });
+    return NextResponse.json({ received: true, success: true }, { status: 200 });
   } catch (error) {
-    console.error("❌ Error processing webhook:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    logger.error({ msg: "Error processing Stripe webhook", err: error instanceof Error ? error.message : error });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

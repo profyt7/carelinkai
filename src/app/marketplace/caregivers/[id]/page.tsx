@@ -1,8 +1,13 @@
 import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import { getMockCaregiverById } from "@/lib/mock/caregivers";
 import Image from "next/image";
 import Link from "next/link";
 import { FiMapPin, FiDollarSign, FiClock, FiCheckCircle } from "react-icons/fi";
+import RequestShiftForm from "@/components/marketplace/RequestShiftForm";
+import CaregiverReviewForm from "@/components/marketplace/CaregiverReviewForm";
+import CaregiverReviewsList from "@/components/marketplace/CaregiverReviewsList";
 
 export const dynamic = "force-dynamic";
 
@@ -231,7 +236,7 @@ export default async function CaregiverDetailPage({
               <div className="mb-6">
                 <h2 className="text-lg font-medium text-gray-900 mb-2">Specialties</h2>
                 <div className="flex flex-wrap gap-2">
-                  {caregiver.specialties.map((specialty, index) => (
+                  {caregiver.specialties.map((specialty: string, index: number) => (
                     <span 
                       key={index} 
                       className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800"
@@ -259,6 +264,35 @@ export default async function CaregiverDetailPage({
               Request interview/shift
             </Link>
           </div>
+
+          {/* Per-diem shift booking */}
+          <section className="mt-10">
+            <h2 className="text-lg font-medium text-gray-900 mb-4">
+              Book a per-diem shift
+            </h2>
+            <RequestShiftForm
+              caregiverUserId={caregiver.userId}
+              caregiverId={caregiver.id}
+            />
+          </section>
+
+          {/* Reviews */}
+          <section className="mt-10">
+            <h2 className="text-lg font-medium text-gray-900 mb-4">Reviews</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <CaregiverReviewsList caregiverId={caregiver.id} />
+              <CaregiverReviewForm caregiverId={caregiver.id} />
+            </div>
+          </section>
+
+          {/* Reviews */}
+          <section className="mt-10">
+            <h2 className="text-lg font-medium text-gray-900 mb-4">Reviews</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <CaregiverReviewsList caregiverId={caregiver.id} />
+              <CaregiverReviewForm caregiverId={caregiver.id} />
+            </div>
+          </section>
         </div>
       </div>
     </div>
