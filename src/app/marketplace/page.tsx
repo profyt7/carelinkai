@@ -397,7 +397,6 @@ export default function MarketplacePage() {
     },
     []
   );
-
   // One-time: initialize tab + filters from URL with localStorage fallback
   useEffect(() => {
     if (didInitFromUrl.current) return;
@@ -506,12 +505,15 @@ export default function MarketplacePage() {
           setCgGeoLat(spCgLat ? Number(spCgLat) : null);
           setCgGeoLng(spCgLng ? Number(spCgLng) : null);
           try { setCgShortlistOnly(savedParams.get("shortlist") === "1"); } catch {}
+          
           // Jobs
           setZip(v("zip"));
           setServices(arr("services"));
           setPostedByMe(savedParams.get("postedByMe") === "true");
+          
           setHideClosed(savedParams.get("status") === "OPEN");
           setFavoritesOnly(savedParams.get("favorites") === "1");
+          
           const spJobPage = parseInt(savedParams.get("page") || "1", 10);
           if (!Number.isNaN(spJobPage) && spJobPage > 0) setJobPage(spJobPage);
           const spJobSort = savedParams.get("sortBy") as any;
