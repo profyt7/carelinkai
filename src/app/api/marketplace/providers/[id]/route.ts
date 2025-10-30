@@ -10,8 +10,10 @@ function createSeededRandom(seed: string): () => number {
 }
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
-  if (process.env.NODE_ENV === 'production') {
-    return NextResponse.json({ error: 'Providers API not implemented in production' }, { status: 501 });
+  // Feature flag aligned with list route
+  const providersEnabled = process.env['NEXT_PUBLIC_PROVIDERS_ENABLED'] !== 'false';
+  if (!providersEnabled) {
+    return NextResponse.json({ error: 'Providers feature disabled' }, { status: 404 });
   }
   const { id } = params;
   try {

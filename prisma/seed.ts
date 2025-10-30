@@ -179,7 +179,16 @@ async function seedMockCaregivers(count: number = 12) {
     // caregiver profile
     await prisma.caregiver.upsert({
       where: { userId: user.id },
-      update: {},
+      update: {
+        specialties: {
+          set: (() => {
+            const shuffled = [...specialtySlugs].sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, Math.min(3, shuffled.length));
+          })(),
+        },
+        settings: { set: [] },
+        careTypes: { set: [] },
+      },
       create: {
         userId: user.id,
         bio: 'Compassionate caregiver with experience supporting seniors across various needs.',
@@ -190,6 +199,8 @@ async function seedMockCaregivers(count: number = 12) {
           const shuffled = [...specialtySlugs].sort(() => 0.5 - Math.random());
           return shuffled.slice(0, Math.min(3, shuffled.length));
         })(),
+        settings: [],
+        careTypes: [],
       },
     });
   }
