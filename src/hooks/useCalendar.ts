@@ -14,6 +14,7 @@ import { toast } from 'react-hot-toast';
 import { format, parseISO, isAfter, isBefore } from 'date-fns';
 
 import { AppointmentType, AppointmentStatus } from '@/lib/types/calendar';
+import { getMockAppointments, filterMockAppointments } from '@/lib/mock/calendar';
 import type {
   Appointment,
   CalendarEvent,
@@ -254,6 +255,25 @@ export function useCalendar(): CalendarHook {
       const currentFilter = partialFilter 
         ? { ...filter, ...partialFilter }
         : filter;
+      
+      // Check runtime mock mode first
+      try {
+        const mockRes = await fetch('/api/runtime/mocks', { cache: 'no-store', credentials: 'include' as RequestCredentials });
+        if (mockRes.ok) {
+          const mj = await mockRes.json();
+          if (mj?.show) {
+            const all = getMockAppointments();
+            const filtered = filterMockAppointments(all, currentFilter);
+            setState(prev => ({
+              ...prev,
+              appointments: filtered,
+              events: convertToEvents(filtered),
+              isLoading: false,
+            }));
+            return filtered;
+          }
+        }
+      } catch {}
       
       // Build query string from filter
       const params = new URLSearchParams();
