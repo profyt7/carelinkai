@@ -99,9 +99,28 @@ export default function PWAManager({ children }: PWAManagerProps) {
        * ------------------------------------------------------------------
        */
       const isDev = process.env.NODE_ENV !== "production";
+      const pwaEnabled = (process.env['NEXT_PUBLIC_PWA_ENABLED'] || '').toString() === '1';
       const forceEnable =
         typeof window !== "undefined" &&
         window.location.search.includes("enable-sw");
+
+      // Kill-switch: if PWA disabled, proactively unregister and clear caches
+      if (!pwaEnabled) {
+        try {
+          if ('serviceWorker' in navigator) {
+            const regs = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(regs.map(r => r.unregister()));
+          }
+          if ('caches' in window) {
+            const keys = await caches.keys();
+            await Promise.all(keys.map(k => caches.delete(k)));
+          }
+          console.info('[PWAManager] PWA disabled (NEXT_PUBLIC_PWA_ENABLED!=1). Service workers unregistered and caches cleared.');
+        } catch (e) {
+          console.warn('[PWAManager] Failed to fully disable PWA:', e);
+        }
+        return;
+      }
 
       if (isDev && !forceEnable) {
         console.info(

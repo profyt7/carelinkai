@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireAnyRole } from "@/lib/rbac";
 import { z } from "zod";
 import fs from "fs";
 import path from "path";
@@ -19,6 +18,9 @@ import {
   createActivityRecord
 } from "@/lib/services/family";
 import { generateMockDocuments } from "@/lib/services/family";
+import { uploadBuffer, buildFamilyDocumentKey, toS3Url, parseS3Url, deleteObject as s3Delete } from "@/lib/storage";
+import { createAuditLogFromRequest } from "@/lib/audit";
+import { rateLimitAsync, getClientIp, buildRateLimitHeaders } from "@/lib/rateLimit";
 
 // Maximum file size (10MB)
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -52,7 +54,6 @@ const documentCreateSchema = z.object({
   title: z.string().min(1).max(255),
   description: z.string().max(1000).optional(),
   type: z.enum([
-    "CARE_PLAN",
     "MEDICAL_RECORD",
     "INSURANCE_DOCUMENT",
     "PHOTO",
@@ -71,7 +72,6 @@ const documentFilterSchema = z.object({
   familyId: z.string().cuid(),
   type: z.union([
     z.enum([
-      "CARE_PLAN",
       "MEDICAL_RECORD",
       "INSURANCE_DOCUMENT",
       "PHOTO",
@@ -82,7 +82,6 @@ const documentFilterSchema = z.object({
     ]),
     z.array(
       z.enum([
-        "CARE_PLAN",
         "MEDICAL_RECORD",
         "INSURANCE_DOCUMENT",
         "PHOTO",
@@ -157,8 +156,21 @@ export async function GET(request: NextRequest) {
   // Inner handle function containing the original logic
   async function handle(): Promise<NextResponse> {
     try {
+      // Rate limit: 60 req/min per IP
+      {
+        const key = getClientIp(request as any);
+        const limit = 60;
+        const rr = await rateLimitAsync({ name: 'family:documents:GET', key, limit, windowMs: 60_000 });
+        if (!rr.allowed) {
+          return NextResponse.json(
+            { error: "Rate limit exceeded" },
+            { status: 429, headers: { ...buildRateLimitHeaders(rr, limit), 'Retry-After': String(Math.ceil(rr.resetMs / 1000)) } }
+          );
+        }
+      }
       // Get session and verify authentication
-      const session = await getServerSession(authOptions);
+      const { session, error } = await requireAnyRole(["FAMILY"] as any);
+      if (error) return error;
       if (!session?.user) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
@@ -343,6 +355,16 @@ export async function GET(request: NextRequest) {
       const elapsed = Date.now() - startedAt;
       console.log(`[Documents API] Request successful, returning response, total elapsed: ${elapsed}ms`);
       
+      // Audit log (read)
+      await createAuditLogFromRequest(
+        request,
+        "READ" as any,
+        "FamilyDocument",
+        filters.familyId,
+        "Listed family documents",
+        { count: documentsWithDetails.length, page: filters.page }
+      );
+
       // Return documents with pagination metadata
       return NextResponse.json({
         documents: documentsWithDetails,
@@ -373,8 +395,21 @@ export async function GET(request: NextRequest) {
 // POST handler for uploading documents
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit: 20 req/min per IP
+    {
+      const key = getClientIp(request as any);
+      const limit = 20;
+      const rr = await rateLimitAsync({ name: 'family:documents:POST', key, limit, windowMs: 60_000 });
+      if (!rr.allowed) {
+        return NextResponse.json(
+          { error: "Rate limit exceeded" },
+          { status: 429, headers: { ...buildRateLimitHeaders(rr, limit), 'Retry-After': String(Math.ceil(rr.resetMs / 1000)) } }
+        );
+      }
+    }
     // Get session and verify authentication
-    const session = await getServerSession(authOptions);
+    const { session, error } = await requireAnyRole(["FAMILY"] as any);
+      if (error) return error;
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -460,23 +495,13 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Ensure upload directory exists
-    const uploadDir = await ensureUploadDirExists(metadata.familyId);
-    
-    // Generate secure filename
+    // Generate secure filename & S3 key
     const secureFilename = generateSecureFilename(file.name);
-    
-    // Full path to save the file
-    const filePath = path.join(uploadDir, secureFilename);
-    
-    // Convert file to buffer
+    const key = buildFamilyDocumentKey(metadata.familyId, secureFilename);
     const fileBuffer = Buffer.from(await file.arrayBuffer());
-    
-    // Write file to disk
-    fs.writeFileSync(filePath, fileBuffer);
-    
-    // Calculate relative URL path
-    const fileUrl = `/uploads/family/${metadata.familyId}/documents/${secureFilename}`;
+    await uploadBuffer({ key, body: fileBuffer, contentType: file.type, metadata: { uploaderId: session.user.id, familyId: metadata.familyId } });
+    // Store S3 URL (not publicly accessible): s3://bucket/key
+    const fileUrl = toS3Url(process.env["S3_BUCKET"] as string, key);
     
     // Create document record in database
     const document = await prisma.familyDocument.create({
@@ -515,6 +540,16 @@ export async function POST(request: NextRequest) {
       resourceId: document.id,
       description: `${session.user.firstName || session.user.name} uploaded a new document: ${document.title}`
     });
+
+    // Audit log (create)
+    await createAuditLogFromRequest(
+      request,
+      "CREATE" as any,
+      "FamilyDocument",
+      document.id,
+      "Uploaded family document",
+      { familyId: metadata.familyId, fileType: file.type, size: file.size }
+    );
 
     // ------------------------------------------------------------------
     // Publish SSE event so all family members receive real-time update
@@ -559,8 +594,21 @@ export async function POST(request: NextRequest) {
 // PUT handler for updating document metadata
 export async function PUT(request: NextRequest) {
   try {
+    // Rate limit: 20 req/min per IP
+    {
+      const key = getClientIp(request as any);
+      const limit = 20;
+      const rr = await rateLimitAsync({ name: 'family:documents:PUT', key, limit, windowMs: 60_000 });
+      if (!rr.allowed) {
+        return NextResponse.json(
+          { error: "Rate limit exceeded" },
+          { status: 429, headers: { ...buildRateLimitHeaders(rr, limit), 'Retry-After': String(Math.ceil(rr.resetMs / 1000)) } }
+        );
+      }
+    }
     // Get session and verify authentication
-    const session = await getServerSession(authOptions);
+    const { session, error } = await requireAnyRole(["FAMILY"] as any);
+      if (error) return error;
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -674,6 +722,16 @@ export async function PUT(request: NextRequest) {
       document: normalized
     });
     
+    // Audit log (update)
+    await createAuditLogFromRequest(
+      request,
+      "UPDATE" as any,
+      "FamilyDocument",
+      document.id,
+      "Updated family document metadata",
+      { updates: Object.keys(updates) }
+    );
+
     // Return success response with updated document
     return NextResponse.json({
       success: true,
@@ -696,8 +754,21 @@ export async function PUT(request: NextRequest) {
 // DELETE handler for removing documents
 export async function DELETE(request: NextRequest) {
   try {
+    // Rate limit: 20 req/min per IP
+    {
+      const key = getClientIp(request as any);
+      const limit = 20;
+      const rr = await rateLimitAsync({ name: 'family:documents:DELETE', key, limit, windowMs: 60_000 });
+      if (!rr.allowed) {
+        return NextResponse.json(
+          { error: "Rate limit exceeded" },
+          { status: 429, headers: { ...buildRateLimitHeaders(rr, limit), 'Retry-After': String(Math.ceil(rr.resetMs / 1000)) } }
+        );
+      }
+    }
     // Get session and verify authentication
-    const session = await getServerSession(authOptions);
+    const { session, error } = await requireAnyRole(["FAMILY"] as any);
+      if (error) return error;
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -740,12 +811,16 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "No permission to delete this document" }, { status: 403 });
     }
     
-    // Get file path
-    const filePath = path.join(process.cwd(), "public", document.fileUrl);
-    
-    // Delete file if it exists
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
+    // Delete underlying file (support legacy FS path and new S3 url)
+    const s3 = parseS3Url(document.fileUrl);
+    if (s3) {
+      await s3Delete({ bucket: s3.bucket, key: s3.key });
+    } else {
+      // Legacy public/ uploads cleanup
+      const filePath = path.join(process.cwd(), "public", document.fileUrl);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
     }
     
     // Delete document from database
@@ -771,6 +846,15 @@ export async function DELETE(request: NextRequest) {
       documentId: document.id
     });
     
+    // Audit log (delete)
+    await createAuditLogFromRequest(
+      request,
+      "DELETE" as any,
+      "FamilyDocument",
+      document.id,
+      "Deleted family document"
+    );
+
     // Return success response
     return NextResponse.json({
       success: true,

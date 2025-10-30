@@ -97,41 +97,67 @@ export async function calculateAIMatchScore(
   residentProfile: ResidentProfile,
   customWeights?: Partial<typeof DEFAULT_WEIGHTS>
 ): Promise<number> {
+  const breakdown = await calculateAIMatchBreakdown(home, residentProfile, customWeights);
+  return breakdown.score;
+}
+
+/**
+ * Calculate AI match with factor breakdown
+ */
+export async function calculateAIMatchBreakdown(
+  home: any,
+  residentProfile: ResidentProfile,
+  customWeights?: Partial<typeof DEFAULT_WEIGHTS>
+): Promise<{
+  score: number;
+  factors: {
+    careLevel: number;
+    budget: number;
+    location: number;
+    amenities: number;
+    gender: number;
+    social: number;
+    medical: number;
+  };
+  weights: typeof DEFAULT_WEIGHTS;
+}> {
   // Merge default weights with any custom weights
   const weights = { ...DEFAULT_WEIGHTS, ...(customWeights || {}) };
-  
+
   // Normalize weights to ensure they sum to 100
   const weightSum = Object.values(weights).reduce((sum, weight) => sum + weight, 0);
   const normalizedWeights = Object.entries(weights).reduce((acc, [key, value]) => {
     acc[key as keyof typeof DEFAULT_WEIGHTS] = (value / weightSum) * 100;
     return acc;
   }, {} as typeof DEFAULT_WEIGHTS);
-  
+
   // Calculate individual factor scores
-  const careLevelScore = calculateCareLevelMatch(home, residentProfile);
-  const budgetScore = calculateBudgetMatch(home, residentProfile);
-  const locationScore = await calculateLocationMatch(home, residentProfile);
-  const amenitiesScore = calculateAmenitiesMatch(home, residentProfile);
-  const genderScore = calculateGenderMatch(home, residentProfile);
-  const socialScore = calculateSocialMatch(home, residentProfile);
-  const medicalScore = calculateMedicalMatch(home, residentProfile);
-  
+  const careLevel = calculateCareLevelMatch(home, residentProfile);
+  const budget = calculateBudgetMatch(home, residentProfile);
+  const location = await calculateLocationMatch(home, residentProfile);
+  const amenities = calculateAmenitiesMatch(home, residentProfile);
+  const gender = calculateGenderMatch(home, residentProfile);
+  const social = calculateSocialMatch(home, residentProfile);
+  const medical = calculateMedicalMatch(home, residentProfile);
+
   // Apply weights to each factor
   const weightedScores = {
-    careLevel: careLevelScore * normalizedWeights.careLevel / 100,
-    budget: budgetScore * normalizedWeights.budget / 100,
-    location: locationScore * normalizedWeights.location / 100,
-    amenities: amenitiesScore * normalizedWeights.amenities / 100,
-    gender: genderScore * normalizedWeights.gender / 100,
-    social: socialScore * normalizedWeights.social / 100,
-    medical: medicalScore * normalizedWeights.medical / 100
+    careLevel: careLevel * normalizedWeights.careLevel / 100,
+    budget: budget * normalizedWeights.budget / 100,
+    location: location * normalizedWeights.location / 100,
+    amenities: amenities * normalizedWeights.amenities / 100,
+    gender: gender * normalizedWeights.gender / 100,
+    social: social * normalizedWeights.social / 100,
+    medical: medical * normalizedWeights.medical / 100,
   };
-  
-  // Calculate total score (0-100)
-  const totalScore = Object.values(weightedScores).reduce((sum, score) => sum + score, 0);
-  
-  // Round to nearest whole number
-  return Math.round(totalScore);
+
+  const score = Math.round(Object.values(weightedScores).reduce((sum, s) => sum + s, 0));
+
+  return {
+    score,
+    factors: { careLevel, budget, location, amenities, gender, social, medical },
+    weights: normalizedWeights,
+  };
 }
 
 /**

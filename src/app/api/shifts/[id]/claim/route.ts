@@ -64,21 +64,30 @@ export async function POST(
     }
 
     // Update the shift
-    const updatedShift = await prisma.caregiverShift.update({
-      where: { id },
-      data: {
-        caregiverId: caregiver.id,
-        status: "ASSIGNED"
-      },
-      include: {
-        home: {
-          select: {
-            name: true,
-            address: true
-          }
-        }
-      }
-    });
+    const [updatedShift, newHire] = await prisma.$transaction([
+      prisma.caregiverShift.update({
+        where: { id },
+        data: {
+          caregiverId: caregiver.id,
+          status: "ASSIGNED",
+        },
+        include: {
+          home: {
+            select: {
+              name: true,
+              address: true,
+            },
+          },
+        },
+      }),
+      prisma.marketplaceHire.create({
+        data: {
+          caregiverId: caregiver.id,
+          shiftId: id,
+          // listingId & applicationId remain null/undefined (implicit)
+        },
+      }),
+    ]);
 
     // Format address if available
     let address = "";
@@ -100,7 +109,8 @@ export async function POST(
         hourlyRate: updatedShift.hourlyRate.toString(),
         status: updatedShift.status,
         notes: updatedShift.notes
-      }
+      },
+      hireId: newHire.id
     });
 
   } catch (error) {
