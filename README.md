@@ -94,6 +94,9 @@ npx prisma migrate dev --name init
 | Prisma Studio (DB UI) | `npm run prisma:studio` |
 | Apply new migration | `npm run prisma:migrate` |
 
+See docs/DEVELOPMENT.md for a fuller local setup and testing guide.
+For production deployment guidance, see docs/DEPLOYMENT.md.
+
 Pull requests must pass ESLint, type-check, and Jest suites (CI pipeline provided in `.github/workflows`).
 
 ---
