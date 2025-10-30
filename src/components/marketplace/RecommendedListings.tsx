@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { FiMapPin, FiDollarSign } from "react-icons/fi";
+import ExplainMatchTrigger from "@/components/marketplace/ExplainMatchTrigger";
 
 type RecommendedListing = {
   id: string;
@@ -132,11 +133,14 @@ export default function RecommendedListings() {
             <p className="text-sm text-gray-700 line-clamp-2 mb-3 flex-grow">{item.data.description}</p>
             
             {item.score > 0 && (
-              <div className="text-xs text-gray-500 mb-3">
+              <div className="text-xs text-gray-500 mb-3 flex items-center justify-between">
                 <span className="font-medium">{item.score}% match</span>
-                {item.reasons && item.reasons.length > 0 && (
-                  <span className="ml-1">- {item.reasons[0]}</span>
-                )}
+                <ExplainMatchTrigger
+                  title={item.data.title}
+                  score={item.score}
+                  reasons={item.reasons}
+                  className="text-[11px] px-2 py-1 border rounded-md text-neutral-700 hover:bg-neutral-50"
+                />
               </div>
             )}
             

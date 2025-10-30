@@ -97,7 +97,7 @@ export default function DocumentUploadModal({
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [documentType, setDocumentType] = useState<FamilyDocumentType>("OTHER");
+  const [documentType, setDocumentType] = useState<FamilyDocumentType>(FamilyDocumentTypeEnum.OTHER);
   // track if user manually changed document type
   const [userTouchedType, setUserTouchedType] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
@@ -120,10 +120,10 @@ export default function DocumentUploadModal({
      Helpers
   ------------------------------------------------------------------*/
   const guessType = (incoming: File[]): FamilyDocumentType => {
-    if (incoming.some((f) => f.type.startsWith("image/"))) return "PHOTO";
-    if (incoming.some((f) => f.type.startsWith("video/"))) return "VIDEO";
-    if (incoming.some((f) => f.type === "application/pdf")) return "OTHER";
-    return "OTHER";
+    if (incoming.some((f) => f.type.startsWith("image/"))) return FamilyDocumentTypeEnum.PHOTO as FamilyDocumentType;
+    if (incoming.some((f) => f.type.startsWith("video/"))) return FamilyDocumentTypeEnum.VIDEO as FamilyDocumentType;
+    if (incoming.some((f) => f.type === "application/pdf")) return FamilyDocumentTypeEnum.OTHER as FamilyDocumentType;
+    return FamilyDocumentTypeEnum.OTHER as FamilyDocumentType;
   };
 
   /* ------------------------------------------------------------------
@@ -172,7 +172,7 @@ export default function DocumentUploadModal({
       setFiles([]);
       setTitle("");
       setDescription("");
-      setDocumentType("OTHER");
+      setDocumentType(FamilyDocumentTypeEnum.OTHER as FamilyDocumentType);
       setTags([]);
       setCurrentTag("");
       setIsEncrypted(true);
@@ -678,7 +678,7 @@ export default function DocumentUploadModal({
                       <Listbox
                         value={documentType}
                         onChange={(val) => {
-                          setDocumentType(val);
+                          setDocumentType(val as FamilyDocumentType);
                           setUserTouchedType(true);
                         }}
                         disabled={isUploading}
