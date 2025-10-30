@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Process atomically
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: any) => {
       let wallet = null as any;
 
       if (walletId) {

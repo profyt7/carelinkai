@@ -1,9 +1,7 @@
 ﻿import { NextResponse } from 'next/server';
-import { PrismaClient, UserRole } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { requireOperatorOrAdmin } from '@/lib/rbac';
-
-const prisma = new PrismaClient();
 
 const endEmploymentSchema = z.object({
   endDate: z.string().datetime().optional(),
@@ -17,7 +15,7 @@ export async function PATCH(
     const { session, error } = await requireOperatorOrAdmin();
     if (error) return error;
     const user = await prisma.user.findUnique({ where: { email: session!.user!.email! } });
-    if (!user || (user.role !== UserRole.OPERATOR && user.role !== UserRole.ADMIN)) {
+    if (!user || (user.role !== 'OPERATOR' && user.role !== 'ADMIN')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -25,7 +23,7 @@ export async function PATCH(
     const employment = await prisma.caregiverEmployment.findUnique({ where: { id } });
     if (!employment) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-    if (user.role !== UserRole.ADMIN) {
+    if (user.role !== 'ADMIN') {
       const operator = await prisma.operator.findUnique({ where: { userId: user.id } });
       if (!operator || operator.id !== employment.operatorId) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -49,6 +47,6 @@ export async function PATCH(
     console.error('End caregiver employment failed', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   } finally {
-    await prisma.$disconnect();
+    // prisma is a singleton; no manual disconnect needed
   }
 }
