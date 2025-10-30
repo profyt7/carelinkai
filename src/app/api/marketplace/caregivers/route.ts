@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth/next';
 import authOptions from '@/lib/auth';
 import { Prisma } from '@prisma/client';
+import { rateLimitAsync, getClientIp, buildRateLimitHeaders } from '@/lib/rateLimit';
 
 /**
  * GET /api/marketplace/caregivers
@@ -14,8 +15,23 @@ import { Prisma } from '@prisma/client';
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
+    // Rate limit: 60 req/min per IP
+    {
+      const key = getClientIp(request);
+      const limit = 60;
+      const rr = await rateLimitAsync({ name: 'caregivers:GET', key, limit, windowMs: 60_000 });
+      if (!rr.allowed) {
+        return NextResponse.json(
+          { error: 'Rate limit exceeded' },
+          { status: 429, headers: { ...buildRateLimitHeaders(rr, limit), 'Retry-After': String(Math.ceil(rr.resetMs / 1000)) } }
+        );
+      }
+      var __rl_caregivers_get = { rr, limit };
+    }
     
     // Extract filter parameters
+    const idsParam = searchParams.get('ids');
+    const ids = idsParam ? idsParam.split(',').map((s) => s.trim()).filter(Boolean) : null;
     const q = searchParams.get('q');
     const city = searchParams.get('city');
     const state = searchParams.get('state');
@@ -23,12 +39,100 @@ export async function GET(request: Request) {
     const maxRate = searchParams.get('maxRate') ? parseFloat(searchParams.get('maxRate')!) : null;
     const minExperience = searchParams.get('minExperience') ? parseInt(searchParams.get('minExperience')!, 10) : null;
     const specialties = searchParams.get('specialties')?.split(',').filter(Boolean);
+    const settings = searchParams.get('settings')?.split(',').filter(Boolean);
+    const careTypes = searchParams.get('careTypes')?.split(',').filter(Boolean);
+    const lat = searchParams.get('lat') ? parseFloat(searchParams.get('lat')!) : null;
+    const lng = searchParams.get('lng') ? parseFloat(searchParams.get('lng')!) : null;
+    const radiusMiles = searchParams.get('radiusMiles') ? parseFloat(searchParams.get('radiusMiles')!) : null;
     
-    // Pagination parameters
+    // Pagination parameters (supports cursor or page)
+    const cursor = searchParams.get('cursor');
     const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1;
     const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 20;
+    
+    // Sorting parameter: recency (default), rateAsc, rateDesc, experienceDesc, distanceAsc (when using radius)
+    const sortBy = searchParams.get('sortBy') || 'recency';
     const skip = (page - 1) * pageSize;
     
+    // If explicit IDs are provided, short-circuit to fetch those caregivers only
+    if (ids && ids.length > 0) {
+      const caregivers = await prisma.caregiver.findMany({
+        where: { id: { in: ids } },
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              profileImageUrl: true,
+              addresses: true,
+            },
+          },
+        },
+      });
+
+      // rating aggregates
+      const reviewAgg = await prisma.caregiverReview.groupBy({
+        by: ['caregiverId'],
+        where: { caregiverId: { in: caregivers.map((c) => c.id) } },
+        _avg: { rating: true },
+        _count: { _all: true },
+      });
+      const reviewMap = new Map(
+        reviewAgg.map((r) => [
+          r.caregiverId,
+          {
+            avg: r._avg.rating ?? 0,
+            count: r._count._all,
+          },
+        ])
+      );
+
+      const deriveBadges = (avg: number, count: number, yearsExp: number | null, bgStatus: string) => {
+        const badges: string[] = [];
+        if (bgStatus === 'CLEAR') badges.push('Background Check Clear');
+        if (yearsExp !== null && yearsExp >= 5) badges.push('Experienced');
+        if (count >= 5 && avg >= 4.5) badges.push('Top Rated');
+        return badges;
+      };
+
+      const formattedCaregivers = caregivers.map((caregiver: any) => {
+        const address = caregiver.user.addresses && caregiver.user.addresses.length > 0 ? caregiver.user.addresses[0] : null;
+        let photoUrl = null as string | null;
+        if (caregiver.user.profileImageUrl) {
+          if (typeof caregiver.user.profileImageUrl === 'string') photoUrl = caregiver.user.profileImageUrl;
+          else if ((caregiver.user.profileImageUrl as any).medium) photoUrl = (caregiver.user.profileImageUrl as any).medium;
+          else if ((caregiver.user.profileImageUrl as any).thumbnail) photoUrl = (caregiver.user.profileImageUrl as any).thumbnail;
+          else if ((caregiver.user.profileImageUrl as any).large) photoUrl = (caregiver.user.profileImageUrl as any).large;
+        }
+        const ratingInfo = reviewMap.get(caregiver.id) ?? { avg: 0, count: 0 };
+        return {
+          id: caregiver.id,
+          userId: caregiver.user.id,
+          name: `${caregiver.user.firstName} ${caregiver.user.lastName}`,
+          city: address?.city || null,
+          state: address?.state || null,
+          hourlyRate: caregiver.hourlyRate ? parseFloat(caregiver.hourlyRate.toString()) : null,
+          yearsExperience: caregiver.yearsExperience,
+          specialties: caregiver.specialties || [],
+          bio: caregiver.bio || null,
+          backgroundCheckStatus: caregiver.backgroundCheckStatus,
+          photoUrl,
+          ratingAverage: Number((ratingInfo.avg ?? 0).toFixed(1)) || 0,
+          reviewCount: ratingInfo.count,
+          badges: deriveBadges(ratingInfo.avg ?? 0, ratingInfo.count, caregiver.yearsExperience, caregiver.backgroundCheckStatus),
+        };
+      });
+
+      return NextResponse.json(
+        {
+          data: formattedCaregivers,
+          pagination: { page: 1, pageSize: formattedCaregivers.length, total: formattedCaregivers.length },
+        },
+        { status: 200, headers: { 'Cache-Control': 'public, max-age=15, s-maxage=15, stale-while-revalidate=60', ...(typeof __rl_caregivers_get !== 'undefined' ? buildRateLimitHeaders(__rl_caregivers_get.rr, __rl_caregivers_get.limit) : {}) } }
+      );
+    }
+
     // Build where clause for filtering
     const where: any = {};
     
@@ -81,10 +185,28 @@ export async function GET(request: Request) {
         hasSome: specialties
       };
     }
+
+    // Settings filter
+    if (settings && settings.length > 0) {
+      where.settings = {
+        hasSome: settings
+      };
+    }
+
+    // Care types filter
+    if (careTypes && careTypes.length > 0) {
+      where.careTypes = {
+        hasSome: careTypes
+      };
+    }
     
-    // Fetch caregivers with counts for pagination
-    const [caregivers, totalCount] = await Promise.all([
-      prisma.caregiver.findMany({
+    // Radius filtering support
+    const useRadius = !!(lat !== null && lng !== null && radiusMiles !== null && !Number.isNaN(radiusMiles));
+    let caregivers: any[] = [];
+    let totalCount = 0;
+    if (useRadius) {
+      // Pull a larger candidate set; include addresses for lat/lng
+      const candidates = await prisma.caregiver.findMany({
         where,
         include: {
           user: {
@@ -97,14 +219,70 @@ export async function GET(request: Request) {
             }
           }
         },
-        orderBy: {
-          createdAt: 'desc'
-        },
-        skip,
-        take: pageSize
-      }),
-      prisma.caregiver.count({ where })
-    ]);
+        take: 500
+      });
+      const withDistance = candidates.map((c: any) => {
+        const addr = c.user?.addresses?.[0];
+        const distance = (addr?.latitude != null && addr?.longitude != null)
+          ? haversineMiles(lat!, lng!, Number(addr.latitude), Number(addr.longitude))
+          : Infinity;
+        return { ...c, distanceMiles: distance };
+      });
+      let filtered = withDistance.filter((c: any) => c.distanceMiles <= (radiusMiles as number));
+      if (sortBy === 'distanceAsc') filtered.sort((a: any, b: any) => (a.distanceMiles ?? Infinity) - (b.distanceMiles ?? Infinity));
+      else if (sortBy === 'rateAsc') filtered.sort((a: any, b: any) => (Number(a.hourlyRate ?? 0) - Number(b.hourlyRate ?? 0)));
+      else if (sortBy === 'rateDesc') filtered.sort((a: any, b: any) => (Number(b.hourlyRate ?? 0) - Number(a.hourlyRate ?? 0)));
+      else if (sortBy === 'experienceDesc') filtered.sort((a: any, b: any) => (Number(b.yearsExperience ?? 0) - Number(a.yearsExperience ?? 0)));
+      else filtered.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      totalCount = filtered.length;
+      caregivers = filtered.slice(skip, skip + pageSize);
+    } else {
+      // Prefer cursor-based pagination when possible
+      const orderBy = (
+        sortBy === 'rateAsc' ? [{ hourlyRate: 'asc' as const }, { id: 'asc' as const }] :
+        sortBy === 'rateDesc' ? [{ hourlyRate: 'desc' as const }, { id: 'asc' as const }] :
+        sortBy === 'experienceDesc' ? [{ yearsExperience: 'desc' as const }, { id: 'asc' as const }] :
+        [{ createdAt: 'desc' as const }, { id: 'asc' as const }]
+      );
+
+      if (cursor) {
+        const rows = await prisma.caregiver.findMany({
+          where,
+          include: {
+            user: {
+              select: { id: true, firstName: true, lastName: true, profileImageUrl: true, addresses: true }
+            }
+          },
+          orderBy,
+          cursor: { id: cursor },
+          skip: 1, // skip the cursor itself
+          take: pageSize + 1,
+        });
+        caregivers = rows.slice(0, pageSize) as any[];
+        // get total for compatibility with existing UI counters
+        totalCount = await prisma.caregiver.count({ where });
+        // Attach marker for nextCursor via response (below)
+        (caregivers as any).__nextCursor = rows[pageSize]?.id ?? null;
+      } else {
+        const [rows, count] = await Promise.all([
+          prisma.caregiver.findMany({
+            where,
+            include: {
+              user: {
+                select: { id: true, firstName: true, lastName: true, profileImageUrl: true, addresses: true }
+              }
+            },
+            orderBy,
+            skip,
+            take: pageSize + 1,
+          }),
+          prisma.caregiver.count({ where })
+        ]);
+        caregivers = rows.slice(0, pageSize) as any[];
+        totalCount = count as number;
+        (caregivers as any).__nextCursor = rows[pageSize]?.id ?? null;
+      }
+    }
     
     /* ------------------------------------------------------------------
        Pull rating aggregates (avg + count) for this result set
@@ -177,7 +355,8 @@ export async function GET(request: Request) {
           ratingInfo.count,
           caregiver.yearsExperience,
           caregiver.backgroundCheckStatus
-        )
+        ),
+        ...(useRadius ? { distanceMiles: caregiver.distanceMiles } : {})
       };
     });
     
@@ -210,20 +389,26 @@ export async function GET(request: Request) {
             total: mockCaregivers.length
           }
         },
-        { status: 200 }
+        { status: 200, headers: { 'Cache-Control': 'public, max-age=15, s-maxage=15, stale-while-revalidate=60' } }
       );
     }
     
+    // next-cursor calculation (only for non-radius path)
+    const nextCursor = !useRadius ? ((caregivers as any).__nextCursor ?? null) : null;
+    const hasMore = !useRadius ? Boolean(nextCursor) : (totalCount > skip + pageSize);
+
     return NextResponse.json(
       { 
         data: formattedCaregivers,
         pagination: {
           page,
           pageSize,
-          total: totalCount
+          total: totalCount,
+          hasMore,
+          cursor: nextCursor,
         }
       },
-      { status: 200 }
+      { status: 200, headers: { 'Cache-Control': 'public, max-age=15, s-maxage=15, stale-while-revalidate=60', ...(typeof __rl_caregivers_get !== 'undefined' ? buildRateLimitHeaders(__rl_caregivers_get.rr, __rl_caregivers_get.limit) : {}) } }
     );
   } catch (error) {
     console.error('Error fetching caregivers:', error);
@@ -238,7 +423,9 @@ export async function GET(request: Request) {
           pagination: {
             page: 1,
             pageSize: 20,
-            total: mockCaregivers.length
+            total: mockCaregivers.length,
+            hasMore: false,
+            cursor: null,
           }
         },
         { status: 200 }
@@ -250,6 +437,17 @@ export async function GET(request: Request) {
       { status: 500 }
     );
   }
+}
+
+// Haversine distance in miles
+function haversineMiles(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const toRad = (v: number) => (v * Math.PI) / 180;
+  const R = 3958.8; // miles
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
 }
 
 /**

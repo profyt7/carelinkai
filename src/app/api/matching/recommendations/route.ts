@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { scoreCaregiverForListing, scoreListingForCaregiver } from "@/lib/matching";
+import { scoreCaregiverForListing, scoreListingForCaregiver, DEFAULT_WEIGHTS } from "@/lib/matching";
 import { z } from "zod";
 
 // Validate query parameters
@@ -13,6 +13,13 @@ const querySchema = z.object({
   target: z.enum(["caregivers", "listings"]),
   listingId: z.string().optional(),
   limit: z.coerce.number().int().positive().default(10),
+  // Optional tuning params
+  maxDistance: z.coerce.number().int().positive().optional(),
+  distanceWeight: z.coerce.number().int().min(0).max(100).optional(),
+  availabilityWeight: z.coerce.number().int().min(0).max(100).optional(),
+  specialtiesWeight: z.coerce.number().int().min(0).max(100).optional(),
+  ratingWeight: z.coerce.number().int().min(0).max(100).optional(),
+  rateFitWeight: z.coerce.number().int().min(0).max(100).optional(),
 });
 
 /**
@@ -42,11 +49,23 @@ export async function GET(request: NextRequest) {
     const target = searchParams.get("target");
     const listingId = searchParams.get("listingId");
     const limitParam = searchParams.get("limit");
+    const maxDistance = searchParams.get("maxDistance");
+    const distanceWeight = searchParams.get("distanceWeight");
+    const availabilityWeight = searchParams.get("availabilityWeight");
+    const specialtiesWeight = searchParams.get("specialtiesWeight");
+    const ratingWeight = searchParams.get("ratingWeight");
+    const rateFitWeight = searchParams.get("rateFitWeight");
     
     const validationResult = querySchema.safeParse({
       target: target ?? undefined,
       listingId: listingId ?? undefined,
       limit: limitParam ?? undefined,
+      maxDistance: maxDistance ?? undefined,
+      distanceWeight: distanceWeight ?? undefined,
+      availabilityWeight: availabilityWeight ?? undefined,
+      specialtiesWeight: specialtiesWeight ?? undefined,
+      ratingWeight: ratingWeight ?? undefined,
+      rateFitWeight: rateFitWeight ?? undefined,
     });
 
     if (!validationResult.success) {
@@ -58,11 +77,22 @@ export async function GET(request: NextRequest) {
 
     const { target: validTarget, listingId: validListingId, limit } = validationResult.data;
 
+    // Build scoring options from optional params
+    const scoringOptions: any = {};
+    const weights: Partial<typeof DEFAULT_WEIGHTS> = {};
+    if (validationResult.data.maxDistance) scoringOptions.maxDistance = validationResult.data.maxDistance;
+    if (validationResult.data.distanceWeight !== undefined) weights.distance = validationResult.data.distanceWeight;
+    if (validationResult.data.availabilityWeight !== undefined) weights.availability = validationResult.data.availabilityWeight;
+    if (validationResult.data.specialtiesWeight !== undefined) weights.specialties = validationResult.data.specialtiesWeight;
+    if (validationResult.data.ratingWeight !== undefined) weights.rating = validationResult.data.ratingWeight;
+    if (validationResult.data.rateFitWeight !== undefined) weights.rateFit = validationResult.data.rateFitWeight;
+    if (Object.keys(weights).length > 0) scoringOptions.weights = weights;
+
     // Handle recommendations based on target
     if (validTarget === "caregivers") {
-      return await getCaregiverRecommendations(session, validListingId, limit);
+      return await getCaregiverRecommendations(session, validListingId, limit, scoringOptions);
     } else {
-      return await getListingRecommendations(session, limit);
+      return await getListingRecommendations(session, limit, scoringOptions);
     }
   } catch (error) {
     console.error("Error in recommendations API:", error);
@@ -76,7 +106,7 @@ export async function GET(request: NextRequest) {
 /**
  * Get caregiver recommendations for a specific listing
  */
-async function getCaregiverRecommendations(session: any, listingId: string | undefined, limit: number) {
+async function getCaregiverRecommendations(session: any, listingId: string | undefined, limit: number, scoringOptions: any) {
   // Verify role: only FAMILY or OPERATOR can request caregiver recommendations
   if (session.user.role !== "FAMILY" && session.user.role !== "OPERATOR") {
     return NextResponse.json(
@@ -158,10 +188,19 @@ async function getCaregiverRecommendations(session: any, listingId: string | und
         take: 10,
       });
 
+      // Fetch caregiver's primary address to compute distance if available
+      const address = (prisma as any).address?.findFirst ? await (prisma as any).address.findFirst({
+        where: { userId: caregiver.userId, latitude: { not: null }, longitude: { not: null } },
+        orderBy: { createdAt: 'asc' },
+      }) : null;
+
       // Calculate match score
       const matchScore = scoreCaregiverForListing(caregiver, listing, {
+        ...scoringOptions,
         caregiverAvailability: availabilitySlots,
         caregiverReviews: reviews,
+        caregiverLocation: address ? { lat: address.latitude as number, lng: address.longitude as number } : undefined,
+        listingLocation: (listing.latitude != null && listing.longitude != null) ? { lat: listing.latitude as number, lng: listing.longitude as number } : undefined,
       });
 
       return {
@@ -195,7 +234,7 @@ async function getCaregiverRecommendations(session: any, listingId: string | und
 /**
  * Get listing recommendations for the current caregiver
  */
-async function getListingRecommendations(session: any, limit: number) {
+async function getListingRecommendations(session: any, limit: number, scoringOptions: any) {
   // Verify role: only CAREGIVER can request listing recommendations
   if (session.user.role !== "CAREGIVER") {
     return NextResponse.json(
@@ -215,6 +254,12 @@ async function getListingRecommendations(session: any, limit: number) {
       { status: 404 }
     );
   }
+
+  // Fetch caregiver's address for distance calculations
+  const cgAddress = (prisma as any).address?.findFirst ? await (prisma as any).address.findFirst({
+    where: { userId: session.user.id, latitude: { not: null }, longitude: { not: null } },
+    orderBy: { createdAt: 'asc' },
+  }) : null;
 
   // Fetch open listings not posted by the current user (limit to 50 for performance)
   const candidateListings = await prisma.marketplaceListing.findMany({
@@ -259,8 +304,11 @@ async function getListingRecommendations(session: any, limit: number) {
   const scoredListings = candidateListings.map((listing) => {
     // Calculate match score
     const matchScore = scoreListingForCaregiver(listing, caregiver, {
+      ...scoringOptions,
       caregiverAvailability: availabilitySlots,
       caregiverReviews: reviews,
+      caregiverLocation: cgAddress ? { lat: cgAddress.latitude as number, lng: cgAddress.longitude as number } : undefined,
+      listingLocation: (listing.latitude != null && listing.longitude != null) ? { lat: listing.latitude as number, lng: listing.longitude as number } : undefined,
     });
 
     return {

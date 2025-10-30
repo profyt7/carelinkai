@@ -91,10 +91,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Handle development environment without Stripe keys
-    if (
-      process.env.NODE_ENV !== "production" &&
-      !process.env["STRIPE_SECRET_KEY"]
-    ) {
+    if (process.env.NODE_ENV !== 'production' && !process.env['STRIPE_SECRET_KEY']) {
       console.log('Using mock Stripe response in development');
       return NextResponse.json({
         clientSecret: null,
@@ -126,10 +123,10 @@ export async function POST(request: NextRequest) {
         query: `email:'${user.email}'`,
         limit: 1
       });
-
-      if (customerSearch.data.length > 0) {
-        // Use existing customer (non-null assertion since length > 0)
-        customerId = customerSearch.data[0]!.id;
+      const existing = customerSearch.data[0];
+      if (existing) {
+        // Use existing customer
+        customerId = existing.id;
       } else {
         // Create new customer
         const customer = await stripe.customers.create({
