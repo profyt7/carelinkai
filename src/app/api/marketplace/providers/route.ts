@@ -47,7 +47,10 @@ export async function GET(request: Request) {
     // Pagination and sorting parameters
     const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1;
     const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 20;
+<<<<<<< HEAD
+=======
     const cursor = searchParams.get('cursor');
+>>>>>>> origin/main
     const sortBy = (searchParams.get('sortBy') || 'ratingDesc') as 'ratingDesc' | 'rateAsc' | 'rateDesc' | 'distanceAsc';
     
     // Generate mock providers
