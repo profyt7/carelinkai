@@ -171,6 +171,7 @@ export default function MarketplacePage() {
   const [prGeoLat, setPrGeoLat] = useState<number | null>(null);
   const [prGeoLng, setPrGeoLng] = useState<number | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
+  
 
   // Mock data (only used when showMock is true)
   const MOCK_CATEGORIES = useMemo<Record<string, { slug: string; name: string }[]>>(() => SHARED_MOCK_CATEGORIES, []);
@@ -1508,6 +1509,7 @@ export default function MarketplacePage() {
                       placeholder="Min Experience (years)" 
                       className="w-full px-3 py-2 border border-gray-300 rounded-md"
                     />
+                    
                     <div className="mt-1">
                       <label className="flex items-center gap-2 text-sm whitespace-nowrap">
                         <input
@@ -1539,6 +1541,7 @@ export default function MarketplacePage() {
                         ))}
                       </div>
                     </details>
+                    
                     <details open={cgCareTypesOpen} onToggle={handleDetailsToggle('cgCareTypes', setCgCareTypesOpen)} className="group rounded-md border border-gray-200 bg-white p-3">
                       <summary className="flex items-center justify-between cursor-pointer text-sm font-medium">
                         <span className="flex items-center gap-2">
@@ -1560,6 +1563,7 @@ export default function MarketplacePage() {
                         ))}
                       </div>
                     </details>
+                    
                     <details open={cgSpecialtiesOpen} onToggle={handleDetailsToggle('cgSpecialties', setCgSpecialtiesOpen)} className="group rounded-md border border-gray-200 bg-white p-3">
                       <summary className="flex items-center justify-between cursor-pointer text-sm font-medium">
                         <span className="flex items-center gap-2">
@@ -1595,6 +1599,7 @@ export default function MarketplacePage() {
                     />
                     <div>
                       <h4 className="font-medium text-sm mb-2">Setting</h4>
+                      
                       <details open={jobSettingOpen} onToggle={handleDetailsToggle('jobSetting', setJobSettingOpen)} className="group rounded-md border border-gray-200 bg-white p-3">
                         <summary className="flex items-center justify-between cursor-pointer text-sm font-medium">
                           <span className="flex items-center gap-2">
