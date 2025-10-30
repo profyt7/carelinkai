@@ -2,6 +2,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { FiUser, FiDollarSign } from "react-icons/fi";
 import { headers } from "next/headers";
+import InviteCaregiverButton from "@/components/marketplace/InviteCaregiverButton";
+import ExplainMatchTrigger from "@/components/marketplace/ExplainMatchTrigger";
+import { getOriginFromHeaders } from "@/lib/http";
 
 type RecommendedCaregiver = {
   id: string;
@@ -26,27 +29,54 @@ type RecommendedCaregiver = {
 export default async function RecommendedCaregivers({ listingId }: { listingId: string }) {
   // Server-side fetch for recommendations
   let items: RecommendedCaregiver[] = [];
+  let applicationStatusByCaregiver: Record<string, string> = {};
   
   try {
-    const response = await fetch(
-      `/api/matching/recommendations?target=caregivers&listingId=${listingId}&limit=6`,
-      {
-        headers: { cookie: headers().get("cookie") ?? "" },
-        cache: "no-store",
-      }
-    );
+    const hdrs = headers();
+    const cookie = hdrs.get("cookie") ?? "";
+    const origin = getOriginFromHeaders(hdrs as any);
+
+    const [recsRes, appsRes] = await Promise.all([
+      fetch(
+        `${origin}/api/matching/recommendations?target=caregivers&listingId=${listingId}&limit=6`,
+        {
+          headers: { cookie },
+          cache: "no-store",
+        }
+      ),
+      fetch(
+        `${origin}/api/marketplace/applications?listingId=${listingId}`,
+        {
+          headers: { cookie },
+          cache: "no-store",
+        }
+      ),
+    ]);
     
-    if (!response.ok) {
+    if (!recsRes.ok) {
       // Don't render anything for non-200 responses
       return null;
     }
     
-    const data = await response.json();
+    const data = await recsRes.json();
     items = data.items || [];
     
     // If no items, don't render the section
     if (items.length === 0) {
       return null;
+    }
+
+    // If applications fetch failed, we can still render without statuses
+    if (appsRes.ok) {
+      const appsData = await appsRes.json();
+      const apps: Array<{ caregiverId: string; status: string }> = (appsData.data || []).map((a: any) => ({
+        caregiverId: a.caregiverId,
+        status: a.status,
+      }));
+      applicationStatusByCaregiver = apps.reduce((acc, a) => {
+        acc[a.caregiverId] = a.status;
+        return acc;
+      }, {} as Record<string, string>);
     }
   } catch (error) {
     // On error, don't render anything
@@ -87,6 +117,14 @@ export default async function RecommendedCaregivers({ listingId }: { listingId: 
           const fullName = `${caregiver.user.firstName} ${caregiver.user.lastName}`;
           const visibleSpecialties = getVisibleSpecialties(caregiver.specialties);
           const hiddenCount = getHiddenSpecialtiesCount(caregiver.specialties);
+          const status = applicationStatusByCaregiver[item.id];
+          const hasStatus = Boolean(status);
+          const statusLabel = status ? status.charAt(0) + status.slice(1).toLowerCase() : "";
+          const statusClass = status === "INVITED"
+            ? "bg-yellow-100 text-yellow-800"
+            : status === "APPLIED"
+            ? "bg-blue-100 text-blue-800"
+            : "bg-gray-100 text-gray-800";
           
           return (
             <div key={item.id} className="bg-white border rounded-md p-4 flex flex-col">
@@ -154,23 +192,42 @@ export default async function RecommendedCaregivers({ listingId }: { listingId: 
                 </div>
               )}
               
-              {/* Match score */}
+              {/* Match score + reasons */}
               {item.score > 0 && (
-                <div className="text-xs text-gray-500 mb-3">
-                  <span className="font-medium">{item.score}% match</span>
+                <div className="text-xs text-gray-600 mb-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-gray-800">{item.score}% match</span>
+                    <ExplainMatchTrigger
+                      title={`${caregiver.user.firstName} ${caregiver.user.lastName}`}
+                      score={item.score}
+                      reasons={item.reasons}
+                      className="text-[11px] px-2 py-1 border rounded-md text-neutral-700 hover:bg-neutral-50"
+                    />
+                  </div>
                   {item.reasons && item.reasons.length > 0 && (
-                    <span className="ml-1">- {item.reasons[0]}</span>
+                    <ul className="mt-1 list-disc pl-5 space-y-0.5">
+                      {item.reasons.slice(0, 2).map((r, idx) => (
+                        <li key={idx}>{r}</li>
+                      ))}
+                    </ul>
                   )}
                 </div>
               )}
               
               {/* View button placeholder */}
-              <Link
-                href={`/marketplace/caregivers/${item.id}`}
-                className="mt-auto block text-center bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
-              >
-                View
-              </Link>
+              <div className="mt-auto flex gap-2">
+                <Link
+                  href={`/marketplace/caregivers/${item.id}`}
+                  className="flex-1 text-center bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
+                >
+                  View
+                </Link>
+                {/* Invite button */}
+                <InviteCaregiverButton
+                  listingId={listingId}
+                  caregiverId={item.id}
+                />
+              </div>
             </div>
           );
         })}

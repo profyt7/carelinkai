@@ -1,3 +1,4 @@
+import { rateLimit } from '@/lib/rate-limit';
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -17,6 +18,11 @@ export async function PUT(
   try {
     // Get session and verify authentication
     const session = await getServerSession(authOptions);
+    {
+      const userId = session?.user?.id || 'anon';
+      const limiter = rateLimit({ interval: 60_000, limit: 120, uniqueTokenPerInterval: 20000 });
+      await limiter.check(120, 'msg:read:' + userId);
+    }
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

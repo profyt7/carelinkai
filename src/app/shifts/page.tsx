@@ -9,8 +9,11 @@ import {
   FiDollarSign, 
   FiCalendar,
   FiArrowRight,
-  FiAlertCircle
+  FiAlertCircle,
+  FiPlay,
+  FiSquare
 } from "react-icons/fi";
+import { getMockOpenShifts, getMockMyShifts } from "@/lib/mock/shifts";
 
 // API response interfaces
 interface ApiShift {
@@ -33,6 +36,14 @@ interface ApiResponse {
     totalPages: number;
     hasMore: boolean;
   };
+}
+
+interface ApiTimesheet {
+  id: string;
+  shiftId: string;
+  startTime: string;
+  endTime: string | null;
+  status: string;
 }
 
 // App state interface
@@ -62,6 +73,22 @@ const formatDate = (date: Date | string) => {
 export default function ShiftsPage() {
   const { data: session, status: authStatus } = useSession();
   const [activeTab, setActiveTab] = useState<'open' | 'my'>('open');
+  const [showMock, setShowMock] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/runtime/mocks', { cache: 'no-store', credentials: 'include' as RequestCredentials });
+        if (!res.ok) return;
+        const j = await res.json();
+        if (!cancelled) setShowMock(!!j?.show);
+      } catch {
+        if (!cancelled) setShowMock(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
   
   // State for API data
   const [openShifts, setOpenShifts] = useState<Shift[]>([]);
@@ -70,6 +97,8 @@ export default function ShiftsPage() {
   const [isLoadingMy, setIsLoadingMy] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isClaimingShift, setIsClaimingShift] = useState<string | null>(null);
+  const [isStartingShift, setIsStartingShift] = useState<string | null>(null);
+  const [isEndingShift, setIsEndingShift] = useState<string | null>(null);
 
   // Fetch open shifts
   useEffect(() => {
@@ -80,6 +109,21 @@ export default function ShiftsPage() {
       setError(null);
       
       try {
+        if (showMock) {
+          const mock = getMockOpenShifts();
+          const formattedShifts = mock.map(shift => ({
+            id: shift.id,
+            homeId: shift.homeId,
+            homeName: shift.homeName,
+            address: shift.address,
+            startTime: new Date(shift.startTime),
+            endTime: new Date(shift.endTime),
+            hourlyRate: Number(shift.hourlyRate),
+            status: shift.status,
+          }));
+          setOpenShifts(formattedShifts);
+          return;
+        }
         const response = await fetch('/api/shifts/open');
         
         if (!response.ok) {
@@ -110,7 +154,7 @@ export default function ShiftsPage() {
     };
     
     fetchOpenShifts();
-  }, [authStatus]);
+  }, [authStatus, showMock]);
 
   // Fetch my shifts
   useEffect(() => {
@@ -121,6 +165,21 @@ export default function ShiftsPage() {
       setError(null);
       
       try {
+        if (showMock) {
+          const mock = getMockMyShifts();
+          const formattedShifts = mock.map(shift => ({
+            id: shift.id,
+            homeId: shift.homeId,
+            homeName: shift.homeName,
+            address: shift.address,
+            startTime: new Date(shift.startTime),
+            endTime: new Date(shift.endTime),
+            hourlyRate: Number(shift.hourlyRate),
+            status: shift.status,
+          }));
+          setMyShifts(formattedShifts);
+          return;
+        }
         const response = await fetch('/api/shifts/my');
         
         if (!response.ok) {
@@ -151,7 +210,7 @@ export default function ShiftsPage() {
     };
     
     fetchMyShifts();
-  }, [authStatus]);
+  }, [authStatus, showMock]);
 
   // Handle claiming a shift
   const handleClaimShift = async (shiftId: string) => {
@@ -161,6 +220,16 @@ export default function ShiftsPage() {
     setError(null);
     
     try {
+      if (showMock) {
+        // Simulate claim in mock mode: move from open to my as ASSIGNED
+        const claimed = openShifts.find(s => s.id === shiftId);
+        if (claimed) {
+          setOpenShifts(prev => prev.filter(s => s.id !== shiftId));
+          setMyShifts(prev => [{ ...claimed, status: 'ASSIGNED' }, ...prev]);
+          setActiveTab('my');
+        }
+        return;
+      }
       const response = await fetch(`/api/shifts/${shiftId}/claim`, {
         method: 'POST',
         headers: {
@@ -212,6 +281,146 @@ export default function ShiftsPage() {
       setError(err instanceof Error ? err.message : 'Failed to claim shift. Please try again later.');
     } finally {
       setIsClaimingShift(null);
+    }
+  };
+
+  // Handle starting a shift
+  const handleStartShift = async (shiftId: string) => {
+    if (authStatus !== 'authenticated') return;
+    
+    setIsStartingShift(shiftId);
+    setError(null);
+    
+    try {
+      if (showMock) {
+        setMyShifts(prev => prev.map(s => s.id === shiftId ? { ...s, status: 'IN_PROGRESS' } : s));
+        return;
+      }
+      const response = await fetch('/api/timesheets/start', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ shiftId })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Failed to start shift: ${response.statusText}`);
+      }
+      
+      // Refresh my shifts after starting
+      const myResponse = await fetch('/api/shifts/my');
+      
+      if (myResponse.ok) {
+        const myData: ApiResponse = await myResponse.json();
+        
+        // Update state with new data
+        setMyShifts(myData.shifts.map(shift => ({
+          id: shift.id,
+          homeId: shift.homeId,
+          homeName: shift.homeName,
+          address: shift.address,
+          startTime: new Date(shift.startTime),
+          endTime: new Date(shift.endTime),
+          hourlyRate: parseFloat(shift.hourlyRate),
+          status: shift.status
+        })));
+        
+        // Ensure "My Shifts" tab is active
+        setActiveTab('my');
+      }
+    } catch (err) {
+      console.error('Error starting shift:', err);
+      setError(err instanceof Error ? err.message : 'Failed to start shift. Please try again later.');
+    } finally {
+      setIsStartingShift(null);
+    }
+  };
+
+  // Handle ending a shift
+  const handleEndShift = async (shiftId: string) => {
+    if (authStatus !== 'authenticated') return;
+    
+    setIsEndingShift(shiftId);
+    setError(null);
+    
+    try {
+      if (showMock) {
+        // In mock mode, simply mark as completed without prompts
+        setMyShifts(prev => prev.map(s => s.id === shiftId ? { ...s, status: 'COMPLETED' } : s));
+        return;
+      }
+      // First, get the timesheet ID for this shift
+      const timesheetsResponse = await fetch('/api/timesheets');
+      
+      if (!timesheetsResponse.ok) {
+        throw new Error(`Failed to fetch timesheets: ${timesheetsResponse.statusText}`);
+      }
+      
+      const timesheetsData = await timesheetsResponse.json();
+      const timesheet = timesheetsData.timesheets.find(
+        (ts: ApiTimesheet) => ts.shiftId === shiftId && ts.endTime === null
+      );
+      
+      if (!timesheet) {
+        throw new Error('Could not find an active timesheet for this shift');
+      }
+      
+      // Prompt for break minutes
+      const breakMinutesInput = window.prompt('Enter break minutes (0 if none):', '0');
+      if (breakMinutesInput === null) {
+        // User cancelled
+        setIsEndingShift(null);
+        return;
+      }
+      
+      const breakMinutes = parseInt(breakMinutesInput, 10) || 0;
+      
+      // Prompt for notes
+      const notes = window.prompt('Add any notes about this shift (optional):', '');
+      
+      // End the timesheet
+      const endResponse = await fetch('/api/timesheets/end', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          timesheetId: timesheet.id,
+          breakMinutes,
+          notes: notes || undefined
+        })
+      });
+      
+      if (!endResponse.ok) {
+        const errorData = await endResponse.json();
+        throw new Error(errorData.error || `Failed to end shift: ${endResponse.statusText}`);
+      }
+      
+      // Refresh my shifts after ending
+      const myResponse = await fetch('/api/shifts/my');
+      
+      if (myResponse.ok) {
+        const myData: ApiResponse = await myResponse.json();
+        
+        // Update state with new data
+        setMyShifts(myData.shifts.map(shift => ({
+          id: shift.id,
+          homeId: shift.homeId,
+          homeName: shift.homeName,
+          address: shift.address,
+          startTime: new Date(shift.startTime),
+          endTime: new Date(shift.endTime),
+          hourlyRate: parseFloat(shift.hourlyRate),
+          status: shift.status
+        })));
+      }
+    } catch (err) {
+      console.error('Error ending shift:', err);
+      setError(err instanceof Error ? err.message : 'Failed to end shift. Please try again later.');
+    } finally {
+      setIsEndingShift(null);
     }
   };
 
@@ -415,15 +624,55 @@ export default function ShiftsPage() {
                         <span>${shift.hourlyRate.toFixed(2)}/hr</span>
                       </div>
                       
-                      <button className={`w-full ${
-                        shift.status === 'COMPLETED' 
-                          ? 'bg-gray-100 text-gray-700' 
-                          : 'bg-primary-600 hover:bg-primary-700 text-white'
-                      } font-medium py-2 px-4 rounded-md transition-colors flex items-center justify-center`}
-                      disabled={shift.status === 'COMPLETED'}>
-                        {shift.status === 'COMPLETED' ? 'Completed' : 'View Details'}
-                        {shift.status !== 'COMPLETED' && <FiArrowRight className="ml-2" />}
-                      </button>
+                      {shift.status === 'ASSIGNED' ? (
+                        <button 
+                          className="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md transition-colors flex items-center justify-center disabled:bg-primary-400"
+                          onClick={() => handleStartShift(shift.id)}
+                          disabled={isStartingShift === shift.id}
+                        >
+                          {isStartingShift === shift.id ? (
+                            <>
+                              <span className="mr-2 h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin"></span>
+                              Starting...
+                            </>
+                          ) : (
+                            <>
+                              Start Shift
+                              <FiPlay className="ml-2" />
+                            </>
+                          )}
+                        </button>
+                      ) : shift.status === 'IN_PROGRESS' ? (
+                        <button 
+                          className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-md transition-colors flex items-center justify-center disabled:bg-red-400"
+                          onClick={() => handleEndShift(shift.id)}
+                          disabled={isEndingShift === shift.id}
+                        >
+                          {isEndingShift === shift.id ? (
+                            <>
+                              <span className="mr-2 h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin"></span>
+                              Ending...
+                            </>
+                          ) : (
+                            <>
+                              End Shift
+                              <FiSquare className="ml-2" />
+                            </>
+                          )}
+                        </button>
+                      ) : (
+                        <button 
+                          className={`w-full ${
+                            shift.status === 'COMPLETED' 
+                              ? 'bg-gray-100 text-gray-700' 
+                              : 'bg-primary-600 hover:bg-primary-700 text-white'
+                          } font-medium py-2 px-4 rounded-md transition-colors flex items-center justify-center`}
+                          disabled={shift.status === 'COMPLETED'}
+                        >
+                          {shift.status === 'COMPLETED' ? 'Completed' : 'View Details'}
+                          {shift.status !== 'COMPLETED' && <FiArrowRight className="ml-2" />}
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
