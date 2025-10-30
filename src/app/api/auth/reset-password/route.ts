@@ -1,3 +1,4 @@
+import { rateLimit } from '@/lib/rate-limit';
 /**
  * Reset Password API Endpoint for CareLinkAI
  * 
@@ -46,6 +47,16 @@ const resetPasswordSchema = z.object({
  * POST handler for password reset
  */
 export async function POST(request: NextRequest) {
+  // Basic per-IP rate limiting to prevent abuse
+  {
+    const ip = (request.headers.get('x-forwarded-for') || (request as any).ip || 'unknown').split(',')[0].trim();
+    const limiter = rateLimit({ interval: 60_000, limit: 8, uniqueTokenPerInterval: 5000 });
+    try {
+      await limiter.check(8, 'rp:' + ip);
+    } catch {
+      const __usage = await limiter.getUsage('rp:' + ip).catch(() => null as any); const __reset = __usage ? Math.ceil((((__usage.resetIn) as number ?? 60000) / 1000)) : 60; return NextResponse.json({ success: false, message: 'Too many requests' }, { status: 429, headers: { 'Retry-After': String(__reset), 'X-RateLimit-Limit': '8', 'X-RateLimit-Reset': String(__reset) } });
+    }
+  }
   try {
     // Parse request body
     const body = await request.json();
@@ -148,3 +159,4 @@ export async function POST(request: NextRequest) {
     await prisma.$disconnect();
   }
 }
+
