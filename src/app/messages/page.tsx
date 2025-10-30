@@ -9,6 +9,7 @@ import ChatInterface, {
   type Participant,
 } from '@/components/messaging/ChatInterface';
 import Image from 'next/image';
+import DashboardLayout from '@/components/layout/DashboardLayout';
 
 // Types for API responses
 interface ThreadUser {
@@ -261,33 +262,24 @@ export default function MessagesPage() {
   // Loading state
   if (status === 'loading') {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-neutral-200 border-t-primary-500"></div>
-      </div>
-    );
-  }
-
-  // Unauthenticated state
-  if (status === 'unauthenticated') {
-    return (
-      <div className="flex h-screen flex-col items-center justify-center p-4 text-center">
-        <FiMessageSquare className="mb-4 h-16 w-16 text-neutral-400" />
-        <h1 className="mb-2 text-2xl font-bold">Sign in to access messages</h1>
-        <p className="text-neutral-600">You need to be signed in to view your messages.</p>
-      </div>
+      <DashboardLayout title="Messages" showSearch={false}>
+        <div className="flex min-h-[50vh] items-center justify-center p-6">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-neutral-200 border-t-primary-500"></div>
+        </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="h-screen bg-white">
-      <div className="flex h-full">
+    <DashboardLayout title="Messages" showSearch={false}>
+      <div className="p-4 sm:p-6">
+        <div className="flex min-h-[60vh] rounded-lg border border-neutral-200 bg-white shadow-sm">
         {/* Thread List - Hidden on mobile when conversation is selected */}
         {(showThreadList || !isMobileView) && (
           <div className={`border-r border-neutral-200 ${isMobileView ? 'w-full' : 'w-1/3'}`}>
-            {/* Header */}
+            {/* Thread search */}
             <div className="border-b border-neutral-200 p-4">
-              <h1 className="text-xl font-bold">Messages</h1>
-              <div className="mt-3 flex items-center rounded-full border border-neutral-300 bg-neutral-50 px-3 py-2">
+              <div className="flex items-center rounded-full border border-neutral-300 bg-neutral-50 px-3 py-2">
                 <FiSearch className="mr-2 text-neutral-500" />
                 <input
                   type="text"
@@ -298,7 +290,7 @@ export default function MessagesPage() {
             </div>
             
             {/* Thread List */}
-            <div className="h-[calc(100%-73px)] overflow-y-auto">
+            <div className="h-[calc(100%-64px)] overflow-y-auto">
               {isLoadingThreads ? (
                 <div className="flex h-full items-center justify-center">
                   <div className="h-8 w-8 animate-spin rounded-full border-4 border-neutral-200 border-t-primary-500"></div>
@@ -423,7 +415,7 @@ export default function MessagesPage() {
                   isLoading={isLoadingMessages}
                   placeholder="Type a message..."
                   showTypingIndicator={false}
-                  height="calc(100vh - 73px)"
+                  height="70vh"
                   className="rounded-none border-0 shadow-none"
                 />
               ) : (
@@ -436,14 +428,15 @@ export default function MessagesPage() {
             </div>
           </div>
         )}
-      </div>
-      
-      {/* Error Toast */}
-      {error && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 rounded-md bg-red-100 px-4 py-2 text-red-800 shadow-md">
-          {error}
         </div>
-      )}
-    </div>
+        
+        {/* Error Toast */}
+        {error && (
+          <div className="fixed bottom-4 left-1/2 -translate-x-1/2 rounded-md bg-red-100 px-4 py-2 text-red-800 shadow-md">
+            {error}
+          </div>
+        )}
+      </div>
+    </DashboardLayout>
   );
 }
