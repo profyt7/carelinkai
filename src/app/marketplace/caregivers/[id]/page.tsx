@@ -236,7 +236,7 @@ export default async function CaregiverDetailPage({
               <div className="mb-6">
                 <h2 className="text-lg font-medium text-gray-900 mb-2">Specialties</h2>
                 <div className="flex flex-wrap gap-2">
-                  {caregiver.specialties.map((specialty, index) => (
+                  {caregiver.specialties.map((specialty: string, index: number) => (
                     <span 
                       key={index} 
                       className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800"
