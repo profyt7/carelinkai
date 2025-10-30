@@ -62,19 +62,21 @@ interface NavItem {
 const navItems: NavItem[] = [
   { name: "Dashboard", icon: <FiHome size={20} />, href: "/dashboard", showInMobileBar: true },
   { name: "Search Homes", icon: <FiSearch size={20} />, href: "/search", showInMobileBar: false },
+  { name: "AI Match", icon: <FiSearch size={20} />, href: "/homes/match", showInMobileBar: false, roleRestriction: ["FAMILY", "OPERATOR", "ADMIN"] },
   // Marketplace (feature-flagged)
   { name: "Marketplace", icon: <FiUsers size={20} />, href: "/marketplace", showInMobileBar: true },
+  { name: "Operator", icon: <FiHome size={20} />, href: "/operator", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN"] },
   { name: "Inquiries", icon: <FiFileText size={20} />, href: "/dashboard/inquiries", showInMobileBar: false },
-  { name: "Residents", icon: <FiUsers size={20} />, href: "/residents", showInMobileBar: true },
-  { name: "Caregivers", icon: <FiUsers size={20} />, href: "/caregivers", showInMobileBar: false },
+  { name: "Residents", icon: <FiUsers size={20} />, href: "/operator/residents", showInMobileBar: true, roleRestriction: ["OPERATOR", "ADMIN"] },
+  { name: "Caregivers", icon: <FiUsers size={20} />, href: "/marketplace?tab=caregivers", showInMobileBar: false },
   { name: "Calendar", icon: <FiCalendar size={20} />, href: "/calendar", showInMobileBar: true },
   // Shifts page
   { name: "Shifts", icon: <FiCalendar size={20} />, href: "/shifts", showInMobileBar: true },
   // Family collaboration (visible to all)
   { name: "Family", icon: <FiUsers size={20} />, href: "/family", showInMobileBar: true },
-  { name: "Finances", icon: <FiDollarSign size={20} />, href: "/finances", showInMobileBar: true },
+  { name: "Finances", icon: <FiDollarSign size={20} />, href: "/settings/payouts", showInMobileBar: true },
   { name: "Messages", icon: <FiMessageSquare size={20} />, href: "/messages", showInMobileBar: true },
-  { name: "Settings", icon: <FiSettings size={20} />, href: "/settings", showInMobileBar: false },
+  { name: "Settings", icon: <FiSettings size={20} />, href: "/settings/profile", showInMobileBar: false },
   // Admin-only tools section
   { 
     name: "Admin Tools", 
@@ -115,6 +117,7 @@ export default function DashboardLayout({
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [mounted, setMounted] = useState(false);
+  const [sessionStall, setSessionStall] = useState(false);
   
   // Touch gesture handling
   const [touchStartX, setTouchStartX] = useState(0);
@@ -198,12 +201,36 @@ export default function DashboardLayout({
     }
   }, [showMobileSearch]);
 
-  // Redirect to login if not authenticated (must be before any early returns)
+  // Compute E2E bypass (env flag OR cookie set by middleware)
+  const e2eEnvBypass = process.env['NODE_ENV'] !== 'production' && process.env['NEXT_PUBLIC_E2E_AUTH_BYPASS'] === '1';
+  const e2eCookieBypass = typeof window !== 'undefined' && document.cookie.includes('e2e-bypass=1');
+  const e2eBypass = e2eEnvBypass || e2eCookieBypass;
+
+  // Note: NextAuth session cookies are HttpOnly in production, so client JS cannot read them.
+  // Instead of relying on cookies, add a short timeout fallback to prevent indefinite spinners.
   useEffect(() => {
-    if (status === "unauthenticated") {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    if (status === 'loading') {
+      timer = setTimeout(() => setSessionStall(true), 2000);
+    } else if (status === 'unauthenticated') {
+      timer = setTimeout(() => setSessionStall(true), 2500);
+    } else {
+      // Reset stall when authenticated
+      setSessionStall(false);
+    }
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [status]);
+
+  // Redirect to login if not authenticated (skip during e2e to allow mocking; add short grace period)
+  useEffect(() => {
+    if (e2eBypass) return;
+    // Only redirect if unauthenticated and we've waited past the stall window
+    if (status === "unauthenticated" && !sessionStall) {
       router.push("/auth/login");
     }
-  }, [status, router]);
+  }, [status, router, e2eBypass, sessionStall]);
 
   // Toggle sidebar
   const toggleSidebar = () => {
@@ -300,8 +327,8 @@ export default function DashboardLayout({
     console.log("[DashboardLayout] resolved profileImage:", profileImage);
   }
 
-  // Show loading state when session is loading
-  if (status === "loading" || !mounted) {
+  // Only gate on mount to avoid indefinite spinner; SSR guard handles auth
+  if (!mounted) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-neutral-50">
         <div className="flex flex-col items-center space-y-4">
@@ -312,9 +339,7 @@ export default function DashboardLayout({
     );
   }
 
-  if (status === "unauthenticated") {
-    return null;
-  }
+  const contentEl = (<>{children}</>);
 
   return (
     <div 
@@ -372,34 +397,47 @@ export default function DashboardLayout({
           Items without a roleRestriction are always shown.
         */}
         {(() => {
+          const normalizedRole = String(userRole || '').toUpperCase();
           const visibleNavItems = navItems.filter(
             (item) =>
               !("roleRestriction" in item) ||
               !item.roleRestriction ||
-              item.roleRestriction.includes(userRole as string)
+              item.roleRestriction.map(r => r.toUpperCase()).includes(normalizedRole)
             // Feature-flag gate for Marketplace
             ).filter(
               (item) =>
                 item.name !== "Marketplace" || marketplaceEnabled
           );
+          // Determine the most specific (longest) matching href for current pathname
+          const hrefs = visibleNavItems.map((i) => (
+            i.name === 'Caregivers' && String(userRole).toUpperCase() === 'CAREGIVER'
+              ? '/settings/profile'
+              : i.href
+          ));
+          const longestMatch = hrefs
+            .filter((h) => pathname === h || pathname?.startsWith(`${h}/`))
+            .sort((a, b) => b.length - a.length)[0];
+
           return (
             <nav className="sidebar-nav mt-4" aria-label="Sidebar navigation">
-              {visibleNavItems.map((item) => (
+              {visibleNavItems.map((item) => {
+                const computedHref = (item.name === 'Caregivers' && String(userRole).toUpperCase() === 'CAREGIVER')
+                  ? '/settings/profile'
+                  : item.href;
+                const isActive = computedHref === longestMatch || pathname === computedHref;
+                return (
             <Link
               key={item.name}
-              href={item.href}
-              className={`sidebar-nav-item ${
-                pathname === item.href || pathname?.startsWith(`${item.href}/`) 
-                  ? "sidebar-nav-item-active" 
-                  : ""
-              }`}
+              href={computedHref}
+              className={`sidebar-nav-item ${isActive ? "sidebar-nav-item-active" : ""}`}
               onClick={() => isMobile && setSidebarOpen(false)}
-              aria-current={pathname === item.href ? "page" : undefined}
+              aria-current={isActive ? "page" : undefined}
             >
               <span className="mr-3">{item.icon}</span>
               {item.name}
             </Link>
-              ))}
+                );
+              })}
             </nav>
           );
         })()}
@@ -694,7 +732,7 @@ export default function DashboardLayout({
             WebkitOverflowScrolling: 'touch' // For iOS momentum scrolling
           }}
         >
-          {children}
+          {contentEl}
         </main>
       </div>
       
@@ -707,27 +745,39 @@ export default function DashboardLayout({
             paddingBottom: 'env(safe-area-inset-bottom, 0px)' // iOS safe area
           }}
         >
-          {navItems
-            .filter(
-              (item) =>
-                item.showInMobileBar &&
-                (item.name !== "Marketplace" || marketplaceEnabled)
-            )
-            .map((item) => (
-            <Link 
-              key={item.name}
-              href={item.href}
-              className={`mobile-tab-item ${
-                pathname === item.href || pathname?.startsWith(`${item.href}/`) 
-                  ? 'mobile-tab-item-active' 
-                  : ''
-              }`}
-              aria-current={pathname === item.href ? "page" : undefined}
-            >
-              {item.icon}
-              <span className="mt-1">{item.name}</span>
-            </Link>
-          ))}
+          {(() => {
+            const normalizedRole = String(userRole || '').toUpperCase();
+            const visibleNavItems = navItems
+              .filter(
+                (item) =>
+                  item.showInMobileBar &&
+                  (
+                    !("roleRestriction" in item) ||
+                    !item.roleRestriction ||
+                    item.roleRestriction.map(r => r.toUpperCase()).includes(normalizedRole)
+                  )
+              )
+              .filter((item) => item.name !== "Marketplace" || marketplaceEnabled);
+            const hrefs = visibleNavItems.map(i => i.href);
+            const longestMatch = hrefs
+              .filter((h) => pathname === h || pathname?.startsWith(`${h}/`))
+              .sort((a, b) => b.length - a.length)[0];
+
+            return visibleNavItems.map((item) => {
+              const isActive = item.href === longestMatch || pathname === item.href;
+              return (
+              <Link 
+                key={item.name}
+                href={item.href}
+                className={`mobile-tab-item ${isActive ? 'mobile-tab-item-active' : ''}`}
+                aria-current={isActive ? "page" : undefined}
+              >
+                {item.icon}
+                <span className="mt-1">{item.name}</span>
+              </Link>
+              );
+            });
+          })()}
           
           {/* More menu button */}
           <button

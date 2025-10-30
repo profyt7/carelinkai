@@ -13,6 +13,7 @@ import {
   FiPlay,
   FiSquare
 } from "react-icons/fi";
+import { getMockOpenShifts, getMockMyShifts } from "@/lib/mock/shifts";
 
 // API response interfaces
 interface ApiShift {
@@ -72,6 +73,22 @@ const formatDate = (date: Date | string) => {
 export default function ShiftsPage() {
   const { data: session, status: authStatus } = useSession();
   const [activeTab, setActiveTab] = useState<'open' | 'my'>('open');
+  const [showMock, setShowMock] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/runtime/mocks', { cache: 'no-store', credentials: 'include' as RequestCredentials });
+        if (!res.ok) return;
+        const j = await res.json();
+        if (!cancelled) setShowMock(!!j?.show);
+      } catch {
+        if (!cancelled) setShowMock(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
   
   // State for API data
   const [openShifts, setOpenShifts] = useState<Shift[]>([]);
@@ -92,6 +109,21 @@ export default function ShiftsPage() {
       setError(null);
       
       try {
+        if (showMock) {
+          const mock = getMockOpenShifts();
+          const formattedShifts = mock.map(shift => ({
+            id: shift.id,
+            homeId: shift.homeId,
+            homeName: shift.homeName,
+            address: shift.address,
+            startTime: new Date(shift.startTime),
+            endTime: new Date(shift.endTime),
+            hourlyRate: Number(shift.hourlyRate),
+            status: shift.status,
+          }));
+          setOpenShifts(formattedShifts);
+          return;
+        }
         const response = await fetch('/api/shifts/open');
         
         if (!response.ok) {
@@ -122,7 +154,7 @@ export default function ShiftsPage() {
     };
     
     fetchOpenShifts();
-  }, [authStatus]);
+  }, [authStatus, showMock]);
 
   // Fetch my shifts
   useEffect(() => {
@@ -133,6 +165,21 @@ export default function ShiftsPage() {
       setError(null);
       
       try {
+        if (showMock) {
+          const mock = getMockMyShifts();
+          const formattedShifts = mock.map(shift => ({
+            id: shift.id,
+            homeId: shift.homeId,
+            homeName: shift.homeName,
+            address: shift.address,
+            startTime: new Date(shift.startTime),
+            endTime: new Date(shift.endTime),
+            hourlyRate: Number(shift.hourlyRate),
+            status: shift.status,
+          }));
+          setMyShifts(formattedShifts);
+          return;
+        }
         const response = await fetch('/api/shifts/my');
         
         if (!response.ok) {
@@ -163,7 +210,7 @@ export default function ShiftsPage() {
     };
     
     fetchMyShifts();
-  }, [authStatus]);
+  }, [authStatus, showMock]);
 
   // Handle claiming a shift
   const handleClaimShift = async (shiftId: string) => {
@@ -173,6 +220,16 @@ export default function ShiftsPage() {
     setError(null);
     
     try {
+      if (showMock) {
+        // Simulate claim in mock mode: move from open to my as ASSIGNED
+        const claimed = openShifts.find(s => s.id === shiftId);
+        if (claimed) {
+          setOpenShifts(prev => prev.filter(s => s.id !== shiftId));
+          setMyShifts(prev => [{ ...claimed, status: 'ASSIGNED' }, ...prev]);
+          setActiveTab('my');
+        }
+        return;
+      }
       const response = await fetch(`/api/shifts/${shiftId}/claim`, {
         method: 'POST',
         headers: {
@@ -235,6 +292,10 @@ export default function ShiftsPage() {
     setError(null);
     
     try {
+      if (showMock) {
+        setMyShifts(prev => prev.map(s => s.id === shiftId ? { ...s, status: 'IN_PROGRESS' } : s));
+        return;
+      }
       const response = await fetch('/api/timesheets/start', {
         method: 'POST',
         headers: {
@@ -285,6 +346,11 @@ export default function ShiftsPage() {
     setError(null);
     
     try {
+      if (showMock) {
+        // In mock mode, simply mark as completed without prompts
+        setMyShifts(prev => prev.map(s => s.id === shiftId ? { ...s, status: 'COMPLETED' } : s));
+        return;
+      }
       // First, get the timesheet ID for this shift
       const timesheetsResponse = await fetch('/api/timesheets');
       

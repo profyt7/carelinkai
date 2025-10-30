@@ -62,7 +62,7 @@ async function initializeEmailTransporter() {
       },
     });
     
-    console.log('📧 Development email account created:', {
+    console.log('Development email account created:', {
       user: testAccount.user,
       pass: testAccount.pass,
       preview: 'https://ethereal.email'
@@ -268,7 +268,7 @@ If you did not create an account with CareLinkAI, please ignore this email.
 Best regards,
 The CareLinkAI Team
 
-© ${new Date().getFullYear()} CareLinkAI. All rights reserved.
+Â© ${new Date().getFullYear()} CareLinkAI. All rights reserved.
   `.trim();
 }
 
@@ -317,7 +317,7 @@ export async function sendVerificationEmail(userId: string): Promise<boolean> {
     
     // Log email details in development
     if (process.env["NODE_ENV"] !== 'production') {
-      console.log('📧 Verification email sent:');
+      console.log('ðŸ“§ Verification email sent:');
       console.log('- To:', user.email);
       console.log('- Token:', user.verificationToken);
       console.log('- Preview URL:', nodemailer.getTestMessageUrl(info));
@@ -370,7 +370,7 @@ export async function resendVerificationEmail(email: string): Promise<boolean> {
  */
 export async function initializeEmailService(): Promise<void> {
   await initializeEmailTransporter();
-  console.log('✅ Email service initialized');
+  console.log('âœ… Email service initialized');
 }
 
 // Named export object to satisfy eslint import/no-anonymous-default-export
