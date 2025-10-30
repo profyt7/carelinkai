@@ -1,3 +1,4 @@
+import { rateLimit } from '@/lib/rate-limit';
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -26,6 +27,14 @@ const messageCreateSchema = z.object({
  * Requires authentication
  */
 export async function POST(request: NextRequest) {
+  // Fetch session ONCE and reuse
+  const session = await getServerSession(authOptions);
+  // Rate limit: 30 messages/min per user (falls back to anon)
+  {
+    const userId = session?.user?.id || 'anon';
+    const limiter = rateLimit({ interval: 60_000, limit: 30, uniqueTokenPerInterval: 20000 });
+    await limiter.check(30, 'msg:send:' + userId);
+  }
   try {
     // Rate limit: 20 req/min per IP for sending messages
     {
@@ -39,8 +48,7 @@ export async function POST(request: NextRequest) {
         );
       }
     }
-    // Get session and verify authentication
-    const session = await getServerSession(authOptions);
+    // Verify authentication using fetched session
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -127,6 +135,14 @@ export async function POST(request: NextRequest) {
  * Requires authentication
  */
 export async function GET(request: NextRequest) {
+  // Fetch session ONCE and reuse
+  const session = await getServerSession(authOptions);
+  // Rate limit: 120 fetches/min per user
+  {
+    const userId = session?.user?.id || 'anon';
+    const limiter = rateLimit({ interval: 60_000, limit: 120, uniqueTokenPerInterval: 20000 });
+    await limiter.check(120, 'msg:get:' + userId);
+  }
   try {
     // Rate limit: 60 req/min per IP for reading messages
     {
@@ -140,8 +156,7 @@ export async function GET(request: NextRequest) {
         );
       }
     }
-    // Get session and verify authentication
-    const session = await getServerSession(authOptions);
+    // Verify authentication using fetched session
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

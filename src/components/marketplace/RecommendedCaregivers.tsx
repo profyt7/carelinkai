@@ -2,9 +2,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { FiUser, FiDollarSign } from "react-icons/fi";
 import { headers } from "next/headers";
-import { getOriginFromHeaders } from "@/lib/http";
 import InviteCaregiverButton from "@/components/marketplace/InviteCaregiverButton";
 import ExplainMatchTrigger from "@/components/marketplace/ExplainMatchTrigger";
+import { getOriginFromHeaders } from "@/lib/http";
+ 
 type RecommendedCaregiver = {
   id: string;
   score: number;
