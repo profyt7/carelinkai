@@ -1,12 +1,13 @@
 import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import { getMockCaregiverById } from "@/lib/mock/caregivers";
 import Image from "next/image";
 import Link from "next/link";
 import { FiMapPin, FiDollarSign, FiClock, FiCheckCircle } from "react-icons/fi";
 import RequestShiftForm from "@/components/marketplace/RequestShiftForm";
 import CaregiverReviewForm from "@/components/marketplace/CaregiverReviewForm";
-import { cookies } from "next/headers";
-import { getMockCaregiverById } from "@/lib/mock/marketplace";
+import CaregiverReviewsList from "@/components/marketplace/CaregiverReviewsList";
 
 export const dynamic = "force-dynamic";
 
@@ -100,50 +101,10 @@ export default async function CaregiverDetailPage({
 }: {
   params: { id: string };
 }) {
-  // Detect runtime mock mode from cookie/env
-  const showMock = (() => {
-    try {
-      const c = cookies().get('carelink_mock_mode')?.value?.toString().trim().toLowerCase() || '';
-      const cookieOn = ['1','true','yes','on'].includes(c);
-      const raw = (process.env['SHOW_SITE_MOCKS'] || process.env['NEXT_PUBLIC_SHOW_MOCK_DASHBOARD'] || '')
-        .toString().trim().toLowerCase();
-      const envOn = ['1','true','yes','on'].includes(raw);
-      return cookieOn || envOn;
-    } catch { return false; }
-  })();
-  const isMockId = params.id?.startsWith('cg_');
+  const caregiver = await getCaregiverById(params.id);
 
-  let caregiver: any = null;
-  let isMock = false;
-  if (showMock && isMockId) {
-    const mock = getMockCaregiverById(params.id);
-    if (!mock) notFound();
-    const ratingAverage = 4.6;
-    const reviewCount = 24;
-    const badges: string[] = [];
-    if (mock.backgroundCheckStatus === 'CLEAR') badges.push('Background Check Clear');
-    if ((mock.yearsExperience || 0) >= 5) badges.push('Experienced');
-    if (reviewCount >= 5 && ratingAverage >= 4.5) badges.push('Top Rated');
-    caregiver = {
-      id: mock.id,
-      userId: 'mock-user',
-      name: mock.name,
-      city: mock.city,
-      state: mock.state,
-      hourlyRate: mock.hourlyRate,
-      yearsExperience: mock.yearsExperience,
-      specialties: mock.specialties,
-      bio: mock.bio,
-      backgroundCheckStatus: mock.backgroundCheckStatus,
-      photoUrl: mock.photoUrl,
-      ratingAverage,
-      reviewCount,
-      badges,
-    };
-    isMock = true;
-  } else {
-    caregiver = await getCaregiverById(params.id);
-    if (!caregiver) notFound();
+  if (!caregiver) {
+    notFound();
   }
 
   // Format location
@@ -191,11 +152,6 @@ export default async function CaregiverDetailPage({
             </div>
             <div className="ml-6">
               <h1 className="text-2xl font-bold text-gray-900 mb-2">{caregiver.name}</h1>
-              {isMock && (
-                <div className="mb-2 inline-flex items-center rounded-md bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800 border border-amber-200">
-                  Demo profile (mock mode)
-                </div>
-              )}
               
               {location && (
                 <div className="flex items-center text-gray-500 mb-2">
@@ -280,7 +236,7 @@ export default async function CaregiverDetailPage({
               <div className="mb-6">
                 <h2 className="text-lg font-medium text-gray-900 mb-2">Specialties</h2>
                 <div className="flex flex-wrap gap-2">
-                  {caregiver.specialties.map((specialty, index) => (
+                  {caregiver.specialties.map((specialty: string, index: number) => (
                     <span 
                       key={index} 
                       className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800"
@@ -293,37 +249,50 @@ export default async function CaregiverDetailPage({
             )}
           </div>
           
-          {/* CTA Buttons / Forms */}
-          {!isMock ? (
-            <>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Link 
-                  href="/messages" 
-                  className="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md transition-colors text-center"
-                >
-                  Message
-                </Link>
-                <Link 
-                  href={`/dashboard/inquiries?caregiverId=${caregiver.id}`}
-                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2 px-4 rounded-md transition-colors text-center"
-                >
-                  Request interview/shift
-                </Link>
-              </div>
-              <section className="mt-10">
-                <h2 className="text-lg font-medium text-gray-900 mb-4">Book a per-diem shift</h2>
-                <RequestShiftForm caregiverUserId={caregiver.userId} caregiverId={caregiver.id} />
-              </section>
-              <section className="mt-10">
-                <h2 className="text-lg font-medium text-gray-900 mb-4">Reviews</h2>
-                <CaregiverReviewForm caregiverId={caregiver.id} />
-              </section>
-            </>
-          ) : (
-            <div className="mt-8 p-4 rounded-md border border-gray-200 bg-gray-50 text-sm text-gray-700">
-              Messaging and booking are disabled in demo mode.
+          {/* CTA Buttons */}
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Link 
+              href="/messages" 
+              className="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md transition-colors text-center"
+            >
+              Message
+            </Link>
+            <Link 
+              href={`/dashboard/inquiries?caregiverId=${caregiver.id}`}
+              className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2 px-4 rounded-md transition-colors text-center"
+            >
+              Request interview/shift
+            </Link>
+          </div>
+
+          {/* Per-diem shift booking */}
+          <section className="mt-10">
+            <h2 className="text-lg font-medium text-gray-900 mb-4">
+              Book a per-diem shift
+            </h2>
+            <RequestShiftForm
+              caregiverUserId={caregiver.userId}
+              caregiverId={caregiver.id}
+            />
+          </section>
+
+          {/* Reviews */}
+          <section className="mt-10">
+            <h2 className="text-lg font-medium text-gray-900 mb-4">Reviews</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <CaregiverReviewsList caregiverId={caregiver.id} />
+              <CaregiverReviewForm caregiverId={caregiver.id} />
             </div>
-          )}
+          </section>
+
+          {/* Reviews */}
+          <section className="mt-10">
+            <h2 className="text-lg font-medium text-gray-900 mb-4">Reviews</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <CaregiverReviewsList caregiverId={caregiver.id} />
+              <CaregiverReviewForm caregiverId={caregiver.id} />
+            </div>
+          </section>
         </div>
       </div>
     </div>

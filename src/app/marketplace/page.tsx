@@ -171,6 +171,7 @@ export default function MarketplacePage() {
   const [prGeoLat, setPrGeoLat] = useState<number | null>(null);
   const [prGeoLng, setPrGeoLng] = useState<number | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
+  
 
   // Mock data (only used when showMock is true)
   const MOCK_CATEGORIES = useMemo<Record<string, { slug: string; name: string }[]>>(() => SHARED_MOCK_CATEGORIES, []);
@@ -396,7 +397,6 @@ export default function MarketplacePage() {
     },
     []
   );
-
   // One-time: initialize tab + filters from URL with localStorage fallback
   useEffect(() => {
     if (didInitFromUrl.current) return;
@@ -505,12 +505,15 @@ export default function MarketplacePage() {
           setCgGeoLat(spCgLat ? Number(spCgLat) : null);
           setCgGeoLng(spCgLng ? Number(spCgLng) : null);
           try { setCgShortlistOnly(savedParams.get("shortlist") === "1"); } catch {}
+          
           // Jobs
           setZip(v("zip"));
           setServices(arr("services"));
           setPostedByMe(savedParams.get("postedByMe") === "true");
+          
           setHideClosed(savedParams.get("status") === "OPEN");
           setFavoritesOnly(savedParams.get("favorites") === "1");
+          
           const spJobPage = parseInt(savedParams.get("page") || "1", 10);
           if (!Number.isNaN(spJobPage) && spJobPage > 0) setJobPage(spJobPage);
           const spJobSort = savedParams.get("sortBy") as any;
@@ -1010,7 +1013,6 @@ export default function MarketplacePage() {
       if (cgShortlistOnly) list.push({ key: `cgShortlistOnly`, label: `Shortlist only`, remove: () => { setCgShortlistOnly(false); } });
       settings.forEach((s) => list.push({ key: `setting:${s}`, label: (categories['SETTING']?.find(x => x.slug === s)?.name) || s, remove: () => { toggleSetting(s); setCgPage(1); } }));
       specialties.forEach((s) => list.push({ key: `spec:${s}`, label: (categories['SPECIALTY']?.find(x => x.slug === s)?.name) || s, remove: () => { toggleSpecialty(s); setCgPage(1); } }));
-      careTypes.forEach((c) => list.push({ key: `care:${c}`, label: (categories['CARE_TYPE']?.find(x => x.slug === c)?.name) || c, remove: () => { toggleCareType(c); setCgPage(1); } }));
     }
 
     if (activeTab === 'jobs') {
@@ -1147,32 +1149,6 @@ export default function MarketplacePage() {
                         placeholder="Min Experience" 
                         className="w-full px-3 py-2 border border-gray-300 rounded-md"
                       />
-                    </div>
-                    <div className="mt-4">
-                      <h4 className="font-medium text-sm mb-2">Setting</h4>
-                      {(categories['SETTING'] || []).map((item) => (
-                        <label key={item.slug} className="flex items-center gap-2 text-sm whitespace-nowrap">
-                          <input
-                            type="checkbox"
-                            checked={settings.includes(item.slug)}
-                            onChange={() => toggleSetting(item.slug)}
-                          />
-                          <span>{item.name}</span>
-                        </label>
-                      ))}
-                    </div>
-                    <div className="mt-4">
-                      <h4 className="font-medium text-sm mb-2">Care Types</h4>
-                      {(categories['CARE_TYPE'] || []).map((careType) => (
-                        <label key={careType.slug} className="flex items-center gap-2 text-sm whitespace-nowrap">
-                          <input 
-                            type="checkbox" 
-                            checked={careTypes.includes(careType.slug)} 
-                            onChange={() => toggleCareType(careType.slug)} 
-                          />
-                          <span>{careType.name}</span>
-                        </label>
-                      ))}
                     </div>
                     <div className="mt-4">
                       <h4 className="font-medium text-sm mb-2">Specialties</h4>
@@ -1508,6 +1484,7 @@ export default function MarketplacePage() {
                       placeholder="Min Experience (years)" 
                       className="w-full px-3 py-2 border border-gray-300 rounded-md"
                     />
+                    
                     <div className="mt-1">
                       <label className="flex items-center gap-2 text-sm whitespace-nowrap">
                         <input
@@ -1539,6 +1516,7 @@ export default function MarketplacePage() {
                         ))}
                       </div>
                     </details>
+                    
                     <details open={cgCareTypesOpen} onToggle={handleDetailsToggle('cgCareTypes', setCgCareTypesOpen)} className="group rounded-md border border-gray-200 bg-white p-3">
                       <summary className="flex items-center justify-between cursor-pointer text-sm font-medium">
                         <span className="flex items-center gap-2">
@@ -1560,6 +1538,7 @@ export default function MarketplacePage() {
                         ))}
                       </div>
                     </details>
+                    
                     <details open={cgSpecialtiesOpen} onToggle={handleDetailsToggle('cgSpecialties', setCgSpecialtiesOpen)} className="group rounded-md border border-gray-200 bg-white p-3">
                       <summary className="flex items-center justify-between cursor-pointer text-sm font-medium">
                         <span className="flex items-center gap-2">
@@ -1595,6 +1574,7 @@ export default function MarketplacePage() {
                     />
                     <div>
                       <h4 className="font-medium text-sm mb-2">Setting</h4>
+                      
                       <details open={jobSettingOpen} onToggle={handleDetailsToggle('jobSetting', setJobSettingOpen)} className="group rounded-md border border-gray-200 bg-white p-3">
                         <summary className="flex items-center justify-between cursor-pointer text-sm font-medium">
                           <span className="flex items-center gap-2">
@@ -1781,26 +1761,13 @@ export default function MarketplacePage() {
                   )}
                   <VirtuosoGrid
                     useWindowScroll
-                    totalCount={jobsToRender.length}
-                    data={jobsToRender}
-                    initialItemCount={20}
-                    endReached={() => { if (jobHasMoreRender && !listingsLoading) setJobPage((p) => p + 1); }}
+                    totalCount={listings.length}
+                    data={listings}
+                    endReached={() => { if (jobHasMore && !listingsLoading) setJobPage((p) => p + 1); }}
                     overscan={200}
-                    components={{ List: GridList as any, Item: GridItem as any, Footer: () => (!jobHasMoreRender && jobsToRender.length > 0 ? <div className="py-6 text-center text-gray-400">End of results</div> : null) as any }}
-                    itemContent={(_, job) => (job ? (
+                    components={{ List: GridList as any, Item: GridItem as any }}
+                    itemContent={(_, job) => (
                       <Link href={`/marketplace/listings/${job.id}`} className={`relative block bg-white border rounded-md p-4 transition-shadow ${job.status === 'CLOSED' || job.status === 'HIRED' ? 'opacity-80' : 'hover:shadow-md'}`}>
-                        {/* Favorite toggle */}
-                        <button
-                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleJobFavorite(job.id); }}
-                          aria-label={jobFavorites.has(job.id) ? 'Unfavorite job' : 'Favorite job'}
-                          aria-pressed={jobFavorites.has(job.id)}
-                          className="absolute left-3 top-3 z-10 inline-flex items-center justify-center h-8 w-8 rounded-full bg-white/90 border hover:bg-white"
-                          title={jobFavorites.has(job.id) ? 'Unfavorite' : 'Favorite'}
-                        >
-                          <svg viewBox="0 0 24 24" className={`h-5 w-5 ${jobFavorites.has(job.id) ? 'text-rose-600' : 'text-gray-400'}`} fill={jobFavorites.has(job.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" />
-                          </svg>
-                        </button>
                         {/* Status badge */}
                         {job.status && (
                           <span className={`absolute right-3 top-3 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${job.status === 'OPEN' ? 'bg-green-100 text-green-800' : job.status === 'HIRED' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-700'}`}>
@@ -1842,71 +1809,9 @@ export default function MarketplacePage() {
                             {typeof job.hireCount === 'number' && <span>{job.hireCount} hires</span>}
                           </div>
                         )}
-                        <p className="text-sm text-gray-700 line-clamp-2 mb-3">{job.description}</p>
-
-                        {session?.user?.role === 'CAREGIVER' && job.status === 'OPEN' && (
-                          <div className="flex justify-end">
-                            {job.appliedByMe ? (
-                              <div className="flex items-center gap-2">
-                                <span className="inline-flex items-center rounded-md bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700">Applied</span>
-                                <button
-                                  className="inline-flex items-center rounded-md bg-white px-2.5 py-1 text-xs text-gray-700 border border-gray-300 hover:bg-gray-50"
-                                  onClick={async (e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    if (applying[job.id]) return;
-                                    setApplying((m) => ({ ...m, [job.id]: true }));
-                                    try {
-                                      const res = await fetch(`/api/marketplace/applications?listingId=${encodeURIComponent(job.id)}`, { method: 'DELETE' });
-                                      if (!res.ok) throw new Error('Failed to withdraw');
-                                      setListings((prev) => prev.map((l) => l.id === job.id ? ({ ...l, appliedByMe: false, applicationCount: (typeof l.applicationCount === 'number' ? Math.max(0, l.applicationCount - 1) : 0) }) : l));
-                                    } catch {
-                                      // noop
-                                    } finally {
-                                      setApplying((m) => ({ ...m, [job.id]: false }));
-                                    }
-                                  }}
-                                >
-                                  Withdraw
-                                </button>
-                              </div>
-                            ) : (
-                              <button
-                                className="inline-flex items-center rounded-md bg-primary-600 px-3 py-1.5 text-sm text-white hover:bg-primary-700"
-                                onClick={async (e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  if (applying[job.id]) return;
-                                  setApplying((m) => ({ ...m, [job.id]: true }));
-                                  try {
-                                    const res = await fetch('/api/marketplace/applications', {
-                                      method: 'POST',
-                                      headers: { 'Content-Type': 'application/json' },
-                                      body: JSON.stringify({ listingId: job.id })
-                                    });
-                                    if (!res.ok) {
-                                      // Try to extract error
-                                      let msg = 'Failed to apply';
-                                      try { const j = await res.json(); if (j?.error) msg = j.error; } catch {}
-                                      throw new Error(msg);
-                                    }
-                                    // Optimistically mark as applied and increment count
-                                    setListings((prev) => prev.map((l) => l.id === job.id ? ({ ...l, appliedByMe: true, applicationCount: (typeof l.applicationCount === 'number' ? l.applicationCount + 1 : 1) }) : l));
-                                  } catch (err) {
-                                    // noop UI error; could add toast
-                                  } finally {
-                                    setApplying((m) => ({ ...m, [job.id]: false }));
-                                  }
-                                }}
-                                disabled={!!applying[job.id]}
-                              >
-                                {applying[job.id] ? 'Applying…' : 'Quick apply'}
-                              </button>
-                            )}
-                          </div>
-                        )}
+                        <p className="text-sm text-gray-700 line-clamp-2">{job.description}</p>
                       </Link>
-                    ) : null)}
+                    )}
                   />
                 </>
               )

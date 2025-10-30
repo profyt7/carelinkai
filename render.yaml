@@ -7,7 +7,7 @@ services:
     dockerfilePath: ./Dockerfile
     envVars:
       - key: NEXTAUTH_URL
-        value: https://your-domain
+        value: https://carelinkai.onrender.com
       - key: NEXTAUTH_SECRET
         generateValue: true
       - key: DATABASE_URL

@@ -1,19 +1,17 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { PrismaClient, UserRole } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-const prisma = new PrismaClient();
-
 export default async function OperatorShiftsPage() {
   const session = await getServerSession(authOptions);
   const email = session?.user?.email ?? null;
   const user = email ? await prisma.user.findUnique({ where: { email } }) : null;
-  const op = user?.role === UserRole.OPERATOR ? await prisma.operator.findUnique({ where: { userId: user.id } }) : null;
+  const op = user?.role === 'OPERATOR' ? await prisma.operator.findUnique({ where: { userId: user.id } }) : null;
 
   const where = op ? { home: { operatorId: op.id } } : {};
 
@@ -44,7 +42,7 @@ export default async function OperatorShiftsPage() {
               </tr>
             </thead>
             <tbody>
-              {shifts.map((s) => (
+              {shifts.map((s: any) => (
                 <tr key={s.id} className="border-t">
                   <td className="py-2 pr-4">{s.home?.name || 'Unknown'}</td>
                   <td className="py-2 pr-4">{s.startTime.toLocaleString()}</td>
