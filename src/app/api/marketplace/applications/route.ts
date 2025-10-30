@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth/next';
 import authOptions from '@/lib/auth';
 import { z, ZodError } from 'zod';
+import { rateLimit, getClientIp } from '@/lib/rateLimit';
 import { Prisma } from '@prisma/client';
 
 /**
@@ -15,6 +16,11 @@ export async function GET(request: Request) {
   try {
     // Check authentication
     const session = await getServerSession(authOptions);
+    const key = session?.user?.id || getClientIp(request);
+    const rr = rateLimit({ name: 'applications:GET', key, limit: 60, windowMs: 60_000 });
+    if (!rr.allowed) {
+      return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429, headers: { 'Retry-After': String(Math.ceil(rr.resetMs / 1000)) } });
+    }
     
     if (!session || !session.user) {
       return NextResponse.json(
@@ -107,6 +113,11 @@ export async function POST(request: Request) {
   try {
     // Check authentication
     const session = await getServerSession(authOptions);
+    const key = session?.user?.id || getClientIp(request);
+    const rr = rateLimit({ name: 'applications:POST', key, limit: 30, windowMs: 60_000 });
+    if (!rr.allowed) {
+      return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429, headers: { 'Retry-After': String(Math.ceil(rr.resetMs / 1000)) } });
+    }
     
     if (!session || !session.user) {
       return NextResponse.json(
@@ -241,8 +252,65 @@ export function PATCH() {
   return methodNotAllowed();
 }
 
-export function DELETE() {
-  return methodNotAllowed();
+export async function DELETE(request: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+    const key = session?.user?.id || getClientIp(request);
+    const rr = rateLimit({ name: 'applications:DELETE', key, limit: 30, windowMs: 60_000 });
+    if (!rr.allowed) {
+      return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429, headers: { 'Retry-After': String(Math.ceil(rr.resetMs / 1000)) } });
+    }
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    const { searchParams } = new URL(request.url);
+    const listingId = searchParams.get('listingId');
+    const Schema = z.object({ listingId: z.string().min(1) });
+    const parsed = Schema.safeParse({ listingId });
+    if (!parsed.success) {
+      const flat = parsed.error.flatten();
+      if (flat.fieldErrors?.listingId) {
+        return NextResponse.json({ error: 'listingId is required' }, { status: 400 });
+      }
+      return NextResponse.json({ error: 'Invalid request', details: flat }, { status: 400 });
+    }
+
+    // Resolve caregiver for current user
+    const caregiver = await (prisma as any).caregiver.findUnique({ where: { userId: session.user.id } });
+    if (!caregiver) {
+      return NextResponse.json(
+        { error: 'Only caregivers can withdraw applications' },
+        { status: 403 }
+      );
+    }
+
+    // Find existing application via composite key
+    const existing = await (prisma as any).marketplaceApplication.findUnique({
+      where: { listingId_caregiverId: { listingId, caregiverId: caregiver.id } },
+      select: { id: true }
+    });
+
+    if (!existing) {
+      return NextResponse.json(
+        { error: 'Application not found' },
+        { status: 404 }
+      );
+    }
+
+    await (prisma as any).marketplaceApplication.delete({ where: { id: existing.id } });
+
+    return NextResponse.json({ success: true }, { status: 200 });
+  } catch (error) {
+    console.error('Error withdrawing application:', error);
+    return NextResponse.json(
+      { error: 'Failed to withdraw application' },
+      { status: 500 }
+    );
+  }
 }
 
 /**
