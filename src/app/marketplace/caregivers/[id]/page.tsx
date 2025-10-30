@@ -284,6 +284,15 @@ export default async function CaregiverDetailPage({
               <CaregiverReviewForm caregiverId={caregiver.id} />
             </div>
           </section>
+
+          {/* Reviews */}
+          <section className="mt-10">
+            <h2 className="text-lg font-medium text-gray-900 mb-4">Reviews</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <CaregiverReviewsList caregiverId={caregiver.id} />
+              <CaregiverReviewForm caregiverId={caregiver.id} />
+            </div>
+          </section>
         </div>
       </div>
     </div>
