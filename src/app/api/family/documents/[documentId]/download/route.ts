@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireAnyRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { checkFamilyMembership, hasPermissionToViewDocuments } from "@/lib/services/family";
 import { parseS3Url, createSignedGetUrl } from "@/lib/storage";
@@ -22,7 +21,8 @@ export async function GET(request: NextRequest, { params }: { params: { document
       }
     }
 
-    const session = await getServerSession(authOptions);
+    const { session, error } = await requireAnyRole(["FAMILY"] as any);
+      if (error) return error;
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

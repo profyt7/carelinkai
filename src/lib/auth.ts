@@ -1,4 +1,4 @@
-/**
+﻿/**
  * NextAuth Configuration for CareLinkAI
  * 
  * This file configures authentication for the CareLinkAI platform with:
@@ -33,7 +33,18 @@ export const authOptions: NextAuthOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   
-  // Configure JWT
+    // Harden cookies (secure in production, httpOnly, SameSite=lax)
+  cookies: {
+    sessionToken: {
+      name: process.env.NODE_ENV === 'production' ? '__Secure-next-auth.session-token' : 'next-auth.session-token',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      },
+    },
+  },// Configure JWT
   jwt: {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
@@ -306,3 +317,4 @@ export const authOptions: NextAuthOptions = {
 };
 
 export default authOptions;
+

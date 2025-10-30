@@ -1,6 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
+﻿import { NextRequest, NextResponse } from 'next/server';
+import { requireOperatorOrAdmin } from '@/lib/rbac';
 import { PrismaClient, UserRole } from '@prisma/client';
 import { createSignedGetUrl, parseS3Url } from '@/lib/storage';
 
@@ -8,9 +7,9 @@ const prisma = new PrismaClient();
 
 export async function GET(req: NextRequest, { params }: { params: { id: string; licenseId: string } }) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+    const { session, error } = await requireOperatorOrAdmin();
+    if (error) return error;
+    const user = await prisma.user.findUnique({ where: { email: session!.user!.email! } });
     if (!user || (user.role !== UserRole.OPERATOR && user.role !== UserRole.ADMIN)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (user.role !== UserRole.ADMIN) {
       const op = await prisma.operator.findUnique({ where: { userId: user.id } });
