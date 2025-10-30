@@ -116,6 +116,7 @@ model User {
   scheduledNotifications    ScheduledNotification[]
 
   // Family collaboration relationships
+  residentNotes ResidentNote[]
   familyMembers        FamilyMember[]
   invitedFamilyMembers FamilyMember[]     @relation("InvitedBy")
   uploadedDocuments    FamilyDocument[]   @relation("DocumentUploader")
@@ -128,6 +129,7 @@ model User {
 
   // Marketplace relationships
   marketplaceListings MarketplaceListing[] @relation("UserListings")
+  approvedTimesheets  Timesheet[]
 
   // Timestamps
   createdAt   DateTime  @default(now())
@@ -140,6 +142,9 @@ model User {
   @@index([status])
   @@index([verificationToken])
   @@index([resetPasswordToken])
+  // Performance: accelerate marketplace search by first/last name
+  @@index([firstName])
+  @@index([lastName])
 }
 
 model Session {
@@ -169,12 +174,13 @@ model Family {
   emergencyPhone   String?
 
   // Relationships
-  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  residents Resident[]
-  inquiries Inquiry[]
-  bookings  Booking[]
-  wallet    FamilyWallet?
-  favorites FavoriteHome[]
+  user                User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  residents           Resident[]
+  inquiries           Inquiry[]
+  bookings            Booking[]
+  wallet              FamilyWallet?
+  favorites           FavoriteHome[]
+  caregiverShortlists FavoriteCaregiver[]
 
   // Family collaboration relationships
   members              FamilyMember[]
@@ -230,16 +236,22 @@ model Caregiver {
   employments CaregiverEmployment[]
   shifts      CaregiverShift[]
   reviews     CaregiverReview[]
+  timesheets  Timesheet[]
 
   // Compliance & marketplace fields
   backgroundCheckStatus    BackgroundCheckStatus @default(NOT_STARTED)
   backgroundCheckProvider  String?
   backgroundCheckReportUrl String?
   specialties              String[]
+  // New marketplace facets
+  settings                 String[]              @default([])
+  careTypes                String[]              @default([])
 
   // Marketplace relations
   marketplaceApplications MarketplaceApplication[]
   marketplaceHires        MarketplaceHire[]
+  favoriteListings        FavoriteListing[]
+  shortlistedByFamilies   FavoriteCaregiver[]
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -247,6 +259,10 @@ model Caregiver {
 
   // Indexes
   @@index([userId])
+  // Performance: common filters/sorts
+  @@index([hourlyRate])
+  @@index([yearsExperience])
+  @@index([createdAt])
 }
 
 model Affiliate {
@@ -405,6 +421,12 @@ model Resident {
   bookings     Booking[]
   careTimeline CareTimelineEvent[]
   documents    Document[]
+  assessmentResults AssessmentResult[]
+  incidents          ResidentIncident[]
+  complianceRecords  ComplianceRecord[]
+  admissionFitScores AdmissionFitScore[]
+  residentNotes      ResidentNote[]
+
 
   // Family collaboration relationships
   familyDocuments      FamilyDocument[]
@@ -579,6 +601,15 @@ enum ShiftStatus {
   NO_SHOW
 }
 
+// -------------------- TIMESHEET ENUM --------------------
+
+enum TimesheetStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
 model CaregiverShift {
   id          String      @id @default(cuid())
   homeId      String
@@ -593,6 +624,7 @@ model CaregiverShift {
   home            AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
   caregiver       Caregiver?         @relation(fields: [caregiverId], references: [id])
   marketplaceHire MarketplaceHire?   @relation("ShiftHire")
+  timesheet       Timesheet?         @relation("ShiftTimesheet")
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -603,6 +635,35 @@ model CaregiverShift {
   @@index([caregiverId])
   @@index([startTime])
   @@index([status])
+}
+
+// -------------------- TIMESHEET MODEL --------------------
+
+model Timesheet {
+  id           String          @id @default(cuid())
+  shiftId      String          @unique
+  caregiverId  String
+  startTime    DateTime
+  endTime      DateTime?
+  breakMinutes Int             @default(0)
+  status       TimesheetStatus @default(DRAFT)
+  notes        String?         @db.Text
+  approvedById String?
+  approvedAt   DateTime?
+
+  // Relationships
+  shift      CaregiverShift @relation("ShiftTimesheet", fields: [shiftId], references: [id], onDelete: Cascade)
+  caregiver  Caregiver      @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+  approvedBy User?          @relation(fields: [approvedById], references: [id])
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([caregiverId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 // ==================== REVIEW MODELS ====================
@@ -1487,6 +1548,7 @@ model MarketplaceListing {
   applications MarketplaceApplication[]
   hires        MarketplaceHire[]
   payments     Payment[]
+  favoritedBy  FavoriteListing[]
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -1544,3 +1606,153 @@ model MarketplaceHire {
   @@index([applicationId])
   @@index([shiftId])
 }
+
+/// Favorites for marketplace listings (per caregiver)
+model FavoriteListing {
+  id          String @id @default(cuid())
+  caregiverId String
+  listingId   String
+
+  // Relations
+  caregiver Caregiver          @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+  listing   MarketplaceListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Constraints and Indexes
+  @@unique([caregiverId, listingId])
+  @@index([caregiverId])
+  @@index([listingId])
+}
+
+/// Families can favorite Caregivers to build shortlists
+model FavoriteCaregiver {
+  id          String @id @default(cuid())
+  familyId    String
+  caregiverId String
+
+  // Relations
+  family    Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  caregiver Caregiver @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Constraints and Indexes
+  @@unique([familyId, caregiverId])
+  @@index([familyId])
+  @@index([caregiverId])
+}
+
+// =====================================================
+// ================ RESIDENTS MODULE ===================
+// =====================================================
+
+enum NoteVisibility {
+  INTERNAL
+  CARE_TEAM
+  FAMILY
+}
+
+/// Clinical/functional assessment results recorded over time
+model AssessmentResult {
+  id         String   @id @default(cuid())
+  residentId String
+  type       String   // e.g., "ADL", "MOCA", "FallRisk"
+  score      Int?
+  data       Json?
+
+  // Relations
+  resident Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([residentId])
+  @@index([createdAt])
+}
+
+/// Reportable incidents for a resident
+model ResidentIncident {
+  id          String   @id @default(cuid())
+  residentId  String
+  type        String   // e.g., "FALL", "MED_ERROR", "BEHAVIORAL"
+  severity    String   // e.g., "LOW", "MODERATE", "HIGH"
+  occurredAt  DateTime
+  description String?  @db.Text
+
+  // Relations
+  resident Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([residentId])
+  @@index([occurredAt])
+}
+
+/// Compliance items per resident (e.g., TB test, immunizations, consents)
+model ComplianceRecord {
+  id           String   @id @default(cuid())
+  residentId   String
+  type         String
+  status       String   // e.g., "DUE", "COMPLETED", "EXPIRED"
+  dueDate      DateTime?
+  completedAt  DateTime?
+  notes        String?  @db.Text
+
+  // Relations
+  resident Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([residentId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+/// Admission suitability score snapshots
+model AdmissionFitScore {
+  id         String   @id @default(cuid())
+  residentId String
+  score      Int
+  reason     String?  @db.Text
+
+  // Relations
+  resident Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+
+  @@index([residentId])
+  @@index([createdAt])
+}
+
+/// Notes tied to a resident with visibility controls
+model ResidentNote {
+  id              String         @id @default(cuid())
+  residentId      String
+  visibility      NoteVisibility @default(INTERNAL)
+  content         String         @db.Text
+  createdByUserId String?
+
+  // Relations
+  resident  Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
+  createdBy User?    @relation(fields: [createdByUserId], references: [id])
+
+  // Timestamps
+  createdAt DateTime @default(now())
+
+  @@index([residentId])
+  @@index([createdByUserId])
+  @@index([visibility])
+}
+
+

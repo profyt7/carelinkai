@@ -1,6 +1,8 @@
 import React from 'react';
 import Image from 'next/image';
+import { getBlurDataURL } from '@/lib/imageBlur';
 import { FiUser, FiMapPin, FiCheckCircle, FiClock, FiDollarSign } from 'react-icons/fi';
+import Link from 'next/link';
 
 interface CaregiverCardProps {
   caregiver: {
@@ -17,6 +19,7 @@ interface CaregiverCardProps {
     ratingAverage?: number | null;
     reviewCount?: number | null;
     badges?: string[];
+    distanceMiles?: number;
   };
 }
 
@@ -105,6 +108,10 @@ const CaregiverCard: React.FC<CaregiverCardProps> = ({ caregiver }) => {
                 alt={caregiver.name}
                 width={64}
                 height={64}
+                placeholder="blur"
+                blurDataURL={getBlurDataURL(64, 64)}
+                sizes="64px"
+                loading="lazy"
                 className="h-full w-full object-cover"
               />
             ) : (
@@ -115,10 +122,15 @@ const CaregiverCard: React.FC<CaregiverCardProps> = ({ caregiver }) => {
           </div>
           <div className="ml-3">
             <h3 className="font-medium text-gray-900">{caregiver.name}</h3>
-            {location && (
+            {(location || typeof caregiver.distanceMiles === 'number') && (
               <div className="flex items-center text-sm text-gray-500">
                 <FiMapPin className="mr-1" size={14} />
-                <span>{location}</span>
+                <span>
+                  {location || 'Location'}
+                  {typeof caregiver.distanceMiles === 'number' && isFinite(caregiver.distanceMiles) && (
+                    <span className="ml-2 text-gray-500">• {caregiver.distanceMiles.toFixed(1)} mi</span>
+                  )}
+                </span>
               </div>
             )}
           </div>
@@ -206,9 +218,9 @@ const CaregiverCard: React.FC<CaregiverCardProps> = ({ caregiver }) => {
         )}
         
         {/* CTA button */}
-        <button className="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md transition-colors">
+        <Link href={`/marketplace/caregivers/${caregiver.id}`} className="block w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md transition-colors text-center">
           View Profile
-        </button>
+        </Link>
       </div>
     </div>
   );
