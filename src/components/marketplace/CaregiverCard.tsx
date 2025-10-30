@@ -1,5 +1,6 @@
 import React from 'react';
 import Image from 'next/image';
+import { getBlurDataURL } from '@/lib/imageBlur';
 import { FiUser, FiMapPin, FiCheckCircle, FiClock, FiDollarSign } from 'react-icons/fi';
 import Link from 'next/link';
 
@@ -107,6 +108,10 @@ const CaregiverCard: React.FC<CaregiverCardProps> = ({ caregiver }) => {
                 alt={caregiver.name}
                 width={64}
                 height={64}
+                placeholder="blur"
+                blurDataURL={getBlurDataURL(64, 64)}
+                sizes="64px"
+                loading="lazy"
                 className="h-full w-full object-cover"
               />
             ) : (
