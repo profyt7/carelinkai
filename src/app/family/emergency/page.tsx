@@ -6,9 +6,6 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import Link from 'next/link';
 import { FiArrowLeft, FiPlus, FiTrash2, FiSave } from 'react-icons/fi';
 
-// Hardcoded family ID - same as used in other pages
-const FAMILY_ID = 'cmdhjmp2x0000765nc52usnp7';
-
 // Define types for our form
 interface EscalationContact {
   name: string;
@@ -29,6 +26,7 @@ export default function EmergencyPreferencesPage() {
   
   // Role gating --------------------------------------------------------
   const [role, setRole] = useState<string | undefined>();
+  const [familyId, setFamilyId] = useState<string | null>(null);
   const isGuest = role === 'GUEST';
   
   // Form state
@@ -44,8 +42,8 @@ export default function EmergencyPreferencesPage() {
       try {
         setLoading(true);
         setError(null);
-        
-        const response = await fetch(`/api/family/emergency?familyId=${FAMILY_ID}`);
+        if (!familyId) return;
+        const response = await fetch(`/api/family/emergency?familyId=${familyId}`);
         
         if (!response.ok) {
           throw new Error('Failed to load emergency preferences');
@@ -62,22 +60,23 @@ export default function EmergencyPreferencesPage() {
     };
     
     loadPreferences();
-  }, []);
+  }, [familyId]);
 
-  // Load membership role ----------------------------------------------
+  // Load membership role & familyId -----------------------------------
   useEffect(() => {
-    const loadRole = async () => {
+    const loadMembership = async () => {
       try {
-        const res = await fetch(`/api/family/membership?familyId=${FAMILY_ID}`);
+        const res = await fetch(`/api/family/membership`);
         if (res.ok) {
           const data = await res.json();
           setRole(data.role);
+          setFamilyId(data.familyId);
         }
       } catch {
         /* ignore */
       }
     };
-    loadRole();
+    loadMembership();
   }, []);
 
   // Handle notify method checkbox changes
@@ -144,7 +143,8 @@ export default function EmergencyPreferencesPage() {
       setSaving(true);
       setError(null);
       
-      const response = await fetch(`/api/family/emergency?familyId=${FAMILY_ID}`, {
+      if (!familyId) throw new Error('Family not selected');
+      const response = await fetch(`/api/family/emergency?familyId=${familyId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -203,7 +203,7 @@ export default function EmergencyPreferencesPage() {
         )}
 
         {/* Content */}
-        {loading ? (
+        {loading || !familyId ? (
           <div className="space-y-4">
             {[...Array(3)].map((_, i) => (
               <div key={i} className="h-20 rounded-md bg-gray-100 animate-pulse" />
