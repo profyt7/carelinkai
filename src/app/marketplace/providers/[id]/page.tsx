@@ -1,14 +1,8 @@
 import { notFound } from "next/navigation";
-<<<<<<< HEAD
-import { headers } from "next/headers";
-import Image from "next/image";
-import Link from "next/link";
-=======
 import { headers, cookies } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
 import { getMockProviderById } from "@/lib/mock/marketplace";
->>>>>>> origin/main
 
 export const dynamic = "force-dynamic";
 
@@ -31,19 +25,6 @@ type Provider = {
 
 async function getProviderById(id: string): Promise<Provider | null> {
   try {
-<<<<<<< HEAD
-    // Use id as the seed (q) so the mock API returns a deterministic list
-    const cookie = headers().get("cookie") ?? "";
-    const res = await fetch(
-      `/api/marketplace/providers?q=${encodeURIComponent(id)}&pageSize=50`,
-      { headers: { cookie }, cache: "no-store" }
-    );
-    if (!res.ok) return null;
-    const json = await res.json();
-    const items: Provider[] = json.data || [];
-    const found = items.find((p) => p.id === id) || null;
-    return found;
-=======
     const h = headers();
     const cookie = h.get("cookie") ?? "";
     const host = h.get("x-forwarded-host") ?? h.get("host");
@@ -54,7 +35,6 @@ async function getProviderById(id: string): Promise<Provider | null> {
     if (!res.ok) return null;
     const json = await res.json();
     return (json?.data as Provider) || null;
->>>>>>> origin/main
   } catch (e) {
     console.error("Error fetching provider:", e);
     return null;
@@ -62,9 +42,6 @@ async function getProviderById(id: string): Promise<Provider | null> {
 }
 
 export default async function ProviderDetailPage({ params }: { params: { id: string } }) {
-<<<<<<< HEAD
-  const provider = await getProviderById(params.id);
-=======
   // Detect runtime mock mode
   const showMock = (() => {
     try {
@@ -101,7 +78,6 @@ export default async function ProviderDetailPage({ params }: { params: { id: str
   } else {
     provider = await getProviderById(params.id);
   }
->>>>>>> origin/main
   if (!provider) notFound();
 
   const location = [provider.city, provider.state].filter(Boolean).join(", ");
