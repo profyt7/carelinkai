@@ -3,7 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
+<<<<<<< HEAD
 import DashboardLayout from "@/components/layout/DashboardLayout";
+=======
+>>>>>>> origin/main
 import Image from "next/image";
 import { getBlurDataURL } from "@/lib/imageBlur";
 
@@ -67,7 +70,10 @@ export default function FavoritesPage() {
   };
 
   return (
+<<<<<<< HEAD
     <DashboardLayout title="My Favorite Jobs">
+=======
+>>>>>>> origin/main
       <div className="px-4 md:px-6 py-4">
         <div className="mb-4">
           <Link href="/marketplace" className="text-sm text-primary-600 hover:underline">← Back to Marketplace</Link>
@@ -160,6 +166,9 @@ export default function FavoritesPage() {
           </>
         )}
       </div>
+<<<<<<< HEAD
     </DashboardLayout>
+=======
+>>>>>>> origin/main
   );
 }

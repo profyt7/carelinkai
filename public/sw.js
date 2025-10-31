@@ -5,11 +5,11 @@
 
 // Cache names with versioning for better cache management
 const CACHE_NAMES = {
-  static: 'carelink-static-v1',
-  dynamic: 'carelink-dynamic-v1',
-  pages: 'carelink-pages-v1',
-  images: 'carelink-images-v1',
-  api: 'carelink-api-v1'
+  static: 'carelink-static-v2',
+  dynamic: 'carelink-dynamic-v2',
+  pages: 'carelink-pages-v2',
+  images: 'carelink-images-v2',
+  api: 'carelink-api-v2'
 };
 
 // Maximum entries per cache to avoid uncontrolled growth
@@ -24,8 +24,7 @@ const CACHE_LIMITS = {
 // Assets to pre-cache during installation
 const CORE_ASSETS = [
   '/',
-  '/dashboard',
-  '/search',
+  // Do NOT pre-cache HTML application routes to avoid serving stale headers/CSP
   '/offline.html',
   '/manifest.json',
   '/icons/icon-192x192.png',
@@ -95,6 +94,10 @@ function getStrategy(request) {
  * Cache first strategy - try cache first, then network
  */
 async function cacheFirst(request, cacheName = CACHE_NAMES.static, maxAgeSeconds = 86400) {
+  // Only cache GET requests
+  if (request.method !== 'GET') {
+    return fetch(request);
+  }
   const cachedResponse = await caches.match(request);
   
   if (cachedResponse) {
@@ -125,7 +128,7 @@ async function cacheFirst(request, cacheName = CACHE_NAMES.static, maxAgeSeconds
     });
     responseToCache.headers.set('sw-cached-at', new Date().toISOString());
     
-    cache.put(request, responseToCache);
+    await cache.put(request, responseToCache);
 
     // Trim cache if it grows beyond limit
     trimCache(cacheName).catch(err =>
@@ -158,13 +161,16 @@ async function cacheFirst(request, cacheName = CACHE_NAMES.static, maxAgeSeconds
  * Network first strategy - try network first, fall back to cache
  */
 async function networkFirst(request, cacheName = CACHE_NAMES.pages) {
+  // Only cache GET requests
+  const isGet = request.method === 'GET';
   try {
     const networkResponse = await fetch(request);
-    const clonedResponse = networkResponse.clone();
-    
-    // Cache the fresh response
-    const cache = await caches.open(cacheName);
-    cache.put(request, clonedResponse);
+    if (isGet) {
+      const clonedResponse = networkResponse.clone();
+      // Cache the fresh response
+      const cache = await caches.open(cacheName);
+      await cache.put(request, clonedResponse);
+    }
     
     return networkResponse;
   } catch (error) {
@@ -192,14 +198,17 @@ async function networkFirst(request, cacheName = CACHE_NAMES.pages) {
  * Stale while revalidate - return from cache, then update cache from network
  */
 async function staleWhileRevalidate(request, cacheName = CACHE_NAMES.dynamic) {
+  const isGet = request.method === 'GET';
   const cachedResponse = await caches.match(request);
   
   const fetchPromise = fetch(request)
     .then(networkResponse => {
-      const clonedResponse = networkResponse.clone();
-      caches.open(cacheName)
-        .then(cache => cache.put(request, clonedResponse))
-        .catch(err => console.error('Failed to update cache:', err));
+      if (isGet) {
+        const clonedResponse = networkResponse.clone();
+        caches.open(cacheName)
+          .then(cache => cache.put(request, clonedResponse))
+          .catch(err => console.error('Failed to update cache:', err));
+      }
       return networkResponse;
     })
     .catch(error => {
@@ -290,6 +299,10 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   // Skip cross-origin requests
   if (!event.request.url.startsWith(self.location.origin)) {
+    return;
+  }
+  // Do not intercept non-GET requests
+  if (event.request.method !== 'GET') {
     return;
   }
   

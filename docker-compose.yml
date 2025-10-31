@@ -1,180 +1,30 @@
+version: "3.9"
 services:
-  # PostgreSQL Database (HIPAA-compliant configuration)
   postgres:
     image: postgres:15-alpine
-    container_name: carelinkai-postgres
-    restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secure_password_change_me}
-      POSTGRES_DB: carelinkai
-      PGDATA: /var/lib/postgresql/data/pgdata
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: carelinkai_marketplace
+    ports:
+      - "5434:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data/pgdata
-    ports:
-      - "5433:5432"
-    # Use default PostgreSQL configuration for local development
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - carelinkai-network
-    security_opt:
-      - no-new-privileges:true
-    deploy:
-      resources:
-        limits:
-          cpus: '1'
-          memory: 1G
+      - db_data:/var/lib/postgresql/data
 
-  # Redis for caching and session management
-  redis:
-    image: redis:7-alpine
-    container_name: carelinkai-redis
-    restart: unless-stopped
-    command: redis-server --requirepass ${REDIS_PASSWORD:-secure_redis_password_change_me} --appendonly yes
-    volumes:
-      - redis_data:/data
-    ports:
-      - "6380:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - carelinkai-network
-    security_opt:
-      - no-new-privileges:true
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-
-  # MinIO S3-compatible storage for HIPAA-compliant document storage
-  minio:
-    image: minio/minio:RELEASE.2023-09-30T07-02-29Z
-    container_name: carelinkai-minio
-    restart: unless-stopped
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-secure_minio_password_change_me}
-    volumes:
-      - minio_data:/data
-    ports:
-      - "9002:9000"
-      - "9003:9001"
-    command: server /data --console-address ":9001"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 30s
-      timeout: 20s
-      retries: 3
-    networks:
-      - carelinkai-network
-    security_opt:
-      - no-new-privileges:true
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-
-  # Mailhog for local email testing
-  mailhog:
-    image: mailhog/mailhog:v1.0.1
-    container_name: carelinkai-mailhog
-    restart: unless-stopped
-    ports:
-      - "1025:1025"  # SMTP port
-      - "8025:8025"  # Web UI port
-    networks:
-      - carelinkai-network
-    security_opt:
-      - no-new-privileges:true
-    deploy:
-      resources:
-        limits:
-          cpus: '0.2'
-          memory: 256M
-
-  # Next.js web application
   web:
-    build:
-      context: .
-      dockerfile: ./docker/Dockerfile
-    container_name: carelinkai-web
-    restart: unless-stopped
+    build: .
     depends_on:
       - postgres
-      - redis
-      - minio
-    environment:
-      # Core settings
-      NODE_ENV: development
-      PORT: 5000
-      NEXT_PUBLIC_APP_URL: http://localhost:5000
-      
-      # Database
-      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-secure_password_change_me}@postgres:5432/carelinkai?schema=public
-      
-      # Redis
-      REDIS_URL: redis://:${REDIS_PASSWORD:-secure_redis_password_change_me}@redis:6379
-      
-      # Storage
-      S3_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
-      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-secure_minio_password_change_me}
-      S3_BUCKET: carelinkai-storage
-      S3_REGION: us-east-1
-      S3_ENDPOINT: http://minio:9000
-      
-      # Email
-      SMTP_HOST: mailhog
-      SMTP_PORT: 1025
-      SMTP_USER: ''
-      SMTP_PASSWORD: ''
-      EMAIL_FROM: noreply@carelinkai.com
-      
-      # Security
-      NEXTAUTH_URL: http://localhost:5000
-      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-development_secret_change_me_in_production}
-      JWT_SECRET: ${JWT_SECRET:-development_jwt_secret_change_me_in_production}
-      
-      # Feature flags
-      FEATURE_REMOTE_MONITORING: 'false'
-      FEATURE_AI_MATCHING: 'true'
-      FEATURE_CAREGIVER_MARKETPLACE: 'true'
+    env_file:
+      - .env
     ports:
-      - "5000:5000"
-    volumes:
-      - .:/app
-      - /app/node_modules
-      - /app/.next
-    networks:
-      - carelinkai-network
-    security_opt:
-      - no-new-privileges:true
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
-          memory: 2G
-
-networks:
-  carelinkai-network:
-    driver: bridge
-    ipam:
-      driver: default
-      config:
-        - subnet: 172.28.0.0/16
+      - "3000:3000"
+    environment:
+      # Ensure DB URL points to compose postgres
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/carelinkai_marketplace?schema=public
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: change-me
+    command: ["npm", "start"]
 
 volumes:
-  postgres_data:
-    driver: local
-  redis_data:
-    driver: local
-  minio_data:
-    driver: local
+  db_data:

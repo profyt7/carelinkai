@@ -2,11 +2,23 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth/next';
 import authOptions from '@/lib/auth';
+import { z } from 'zod';
+import { rateLimitAsync, getClientIp, buildRateLimitHeaders } from '@/lib/rateLimit';
 
 // GET: list caregiver's favorite listings (IDs + basic listing data)
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    // Rate limit: 60 requests/min per user or IP
     const session = await getServerSession(authOptions);
+    const key = session?.user?.id || getClientIp(request);
+    const limit = 60;
+    const rr = await rateLimitAsync({ name: 'favorites:GET', key, limit, windowMs: 60_000 });
+    if (!rr.allowed) {
+      return NextResponse.json(
+        { error: 'Rate limit exceeded' },
+        { status: 429, headers: { ...buildRateLimitHeaders(rr, limit), 'Retry-After': String(Math.ceil(rr.resetMs / 1000)) } }
+      );
+    }
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
@@ -43,7 +55,10 @@ export async function GET() {
       createdAt: f.createdAt,
       listing: f.listing,
     }));
-    return NextResponse.json({ data }, { status: 200 });
+    return NextResponse.json(
+      { data },
+      { status: 200, headers: buildRateLimitHeaders(rr, limit) }
+    );
   } catch (err) {
     console.error('GET /api/marketplace/favorites failed', err);
     return NextResponse.json({ error: 'Failed to fetch favorites' }, { status: 500 });
@@ -54,15 +69,27 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
+    const key = session?.user?.id || getClientIp(request);
+    const limit = 30;
+    const rr = await rateLimitAsync({ name: 'favorites:POST', key, limit, windowMs: 60_000 });
+    if (!rr.allowed) {
+      return NextResponse.json(
+        { error: 'Rate limit exceeded' },
+        { status: 429, headers: { ...buildRateLimitHeaders(rr, limit), 'Retry-After': String(Math.ceil(rr.resetMs / 1000)) } }
+      );
+    }
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
     const body = await request.json().catch(() => ({}));
-    const listingId = body?.listingId as string | undefined;
-    if (!listingId) {
+    const Schema = z.object({ listingId: z.string().min(1) });
+    const parsed = Schema.safeParse(body);
+    if (!parsed.success) {
+      // Maintain backward-compatible error shape expected by tests
       return NextResponse.json({ error: 'listingId is required' }, { status: 400 });
     }
+    const { listingId } = parsed.data;
 
     const caregiver = await (prisma as any).caregiver.findUnique({ where: { userId: session.user.id } });
     if (!caregiver) {
@@ -87,7 +114,10 @@ export async function POST(request: Request) {
     const created = await (prisma as any).favoriteListing.create({
       data: { caregiverId: caregiver.id, listingId }
     });
-    return NextResponse.json({ data: { id: created.id, listingId } }, { status: 201 });
+    return NextResponse.json(
+      { data: { id: created.id, listingId } },
+      { status: 201, headers: buildRateLimitHeaders(rr, limit) }
+    );
   } catch (err) {
     console.error('POST /api/marketplace/favorites failed', err);
     return NextResponse.json({ error: 'Failed to add favorite' }, { status: 500 });
@@ -98,13 +128,25 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const session = await getServerSession(authOptions);
+    const key = session?.user?.id || getClientIp(request);
+    const limit = 30;
+    const rr = await rateLimitAsync({ name: 'favorites:DELETE', key, limit, windowMs: 60_000 });
+    if (!rr.allowed) {
+      return NextResponse.json(
+        { error: 'Rate limit exceeded' },
+        { status: 429, headers: { ...buildRateLimitHeaders(rr, limit), 'Retry-After': String(Math.ceil(rr.resetMs / 1000)) } }
+      );
+    }
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
     const listingId = searchParams.get('listingId');
-    if (!listingId) {
+    const Schema = z.object({ listingId: z.string().min(1) });
+    const parsed = Schema.safeParse({ listingId });
+    if (!parsed.success) {
+      // Maintain backward-compatible error shape expected by tests
       return NextResponse.json({ error: 'listingId is required' }, { status: 400 });
     }
 
@@ -122,7 +164,10 @@ export async function DELETE(request: Request) {
     }
 
     await (prisma as any).favoriteListing.delete({ where: { id: existing.id } });
-    return NextResponse.json({ success: true }, { status: 200 });
+    return NextResponse.json(
+      { success: true },
+      { status: 200, headers: buildRateLimitHeaders(rr, limit) }
+    );
   } catch (err) {
     console.error('DELETE /api/marketplace/favorites failed', err);
     return NextResponse.json({ error: 'Failed to remove favorite' }, { status: 500 });
