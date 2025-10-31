@@ -116,7 +116,6 @@ model User {
   scheduledNotifications    ScheduledNotification[]
 
   // Family collaboration relationships
-  residentNotes ResidentNote[]
   familyMembers        FamilyMember[]
   invitedFamilyMembers FamilyMember[]     @relation("InvitedBy")
   uploadedDocuments    FamilyDocument[]   @relation("DocumentUploader")
@@ -421,12 +420,6 @@ model Resident {
   bookings     Booking[]
   careTimeline CareTimelineEvent[]
   documents    Document[]
-  assessmentResults AssessmentResult[]
-  incidents          ResidentIncident[]
-  complianceRecords  ComplianceRecord[]
-  admissionFitScores AdmissionFitScore[]
-  residentNotes      ResidentNote[]
-
 
   // Family collaboration relationships
   familyDocuments      FamilyDocument[]
@@ -1646,113 +1639,3 @@ model FavoriteCaregiver {
   @@index([familyId])
   @@index([caregiverId])
 }
-
-// =====================================================
-// ================ RESIDENTS MODULE ===================
-// =====================================================
-
-enum NoteVisibility {
-  INTERNAL
-  CARE_TEAM
-  FAMILY
-}
-
-/// Clinical/functional assessment results recorded over time
-model AssessmentResult {
-  id         String   @id @default(cuid())
-  residentId String
-  type       String   // e.g., "ADL", "MOCA", "FallRisk"
-  score      Int?
-  data       Json?
-
-  // Relations
-  resident Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
-
-  // Timestamps
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([residentId])
-  @@index([createdAt])
-}
-
-/// Reportable incidents for a resident
-model ResidentIncident {
-  id          String   @id @default(cuid())
-  residentId  String
-  type        String   // e.g., "FALL", "MED_ERROR", "BEHAVIORAL"
-  severity    String   // e.g., "LOW", "MODERATE", "HIGH"
-  occurredAt  DateTime
-  description String?  @db.Text
-
-  // Relations
-  resident Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
-
-  // Timestamps
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([residentId])
-  @@index([occurredAt])
-}
-
-/// Compliance items per resident (e.g., TB test, immunizations, consents)
-model ComplianceRecord {
-  id           String   @id @default(cuid())
-  residentId   String
-  type         String
-  status       String   // e.g., "DUE", "COMPLETED", "EXPIRED"
-  dueDate      DateTime?
-  completedAt  DateTime?
-  notes        String?  @db.Text
-
-  // Relations
-  resident Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
-
-  // Timestamps
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([residentId])
-  @@index([status])
-  @@index([dueDate])
-}
-
-/// Admission suitability score snapshots
-model AdmissionFitScore {
-  id         String   @id @default(cuid())
-  residentId String
-  score      Int
-  reason     String?  @db.Text
-
-  // Relations
-  resident Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
-
-  // Timestamps
-  createdAt DateTime @default(now())
-
-  @@index([residentId])
-  @@index([createdAt])
-}
-
-/// Notes tied to a resident with visibility controls
-model ResidentNote {
-  id              String         @id @default(cuid())
-  residentId      String
-  visibility      NoteVisibility @default(INTERNAL)
-  content         String         @db.Text
-  createdByUserId String?
-
-  // Relations
-  resident  Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
-  createdBy User?    @relation(fields: [createdByUserId], references: [id])
-
-  // Timestamps
-  createdAt DateTime @default(now())
-
-  @@index([residentId])
-  @@index([createdByUserId])
-  @@index([visibility])
-}
-
-
