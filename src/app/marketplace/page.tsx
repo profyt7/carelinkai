@@ -10,6 +10,7 @@ import RecommendedListings from "@/components/marketplace/RecommendedListings";
 import { fetchJsonCached } from "@/lib/fetchCache";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { VirtuosoGrid } from "react-virtuoso";
+import { MOCK_CATEGORIES as SHARED_MOCK_CATEGORIES, MOCK_CAREGIVERS as SHARED_MOCK_CAREGIVERS, MOCK_LISTINGS as SHARED_MOCK_LISTINGS, MOCK_PROVIDERS as SHARED_MOCK_PROVIDERS } from "@/lib/mock/marketplace";
 
 const LAST_TAB_KEY = "marketplace:lastTab";
 const LS_KEYS = {
@@ -68,6 +69,23 @@ export default function MarketplacePage() {
   const searchParams = useSearchParams();
   const didInitFromUrl = useRef(false);
 
+  // Runtime mock toggle fetched from API (works in Docker/runtime envs)
+  const [showMock, setShowMock] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/runtime/mocks', { cache: 'no-store', credentials: 'include' as RequestCredentials });
+        if (!res.ok) return;
+        const j = await res.json();
+        if (!cancelled) setShowMock(!!j?.show);
+      } catch {
+        if (!cancelled) setShowMock(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   // Include "providers" as a valid tab option
   const [activeTab, setActiveTab] = useState<"jobs" | "caregivers" | "providers">(
     "caregivers"
@@ -110,6 +128,10 @@ export default function MarketplacePage() {
   const [cgRadius, setCgRadius] = useState<string>("");
   const [cgGeoLat, setCgGeoLat] = useState<number | null>(null);
   const [cgGeoLng, setCgGeoLng] = useState<number | null>(null);
+  const [cgShortlistOnly, setCgShortlistOnly] = useState(false);
+  // Server-driven pagination (cursor)
+  const [cgCursor, setCgCursor] = useState<string | null>(null);
+  const [cgHasMoreSvr, setCgHasMoreSvr] = useState<boolean | null>(null);
 
   const [listings, setListings] = useState<Listing[]>([]);
   const [listingsLoading, setListingsLoading] = useState(false);
@@ -118,6 +140,9 @@ export default function MarketplacePage() {
   const [jobSort, setJobSort] = useState<"recency" | "rateAsc" | "rateDesc" | "distanceAsc">("recency");
   const [applying, setApplying] = useState<Record<string, boolean>>({});
   const [favoritesOnly, setFavoritesOnly] = useState(false);
+  // Server-driven pagination (cursor)
+  const [jobCursor, setJobCursor] = useState<string | null>(null);
+  const [jobHasMoreSvr, setJobHasMoreSvr] = useState<boolean | null>(null);
 
   // Providers state --------------------------------------------------------
   type Provider = {
@@ -140,9 +165,22 @@ export default function MarketplacePage() {
   const [providerTotal, setProviderTotal] = useState(0);
   const [providerSort, setProviderSort] = useState<"ratingDesc" | "rateAsc" | "rateDesc" | "distanceAsc">("ratingDesc");
   const [prRadius, setPrRadius] = useState<string>("");
+  // Server-driven pagination (cursor)
+  const [providerCursor, setProviderCursor] = useState<string | null>(null);
+  const [providerHasMoreSvr, setProviderHasMoreSvr] = useState<boolean | null>(null);
   const [prGeoLat, setPrGeoLat] = useState<number | null>(null);
   const [prGeoLng, setPrGeoLng] = useState<number | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
+  
+
+  // Mock data (only used when showMock is true)
+  const MOCK_CATEGORIES = useMemo<Record<string, { slug: string; name: string }[]>>(() => SHARED_MOCK_CATEGORIES, []);
+
+  const MOCK_CAREGIVERS = useMemo<Caregiver[]>(() => SHARED_MOCK_CAREGIVERS as Caregiver[], []);
+
+  const MOCK_LISTINGS = useMemo<Listing[]>(() => SHARED_MOCK_LISTINGS as Listing[], []);
+
+  const MOCK_PROVIDERS = useMemo<Provider[]>(() => SHARED_MOCK_PROVIDERS as Provider[], []);
   // Caregiver favorites (for families; local fallback for others)
   const CG_FAV_KEY = 'marketplace:caregiver-favorites:v1';
   const [caregiverFavorites, setCaregiverFavorites] = useState<Set<string>>(new Set());
@@ -359,7 +397,6 @@ export default function MarketplacePage() {
     },
     []
   );
-
   // One-time: initialize tab + filters from URL with localStorage fallback
   useEffect(() => {
     if (didInitFromUrl.current) return;
@@ -402,6 +439,10 @@ export default function MarketplacePage() {
     setCgRadius(cgRadiusFromUrl ?? "");
     setCgGeoLat(cgLatFromUrl ? Number(cgLatFromUrl) : null);
     setCgGeoLng(cgLngFromUrl ? Number(cgLngFromUrl) : null);
+    // shortlist-only filter for caregivers
+    // use query param `shortlist=1`
+    // (client-side filter backed by server favorites when FAMILY)
+    try { setCgShortlistOnly(sp.get("shortlist") === "1"); } catch {}
 
     // Jobs
     setZip(valOrEmpty("zip"));
@@ -463,12 +504,16 @@ export default function MarketplacePage() {
           setCgRadius(spCgRadius ?? "");
           setCgGeoLat(spCgLat ? Number(spCgLat) : null);
           setCgGeoLng(spCgLng ? Number(spCgLng) : null);
+          try { setCgShortlistOnly(savedParams.get("shortlist") === "1"); } catch {}
+          
           // Jobs
           setZip(v("zip"));
           setServices(arr("services"));
           setPostedByMe(savedParams.get("postedByMe") === "true");
+          
           setHideClosed(savedParams.get("status") === "OPEN");
           setFavoritesOnly(savedParams.get("favorites") === "1");
+          
           const spJobPage = parseInt(savedParams.get("page") || "1", 10);
           if (!Number.isNaN(spJobPage) && spJobPage > 0) setJobPage(spJobPage);
           const spJobSort = savedParams.get("sortBy") as any;
@@ -516,6 +561,7 @@ export default function MarketplacePage() {
     setOrDel("minRate", debouncedMinRate);
     setOrDel("maxRate", debouncedMaxRate);
     setOrDel("minExperience", debouncedMinExperience);
+    if (cgShortlistOnly) params.set("shortlist", "1"); else params.delete("shortlist");
     params.set("page", String(cgPage));
     params.set("sortBy", cgSort);
     if (cgRadius && cgGeoLat !== null && cgGeoLng !== null) {
@@ -529,7 +575,7 @@ export default function MarketplacePage() {
     }
     try { localStorage.setItem(LAST_TAB_KEY, "caregivers"); localStorage.setItem(LS_KEYS.caregivers, params.toString()); } catch {}
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, settings, careTypes, debouncedMinRate, debouncedMaxRate, debouncedMinExperience, cgPage, cgSort, cgRadius, cgGeoLat, cgGeoLng, router, pathname, searchParams]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, settings, careTypes, debouncedMinRate, debouncedMaxRate, debouncedMinExperience, cgPage, cgSort, cgRadius, cgGeoLat, cgGeoLng, cgShortlistOnly, router, pathname, searchParams]);
 
   // Keep URL in sync when on jobs tab (debounced inputs)
   useEffect(() => {
@@ -597,6 +643,10 @@ export default function MarketplacePage() {
   useEffect(() => {
     // Load marketplace categories once
     const loadCategories = async () => {
+      if (showMock) {
+        setCategories(MOCK_CATEGORIES);
+        return;
+      }
       try {
         const res = await fetch("/api/marketplace/categories");
         const json = await res.json();
@@ -606,7 +656,7 @@ export default function MarketplacePage() {
       }
     };
     loadCategories();
-  }, []);
+  }, [showMock, MOCK_CATEGORIES]);
 
   // Saved searches: load/save helpers
   useEffect(() => {
@@ -650,6 +700,13 @@ export default function MarketplacePage() {
     const run = async () => {
       setCaregiversLoading(true);
       try {
+        if (showMock) {
+          setCaregivers(MOCK_CAREGIVERS);
+          setCgTotal(MOCK_CAREGIVERS.length);
+          setCgHasMoreSvr(false);
+          setCgCursor(null);
+          return;
+        }
         const params = new URLSearchParams();
         if (debouncedSearch) params.set("q", debouncedSearch);
         if (debouncedCity) params.set("city", debouncedCity);
@@ -668,9 +725,15 @@ export default function MarketplacePage() {
         params.set("page", String(cgPage));
         params.set("pageSize", String(20));
         params.set("sortBy", cgSort);
+        // Use cursor when available and not using radius search
+        if (!(cgRadius && cgGeoLat !== null && cgGeoLng !== null) && cgCursor) {
+          params.set('cursor', cgCursor);
+        }
         const json = await fetchJsonCached(`/api/marketplace/caregivers?${params.toString()}`, { signal: controller.signal }, 15000);
         setCaregivers((prev) => (cgPage > 1 ? [...prev, ...(json?.data ?? [])] : (json?.data ?? [])));
         setCgTotal(json?.pagination?.total ?? 0);
+        setCgHasMoreSvr(typeof json?.pagination?.hasMore === 'boolean' ? json.pagination.hasMore : null);
+        setCgCursor(json?.pagination?.cursor ?? null);
       } catch (e: any) {
         if (e?.name === 'AbortError') return;
         if (cgPage === 1) setCaregivers([]);
@@ -682,7 +745,7 @@ export default function MarketplacePage() {
     return () => {
       controller.abort();
     };
-  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, settings, careTypes, debouncedMinRate, debouncedMaxRate, debouncedMinExperience, cgPage, cgSort, cgRadius, cgGeoLat, cgGeoLng]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, settings, careTypes, debouncedMinRate, debouncedMaxRate, debouncedMinExperience, cgPage, cgSort, cgRadius, cgGeoLat, cgGeoLng, cgCursor, showMock, MOCK_CAREGIVERS]);
 
   // Reset caregivers list when non-page filters change
   const cgQueryKey = useMemo(() => JSON.stringify({
@@ -699,6 +762,8 @@ export default function MarketplacePage() {
       cgPrevKeyRef.current = cgQueryKey;
       setCaregivers([]);
       setCgPage(1);
+      setCgCursor(null);
+      setCgHasMoreSvr(null);
     }
   }, [cgQueryKey, activeTab]);
 
@@ -708,6 +773,13 @@ export default function MarketplacePage() {
     const run = async () => {
       setListingsLoading(true);
       try {
+        if (showMock) {
+          setListings(MOCK_LISTINGS);
+          setJobTotal(MOCK_LISTINGS.length);
+          setJobHasMoreSvr(false);
+          setJobCursor(null);
+          return;
+        }
         const params = new URLSearchParams();
         if (debouncedSearch) params.set("q", debouncedSearch);
         if (debouncedCity) params.set("city", debouncedCity);
@@ -727,9 +799,15 @@ export default function MarketplacePage() {
         params.set("page", String(jobPage));
         params.set("pageSize", String(20));
         params.set("sortBy", jobSort);
+        // Use cursor when available and not using radius search
+        if (!(jobRadius && geoLat !== null && geoLng !== null) && jobCursor) {
+          params.set('cursor', jobCursor);
+        }
         const json = await fetchJsonCached(`/api/marketplace/listings?${params.toString()}`, { signal: controller.signal }, 15000);
         setListings((prev) => (jobPage > 1 ? [...prev, ...(json?.data ?? [])] : (json?.data ?? [])));
         setJobTotal(json?.pagination?.total ?? 0);
+        setJobHasMoreSvr(typeof json?.pagination?.hasMore === 'boolean' ? json.pagination.hasMore : null);
+        setJobCursor(json?.pagination?.cursor ?? null);
       } catch (e: any) {
         if (e?.name === 'AbortError') return;
         if (jobPage === 1) setListings([]);
@@ -741,7 +819,7 @@ export default function MarketplacePage() {
     return () => {
       controller.abort();
     };
-  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, debouncedZip, settings, careTypes, services, postedByMe, hideClosed, session, jobPage, jobSort, jobRadius, geoLat, geoLng]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, debouncedZip, settings, careTypes, services, postedByMe, hideClosed, session, jobPage, jobSort, jobRadius, geoLat, geoLng, jobCursor, showMock, MOCK_LISTINGS]);
 
   // Reset jobs list when non-page filters change
   const jobQueryKey = useMemo(() => JSON.stringify({
@@ -757,6 +835,8 @@ export default function MarketplacePage() {
       jobPrevKeyRef.current = jobQueryKey;
       setListings([]);
       setJobPage(1);
+      setJobCursor(null);
+      setJobHasMoreSvr(null);
     }
   }, [jobQueryKey, activeTab]);
 
@@ -769,6 +849,13 @@ export default function MarketplacePage() {
     const run = async () => {
       setProvidersLoading(true);
       try {
+        if (showMock) {
+          setProviders(MOCK_PROVIDERS);
+          setProviderTotal(MOCK_PROVIDERS.length);
+          setProviderHasMoreSvr(false);
+          setProviderCursor(null);
+          return;
+        }
         const params = new URLSearchParams();
         if (debouncedSearch) params.set("q", debouncedSearch);
         if (debouncedCity) params.set("city", debouncedCity);
@@ -782,9 +869,14 @@ export default function MarketplacePage() {
         params.set("page", String(providerPage));
         params.set("pageSize", String(20));
         params.set("sortBy", providerSort);
+        if (!(prRadius && prGeoLat !== null && prGeoLng !== null) && providerCursor) {
+          params.set('cursor', providerCursor);
+        }
         const json = await fetchJsonCached(`/api/marketplace/providers?${params.toString()}`, { signal: controller.signal }, 15000);
         setProviders((prev) => (providerPage > 1 ? [...prev, ...(json?.data ?? [])] : (json?.data ?? [])));
         setProviderTotal(json?.pagination?.total ?? 0);
+        setProviderHasMoreSvr(typeof json?.pagination?.hasMore === 'boolean' ? json.pagination.hasMore : null);
+        setProviderCursor(json?.pagination?.cursor ?? null);
       } catch (e: any) {
         if (e?.name === 'AbortError') return;
         if (providerPage === 1) setProviders([]);
@@ -796,7 +888,7 @@ export default function MarketplacePage() {
     return () => {
       controller.abort();
     };
-  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, providerServices, providerPage, providerSort, prRadius, prGeoLat, prGeoLng]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, providerServices, providerPage, providerSort, prRadius, prGeoLat, prGeoLng, providerCursor, showMock, MOCK_PROVIDERS]);
 
   // Reset providers list when non-page filters change
   const prQueryKey = useMemo(() => JSON.stringify({
@@ -812,15 +904,26 @@ export default function MarketplacePage() {
       prPrevKeyRef.current = prQueryKey;
       setProviders([]);
       setProviderPage(1);
+      setProviderCursor(null);
+      setProviderHasMoreSvr(null);
     }
   }, [prQueryKey, activeTab]);
 
   // Infinite scroll flags
-  const cgHasMore = cgTotal === 0 ? false : caregivers.length < cgTotal;
-  const jobHasMore = jobTotal === 0 ? false : listings.length < jobTotal;
+  // Prefer server-provided hasMore when available (cursor pagination)
+  const cgHasMore = (cgHasMoreSvr !== null)
+    ? cgHasMoreSvr
+    : (cgTotal === 0 ? false : caregivers.length < cgTotal);
+  const caregiversToRender = useMemo(() => (cgShortlistOnly ? caregivers.filter(c => caregiverFavorites.has(c.id)) : caregivers), [cgShortlistOnly, caregivers, caregiverFavorites]);
+  const cgHasMoreRender = cgShortlistOnly ? false : cgHasMore;
+  const jobHasMore = (jobHasMoreSvr !== null)
+    ? jobHasMoreSvr
+    : (jobTotal === 0 ? false : listings.length < jobTotal);
   const jobsToRender = useMemo(() => (favoritesOnly ? listings.filter(l => jobFavorites.has(l.id)) : listings), [favoritesOnly, listings, jobFavorites]);
   const jobHasMoreRender = favoritesOnly ? false : jobHasMore;
-  const prHasMore = providerTotal === 0 ? false : providers.length < providerTotal;
+  const prHasMore = (providerHasMoreSvr !== null)
+    ? providerHasMoreSvr
+    : (providerTotal === 0 ? false : providers.length < providerTotal);
 
   // Virtualized grid components (react-virtuoso)
   const GridList = useMemo(() => {
@@ -907,9 +1010,9 @@ export default function MarketplacePage() {
       if (minRate) list.push({ key: `minRate:${minRate}`, label: `Min $${minRate}/hr`, remove: () => { setMinRate(""); setCgPage(1); } });
       if (maxRate) list.push({ key: `maxRate:${maxRate}`, label: `Max $${maxRate}/hr`, remove: () => { setMaxRate(""); setCgPage(1); } });
       if (minExperience) list.push({ key: `minExp:${minExperience}`, label: `Min ${minExperience} yrs`, remove: () => { setMinExperience(""); setCgPage(1); } });
+      if (cgShortlistOnly) list.push({ key: `cgShortlistOnly`, label: `Shortlist only`, remove: () => { setCgShortlistOnly(false); } });
       settings.forEach((s) => list.push({ key: `setting:${s}`, label: (categories['SETTING']?.find(x => x.slug === s)?.name) || s, remove: () => { toggleSetting(s); setCgPage(1); } }));
       specialties.forEach((s) => list.push({ key: `spec:${s}`, label: (categories['SPECIALTY']?.find(x => x.slug === s)?.name) || s, remove: () => { toggleSpecialty(s); setCgPage(1); } }));
-      careTypes.forEach((c) => list.push({ key: `care:${c}`, label: (categories['CARE_TYPE']?.find(x => x.slug === c)?.name) || c, remove: () => { toggleCareType(c); setCgPage(1); } }));
     }
 
     if (activeTab === 'jobs') {
@@ -928,7 +1031,7 @@ export default function MarketplacePage() {
     }
 
     return list;
-  }, [search, city, state, activeTab, minRate, maxRate, minExperience, settings, specialties, careTypes, services, providerServices, categories, zip, postedByMe, hideClosed, favoritesOnly, toggleSetting]);
+  }, [search, city, state, activeTab, minRate, maxRate, minExperience, settings, specialties, careTypes, services, providerServices, categories, zip, postedByMe, hideClosed, favoritesOnly, cgShortlistOnly, toggleSetting]);
 
   return (
       <div className="px-4 md:px-6 py-4">
@@ -976,6 +1079,16 @@ export default function MarketplacePage() {
                         <option value="experienceDesc">Experience: High to Low</option>
                         <option value="distanceAsc" disabled={!cgRadius || cgGeoLat === null || cgGeoLng === null}>Distance: Nearest</option>
                       </select>
+                    </div>
+                    <div className="mb-2">
+                      <label className="flex items-center gap-2 text-sm whitespace-nowrap">
+                        <input
+                          type="checkbox"
+                          checked={cgShortlistOnly}
+                          onChange={(e) => { setCgShortlistOnly(e.target.checked); }}
+                        />
+                        <span>Shortlist only</span>
+                      </label>
                     </div>
                     <div className="mb-3">
                       <label className="block text-sm font-medium text-gray-700 mb-1">Radius (miles)</label>
@@ -1036,32 +1149,6 @@ export default function MarketplacePage() {
                         placeholder="Min Experience" 
                         className="w-full px-3 py-2 border border-gray-300 rounded-md"
                       />
-                    </div>
-                    <div className="mt-4">
-                      <h4 className="font-medium text-sm mb-2">Setting</h4>
-                      {(categories['SETTING'] || []).map((item) => (
-                        <label key={item.slug} className="flex items-center gap-2 text-sm whitespace-nowrap">
-                          <input
-                            type="checkbox"
-                            checked={settings.includes(item.slug)}
-                            onChange={() => toggleSetting(item.slug)}
-                          />
-                          <span>{item.name}</span>
-                        </label>
-                      ))}
-                    </div>
-                    <div className="mt-4">
-                      <h4 className="font-medium text-sm mb-2">Care Types</h4>
-                      {(categories['CARE_TYPE'] || []).map((careType) => (
-                        <label key={careType.slug} className="flex items-center gap-2 text-sm whitespace-nowrap">
-                          <input 
-                            type="checkbox" 
-                            checked={careTypes.includes(careType.slug)} 
-                            onChange={() => toggleCareType(careType.slug)} 
-                          />
-                          <span>{careType.name}</span>
-                        </label>
-                      ))}
                     </div>
                     <div className="mt-4">
                       <h4 className="font-medium text-sm mb-2">Specialties</h4>
@@ -1397,6 +1484,17 @@ export default function MarketplacePage() {
                       placeholder="Min Experience (years)" 
                       className="w-full px-3 py-2 border border-gray-300 rounded-md"
                     />
+                    
+                    <div className="mt-1">
+                      <label className="flex items-center gap-2 text-sm whitespace-nowrap">
+                        <input
+                          type="checkbox"
+                          checked={cgShortlistOnly}
+                          onChange={(e) => { setCgShortlistOnly(e.target.checked); }}
+                        />
+                        <span>Shortlist only</span>
+                      </label>
+                    </div>
                     <details open={cgSettingOpen} onToggle={handleDetailsToggle('cgSetting', setCgSettingOpen)} className="group rounded-md border border-gray-200 bg-white p-3">
                       <summary className="flex items-center justify-between cursor-pointer text-sm font-medium">
                         <span className="flex items-center gap-2">
@@ -1418,6 +1516,7 @@ export default function MarketplacePage() {
                         ))}
                       </div>
                     </details>
+                    
                     <details open={cgCareTypesOpen} onToggle={handleDetailsToggle('cgCareTypes', setCgCareTypesOpen)} className="group rounded-md border border-gray-200 bg-white p-3">
                       <summary className="flex items-center justify-between cursor-pointer text-sm font-medium">
                         <span className="flex items-center gap-2">
@@ -1439,6 +1538,7 @@ export default function MarketplacePage() {
                         ))}
                       </div>
                     </details>
+                    
                     <details open={cgSpecialtiesOpen} onToggle={handleDetailsToggle('cgSpecialties', setCgSpecialtiesOpen)} className="group rounded-md border border-gray-200 bg-white p-3">
                       <summary className="flex items-center justify-between cursor-pointer text-sm font-medium">
                         <span className="flex items-center gap-2">
@@ -1474,6 +1574,7 @@ export default function MarketplacePage() {
                     />
                     <div>
                       <h4 className="font-medium text-sm mb-2">Setting</h4>
+                      
                       <details open={jobSettingOpen} onToggle={handleDetailsToggle('jobSetting', setJobSettingOpen)} className="group rounded-md border border-gray-200 bg-white p-3">
                         <summary className="flex items-center justify-between cursor-pointer text-sm font-medium">
                           <span className="flex items-center gap-2">
@@ -1605,9 +1706,9 @@ export default function MarketplacePage() {
 
             {/* Tab bodies */}
             {activeTab === "caregivers" ? (
-              caregiversLoading && caregivers.length === 0 ? (
+              caregiversLoading && caregiversToRender.length === 0 ? (
                 <div className="py-20 text-center text-gray-500">Loading caregivers…</div>
-              ) : caregivers.length === 0 ? (
+              ) : caregiversToRender.length === 0 ? (
                 <div className="py-16 text-center">
                   <div className="text-lg font-medium text-gray-900 mb-1">No caregivers found</div>
                   <div className="text-sm text-gray-600 mb-4">Try adjusting your filters or search terms.</div>
@@ -1616,18 +1717,19 @@ export default function MarketplacePage() {
               ) : (
                 <VirtuosoGrid
                   useWindowScroll
-                  totalCount={caregivers.length}
-                  data={caregivers}
+                  totalCount={caregiversToRender.length}
+                  data={caregiversToRender}
                   initialItemCount={20}
-                  endReached={() => { if (cgHasMore && !caregiversLoading) setCgPage((p) => p + 1); }}
+                  endReached={() => { if (cgHasMoreRender && !caregiversLoading) setCgPage((p) => p + 1); }}
                   overscan={200}
-                  components={{ List: GridList as any, Item: GridItem as any, Footer: () => (!cgHasMore && caregivers.length > 0 ? <div className="py-6 text-center text-gray-400">End of results</div> : null) as any }}
+                  components={{ List: GridList as any, Item: GridItem as any, Footer: () => (!cgHasMoreRender && caregiversToRender.length > 0 ? <div className="py-6 text-center text-gray-400">End of results</div> : null) as any }}
                   itemContent={(_, cg) => (cg ? (
                     <div className="relative">
                       {/* Favorite (always visible; server-sync when FAMILY) */}
                         <button
                           onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleCaregiverFavorite(cg.id); }}
                           aria-label={caregiverFavorites.has(cg.id) ? 'Remove from shortlist' : 'Add to shortlist'}
+                          aria-pressed={caregiverFavorites.has(cg.id)}
                           className="absolute right-3 top-3 z-10 inline-flex items-center justify-center h-8 w-8 rounded-full bg-white/90 border hover:bg-white"
                           title={caregiverFavorites.has(cg.id) ? 'Shortlisted' : 'Shortlist'}
                         >
@@ -1651,7 +1753,7 @@ export default function MarketplacePage() {
                 </div>
               ) : (
                 <>
-                  {session?.user?.role === "CAREGIVER" && (
+                  {!showMock && session?.user?.role === "CAREGIVER" && (
                     <div className="mb-6">
                       <RecommendedListings />
                       <div className="my-4" />
@@ -1659,25 +1761,13 @@ export default function MarketplacePage() {
                   )}
                   <VirtuosoGrid
                     useWindowScroll
-                    totalCount={jobsToRender.length}
-                    data={jobsToRender}
-                    initialItemCount={20}
-                    endReached={() => { if (jobHasMoreRender && !listingsLoading) setJobPage((p) => p + 1); }}
+                    totalCount={listings.length}
+                    data={listings}
+                    endReached={() => { if (jobHasMore && !listingsLoading) setJobPage((p) => p + 1); }}
                     overscan={200}
-                    components={{ List: GridList as any, Item: GridItem as any, Footer: () => (!jobHasMoreRender && jobsToRender.length > 0 ? <div className="py-6 text-center text-gray-400">End of results</div> : null) as any }}
-                    itemContent={(_, job) => (job ? (
+                    components={{ List: GridList as any, Item: GridItem as any }}
+                    itemContent={(_, job) => (
                       <Link href={`/marketplace/listings/${job.id}`} className={`relative block bg-white border rounded-md p-4 transition-shadow ${job.status === 'CLOSED' || job.status === 'HIRED' ? 'opacity-80' : 'hover:shadow-md'}`}>
-                        {/* Favorite toggle */}
-                        <button
-                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleJobFavorite(job.id); }}
-                          aria-label={jobFavorites.has(job.id) ? 'Unfavorite job' : 'Favorite job'}
-                          className="absolute right-3 bottom-3 z-10 inline-flex items-center justify-center h-8 w-8 rounded-full bg-white/90 border hover:bg-white"
-                          title={jobFavorites.has(job.id) ? 'Unfavorite' : 'Favorite'}
-                        >
-                          <svg viewBox="0 0 24 24" className={`h-5 w-5 ${jobFavorites.has(job.id) ? 'text-rose-600' : 'text-gray-400'}`} fill={jobFavorites.has(job.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" />
-                          </svg>
-                        </button>
                         {/* Status badge */}
                         {job.status && (
                           <span className={`absolute right-3 top-3 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${job.status === 'OPEN' ? 'bg-green-100 text-green-800' : job.status === 'HIRED' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-700'}`}>
@@ -1719,71 +1809,9 @@ export default function MarketplacePage() {
                             {typeof job.hireCount === 'number' && <span>{job.hireCount} hires</span>}
                           </div>
                         )}
-                        <p className="text-sm text-gray-700 line-clamp-2 mb-3">{job.description}</p>
-
-                        {session?.user?.role === 'CAREGIVER' && job.status === 'OPEN' && (
-                          <div className="flex justify-end">
-                            {job.appliedByMe ? (
-                              <div className="flex items-center gap-2">
-                                <span className="inline-flex items-center rounded-md bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700">Applied</span>
-                                <button
-                                  className="inline-flex items-center rounded-md bg-white px-2.5 py-1 text-xs text-gray-700 border border-gray-300 hover:bg-gray-50"
-                                  onClick={async (e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    if (applying[job.id]) return;
-                                    setApplying((m) => ({ ...m, [job.id]: true }));
-                                    try {
-                                      const res = await fetch(`/api/marketplace/applications?listingId=${encodeURIComponent(job.id)}`, { method: 'DELETE' });
-                                      if (!res.ok) throw new Error('Failed to withdraw');
-                                      setListings((prev) => prev.map((l) => l.id === job.id ? ({ ...l, appliedByMe: false, applicationCount: (typeof l.applicationCount === 'number' ? Math.max(0, l.applicationCount - 1) : 0) }) : l));
-                                    } catch {
-                                      // noop
-                                    } finally {
-                                      setApplying((m) => ({ ...m, [job.id]: false }));
-                                    }
-                                  }}
-                                >
-                                  Withdraw
-                                </button>
-                              </div>
-                            ) : (
-                              <button
-                                className="inline-flex items-center rounded-md bg-primary-600 px-3 py-1.5 text-sm text-white hover:bg-primary-700"
-                                onClick={async (e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  if (applying[job.id]) return;
-                                  setApplying((m) => ({ ...m, [job.id]: true }));
-                                  try {
-                                    const res = await fetch('/api/marketplace/applications', {
-                                      method: 'POST',
-                                      headers: { 'Content-Type': 'application/json' },
-                                      body: JSON.stringify({ listingId: job.id })
-                                    });
-                                    if (!res.ok) {
-                                      // Try to extract error
-                                      let msg = 'Failed to apply';
-                                      try { const j = await res.json(); if (j?.error) msg = j.error; } catch {}
-                                      throw new Error(msg);
-                                    }
-                                    // Optimistically mark as applied and increment count
-                                    setListings((prev) => prev.map((l) => l.id === job.id ? ({ ...l, appliedByMe: true, applicationCount: (typeof l.applicationCount === 'number' ? l.applicationCount + 1 : 1) }) : l));
-                                  } catch (err) {
-                                    // noop UI error; could add toast
-                                  } finally {
-                                    setApplying((m) => ({ ...m, [job.id]: false }));
-                                  }
-                                }}
-                                disabled={!!applying[job.id]}
-                              >
-                                {applying[job.id] ? 'Applying…' : 'Quick apply'}
-                              </button>
-                            )}
-                          </div>
-                        )}
+                        <p className="text-sm text-gray-700 line-clamp-2">{job.description}</p>
                       </Link>
-                    ) : null)}
+                    )}
                   />
                 </>
               )
@@ -1811,6 +1839,7 @@ export default function MarketplacePage() {
                       <button
                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleProviderFavorite(p.id); }}
                         aria-label={providerFavorites.has(p.id) ? 'Unfavorite provider' : 'Favorite provider'}
+                        aria-pressed={providerFavorites.has(p.id)}
                         className="absolute right-3 bottom-3 z-10 inline-flex items-center justify-center h-8 w-8 rounded-full bg-white/90 border hover:bg-white"
                         title={providerFavorites.has(p.id) ? 'Unfavorite' : 'Favorite'}
                       >
@@ -1870,3 +1899,4 @@ export default function MarketplacePage() {
       </div>
   );
 }
+
