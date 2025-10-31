@@ -125,6 +125,7 @@ model User {
   createdGalleries     SharedGallery[]    @relation("GalleryCreator")
   uploadedPhotos       GalleryPhoto[]     @relation("PhotoUploader")
   activities           ActivityFeedItem[] @relation("ActivityActor")
+  createdResidentNotes ResidentNote[]
 
   // Marketplace relationships
   marketplaceListings MarketplaceListing[] @relation("UserListings")
@@ -400,6 +401,13 @@ enum ResidentStatus {
   DECEASED
 }
 
+/// Visibility options for resident notes
+enum NoteVisibility {
+  INTERNAL
+  CARE_TEAM
+  FAMILY
+}
+
 model Resident {
   id                String         @id @default(cuid())
   familyId          String
@@ -420,6 +428,9 @@ model Resident {
   bookings     Booking[]
   careTimeline CareTimelineEvent[]
   documents    Document[]
+  assessmentResults AssessmentResult[]
+  residentIncidents ResidentIncident[]
+  residentNotes     ResidentNote[]
 
   // Family collaboration relationships
   familyDocuments      FamilyDocument[]
@@ -458,6 +469,69 @@ model CareTimelineEvent {
   @@index([residentId])
   @@index([eventType])
   @@index([scheduledAt])
+}
+
+/// Clinical assessment results recorded for a resident
+model AssessmentResult {
+  id         String   @id @default(cuid())
+  residentId String
+  type       String
+  score      Int?
+  data       Json?
+
+  // Relations
+  resident Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([residentId])
+  @@index([createdAt])
+}
+
+/// Incident reports associated with a resident
+model ResidentIncident {
+  id          String   @id @default(cuid())
+  residentId  String
+  type        String
+  severity    String
+  occurredAt  DateTime
+  description String?  @db.Text
+
+  // Relations
+  resident Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([residentId])
+  @@index([occurredAt])
+}
+
+/// Free-form notes on a resident with role-based visibility
+model ResidentNote {
+  id              String          @id @default(cuid())
+  residentId      String
+  visibility      NoteVisibility  @default(INTERNAL)
+  content         String          @db.Text
+  createdByUserId String?
+
+  // Relations
+  resident  Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
+  createdBy User?    @relation(fields: [createdByUserId], references: [id])
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([residentId])
+  @@index([createdByUserId])
+  @@index([visibility])
 }
 
 // ==================== BOOKING & INQUIRY MODELS ====================
