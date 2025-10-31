@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { z } from "zod";
@@ -236,71 +237,78 @@ export default function PayoutsSettings() {
   // If loading, show loading state
   if (statusLoading) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center p-4">
-        <div className="flex items-center space-x-2">
-          <FiLoader className="h-6 w-6 animate-spin text-primary-600" />
-          <span className="text-lg font-medium text-neutral-700">Loading payouts...</span>
+      <DashboardLayout title="Payouts" showSearch={false}>
+        <div className="flex min-h-[60vh] flex-col items-center justify-center p-4">
+          <div className="flex items-center space-x-2">
+            <FiLoader className="h-6 w-6 animate-spin text-primary-600" />
+            <span className="text-lg font-medium text-neutral-700">Loading payouts...</span>
+          </div>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
   
   // If not authenticated, show message
   if (status !== "authenticated") {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center p-4">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-neutral-800">Authentication Required</h1>
-          <p className="mt-2 text-neutral-600">
-            Please{" "}
-            <Link href="/auth/login?callbackUrl=/settings/payouts" className="text-primary-600 hover:underline">
-              sign in
-            </Link>{" "}
-            to view your payout settings.
-          </p>
+      <DashboardLayout title="Payouts" showSearch={false}>
+        <div className="flex min-h-[60vh] flex-col items-center justify-center p-4">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-neutral-800">Authentication Required</h1>
+            <p className="mt-2 text-neutral-600">
+              Please{" "}
+              <Link href="/auth/login?callbackUrl=/settings/payouts" className="text-primary-600 hover:underline">
+                sign in
+              </Link>{" "}
+              to view your payout settings.
+            </p>
+          </div>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
   
   // If user is not a caregiver, show message
   if (session?.user?.role !== "CAREGIVER") {
     return (
-      <div className="container mx-auto max-w-4xl px-4 py-8">
-        <div className="mb-8 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-neutral-800">Payout Settings</h1>
-          <Link
-            href="/settings/profile"
-            className="rounded-md bg-neutral-100 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-200"
-          >
-            Back to Profile
-          </Link>
-        </div>
-        
-        <div className="overflow-hidden rounded-lg bg-white shadow">
-          <div className="p-6">
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <FiInfo className="h-16 w-16 text-neutral-400" />
-              <h2 className="mt-4 text-xl font-medium text-neutral-800">Feature Not Available</h2>
-              <p className="mt-2 max-w-md text-neutral-600">
-                Payout settings are only available for caregivers. Please visit your profile settings to manage your account.
-              </p>
-              <Link
-                href="/settings/profile"
-                className="mt-6 inline-flex items-center rounded-md border border-transparent bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700"
-              >
-                Go to Profile Settings
-                <FiArrowRight className="ml-2 h-4 w-4" />
-              </Link>
+      <DashboardLayout title="Payouts" showSearch={false}>
+        <div className="container mx-auto max-w-4xl px-4 py-8">
+          <div className="mb-8 flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-neutral-800">Payout Settings</h1>
+            <Link
+              href="/settings/profile"
+              className="rounded-md bg-neutral-100 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-200"
+            >
+              Back to Profile
+            </Link>
+          </div>
+          
+          <div className="overflow-hidden rounded-lg bg-white shadow">
+            <div className="p-6">
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <FiInfo className="h-16 w-16 text-neutral-400" />
+                <h2 className="mt-4 text-xl font-medium text-neutral-800">Feature Not Available</h2>
+                <p className="mt-2 max-w-md text-neutral-600">
+                  Payout settings are only available for caregivers. Please visit your profile settings to manage your account.
+                </p>
+                <Link
+                  href="/settings/profile"
+                  className="mt-6 inline-flex items-center rounded-md border border-transparent bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700"
+                >
+                  Go to Profile Settings
+                  <FiArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
   
   return (
-    <div className="container mx-auto max-w-4xl px-4 py-8">
+    <DashboardLayout title="Payouts" showSearch={false}>
+      <div className="container mx-auto max-w-4xl px-4 py-8">
       <div className="mb-8 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-neutral-800">Payout Settings</h1>
         <Link
@@ -525,6 +533,7 @@ export default function PayoutsSettings() {
           Back to Dashboard
         </Link>
       </div>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }

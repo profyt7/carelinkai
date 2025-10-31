@@ -45,7 +45,8 @@ export async function GET(request: Request) {
     const lng = searchParams.get('lng') ? parseFloat(searchParams.get('lng')!) : null;
     const radiusMiles = searchParams.get('radiusMiles') ? parseFloat(searchParams.get('radiusMiles')!) : null;
     
-    // Pagination parameters
+    // Pagination parameters (supports cursor or page)
+    const cursor = searchParams.get('cursor');
     const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1;
     const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 20;
     
@@ -236,32 +237,51 @@ export async function GET(request: Request) {
       totalCount = filtered.length;
       caregivers = filtered.slice(skip, skip + pageSize);
     } else {
-      const result = await Promise.all([
-        prisma.caregiver.findMany({
+      // Prefer cursor-based pagination when possible
+      const orderBy = (
+        sortBy === 'rateAsc' ? [{ hourlyRate: 'asc' as const }, { id: 'asc' as const }] :
+        sortBy === 'rateDesc' ? [{ hourlyRate: 'desc' as const }, { id: 'asc' as const }] :
+        sortBy === 'experienceDesc' ? [{ yearsExperience: 'desc' as const }, { id: 'asc' as const }] :
+        [{ createdAt: 'desc' as const }, { id: 'asc' as const }]
+      );
+
+      if (cursor) {
+        const rows = await prisma.caregiver.findMany({
           where,
           include: {
             user: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                profileImageUrl: true,
-                addresses: true
-              }
+              select: { id: true, firstName: true, lastName: true, profileImageUrl: true, addresses: true }
             }
           },
-          orderBy:
-            sortBy === 'rateAsc' ? { hourlyRate: 'asc' } :
-            sortBy === 'rateDesc' ? { hourlyRate: 'desc' } :
-            sortBy === 'experienceDesc' ? { yearsExperience: 'desc' } :
-            { createdAt: 'desc' },
-          skip,
-          take: pageSize
-        }),
-        prisma.caregiver.count({ where })
-      ]);
-      caregivers = result[0] as any[];
-      totalCount = result[1] as number;
+          orderBy,
+          cursor: { id: cursor },
+          skip: 1, // skip the cursor itself
+          take: pageSize + 1,
+        });
+        caregivers = rows.slice(0, pageSize) as any[];
+        // get total for compatibility with existing UI counters
+        totalCount = await prisma.caregiver.count({ where });
+        // Attach marker for nextCursor via response (below)
+        (caregivers as any).__nextCursor = rows[pageSize]?.id ?? null;
+      } else {
+        const [rows, count] = await Promise.all([
+          prisma.caregiver.findMany({
+            where,
+            include: {
+              user: {
+                select: { id: true, firstName: true, lastName: true, profileImageUrl: true, addresses: true }
+              }
+            },
+            orderBy,
+            skip,
+            take: pageSize + 1,
+          }),
+          prisma.caregiver.count({ where })
+        ]);
+        caregivers = rows.slice(0, pageSize) as any[];
+        totalCount = count as number;
+        (caregivers as any).__nextCursor = rows[pageSize]?.id ?? null;
+      }
     }
     
     /* ------------------------------------------------------------------
@@ -373,13 +393,19 @@ export async function GET(request: Request) {
       );
     }
     
+    // next-cursor calculation (only for non-radius path)
+    const nextCursor = !useRadius ? ((caregivers as any).__nextCursor ?? null) : null;
+    const hasMore = !useRadius ? Boolean(nextCursor) : (totalCount > skip + pageSize);
+
     return NextResponse.json(
       { 
         data: formattedCaregivers,
         pagination: {
           page,
           pageSize,
-          total: totalCount
+          total: totalCount,
+          hasMore,
+          cursor: nextCursor,
         }
       },
       { status: 200, headers: { 'Cache-Control': 'public, max-age=15, s-maxage=15, stale-while-revalidate=60', ...(typeof __rl_caregivers_get !== 'undefined' ? buildRateLimitHeaders(__rl_caregivers_get.rr, __rl_caregivers_get.limit) : {}) } }
@@ -397,7 +423,9 @@ export async function GET(request: Request) {
           pagination: {
             page: 1,
             pageSize: 20,
-            total: mockCaregivers.length
+            total: mockCaregivers.length,
+            hasMore: false,
+            cursor: null,
           }
         },
         { status: 200 }

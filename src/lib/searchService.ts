@@ -28,6 +28,9 @@ export interface SearchParams {
   sortBy?: 'relevance' | 'price_low' | 'price_high' | 'distance' | 'rating';
   minAvailability?: number;    // Minimum availability required
   verified?: boolean;          // Only show verified homes
+
+  /* ---- AI matching ---- */
+  residentProfile?: any;       // Resident profile to personalize AI matching
 }
 
 /**
@@ -80,6 +83,24 @@ export interface SearchResultItem {
   imageUrl: string | null;
   operator: OperatorInfo | null;
   aiMatchScore: number;
+  aiMatchFactors?: {
+    careLevel: number;
+    budget: number;
+    location: number;
+    amenities: number;
+    gender: number;
+    social: number;
+    medical: number;
+  };
+  aiMatchWeights?: {
+    careLevel: number;
+    budget: number;
+    location: number;
+    amenities: number;
+    gender: number;
+    social: number;
+    medical: number;
+  };
   /** Indicates whether the currently-logged-in family has favorited this home */
   isFavorited?: boolean;
 }
@@ -149,6 +170,14 @@ function formatSearchParams(params: SearchParams): URLSearchParams {
   if (params.radius) searchParams.set('radius', params.radius.toString());
   if (params.sortBy) searchParams.set('sortBy', params.sortBy);
   if (params.verified !== undefined) searchParams.set('verified', params.verified.toString());
+
+  // Add resident profile for AI matching (JSON string)
+  if (params.residentProfile) {
+    try {
+      const encoded = JSON.stringify(params.residentProfile);
+      searchParams.set('residentProfile', encoded);
+    } catch {}
+  }
   
   // Add amenities (comma-separated)
   if (params.amenities && params.amenities.length > 0) {
