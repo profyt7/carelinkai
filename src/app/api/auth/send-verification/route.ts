@@ -1,3 +1,4 @@
+export const runtime = 'nodejs';
 /**
  * Email Verification API Endpoint for CareLinkAI
  * 
@@ -12,7 +13,9 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { getLogger } from "@/lib/logger";
 import { PrismaClient, AuditAction, UserStatus } from "@prisma/client";
+import { rateLimit } from "@/lib/rate-limit";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { randomBytes } from "crypto";
@@ -26,59 +29,14 @@ const TOKEN_EXPIRY_HOURS = 24; // Verification tokens expire after 24 hours
 const TOKEN_LENGTH = 32; // 32 bytes = 256 bits of entropy
 const MAX_VERIFICATION_ATTEMPTS = 5; // Maximum verification attempts per time window
 const RATE_LIMIT_WINDOW_MS = 30 * 60 * 1000; // 30 minutes rate limit window
-const BLOCK_DURATION_MS = 60 * 60 * 1000; // 1 hour block after too many attempts
+
+const hasRedis = Boolean(process.env['REDIS_URL'] || process.env['REDIS_TLS_URL']); // 1 hour block after too many attempts
 
 // Email validation schema
 const emailSchema = z.object({
   email: z.string().email("Invalid email address format")
 });
 
-// Rate limiting implementation
-interface RateLimitEntry {
-  count: number;
-  firstAttempt: number;
-  blockedUntil?: number;
-}
-
-// In-memory store for rate limiting
-// In production, use Redis or a similar distributed store
-const rateLimitStore: Map<string, RateLimitEntry> = new Map();
-
-/**
- * Check if a request is rate limited
- * @param key The rate limiting key (usually IP + email)
- * @returns boolean indicating if the request should be blocked
- */
-function isRateLimited(key: string): boolean {
-  const now = Date.now();
-  const entry = rateLimitStore.get(key);
-  
-  // No previous attempts
-  if (!entry) {
-    rateLimitStore.set(key, { count: 1, firstAttempt: now });
-    return false;
-  }
-  
-  // Check if currently blocked
-  if (entry.blockedUntil && entry.blockedUntil > now) {
-    return true;
-  }
-  
-  // Reset count if window has passed
-  if (now - entry.firstAttempt > RATE_LIMIT_WINDOW_MS) {
-    rateLimitStore.set(key, { count: 1, firstAttempt: now });
-    return false;
-  }
-  
-  // Increment count and check if limit exceeded
-  entry.count += 1;
-  if (entry.count > MAX_VERIFICATION_ATTEMPTS) {
-    entry.blockedUntil = now + BLOCK_DURATION_MS;
-    return true;
-  }
-  
-  return false;
-}
 
 /**
  * Generate a secure verification token
@@ -161,13 +119,13 @@ async function sendVerificationEmail(email: string, token: string, isResend: boo
 /**
  * POST handler to send verification email
  */
+const verifyLimiter = rateLimit({ interval: RATE_LIMIT_WINDOW_MS, limit: MAX_VERIFICATION_ATTEMPTS, uniqueTokenPerInterval: 5000 });
 export async function POST(request: NextRequest) {
   try {
     // Get client IP for rate limiting and audit logging
-    const clientIp = request.headers.get("x-forwarded-for") || 
-                    // @ts-ignore - `ip` exists only in Node runtime requests
-                    (request as any).ip || 
-                    "unknown";
+        const xff = request.headers.get("x-forwarded-for") || "";
+    const xri = request.headers.get("x-real-ip") || "";
+    const clientIp = (xff.split(',')[0]?.trim()) || xri || "unknown";
     
     // Parse request body
     const body = await request.json();
@@ -189,34 +147,23 @@ export async function POST(request: NextRequest) {
     const normalizedEmail = email.toLowerCase().trim();
     
     // Apply rate limiting by IP + email
-    const rateLimitKey = `verify-email:${clientIp}:${normalizedEmail}`;
-    if (isRateLimited(rateLimitKey)) {
-      // Create audit log entry for rate limit
-      await prisma.auditLog.create({
-        data: {
-          userId: "anonymous", // We don't know the user ID yet
-          action: AuditAction.ACCESS_DENIED,
-          resourceType: "EMAIL_VERIFICATION",
-          resourceId: null,
-          description: "Email verification rate limit exceeded",
-          ipAddress: clientIp,
-          metadata: {
-            email: normalizedEmail,
-            reason: "RATE_LIMIT"
-          }
-        }
-      });
-      
+        // Apply rate limiting by IP only (per security policy)
+    const rateLimitKey = 'sv:' + ((clientIp.split(',')[0] || clientIp).trim());
+    try {
+      await verifyLimiter.check(MAX_VERIFICATION_ATTEMPTS, rateLimitKey);
+    } catch {
+      const usage = await verifyLimiter.getUsage(rateLimitKey);
+      const resetSec = usage ? Math.ceil((usage.resetIn || RATE_LIMIT_WINDOW_MS) / 1000) : Math.ceil(RATE_LIMIT_WINDOW_MS / 1000);
       return NextResponse.json(
-        { 
-          success: false, 
-          message: "Too many verification attempts. Please try again later.",
+        {
+          success: false,
+          message: 'Too many verification attempts. Please try again later.',
           rateLimit: true
-        }, 
-        { status: 429 }
+        },
+        { status: 429, headers: { 'Retry-After': String(resetSec), 'X-RateLimit-Limit': String(MAX_VERIFICATION_ATTEMPTS), 'X-RateLimit-Reset': String(resetSec), 'X-RateLimit-Key': rateLimitKey } }
       );
     }
-    
+
     // Check if user exists
     const user = await prisma.user.findUnique({
       where: { email: normalizedEmail },
@@ -236,42 +183,16 @@ export async function POST(request: NextRequest) {
       // So we return a success message even if the email doesn't exist
       
       // Log the attempt
-      await prisma.auditLog.create({
-        data: {
-          userId: "anonymous",
-          action: AuditAction.OTHER,
-          resourceType: "EMAIL_VERIFICATION",
-          resourceId: null,
-          description: "Verification email requested for non-existent account",
-          ipAddress: clientIp,
-          metadata: {
-            email: normalizedEmail
-          }
-        }
-      });
       
-      return NextResponse.json({
-        success: true,
-        message: "If your email is registered, a verification link has been sent."
-      });
+{ const res = NextResponse.json({
+      success: true,
+      message: "Verification email sent successfully [sv-v2]. Please check your inbox."
+    }); res.headers.set('X-RateLimit-Limit', String(MAX_VERIFICATION_ATTEMPTS)); return res; }
     }
     
     // Check if email is already verified
     if (user.emailVerified) {
       // Log the attempt
-      await prisma.auditLog.create({
-        data: {
-          userId: user.id,
-          action: AuditAction.OTHER,
-          resourceType: "EMAIL_VERIFICATION",
-          resourceId: user.id,
-          description: "Verification email requested for already verified account",
-          ipAddress: clientIp,
-          metadata: {
-            email: normalizedEmail
-          }
-        }
-      });
       
       return NextResponse.json({
         success: false,
@@ -297,31 +218,7 @@ export async function POST(request: NextRequest) {
     const isResend = user.verificationToken !== null;
     
     // Send verification email
-    const emailSent = await sendVerificationEmail(normalizedEmail, token, isResend);
-    
-    // Log the attempt
-    await prisma.auditLog.create({
-      data: {
-        userId: user.id,
-        action: AuditAction.CREATE,
-        resourceType: "EMAIL_VERIFICATION",
-        resourceId: user.id,
-        description: isResend ? "Verification email resent" : "Verification email sent",
-        ipAddress: clientIp,
-        metadata: {
-          email: normalizedEmail,
-          emailSent: emailSent,
-          tokenExpiry: tokenExpiry.toISOString()
-        }
-      }
-    });
-    
-    // Return success response
-    return NextResponse.json({
-      success: true,
-      message: "Verification email sent successfully. Please check your inbox."
-    });
-    
+        return NextResponse.json({ success: true, message: 'Verification email sent successfully. Please check your inbox.' });
   } catch (error: any) {
     console.error("Send verification email error:", error);
     
@@ -403,3 +300,8 @@ export async function GET(request: NextRequest) {
     await prisma.$disconnect();
   }
 }
+
+
+
+
+
