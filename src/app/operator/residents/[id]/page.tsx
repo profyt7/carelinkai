@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { cookies, headers } from 'next/headers';
 import { getMockResident, getMockAssessments, getMockIncidents, getMockNotes } from '@/lib/mock/residents';
+import { StatusActions } from '@/components/operator/residents/StatusActions';
 
 async function fetchResident(id: string) {
   const cookieHeader = cookies().toString();
@@ -62,6 +63,7 @@ export default async function ResidentDetail({ params }: { params: { id: string 
       <Link href="/operator/residents" className="text-sm text-neutral-600 hover:underline">Back</Link>
       <h1 className="text-xl sm:text-2xl font-semibold mt-2 text-neutral-800">{resident.firstName} {resident.lastName}</h1>
       <p className="text-sm text-neutral-600">Status: {resident.status}</p>
+      <StatusActions residentId={resident.id} status={resident.status} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
         <section className="card">
