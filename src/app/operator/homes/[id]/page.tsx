@@ -64,12 +64,33 @@ export default async function OperatorHomeManagePage({ params, searchParams }: {
               <HomePhotosManager homeId={home.id} photos={home.photos as any} />
             </div>
           </div>
-          <div className="card space-y-2 text-sm">
-            <div><span className="text-neutral-500">Status:</span> {home.status}</div>
-            <div><span className="text-neutral-500">Capacity:</span> {home.capacity}</div>
-            <div><span className="text-neutral-500">Current Occupancy:</span> {home.currentOccupancy}</div>
-            <div><span className="text-neutral-500">Care Level:</span> {home.careLevel.join(', ')}</div>
-            <div><span className="text-neutral-500">Amenities:</span> {home.amenities.join(', ')}</div>
+          <div className="card space-y-3 text-sm">
+            <form action={`/api/operator/homes/${home.id}`} method="post" className="space-y-3">
+              <div className="font-medium text-neutral-800">Quick Actions</div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="form-label">Status</label>
+                  <select name="status" defaultValue={home.status} className="form-select">
+                    <option value="DRAFT">DRAFT</option>
+                    <option value="PENDING_REVIEW">PENDING_REVIEW</option>
+                    <option value="ACTIVE">ACTIVE</option>
+                    <option value="SUSPENDED">SUSPENDED</option>
+                    <option value="INACTIVE">INACTIVE</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="form-label">Current Occupancy</label>
+                  <input className="form-input" type="number" name="currentOccupancy" min={0} max={home.capacity} defaultValue={home.currentOccupancy} />
+                </div>
+              </div>
+              <div>
+                <label className="form-label">Amenities (comma-separated)</label>
+                <input className="form-input" type="text" name="amenities" defaultValue={home.amenities.join(', ')} />
+              </div>
+              <div className="flex gap-2">
+                <button className="btn btn-secondary" name="_action" value="quick-update" type="submit">Save</button>
+              </div>
+            </form>
           </div>
         </div>
       </div>

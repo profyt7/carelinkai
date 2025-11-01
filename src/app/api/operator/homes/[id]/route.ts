@@ -50,6 +50,54 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   }
 }
 
+export async function POST(req: Request, ctx: { params: { id: string } }) {
+  // Support form-encoded quick updates from Manage Home page
+  try {
+    const contentType = req.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      // Delegate to PATCH for JSON payloads
+      return await PATCH(req, ctx as any);
+    }
+
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+    if (!user || (user.role !== UserRole.OPERATOR && user.role !== UserRole.ADMIN)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const home = await prisma.assistedLivingHome.findUnique({ where: { id: ctx.params.id } });
+    if (!home) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    if (user.role !== UserRole.ADMIN) {
+      const op = await prisma.operator.findUnique({ where: { userId: user.id } });
+      if (!op || op.id !== home.operatorId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const form = await (req as any).formData();
+    const action = String(form.get('_action') || 'quick-update');
+    if (action !== 'quick-update') return NextResponse.json({ ok: true });
+
+    const status = form.get('status') ? String(form.get('status')) : undefined;
+    const currentOccupancyStr = form.get('currentOccupancy') ? String(form.get('currentOccupancy')) : undefined;
+    const currentOccupancy = currentOccupancyStr ? Math.max(0, Math.min(parseInt(currentOccupancyStr, 10) || 0, home.capacity)) : undefined;
+    const amenitiesStr = form.get('amenities') ? String(form.get('amenities')) : undefined;
+    const amenities = amenitiesStr !== undefined ? amenitiesStr.split(',').map(s => s.trim()).filter(Boolean) : undefined;
+
+    const data: any = {};
+    if (status) data.status = status;
+    if (currentOccupancy !== undefined) data.currentOccupancy = currentOccupancy;
+    if (amenities !== undefined) data.amenities = amenities;
+
+    await prisma.assistedLivingHome.update({ where: { id: home.id }, data });
+    return NextResponse.redirect(new URL(`/operator/homes/${home.id}`, req.url));
+  } catch (e) {
+    console.error('Quick update home failed', e);
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   try {
     const session = await getServerSession(authOptions);

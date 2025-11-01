@@ -3,6 +3,7 @@ import { authOptions } from "@/lib/auth";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { PrismaClient, UserRole } from "@prisma/client";
 import { formatCurrency } from "@/lib/utils";
+import { Decimal } from "@prisma/client/runtime/library";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -23,6 +24,24 @@ export default async function OperatorBillingPage({ searchParams }: { searchPara
     orderBy: { createdAt: 'desc' },
     take: 25,
     include: { booking: { include: { home: true, family: true } }, user: true },
+  });
+  const since30 = new Date(); since30.setDate(since30.getDate() - 30);
+  const last30 = await prisma.payment.aggregate({
+    where: {
+      createdAt: { gte: since30 },
+      status: 'COMPLETED',
+      ...(effectiveOperatorId ? { booking: { home: { operatorId: effectiveOperatorId } } } : {}),
+    },
+    _sum: { amount: true },
+    _count: { _all: true },
+  });
+  const mrr = await prisma.payment.aggregate({
+    where: {
+      status: 'COMPLETED',
+      type: 'MONTHLY_FEE',
+      ...(effectiveOperatorId ? { booking: { home: { operatorId: effectiveOperatorId } } } : {}),
+    },
+    _sum: { amount: true },
   });
   const operators = isAdmin
     ? await prisma.operator.findMany({ orderBy: { companyName: 'asc' }, select: { id: true, companyName: true } })
@@ -55,7 +74,32 @@ export default async function OperatorBillingPage({ searchParams }: { searchPara
             </div>
           </div>
         )}
-        <div className="card">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="card">
+            <div className="text-sm text-neutral-500">30-day Volume</div>
+            <div className="text-2xl font-semibold">{formatCurrency(Number(last30._sum.amount || 0))}</div>
+            <div className="text-xs text-neutral-500 mt-1">{last30._count._all} payments</div>
+          </div>
+          <div className="card">
+            <div className="text-sm text-neutral-500">MRR</div>
+            <div className="text-2xl font-semibold">{formatCurrency(Number(mrr._sum.amount || 0))}</div>
+            <div className="text-xs text-neutral-500 mt-1">Monthly fees</div>
+          </div>
+          <div className="card">
+            <div className="text-sm text-neutral-500">Filter</div>
+            <form method="GET" className="flex items-center gap-2 mt-1">
+              <label className="text-sm text-neutral-600" htmlFor="operatorId">Operator</label>
+              <select id="operatorId" name="operatorId" defaultValue={selected} className="form-select">
+                <option value="">All Operators</option>
+                {operators.map((o) => (
+                  <option key={o.id} value={o.id}>{o.companyName}</option>
+                ))}
+              </select>
+              <button className="btn btn-secondary" type="submit">Apply</button>
+            </form>
+          </div>
+        </div>
+        <div className="card mt-4">
           <div className="font-medium mb-3">Recent Payments</div>
           <div className="overflow-x-auto">
             <table className="table w-full">
@@ -82,7 +126,7 @@ export default async function OperatorBillingPage({ searchParams }: { searchPara
                 ))}
                 {payments.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="text-center text-neutral-600 py-6">No payments yet.</td>
+                    <td colSpan={6} className="table-empty">No payments yet.</td>
                   </tr>
                 )}
               </tbody>
