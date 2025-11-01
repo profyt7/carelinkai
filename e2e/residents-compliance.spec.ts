@@ -81,13 +81,11 @@ test.describe('[non-bypass] Operator Residents: Compliance end-to-end', () => {
     // Add a compliance item via UI
     await page.getByLabel('Title').fill('Initial Care Plan Review');
     await page.getByRole('button', { name: 'Add' }).click();
-    await page.waitForLoadState('networkidle');
     await expect(page.getByText('Initial Care Plan Review')).toBeVisible({ timeout: 10000 });
     await expect(page.getByText('OPEN')).toBeVisible();
 
     // Mark it complete
     await page.getByRole('button', { name: 'Mark complete' }).click();
-    await page.waitForLoadState('networkidle');
     await expect(page.getByText('COMPLETED')).toBeVisible({ timeout: 10000 });
 
     // Summary should reflect 0 open, 1 completed (dueSoon/overdue may vary if no dueDate)

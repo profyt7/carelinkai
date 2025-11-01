@@ -14,6 +14,7 @@ export function CompliancePanel({ residentId }: { residentId: string }) {
   const [items, setItems] = useState<Item[]>([]);
   const [summary, setSummary] = useState<{open:number;completed:number;dueSoon:number;overdue:number}>({ open: 0, completed: 0, dueSoon: 0, overdue: 0 });
   const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [title, setTitle] = useState('');
   const [type, setType] = useState('CARE_PLAN_REVIEW');
   const [dueDate, setDueDate] = useState<string>('');
@@ -39,15 +40,18 @@ export function CompliancePanel({ residentId }: { residentId: string }) {
   async function addItem(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim()) return;
-    const res = await fetch(`/api/residents/${residentId}/compliance`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type, title, dueDate: dueDate ? new Date(dueDate).toISOString() : undefined }),
-    });
-    if (res.ok) {
-      setTitle(''); setDueDate('');
-      await load();
-    }
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/residents/${residentId}/compliance`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, title, dueDate: dueDate ? new Date(dueDate).toISOString() : undefined }),
+      });
+      if (res.ok) {
+        setTitle(''); setDueDate('');
+        await load();
+      }
+    } finally { setSubmitting(false); }
   }
 
   async function markComplete(id: string) {
@@ -90,7 +94,7 @@ export function CompliancePanel({ residentId }: { residentId: string }) {
           <label htmlFor="compliance-due" className="block text-xs text-neutral-600 mb-1">Due date</label>
           <input id="compliance-due" type="date" className="border rounded px-2 py-1 text-sm" value={dueDate} onChange={e=>setDueDate(e.target.value)} />
         </div>
-        <button className="btn btn-sm" type="submit" disabled={loading}>Add</button>
+        <button className="btn btn-sm" type="submit" disabled={!title.trim() || submitting}>Add</button>
       </form>
       <ul className="divide-y divide-neutral-100">
         {items.map((it) => (
