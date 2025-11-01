@@ -30,7 +30,6 @@ test.describe('[non-bypass] Operator Residents: Compliance end-to-end', () => {
       } catch { return false; }
     }, OP_EMAIL);
     expect(devLoginOk).toBeTruthy();
-    await page.goto('/dashboard');
 
     // Verify server-side session established (whoami)
     {
@@ -74,7 +73,7 @@ test.describe('[non-bypass] Operator Residents: Compliance end-to-end', () => {
 
     // Navigate to lightweight compliance-only page to avoid SSR streaming hangs in dev
     await page.goto(`/operator/residents/${residentId}/compliance`, { waitUntil: 'domcontentloaded' });
-    await expect(page.getByText('Compliance')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Compliance', exact: true })).toBeVisible();
 
     // Initially completed should be 0 for a fresh resident
     const summarySel = page.locator('section.card >> text=Compliance').locator('..');
