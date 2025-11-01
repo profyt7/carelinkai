@@ -61,8 +61,8 @@ test.describe('[non-bypass] Operator Residents: Compliance end-to-end', () => {
     const created = await newRes.json();
     const residentId: string = created.id;
 
-    // Navigate to resident detail
-    await page.goto(`/operator/residents/${residentId}`, { waitUntil: 'domcontentloaded' });
+    // Navigate to lightweight compliance-only page to avoid SSR streaming hangs in dev
+    await page.goto(`/operator/residents/${residentId}/compliance`, { waitUntil: 'domcontentloaded' });
     await expect(page.getByText('Compliance')).toBeVisible();
 
     // Initially completed should be 0 for a fresh resident
