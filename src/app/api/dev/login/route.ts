@@ -46,6 +46,7 @@ export async function POST(request: NextRequest) {
     // Craft a NextAuth-compatible JWT payload mirroring our session claims
     const tokenPayload: Record<string, any> = {
       sub: user.id,
+      id: user.id,
       email: user.email,
       name: `${user.firstName} ${user.lastName}`.trim(),
       firstName: user.firstName,
