@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { cookies, headers } from 'next/headers';
 import { MOCK_RESIDENTS } from '@/lib/mock/residents';
+import { InlineActions, StatusPill } from '@/components/operator/residents/InlineActions';
 
 async function fetchResidents(q?: string, status?: string) {
   const cookieHeader = cookies().toString();
@@ -73,9 +74,10 @@ export default async function ResidentsPage({ searchParams }: { searchParams?: {
             {items.map((r) => (
               <tr key={r.id}>
                 <td className="px-4 py-2 text-sm text-neutral-800">{r.firstName} {r.lastName}</td>
-                <td className="px-4 py-2 text-sm text-neutral-700">{r.status}</td>
-                <td className="px-4 py-2 text-right">
-                  <Link className="text-primary-600 hover:underline text-sm" href={`/operator/residents/${r.id}`}>View</Link>
+                <td className="px-4 py-2 text-sm text-neutral-700"><StatusPill status={r.status} /></td>
+                <td className="px-4 py-2 text-right flex items-center gap-3 justify-end">
+                  <InlineActions id={r.id} status={r.status} />
+                  <Link className="text-primary-600 hover:underline text-sm" href={`/operator/residents/${r.id}`}>Details</Link>
                 </td>
               </tr>
             ))}
