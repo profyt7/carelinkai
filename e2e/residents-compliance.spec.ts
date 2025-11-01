@@ -17,8 +17,19 @@ test.describe('[non-bypass] Operator Residents: Compliance end-to-end', () => {
     const homeId: string = seed.homeId;
 
     // Establish session via dev helper to avoid UI flakiness in CI-like runs
-    const devLogin = await page.request.post('/api/dev/login', { data: { email: OP_EMAIL } });
-    expect(devLogin.ok()).toBeTruthy();
+    // Use in-page fetch so Set-Cookie is applied to browser context reliably
+    await page.goto('/');
+    const devLoginOk = await page.evaluate(async (email) => {
+      try {
+        const r = await fetch('/api/dev/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        return r.ok;
+      } catch { return false; }
+    }, OP_EMAIL);
+    expect(devLoginOk).toBeTruthy();
     await page.goto('/dashboard');
 
     // Verify server-side session established (whoami)
