@@ -3,6 +3,9 @@ import Link from 'next/link';
 import { cookies, headers } from 'next/headers';
 import { getMockResident, getMockAssessments, getMockIncidents, getMockNotes } from '@/lib/mock/residents';
 import { StatusActions } from '@/components/operator/residents/StatusActions';
+import { CreateNoteForm } from '@/components/operator/residents/forms/CreateNoteForm';
+import { CreateAssessmentForm } from '@/components/operator/residents/forms/CreateAssessmentForm';
+import { CreateIncidentForm } from '@/components/operator/residents/forms/CreateIncidentForm';
 
 async function fetchResident(id: string) {
   const cookieHeader = cookies().toString();
@@ -62,7 +65,10 @@ export default async function ResidentDetail({ params }: { params: { id: string 
     <div className="p-4 sm:p-6">
       <Link href="/operator/residents" className="text-sm text-neutral-600 hover:underline">Back</Link>
       <h1 className="text-xl sm:text-2xl font-semibold mt-2 text-neutral-800">{resident.firstName} {resident.lastName}</h1>
-      <p className="text-sm text-neutral-600">Status: {resident.status}</p>
+      <div className="flex items-center gap-3">
+        <p className="text-sm text-neutral-600">Status: {resident.status}</p>
+        <Link href={`/operator/residents/${resident.id}/edit`} className="text-sm text-primary-600 hover:underline">Edit</Link>
+      </div>
       {/* Downloadable PDF summary for operations use */}
       {(() => {
         const h = headers();
@@ -82,6 +88,7 @@ export default async function ResidentDetail({ params }: { params: { id: string 
               <li key={a.id}>{a.type} {a.score != null ? `(score: ${a.score})` : ''}</li>
             ))}
           </ul>
+          <CreateAssessmentForm residentId={resident.id} />
         </section>
         <section className="card">
           <h2 className="font-semibold mb-2 text-neutral-800">Incidents</h2>
@@ -90,6 +97,7 @@ export default async function ResidentDetail({ params }: { params: { id: string 
               <li key={i.id}>{i.type} (severity: {i.severity})</li>
             ))}
           </ul>
+          <CreateIncidentForm residentId={resident.id} />
         </section>
         <section className="card">
           <h2 className="font-semibold mb-2 text-neutral-800">Notes</h2>
@@ -98,6 +106,7 @@ export default async function ResidentDetail({ params }: { params: { id: string 
               <li key={n.id}>{n.content}</li>
             ))}
           </ul>
+          <CreateNoteForm residentId={resident.id} />
         </section>
       </div>
     </div>
