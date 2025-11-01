@@ -2,7 +2,7 @@ services:
   - type: web
     name: carelinkai
     env: docker
-    autoDeploy: false
+    autoDeploy: true
     plan: starter
     dockerfilePath: ./Dockerfile
     envVars:
