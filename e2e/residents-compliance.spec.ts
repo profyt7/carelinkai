@@ -62,7 +62,7 @@ test.describe('[non-bypass] Operator Residents: Compliance end-to-end', () => {
     const residentId: string = created.id;
 
     // Navigate to resident detail
-    await page.goto(`/operator/residents/${residentId}`);
+    await page.goto(`/operator/residents/${residentId}`, { waitUntil: 'domcontentloaded' });
     await expect(page.getByText('Compliance')).toBeVisible();
 
     // Initially completed should be 0 for a fresh resident
