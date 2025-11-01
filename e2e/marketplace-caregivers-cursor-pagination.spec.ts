@@ -74,7 +74,8 @@ test.describe('Marketplace caregivers - cursor-based pagination', () => {
 
     await page.goto('/marketplace?tab=caregivers');
 
-    // Initial batch rendered via virtualization; ensure some cards are visible
+    // Wait for at least one caregiver card CTA to appear (CSR fetch + virtualization)
+    await expect(page.getByRole('link', { name: 'View Profile' }).first()).toBeVisible();
     const initialCount = await page.getByRole('link', { name: 'View Profile' }).count();
     expect(initialCount).toBeGreaterThan(0);
 
