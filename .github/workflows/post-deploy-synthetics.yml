@@ -1,0 +1,42 @@
+name: Post Deploy Synthetics
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Wait for Render deploy to go live
+        shell: bash
+        env:
+          HEALTH_URL: https://carelinkai.onrender.com/api/health
+        run: |
+          echo "Polling $HEALTH_URL for readiness..."
+          for i in {1..90}; do
+            status=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL" || true)
+            if [ "$status" = "200" ]; then
+              echo "Healthy (200)."; exit 0; fi
+            echo "Attempt $i: status=$status; retrying in 10s..."; sleep 10;
+          done
+          echo "Timed out waiting for health endpoint" >&2
+          exit 1
+
+      - name: Synthetic checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=https://carelinkai.onrender.com
+          declare -a PATHS=("/" "/api/health" "/operator/residents")
+          for p in "${PATHS[@]}"; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" "$BASE$p")
+            echo "$p -> $code"
+            if [ "$code" != "200" ]; then
+              echo "Route check failed: $p returned $code" >&2
+              exit 1
+            fi
+          done
+          echo "All synthetic checks passed."
