@@ -4,15 +4,18 @@ import { cookies, headers } from 'next/headers';
 import { MOCK_RESIDENTS } from '@/lib/mock/residents';
 import { InlineActions, StatusPill } from '@/components/operator/residents/InlineActions';
 
-async function fetchResidents(q?: string, status?: string) {
+async function fetchResidents(params: { q?: string; status?: string; homeId?: string; familyId?: string; cursor?: string }) {
   const cookieHeader = cookies().toString();
   const h = headers();
   const proto = h.get('x-forwarded-proto') ?? 'https';
   const host = h.get('host') ?? '';
   const origin = `${proto}://${host}`;
-  const qParam = q ? `&q=${encodeURIComponent(q)}` : '';
-  const sParam = status ? `&status=${encodeURIComponent(status)}` : '';
-  const res = await fetch(`${origin}/api/residents?limit=50${qParam}${sParam}`, {
+  const qParam = params.q ? `&q=${encodeURIComponent(params.q)}` : '';
+  const sParam = params.status ? `&status=${encodeURIComponent(params.status)}` : '';
+  const hParam = params.homeId ? `&homeId=${encodeURIComponent(params.homeId)}` : '';
+  const fParam = params.familyId ? `&familyId=${encodeURIComponent(params.familyId)}` : '';
+  const cParam = params.cursor ? `&cursor=${encodeURIComponent(params.cursor)}` : '';
+  const res = await fetch(`${origin}/api/residents?limit=50${qParam}${sParam}${hParam}${fParam}${cParam}`, {
     cache: 'no-store',
     headers: { cookie: cookieHeader },
   });
@@ -20,15 +23,20 @@ async function fetchResidents(q?: string, status?: string) {
   return res.json();
 }
 
-export default async function ResidentsPage({ searchParams }: { searchParams?: { q?: string; status?: string } }) {
+export default async function ResidentsPage({ searchParams }: { searchParams?: { q?: string; status?: string; homeId?: string; familyId?: string; cursor?: string } }) {
   if (process.env['NEXT_PUBLIC_RESIDENTS_ENABLED'] === 'false') return notFound();
   const mockCookie = cookies().get('carelink_mock_mode')?.value?.toString().trim().toLowerCase() || '';
   const showMock = ['1','true','yes','on'].includes(mockCookie);
   const q = searchParams?.q?.toString() || '';
   const status = searchParams?.status?.toString() || '';
-  const items: Array<{ id: string; firstName: string; lastName: string; status: string }> = showMock
+  const homeId = searchParams?.homeId?.toString() || '';
+  const familyId = searchParams?.familyId?.toString() || '';
+  const cursor = searchParams?.cursor?.toString() || '';
+  const data = showMock
     ? MOCK_RESIDENTS
-    : (await fetchResidents(q, status)).items ?? [];
+    : await fetchResidents({ q, status, homeId, familyId, cursor });
+  const items: Array<{ id: string; firstName: string; lastName: string; status: string }> = Array.isArray(data) ? data : (data.items ?? []);
+  const nextCursor = Array.isArray(data) ? null : (data.nextCursor ?? null);
   const h = headers();
   const proto = h.get('x-forwarded-proto') ?? 'https';
   const host = h.get('host') ?? '';
@@ -54,11 +62,14 @@ export default async function ResidentsPage({ searchParams }: { searchParams?: {
               <option value="DISCHARGED">Discharged</option>
               <option value="DECEASED">Deceased</option>
             </select>
+            <input type="text" name="homeId" placeholder="Home ID" defaultValue={homeId} className="border rounded px-2 py-1 text-sm" />
+            <input type="text" name="familyId" placeholder="Family ID" defaultValue={familyId} className="border rounded px-2 py-1 text-sm" />
             <button className="btn btn-sm" type="submit">Search</button>
           </form>
-          <a className="btn btn-sm" href={`${origin}/api/residents?limit=1000${q ? `&q=${encodeURIComponent(q)}` : ''}${status ? `&status=${encodeURIComponent(status)}` : ''}&format=csv`}>
+          <a className="btn btn-sm" href={`${origin}/api/residents?limit=1000${q ? `&q=${encodeURIComponent(q)}` : ''}${status ? `&status=${encodeURIComponent(status)}` : ''}${homeId ? `&homeId=${encodeURIComponent(homeId)}` : ''}${familyId ? `&familyId=${encodeURIComponent(familyId)}` : ''}&format=csv`}>
             Export CSV
           </a>
+          <Link href="/operator/residents/new" className="btn btn-sm">New Resident</Link>
         </div>
       </div>
       <div className="mt-6 overflow-x-auto">
@@ -89,6 +100,11 @@ export default async function ResidentsPage({ searchParams }: { searchParams?: {
           </tbody>
         </table>
       </div>
+      {nextCursor && (
+        <div className="mt-4">
+          <Link className="btn btn-sm" href={`/operator/residents?${new URLSearchParams({ q, status, homeId, familyId, cursor: nextCursor }).toString()}`}>Next</Link>
+        </div>
+      )}
     </div>
   );
 }

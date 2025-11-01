@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { AuditAction } from "@prisma/client";
 import { requireOperatorOrAdmin } from "@/lib/rbac";
-
-const prisma = new PrismaClient();
+import { createAuditLogFromRequest } from "@/lib/audit";
+import { z } from "zod";
+import { prisma } from "@/lib/prisma";
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -21,7 +22,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     console.error("Incidents list error", e);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   } finally {
-    await prisma.$disconnect();
+    // noop
   }
 }
 
@@ -30,15 +31,18 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     const { error } = await requireOperatorOrAdmin();
     if (error) return error;
     const body = await req.json().catch(() => ({}));
-    const { type, severity, description, occurredAt } = body || {};
-    if (!type || !severity || !occurredAt) return NextResponse.json({ error: "type, severity, occurredAt required" }, { status: 400 });
+    const Schema = z.object({ type: z.string().min(1), severity: z.string().min(1), description: z.string().optional(), occurredAt: z.string().datetime() });
+    const parsed = Schema.safeParse(body);
+    if (!parsed.success) return NextResponse.json({ error: "Invalid body", details: parsed.error.format() }, { status: 400 });
+    const { type, severity, description, occurredAt } = parsed.data;
     const created = await prisma.residentIncident.create({ data: { residentId: params.id, type, severity, description: description ?? null, occurredAt: new Date(occurredAt) }, select: { id: true } });
+    await createAuditLogFromRequest(req, AuditAction.CREATE, 'ResidentIncident', created.id, 'Created incident', { residentId: params.id, type, severity });
     return NextResponse.json({ success: true, id: created.id }, { status: 201 });
   } catch (e) {
     console.error("Incidents create error", e);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   } finally {
-    await prisma.$disconnect();
+    // noop
   }
 }
 
