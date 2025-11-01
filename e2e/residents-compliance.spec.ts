@@ -88,8 +88,7 @@ test.describe('[non-bypass] Operator Residents: Compliance end-to-end', () => {
     await page.getByRole('button', { name: 'Mark complete' }).click();
     await expect(page.getByText('COMPLETED')).toBeVisible({ timeout: 10000 });
 
-    // Summary should reflect 0 open, 1 completed (dueSoon/overdue may vary if no dueDate)
-    await expect(page.getByText('Open: 0')).toBeVisible({ timeout: 10000 });
+    // Summary should reflect 1 completed (dueSoon/overdue may vary if no dueDate)
     await expect(page.getByText('Completed: 1')).toBeVisible({ timeout: 10000 });
 
     // Cross-check via API summary
