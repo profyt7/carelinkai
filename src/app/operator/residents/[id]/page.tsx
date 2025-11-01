@@ -11,7 +11,7 @@ import { CompliancePanel } from '@/components/operator/residents/CompliancePanel
 async function fetchResident(id: string) {
   const cookieHeader = cookies().toString();
   const h = headers();
-  const proto = h.get('x-forwarded-proto') ?? 'https';
+  const proto = h.get('x-forwarded-proto') ?? 'http';
   const host = h.get('host') ?? '';
   const origin = `${proto}://${host}`;
   const res = await fetch(`${origin}/api/residents/${id}`, {
@@ -26,7 +26,7 @@ async function fetchResident(id: string) {
 async function fetchSection(id: string, section: 'assessments' | 'incidents' | 'notes') {
   const cookieHeader = cookies().toString();
   const h = headers();
-  const proto = h.get('x-forwarded-proto') ?? 'https';
+  const proto = h.get('x-forwarded-proto') ?? 'http';
   const host = h.get('host') ?? '';
   const origin = `${proto}://${host}`;
   const res = await fetch(`${origin}/api/residents/${id}/${section}?limit=5`, {
@@ -73,7 +73,7 @@ export default async function ResidentDetail({ params }: { params: { id: string 
       {/* Downloadable PDF summary for operations use */}
       {(() => {
         const h = headers();
-        const proto = h.get('x-forwarded-proto') ?? 'https';
+        const proto = h.get('x-forwarded-proto') ?? 'http';
         const host = h.get('host') ?? '';
         const origin = `${proto}://${host}`;
         const href = `${origin}/api/residents/${resident.id}/summary`;
