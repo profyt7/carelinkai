@@ -186,6 +186,7 @@ export async function GET(request: Request) {
     } catch {
       appliedSet = null;
     }
+
     
     // Transform the data to include counts directly
     const formattedListings = listings.map((listing: any) => {
