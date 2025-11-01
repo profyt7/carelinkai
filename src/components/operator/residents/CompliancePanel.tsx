@@ -83,12 +83,12 @@ export function CompliancePanel({ residentId }: { residentId: string }) {
           </select>
         </div>
         <div className="flex-1">
-          <label className="block text-xs text-neutral-600 mb-1">Title</label>
-          <input className="border rounded px-2 py-1 text-sm w-full" value={title} onChange={e=>setTitle(e.target.value)} placeholder="e.g., Q4 Care Plan Review" />
+          <label htmlFor="compliance-title" className="block text-xs text-neutral-600 mb-1">Title</label>
+          <input id="compliance-title" className="border rounded px-2 py-1 text-sm w-full" value={title} onChange={e=>setTitle(e.target.value)} placeholder="e.g., Q4 Care Plan Review" />
         </div>
         <div>
-          <label className="block text-xs text-neutral-600 mb-1">Due date</label>
-          <input type="date" className="border rounded px-2 py-1 text-sm" value={dueDate} onChange={e=>setDueDate(e.target.value)} />
+          <label htmlFor="compliance-due" className="block text-xs text-neutral-600 mb-1">Due date</label>
+          <input id="compliance-due" type="date" className="border rounded px-2 py-1 text-sm" value={dueDate} onChange={e=>setDueDate(e.target.value)} />
         </div>
         <button className="btn btn-sm" type="submit" disabled={loading}>Add</button>
       </form>
