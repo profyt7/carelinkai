@@ -29,11 +29,14 @@ test.describe('[non-bypass] Operator Residents: Compliance end-to-end', () => {
       const deadline = Date.now() + 20000;
       let ok = false;
       while (Date.now() < deadline) {
-        const r = await page.request.get('/api/dev/whoami');
-        if (r.ok()) {
-          const body = await r.json();
-          if (body?.session?.user?.email) { ok = true; break; }
-        }
+        const body = await page.evaluate(async () => {
+          try {
+            const res = await fetch('/api/dev/whoami', { credentials: 'include' });
+            if (!res.ok) return null;
+            return await res.json();
+          } catch { return null; }
+        });
+        if (body?.session?.user?.email) { ok = true; break; }
         await page.waitForTimeout(200);
       }
       expect(ok).toBeTruthy();
