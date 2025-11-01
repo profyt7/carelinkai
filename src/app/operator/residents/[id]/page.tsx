@@ -63,6 +63,15 @@ export default async function ResidentDetail({ params }: { params: { id: string 
       <Link href="/operator/residents" className="text-sm text-neutral-600 hover:underline">Back</Link>
       <h1 className="text-xl sm:text-2xl font-semibold mt-2 text-neutral-800">{resident.firstName} {resident.lastName}</h1>
       <p className="text-sm text-neutral-600">Status: {resident.status}</p>
+      {/* Downloadable PDF summary for operations use */}
+      {(() => {
+        const h = headers();
+        const proto = h.get('x-forwarded-proto') ?? 'https';
+        const host = h.get('host') ?? '';
+        const origin = `${proto}://${host}`;
+        const href = `${origin}/api/residents/${resident.id}/summary`;
+        return <a href={href} target="_blank" className="text-sm text-primary-600 hover:underline">Open Summary PDF</a>;
+      })()}
       <StatusActions residentId={resident.id} status={resident.status} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">

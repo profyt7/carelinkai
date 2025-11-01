@@ -72,6 +72,7 @@
         "node-fetch": "^3.3.2",
         "nodemailer": "^6.10.1",
         "otplib": "^12.0.1",
+        "pdfkit": "0.17.2",
         "pino": "10.1.0",
         "postcss-flexbugs-fixes": "^5.0.2",
         "postcss-preset-env": "^10.2.4",
@@ -129,13 +130,12 @@
     "jest": {
         "preset": "ts-jest",
         "testEnvironment": "node",
-    "testPathIgnorePatterns": [
-      "<rootDir>/e2e/",
-      "<rootDir>/.next/"
-    ],
+        "testPathIgnorePatterns": [
+            "<rootDir>/e2e/",
+            "<rootDir>/.next/"
+        ],
         "moduleNameMapper": {
             "^@/(.*)$": "<rootDir>/src/$1"
         }
     }
 }
-
