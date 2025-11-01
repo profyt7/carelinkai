@@ -82,7 +82,7 @@ test.describe('[non-bypass] Operator Residents: Compliance end-to-end', () => {
     await page.getByLabel('Title').fill('Initial Care Plan Review');
     await page.getByRole('button', { name: 'Add' }).click();
     await expect(page.getByText('Initial Care Plan Review')).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText('OPEN')).toBeVisible();
+    await expect(page.getByText(/^OPEN$/)).toBeVisible();
 
     // Mark it complete
     await page.getByRole('button', { name: 'Mark complete' }).click();
