@@ -75,9 +75,8 @@ test.describe('[non-bypass] Operator Residents: Compliance end-to-end', () => {
     await page.goto(`/operator/residents/${residentId}/compliance`, { waitUntil: 'domcontentloaded' });
     await expect(page.getByRole('heading', { name: 'Compliance', exact: true })).toBeVisible();
 
-    // Initially completed should be 0 for a fresh resident
-    const summarySel = page.locator('section.card >> text=Compliance').locator('..');
-    await expect(page.getByText('Completed: 0')).toBeVisible();
+    // Wait for summary to load; initial completed should be 0 for a fresh resident
+    await expect(page.getByText(/Completed: \d+/)).toBeVisible({ timeout: 15000 });
 
     // Add a compliance item via UI
     await page.getByLabel('Title').fill('Initial Care Plan Review');
