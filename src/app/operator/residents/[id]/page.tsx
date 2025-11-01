@@ -53,14 +53,18 @@ export default async function ResidentDetail({ params }: { params: { id: string 
     incidents = getMockIncidents(r.id);
     notes = getMockNotes(r.id);
   } else {
+    console.log('[ResidentDetail] fetching resident', params.id);
     const data = await fetchResident(params.id);
+    console.log('[ResidentDetail] fetched resident', !!data);
     if (!data?.resident) return notFound();
     resident = data.resident;
+    console.log('[ResidentDetail] fetching sections');
     [assessments, incidents, notes] = await Promise.all([
       fetchSection(resident.id, 'assessments'),
       fetchSection(resident.id, 'incidents'),
       fetchSection(resident.id, 'notes'),
     ]);
+    console.log('[ResidentDetail] sections fetched');
   }
   return (
     <div className="p-4 sm:p-6">
