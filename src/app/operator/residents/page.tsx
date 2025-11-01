@@ -3,13 +3,14 @@ import Link from 'next/link';
 import { cookies, headers } from 'next/headers';
 import { MOCK_RESIDENTS } from '@/lib/mock/residents';
 
-async function fetchResidents() {
+async function fetchResidents(q?: string) {
   const cookieHeader = cookies().toString();
   const h = headers();
   const proto = h.get('x-forwarded-proto') ?? 'https';
   const host = h.get('host') ?? '';
   const origin = `${proto}://${host}`;
-  const res = await fetch(`${origin}/api/residents?limit=50`, {
+  const qParam = q ? `&q=${encodeURIComponent(q)}` : '';
+  const res = await fetch(`${origin}/api/residents?limit=50${qParam}`, {
     cache: 'no-store',
     headers: { cookie: cookieHeader },
   });
@@ -17,18 +18,37 @@ async function fetchResidents() {
   return res.json();
 }
 
-export default async function ResidentsPage() {
+export default async function ResidentsPage({ searchParams }: { searchParams?: { q?: string } }) {
   if (process.env['NEXT_PUBLIC_RESIDENTS_ENABLED'] === 'false') return notFound();
   const mockCookie = cookies().get('carelink_mock_mode')?.value?.toString().trim().toLowerCase() || '';
   const showMock = ['1','true','yes','on'].includes(mockCookie);
+  const q = searchParams?.q?.toString() || '';
   const items: Array<{ id: string; firstName: string; lastName: string; status: string }> = showMock
     ? MOCK_RESIDENTS
-    : (await fetchResidents()).items ?? [];
+    : (await fetchResidents(q)).items ?? [];
+  const h = headers();
+  const proto = h.get('x-forwarded-proto') ?? 'https';
+  const host = h.get('host') ?? '';
+  const origin = `${proto}://${host}`;
   return (
     <div className="p-4 sm:p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl sm:text-2xl font-semibold text-neutral-800">Residents</h1>
-        <div />
+        <div className="flex items-center gap-3">
+          <form action="/operator/residents" className="flex items-center gap-2">
+            <input
+              type="text"
+              name="q"
+              placeholder="Search by name"
+              defaultValue={q}
+              className="border rounded px-2 py-1 text-sm"
+            />
+            <button className="btn btn-sm" type="submit">Search</button>
+          </form>
+          <a className="btn btn-sm" href={`${origin}/api/residents?limit=1000${q ? `&q=${encodeURIComponent(q)}` : ''}&format=csv`}>
+            Export CSV
+          </a>
+        </div>
       </div>
       <div className="mt-6 overflow-x-auto">
         <table className="min-w-full divide-y divide-neutral-200">

@@ -4,6 +4,10 @@ import { requireOperatorOrAdmin } from '@/lib/rbac';
 
 const prisma = new PrismaClient();
 
+// Assumptions logged:
+// - CSV export is enabled via `?format=csv` and respects RBAC filters.
+// - Pagination via `limit` and `cursor` (id-based). Additional filters: status, homeId, familyId.
+// - Operators only see residents at their homes; Admin sees all.
 export async function GET(req: NextRequest) {
   try {
     const { session, error } = await requireOperatorOrAdmin();
@@ -13,6 +17,10 @@ export async function GET(req: NextRequest) {
     const q = (url.searchParams.get('q') || '').trim();
     const limit = Math.min(Number(url.searchParams.get('limit') || '25'), 100);
     const cursor = url.searchParams.get('cursor') || undefined;
+    const status = (url.searchParams.get('status') || '').trim();
+    const homeId = (url.searchParams.get('homeId') || '').trim();
+    const familyId = (url.searchParams.get('familyId') || '').trim();
+    const format = (url.searchParams.get('format') || '').trim().toLowerCase();
 
     const user = await prisma.user.findUnique({ where: { email: session!.user!.email! } });
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -24,6 +32,9 @@ export async function GET(req: NextRequest) {
         { lastName: { contains: q, mode: 'insensitive' } },
       ];
     }
+    if (status) whereBase.status = status as any;
+    if (homeId) whereBase.homeId = homeId;
+    if (familyId) whereBase.familyId = familyId;
 
     if (user.role === UserRole.OPERATOR) {
       const op = await prisma.operator.findUnique({ where: { userId: user.id } });
@@ -49,6 +60,22 @@ export async function GET(req: NextRequest) {
     const page = hasNext ? items.slice(0, -1) : items;
     const last = items[items.length - 1];
     const nextCursor = hasNext && last ? last.id : null;
+    if (format === 'csv') {
+      const header = 'id,firstName,lastName,status,homeId,createdAt\n';
+      const rows = page
+        .map((r) => [r.id, r.firstName, r.lastName, r.status, r.homeId ?? '', r.createdAt.toISOString()]
+          .map((v) => String(v).replaceAll('"', '""'))
+          .map((v) => /[",\n]/.test(v) ? `"${v}"` : v)
+          .join(','))
+        .join('\n');
+      return new NextResponse(header + rows, {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/csv; charset=utf-8',
+          'Cache-Control': 'no-store',
+        },
+      });
+    }
     return NextResponse.json({ items: page, nextCursor });
   } catch (e) {
     console.error('Residents list error', e);

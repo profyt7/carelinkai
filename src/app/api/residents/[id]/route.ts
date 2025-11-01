@@ -55,6 +55,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     for (const k of ['firstName', 'lastName', 'gender', 'homeId'] as const) if (body[k] !== undefined) data[k] = body[k];
     if (body.status) data.status = body.status as ResidentStatus;
     if (body.dateOfBirth) data.dateOfBirth = new Date(body.dateOfBirth);
+    if (body.admissionDate) data.admissionDate = new Date(body.admissionDate);
+    if (body.dischargeDate) data.dischargeDate = new Date(body.dischargeDate);
+
+    // Validate discharge not before admission
+    if (data.dischargeDate && data.admissionDate && data.dischargeDate < data.admissionDate) {
+      return NextResponse.json({ error: 'dischargeDate cannot be before admissionDate' }, { status: 400 });
+    }
 
     const updated = await prisma.resident.update({ where: { id: params.id }, data, select: { id: true } });
     return NextResponse.json({ success: true, id: updated.id });
