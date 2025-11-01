@@ -431,6 +431,8 @@ model Resident {
   assessmentResults AssessmentResult[]
   residentIncidents ResidentIncident[]
   residentNotes     ResidentNote[]
+  contacts          ResidentContact[]
+  complianceItems   ResidentComplianceItem[]
 
   // Family collaboration relationships
   familyDocuments      FamilyDocument[]
@@ -447,6 +449,61 @@ model Resident {
   @@index([familyId])
   @@index([homeId])
   @@index([status])
+}
+
+/// Primary and secondary contacts for a resident (e.g., family members, care proxy)
+model ResidentContact {
+  id          String   @id @default(cuid())
+  residentId  String
+  name        String
+  relationship String?
+  email       String?
+  phone       String?
+  isPrimary   Boolean  @default(false)
+  preferences Json?
+
+  // Relations
+  resident Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([residentId])
+  @@index([isPrimary])
+  @@unique([residentId, email])
+}
+
+/// Compliance tasks/items tracked per resident (e.g., TB test, flu shot, care plan review)
+enum ComplianceStatus {
+  OPEN
+  COMPLETED
+}
+
+model ResidentComplianceItem {
+  id          String            @id @default(cuid())
+  residentId  String
+  type        String            // e.g., TB_TEST, FLU_SHOT, CARE_PLAN_REVIEW
+  title       String
+  notes       String?           @db.Text
+  owner       String?           // optional owner/assignee
+  status      ComplianceStatus  @default(OPEN)
+  severity    String?           // LOW|MEDIUM|HIGH (free-form for now)
+  dueDate     DateTime?
+  completedAt DateTime?
+
+  // Relations
+  resident Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([residentId])
+  @@index([status])
+  @@index([dueDate])
 }
 
 model CareTimelineEvent {
