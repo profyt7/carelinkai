@@ -31,45 +31,34 @@ test.describe('[non-bypass] Operator Residents: Compliance end-to-end', () => {
     }, OP_EMAIL);
     expect(devLoginOk).toBeTruthy();
 
-    // Verify server-side session established (whoami)
-    {
-      const deadline = Date.now() + 15000;
-      let ok = false;
-      while (Date.now() < deadline) {
-        const body = await page.evaluate(async () => {
-          try {
-            const res = await fetch('/api/dev/whoami', { credentials: 'include' });
-            if (!res.ok) return null;
-            return await res.json();
-          } catch { return null; }
-        });
-        if (body?.session?.user?.email) { ok = true; break; }
-        await page.waitForTimeout(200);
-      }
-      expect(ok).toBeTruthy();
-    }
-
-    // Acquire/ensure a familyId to associate the resident
-    const famRes = await page.request.get('/api/user/family');
-    expect(famRes.ok()).toBeTruthy();
-    const famJson = await famRes.json();
-    const familyId: string = famJson.familyId;
-
-    // Create a resident associated with this operator's home
-    const newRes = await page.request.post('/api/residents', {
-      data: {
-        familyId,
-        homeId,
-        firstName: 'E2E',
-        lastName: 'Resident',
-        dateOfBirth: '1940-01-01',
-        gender: 'FEMALE',
-        status: 'ACTIVE',
-      }
+    // Acquire/ensure a familyId to associate the resident (use in-page fetch to include cookies)
+    const familyId: string = await page.evaluate(async () => {
+      const r = await fetch('/api/user/family', { credentials: 'include' });
+      if (!r.ok) throw new Error('family failed');
+      const j = await r.json();
+      return j.familyId as string;
     });
-    expect(newRes.ok()).toBeTruthy();
-    const created = await newRes.json();
-    const residentId: string = created.id;
+
+    // Create a resident associated with this operator's home (in-page fetch for auth)
+    const residentId: string = await page.evaluate(async (args) => {
+      const r = await fetch('/api/residents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          familyId: args.familyId,
+          homeId: args.homeId,
+          firstName: 'E2E',
+          lastName: 'Resident',
+          dateOfBirth: '1940-01-01',
+          gender: 'FEMALE',
+          status: 'ACTIVE',
+        })
+      });
+      if (!r.ok) throw new Error('resident create failed');
+      const j = await r.json();
+      return j.id as string;
+    }, { familyId, homeId });
 
     // Navigate to lightweight compliance-only page to avoid SSR streaming hangs in dev
     await page.goto(`/operator/residents/${residentId}/compliance`, { waitUntil: 'domcontentloaded' });
