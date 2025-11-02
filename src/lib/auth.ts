@@ -36,7 +36,10 @@ export const authOptions: NextAuthOptions = {
     // Harden cookies (secure in production, httpOnly, SameSite=lax)
   cookies: {
     sessionToken: {
-      name: process.env.NODE_ENV === 'production' ? '__Secure-next-auth.session-token' : 'next-auth.session-token',
+      // Align cookie name with security: when insecure cookies are allowed, use non-__Secure name
+      name: (process.env.NODE_ENV === 'production' && process.env['ALLOW_INSECURE_AUTH_COOKIE'] !== '1')
+        ? '__Secure-next-auth.session-token'
+        : 'next-auth.session-token',
       options: {
         httpOnly: true,
         sameSite: 'lax',
