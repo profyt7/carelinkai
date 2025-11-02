@@ -77,8 +77,9 @@ test.describe('Marketplace favorites (guest, localStorage fallback)', () => {
       return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({}) });
     });
 
+    await page.addInitScript(() => { try { localStorage.setItem('marketplace:lastTab', 'jobs'); } catch {} });
     await page.goto('/marketplace?tab=jobs');
-    await page.getByRole('button', { name: /^Jobs/ }).click();
+    await page.locator('nav[aria-label="Tabs"]').getByText(/Jobs/).first().click();
     // Wait for a job card to render instead of relying on tab count
 
     // Favorite the first job via its card-specific button

@@ -43,9 +43,11 @@ test.describe('Marketplace applications (caregiver apply/withdraw)', () => {
       return route.continue();
     });
 
+    // Hint tab via localStorage before page scripts
+    await page.addInitScript(() => { try { localStorage.setItem('marketplace:lastTab', 'jobs'); } catch {} });
     await page.goto('/marketplace?tab=jobs');
     // Ensure Jobs tab is active in case URL init races
-    await page.getByRole('button', { name: /^Jobs/ }).click();
+    await page.locator('nav[aria-label="Tabs"]').getByText(/Jobs/).first().click();
 
     // Wait for a job card to render (use heading to avoid brittle href selectors)
     const card = page.locator('div.relative').filter({ has: page.getByRole('heading', { name: 'Caregiver Needed' }) }).first();
