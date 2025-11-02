@@ -45,8 +45,8 @@ test.describe('Marketplace applications (caregiver apply/withdraw)', () => {
 
     await page.goto('/marketplace?tab=jobs');
 
-    // Wait for a job card to render (tab count can lag)
-    const card = page.locator('a[href="/marketplace/listings/job-1"]');
+    // Wait for a job card to render (use heading to avoid brittle href selectors)
+    const card = page.locator('div.relative').filter({ has: page.getByRole('heading', { name: 'Caregiver Needed' }) }).first();
     await expect(card).toBeVisible();
 
     // Apply
