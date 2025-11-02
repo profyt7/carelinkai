@@ -26,6 +26,17 @@ test.describe('[non-bypass] Credentials: Caregiver credential upload (real flow)
       await route.fulfill({ status: 200, body: '' });
     });
 
+    // Ensure upload-url endpoint resolves without AWS creds by fulfilling with same-origin mock URL
+    await page.route('**/api/caregiver/credentials/upload-url', async (route) => {
+      const mock = {
+        url: '/api/dev/mock-upload/cred/1/test-cert.pdf',
+        fields: {},
+        fileUrl: 'https://example.com/mock-credentials/cred/1/test-cert.pdf',
+        expires: 3600,
+      };
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(mock) });
+    });
+
     // Establish session via dev helper (more reliable than UI login in e2e)
     await page.goto('/');
     const loggedIn = await page.evaluate(async (email) => {
