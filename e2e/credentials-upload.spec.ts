@@ -42,8 +42,8 @@ test.describe('[non-bypass] Credentials: Caregiver credential upload (real flow)
     await expect(page.getByRole('heading', { name: 'Profile Settings' })).toBeVisible({ timeout: 20000 });
 
     // If role is CAREGIVER, the Credentials section should be present
-    await expect(page.getByText('Credentials')).toBeVisible();
-    await expect(page.getByText('Add New Credential')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Credentials', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Add New Credential' })).toBeVisible();
 
     // Fill credential form fields
     await page.getByLabel('Credential Type').fill('CPR Certification');
