@@ -85,11 +85,11 @@ const nextConfig = {
       { source: '/uploads/:path*', destination: '/uploads/:path*' },
     ];
   },
-  // Redirect from HTTP to HTTPS for HIPAA compliance in production only.
-  // In local Docker / dev, unconditional redirects can create invalid URL patterns
-  // (e.g. https://:host/__ESC_COLON_path*) and break NextAuth.
+  // Redirect from HTTP to HTTPS for HIPAA compliance in production only when explicitly enabled.
+  // In local/dev and e2e, unconditional redirects can create invalid URL patterns (e.g., https://:host/__ESC_COLON_path*)
+  // and break auth flows. Gate behind ENABLE_HTTPS_REDIRECT=1.
   async redirects() {
-    if (process.env.NODE_ENV !== 'production') {
+    if (process.env.NODE_ENV !== 'production' || process.env.ENABLE_HTTPS_REDIRECT !== '1') {
       return [];
     }
     return [
@@ -99,6 +99,7 @@ const nextConfig = {
           { type: 'header', key: 'x-forwarded-proto', value: 'http' },
         ],
         permanent: true,
+        // Note: Next.js does not support :host token reliably in all environments; use :path* only when behind a proxy that sets host.
         destination: 'https://:host/:path*',
       },
     ];
