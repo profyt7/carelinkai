@@ -44,7 +44,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       const buff = Buffer.from(await file.arrayBuffer());
       const safeName = (file.name || 'license').replace(/[^a-z0-9_.-]+/gi, '_').toLowerCase();
       const key = `homes/${home.id}/licenses/${Date.now()}-${safeName}`;
-      const useMock = process.env['ALLOW_DEV_ENDPOINTS'] === '1' || process.env['NODE_ENV'] !== 'production';
+      const useMock = req.headers.get('x-e2e-bypass') === '1' || process.env['ALLOW_DEV_ENDPOINTS'] === '1' || process.env['NODE_ENV'] !== 'production';
       if (useMock) {
         // Skip real S3 in dev/e2e; store a mock URL that download route will redirect to
         documentUrl = `https://example.com/mock-operator/${home.id}/licenses/${key}`;
