@@ -65,10 +65,10 @@ export async function POST(request: NextRequest) {
       maxAge: 30 * 24 * 60 * 60,
     } as any);
 
-    // Cookie name matches NextAuth defaults
-    const cookieName = process.env.NODE_ENV === 'production'
-      ? '__Secure-next-auth.session-token'
-      : 'next-auth.session-token';
+    // Cookie name must align with security: __Secure-* requires Secure attr
+    const isProd = process.env.NODE_ENV === 'production';
+    const shouldBeSecure = isProd && process.env['ALLOW_INSECURE_AUTH_COOKIE'] !== '1';
+    const cookieName = shouldBeSecure ? '__Secure-next-auth.session-token' : 'next-auth.session-token';
 
     const res = NextResponse.json({ ok: true });
     res.cookies.set(cookieName, jwt, {
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
       sameSite: 'lax',
       path: '/',
       // For localhost dev and e2e on http, do not require secure
-      secure: process.env.NODE_ENV === 'production' && process.env['ALLOW_INSECURE_AUTH_COOKIE'] !== '1',
+      secure: shouldBeSecure,
       maxAge: 30 * 24 * 60 * 60,
     });
     return res;
