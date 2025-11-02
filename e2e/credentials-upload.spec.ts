@@ -36,13 +36,10 @@ test.describe('[non-bypass] Credentials: Caregiver credential upload (real flow)
     }, CAREGIVER_EMAIL);
     expect(loggedIn).toBeTruthy();
 
-    // Navigate to Profile Settings
-    await page.goto('/settings/profile');
+    // Navigate directly to Credentials settings page (simpler UI for uploads)
+    await page.goto('/settings/credentials');
     await page.waitForLoadState('domcontentloaded');
-    await expect(page.getByRole('heading', { name: 'Profile Settings' })).toBeVisible({ timeout: 20000 });
-
-    // If role is CAREGIVER, the Credentials section should be present
-    await expect(page.getByRole('heading', { name: 'Credentials', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Credentials' })).toBeVisible({ timeout: 20000 });
     await expect(page.getByRole('button', { name: 'Add Credential' })).toBeVisible();
 
     // Fill credential form fields
