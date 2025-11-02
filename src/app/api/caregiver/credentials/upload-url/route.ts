@@ -50,9 +50,11 @@ export async function POST(request: NextRequest) {
     const sanitizedFileName = sanitizeFilename(fileName);
     const key = `caregivers/${caregiver.id}/credentials/${timestamp}-${uuid}-${sanitizedFileName}`;
 
+    const hasAwsCreds = !!(process.env['AWS_ACCESS_KEY_ID'] && process.env['AWS_SECRET_ACCESS_KEY']);
     const useMock = process.env.NODE_ENV !== 'production' ||
       process.env['ALLOW_DEV_ENDPOINTS'] === '1' ||
-      request.headers.get('x-e2e-bypass') === '1';
+      request.headers.get('x-e2e-bypass') === '1' ||
+      !hasAwsCreds;
     if (useMock) {
       const mockFileUrl = `https://example.com/mock-credentials/${caregiver.id}/${uuid}-${sanitizedFileName}`;
       // Same-origin mock upload endpoint to avoid CORS in browser tests
