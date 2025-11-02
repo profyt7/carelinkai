@@ -78,6 +78,7 @@ test.describe('Marketplace favorites (guest, localStorage fallback)', () => {
     });
 
     await page.goto('/marketplace?tab=jobs');
+    await page.getByRole('button', { name: /^Jobs/ }).click();
     // Wait for a job card to render instead of relying on tab count
 
     // Favorite the first job via its card-specific button
