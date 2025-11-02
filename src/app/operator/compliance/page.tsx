@@ -82,7 +82,7 @@ export default async function OperatorCompliancePage({ searchParams }: { searchP
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <a className="btn btn-secondary btn-sm" href={`/api/operator/homes/${l.homeId}/licenses/${l.id}/download`}>Download</a>
-                  <form action={`/api/operator/homes/${l.homeId}/licenses/${l.id}`} method="post" onSubmit={(e) => { if (!confirm('Delete this license?')) e.preventDefault(); }}>
+                  <form action={`/api/operator/homes/${l.homeId}/licenses/${l.id}`} method="post">
                     <button className="btn btn-danger btn-sm" type="submit">Delete</button>
                   </form>
                   <div className={`text-sm ${new Date(l.expirationDate) < today ? 'text-red-600' : 'text-amber-600'}`}>
@@ -110,7 +110,7 @@ export default async function OperatorCompliancePage({ searchParams }: { searchP
                   {i.documentUrl ? (
                     <a className="btn btn-secondary btn-sm" href={`/api/operator/homes/${i.homeId}/inspections/${i.id}/download`}>Download</a>
                   ) : null}
-                  <form action={`/api/operator/homes/${i.homeId}/inspections/${i.id}`} method="post" onSubmit={(e) => { if (!confirm('Delete this inspection?')) e.preventDefault(); }}>
+                  <form action={`/api/operator/homes/${i.homeId}/inspections/${i.id}`} method="post">
                     <button className="btn btn-danger btn-sm" type="submit">Delete</button>
                   </form>
                   <div className="text-sm text-neutral-700">
