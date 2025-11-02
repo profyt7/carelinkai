@@ -2,6 +2,8 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Marketplace favorites (guest, localStorage fallback)', () => {
   test('toggle favorite and filter favorites only', async ({ page }) => {
+    // Force runtime to use API-backed data instead of built-in mocks
+    await page.route('**/api/runtime/mocks', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ show: false }) }));
     // Mock authenticated caregiver session to bypass auth redirects in layout
     await page.route('**/api/auth/session', (route) =>
       route.fulfill({

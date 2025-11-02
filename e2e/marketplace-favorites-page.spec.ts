@@ -2,6 +2,8 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Favorites page (caregiver)', () => {
   test('list favorites and unfavorite from page', async ({ page }) => {
+    // Force runtime to use API-backed data instead of built-in mocks
+    await page.route('**/api/runtime/mocks', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ show: false }) }));
     // Mock caregiver session
     await page.route('**/api/auth/session', (route) =>
       route.fulfill({
