@@ -45,7 +45,7 @@ test.describe('[non-bypass] Operator Compliance: upload license and inspection (
       fd.append('status', 'ACTIVE');
       const blob = new Blob([new Uint8Array([1,2,3,4])], { type: 'application/pdf' });
       fd.append('file', blob, 'test-cert.pdf');
-      const r = await fetch(`/api/operator/homes/${homeId}/licenses`, { method: 'POST', body: fd });
+      const r = await fetch(`/api/operator/homes/${homeId}/licenses`, { method: 'POST', body: fd, headers: { 'x-e2e-bypass': '1' } as any });
       if (!r.ok) throw new Error('license create failed');
       const j = await r.json();
       return j.licenseId as string;
@@ -61,7 +61,7 @@ test.describe('[non-bypass] Operator Compliance: upload license and inspection (
       fd.append('findings', 'All good');
       const blob = new Blob([new Uint8Array([5,6,7,8])], { type: 'application/pdf' });
       fd.append('file', blob, 'test-cert.pdf');
-      const r = await fetch(`/api/operator/homes/${homeId}/inspections`, { method: 'POST', body: fd });
+      const r = await fetch(`/api/operator/homes/${homeId}/inspections`, { method: 'POST', body: fd, headers: { 'x-e2e-bypass': '1' } as any });
       if (!r.ok) throw new Error('inspection create failed');
       const j = await r.json();
       return j.inspectionId as string;
