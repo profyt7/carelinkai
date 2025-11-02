@@ -8,17 +8,17 @@ test.describe('[non-bypass] Operator Residents: Compliance end-to-end', () => {
   const OP_PASSWORD = process.env.OP_PASSWORD || 'Operator123!';
 
   test('create resident, add compliance item, mark complete, verify summary', async ({ page, context }) => {
-    // Seed operator and a home
-    const seedRes = await page.request.post('/api/dev/upsert-operator', {
-      data: { email: OP_EMAIL, password: OP_PASSWORD, companyName: 'E2E Operator Inc.' },
-    });
-    expect(seedRes.ok()).toBeTruthy();
-    const seed = await seedRes.json();
-    const homeId: string = seed.homeId;
+    // Seed operator and a home (use in-page fetch for server readiness and cookie context)
+    await page.goto('/');
+    const homeId: string = await page.evaluate(async (args) => {
+      const r = await fetch('/api/dev/upsert-operator', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: args.email, password: args.password, companyName: 'E2E Operator Inc.' }) });
+      if (!r.ok) throw new Error('seed failed');
+      const j = await r.json();
+      return j.homeId as string;
+    }, { email: OP_EMAIL, password: OP_PASSWORD });
 
     // Establish session via dev helper to avoid UI flakiness in CI-like runs
     // Use in-page fetch so Set-Cookie is applied to browser context reliably
-    await page.goto('/');
     const devLoginOk = await page.evaluate(async (email) => {
       try {
         const r = await fetch('/api/dev/login', {

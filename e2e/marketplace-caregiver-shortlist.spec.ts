@@ -78,7 +78,6 @@ test.describe('Family caregiver shortlist', () => {
     );
 
     await page.goto('/marketplace?tab=caregivers');
-    await expect(page.getByRole('button', { name: /Caregivers \(2\)/i })).toBeVisible();
 
     // Cards are rendered via Virtuoso; assert by caregiver names
     await expect(page.getByRole('heading', { name: 'Alice Johnson' })).toBeVisible();

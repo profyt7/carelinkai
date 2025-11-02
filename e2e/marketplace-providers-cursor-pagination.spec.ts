@@ -73,10 +73,8 @@ test.describe('Marketplace providers - cursor-based pagination', () => {
 
     await page.goto('/marketplace?tab=providers');
 
-    // Wait for initial providers to render (virtualized grid)
-    const initialHeadings = await page.getByRole('heading').allTextContents();
-    const initialProviderNames = new Set(initialHeadings.filter((t) => /^Provider\s+\d+$/i.test(t)));
-    expect(initialProviderNames.size).toBeGreaterThan(0);
+    // Wait for at least one provider card heading to be visible
+    await expect(page.getByRole('heading', { name: /^Provider\s+\d+$/ }).first()).toBeVisible();
 
     // Trigger infinite scroll
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
