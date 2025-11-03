@@ -117,6 +117,36 @@ export default async function FamilyResidentPage({ params }: Props) {
     _count: { _all: true },
   });
 
+  // Timeline (appointments within +/-30d, latest family notes, documents)
+  const pastWindow = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const futureWindow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+  const limit = 25;
+  const [appointmentsT, notesT, documentsT] = await Promise.all([
+    prisma.appointment.findMany({
+      where: { residentId: resident.id, startTime: { gte: pastWindow, lte: futureWindow } },
+      select: { id: true, title: true, startTime: true, endTime: true, status: true, type: true },
+      orderBy: { startTime: 'desc' },
+      take: limit,
+    }),
+    prisma.familyNote.findMany({
+      where: { familyId: membership.familyId, residentId: resident.id },
+      select: { id: true, title: true, createdAt: true },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    }),
+    prisma.familyDocument.findMany({
+      where: { familyId: membership.familyId, residentId: resident.id },
+      select: { id: true, title: true, type: true, createdAt: true },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    }),
+  ]);
+  const timelineItems = [
+    ...appointmentsT.map(a => ({ kind: 'appointment' as const, id: a.id, title: a.title, at: a.startTime })),
+    ...notesT.map(n => ({ kind: 'note' as const, id: n.id, title: n.title, at: n.createdAt })),
+    ...documentsT.map(d => ({ kind: 'document' as const, id: d.id, title: d.title, at: d.createdAt })),
+  ].sort((a, b) => (b.at as any) - (a.at as any)).slice(0, limit);
+
   // Audit READ access (minimal metadata)
   try {
     const sess = await getServerSession(authOptions);
@@ -294,6 +324,25 @@ export default async function FamilyResidentPage({ params }: Props) {
                     {n.createdBy ? `${n.createdBy.firstName ?? ''} ${n.createdBy.lastName ?? ''}` : '—'} • {format(new Date(n.createdAt as any), 'MMM d, yyyy')}
                   </div>
                 </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div className="mt-6 rounded-lg border p-4 bg-white">
+        <h2 className="font-medium mb-2">Timeline</h2>
+        {timelineItems.length === 0 ? (
+          <p className="text-sm text-neutral-500">No recent activity.</p>
+        ) : (
+          <ul className="divide-y">
+            {timelineItems.map((it) => (
+              <li key={`${it.kind}-${it.id}`} className="py-2 text-sm flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-700 uppercase">{it.kind}</span>
+                  <span className="text-neutral-800">{it.title}</span>
+                </div>
+                <div className="text-xs text-neutral-500 ml-3 whitespace-nowrap">{format(new Date(it.at as any), 'MMM d, yyyy')}</div>
               </li>
             ))}
           </ul>
