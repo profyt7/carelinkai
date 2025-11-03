@@ -7,6 +7,7 @@ import { CreateNoteForm } from '@/components/operator/residents/forms/CreateNote
 import { CreateAssessmentForm } from '@/components/operator/residents/forms/CreateAssessmentForm';
 import { CreateIncidentForm } from '@/components/operator/residents/forms/CreateIncidentForm';
 import { CompliancePanel } from '@/components/operator/residents/CompliancePanel';
+import { ContactsPanel } from '@/components/operator/residents/ContactsPanel';
 
 async function fetchResident(id: string) {
   const cookieHeader = cookies().toString();
@@ -88,6 +89,9 @@ export default async function ResidentDetail({ params }: { params: { id: string 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
         <section className="lg:col-span-3">
           <CompliancePanel residentId={resident.id} />
+        </section>
+        <section className="lg:col-span-3">
+          <ContactsPanel residentId={resident.id} />
         </section>
         <section className="card">
           <h2 className="font-semibold mb-2 text-neutral-800">Assessments</h2>
