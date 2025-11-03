@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireOperatorOrAdmin } from '@/lib/rbac';
 import { PrismaClient, UserRole } from '@prisma/client';
-import { uploadBuffer, toS3Url, deleteObject as s3Delete, parseS3Url } from '@/lib/storage';
+import { uploadBuffer, toS3Url, deleteObject as s3Delete, parseS3Url, canUseS3 } from '@/lib/storage';
 
 const prisma = new PrismaClient();
 
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       const buff = Buffer.from(await file.arrayBuffer());
       const safeName = (file.name || 'license').replace(/[^a-z0-9_.-]+/gi, '_').toLowerCase();
       const key = `homes/${home.id}/licenses/${Date.now()}-${safeName}`;
-      const useMock = req.headers.has('x-e2e-bypass') || process.env['ALLOW_DEV_ENDPOINTS'] === '1' || process.env['NODE_ENV'] !== 'production';
+      const useMock = req.headers.has('x-e2e-bypass') || !canUseS3();
       if (useMock) {
         // Skip real S3 in dev/e2e; store a mock URL that download route will redirect to
         documentUrl = `https://example.com/mock-operator/${home.id}/licenses/${key}`;
