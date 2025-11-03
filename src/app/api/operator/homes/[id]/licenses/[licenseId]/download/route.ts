@@ -21,7 +21,14 @@ export async function GET(req: NextRequest, { params }: { params: { id: string; 
     if (!lic) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     if (!lic.documentUrl) return NextResponse.json({ error: 'No document on record' }, { status: 404 });
     const s3 = parseS3Url(lic.documentUrl);
-    if (!s3) return NextResponse.json({ error: 'Legacy path unsupported' }, { status: 410 });
+    if (!s3) {
+      // In dev/e2e we may store an https mock URL; allow redirect when enabled
+      const allowDev = process.env['ALLOW_DEV_ENDPOINTS'] === '1' || process.env['NODE_ENV'] !== 'production';
+      if (allowDev && /^https?:\/\//i.test(lic.documentUrl)) {
+        return NextResponse.redirect(lic.documentUrl, 302);
+      }
+      return NextResponse.json({ error: 'Legacy path unsupported' }, { status: 410 });
+    }
     const url = await createSignedGetUrl({ bucket: s3.bucket, key: s3.key, expiresIn: 60 });
     return NextResponse.redirect(url, 302);
   } finally {

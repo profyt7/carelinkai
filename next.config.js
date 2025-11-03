@@ -85,24 +85,9 @@ const nextConfig = {
       { source: '/uploads/:path*', destination: '/uploads/:path*' },
     ];
   },
-  // Redirect from HTTP to HTTPS for HIPAA compliance in production only.
-  // In local Docker / dev, unconditional redirects can create invalid URL patterns
-  // (e.g. https://:host/__ESC_COLON_path*) and break NextAuth.
-  async redirects() {
-    if (process.env.NODE_ENV !== 'production') {
-      return [];
-    }
-    return [
-      {
-        source: '/:path*',
-        has: [
-          { type: 'header', key: 'x-forwarded-proto', value: 'http' },
-        ],
-        permanent: true,
-        destination: 'https://:host/:path*',
-      },
-    ];
-  },
+  // HTTPS redirects are handled at the edge/proxy (Render/Cloudflare). Avoid app-level dynamic redirects to prevent
+  // invalid URL shapes during build/runtime.
+  async redirects() { return []; },
 };
 
 module.exports = withSentryConfig(nextConfig, { silent: true }, { hideSourceMaps: true });

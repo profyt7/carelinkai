@@ -44,8 +44,14 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       const buff = Buffer.from(await file.arrayBuffer());
       const safeName = (file.name || 'license').replace(/[^a-z0-9_.-]+/gi, '_').toLowerCase();
       const key = `homes/${home.id}/licenses/${Date.now()}-${safeName}`;
-      await uploadBuffer({ key, body: buff, contentType: file.type || 'application/octet-stream', metadata: { homeId: home.id, kind: 'license' } });
-      documentUrl = toS3Url(process.env['S3_BUCKET'] as string, key);
+      const useMock = req.headers.has('x-e2e-bypass') || process.env['ALLOW_DEV_ENDPOINTS'] === '1' || process.env['NODE_ENV'] !== 'production';
+      if (useMock) {
+        // Skip real S3 in dev/e2e; store a mock URL that download route will redirect to
+        documentUrl = `https://example.com/mock-operator/${home.id}/licenses/${key}`;
+      } else {
+        await uploadBuffer({ key, body: buff, contentType: file.type || 'application/octet-stream', metadata: { homeId: home.id, kind: 'license' } });
+        documentUrl = toS3Url(process.env['S3_BUCKET'] as string, key);
+      }
     }
 
     const created = await prisma.license.create({

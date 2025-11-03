@@ -2,6 +2,8 @@
 import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import type { UserRole } from "@prisma/client";
+import { cookies } from 'next/headers';
+import { decode } from 'next-auth/jwt';
 
 // RBAC helpers for App Router routes
 // Assumptions:
@@ -34,7 +36,31 @@ export async function requireAnyRole(
     }
   }
   if (!session?.user) {
-    return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
+    // Dev/e2e fallback: when explicitly allowed, decode JWT from cookie to emulate session
+    if (process.env['ALLOW_DEV_ENDPOINTS'] === '1') {
+      try {
+        const jar = cookies();
+        // Align with auth cookie name logic
+        const cookieName = (process.env.NODE_ENV === 'production' && process.env['ALLOW_INSECURE_AUTH_COOKIE'] !== '1')
+          ? '__Secure-next-auth.session-token'
+          : 'next-auth.session-token';
+        const raw = jar.get(cookieName)?.value;
+        if (raw) {
+          const token: any = await decode({ token: raw, secret: process.env['NEXTAUTH_SECRET']! } as any);
+          if (token?.email) {
+            session = { user: {
+              id: token.id,
+              email: token.email,
+              name: token.name,
+              role: token.role as UserRole,
+            } };
+          }
+        }
+      } catch {}
+    }
+    if (!session?.user) {
+      return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
+    }
   }
   const role = (session.user as any).role as UserRole | undefined;
   if (role && allowed?.length && !allowed.includes(role)) {

@@ -6,11 +6,13 @@ import { StatusActions } from '@/components/operator/residents/StatusActions';
 import { CreateNoteForm } from '@/components/operator/residents/forms/CreateNoteForm';
 import { CreateAssessmentForm } from '@/components/operator/residents/forms/CreateAssessmentForm';
 import { CreateIncidentForm } from '@/components/operator/residents/forms/CreateIncidentForm';
+import { CompliancePanel } from '@/components/operator/residents/CompliancePanel';
+import { ContactsPanel } from '@/components/operator/residents/ContactsPanel';
 
 async function fetchResident(id: string) {
   const cookieHeader = cookies().toString();
   const h = headers();
-  const proto = h.get('x-forwarded-proto') ?? 'https';
+  const proto = h.get('x-forwarded-proto') ?? 'http';
   const host = h.get('host') ?? '';
   const origin = `${proto}://${host}`;
   const res = await fetch(`${origin}/api/residents/${id}`, {
@@ -25,7 +27,7 @@ async function fetchResident(id: string) {
 async function fetchSection(id: string, section: 'assessments' | 'incidents' | 'notes') {
   const cookieHeader = cookies().toString();
   const h = headers();
-  const proto = h.get('x-forwarded-proto') ?? 'https';
+  const proto = h.get('x-forwarded-proto') ?? 'http';
   const host = h.get('host') ?? '';
   const origin = `${proto}://${host}`;
   const res = await fetch(`${origin}/api/residents/${id}/${section}?limit=5`, {
@@ -52,14 +54,18 @@ export default async function ResidentDetail({ params }: { params: { id: string 
     incidents = getMockIncidents(r.id);
     notes = getMockNotes(r.id);
   } else {
+    console.log('[ResidentDetail] fetching resident', params.id);
     const data = await fetchResident(params.id);
+    console.log('[ResidentDetail] fetched resident', !!data);
     if (!data?.resident) return notFound();
     resident = data.resident;
+    console.log('[ResidentDetail] fetching sections');
     [assessments, incidents, notes] = await Promise.all([
       fetchSection(resident.id, 'assessments'),
       fetchSection(resident.id, 'incidents'),
       fetchSection(resident.id, 'notes'),
     ]);
+    console.log('[ResidentDetail] sections fetched');
   }
   return (
     <div className="p-4 sm:p-6">
@@ -72,7 +78,7 @@ export default async function ResidentDetail({ params }: { params: { id: string 
       {/* Downloadable PDF summary for operations use */}
       {(() => {
         const h = headers();
-        const proto = h.get('x-forwarded-proto') ?? 'https';
+        const proto = h.get('x-forwarded-proto') ?? 'http';
         const host = h.get('host') ?? '';
         const origin = `${proto}://${host}`;
         const href = `${origin}/api/residents/${resident.id}/summary`;
@@ -81,6 +87,12 @@ export default async function ResidentDetail({ params }: { params: { id: string 
       <StatusActions residentId={resident.id} status={resident.status} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+        <section className="lg:col-span-3">
+          <CompliancePanel residentId={resident.id} />
+        </section>
+        <section className="lg:col-span-3">
+          <ContactsPanel residentId={resident.id} />
+        </section>
         <section className="card">
           <h2 className="font-semibold mb-2 text-neutral-800">Assessments</h2>
           <ul className="text-sm list-disc ml-4">

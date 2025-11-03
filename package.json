@@ -6,6 +6,7 @@
         "dev": "next dev",
         "build": "next build",
         "start": "npm run migrate:deploy && next start",
+        "start:e2e": "cross-env NODE_ENV=production NEXTAUTH_URL=http://localhost:3000 NEXTAUTH_SECRET=devsecret ALLOW_DEV_ENDPOINTS=1 ALLOW_INSECURE_AUTH_COOKIE=1 DATABASE_URL=postgresql://postgres:postgres@localhost:5434/carelinkai_marketplace?schema=public npm run start",
         "lint": "next lint",
         "test": "jest",
         "prisma:generate": "prisma generate",

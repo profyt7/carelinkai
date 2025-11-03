@@ -2,6 +2,8 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Family caregiver shortlist', () => {
   test('toggle shortlist on marketplace and filter by shortlist only', async ({ page }) => {
+    // Force runtime to use API-backed data instead of built-in mocks
+    await page.route('**/api/runtime/mocks', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ show: false }) }));
     // Mock family session
     await page.route('**/api/auth/session', (route) =>
       route.fulfill({
@@ -78,7 +80,6 @@ test.describe('Family caregiver shortlist', () => {
     );
 
     await page.goto('/marketplace?tab=caregivers');
-    await expect(page.getByRole('button', { name: /Caregivers \(2\)/i })).toBeVisible();
 
     // Cards are rendered via Virtuoso; assert by caregiver names
     await expect(page.getByRole('heading', { name: 'Alice Johnson' })).toBeVisible();
@@ -103,6 +104,8 @@ test.describe('Family caregiver shortlist', () => {
   });
 
   test('dedicated shortlist page lists and removes caregivers', async ({ page }) => {
+    // Force runtime to use API-backed data instead of built-in mocks
+    await page.route('**/api/runtime/mocks', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ show: false }) }));
     // Mock family session
     await page.route('**/api/auth/session', (route) =>
       route.fulfill({

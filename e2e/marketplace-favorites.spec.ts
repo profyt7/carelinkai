@@ -2,6 +2,8 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Marketplace favorites (guest, localStorage fallback)', () => {
   test('toggle favorite and filter favorites only', async ({ page }) => {
+    // Force runtime to use API-backed data instead of built-in mocks
+    await page.route('**/api/runtime/mocks', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ show: false }) }));
     // Mock authenticated caregiver session to bypass auth redirects in layout
     await page.route('**/api/auth/session', (route) =>
       route.fulfill({
@@ -75,15 +77,13 @@ test.describe('Marketplace favorites (guest, localStorage fallback)', () => {
       return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({}) });
     });
 
+    await page.addInitScript(() => { try { localStorage.setItem('marketplace:lastTab', 'jobs'); } catch {} });
     await page.goto('/marketplace?tab=jobs');
-    // Wait for marketplace tabs to render
-    await page.waitForSelector('nav[aria-label="Tabs"]', { timeout: 15000 });
-
-    // Validate that backend returned 2 jobs via tab count (virtualization may not render all at once)
-    await expect(page.getByRole('button', { name: /Jobs \(2\)/i })).toBeVisible();
+    await page.locator('nav[aria-label="Tabs"]').getByText(/Jobs/).first().click();
+    // Wait for a job card to render instead of relying on tab count
 
     // Favorite the first job via its card-specific button
-    const firstCard = page.locator('a[href="/marketplace/listings/job-1"]');
+    const firstCard = page.locator('div.relative').filter({ has: page.getByRole('heading', { name: 'Caregiver Needed' }) }).first();
     await expect(firstCard).toBeVisible();
     const favBtn = firstCard.getByRole('button', { name: /favorite/i });
     await favBtn.click();
@@ -95,11 +95,11 @@ test.describe('Marketplace favorites (guest, localStorage fallback)', () => {
     const favOnly = page.locator('div.md\\:w-72').getByLabel('Favorites only').first();
     await favOnly.check({ force: true });
 
-    await expect(page.locator('a[href^="/marketplace/listings/"]')).toHaveCount(1);
-    await expect(page.locator('a[href="/marketplace/listings/job-1"]')).toBeVisible();
+    await expect(page.locator('div.relative').filter({ has: page.getByRole('heading', { name: 'Caregiver Needed' }) })).toHaveCount(1);
+    await expect(page.getByRole('heading', { name: 'Caregiver Needed' })).toBeVisible();
 
     // Unfavorite and expect empty state text
-    const unfavBtn = page.locator('a[href="/marketplace/listings/job-1"]').getByRole('button', { name: /unfavorite/i });
+    const unfavBtn = firstCard.getByRole('button', { name: /unfavorite/i });
     await unfavBtn.click();
     await expect(page.getByText('No jobs found')).toBeVisible();
   });

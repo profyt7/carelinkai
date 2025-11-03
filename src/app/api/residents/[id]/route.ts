@@ -21,6 +21,7 @@ async function ensureAccess(userEmail: string, residentId: string) {
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   try {
+    console.log('Resident API GET start', params.id);
     const { session, error } = await requireOperatorOrAdmin();
     if (error) return error;
     const access = await ensureAccess(session!.user!.email!, params.id);
@@ -34,6 +35,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       },
     });
     if (!resident) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    console.log('Resident API GET ok', params.id);
     return NextResponse.json({ resident });
   } catch (e) {
     console.error('Resident get error', e);

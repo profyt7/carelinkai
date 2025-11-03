@@ -22,7 +22,13 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string;
     if (!insp) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     if (!insp.documentUrl) return NextResponse.json({ error: 'No document on record' }, { status: 404 });
     const s3 = parseS3Url(insp.documentUrl);
-    if (!s3) return NextResponse.json({ error: 'Legacy path unsupported' }, { status: 410 });
+    if (!s3) {
+      const allowDev = process.env['ALLOW_DEV_ENDPOINTS'] === '1' || process.env['NODE_ENV'] !== 'production';
+      if (allowDev && /^https?:\/\//i.test(insp.documentUrl)) {
+        return NextResponse.redirect(insp.documentUrl, 302);
+      }
+      return NextResponse.json({ error: 'Legacy path unsupported' }, { status: 410 });
+    }
     const url = await createSignedGetUrl({ bucket: s3.bucket, key: s3.key, expiresIn: 60 });
     return NextResponse.redirect(url, 302);
   } finally {
