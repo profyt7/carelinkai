@@ -1,33 +1,66 @@
-import { NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
+
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireOperatorOrAdmin } from '@/lib/rbac';
+import { createAuditLogFromRequest } from '@/lib/audit';
 
-// Assumptions:
-// - DueSoon = dueDate within next 7 days (and not completed)
-// - Overdue = dueDate in the past (and not completed)
+async function assertOperatorAccess(userId: string, residentId: string) {
+  const operator = await prisma.operator.findUnique({ where: { userId } });
+  if (!operator) return false;
+  const resident = await prisma.resident.findUnique({
+    where: { id: residentId },
+    select: { home: { select: { operatorId: true } } },
+  });
+  if (!resident) return false;
+  if (!resident.home) return true;
+  return resident.home.operatorId === operator.id;
+}
 
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
-  const { session, error } = await requireOperatorOrAdmin();
-  if (error) return error;
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    const { session, error } = await requireOperatorOrAdmin();
+    if (error) return error;
+    const userId = (session as any)?.user?.id as string | undefined;
+    const role = (session as any)?.user?.role as string | undefined;
+    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const resident = await prisma.resident.findUnique({ where: { id: params.id }, select: { id: true, home: { select: { operatorId: true } } } });
-  if (!resident) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    if (role !== 'ADMIN') {
+      const ok = await assertOperatorAccess(userId, params.id);
+      if (!ok) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
-  if (session!.user!.role === 'OPERATOR') {
-    const me = await prisma.user.findUnique({ where: { email: session!.user!.email! }, select: { id: true } });
-    const op = me ? await prisma.operator.findUnique({ where: { userId: me.id }, select: { id: true } }) : null;
-    if (!op || resident.home?.operatorId !== op.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    const now = new Date();
+    const in14 = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+    const [open, completed, dueSoon, overdue] = await Promise.all([
+      prisma.residentComplianceItem.count({
+        where: { residentId: params.id, status: 'OPEN' as any },
+      }),
+      prisma.residentComplianceItem.count({
+        where: { residentId: params.id, status: 'COMPLETED' as any },
+      }),
+      prisma.residentComplianceItem.count({
+        where: { residentId: params.id, status: 'OPEN' as any, dueDate: { gte: now, lte: in14 } },
+      }),
+      prisma.residentComplianceItem.count({
+        where: { residentId: params.id, status: 'OPEN' as any, dueDate: { lt: now } },
+      }),
+    ]);
+
+    await createAuditLogFromRequest(
+      req,
+      'READ' as any,
+      'ResidentComplianceItem',
+      params.id,
+      'Operator viewed compliance summary',
+      { scope: 'operator_compliance_summary' }
+    );
+
+    return NextResponse.json({ open, completed, dueSoon, overdue });
+  } catch (e) {
+    console.error('Operator compliance summary error', e);
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
-
-  const now = new Date();
-  const soon = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-
-  const [open, completed, dueSoon, overdue] = await Promise.all([
-    prisma.residentComplianceItem.count({ where: { residentId: resident.id, status: 'OPEN' } }),
-    prisma.residentComplianceItem.count({ where: { residentId: resident.id, status: 'COMPLETED' } }),
-    prisma.residentComplianceItem.count({ where: { residentId: resident.id, status: 'OPEN', dueDate: { gte: now, lte: soon } } }),
-    prisma.residentComplianceItem.count({ where: { residentId: resident.id, status: 'OPEN', dueDate: { lt: now } } }),
-  ]);
-
-  return NextResponse.json({ open, completed, dueSoon, overdue });
 }
