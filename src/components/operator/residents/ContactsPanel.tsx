@@ -13,7 +13,7 @@ type Contact = {
   preferences?: any;
 };
 
-export function ContactsPanel({ residentId }: { residentId: string }) {
+export function ContactsPanel({ residentId, disabled }: { residentId: string; disabled?: boolean }) {
   const [items, setItems] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -94,6 +94,7 @@ export function ContactsPanel({ residentId }: { residentId: string }) {
           <button
             type="button"
             onClick={addEmpty}
+            disabled={disabled}
             className="rounded-md bg-gray-100 px-3 py-1.5 text-sm text-gray-800 hover:bg-gray-200"
           >
             Add contact
@@ -101,7 +102,7 @@ export function ContactsPanel({ residentId }: { residentId: string }) {
           <button
             type="button"
             onClick={onSave}
-            disabled={saving}
+            disabled={saving || disabled}
             className="rounded-md bg-primary-600 px-3 py-1.5 text-sm text-white hover:bg-primary-700 disabled:opacity-60"
           >
             {saving ? "Saving..." : "Save"}
@@ -126,6 +127,7 @@ export function ContactsPanel({ residentId }: { residentId: string }) {
                   className="w-full rounded-md border px-3 py-2"
                   value={c.name}
                   onChange={(e) => update(idx, { name: e.target.value })}
+                  disabled={disabled}
                 />
               </label>
               <label className="text-sm">
@@ -135,6 +137,7 @@ export function ContactsPanel({ residentId }: { residentId: string }) {
                   className="w-full rounded-md border px-3 py-2"
                   value={c.relationship || ""}
                   onChange={(e) => update(idx, { relationship: e.target.value })}
+                  disabled={disabled}
                 />
               </label>
               <label className="text-sm">
@@ -145,6 +148,7 @@ export function ContactsPanel({ residentId }: { residentId: string }) {
                   className="w-full rounded-md border px-3 py-2"
                   value={c.email || ""}
                   onChange={(e) => update(idx, { email: e.target.value })}
+                  disabled={disabled}
                 />
               </label>
               <label className="text-sm">
@@ -154,6 +158,7 @@ export function ContactsPanel({ residentId }: { residentId: string }) {
                   className="w-full rounded-md border px-3 py-2"
                   value={c.phone || ""}
                   onChange={(e) => update(idx, { phone: e.target.value })}
+                  disabled={disabled}
                 />
               </label>
               <label className="text-sm inline-flex items-center gap-2">
@@ -162,6 +167,7 @@ export function ContactsPanel({ residentId }: { residentId: string }) {
                   aria-label="Primary"
                   checked={!!c.isPrimary}
                   onChange={(e) => update(idx, { isPrimary: e.target.checked })}
+                  disabled={disabled}
                 />
                 <span>Primary</span>
               </label>
@@ -170,6 +176,7 @@ export function ContactsPanel({ residentId }: { residentId: string }) {
               <button
                 type="button"
                 onClick={() => removeAt(idx)}
+                disabled={disabled}
                 className="rounded-md border px-3 py-1.5 text-sm hover:bg-gray-50"
               >
                 Remove

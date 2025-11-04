@@ -18,6 +18,8 @@ export async function GET(req: NextRequest) {
     const homeId = (url.searchParams.get('homeId') || '').trim();
     const familyId = (url.searchParams.get('familyId') || '').trim();
     const format = (url.searchParams.get('format') || '').trim().toLowerCase();
+    const include = (url.searchParams.get('include') || '').trim().toLowerCase();
+    const compliance = (url.searchParams.get('compliance') || '').trim().toLowerCase();
 
     const user = await prisma.user.findUnique({ where: { email: session!.user!.email! } });
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -75,7 +77,53 @@ export async function GET(req: NextRequest) {
         },
       });
     }
-    return NextResponse.json({ items: page, nextCursor });
+    // Optional compliance filter (residents having at least one matching open item)
+    let filtered = page;
+    if (compliance) {
+      const now = new Date();
+      const soon = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+      const baseWhere: any = { status: 'OPEN', residentId: { in: page.map((r) => r.id) } };
+      if (compliance === 'open') {
+        // no extra date constraints
+      } else if (compliance === 'duesoon' || compliance === 'due-soon') {
+        baseWhere.dueDate = { gte: now, lte: soon };
+      } else if (compliance === 'overdue') {
+        baseWhere.dueDate = { lt: now };
+      }
+      const groups = await prisma.residentComplianceItem.groupBy({
+        by: ['residentId'],
+        where: baseWhere,
+        _count: { _all: true },
+      });
+      const allowed = new Set(groups.map((g) => g.residentId));
+      filtered = page.filter((r) => allowed.has(r.id));
+    }
+
+    // Optional include=summary (compliance badges)
+    if (include.includes('summary') && filtered.length > 0) {
+      const ids = filtered.map((r) => r.id);
+      const now = new Date();
+      const soon = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+      const [openG, dueSoonG, overdueG] = await Promise.all([
+        prisma.residentComplianceItem.groupBy({ by: ['residentId'], where: { residentId: { in: ids }, status: 'OPEN' as any }, _count: { _all: true } }),
+        prisma.residentComplianceItem.groupBy({ by: ['residentId'], where: { residentId: { in: ids }, status: 'OPEN' as any, dueDate: { gte: now, lte: soon } }, _count: { _all: true } }),
+        prisma.residentComplianceItem.groupBy({ by: ['residentId'], where: { residentId: { in: ids }, status: 'OPEN' as any, dueDate: { lt: now } }, _count: { _all: true } }),
+      ]);
+      const openMap = Object.fromEntries(openG.map((g) => [g.residentId, g._count._all]));
+      const dueSoonMap = Object.fromEntries(dueSoonG.map((g) => [g.residentId, g._count._all]));
+      const overdueMap = Object.fromEntries(overdueG.map((g) => [g.residentId, g._count._all]));
+      const itemsWith = filtered.map((r) => ({
+        ...r,
+        complianceSummary: {
+          open: openMap[r.id] || 0,
+          dueSoon: dueSoonMap[r.id] || 0,
+          overdue: overdueMap[r.id] || 0,
+        },
+      }));
+      return NextResponse.json({ items: itemsWith, nextCursor });
+    }
+
+    return NextResponse.json({ items: filtered, nextCursor });
   } catch (e) {
     console.error('Residents list error', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
