@@ -15,8 +15,9 @@ export default async function FamilyResidentsIndex({ searchParams }: { searchPar
   });
   if (!membership) redirect('/family');
 
-  const q = (typeof searchParams?.q === 'string' ? searchParams?.q : '').trim();
-  const status = (typeof searchParams?.status === 'string' ? searchParams?.status : '').trim();
+  // ASSUMPTION: TS config has noPropertyAccessFromIndexSignature enabled; use bracket access.
+  const q = (typeof searchParams?.['q'] === 'string' ? searchParams?.['q'] : '').trim();
+  const status = (typeof searchParams?.['status'] === 'string' ? searchParams?.['status'] : '').trim();
 
   const residents = await prisma.resident.findMany({
     where: {
