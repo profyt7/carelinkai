@@ -58,6 +58,45 @@ export default async function FamilyResidentPage({ params }: Props) {
     select: { id: true, title: true, startTime: true, type: true, location: true },
   });
 
+  // Family-safe contacts (read-only)
+  const contacts = await prisma.residentContact.findMany({
+    where: { residentId: resident.id },
+    select: {
+      id: true,
+      name: true,
+      relationship: true,
+      email: true,
+      phone: true,
+      isPrimary: true,
+    },
+    orderBy: [{ isPrimary: 'desc' as any }, { createdAt: 'asc' as any }],
+  });
+
+  // Compliance summary (family-safe counts only)
+  const in14 = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+  const [openCount, completedCount, dueSoonCount, overdueCount] = await Promise.all([
+    prisma.residentComplianceItem.count({
+      where: { residentId: resident.id, status: 'OPEN' as any },
+    }),
+    prisma.residentComplianceItem.count({
+      where: { residentId: resident.id, status: 'COMPLETED' as any },
+    }),
+    prisma.residentComplianceItem.count({
+      where: {
+        residentId: resident.id,
+        status: 'OPEN' as any,
+        dueDate: { gte: now, lte: in14 },
+      },
+    }),
+    prisma.residentComplianceItem.count({
+      where: {
+        residentId: resident.id,
+        status: 'OPEN' as any,
+        dueDate: { lt: now },
+      },
+    }),
+  ]);
+
   // Family-visible notes for this resident
   const notes = await prisma.residentNote.findMany({
     where: { residentId: resident.id, visibility: 'FAMILY' as any },
@@ -77,6 +116,36 @@ export default async function FamilyResidentPage({ params }: Props) {
     where: { residentId: resident.id },
     _count: { _all: true },
   });
+
+  // Timeline (appointments within +/-30d, latest family notes, documents)
+  const pastWindow = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const futureWindow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+  const limit = 25;
+  const [appointmentsT, notesT, documentsT] = await Promise.all([
+    prisma.appointment.findMany({
+      where: { residentId: resident.id, startTime: { gte: pastWindow, lte: futureWindow } },
+      select: { id: true, title: true, startTime: true, endTime: true, status: true, type: true },
+      orderBy: { startTime: 'desc' },
+      take: limit,
+    }),
+    prisma.familyNote.findMany({
+      where: { familyId: membership.familyId, residentId: resident.id },
+      select: { id: true, title: true, createdAt: true },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    }),
+    prisma.familyDocument.findMany({
+      where: { familyId: membership.familyId, residentId: resident.id },
+      select: { id: true, title: true, type: true, createdAt: true },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    }),
+  ]);
+  const timelineItems = [
+    ...appointmentsT.map(a => ({ kind: 'appointment' as const, id: a.id, title: a.title, at: a.startTime })),
+    ...notesT.map(n => ({ kind: 'note' as const, id: n.id, title: n.title, at: n.createdAt })),
+    ...documentsT.map(d => ({ kind: 'document' as const, id: d.id, title: d.title, at: d.createdAt })),
+  ].sort((a, b) => (b.at as any) - (a.at as any)).slice(0, limit);
 
   // Audit READ access (minimal metadata)
   try {
@@ -169,6 +238,71 @@ export default async function FamilyResidentPage({ params }: Props) {
               ))}
             </ul>
           )}
+      {/* Contacts & Compliance Summary */}
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="rounded-lg border p-4 bg-white md:col-span-2">
+          <h2 className="font-medium mb-2">Contacts</h2>
+          {contacts.length === 0 ? (
+            <p className="text-sm text-neutral-500">No contacts on file.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="text-left text-neutral-600">
+                    <th className="py-2 pr-4">Name</th>
+                    <th className="py-2 pr-4">Relationship</th>
+                    <th className="py-2 pr-4">Phone</th>
+                    <th className="py-2 pr-4">Email</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {contacts.map((c) => (
+                    <tr key={c.id} className="align-top">
+                      <td className="py-2 pr-4">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-neutral-800">{c.name}</span>
+                          {c.isPrimary && (
+                            <span className="text-[10px] rounded-full bg-emerald-100 text-emerald-700 px-2 py-0.5">PRIMARY</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-2 pr-4 text-neutral-700">{c.relationship ?? '—'}</td>
+                      <td className="py-2 pr-4 text-neutral-700">{c.phone ?? '—'}</td>
+                      <td className="py-2 pr-4 text-neutral-700">{c.email ?? '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-lg border p-4 bg-white">
+          <h2 className="font-medium mb-2">Compliance Summary</h2>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-md border p-3">
+              <div className="text-xs text-neutral-500">Open</div>
+              <div className="text-xl font-semibold">{openCount}</div>
+            </div>
+            <div className="rounded-md border p-3">
+              <div className="text-xs text-neutral-500">Completed</div>
+              <div className="text-xl font-semibold">{completedCount}</div>
+            </div>
+            <div className="rounded-md border p-3">
+              <div className="text-xs text-neutral-500">Due Soon (14d)</div>
+              <div className="text-xl font-semibold">{dueSoonCount}</div>
+            </div>
+            <div className="rounded-md border p-3">
+              <div className="text-xs text-neutral-500">Overdue</div>
+              <div className="text-xl font-semibold">{overdueCount}</div>
+            </div>
+          </div>
+          <p className="text-xs text-neutral-500 mt-3">
+            Family can view status counts only. Details are available through the operator portal.
+          </p>
+        </div>
+      </div>
+
         </div>
       </div>
 
@@ -190,6 +324,25 @@ export default async function FamilyResidentPage({ params }: Props) {
                     {n.createdBy ? `${n.createdBy.firstName ?? ''} ${n.createdBy.lastName ?? ''}` : '—'} • {format(new Date(n.createdAt as any), 'MMM d, yyyy')}
                   </div>
                 </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div className="mt-6 rounded-lg border p-4 bg-white">
+        <h2 className="font-medium mb-2">Timeline</h2>
+        {timelineItems.length === 0 ? (
+          <p className="text-sm text-neutral-500">No recent activity.</p>
+        ) : (
+          <ul className="divide-y">
+            {timelineItems.map((it) => (
+              <li key={`${it.kind}-${it.id}`} className="py-2 text-sm flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-700 uppercase">{it.kind}</span>
+                  <span className="text-neutral-800">{it.title}</span>
+                </div>
+                <div className="text-xs text-neutral-500 ml-3 whitespace-nowrap">{format(new Date(it.at as any), 'MMM d, yyyy')}</div>
               </li>
             ))}
           </ul>

@@ -8,6 +8,8 @@ import { CreateAssessmentForm } from '@/components/operator/residents/forms/Crea
 import { CreateIncidentForm } from '@/components/operator/residents/forms/CreateIncidentForm';
 import { CompliancePanel } from '@/components/operator/residents/CompliancePanel';
 import { ContactsPanel } from '@/components/operator/residents/ContactsPanel';
+import { DocumentsPanel } from '@/components/operator/residents/DocumentsPanel';
+import { getResourceAuditTrail } from '@/lib/audit';
 
 async function fetchResident(id: string) {
   const cookieHeader = cookies().toString();
@@ -67,6 +69,8 @@ export default async function ResidentDetail({ params }: { params: { id: string 
     ]);
     console.log('[ResidentDetail] sections fetched');
   }
+  const isReadOnly = resident.status === 'DISCHARGED' || resident.status === 'DECEASED';
+  const audit = await getResourceAuditTrail('Resident', resident.id, 20).catch(() => [] as any[]);
   return (
     <div className="p-4 sm:p-6">
       <Link href="/operator/residents" className="text-sm text-neutral-600 hover:underline">Back</Link>
@@ -85,13 +89,21 @@ export default async function ResidentDetail({ params }: { params: { id: string 
         return <a href={href} target="_blank" className="text-sm text-primary-600 hover:underline">Open Summary PDF</a>;
       })()}
       <StatusActions residentId={resident.id} status={resident.status} />
+      {isReadOnly && (
+        <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 text-amber-800 px-3 py-2 text-sm">
+          This resident is {resident.status.toLowerCase()}. Editing is disabled.
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
         <section className="lg:col-span-3">
           <CompliancePanel residentId={resident.id} />
         </section>
         <section className="lg:col-span-3">
-          <ContactsPanel residentId={resident.id} />
+          <ContactsPanel residentId={resident.id} disabled={isReadOnly} />
+        </section>
+        <section className="lg:col-span-3">
+          <DocumentsPanel residentId={resident.id} disabled={isReadOnly} />
         </section>
         <section className="card">
           <h2 className="font-semibold mb-2 text-neutral-800">Assessments</h2>
@@ -100,7 +112,7 @@ export default async function ResidentDetail({ params }: { params: { id: string 
               <li key={a.id}>{a.type} {a.score != null ? `(score: ${a.score})` : ''}</li>
             ))}
           </ul>
-          <CreateAssessmentForm residentId={resident.id} />
+          {!isReadOnly && <CreateAssessmentForm residentId={resident.id} />}
         </section>
         <section className="card">
           <h2 className="font-semibold mb-2 text-neutral-800">Incidents</h2>
@@ -109,7 +121,7 @@ export default async function ResidentDetail({ params }: { params: { id: string 
               <li key={i.id}>{i.type} (severity: {i.severity})</li>
             ))}
           </ul>
-          <CreateIncidentForm residentId={resident.id} />
+          {!isReadOnly && <CreateIncidentForm residentId={resident.id} />}
         </section>
         <section className="card">
           <h2 className="font-semibold mb-2 text-neutral-800">Notes</h2>
@@ -118,7 +130,26 @@ export default async function ResidentDetail({ params }: { params: { id: string 
               <li key={n.id}>{n.content}</li>
             ))}
           </ul>
-          <CreateNoteForm residentId={resident.id} />
+          {!isReadOnly && <CreateNoteForm residentId={resident.id} />}
+        </section>
+        <section className="lg:col-span-3">
+          <div className="bg-white border rounded-md p-4">
+            <h2 className="font-semibold text-neutral-800 mb-2">Audit trail</h2>
+            {audit.length === 0 ? (
+              <div className="text-sm text-neutral-500">No recent activity.</div>
+            ) : (
+              <ul className="text-sm divide-y">
+                {audit.map((a: any) => (
+                  <li key={a.id} className="py-2 flex items-center justify-between">
+                    <div>
+                      <div className="text-neutral-800">{a.action} — {a.description}</div>
+                      <div className="text-neutral-500 text-xs">{new Date(a.createdAt).toLocaleString()} • {a.user?.email ?? 'unknown'}</div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </section>
       </div>
     </div>

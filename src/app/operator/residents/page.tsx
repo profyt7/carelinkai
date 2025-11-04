@@ -4,7 +4,7 @@ import { cookies, headers } from 'next/headers';
 import { MOCK_RESIDENTS } from '@/lib/mock/residents';
 import { InlineActions, StatusPill } from '@/components/operator/residents/InlineActions';
 
-async function fetchResidents(params: { q?: string; status?: string; homeId?: string; familyId?: string; cursor?: string }) {
+async function fetchResidents(params: { q?: string; status?: string; homeId?: string; familyId?: string; cursor?: string; compliance?: string }) {
   const cookieHeader = cookies().toString();
   const h = headers();
   const proto = h.get('x-forwarded-proto') ?? 'https';
@@ -15,7 +15,8 @@ async function fetchResidents(params: { q?: string; status?: string; homeId?: st
   const hParam = params.homeId ? `&homeId=${encodeURIComponent(params.homeId)}` : '';
   const fParam = params.familyId ? `&familyId=${encodeURIComponent(params.familyId)}` : '';
   const cParam = params.cursor ? `&cursor=${encodeURIComponent(params.cursor)}` : '';
-  const res = await fetch(`${origin}/api/residents?limit=50${qParam}${sParam}${hParam}${fParam}${cParam}`, {
+  const compParam = params.compliance ? `&compliance=${encodeURIComponent(params.compliance)}` : '';
+  const res = await fetch(`${origin}/api/residents?limit=50&include=summary${qParam}${sParam}${hParam}${fParam}${cParam}${compParam}`, {
     cache: 'no-store',
     headers: { cookie: cookieHeader },
   });
@@ -23,7 +24,7 @@ async function fetchResidents(params: { q?: string; status?: string; homeId?: st
   return res.json();
 }
 
-export default async function ResidentsPage({ searchParams }: { searchParams?: { q?: string; status?: string; homeId?: string; familyId?: string; cursor?: string } }) {
+export default async function ResidentsPage({ searchParams }: { searchParams?: { q?: string; status?: string; homeId?: string; familyId?: string; cursor?: string; compliance?: string } }) {
   if (process.env['NEXT_PUBLIC_RESIDENTS_ENABLED'] === 'false') return notFound();
   const mockCookie = cookies().get('carelink_mock_mode')?.value?.toString().trim().toLowerCase() || '';
   const showMock = ['1','true','yes','on'].includes(mockCookie);
@@ -32,10 +33,11 @@ export default async function ResidentsPage({ searchParams }: { searchParams?: {
   const homeId = searchParams?.homeId?.toString() || '';
   const familyId = searchParams?.familyId?.toString() || '';
   const cursor = searchParams?.cursor?.toString() || '';
+  const compliance = searchParams?.compliance?.toString() || '';
   const data = showMock
     ? MOCK_RESIDENTS
-    : await fetchResidents({ q, status, homeId, familyId, cursor });
-  const items: Array<{ id: string; firstName: string; lastName: string; status: string }> = Array.isArray(data) ? data : (data.items ?? []);
+    : await fetchResidents({ q, status, homeId, familyId, cursor, compliance });
+  const items: Array<{ id: string; firstName: string; lastName: string; status: string; complianceSummary?: { open: number; dueSoon: number; overdue: number } }> = Array.isArray(data) ? data : (data.items ?? []);
   const nextCursor = Array.isArray(data) ? null : (data.nextCursor ?? null);
   const h = headers();
   const proto = h.get('x-forwarded-proto') ?? 'https';
@@ -64,6 +66,12 @@ export default async function ResidentsPage({ searchParams }: { searchParams?: {
             </select>
             <input type="text" name="homeId" placeholder="Home ID" defaultValue={homeId} className="border rounded px-2 py-1 text-sm" />
             <input type="text" name="familyId" placeholder="Family ID" defaultValue={familyId} className="border rounded px-2 py-1 text-sm" />
+            <select name="compliance" defaultValue={compliance} className="border rounded px-2 py-1 text-sm">
+              <option value="">All Compliance</option>
+              <option value="open">Open</option>
+              <option value="dueSoon">Due Soon</option>
+              <option value="overdue">Overdue</option>
+            </select>
             <button className="btn btn-sm" type="submit">Search</button>
           </form>
           <a className="btn btn-sm" href={`${origin}/api/residents?limit=1000${q ? `&q=${encodeURIComponent(q)}` : ''}${status ? `&status=${encodeURIComponent(status)}` : ''}${homeId ? `&homeId=${encodeURIComponent(homeId)}` : ''}${familyId ? `&familyId=${encodeURIComponent(familyId)}` : ''}&format=csv`}>
@@ -78,6 +86,7 @@ export default async function ResidentsPage({ searchParams }: { searchParams?: {
             <tr>
               <th className="px-4 py-2 text-left text-sm font-medium text-neutral-700">Name</th>
               <th className="px-4 py-2 text-left text-sm font-medium text-neutral-700">Status</th>
+              <th className="px-4 py-2 text-left text-sm font-medium text-neutral-700">Compliance</th>
               <th className="px-4 py-2" />
             </tr>
           </thead>
@@ -86,6 +95,17 @@ export default async function ResidentsPage({ searchParams }: { searchParams?: {
               <tr key={r.id}>
                 <td className="px-4 py-2 text-sm text-neutral-800">{r.firstName} {r.lastName}</td>
                 <td className="px-4 py-2 text-sm text-neutral-700"><StatusPill status={r.status} /></td>
+                <td className="px-4 py-2 text-sm">
+                  {r.complianceSummary ? (
+                    <div className="flex items-center gap-2">
+                      <span className="rounded bg-neutral-100 px-2 py-0.5 text-xs">Open: {r.complianceSummary.open}</span>
+                      <span className="rounded bg-amber-100 text-amber-800 px-2 py-0.5 text-xs">Due Soon: {r.complianceSummary.dueSoon}</span>
+                      <span className="rounded bg-red-100 text-red-800 px-2 py-0.5 text-xs">Overdue: {r.complianceSummary.overdue}</span>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-neutral-400">—</span>
+                  )}
+                </td>
                 <td className="px-4 py-2 text-right flex items-center gap-3 justify-end">
                   <InlineActions id={r.id} status={r.status} />
                   <Link className="text-primary-600 hover:underline text-sm" href={`/operator/residents/${r.id}`}>Details</Link>
@@ -94,7 +114,7 @@ export default async function ResidentsPage({ searchParams }: { searchParams?: {
             ))}
             {items.length === 0 && (
               <tr>
-                <td className="px-4 py-6 text-sm text-neutral-500" colSpan={3}>No residents found.</td>
+                <td className="px-4 py-6 text-sm text-neutral-500" colSpan={4}>No residents found.</td>
               </tr>
             )}
           </tbody>

@@ -30,6 +30,24 @@ export function getBucket(): string {
   return getRequired("S3_BUCKET");
 }
 
+// Safe capability checks for dev/e2e
+export function hasS3Credentials(): boolean {
+  const accessKeyId = process.env["S3_ACCESS_KEY_ID"] || process.env["S3_ACCESS_KEY"];
+  const secretAccessKey = process.env["S3_SECRET_ACCESS_KEY"] || process.env["S3_SECRET_KEY"];
+  const bucket = process.env["S3_BUCKET"];
+  return Boolean(accessKeyId && secretAccessKey && bucket);
+}
+
+export function canUseS3(): boolean {
+  // Assumptions:
+  // - Only use real S3 in production with credentials present
+  // - Allow override to disable via S3_DISABLE=1 or ALLOW_DEV_ENDPOINTS=1
+  if (process.env["S3_DISABLE"] === "1") return false;
+  if (process.env["ALLOW_DEV_ENDPOINTS"] === "1") return false;
+  if (process.env["NODE_ENV"] !== "production") return false;
+  return hasS3Credentials();
+}
+
 export function buildFamilyDocumentKey(familyId: string, filename: string): string {
   return `family/${familyId}/documents/${filename}`;
 }
