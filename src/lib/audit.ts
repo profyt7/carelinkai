@@ -12,14 +12,14 @@
  * - Enforced retention policies (7+ years for HIPAA)
  */
 
-import { PrismaClient, AuditAction } from "@prisma/client";
+import { AuditAction } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "./auth";
 import { NextRequest } from "next/server";
 import { v4 as uuidv4 } from "uuid";
+import { prisma } from "@/lib/prisma";
 
-// Initialize Prisma client
-const prisma = new PrismaClient();
+// Assumption: Use shared Prisma client singleton to avoid connection bloat
 
 // Constants
 const AUDIT_LOG_RETENTION_DAYS = parseInt(process.env["AUDIT_LOG_RETENTION_DAYS"] || "2555"); // Default: 7 years (HIPAA requirement)
