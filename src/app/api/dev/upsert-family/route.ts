@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient, UserRole, UserStatus, FamilyMemberStatus, FamilyMemberRole } from '@prisma/client';
+import { UserRole, UserStatus, FamilyMemberStatus, FamilyMemberRole } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 
 export async function POST(request: NextRequest) {
@@ -8,7 +9,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: false, message: 'Only available in development mode' }, { status: 403 });
   }
 
-  const prisma = new PrismaClient();
   try {
     const body = await request.json().catch(() => ({} as any));
     const email: string = (body.email as string) || 'family+e2e@carelinkai.com';
@@ -49,29 +49,34 @@ export async function POST(request: NextRequest) {
       select: { id: true },
     });
 
-    // Ensure FamilyMember entry exists and ACTIVE
-    await prisma.familyMember.upsert({
-      where: {
-        familyId_userId: {
+    // Ensure FamilyMember entry exists and ACTIVE (avoid ON CONFLICT in CI by manual upsert)
+    const existingMember = await prisma.familyMember.findUnique({
+      where: { familyId_userId: { familyId: family.id, userId: user.id } },
+      select: { id: true },
+    }).catch(() => null);
+
+    if (existingMember?.id) {
+      await prisma.familyMember.update({
+        where: { id: existingMember.id },
+        data: { status: FamilyMemberStatus.ACTIVE, role: FamilyMemberRole.OWNER, joinedAt: new Date() },
+      });
+    } else {
+      await prisma.familyMember.create({
+        data: {
           familyId: family.id,
           userId: user.id,
-        }
-      } as any,
-      update: { status: FamilyMemberStatus.ACTIVE, role: FamilyMemberRole.OWNER, joinedAt: new Date() },
-      create: {
-        familyId: family.id,
-        userId: user.id,
-        role: FamilyMemberRole.OWNER,
-        status: FamilyMemberStatus.ACTIVE,
-        joinedAt: new Date(),
-      },
-    });
+          role: FamilyMemberRole.OWNER,
+          status: FamilyMemberStatus.ACTIVE,
+          joinedAt: new Date(),
+        },
+      });
+    }
 
     return NextResponse.json({ success: true, userId: user.id, familyId: family.id, email, password: rawPassword });
   } catch (e) {
     console.error('upsert-family failed', e);
     return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
   } finally {
-    await prisma.$disconnect();
+    // Prisma singleton handles its own lifecycle
   }
 }
