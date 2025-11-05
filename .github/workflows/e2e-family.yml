@@ -48,8 +48,8 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install dependencies (including dev)
+        run: npm ci --include=dev
 
       - name: Prepare database schema
         run: npx prisma migrate deploy
