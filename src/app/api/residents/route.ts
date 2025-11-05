@@ -1,131 +1,69 @@
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
+
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient, UserRole, ResidentStatus } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { requireOperatorOrAdmin } from '@/lib/rbac';
-import { recordDataExport } from '@/lib/audit';
+import { createAuditLogFromRequest } from '@/lib/audit';
 
-const prisma = new PrismaClient();
-
-export async function GET(req: NextRequest) {
-  try {
-    const { session, error } = await requireOperatorOrAdmin();
-    if (error) return error;
-
-    const url = new URL(req.url);
-    const q = (url.searchParams.get('q') || '').trim();
-    const limit = Math.min(Number(url.searchParams.get('limit') || '25'), 100);
-    const cursor = url.searchParams.get('cursor') || undefined;
-    const status = (url.searchParams.get('status') || '').trim();
-    const homeId = (url.searchParams.get('homeId') || '').trim();
-    const familyId = (url.searchParams.get('familyId') || '').trim();
-    const format = (url.searchParams.get('format') || '').trim().toLowerCase();
-
-    const user = await prisma.user.findUnique({ where: { email: session!.user!.email! } });
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-    const whereBase: any = {};
-    if (q) {
-      whereBase.OR = [
-        { firstName: { contains: q, mode: 'insensitive' } },
-        { lastName: { contains: q, mode: 'insensitive' } },
-      ];
-    }
-    if (status) whereBase.status = status as any;
-    if (homeId) whereBase.homeId = homeId;
-    if (familyId) whereBase.familyId = familyId;
-
-    if (user.role === UserRole.OPERATOR) {
-      const op = await prisma.operator.findUnique({ where: { userId: user.id } });
-      if (!op) return NextResponse.json({ items: [], nextCursor: null });
-      whereBase.home = { operatorId: op.id };
-    }
-
-    const items = await prisma.resident.findMany({
-      where: whereBase,
-      orderBy: { createdAt: 'desc' },
-      take: limit + 1,
-      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        status: true,
-        homeId: true,
-        createdAt: true,
-      },
-    });
-    const hasNext = items.length > limit;
-    const page = hasNext ? items.slice(0, -1) : items;
-    const last = items[items.length - 1];
-    const nextCursor = hasNext && last ? last.id : null;
-    if (format === 'csv') {
-      const header = 'id,firstName,lastName,status,homeId,createdAt\n';
-      const rows = page
-        .map((r) => [r.id, r.firstName, r.lastName, r.status, r.homeId ?? '', r.createdAt.toISOString()]
-          .map((v) => String(v).replaceAll('"', '""'))
-          .map((v) => /[",\n]/.test(v) ? `"${v}"` : v)
-          .join(','))
-        .join('\n');
-      // Audit the export
-      await recordDataExport(user.id, 'Resident', 'csv', { q, status, homeId, familyId }, page.length, req);
-      return new NextResponse(header + rows, {
-        status: 200,
-        headers: {
-          'Content-Type': 'text/csv; charset=utf-8',
-          'Cache-Control': 'no-store',
-        },
-      });
-    }
-    return NextResponse.json({ items: page, nextCursor });
-  } catch (e) {
-    console.error('Residents list error', e);
-    return NextResponse.json({ error: 'Server error' }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
-  }
+async function assertOperatorHomeOwnership(userId: string, homeId?: string | null) {
+  if (!homeId) return true; // Allow creating unassigned residents
+  const operator = await prisma.operator.findUnique({ where: { userId } });
+  if (!operator) return false;
+  const home = await prisma.assistedLivingHome.findUnique({ where: { id: homeId }, select: { operatorId: true } });
+  return !!home && home.operatorId === operator.id;
 }
 
 export async function POST(req: NextRequest) {
   try {
     const { session, error } = await requireOperatorOrAdmin();
     if (error) return error;
+    const userId = (session as any)?.user?.id as string | undefined;
+    const role = (session as any)?.user?.role as string | undefined;
+    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await req.json().catch(() => ({}));
     const { familyId, homeId, firstName, lastName, dateOfBirth, gender, status } = body || {};
-
     if (!familyId || !firstName || !lastName || !dateOfBirth || !gender) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+      return NextResponse.json({ error: 'familyId, firstName, lastName, dateOfBirth, gender are required' }, { status: 400 });
     }
 
-    const user = await prisma.user.findUnique({ where: { email: session!.user!.email! } });
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    let resolvedHomeId = homeId as string | null | undefined;
-    if (user.role === UserRole.OPERATOR && resolvedHomeId) {
-      const op = await prisma.operator.findUnique({ where: { userId: user.id } });
-      if (!op) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-      const home = await prisma.assistedLivingHome.findUnique({ where: { id: resolvedHomeId }, select: { operatorId: true } });
-      if (!home || home.operatorId !== op.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (role !== 'ADMIN') {
+      const ok = await assertOperatorHomeOwnership(userId, homeId);
+      if (!ok) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
+    // Ensure family exists
+    const fam = await prisma.family.findUnique({ where: { id: familyId }, select: { id: true } });
+    if (!fam) return NextResponse.json({ error: 'Family not found' }, { status: 404 });
+
+    // Create resident
     const created = await prisma.resident.create({
       data: {
         familyId,
-        homeId: resolvedHomeId,
+        homeId: homeId || null,
         firstName,
         lastName,
         dateOfBirth: new Date(dateOfBirth),
         gender,
-        status: (status as ResidentStatus) || ResidentStatus.INQUIRY,
+        status: (status || 'INQUIRY') as any,
       },
       select: { id: true },
     });
 
-    return NextResponse.json({ success: true, id: created.id }, { status: 201 });
+    await createAuditLogFromRequest(
+      req,
+      'CREATE' as any,
+      'Resident',
+      created.id,
+      'Created resident',
+      { homeId: homeId || null, familyId }
+    );
+
+    return NextResponse.json({ id: created.id }, { status: 201 });
   } catch (e) {
     console.error('Resident create error', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }
-
-

@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 type Item = {
   id: string;
@@ -19,7 +19,8 @@ export function CompliancePanel({ residentId }: { residentId: string }) {
   const [type, setType] = useState('CARE_PLAN_REVIEW');
   const [dueDate, setDueDate] = useState<string>('');
 
-  async function load() {
+  // Assumption: load is stable via useCallback to satisfy exhaustive-deps
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const [itemsRes, sumRes] = await Promise.all([
@@ -33,9 +34,9 @@ export function CompliancePanel({ residentId }: { residentId: string }) {
       if (sumRes.ok) setSummary(await sumRes.json());
       // In dev/e2e, if summary fails due to auth or timing, keep zeroed summary to avoid empty UI
     } finally { setLoading(false); }
-  }
+  }, [residentId]);
 
-  useEffect(() => { load(); }, [residentId]);
+  useEffect(() => { load(); }, [load]);
 
   async function addItem(e: React.FormEvent) {
     e.preventDefault();

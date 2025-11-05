@@ -1,54 +1,69 @@
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
+
 import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { requireOperatorOrAdmin } from '@/lib/rbac';
 import { createAuditLogFromRequest } from '@/lib/audit';
-import * as Sentry from '@sentry/nextjs';
 
-const UpdateSchema = z.object({
-  title: z.string().optional(),
-  notes: z.string().optional(),
-  owner: z.string().optional(),
-  severity: z.string().optional(),
-  status: z.enum(['OPEN', 'COMPLETED']).optional(),
-  dueDate: z.string().datetime().nullable().optional(),
-  completedAt: z.string().datetime().nullable().optional(),
-});
+async function assertOperatorAccess(userId: string, residentId: string) {
+  const operator = await prisma.operator.findUnique({ where: { userId } });
+  if (!operator) return false;
+  const resident = await prisma.resident.findUnique({
+    where: { id: residentId },
+    select: { home: { select: { operatorId: true } } },
+  });
+  if (!resident) return false;
+  if (!resident.home) return true;
+  return resident.home.operatorId === operator.id;
+}
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string; itemId: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: { id: string, itemId: string } }) {
   try {
     const { session, error } = await requireOperatorOrAdmin();
     if (error) return error;
+    const userId = (session as any)?.user?.id as string | undefined;
+    const role = (session as any)?.user?.role as string | undefined;
+    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const resident = await prisma.resident.findUnique({ where: { id: params.id }, select: { id: true, home: { select: { operatorId: true } } } });
-    if (!resident) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-
-    if (session!.user!.role === 'OPERATOR') {
-      const me = await prisma.user.findUnique({ where: { email: session!.user!.email! }, select: { id: true } });
-      const op = me ? await prisma.operator.findUnique({ where: { userId: me.id }, select: { id: true } }) : null;
-      if (!op || resident.home?.operatorId !== op.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (role !== 'ADMIN') {
+      const ok = await assertOperatorAccess(userId, params.id);
+      if (!ok) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const payload = await req.json().catch(() => ({}));
-    const data = UpdateSchema.parse(payload);
+    const body = await req.json().catch(() => ({}));
+    const { status, title, notes, owner, severity, dueDate, completedAt } = body || {};
 
     const updated = await prisma.residentComplianceItem.update({
       where: { id: params.itemId },
       data: {
-        title: data.title ?? undefined,
-        notes: data.notes ?? undefined,
-        owner: data.owner ?? undefined,
-        severity: data.severity ?? undefined,
-        status: data.status as any,
-        dueDate: data.dueDate === undefined ? undefined : data.dueDate ? new Date(data.dueDate) : null,
-        completedAt: data.completedAt === undefined ? undefined : data.completedAt ? new Date(data.completedAt) : null,
+        status,
+        title,
+        notes,
+        owner,
+        severity,
+        dueDate: dueDate ? new Date(dueDate) : undefined,
+        completedAt: completedAt ? new Date(completedAt) : undefined,
+      },
+      select: {
+        id: true, type: true, title: true, notes: true, owner: true, severity: true,
+        status: true, dueDate: true, completedAt: true,
       },
     });
-    Sentry.addBreadcrumb({ category: 'resident', message: 'compliance_updated', level: 'info', data: { residentId: resident.id, itemId: updated.id } });
-    await createAuditLogFromRequest(req, 'UPDATE', 'ResidentComplianceItem', updated.id, 'Updated compliance item');
-    return NextResponse.json({ success: true });
+
+    await createAuditLogFromRequest(
+      req,
+      'UPDATE' as any,
+      'ResidentComplianceItem',
+      params.itemId,
+      'Operator updated compliance item',
+      { scope: 'operator_compliance_update', residentId: params.id }
+    );
+
+    return NextResponse.json({ item: updated });
   } catch (e) {
-    console.error('compliance PATCH error', e);
-    return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
+    console.error('Operator compliance update error', e);
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

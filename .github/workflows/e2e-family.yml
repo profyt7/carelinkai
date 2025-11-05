@@ -1,0 +1,66 @@
+name: E2E (Family + Residents Core)
+
+on:
+  push:
+    branches: [ "feat/**", "main", "master" ]
+  pull_request:
+    branches: [ "**" ]
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: carelinkai_marketplace
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres" \
+          --health-interval 10s \
+          --health-timeout 5s \
+          --health-retries 5
+
+    env:
+      # App runtime
+      NODE_ENV: production
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: testsecret_e2e_123
+      ALLOW_DEV_ENDPOINTS: "1"
+      ALLOW_INSECURE_AUTH_COOKIE: "1"
+      # DB
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/carelinkai_marketplace?schema=public
+      # S3 disabled in CI by default (mock URLs)
+      S3_DISABLE: "1"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prepare database schema
+        run: npx prisma migrate deploy
+
+      - name: Build app
+        run: npm run build
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Run Playwright (Family + Residents core)
+        env:
+          PW_USE_START: "1"
+        run: |
+          npx playwright test e2e/family-*.spec.ts e2e/residents-*.spec.ts --reporter=dot

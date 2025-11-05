@@ -13,13 +13,13 @@
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
-import { PrismaClient, AuditAction } from "@prisma/client";
+import { AuditAction } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import type { UserStatus, UserRole } from "@prisma/client";
 import { compare } from "bcryptjs";
 import { authenticator } from "otplib";
 
-// Initialize Prisma client
-const prisma = new PrismaClient();
+// Assumption: Use shared Prisma client singleton to avoid connection bloat
 
 /**
  * NextAuth configuration options
