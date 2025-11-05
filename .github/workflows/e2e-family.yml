@@ -62,6 +62,6 @@ jobs:
 
       - name: Run Playwright (Family + Residents core)
         env:
-          PW_USE_START: "1"
+          PLAYWRIGHT_WEB_SERVER_CMD: npm run start
         run: |
           npx playwright test e2e/family-*.spec.ts e2e/residents-*.spec.ts --reporter=dot
