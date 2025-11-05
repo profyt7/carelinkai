@@ -1390,6 +1390,7 @@ model FamilyMember {
   @@index([familyId])
   @@index([userId])
   @@index([status])
+  @@unique([familyId, userId])
 }
 
 enum FamilyDocumentType {
