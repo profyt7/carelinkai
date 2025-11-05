@@ -46,7 +46,11 @@ export async function POST(req: NextRequest) {
     });
 
     // Ensure at least one Home for operator
-    let home = await prisma.assistedLivingHome.findFirst({ where: { operatorId: op.id } });
+    // Assumption: keep selection shape consistent to satisfy TS
+    let home = await prisma.assistedLivingHome.findFirst({
+      where: { operatorId: op.id },
+      select: { id: true },
+    });
     if (!home) {
       home = await prisma.assistedLivingHome.create({
         data: {
@@ -60,6 +64,11 @@ export async function POST(req: NextRequest) {
         },
         select: { id: true },
       });
+    }
+
+    if (!home) {
+      // Extremely unlikely: create failed
+      return NextResponse.json({ error: 'Failed to ensure home' }, { status: 500 });
     }
 
     return NextResponse.json({ homeId: home.id });
