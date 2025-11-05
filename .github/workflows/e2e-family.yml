@@ -28,6 +28,7 @@ jobs:
     env:
       # App runtime
       NODE_ENV: production
+      NODE_OPTIONS: --max-old-space-size=4096
       NEXTAUTH_URL: http://localhost:3000
       NEXTAUTH_SECRET: testsecret_e2e_123
       ALLOW_DEV_ENDPOINTS: "1"
