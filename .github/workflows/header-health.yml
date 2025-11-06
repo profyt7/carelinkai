@@ -19,32 +19,58 @@ jobs:
       - name: Fetch response headers
         id: fetch
         run: |
+          set -euo pipefail
           URL="https://carelinkai.onrender.com${{ matrix.endpoint }}"
           echo "Requesting: $URL"
-          curl -s -D headers.txt -o /dev/null "$URL"
+          # Follow redirects and dump headers; normalize header casing for portability
+          curl -s -L -D headers.txt -o /dev/null "$URL"
           echo "--- Response headers ---"
           cat headers.txt
       - name: Ensure no invalid Set-Cookie headers are present
         run: |
+          set -euo pipefail
           echo "Validating Set-Cookie hygiene..."
-          # Fail if any Set-Cookie header starts with attributes instead of a cookie name
-          if grep -iE '^Set-Cookie:\s*(Path=|HttpOnly|Secure|SameSite)' headers.txt; then
-            echo "Found an invalid Set-Cookie header that starts with attributes (no cookie name)." >&2
-            exit 1
+          # Extract Set-Cookie lines case-insensitively
+          grep -i '^Set-Cookie:' headers.txt > sc.txt || true
+
+          # If none present, it's fine for public pages; for /api/auth/session we still allow empty but we only validate hygiene
+          if [ ! -s sc.txt ]; then
+            echo "No Set-Cookie headers present; skipping cookie validations."
+            exit 0
           fi
 
-          # Fail if any Set-Cookie lacks an '=' before the first ';'
-          # Extract Set-Cookie lines, strip prefix, then check the first token before ';'
-          BAD=0
+          VIOLATIONS=0
           while IFS= read -r line; do
-            cookie_part=$(echo "$line" | sed -E 's/^Set-Cookie:\s*//I' | cut -d';' -f1)
-            if ! echo "$cookie_part" | grep -q '='; then
-              echo "Malformed Set-Cookie (no name=value): $line" >&2
-              BAD=1
-            fi
-          done < <(grep -i '^Set-Cookie:' headers.txt || true)
+            lc=$(echo "$line" | sed -E 's/^Set-Cookie:\s*//I')
+            name=$(echo "$lc" | cut -d';' -f1 | cut -d'=' -f1 | tr -d ' ')
 
-          if [ "$BAD" -ne 0 ]; then
+            # 1) Must not start with an attribute keyword
+            if echo "$name" | grep -qiE '^(Path|HttpOnly|Secure|SameSite)$'; then
+              echo "Invalid: cookie starts with attribute: $line" >&2
+              VIOLATIONS=1
+            fi
+
+            # 2) Must contain '=' before first ';'
+            first_token=$(echo "$lc" | cut -d';' -f1)
+            if ! echo "$first_token" | grep -q '='; then
+              echo "Invalid: no name=value pair: $line" >&2
+              VIOLATIONS=1
+            fi
+
+            # 3) __Host- cookies must be Secure, Path=/, and have no Domain
+            if echo "$name" | grep -q '^__Host-'; then
+              echo "$lc" | grep -qiE ';\s*Secure(=|;|$)' || { echo "__Host- cookie missing Secure: $line" >&2; VIOLATIONS=1; }
+              echo "$lc" | grep -qiE ';\s*Path=/([;]|$)' || { echo "__Host- cookie must have Path=/ : $line" >&2; VIOLATIONS=1; }
+              if echo "$lc" | grep -qiE ';\s*Domain='; then echo "__Host- cookie must not set Domain: $line" >&2; VIOLATIONS=1; fi
+            fi
+
+            # 4) __Secure- cookies must be Secure
+            if echo "$name" | grep -q '^__Secure-'; then
+              echo "$lc" | grep -qiE ';\s*Secure(=|;|$)' || { echo "__Secure- cookie missing Secure: $line" >&2; VIOLATIONS=1; }
+            fi
+          done < sc.txt
+
+          if [ "$VIOLATIONS" -ne 0 ]; then
             exit 1
           fi
 
@@ -55,4 +81,6 @@ jobs:
         with:
           # Use expression functions; remove slashes from endpoint for a valid artifact name
           name: ${{ format('headers-{0}', replace(matrix.endpoint, '/', '')) }}
-          path: headers.txt
+          path: |
+            headers.txt
+            sc.txt
