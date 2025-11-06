@@ -131,6 +131,7 @@
     "jest": {
         "preset": "ts-jest",
         "testEnvironment": "node",
+    "globalTeardown": "<rootDir>/jest.teardown.js",
         "testPathIgnorePatterns": [
             "<rootDir>/e2e/",
             "<rootDir>/.next/"
