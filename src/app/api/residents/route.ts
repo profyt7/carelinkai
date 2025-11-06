@@ -71,8 +71,10 @@ export async function GET(req: NextRequest) {
     let nextCursor: string | null = null;
     let items = rows;
     if (rows.length > limit) {
-      const next = rows[rows.length - 1];
-      nextCursor = next.id;
+      const last = rows[rows.length - 1];
+      if (last) {
+        nextCursor = (last as any).id as string;
+      }
       items = rows.slice(0, limit);
     }
 
