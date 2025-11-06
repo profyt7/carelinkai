@@ -27,7 +27,8 @@ jobs:
 
     env:
       # App runtime
-      NODE_ENV: production
+      # Use test mode so CI-only dev endpoints are enabled when ALLOW_DEV_ENDPOINTS=1
+      NODE_ENV: test
       NODE_OPTIONS: --max-old-space-size=4096
       NEXTAUTH_URL: http://localhost:3000
       NEXTAUTH_SECRET: testsecret_e2e_123
@@ -62,6 +63,11 @@ jobs:
 
       - name: Run Playwright (Family + Residents core)
         env:
-          PLAYWRIGHT_WEB_SERVER_CMD: npm run start
+          # Use dev server so NODE_ENV is not forced to production; enable dev endpoints in CI
+          PLAYWRIGHT_WEB_SERVER_CMD: >-
+            cross-env NEXTAUTH_URL=http://localhost:3000 NEXTAUTH_SECRET=devsecret 
+            ALLOW_DEV_ENDPOINTS=1 ALLOW_INSECURE_AUTH_COOKIE=1 
+            DATABASE_URL=postgresql://postgres:postgres@localhost:5432/carelinkai_marketplace?schema=public 
+            npm run dev
         run: |
           npx playwright test e2e/family-*.spec.ts e2e/residents-*.spec.ts --reporter=dot

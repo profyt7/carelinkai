@@ -13,7 +13,8 @@ import bcrypt from 'bcryptjs';
 // - Ensures at least one AssistedLivingHome for the operator and returns its ID
 
 export async function POST(req: NextRequest) {
-  if (process.env['ALLOW_DEV_ENDPOINTS'] !== '1') {
+  // Disable in production unconditionally; require explicit opt-in elsewhere
+  if ((process.env.NODE_ENV as string) === 'production' || process.env['ALLOW_DEV_ENDPOINTS'] !== '1') {
     return NextResponse.json({ error: 'Not Found' }, { status: 404 });
   }
   try {
