@@ -44,7 +44,17 @@ jobs:
         run: npm run type-check
 
       - name: Test
-        run: npm test -- --ci --reporters=default --forceExit
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm test -- --ci --reporters=default --forceExit --runInBand 2>&1 | tee jest.log
+
+      - name: Upload Jest logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jest-log
+          path: jest.log
 
       - name: Build
         env:
