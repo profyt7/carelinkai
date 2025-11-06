@@ -44,7 +44,7 @@ jobs:
         run: npm run type-check
 
       - name: Test
-        run: npm test -- --ci --reporters=default
+        run: npm test -- --ci --reporters=default --detectOpenHandles --forceExit
 
       - name: Build
         env:
