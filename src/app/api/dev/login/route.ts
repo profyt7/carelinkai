@@ -13,7 +13,8 @@ import { encode } from 'next-auth/jwt';
 // - Uses insecure cookie name in dev when ALLOW_INSECURE_AUTH_COOKIE=1
 
 export async function POST(req: NextRequest) {
-  if (process.env['ALLOW_DEV_ENDPOINTS'] !== '1') {
+  // Disable in production unconditionally; require explicit opt-in elsewhere
+  if (process.env.NODE_ENV === 'production' || process.env['ALLOW_DEV_ENDPOINTS'] !== '1') {
     return NextResponse.json({ error: 'Not Found' }, { status: 404 });
   }
   const secret = process.env['NEXTAUTH_SECRET'];

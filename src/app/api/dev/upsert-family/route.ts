@@ -4,9 +4,9 @@ import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 
 export async function POST(request: NextRequest) {
-  // Dev-only safety gate (allow override for e2e in built server)
-  if (process.env.NODE_ENV !== 'development' && process.env['ALLOW_DEV_ENDPOINTS'] !== '1') {
-    return NextResponse.json({ success: false, message: 'Only available in development mode' }, { status: 403 });
+  // Disable in production unconditionally; require explicit opt-in elsewhere
+  if (process.env.NODE_ENV === 'production' || process.env['ALLOW_DEV_ENDPOINTS'] !== '1') {
+    return NextResponse.json({ error: 'Not Found' }, { status: 404 });
   }
 
   try {
