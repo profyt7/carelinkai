@@ -1,9 +1,14 @@
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient, ComplianceStatus, ResidentStatus } from '@prisma/client';
 
 export async function POST(request: NextRequest) {
-  if (process.env.NODE_ENV !== 'development' && process.env['ALLOW_DEV_ENDPOINTS'] !== '1') {
-    return NextResponse.json({ success: false, message: 'Only available in development mode' }, { status: 403 });
+  // Disable in production unconditionally; require explicit opt-in elsewhere
+  if ((process.env.NODE_ENV as string) === 'production' || process.env['ALLOW_DEV_ENDPOINTS'] !== '1') {
+    return NextResponse.json({ error: 'Not Found' }, { status: 404 });
   }
 
   const prisma = new PrismaClient();
