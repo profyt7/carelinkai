@@ -15,79 +15,58 @@ jobs:
     name: Validate Set-Cookie headers on production
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    strategy:
-      fail-fast: false
-      matrix:
-        endpoint: ["/", "/api/auth/session"]
     steps:
       - name: Sanity
         run: |
           echo "Runner OK"; uname -a; curl --version | head -n1
-      - name: Fetch response headers
-        id: fetch
+      - name: Validate endpoints
+        shell: bash
         run: |
           set -euo pipefail
-          URL="https://carelinkai.onrender.com${{ matrix.endpoint }}"
-          echo "Requesting: $URL"
-          # Follow redirects and dump headers; normalize header casing for portability
-          curl -s -L -D headers.txt -o /dev/null "$URL"
-          echo "--- Response headers ---"
-          cat headers.txt
-      - name: Ensure no invalid Set-Cookie headers are present
-        run: |
-          set -euo pipefail
-          echo "Validating Set-Cookie hygiene..."
-          # Extract Set-Cookie lines case-insensitively
-          grep -i '^Set-Cookie:' headers.txt > sc.txt || true
-
-          # If none present, it's fine for public pages; for /api/auth/session we still allow empty but we only validate hygiene
-          if [ ! -s sc.txt ]; then
-            echo "No Set-Cookie headers present; skipping cookie validations."
-            exit 0
-          fi
-
-          VIOLATIONS=0
-          while IFS= read -r line; do
-            lc=$(echo "$line" | sed -E 's/^Set-Cookie:\s*//I')
-            name=$(echo "$lc" | cut -d';' -f1 | cut -d'=' -f1 | tr -d ' ')
-
-            # 1) Must not start with an attribute keyword
-            if echo "$name" | grep -qiE '^(Path|HttpOnly|Secure|SameSite)$'; then
-              echo "Invalid: cookie starts with attribute: $line" >&2
-              VIOLATIONS=1
+          BASE=https://carelinkai.onrender.com
+          ENDPOINTS=("/" "/api/auth/session")
+          for ep in "${ENDPOINTS[@]}"; do
+            URL="$BASE$ep"
+            echo "\n== Checking $URL =="
+            curl -s -L -D headers.txt -o /dev/null "$URL"
+            echo "--- Response headers ---"
+            cat headers.txt
+            echo "Validating Set-Cookie hygiene..."
+            grep -i '^Set-Cookie:' headers.txt > sc.txt || true
+            if [ ! -s sc.txt ]; then
+              echo "No Set-Cookie headers present; continuing."
+              continue
             fi
-
-            # 2) Must contain '=' before first ';'
-            first_token=$(echo "$lc" | cut -d';' -f1)
-            if ! echo "$first_token" | grep -q '='; then
-              echo "Invalid: no name=value pair: $line" >&2
-              VIOLATIONS=1
+            VIOLATIONS=0
+            while IFS= read -r line; do
+              lc=$(echo "$line" | sed -E 's/^Set-Cookie:\s*//I')
+              name=$(echo "$lc" | cut -d';' -f1 | cut -d'=' -f1 | tr -d ' ')
+              if echo "$name" | grep -qiE '^(Path|HttpOnly|Secure|SameSite)$'; then
+                echo "Invalid: cookie starts with attribute: $line" >&2; VIOLATIONS=1; fi
+              first_token=$(echo "$lc" | cut -d';' -f1)
+              if ! echo "$first_token" | grep -q '='; then
+                echo "Invalid: no name=value pair: $line" >&2; VIOLATIONS=1; fi
+              if echo "$name" | grep -q '^__Host-'; then
+                echo "$lc" | grep -qiE '(^|;)[[:space:]]*Secure([;]|$)' || { echo "__Host- cookie missing Secure: $line" >&2; VIOLATIONS=1; }
+                echo "$lc" | grep -qiE '(^|;)[[:space:]]*Path=/([;]|$)' || { echo "__Host- cookie must have Path=/ : $line" >&2; VIOLATIONS=1; }
+                if echo "$lc" | grep -qiE '(^|;)[[:space:]]*Domain='; then echo "__Host- cookie must not set Domain: $line" >&2; VIOLATIONS=1; fi
+              fi
+              if echo "$name" | grep -q '^__Secure-'; then
+                echo "$lc" | grep -qiE '(^|;)[[:space:]]*Secure([;]|$)' || { echo "__Secure- cookie missing Secure: $line" >&2; VIOLATIONS=1; }
+              fi
+            done < sc.txt
+            if [ "$VIOLATIONS" -ne 0 ]; then
+              exit 1
             fi
-
-            # 3) __Host- cookies must be Secure, Path=/, and have no Domain
-            if echo "$name" | grep -q '^__Host-'; then
-              echo "$lc" | grep -qiE '(^|;)[[:space:]]*Secure([;]|$)' || { echo "__Host- cookie missing Secure: $line" >&2; VIOLATIONS=1; }
-              echo "$lc" | grep -qiE '(^|;)[[:space:]]*Path=/([;]|$)' || { echo "__Host- cookie must have Path=/ : $line" >&2; VIOLATIONS=1; }
-              if echo "$lc" | grep -qiE '(^|;)[[:space:]]*Domain='; then echo "__Host- cookie must not set Domain: $line" >&2; VIOLATIONS=1; fi
-            fi
-
-            # 4) __Secure- cookies must be Secure
-            if echo "$name" | grep -q '^__Secure-'; then
-              echo "$lc" | grep -qiE '(^|;)[[:space:]]*Secure([;]|$)' || { echo "__Secure- cookie missing Secure: $line" >&2; VIOLATIONS=1; }
-            fi
-          done < sc.txt
-
-          if [ "$VIOLATIONS" -ne 0 ]; then
-            exit 1
-          fi
-
-          echo "Set-Cookie headers look sane."
+            echo "OK: $ep"
+          done
+          echo "All checks passed."
       - name: Upload headers artifact on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           # Use expression functions; remove slashes from endpoint for a valid artifact name
-          name: ${{ format('headers-{0}', replace(matrix.endpoint, '/', '')) }}
+          name: headers
           path: |
             headers.txt
             sc.txt
