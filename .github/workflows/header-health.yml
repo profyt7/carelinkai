@@ -7,15 +7,22 @@ on:
     branches: [ main ]
   workflow_dispatch: {}
 
+permissions:
+  contents: read
+
 jobs:
   check-headers:
     name: Validate Set-Cookie headers on production
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     strategy:
       fail-fast: false
       matrix:
         endpoint: ["/", "/api/auth/session"]
     steps:
+      - name: Sanity
+        run: |
+          echo "Runner OK"; uname -a; curl --version | head -n1
       - name: Fetch response headers
         id: fetch
         run: |
