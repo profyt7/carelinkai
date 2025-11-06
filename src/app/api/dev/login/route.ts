@@ -14,7 +14,7 @@ import { encode } from 'next-auth/jwt';
 
 export async function POST(req: NextRequest) {
   // Disable in production unconditionally; require explicit opt-in elsewhere
-  if (process.env.NODE_ENV === 'production' || process.env['ALLOW_DEV_ENDPOINTS'] !== '1') {
+  if ((process.env.NODE_ENV as string) === 'production' || process.env['ALLOW_DEV_ENDPOINTS'] !== '1') {
     return NextResponse.json({ error: 'Not Found' }, { status: 404 });
   }
   const secret = process.env['NEXTAUTH_SECRET'];
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       } as any,
     } as any);
 
-    const cookieName = (process.env.NODE_ENV === 'production' && process.env['ALLOW_INSECURE_AUTH_COOKIE'] !== '1')
+    const cookieName = ((process.env.NODE_ENV as string) === 'production' && process.env['ALLOW_INSECURE_AUTH_COOKIE'] !== '1')
       ? '__Secure-next-auth.session-token'
       : 'next-auth.session-token';
 
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     res.cookies.set(cookieName, token, {
       httpOnly: true,
       sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production' && process.env['ALLOW_INSECURE_AUTH_COOKIE'] !== '1',
+      secure: ((process.env.NODE_ENV as string) === 'production') && process.env['ALLOW_INSECURE_AUTH_COOKIE'] !== '1',
       path: '/',
       maxAge: 60 * 60 * 24 * 7,
     });
