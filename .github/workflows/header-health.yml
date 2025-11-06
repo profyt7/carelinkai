@@ -59,14 +59,14 @@ jobs:
 
             # 3) __Host- cookies must be Secure, Path=/, and have no Domain
             if echo "$name" | grep -q '^__Host-'; then
-              echo "$lc" | grep -qiE ';\s*Secure(=|;|$)' || { echo "__Host- cookie missing Secure: $line" >&2; VIOLATIONS=1; }
-              echo "$lc" | grep -qiE ';\s*Path=/([;]|$)' || { echo "__Host- cookie must have Path=/ : $line" >&2; VIOLATIONS=1; }
-              if echo "$lc" | grep -qiE ';\s*Domain='; then echo "__Host- cookie must not set Domain: $line" >&2; VIOLATIONS=1; fi
+              echo "$lc" | grep -qiE '(^|;)[[:space:]]*Secure([;]|$)' || { echo "__Host- cookie missing Secure: $line" >&2; VIOLATIONS=1; }
+              echo "$lc" | grep -qiE '(^|;)[[:space:]]*Path=/([;]|$)' || { echo "__Host- cookie must have Path=/ : $line" >&2; VIOLATIONS=1; }
+              if echo "$lc" | grep -qiE '(^|;)[[:space:]]*Domain='; then echo "__Host- cookie must not set Domain: $line" >&2; VIOLATIONS=1; fi
             fi
 
             # 4) __Secure- cookies must be Secure
             if echo "$name" | grep -q '^__Secure-'; then
-              echo "$lc" | grep -qiE ';\s*Secure(=|;|$)' || { echo "__Secure- cookie missing Secure: $line" >&2; VIOLATIONS=1; }
+              echo "$lc" | grep -qiE '(^|;)[[:space:]]*Secure([;]|$)' || { echo "__Secure- cookie missing Secure: $line" >&2; VIOLATIONS=1; }
             fi
           done < sc.txt
 
