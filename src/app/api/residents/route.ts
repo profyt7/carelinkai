@@ -70,6 +70,7 @@ export async function GET(req: NextRequest) {
     const rows = await prisma.resident.findMany(queryOpts);
     let nextCursor: string | null = null;
     let items = rows;
+    // NOTE(droid): Guard last row access to satisfy TS strict null checks in CI
     if (rows.length > limit) {
       const last = rows[rows.length - 1];
       if (last) {
