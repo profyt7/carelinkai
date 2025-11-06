@@ -20,14 +20,15 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U postgres" \
-          --health-interval 10s \
-          --health-timeout 5s \
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
           --health-retries 5
 
     env:
       # App runtime
       NODE_ENV: production
+      NODE_OPTIONS: --max-old-space-size=4096
       NEXTAUTH_URL: http://localhost:3000
       NEXTAUTH_SECRET: testsecret_e2e_123
       ALLOW_DEV_ENDPOINTS: "1"
@@ -47,8 +48,8 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install dependencies (including dev)
+        run: npm ci --include=dev
 
       - name: Prepare database schema
         run: npx prisma migrate deploy
@@ -61,6 +62,6 @@ jobs:
 
       - name: Run Playwright (Family + Residents core)
         env:
-          PW_USE_START: "1"
+          PLAYWRIGHT_WEB_SERVER_CMD: npm run start
         run: |
           npx playwright test e2e/family-*.spec.ts e2e/residents-*.spec.ts --reporter=dot

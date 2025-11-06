@@ -14,7 +14,10 @@ function getHourInTimeZone(date, timeZone) {
     });
     const parts = dtf.formatToParts(date);
     const hourPart = parts.find((p) => p.type === 'hour');
-    return hourPart ? Number(hourPart.value) : date.getUTCHours();
+    if (!hourPart) return date.getUTCHours();
+    const hour = Number(hourPart.value);
+    // Normalize 24 to 0 for midnight edge cases in some ICU locales
+    return hour === 24 ? 0 : hour;
   } catch {
     // Invalid/unsupported timezone → fall back to UTC hour
     return date.getUTCHours();

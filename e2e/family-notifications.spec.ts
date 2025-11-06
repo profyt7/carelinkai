@@ -27,5 +27,6 @@ test('Family Portal - Notifications shows due soon and overdue counts', async ({
   await expect(page.getByRole('heading', { name: 'Notifications' })).toBeVisible();
   // We expect non-negative numbers; just verify cards render
   await expect(page.getByText('Due Soon (14d)')).toBeVisible();
-  await expect(page.getByText('Overdue')).toBeVisible();
+  // Use the section heading to avoid strict-mode ambiguity with the stat tile label
+  await expect(page.getByRole('heading', { name: 'Overdue' })).toBeVisible();
 });

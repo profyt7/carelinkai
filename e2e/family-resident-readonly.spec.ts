@@ -45,7 +45,8 @@ test.describe('Family Portal - Resident Read-only Views', () => {
 
     // 5) Validate Contacts table
     await expect(page.getByRole('heading', { name: 'Contacts' })).toBeVisible();
-    await expect(page.getByText('PRIMARY')).toBeVisible();
+    const contactsSection = page.getByRole('heading', { name: 'Contacts' }).locator('..');
+    await expect(contactsSection.getByText('PRIMARY', { exact: true }).first()).toBeVisible();
     await expect(page.getByRole('cell', { name: 'Primary Contact' })).toBeVisible();
     await expect(page.getByRole('cell', { name: 'Backup Contact' })).toBeVisible();
 

@@ -53,5 +53,6 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: headers-${{ matrix.endpoint##*/ }}
+          # Use expression functions; remove slashes from endpoint for a valid artifact name
+          name: ${{ format('headers-{0}', replace(matrix.endpoint, '/', '')) }}
           path: headers.txt

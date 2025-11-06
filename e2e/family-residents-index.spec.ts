@@ -38,6 +38,6 @@ test.describe('Family Portal - Residents Index', () => {
     // Navigate to detail
     await page.getByRole('link', { name: 'View' }).first().click();
     await expect(page).toHaveURL(/\/family\/residents\//);
-    await expect(page.getByRole('heading')).toContainText(/Resident/);
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(/Resident/);
   });
 });
