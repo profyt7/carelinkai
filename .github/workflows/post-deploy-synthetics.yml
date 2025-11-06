@@ -32,7 +32,8 @@ jobs:
           BASE=https://carelinkai.onrender.com
           declare -a PATHS=("/" "/api/health" "/operator/residents")
           for p in "${PATHS[@]}"; do
-            code=$(curl -s -o /dev/null -w "%{http_code}" "$BASE$p")
+            # Follow redirects so protected pages that 302/307 to login still yield 200
+            code=$(curl -L -s -o /dev/null -w "%{http_code}" "$BASE$p")
             echo "$p -> $code"
             if [ "$code" != "200" ]; then
               echo "Route check failed: $p returned $code" >&2
