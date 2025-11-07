@@ -48,11 +48,22 @@ export default async function ResidentDetail({ params }: { params: { id: string 
   let notes: any = { items: [] };
   if (showMock) {
     const r = getMockResident(params.id);
-    if (!r) return notFound();
-    resident = r;
-    assessments = getMockAssessments(r.id);
-    incidents = getMockIncidents(r.id);
-    notes = getMockNotes(r.id);
+    if (r) {
+      resident = r;
+      assessments = getMockAssessments(r.id);
+      incidents = getMockIncidents(r.id);
+      notes = getMockNotes(r.id);
+    } else {
+      // Fallback to live data when ID not in mock set (e.g., newly created resident while mock mode is on)
+      const data = await fetchResident(params.id);
+      if (!data?.resident) return notFound();
+      resident = data.resident;
+      [assessments, incidents, notes] = await Promise.all([
+        fetchSection(resident.id, 'assessments'),
+        fetchSection(resident.id, 'incidents'),
+        fetchSection(resident.id, 'notes'),
+      ]);
+    }
   } else {
     console.log('[ResidentDetail] fetching resident', params.id);
     const data = await fetchResident(params.id);
