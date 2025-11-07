@@ -116,9 +116,9 @@ export async function POST(req: NextRequest) {
     if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await req.json().catch(() => ({}));
-    const { familyId, homeId, firstName, lastName, dateOfBirth, gender, status } = body || {};
-    if (!familyId || !firstName || !lastName || !dateOfBirth || !gender) {
-      return NextResponse.json({ error: 'familyId, firstName, lastName, dateOfBirth, gender are required' }, { status: 400 });
+    const { familyId, familyEmail, familyName, homeId, firstName, lastName, dateOfBirth, gender, status } = body || {};
+    if (!firstName || !lastName || !dateOfBirth || !gender) {
+      return NextResponse.json({ error: 'firstName, lastName, dateOfBirth, gender are required' }, { status: 400 });
     }
 
     if (role !== 'ADMIN') {
@@ -126,14 +126,48 @@ export async function POST(req: NextRequest) {
       if (!ok) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Ensure family exists
-    const fam = await prisma.family.findUnique({ where: { id: familyId }, select: { id: true } });
-    if (!fam) return NextResponse.json({ error: 'Family not found' }, { status: 404 });
+    // Resolve or create a family
+    let resolvedFamilyId: string | null = null;
+    if (familyId) {
+      const fam = await prisma.family.findUnique({ where: { id: familyId }, select: { id: true } });
+      if (!fam) return NextResponse.json({ error: 'Family not found' }, { status: 404 });
+      resolvedFamilyId = fam.id;
+    } else if (familyEmail) {
+      const existingUser = await prisma.user.findUnique({ where: { email: familyEmail } });
+      if (existingUser && existingUser.role !== 'FAMILY') {
+        return NextResponse.json({ error: 'Email belongs to a non-family user' }, { status: 400 });
+      }
+      const user = existingUser ?? await prisma.user.create({
+        data: {
+          email: familyEmail,
+          firstName: (familyName || 'Family').split(' ')[0] || 'Family',
+          lastName: (familyName || 'Contact').split(' ').slice(1).join(' ') || 'Contact',
+          role: 'FAMILY' as any,
+          status: 'ACTIVE' as any,
+        }
+      });
+      const fam = await prisma.family.upsert({ where: { userId: user.id }, update: {}, create: { userId: user.id } });
+      resolvedFamilyId = fam.id;
+    } else {
+      // Create placeholder family for operator-created resident without known contacts
+      const placeholderEmail = `no-family+${Date.now()}-${Math.random().toString(36).slice(2)}@example.invalid`;
+      const user = await prisma.user.create({
+        data: {
+          email: placeholderEmail,
+          firstName: 'Unlisted',
+          lastName: 'Family',
+          role: 'FAMILY' as any,
+          status: 'PENDING' as any,
+        }
+      });
+      const fam = await prisma.family.create({ data: { userId: user.id } });
+      resolvedFamilyId = fam.id;
+    }
 
     // Create resident
     const created = await prisma.resident.create({
       data: {
-        familyId,
+        familyId: resolvedFamilyId,
         homeId: homeId || null,
         firstName,
         lastName,
