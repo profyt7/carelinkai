@@ -6,6 +6,8 @@ import { test, expect } from '@playwright/test';
 // - Residents list shows actions; home name is not displayed, so we verify via API
 
 test('operator can transfer an ACTIVE resident between homes', async ({ page, request }) => {
+  // Ensure page has an origin for relative fetch() calls inside page.evaluate
+  await page.goto('/');
   // 1) Ensure operator with two homes exists
   const up = await request.post('/api/dev/upsert-operator', {
     data: {
@@ -23,7 +25,8 @@ test('operator can transfer an ACTIVE resident between homes', async ({ page, re
 
   // 2) Log in as operator (browser context so auth cookie is set correctly)
   const devLoginOk = await page.evaluate(async () => {
-    const r = await fetch('/api/dev/login', {
+    const abs = `${location.origin}/api/dev/login`;
+    const r = await fetch(abs, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: 'op-transfer@example.com' }),
@@ -35,12 +38,14 @@ test('operator can transfer an ACTIVE resident between homes', async ({ page, re
   // 3) Create family and resident directly via API, admitted to Home A
   // Create family for current user
   const family = await page.evaluate(async () => {
-    const r = await fetch('/api/user/family', { credentials: 'include' });
+    const abs = `${location.origin}/api/user/family`;
+    const r = await fetch(abs, { credentials: 'include' });
     if (!r.ok) throw new Error('family failed');
     return r.json();
   });
   const residentId = await page.evaluate(async (args) => {
-    const r = await fetch('/api/residents', {
+    const abs = `${location.origin}/api/residents`;
+    const r = await fetch(abs, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -71,7 +76,8 @@ test('operator can transfer an ACTIVE resident between homes', async ({ page, re
 
   // 6) Verify via API the resident homeId is now Home B
   const { newHomeId } = await page.evaluate(async (rid) => {
-    const r = await fetch(`/api/residents/${rid}`, { credentials: 'include' });
+    const abs = `${location.origin}/api/residents/${rid}`;
+    const r = await fetch(abs, { credentials: 'include' });
     if (!r.ok) throw new Error('get resident failed');
     const j = await r.json();
     return { newHomeId: j?.resident?.homeId ?? j?.homeId };
