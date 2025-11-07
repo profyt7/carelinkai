@@ -77,10 +77,19 @@ test('operator can transfer an ACTIVE resident between homes', async ({ page, re
   // 6) Verify via API the resident homeId is now Home B
   const { newHomeId } = await page.evaluate(async (rid) => {
     const abs = `${location.origin}/api/residents/${rid}`;
-    const r = await fetch(abs, { credentials: 'include' });
-    if (!r.ok) throw new Error('get resident failed');
-    const j = await r.json();
-    return { newHomeId: j?.resident?.homeId ?? j?.homeId };
+    const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
+    for (let i = 0; i < 25; i++) {
+      try {
+        const r = await fetch(abs, { credentials: 'include' });
+        if (r.ok) {
+          const j = await r.json();
+          const hid = j?.resident?.homeId ?? j?.homeId;
+          if (hid) return { newHomeId: hid };
+        }
+      } catch {}
+      await sleep(200);
+    }
+    throw new Error('get resident failed (poll timeout)');
   }, residentId);
   expect(newHomeId).toBe(homeB.id);
 });
