@@ -30,10 +30,9 @@ async function upsertOperatorWithHomes() {
     update: { companyName: 'CareLink Seed Ops' },
     create: { userId: user.id, companyName: 'CareLink Seed Ops' },
   });
-  const homeA = await prisma.assistedLivingHome.upsert({
-    where: { id: (await prisma.assistedLivingHome.findFirst({ where: { name: 'Sunrise Villa' } }))?.id || '' },
-    update: {},
-    create: {
+  const existingA = await prisma.assistedLivingHome.findFirst({ where: { name: 'Sunrise Villa' } });
+  const homeA = existingA ?? await prisma.assistedLivingHome.create({
+    data: {
       operatorId: operator.id,
       name: 'Sunrise Villa',
       description: 'Seeded facility A',
@@ -42,23 +41,11 @@ async function upsertOperatorWithHomes() {
       amenities: ['Meals', '24/7 Care', 'Garden'],
       careLevel: ['ASSISTED'],
     },
-  }).catch(async () => {
-    return prisma.assistedLivingHome.create({
-      data: {
-        operatorId: operator.id,
-        name: 'Sunrise Villa',
-        description: 'Seeded facility A',
-        capacity: 50,
-        currentOccupancy: 10,
-        amenities: ['Meals', '24/7 Care', 'Garden'],
-        careLevel: ['ASSISTED'],
-      },
-    });
   });
-  const homeB = await prisma.assistedLivingHome.upsert({
-    where: { id: (await prisma.assistedLivingHome.findFirst({ where: { name: 'Maple Grove' } }))?.id || '' },
-    update: {},
-    create: {
+
+  const existingB = await prisma.assistedLivingHome.findFirst({ where: { name: 'Maple Grove' } });
+  const homeB = existingB ?? await prisma.assistedLivingHome.create({
+    data: {
       operatorId: operator.id,
       name: 'Maple Grove',
       description: 'Seeded facility B',
@@ -67,18 +54,6 @@ async function upsertOperatorWithHomes() {
       amenities: ['Activities', 'Laundry', 'Transportation'],
       careLevel: ['ASSISTED', 'MEMORY_CARE'],
     },
-  }).catch(async () => {
-    return prisma.assistedLivingHome.create({
-      data: {
-        operatorId: operator.id,
-        name: 'Maple Grove',
-        description: 'Seeded facility B',
-        capacity: 40,
-        currentOccupancy: 8,
-        amenities: ['Activities', 'Laundry', 'Transportation'],
-        careLevel: ['ASSISTED', 'MEMORY_CARE'],
-      },
-    });
   });
   return { user, operator, homeA, homeB };
 }
@@ -99,13 +74,17 @@ async function upsertFamilies() {
   return families;
 }
 
-function randomChoice<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.length)]; }
+function randomChoice<T>(arr: readonly T[]): T {
+  const idx = Math.floor(Math.random() * arr.length);
+  return arr[idx]!;
+}
 
 async function createResidents(homes: [string, string], families: { id: string }[]) {
   const [homeAId, homeBId] = homes;
+  if (!families.length) throw new Error('No families available to assign residents');
   const statuses: ResidentStatus[] = [ResidentStatus.ACTIVE, ResidentStatus.DISCHARGED, ResidentStatus.PENDING, ResidentStatus.INQUIRY];
-  const genders = ['MALE', 'FEMALE', 'OTHER'];
-  const payerTypes = ['PRIVATE_PAY', 'MEDICAID', 'MEDICARE', 'LTC_INSURANCE'];
+  const genders = ['MALE', 'FEMALE', 'OTHER'] as const;
+  const payerTypes = ['PRIVATE_PAY', 'MEDICAID', 'MEDICARE', 'LTC_INSURANCE'] as const;
   const names: Array<[string, string]> = [
     ['Alice','Morgan'],['Ben','Lee'],['Carla','Rodriguez'],['Daniel','Ng'],['Ella','Chen'],
     ['Frank','Ibrahim'],['Grace','Kim'],['Hector','Garcia'],['Isla','Patel'],['Jack','Olsen'],['Kara','Singh'],['Leo','Mendes']
@@ -113,12 +92,12 @@ async function createResidents(homes: [string, string], families: { id: string }
 
   const created: string[] = [];
   for (let i = 0; i < names.length; i++) {
-    const [firstName, lastName] = names[i];
-    const fam = families[i % families.length];
+    const [firstName, lastName] = names[i]!;
+    const fam = families[i % families.length]!;
     const homeId = i % 2 === 0 ? homeAId : homeBId;
     const status = i < 8 ? ResidentStatus.ACTIVE : ResidentStatus.DISCHARGED; // mix
     const roomNumber = `${i % 2 === 0 ? 'A' : 'B'}-${100 + i}`;
-    const payerType = payerTypes[i % payerTypes.length];
+    const payerType = payerTypes[i % payerTypes.length]!;
     const dob = new Date(1940, (i % 12), 1 + (i % 28));
     const admissionDate = status === ResidentStatus.ACTIVE ? new Date(Date.now() - (30 - i) * 86400000) : new Date(Date.now() - (200 + i) * 86400000);
     const dischargeDate = status === ResidentStatus.DISCHARGED ? new Date(Date.now() - (10 + i) * 86400000) : null;
@@ -147,7 +126,7 @@ async function createResidents(homes: [string, string], families: { id: string }
         status: 'CONFIRMED',
         moveInDate: admissionDate as any,
         moveOutDate: dischargeDate as any,
-        monthlyRate: (3000 + (i * 50)).toFixed(2) as any,
+        monthlyRate: 3000 + (i * 50) as any,
         notes: `Room ${roomNumber} - ${payerType}`,
       },
     });
@@ -217,16 +196,16 @@ async function addFacilityCompliance(homeIds: string[], residentIds: string[]) {
 
 async function addAdmissionFitScores(homeIds: string[], residentIds: string[]) {
   // 6 AIMatchingData rows with last one recent
-  const pairs = [
-    [residentIds[0], homeIds[0]],
-    [residentIds[1], homeIds[1]],
-    [residentIds[2], homeIds[0]],
-    [residentIds[3], homeIds[1]],
-    [residentIds[4], homeIds[0]],
-    [residentIds[5], homeIds[1]],
-  ] as const;
+  const pairs: Array<[string, string]> = [
+    [residentIds[0]!, homeIds[0]!],
+    [residentIds[1]!, homeIds[1]!],
+    [residentIds[2]!, homeIds[0]!],
+    [residentIds[3]!, homeIds[1]!],
+    [residentIds[4]!, homeIds[0]!],
+    [residentIds[5]!, homeIds[1]!],
+  ];
   for (let i = 0; i < pairs.length; i++) {
-    const [residentId, homeId] = pairs[i];
+    const [residentId, homeId] = pairs[i]!;
     await prisma.aIMatchingData.create({
       data: {
         residentId,
