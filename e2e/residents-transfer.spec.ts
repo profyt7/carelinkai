@@ -60,5 +60,6 @@ test('operator can transfer an ACTIVE resident between homes', async ({ page, re
   const getRes = await request.get(`/api/residents/${residentId}`);
   expect(getRes.ok()).toBeTruthy();
   const resJson = await getRes.json();
-  expect(resJson.homeId).toBe(homeB.id);
+  const newHomeId = resJson?.resident?.homeId ?? resJson?.homeId;
+  expect(newHomeId).toBe(homeB.id);
 });
