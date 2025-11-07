@@ -57,7 +57,7 @@ test('operator can transfer an ACTIVE resident between homes', async ({ page, re
     if (!r.ok) throw new Error('resident create failed');
     const j = await r.json();
     return j.id as string;
-  }, { familyId: family.id as string, homeAId: homeA.id as string });
+  }, { familyId: (family.familyId as string), homeAId: homeA.id as string });
 
   // 4) Navigate to operator residents page
   await page.goto('/operator/residents');
