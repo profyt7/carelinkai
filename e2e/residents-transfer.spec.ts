@@ -21,17 +21,24 @@ test('operator can transfer an ACTIVE resident between homes', async ({ page, re
   const upJson = await up.json();
   const [homeA, homeB] = upJson.homes as Array<{ id: string; name: string }>;
 
-  // 2) Log in as operator
-  const login = await request.post('/api/dev/login', { data: { email: 'op-transfer@example.com' } });
-  expect(login.ok()).toBeTruthy();
-  const cookies = (await login.json()).cookies as Array<{ name: string; value: string; domain?: string; path?: string }>;
-  for (const c of cookies) await page.context().addCookies([{ name: c.name, value: c.value, domain: 'localhost', path: c.path ?? '/' }]);
+  // 2) Log in as operator (browser context so auth cookie is set correctly)
+  const devLoginOk = await page.evaluate(async () => {
+    const r = await fetch('/api/dev/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'op-transfer@example.com' }),
+    });
+    return r.ok;
+  });
+  expect(devLoginOk).toBeTruthy();
 
   // 3) Create family and resident directly via API, admitted to Home A
   // Create family for current user
-  const famRes = await request.get('/api/user/family');
-  expect(famRes.ok()).toBeTruthy();
-  const family = await famRes.json();
+  const family = await page.evaluate(async () => {
+    const r = await fetch('/api/user/family', { credentials: 'include' });
+    if (!r.ok) throw new Error('family failed');
+    return r.json();
+  });
   const create = await request.post('/api/residents', {
     data: {
       familyId: family.id,

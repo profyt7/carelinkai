@@ -86,7 +86,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to ensure homes' }, { status: 500 });
     }
 
-    return NextResponse.json({ homes: ensured });
+    // Back-compat: include homeId of the first ensured home for older tests
+    return NextResponse.json({ homes: ensured, homeId: ensured[0]?.id });
   } catch (e) {
     console.error('dev upsert-operator error', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
