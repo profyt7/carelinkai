@@ -66,7 +66,7 @@ async function upsertFamilies() {
     const u = await prisma.user.upsert({
       where: { email },
       update: { passwordHash: pwd, status: UserStatus.ACTIVE, role: UserRole.FAMILY },
-      create: { email, firstName: 'Family', lastName: email.split('@')[0], passwordHash: pwd, role: UserRole.FAMILY, status: UserStatus.ACTIVE },
+      create: { email, firstName: 'Family', lastName: email.split('@')[0]!, passwordHash: pwd, role: UserRole.FAMILY, status: UserStatus.ACTIVE },
     });
     const f = await prisma.family.upsert({ where: { userId: u.id }, update: {}, create: { userId: u.id } });
     families.push(f);
@@ -140,7 +140,7 @@ async function addAssessments(residentIds: string[]) {
   // For 6 residents, add 1–2 AssessmentResult (ADL/FallRisk)
   const subset = residentIds.slice(0, 6);
   for (let i = 0; i < subset.length; i++) {
-    const residentId = subset[i];
+    const residentId = subset[i]!;
     await prisma.assessmentResult.create({ data: { residentId, type: 'ADL', score: 10 + i, data: { ambulation: i % 2 ? 'assisted' : 'independent' } } });
     if (i % 2 === 0) {
       await prisma.assessmentResult.create({ data: { residentId, type: 'FALL_RISK', score: 3 + (i % 5), data: { history: i % 3 ? 'none' : 'prior fall' } } });
@@ -153,12 +153,12 @@ async function addIncidents(residentIds: string[]) {
   const severities = ['LOW', 'MEDIUM', 'HIGH', 'SEVERE'];
   const subset = residentIds.slice(6, 10);
   for (let i = 0; i < subset.length; i++) {
-    const residentId = subset[i];
+    const residentId = subset[i]!;
     await prisma.residentIncident.create({
       data: {
         residentId,
         type: 'Fall',
-        severity: severities[i % severities.length],
+        severity: severities[i % severities.length]!,
         occurredAt: new Date(Date.now() - (i + 1) * 86400000),
         description: 'Seeded incident record',
       },
