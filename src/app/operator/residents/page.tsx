@@ -77,7 +77,7 @@ export default async function ResidentsPage({ searchParams }: { searchParams?: {
             {/* Assumption: Operator should filter by their homes; provide a dropdown for convenience */}
             <select name="homeId" defaultValue={homeId} className="border rounded px-2 py-1 text-sm">
               <option value="">All Homes</option>
-              {homes.map(h => (
+              {homes.map((h: { id: string; name: string }) => (
                 <option key={h.id} value={h.id}>{h.name}</option>
               ))}
             </select>
