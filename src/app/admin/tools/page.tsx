@@ -19,6 +19,9 @@ export default function AdminToolsPage() {
   const [mockLoading, setMockLoading] = useState(false);
   const [mockEnabled, setMockEnabled] = useState<boolean | null>(null);
   const [mockError, setMockError] = useState<string | null>(null);
+  const [seedLoading, setSeedLoading] = useState(false);
+  const [seedError, setSeedError] = useState<string | null>(null);
+  const [seedResult, setSeedResult] = useState<string | null>(null);
 
   // Check authorization
   useEffect(() => {
@@ -79,10 +82,35 @@ export default function AdminToolsPage() {
       }
       const j = await res.json();
       setMockEnabled(!!j?.show);
+      // If enabling, try auto-seed demo data
+      if (on) {
+        await seedDemo();
+      }
     } catch (e: any) {
       setMockError("Unable to toggle mock mode");
     } finally {
       setMockLoading(false);
+    }
+  };
+
+  const seedDemo = async () => {
+    try {
+      setSeedLoading(true);
+      setSeedError(null);
+      setSeedResult(null);
+      const res = await fetch('/api/admin/seed-demo', { method: 'POST', cache: 'no-store', credentials: 'include' as RequestCredentials });
+      if (!res.ok) {
+        const text = (await res.text()) || 'Failed to seed demo data';
+        setSeedError(res.status === 403 ? 'Admin privilege required or disabled in production' : text);
+        return;
+      }
+      const j = await res.json();
+      const homes = Array.isArray(j?.homes) ? j.homes.map((h: any) => h.name).join(', ') : 'homes created';
+      setSeedResult(`Demo data created: ${j?.residents?.length ?? 0} residents across ${homes}`);
+    } catch (e) {
+      setSeedError('Unable to seed demo data');
+    } finally {
+      setSeedLoading(false);
     }
   };
 
@@ -131,11 +159,28 @@ export default function AdminToolsPage() {
               >
                 Disable
               </button>
+              <button
+                onClick={seedDemo}
+                disabled={!isAdmin || seedLoading}
+                className="rounded-md border px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+              >
+                {seedLoading ? 'Seeding…' : 'Generate Demo Data'}
+              </button>
             </div>
           </div>
           {mockError && (
             <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
               {mockError}
+            </div>
+          )}
+          {seedError && (
+            <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+              {seedError}
+            </div>
+          )}
+          {seedResult && (
+            <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+              {seedResult}
             </div>
           )}
           <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3 text-xs text-neutral-700">
