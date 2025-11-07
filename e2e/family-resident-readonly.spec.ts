@@ -10,7 +10,7 @@ test.describe('Family Portal - Resident Read-only Views', () => {
     const famEmail = `family.e2e+${Date.now()}@carelinkai.com`;
     await page.goto('/');
     const upsertRes = await page.evaluate(async (email) => {
-      const res = await fetch('/api/dev/upsert-family', {
+      const res = await fetch(`${location.origin}/api/dev/upsert-family`, {
         method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ email })
       });
@@ -21,7 +21,7 @@ test.describe('Family Portal - Resident Read-only Views', () => {
 
     // 2) Seed a resident for this family with contacts and compliance
     const seedRes = await page.evaluate(async (familyId) => {
-      const res = await fetch('/api/dev/seed-family-resident', {
+      const res = await fetch(`${location.origin}/api/dev/seed-family-resident`, {
         method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ familyId })
       });
@@ -32,7 +32,7 @@ test.describe('Family Portal - Resident Read-only Views', () => {
 
     // 3) Login as this family user via dev helper
     const loginRes = await page.evaluate(async (email) => {
-      const res = await fetch('/api/dev/login', {
+      const res = await fetch(`${location.origin}/api/dev/login`, {
         method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ email })
       });

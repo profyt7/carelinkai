@@ -6,6 +6,8 @@ import { test, expect } from '@playwright/test';
 // - Residents list shows actions; home name is not displayed, so we verify via API
 
 test('operator can transfer an ACTIVE resident between homes', async ({ page, request }) => {
+  // Ensure page has an origin for relative fetch() calls inside page.evaluate
+  await page.goto('/');
   // 1) Ensure operator with two homes exists
   const up = await request.post('/api/dev/upsert-operator', {
     data: {
@@ -21,30 +23,46 @@ test('operator can transfer an ACTIVE resident between homes', async ({ page, re
   const upJson = await up.json();
   const [homeA, homeB] = upJson.homes as Array<{ id: string; name: string }>;
 
-  // 2) Log in as operator
-  const login = await request.post('/api/dev/login', { data: { email: 'op-transfer@example.com' } });
-  expect(login.ok()).toBeTruthy();
-  const cookies = (await login.json()).cookies as Array<{ name: string; value: string; domain?: string; path?: string }>;
-  for (const c of cookies) await page.context().addCookies([{ name: c.name, value: c.value, domain: 'localhost', path: c.path ?? '/' }]);
+  // 2) Log in as operator (browser context so auth cookie is set correctly)
+  const devLoginOk = await page.evaluate(async () => {
+    const abs = `${location.origin}/api/dev/login`;
+    const r = await fetch(abs, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'op-transfer@example.com' }),
+    });
+    return r.ok;
+  });
+  expect(devLoginOk).toBeTruthy();
 
   // 3) Create family and resident directly via API, admitted to Home A
   // Create family for current user
-  const famRes = await request.get('/api/user/family');
-  expect(famRes.ok()).toBeTruthy();
-  const family = await famRes.json();
-  const create = await request.post('/api/residents', {
-    data: {
-      familyId: family.id,
-      firstName: 'Trans',
-      lastName: 'Fer',
-      dateOfBirth: '1950-01-01',
-      gender: 'FEMALE',
-      status: 'ACTIVE',
-      homeId: homeA.id,
-    },
+  const family = await page.evaluate(async () => {
+    const abs = `${location.origin}/api/user/family`;
+    const r = await fetch(abs, { credentials: 'include' });
+    if (!r.ok) throw new Error('family failed');
+    return r.json();
   });
-  expect(create.ok()).toBeTruthy();
-  const { id: residentId } = await create.json();
+  const residentId = await page.evaluate(async (args) => {
+    const abs = `${location.origin}/api/residents`;
+    const r = await fetch(abs, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        familyId: args.familyId,
+        firstName: 'Trans',
+        lastName: 'Fer',
+        dateOfBirth: '1950-01-01',
+        gender: 'FEMALE',
+        status: 'ACTIVE',
+        homeId: args.homeAId,
+      }),
+    });
+    if (!r.ok) throw new Error('resident create failed');
+    const j = await r.json();
+    return j.id as string;
+  }, { familyId: (family.familyId as string), homeAId: homeA.id as string });
 
   // 4) Navigate to operator residents page
   await page.goto('/operator/residents');
@@ -57,8 +75,21 @@ test('operator can transfer an ACTIVE resident between homes', async ({ page, re
   await row.getByRole('button', { name: 'Go' }).click();
 
   // 6) Verify via API the resident homeId is now Home B
-  const getRes = await request.get(`/api/residents/${residentId}`);
-  expect(getRes.ok()).toBeTruthy();
-  const resJson = await getRes.json();
-  expect(resJson.homeId).toBe(homeB.id);
+  const { newHomeId } = await page.evaluate(async (rid) => {
+    const abs = `${location.origin}/api/residents/${rid}`;
+    const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
+    for (let i = 0; i < 25; i++) {
+      try {
+        const r = await fetch(abs, { credentials: 'include' });
+        if (r.ok) {
+          const j = await r.json();
+          const hid = j?.resident?.homeId ?? j?.homeId;
+          if (hid) return { newHomeId: hid };
+        }
+      } catch {}
+      await sleep(200);
+    }
+    throw new Error('get resident failed (poll timeout)');
+  }, residentId);
+  expect(newHomeId).toBe(homeB.id);
 });
