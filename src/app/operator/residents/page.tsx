@@ -106,7 +106,7 @@ export default async function ResidentsPage({ searchParams }: { searchParams?: {
                 <td className="px-4 py-2 text-sm text-neutral-800">{r.firstName} {r.lastName}</td>
                 <td className="px-4 py-2 text-sm text-neutral-700"><StatusPill status={r.status} /></td>
                 <td className="px-4 py-2 text-right flex items-center gap-3 justify-end">
-                  <InlineActions id={r.id} status={r.status} />
+                  <InlineActions id={r.id} status={r.status} homes={homes} />
                   <Link className="text-primary-600 hover:underline text-sm" href={`/operator/residents/${r.id}`}>Details</Link>
                 </td>
               </tr>
