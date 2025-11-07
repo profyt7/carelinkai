@@ -23,6 +23,19 @@ async function fetchResidents(params: { q?: string; status?: string; homeId?: st
   return res.json();
 }
 
+async function fetchHomes() {
+  // Server-side same-origin fetch with cookies for RBAC scoping to operator homes
+  const cookieHeader = cookies().toString();
+  const h = headers();
+  const proto = h.get('x-forwarded-proto') ?? 'https';
+  const host = h.get('host') ?? '';
+  const origin = `${proto}://${host}`;
+  const res = await fetch(`${origin}/api/operator/homes`, { cache: 'no-store', headers: { cookie: cookieHeader } });
+  if (!res.ok) return { homes: [] as Array<{ id: string; name: string }> };
+  const json = await res.json();
+  return { homes: (json.homes ?? []).map((h: any) => ({ id: h.id, name: h.name })) };
+}
+
 export default async function ResidentsPage({ searchParams }: { searchParams?: { q?: string; status?: string; homeId?: string; familyId?: string; cursor?: string } }) {
   if (process.env['NEXT_PUBLIC_RESIDENTS_ENABLED'] === 'false') return notFound();
   const mockCookie = cookies().get('carelink_mock_mode')?.value?.toString().trim().toLowerCase() || '';
@@ -32,9 +45,8 @@ export default async function ResidentsPage({ searchParams }: { searchParams?: {
   const homeId = searchParams?.homeId?.toString() || '';
   const familyId = searchParams?.familyId?.toString() || '';
   const cursor = searchParams?.cursor?.toString() || '';
-  const data = showMock
-    ? MOCK_RESIDENTS
-    : await fetchResidents({ q, status, homeId, familyId, cursor });
+  const data = showMock ? MOCK_RESIDENTS : await fetchResidents({ q, status, homeId, familyId, cursor });
+  const { homes } = showMock ? { homes: [] as Array<{ id: string; name: string }> } : await fetchHomes();
   const items: Array<{ id: string; firstName: string; lastName: string; status: string }> = Array.isArray(data) ? data : (data.items ?? []);
   const nextCursor = Array.isArray(data) ? null : (data.nextCursor ?? null);
   const h = headers();
@@ -62,10 +74,17 @@ export default async function ResidentsPage({ searchParams }: { searchParams?: {
               <option value="DISCHARGED">Discharged</option>
               <option value="DECEASED">Deceased</option>
             </select>
-            <input type="text" name="homeId" placeholder="Home ID" defaultValue={homeId} className="border rounded px-2 py-1 text-sm" />
+            {/* Assumption: Operator should filter by their homes; provide a dropdown for convenience */}
+            <select name="homeId" defaultValue={homeId} className="border rounded px-2 py-1 text-sm">
+              <option value="">All Homes</option>
+              {homes.map((h: { id: string; name: string }) => (
+                <option key={h.id} value={h.id}>{h.name}</option>
+              ))}
+            </select>
             <input type="text" name="familyId" placeholder="Family ID" defaultValue={familyId} className="border rounded px-2 py-1 text-sm" />
             <button className="btn btn-sm" type="submit">Search</button>
           </form>
+          {/* Assumption: same-origin CSV export endpoint; preserves current filters; filename hint for UX */}
           <a className="btn btn-sm" download="residents.csv" href={`${origin}/api/residents?limit=1000${q ? `&q=${encodeURIComponent(q)}` : ''}${status ? `&status=${encodeURIComponent(status)}` : ''}${homeId ? `&homeId=${encodeURIComponent(homeId)}` : ''}${familyId ? `&familyId=${encodeURIComponent(familyId)}` : ''}&format=csv`}>
             Export CSV
           </a>
