@@ -39,19 +39,25 @@ test('operator can transfer an ACTIVE resident between homes', async ({ page, re
     if (!r.ok) throw new Error('family failed');
     return r.json();
   });
-  const create = await request.post('/api/residents', {
-    data: {
-      familyId: family.id,
-      firstName: 'Trans',
-      lastName: 'Fer',
-      dateOfBirth: '1950-01-01',
-      gender: 'FEMALE',
-      status: 'ACTIVE',
-      homeId: homeA.id,
-    },
-  });
-  expect(create.ok()).toBeTruthy();
-  const { id: residentId } = await create.json();
+  const residentId = await page.evaluate(async (args) => {
+    const r = await fetch('/api/residents', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        familyId: args.familyId,
+        firstName: 'Trans',
+        lastName: 'Fer',
+        dateOfBirth: '1950-01-01',
+        gender: 'FEMALE',
+        status: 'ACTIVE',
+        homeId: args.homeAId,
+      }),
+    });
+    if (!r.ok) throw new Error('resident create failed');
+    const j = await r.json();
+    return j.id as string;
+  }, { familyId: family.id as string, homeAId: homeA.id as string });
 
   // 4) Navigate to operator residents page
   await page.goto('/operator/residents');
@@ -64,9 +70,11 @@ test('operator can transfer an ACTIVE resident between homes', async ({ page, re
   await row.getByRole('button', { name: 'Go' }).click();
 
   // 6) Verify via API the resident homeId is now Home B
-  const getRes = await request.get(`/api/residents/${residentId}`);
-  expect(getRes.ok()).toBeTruthy();
-  const resJson = await getRes.json();
-  const newHomeId = resJson?.resident?.homeId ?? resJson?.homeId;
+  const { newHomeId } = await page.evaluate(async (rid) => {
+    const r = await fetch(`/api/residents/${rid}`, { credentials: 'include' });
+    if (!r.ok) throw new Error('get resident failed');
+    const j = await r.json();
+    return { newHomeId: j?.resident?.homeId ?? j?.homeId };
+  }, residentId);
   expect(newHomeId).toBe(homeB.id);
 });
