@@ -1,9 +1,13 @@
 "use client";
 import { useTransition, useState } from 'react';
 
-export function InlineActions({ id, status }: { id: string; status: string }) {
+type HomeOption = { id: string; name: string };
+
+export function InlineActions({ id, status, homes = [] as HomeOption[] }: { id: string; status: string; homes?: HomeOption[] }) {
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
+  const [showTransfer, setShowTransfer] = useState(false);
+  const [targetHomeId, setTargetHomeId] = useState<string>(homes[0]?.id ?? "");
   async function call(path: string, body: any) {
     setErr(null);
     const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -35,6 +39,41 @@ export function InlineActions({ id, status }: { id: string; status: string }) {
             disabled={pending}
             onClick={() => start(async () => { await call(`/api/residents/${id}/discharge`, { dischargeDate: today, status: 'DECEASED' }); location.reload(); })}
           >Deceased</button>
+          <div className="relative inline-flex items-center">
+            <button
+              type="button"
+              className="btn btn-xs"
+              onClick={() => setShowTransfer((v) => !v)}
+              disabled={pending}
+            >Transfer</button>
+            {showTransfer && (
+              <div className="absolute z-10 top-full right-0 mt-1 p-2 bg-white border rounded shadow min-w-[220px]">
+                <div className="flex items-center gap-2">
+                  <select
+                    className="border rounded px-2 py-1 text-xs max-w-[160px]"
+                    value={targetHomeId}
+                    onChange={(e) => setTargetHomeId(e.target.value)}
+                  >
+                    <option value="">Select home…</option>
+                    {homes.map((h) => (
+                      <option key={h.id} value={h.id}>{h.name}</option>
+                    ))}
+                  </select>
+                  <button
+                    className="btn btn-xs"
+                    disabled={pending || !targetHomeId}
+                    onClick={() => start(async () => {
+                      const ok = await call(`/api/residents/${id}/transfer`, { homeId: targetHomeId, effectiveDate: new Date().toISOString() });
+                      if (ok) {
+                        setShowTransfer(false);
+                        location.reload();
+                      }
+                    })}
+                  >Go</button>
+                </div>
+              </div>
+            )}
+          </div>
         </>
       )}
       {err && <span className="text-xs text-red-600">{err}</span>}
