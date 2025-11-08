@@ -30,7 +30,7 @@ test('assessments + incidents CRUD and profile edit', async ({ page, request }) 
   const residentId = await page.evaluate(async (args) => {
     const r = await fetch(`${location.origin}/api/residents`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-      body: JSON.stringify({ familyId: args.familyId, firstName: 'Assess', lastName: ' Inc', dateOfBirth: '1944-04-04', gender: 'OTHER', status: 'ACTIVE' })
+      body: JSON.stringify({ familyId: args.familyId, firstName: 'Assess', lastName: 'Inc', dateOfBirth: '1944-04-04', gender: 'OTHER', status: 'ACTIVE' })
     });
     if (!r.ok) throw new Error('resident create failed');
     const j = await r.json();
@@ -76,7 +76,7 @@ test('assessments + incidents CRUD and profile edit', async ({ page, request }) 
   await page.getByRole('link', { name: 'Edit' }).click();
   await expect(page.getByRole('heading', { name: 'Edit Resident' })).toBeVisible();
   const lastNameInput = page.getByPlaceholder('Last name');
-  await lastNameInput.fill(' Edited');
+  await lastNameInput.fill('Edited');
   await page.getByRole('button', { name: 'Save Changes' }).click();
 
   // Back on detail page; verify name reflects edit
