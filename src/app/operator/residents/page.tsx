@@ -36,16 +36,18 @@ async function fetchHomes() {
   return { homes: (json.homes ?? []).map((h: any) => ({ id: h.id, name: h.name })) };
 }
 
-export default async function ResidentsPage({ searchParams }: { searchParams?: { q?: string; status?: string; homeId?: string; familyId?: string; cursor?: string } }) {
+export default async function ResidentsPage({ searchParams }: { searchParams?: { q?: string; status?: string; homeId?: string; familyId?: string; cursor?: string; live?: string } }) {
   if (process.env['NEXT_PUBLIC_RESIDENTS_ENABLED'] === 'false') return notFound();
   const mockCookie = cookies().get('carelink_mock_mode')?.value?.toString().trim().toLowerCase() || '';
   const showMock = ['1','true','yes','on'].includes(mockCookie);
+  const liveCookie = cookies().get('carelink_show_live')?.value?.toString().trim().toLowerCase() || '';
+  const forceLive = ['1','true','yes','on'].includes(liveCookie) || ['1','true','yes','on'].includes((searchParams?.live ?? '').toString().trim().toLowerCase());
   const q = searchParams?.q?.toString() || '';
   const status = searchParams?.status?.toString() || '';
   const homeId = searchParams?.homeId?.toString() || '';
   const familyId = searchParams?.familyId?.toString() || '';
   const cursor = searchParams?.cursor?.toString() || '';
-  const data = showMock ? MOCK_RESIDENTS : await fetchResidents({ q, status, homeId, familyId, cursor });
+  const data = showMock && !forceLive ? MOCK_RESIDENTS : await fetchResidents({ q, status, homeId, familyId, cursor });
   const { homes } = showMock ? { homes: [] as Array<{ id: string; name: string }> } : await fetchHomes();
   const items: Array<{ id: string; firstName: string; lastName: string; status: string }> = Array.isArray(data) ? data : (data.items ?? []);
   const nextCursor = Array.isArray(data) ? null : (data.nextCursor ?? null);
@@ -84,6 +86,22 @@ export default async function ResidentsPage({ searchParams }: { searchParams?: {
             <input type="text" name="familyId" placeholder="Family ID" defaultValue={familyId} className="border rounded px-2 py-1 text-sm" />
             <button className="btn btn-sm" type="submit">Search</button>
           </form>
+          {showMock && (
+            <form action="/operator/residents" className="inline">
+              <input type="hidden" name="live" value={forceLive ? '' : '1'} />
+              <button
+                className="btn btn-sm"
+                formAction={(async () => {
+                  'use server';
+                  const cookieStore = cookies();
+                  try { cookieStore.set('carelink_show_live', forceLive ? '0' : '1', { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', path: '/', maxAge: 60*60*6 }); } catch {}
+                })}
+                type="submit"
+              >
+                {forceLive ? 'Showing Live' : 'Show Live Data'}
+              </button>
+            </form>
+          )}
           {/* Assumption: same-origin CSV export endpoint; preserves current filters; filename hint for UX */}
           <a className="btn btn-sm" download="residents.csv" href={`${origin}/api/residents?limit=1000${q ? `&q=${encodeURIComponent(q)}` : ''}${status ? `&status=${encodeURIComponent(status)}` : ''}${homeId ? `&homeId=${encodeURIComponent(homeId)}` : ''}${familyId ? `&familyId=${encodeURIComponent(familyId)}` : ''}&format=csv`}>
             Export CSV

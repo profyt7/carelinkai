@@ -8,6 +8,9 @@ import { CreateAssessmentForm } from '@/components/operator/residents/forms/Crea
 import { CreateIncidentForm } from '@/components/operator/residents/forms/CreateIncidentForm';
 import { CompliancePanel } from '@/components/operator/residents/CompliancePanel';
 import { ContactsPanel } from '@/components/operator/residents/ContactsPanel';
+import { DocumentsPanel } from '@/components/operator/residents/DocumentsPanel';
+import { AssessmentsList } from '@/components/operator/residents/AssessmentsList';
+import { IncidentsList } from '@/components/operator/residents/IncidentsList';
 
 async function fetchResident(id: string) {
   const cookieHeader = cookies().toString();
@@ -104,22 +107,17 @@ export default async function ResidentDetail({ params }: { params: { id: string 
         <section className="lg:col-span-3">
           <ContactsPanel residentId={resident.id} />
         </section>
+        <section className="lg:col-span-3">
+          <DocumentsPanel residentId={resident.id} />
+        </section>
         <section className="card">
           <h2 className="font-semibold mb-2 text-neutral-800">Assessments</h2>
-          <ul className="text-sm list-disc ml-4">
-            {(assessments.items ?? []).map((a: any) => (
-              <li key={a.id}>{a.type} {a.score != null ? `(score: ${a.score})` : ''}</li>
-            ))}
-          </ul>
+          <AssessmentsList residentId={resident.id} items={(assessments.items ?? []) as any[]} />
           <CreateAssessmentForm residentId={resident.id} />
         </section>
         <section className="card">
           <h2 className="font-semibold mb-2 text-neutral-800">Incidents</h2>
-          <ul className="text-sm list-disc ml-4">
-            {(incidents.items ?? []).map((i: any) => (
-              <li key={i.id}>{i.type} (severity: {i.severity})</li>
-            ))}
-          </ul>
+          <IncidentsList residentId={resident.id} items={(incidents.items ?? []) as any[]} />
           <CreateIncidentForm residentId={resident.id} />
         </section>
         <section className="card">

@@ -41,3 +41,43 @@ jobs:
             fi
           done
           echo "All synthetic checks passed."
+
+      - name: Synthetic (optional): operator login + create/view resident
+        if: ${{ vars.OP_EMAIL != '' && vars.OP_PASSWORD != '' }}
+        env:
+          BASE: https://carelinkai.onrender.com
+          OP_EMAIL: ${{ vars.OP_EMAIL }}
+          OP_PASSWORD: ${{ vars.OP_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Attempting credentials login for operator to exercise residents API..."
+          tmpdir=$(mktemp -d)
+          COOKIES="$tmpdir/cookies.txt"
+          # 1) Get CSRF token
+          csrf=$(curl -sL -c "$COOKIES" -b "$COOKIES" "$BASE/api/auth/csrf" | jq -r '.csrfToken // empty')
+          if [ -z "$csrf" ]; then echo "Failed to fetch CSRF token" >&2; exit 1; fi
+          # 2) Credentials login
+          login_code=$(curl -s -o /dev/null -w "%{http_code}" -c "$COOKIES" -b "$COOKIES" \
+            -H 'content-type: application/x-www-form-urlencoded' \
+            --data-urlencode "csrfToken=$csrf" \
+            --data-urlencode "email=$OP_EMAIL" \
+            --data-urlencode "password=$OP_PASSWORD" \
+            --data-urlencode "callbackUrl=$BASE/" \
+            "$BASE/api/auth/callback/credentials")
+          echo "login -> $login_code"
+          if [ "$login_code" != "200" ] && [ "$login_code" != "302" ]; then echo "Login failed" >&2; exit 1; fi
+          # 3) Create a minimal family (idempotent) and resident
+          fam_code=$(curl -s -o /dev/null -w "%{http_code}" -c "$COOKIES" -b "$COOKIES" "$BASE/api/user/family") || true
+          echo "/api/user/family -> $fam_code"
+          # POST resident
+          rid=$(curl -s -c "$COOKIES" -b "$COOKIES" -H 'content-type: application/json' \
+            -d '{"firstName":"Syn","lastName":" Check","dateOfBirth":"1950-01-01","gender":"MALE","status":"ACTIVE"}' \
+            "$BASE/api/residents" | jq -r '.id // empty')
+          if [ -z "$rid" ]; then echo "Resident create failed" >&2; exit 1; fi
+          echo "Created resident: $rid"
+          # 4) View resident JSON
+          rcode=$(curl -s -o /dev/null -w "%{http_code}" -c "$COOKIES" -b "$COOKIES" "$BASE/api/residents/$rid")
+          echo "/api/residents/$rid -> $rcode"
+          if [ "$rcode" != "200" ]; then echo "Resident view failed" >&2; exit 1; fi
+          echo "Synthetic resident create/view passed"

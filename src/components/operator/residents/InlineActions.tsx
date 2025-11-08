@@ -1,5 +1,6 @@
 "use client";
 import { useTransition, useState } from 'react';
+import { toast } from 'react-hot-toast';
 
 type HomeOption = { id: string; name: string };
 
@@ -16,6 +17,7 @@ export function InlineActions({ id, status, homes = [] as HomeOption[] }: { id: 
       setErr(j.error || 'Action failed');
       return false;
     }
+    toast.success('Success');
     return true;
   }
   const today = new Date().toISOString().slice(0, 10);
@@ -25,19 +27,19 @@ export function InlineActions({ id, status, homes = [] as HomeOption[] }: { id: 
         <button
           className="btn btn-xs"
           disabled={pending}
-          onClick={() => start(async () => { await call(`/api/residents/${id}/admit`, { admissionDate: today }); location.reload(); })}
+          onClick={() => start(async () => { const ok = await call(`/api/residents/${id}/admit`, { admissionDate: today }); if (ok) location.reload(); })}
         >Admit</button>
       ) : (
         <>
           <button
             className="btn btn-xs"
             disabled={pending}
-            onClick={() => start(async () => { await call(`/api/residents/${id}/discharge`, { dischargeDate: today, status: 'DISCHARGED' }); location.reload(); })}
+            onClick={() => start(async () => { const ok = await call(`/api/residents/${id}/discharge`, { dischargeDate: today, status: 'DISCHARGED' }); if (ok) location.reload(); })}
           >Discharge</button>
           <button
             className="btn btn-xs btn-danger"
             disabled={pending}
-            onClick={() => start(async () => { await call(`/api/residents/${id}/discharge`, { dischargeDate: today, status: 'DECEASED' }); location.reload(); })}
+            onClick={() => start(async () => { const ok = await call(`/api/residents/${id}/discharge`, { dischargeDate: today, status: 'DECEASED' }); if (ok) location.reload(); })}
           >Deceased</button>
           <div className="relative inline-flex items-center">
             <button
