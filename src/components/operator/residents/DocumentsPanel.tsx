@@ -15,6 +15,8 @@ export function DocumentsPanel({ residentId }: { residentId: string }) {
   const [items, setItems] = useState<Doc[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [mode, setMode] = useState<'link' | 'upload'>('link');
+  const [file, setFile] = useState<File | null>(null);
   const [form, setForm] = useState<{ title: string; fileUrl: string; fileType: string; fileSize: string; isEncrypted: boolean }>({
     title: '',
     fileUrl: '',
@@ -46,26 +48,35 @@ export function DocumentsPanel({ residentId }: { residentId: string }) {
     e.preventDefault();
     setSaving(true);
     try {
-      const size = Number(form.fileSize);
-      if (!form.title || !form.fileUrl || !form.fileType || !Number.isFinite(size) || size <= 0) {
-        toast.error('Please fill in Title, File URL, Type, and positive Size');
-        return;
+      let payload: { title: string; fileUrl: string; fileType: string; fileSize: number; isEncrypted: boolean } | null = null;
+      if (mode === 'link') {
+        const size = Number(form.fileSize);
+        if (!form.title || !form.fileUrl || !form.fileType || !Number.isFinite(size) || size <= 0) {
+          toast.error('Please fill in Title, File URL, Type, and positive Size');
+          return;
+        }
+        payload = { title: form.title, fileUrl: form.fileUrl, fileType: form.fileType, fileSize: size, isEncrypted: form.isEncrypted };
+      } else {
+        // Upload mode with presigned URL (S3); fallback to mock when S3 is disabled
+        if (!file) { toast.error('Choose a file'); return; }
+        const contentType = file.type || 'application/octet-stream';
+        const presign = await fetch(`/api/uploads/presign`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contentType, residentId }),
+        });
+        if (!presign.ok) throw new Error('presign failed');
+        const p = await presign.json() as { mode: string; uploadUrl: string | null; publicUrl: string };
+        if (p.mode === 's3' && p.uploadUrl) {
+          const put = await fetch(p.uploadUrl, { method: 'PUT', headers: { 'Content-Type': contentType }, body: file });
+          if (!put.ok) throw new Error('upload failed');
+        }
+        payload = { title: form.title || file.name, fileUrl: p.publicUrl, fileType: contentType, fileSize: file.size, isEncrypted: form.isEncrypted };
       }
-      // Assumption: For simplicity we accept a direct URL. In production, use a presigned upload flow.
-      const r = await fetch(`/api/residents/${residentId}/documents`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: form.title,
-          fileUrl: form.fileUrl,
-          fileType: form.fileType,
-          fileSize: size,
-          isEncrypted: form.isEncrypted,
-        }),
-      });
+      const r = await fetch(`/api/residents/${residentId}/documents`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       if (!r.ok) throw new Error('create');
       toast.success('Document added');
       setForm({ title: '', fileUrl: '', fileType: '', fileSize: '', isEncrypted: true });
+      setFile(null);
       await load();
     } catch (e) {
       toast.error('Failed to add document');
@@ -91,11 +102,24 @@ export function DocumentsPanel({ residentId }: { residentId: string }) {
       <div className="flex items-center justify-between mb-3">
         <h2 className="font-semibold text-neutral-800">Documents</h2>
       </div>
+      <div className="flex items-center gap-3 mb-2 text-sm">
+        <label className="flex items-center gap-1"><input type="radio" checked={mode==='link'} onChange={() => setMode('link')} /> Link URL</label>
+        <label className="flex items-center gap-1"><input type="radio" checked={mode==='upload'} onChange={() => setMode('upload')} /> Upload file (presigned)</label>
+      </div>
       <form onSubmit={onAdd} className="grid grid-cols-1 lg:grid-cols-5 gap-2 mb-4">
         <input className="border rounded px-2 py-1 text-sm" placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-        <input className="border rounded px-2 py-1 text-sm lg:col-span-2" placeholder="File URL (https://...)" value={form.fileUrl} onChange={(e) => setForm({ ...form, fileUrl: e.target.value })} />
-        <input className="border rounded px-2 py-1 text-sm" placeholder="MIME Type (e.g. application/pdf)" value={form.fileType} onChange={(e) => setForm({ ...form, fileType: e.target.value })} />
-        <input className="border rounded px-2 py-1 text-sm" placeholder="Size (bytes)" value={form.fileSize} onChange={(e) => setForm({ ...form, fileSize: e.target.value })} />
+        {mode === 'link' ? (
+          <>
+            <input className="border rounded px-2 py-1 text-sm lg:col-span-2" placeholder="File URL (https://...)" value={form.fileUrl} onChange={(e) => setForm({ ...form, fileUrl: e.target.value })} />
+            <input className="border rounded px-2 py-1 text-sm" placeholder="MIME Type (e.g. application/pdf)" value={form.fileType} onChange={(e) => setForm({ ...form, fileType: e.target.value })} />
+            <input className="border rounded px-2 py-1 text-sm" placeholder="Size (bytes)" value={form.fileSize} onChange={(e) => setForm({ ...form, fileSize: e.target.value })} />
+          </>
+        ) : (
+          <>
+            <input className="border rounded px-2 py-1 text-sm lg:col-span-3" placeholder="MIME Type (e.g. application/pdf)" value={form.fileType} onChange={(e) => setForm({ ...form, fileType: e.target.value })} />
+            <input type="file" className="border rounded px-2 py-1 text-sm lg:col-span-2" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+          </>
+        )}
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" checked={form.isEncrypted} onChange={(e) => setForm({ ...form, isEncrypted: e.target.checked })} />
           <span>Encrypted</span>
