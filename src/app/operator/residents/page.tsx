@@ -27,7 +27,7 @@ async function fetchHomes() {
   // Server-side same-origin fetch with cookies for RBAC scoping to operator homes
   const cookieHeader = cookies().toString();
   const h = headers();
-  const proto = h.get('x-forwarded-proto') ?? 'https';
+  const proto = h.get('x-forwarded-proto') ?? 'http';
   const host = h.get('host') ?? '';
   const origin = `${proto}://${host}`;
   const res = await fetch(`${origin}/api/operator/homes`, { cache: 'no-store', headers: { cookie: cookieHeader } });
