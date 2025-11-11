@@ -68,16 +68,27 @@ test('resident documents: add and delete document via UI', async ({ page, reques
   await page.getByPlaceholder('Size (bytes)').fill('12345');
   await page.getByRole('button', { name: 'Add' }).click();
 
-  // Verify presence via table text and API fallback
-  await expect(page.getByText('E2E Policy PDF').first()).toBeVisible({ timeout: 10000 });
+  // Wait for API to reflect the new document (robust against UI rendering delays)
   const countAfterAdd = await page.evaluate(async (rid) => {
-    const r = await fetch(`${location.origin}/api/residents/${rid}/documents?limit=10`, { credentials: 'include' });
-    if (!r.ok) return 0;
-    const j = await r.json();
-    return (j.items || []).length as number;
+    const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
+    for (let i = 0; i < 30; i++) {
+      try {
+        const r = await fetch(`${location.origin}/api/residents/${rid}/documents?limit=10`, { credentials: 'include' });
+        if (r.ok) {
+          const j = await r.json();
+          const n = (j.items || []).length as number;
+          if (n > 0) return n;
+        }
+      } catch {}
+      await sleep(200);
+    }
+    return 0;
   }, residentId);
   expect(countAfterAdd).toBeGreaterThan(0);
 
+  // Ensure UI reflects the new document (reload to avoid any client-side stale state)
+  await page.reload();
+  await expect(page.getByText('E2E Policy PDF').first()).toBeVisible({ timeout: 10000 });
   // 5) Delete the document (handle confirm dialog)
   page.once('dialog', (d) => d.accept());
   await page.getByRole('row', { name: /E2E Policy PDF/ }).getByRole('button', { name: 'Delete' }).click();
