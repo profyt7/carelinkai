@@ -104,6 +104,7 @@
         "@types/jest": "^29.5.10",
         "@types/leaflet": "^1.9.20",
         "@types/node": "^20.10.0",
+        "@types/pdfkit": "^0.13.9",
         "@types/qrcode": "^1.5.5",
         "@types/react": "^18.2.38",
         "@types/react-dom": "^18.2.17",
@@ -132,7 +133,7 @@
     "jest": {
         "preset": "ts-jest",
         "testEnvironment": "node",
-    "globalTeardown": "<rootDir>/jest.teardown.js",
+        "globalTeardown": "<rootDir>/jest.teardown.js",
         "testPathIgnorePatterns": [
             "<rootDir>/e2e/",
             "<rootDir>/.next/"

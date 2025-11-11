@@ -48,7 +48,9 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     // Build PDF into a Buffer (small doc)
     const doc = new PDFDocument({ size: 'A4', margin: 50 });
     const chunks: Buffer[] = [];
-    doc.on('data', (c) => chunks.push(c as Buffer));
+    doc.on('data', (c: Buffer | Uint8Array) =>
+      chunks.push(Buffer.isBuffer(c) ? c : Buffer.from(c))
+    );
     const done = new Promise<Buffer>((resolve) => doc.on('end', () => resolve(Buffer.concat(chunks))));
 
     // Header
