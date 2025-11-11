@@ -70,4 +70,14 @@ jobs:
             DATABASE_URL=postgresql://postgres:postgres@localhost:5432/carelinkai_marketplace?schema=public 
             npm run dev
         run: |
-          npx playwright test e2e/family-*.spec.ts e2e/residents-*.spec.ts --reporter=dot
+          npx playwright test e2e/family-*.spec.ts e2e/residents-*.spec.ts --reporter=line
+
+      - name: Upload Playwright test artifacts (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: |
+            test-results
+            playwright-report
+          if-no-files-found: ignore
