@@ -8,7 +8,6 @@ export function InlineActions({ id, status, homes = [] as HomeOption[] }: { id: 
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
   const [showTransfer, setShowTransfer] = useState(false);
-  const [targetHomeId, setTargetHomeId] = useState<string>(homes[0]?.id ?? "");
   const selectRef = useRef<HTMLSelectElement | null>(null);
   async function call(path: string, body: any) {
     setErr(null);
@@ -54,9 +53,8 @@ export function InlineActions({ id, status, homes = [] as HomeOption[] }: { id: 
                 <div className="flex items-center gap-2">
                   <select
                     className="border rounded px-2 py-1 text-xs max-w-[160px]"
-                    value={targetHomeId}
-                    onChange={(e) => setTargetHomeId(e.target.value)}
                     ref={selectRef}
+                    defaultValue=""
                   >
                     <option value="">Select home…</option>
                     {homes.map((h) => (
@@ -65,9 +63,9 @@ export function InlineActions({ id, status, homes = [] as HomeOption[] }: { id: 
                   </select>
                   <button
                     className="btn btn-xs"
-                    disabled={pending || !targetHomeId}
+                    disabled={pending}
                     onClick={() => start(async () => {
-                      const selected = selectRef.current?.value || targetHomeId;
+                      const selected = selectRef.current?.value || "";
                       const ok = await call(`/api/residents/${id}/transfer`, { homeId: selected, effectiveDate: new Date().toISOString() });
                       if (ok) {
                         setShowTransfer(false);

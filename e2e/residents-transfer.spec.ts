@@ -21,7 +21,7 @@ test('operator can transfer an ACTIVE resident between homes', async ({ page, re
   });
   expect(up.ok()).toBeTruthy();
   const upJson = await up.json();
-  const [homeA, homeB] = upJson.homes as Array<{ id: string; name: string }>;
+  const ensuredHomes = upJson.homes as Array<{ id: string; name: string }>;
 
   // 2) Log in as operator (browser context so auth cookie is set correctly)
   const devLoginOk = await page.evaluate(async () => {
@@ -34,6 +34,16 @@ test('operator can transfer an ACTIVE resident between homes', async ({ page, re
     return r.ok;
   });
   expect(devLoginOk).toBeTruthy();
+
+  // Get authoritative homes list from authenticated operator context
+  const operatorHomes = await page.evaluate(async () => {
+    const r = await fetch(`${location.origin}/api/operator/homes`, { credentials: 'include' });
+    if (!r.ok) throw new Error('fetch homes failed');
+    return r.json();
+  });
+  const namesToIds = new Map<string, string>((operatorHomes.homes as Array<{id:string; name:string}>).map(h => [h.name, h.id]));
+  const homeA = { id: namesToIds.get('Transfer Home A')!, name: 'Transfer Home A' };
+  const homeB = { id: namesToIds.get('Transfer Home B')!, name: 'Transfer Home B' };
 
   // 3) Create family and resident directly via API, admitted to Home A
   // Create family for current user
@@ -68,8 +78,8 @@ test('operator can transfer an ACTIVE resident between homes', async ({ page, re
   await page.goto('/operator/residents');
   await expect(page.getByRole('heading', { name: 'Residents' })).toBeVisible();
 
-  // 5) Find the row and open Transfer popover, select Home B, click Go
-  const row = page.getByRole('row').filter({ hasText: 'Trans Fer' }).first();
+  // 5) Find the exact row for this resident by Details link containing the residentId
+  const row = page.locator('tr', { has: page.locator(`a[href="/operator/residents/${residentId}"]`) }).first();
   await row.getByRole('button', { name: 'Transfer' }).click();
   await row.locator('select').selectOption(homeB.id);
   await row.getByRole('button', { name: 'Go' }).click();
