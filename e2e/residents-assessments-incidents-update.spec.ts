@@ -9,6 +9,14 @@ test('edit assessment and incident inline', async ({ page, request }) => {
     await fetch(`${location.origin}/api/dev/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'op-ai2@example.com' }) });
   });
 
+  // Resolve operator home id for RBAC-conformant access
+  const homeId = await page.evaluate(async () => {
+    const r = await fetch(`${location.origin}/api/operator/homes`, { credentials: 'include' });
+    if (!r.ok) return null;
+    const j = await r.json();
+    return (j.homes && j.homes.length > 0) ? (j.homes[0].id as string) : null;
+  });
+
   // Create family + resident
   const family = await page.evaluate(async () => {
     const r = await fetch(`${location.origin}/api/user/family`, { credentials: 'include' });
@@ -18,7 +26,7 @@ test('edit assessment and incident inline', async ({ page, request }) => {
     const r = await fetch(`${location.origin}/api/residents`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ familyId: args.familyId, firstName: 'Edit', lastName: 'Flow', dateOfBirth: '1940-02-02', gender: 'OTHER', status: 'ACTIVE' }) });
     const j = await r.json();
     return j.id as string;
-  }, { familyId: (family.familyId as string) });
+  }, { familyId: (family.familyId as string), homeId });
 
   await page.goto(`/operator/residents/${residentId}`);
 

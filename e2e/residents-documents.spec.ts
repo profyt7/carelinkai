@@ -22,6 +22,14 @@ test('resident documents: add and delete document via UI', async ({ page, reques
   });
   expect(devLoginOk).toBeTruthy();
 
+  // Resolve operator home id to ensure resident is within accessible scope
+  const homeId = await page.evaluate(async () => {
+    const r = await fetch(`${location.origin}/api/operator/homes`, { credentials: 'include' });
+    if (!r.ok) return null;
+    const j = await r.json();
+    return (j.homes && j.homes.length > 0) ? (j.homes[0].id as string) : null;
+  });
+
   // 2) Create family and resident
   const family = await page.evaluate(async () => {
     const r = await fetch(`${location.origin}/api/user/family`, { credentials: 'include' });
@@ -36,6 +44,7 @@ test('resident documents: add and delete document via UI', async ({ page, reques
       credentials: 'include',
       body: JSON.stringify({
         familyId: args.familyId,
+        homeId: args.homeId,
         firstName: 'Doc',
         lastName: ' Test',
         dateOfBirth: '1955-05-05',
@@ -46,7 +55,7 @@ test('resident documents: add and delete document via UI', async ({ page, reques
     if (!r.ok) throw new Error('resident create failed');
     const j = await r.json();
     return j.id as string;
-  }, { familyId: (family.familyId as string) });
+  }, { familyId: (family.familyId as string), homeId });
 
   // 3) Navigate to resident page and open Documents panel
   await page.goto(`/operator/residents/${residentId}`);

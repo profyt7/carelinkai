@@ -21,6 +21,14 @@ test('assessments + incidents CRUD and profile edit', async ({ page, request }) 
   });
   expect(loggedIn).toBeTruthy();
 
+  // Resolve operator home id to scope resident correctly
+  const homeId = await page.evaluate(async () => {
+    const r = await fetch(`${location.origin}/api/operator/homes`, { credentials: 'include' });
+    if (!r.ok) return null;
+    const j = await r.json();
+    return (j.homes && j.homes.length > 0) ? (j.homes[0].id as string) : null;
+  });
+
   // Create family + resident
   const family = await page.evaluate(async () => {
     const r = await fetch(`${location.origin}/api/user/family`, { credentials: 'include' });
@@ -30,12 +38,12 @@ test('assessments + incidents CRUD and profile edit', async ({ page, request }) 
   const residentId = await page.evaluate(async (args) => {
     const r = await fetch(`${location.origin}/api/residents`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-      body: JSON.stringify({ familyId: args.familyId, firstName: 'Assess', lastName: 'Inc', dateOfBirth: '1944-04-04', gender: 'OTHER', status: 'ACTIVE' })
+      body: JSON.stringify({ familyId: args.familyId, homeId: args.homeId, firstName: 'Assess', lastName: 'Inc', dateOfBirth: '1944-04-04', gender: 'OTHER', status: 'ACTIVE' })
     });
     if (!r.ok) throw new Error('resident create failed');
     const j = await r.json();
     return j.id as string;
-  }, { familyId: (family.familyId as string) });
+  }, { familyId: (family.familyId as string), homeId });
 
   await page.goto(`/operator/residents/${residentId}`);
   await expect(page.getByRole('heading', { name: 'Assessments' })).toBeVisible();
