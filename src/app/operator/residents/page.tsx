@@ -1,21 +1,20 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { cookies, headers } from 'next/headers';
+import { getBaseUrl } from '@/lib/http';
 import { MOCK_RESIDENTS } from '@/lib/mock/residents';
 import { InlineActions, StatusPill } from '@/components/operator/residents/InlineActions';
 
 async function fetchResidents(params: { q?: string; status?: string; homeId?: string; familyId?: string; cursor?: string }) {
   const cookieHeader = cookies().toString();
-  const h = headers();
-  const proto = h.get('x-forwarded-proto') ?? 'http';
-  const host = h.get('host') ?? '';
-  const origin = `${proto}://${host}`;
   const qParam = params.q ? `&q=${encodeURIComponent(params.q)}` : '';
   const sParam = params.status ? `&status=${encodeURIComponent(params.status)}` : '';
   const hParam = params.homeId ? `&homeId=${encodeURIComponent(params.homeId)}` : '';
   const fParam = params.familyId ? `&familyId=${encodeURIComponent(params.familyId)}` : '';
   const cParam = params.cursor ? `&cursor=${encodeURIComponent(params.cursor)}` : '';
-  const res = await fetch(`${origin}/api/residents?limit=50${qParam}${sParam}${hParam}${fParam}${cParam}`, {
+  const h = headers();
+  const base = getBaseUrl(h);
+  const res = await fetch(`${base}/api/residents?limit=50${qParam}${sParam}${hParam}${fParam}${cParam}`, {
     cache: 'no-store',
     headers: { cookie: cookieHeader },
   });
@@ -27,10 +26,8 @@ async function fetchHomes() {
   // Server-side same-origin fetch with cookies for RBAC scoping to operator homes
   const cookieHeader = cookies().toString();
   const h = headers();
-  const proto = h.get('x-forwarded-proto') ?? 'http';
-  const host = h.get('host') ?? '';
-  const origin = `${proto}://${host}`;
-  const res = await fetch(`${origin}/api/operator/homes`, { cache: 'no-store', headers: { cookie: cookieHeader } });
+  const base = getBaseUrl(h);
+  const res = await fetch(`${base}/api/operator/homes`, { cache: 'no-store', headers: { cookie: cookieHeader } });
   if (!res.ok) return { homes: [] as Array<{ id: string; name: string }> };
   const json = await res.json();
   return { homes: (json.homes ?? []).map((h: any) => ({ id: h.id, name: h.name })) };
@@ -51,10 +48,6 @@ export default async function ResidentsPage({ searchParams }: { searchParams?: {
   const { homes } = showMock ? { homes: [] as Array<{ id: string; name: string }> } : await fetchHomes();
   const items: Array<{ id: string; firstName: string; lastName: string; status: string }> = Array.isArray(data) ? data : (data.items ?? []);
   const nextCursor = Array.isArray(data) ? null : (data.nextCursor ?? null);
-  const h = headers();
-  const proto = h.get('x-forwarded-proto') ?? 'https';
-  const host = h.get('host') ?? '';
-  const origin = `${proto}://${host}`;
   return (
     <div className="p-4 sm:p-6">
       <div className="flex items-center justify-between">
@@ -103,7 +96,7 @@ export default async function ResidentsPage({ searchParams }: { searchParams?: {
             </form>
           )}
           {/* Assumption: same-origin CSV export endpoint; preserves current filters; filename hint for UX */}
-          <a className="btn btn-sm" download="residents.csv" href={`${origin}/api/residents?limit=1000${q ? `&q=${encodeURIComponent(q)}` : ''}${status ? `&status=${encodeURIComponent(status)}` : ''}${homeId ? `&homeId=${encodeURIComponent(homeId)}` : ''}${familyId ? `&familyId=${encodeURIComponent(familyId)}` : ''}&format=csv`}>
+          <a className="btn btn-sm" download="residents.csv" href={`/api/residents?limit=1000${q ? `&q=${encodeURIComponent(q)}` : ''}${status ? `&status=${encodeURIComponent(status)}` : ''}${homeId ? `&homeId=${encodeURIComponent(homeId)}` : ''}${familyId ? `&familyId=${encodeURIComponent(familyId)}` : ''}&format=csv`}>
             Export CSV
           </a>
           <Link href="/operator/residents/new" className="btn btn-sm">New Resident</Link>

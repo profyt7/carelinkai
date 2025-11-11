@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { cookies, headers } from 'next/headers';
+import { getBaseUrl } from '@/lib/http';
 import { getMockResident, getMockAssessments, getMockIncidents, getMockNotes } from '@/lib/mock/residents';
 import { StatusActions } from '@/components/operator/residents/StatusActions';
 import { CreateNoteForm } from '@/components/operator/residents/forms/CreateNoteForm';
@@ -15,10 +16,8 @@ import { IncidentsList } from '@/components/operator/residents/IncidentsList';
 async function fetchResident(id: string) {
   const cookieHeader = cookies().toString();
   const h = headers();
-  const proto = h.get('x-forwarded-proto') ?? 'http';
-  const host = h.get('host') ?? '';
-  const origin = `${proto}://${host}`;
-  const res = await fetch(`${origin}/api/residents/${id}`, {
+  const base = getBaseUrl(h);
+  const res = await fetch(`${base}/api/residents/${id}`, {
     cache: 'no-store',
     headers: { cookie: cookieHeader },
   });
@@ -30,10 +29,8 @@ async function fetchResident(id: string) {
 async function fetchSection(id: string, section: 'assessments' | 'incidents' | 'notes') {
   const cookieHeader = cookies().toString();
   const h = headers();
-  const proto = h.get('x-forwarded-proto') ?? 'http';
-  const host = h.get('host') ?? '';
-  const origin = `${proto}://${host}`;
-  const res = await fetch(`${origin}/api/residents/${id}/${section}?limit=5`, {
+  const base = getBaseUrl(h);
+  const res = await fetch(`${base}/api/residents/${id}/${section}?limit=5`, {
     cache: 'no-store',
     headers: { cookie: cookieHeader },
   });
@@ -90,14 +87,7 @@ export default async function ResidentDetail({ params }: { params: { id: string 
         <Link href={`/operator/residents/${resident.id}/edit`} className="text-sm text-primary-600 hover:underline">Edit</Link>
       </div>
       {/* Downloadable PDF summary for operations use */}
-      {(() => {
-        const h = headers();
-        const proto = h.get('x-forwarded-proto') ?? 'http';
-        const host = h.get('host') ?? '';
-        const origin = `${proto}://${host}`;
-        const href = `${origin}/api/residents/${resident.id}/summary`;
-        return <a href={href} target="_blank" className="text-sm text-primary-600 hover:underline">Open Summary PDF</a>;
-      })()}
+      <a href={`/api/residents/${resident.id}/summary`} target="_blank" className="text-sm text-primary-600 hover:underline">Open Summary PDF</a>
       <StatusActions residentId={resident.id} status={resident.status} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
