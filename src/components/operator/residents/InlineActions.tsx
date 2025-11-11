@@ -1,5 +1,5 @@
 "use client";
-import { useTransition, useState } from 'react';
+import { useTransition, useState, useRef } from 'react';
 import { toast } from 'react-hot-toast';
 
 type HomeOption = { id: string; name: string };
@@ -9,6 +9,7 @@ export function InlineActions({ id, status, homes = [] as HomeOption[] }: { id: 
   const [err, setErr] = useState<string | null>(null);
   const [showTransfer, setShowTransfer] = useState(false);
   const [targetHomeId, setTargetHomeId] = useState<string>(homes[0]?.id ?? "");
+  const selectRef = useRef<HTMLSelectElement | null>(null);
   async function call(path: string, body: any) {
     setErr(null);
     const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -55,6 +56,7 @@ export function InlineActions({ id, status, homes = [] as HomeOption[] }: { id: 
                     className="border rounded px-2 py-1 text-xs max-w-[160px]"
                     value={targetHomeId}
                     onChange={(e) => setTargetHomeId(e.target.value)}
+                    ref={selectRef}
                   >
                     <option value="">Select home…</option>
                     {homes.map((h) => (
@@ -65,7 +67,8 @@ export function InlineActions({ id, status, homes = [] as HomeOption[] }: { id: 
                     className="btn btn-xs"
                     disabled={pending || !targetHomeId}
                     onClick={() => start(async () => {
-                      const ok = await call(`/api/residents/${id}/transfer`, { homeId: targetHomeId, effectiveDate: new Date().toISOString() });
+                      const selected = selectRef.current?.value || targetHomeId;
+                      const ok = await call(`/api/residents/${id}/transfer`, { homeId: selected, effectiveDate: new Date().toISOString() });
                       if (ok) {
                         setShowTransfer(false);
                         location.reload();
