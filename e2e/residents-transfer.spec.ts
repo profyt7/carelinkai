@@ -8,14 +8,17 @@ import { test, expect } from '@playwright/test';
 test('operator can transfer an ACTIVE resident between homes', async ({ page, request }) => {
   // Ensure page has an origin for relative fetch() calls inside page.evaluate
   await page.goto('/');
+  const ts = Date.now();
+  const HOME_A = `Transfer Home A ${ts}`;
+  const HOME_B = `Transfer Home B ${ts}`;
   // 1) Ensure operator with two homes exists
   const up = await request.post('/api/dev/upsert-operator', {
     data: {
       email: 'op-transfer@example.com',
       companyName: 'Transfer Ops',
       homes: [
-        { name: 'Transfer Home A', capacity: 10 },
-        { name: 'Transfer Home B', capacity: 10 },
+        { name: HOME_A, capacity: 10 },
+        { name: HOME_B, capacity: 10 },
       ],
     },
   });
@@ -42,8 +45,8 @@ test('operator can transfer an ACTIVE resident between homes', async ({ page, re
     return r.json();
   });
   const namesToIds = new Map<string, string>((operatorHomes.homes as Array<{id:string; name:string}>).map(h => [h.name, h.id]));
-  const homeA = { id: namesToIds.get('Transfer Home A')!, name: 'Transfer Home A' };
-  const homeB = { id: namesToIds.get('Transfer Home B')!, name: 'Transfer Home B' };
+  const homeA = { id: namesToIds.get(HOME_A)!, name: HOME_A };
+  const homeB = { id: namesToIds.get(HOME_B)!, name: HOME_B };
 
   // 3) Create family and resident directly via API, admitted to Home A
   // Create family for current user

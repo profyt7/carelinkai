@@ -46,7 +46,6 @@ export function InlineActions({ id, status, homes = [] as HomeOption[] }: { id: 
               type="button"
               className="btn btn-xs"
               onClick={() => setShowTransfer((v) => !v)}
-              disabled={pending}
             >Transfer</button>
             {showTransfer && (
               <div className="absolute z-10 top-full right-0 mt-1 p-2 bg-white border rounded shadow min-w-[220px]">
@@ -63,9 +62,9 @@ export function InlineActions({ id, status, homes = [] as HomeOption[] }: { id: 
                   </select>
                   <button
                     className="btn btn-xs"
-                    disabled={pending}
                     onClick={() => start(async () => {
                       const selected = selectRef.current?.value || "";
+                      if (!selected) { setErr('Select a home'); return; }
                       const ok = await call(`/api/residents/${id}/transfer`, { homeId: selected, effectiveDate: new Date().toISOString() });
                       if (ok) {
                         setShowTransfer(false);
