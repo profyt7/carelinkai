@@ -7,7 +7,7 @@ import { InlineActions, StatusPill } from '@/components/operator/residents/Inlin
 async function fetchResidents(params: { q?: string; status?: string; homeId?: string; familyId?: string; cursor?: string }) {
   const cookieHeader = cookies().toString();
   const h = headers();
-  const proto = h.get('x-forwarded-proto') ?? 'https';
+  const proto = h.get('x-forwarded-proto') ?? 'http';
   const host = h.get('host') ?? '';
   const origin = `${proto}://${host}`;
   const qParam = params.q ? `&q=${encodeURIComponent(params.q)}` : '';

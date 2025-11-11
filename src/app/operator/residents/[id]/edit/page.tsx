@@ -6,7 +6,7 @@ import { EditResidentForm } from '@/components/operator/residents/EditResidentFo
 async function fetchResident(id: string) {
   const cookieHeader = cookies().toString();
   const h = headers();
-  const proto = h.get('x-forwarded-proto') ?? 'https';
+  const proto = h.get('x-forwarded-proto') ?? 'http';
   const host = h.get('host') ?? '';
   const origin = `${proto}://${host}`;
   const res = await fetch(`${origin}/api/residents/${id}`, {
