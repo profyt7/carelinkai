@@ -58,7 +58,7 @@ test('resident documents: add and delete document via UI', async ({ page, reques
   }, { familyId: (family.familyId as string), homeId });
 
   // 3) Navigate to resident page and open Documents panel
-  await page.goto(`/operator/residents/${residentId}`);
+  await page.goto(`/operator/residents/${residentId}`, { waitUntil: 'domcontentloaded' });
   await expect(page.getByRole('heading', { name: 'Documents' })).toBeVisible();
 
   // 4) Fill document form and add
@@ -66,7 +66,11 @@ test('resident documents: add and delete document via UI', async ({ page, reques
   await page.getByPlaceholder('File URL (https://...)').fill('https://example.com/policy.pdf');
   await page.getByPlaceholder('MIME Type (e.g. application/pdf)').fill('application/pdf');
   await page.getByPlaceholder('Size (bytes)').fill('12345');
-  await page.getByRole('button', { name: 'Add' }).click();
+  await page
+    .locator('form')
+    .filter({ has: page.getByPlaceholder('File URL (https://...)') })
+    .getByRole('button', { name: 'Add' })
+    .click();
 
   // Wait for API to reflect the new document (robust against UI rendering delays)
   const countAfterAdd = await page.evaluate(async (rid) => {
@@ -89,16 +93,29 @@ test('resident documents: add and delete document via UI', async ({ page, reques
   // Ensure UI reflects the new document (reload to avoid any client-side stale state)
   await page.reload();
   await expect(page.getByText('E2E Policy PDF').first()).toBeVisible({ timeout: 10000 });
-  // 5) Delete the document (handle confirm dialog)
+  // 5) Delete the document (handle confirm dialog) and wait for DELETE request
   page.once('dialog', (d) => d.accept());
-  await page.getByRole('row', { name: /E2E Policy PDF/ }).getByRole('button', { name: 'Delete' }).click();
+  await Promise.all([
+    page.waitForResponse((r) => r.url().includes(`/api/residents/${residentId}/documents/`) && r.request().method() === 'DELETE' && r.status() === 200),
+    page.getByRole('row', { name: /E2E Policy PDF/ }).getByRole('button', { name: 'Delete' }).click(),
+  ]);
 
   // Verify deletion via API
+  // Verify deletion via API with retries
   const countAfterDelete = await page.evaluate(async (rid) => {
-    const r = await fetch(`${location.origin}/api/residents/${rid}/documents?limit=10`, { credentials: 'include' });
-    if (!r.ok) return 0;
-    const j = await r.json();
-    return (j.items || []).length as number;
+    const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
+    for (let i = 0; i < 20; i++) {
+      try {
+        const r = await fetch(`${location.origin}/api/residents/${rid}/documents?limit=10`, { credentials: 'include' });
+        if (r.ok) {
+          const j = await r.json();
+          const n = (j.items || []).length as number;
+          if (n === 0) return 0;
+        }
+      } catch {}
+      await sleep(200);
+    }
+    return 1;
   }, residentId);
   expect(countAfterDelete).toBe(0);
 });

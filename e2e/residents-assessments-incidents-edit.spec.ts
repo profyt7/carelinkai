@@ -45,38 +45,61 @@ test('assessments + incidents CRUD and profile edit', async ({ page, request }) 
     return j.id as string;
   }, { familyId: (family.familyId as string), homeId });
 
-  await page.goto(`/operator/residents/${residentId}`);
+  await page.goto(`/operator/residents/${residentId}`, { waitUntil: 'domcontentloaded' });
   await expect(page.getByRole('heading', { name: 'Assessments' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Incidents' })).toBeVisible();
 
-  // Add assessment
-  await page.getByPlaceholder('Type').first().fill('MMSE');
-  await page.getByPlaceholder('Score').fill('25');
-  await page.getByRole('button', { name: 'Add Assessment' }).click();
+  // Add assessment (scope to Assessments section)
+  const assessSection = page.getByRole('heading', { name: 'Assessments' }).locator('..');
+  await assessSection.getByPlaceholder('Type').fill('MMSE');
+  await assessSection.getByPlaceholder('Score').fill('25');
+  await assessSection.getByPlaceholder('Score').press('Enter');
   await expect(page.getByText(/MMSE \(score: 25\)/).first()).toBeVisible({ timeout: 10000 });
 
   // Delete assessment
   page.once('dialog', (d) => d.accept());
-  await page.getByText(/MMSE \(score: 25\)/).locator('..').getByRole('button', { name: 'Delete' }).click();
-  // Confirm deletion via API
+  await Promise.all([
+    page.waitForResponse((r) => r.url().includes(`/api/residents/${residentId}/assessments/`) && r.request().method() === 'DELETE' && r.status() === 200),
+    page.getByText(/MMSE \(score: 25\)/).locator('..').getByRole('button', { name: 'Delete' }).click(),
+  ]);
+  // Confirm deletion via API with retries
   const assessCount = await page.evaluate(async (rid) => {
-    const r = await fetch(`${location.origin}/api/residents/${rid}/assessments?limit=10`, { credentials: 'include' });
-    if (!r.ok) return 0; const j = await r.json(); return (j.items || []).length as number;
+    const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
+    for (let i = 0; i < 20; i++) {
+      try {
+        const r = await fetch(`${location.origin}/api/residents/${rid}/assessments?limit=10`, { credentials: 'include' });
+        if (r.ok) {
+          const j = await r.json();
+          if ((j.items || []).length === 0) return 0;
+        }
+      } catch {}
+      await sleep(200);
+    }
+    return 1;
   }, residentId);
   expect(assessCount).toBe(0);
 
   // Add incident
-  await page.getByPlaceholder('Type').nth(1).fill('Fall');
-  await page.locator('select').filter({ hasText: /Low|Medium|High/i }).first().selectOption('HIGH');
-  await page.getByRole('button', { name: 'Add Incident' }).click();
+  const incidentSection = page.getByRole('heading', { name: 'Incidents' }).locator('..');
+  await incidentSection.getByPlaceholder('Type').fill('Fall');
+  await incidentSection.locator('select').first().selectOption('HIGH');
+  await incidentSection.getByPlaceholder('Type').press('Enter');
   await expect(page.getByText(/Fall \(severity: HIGH\)/).first()).toBeVisible({ timeout: 10000 });
 
   // Delete incident
   page.once('dialog', (d) => d.accept());
-  await page.getByText(/Fall \(severity: HIGH\)/).locator('..').getByRole('button', { name: 'Delete' }).click();
+  await Promise.all([
+    page.waitForResponse((r) => r.url().includes(`/api/residents/${residentId}/incidents/`) && r.request().method() === 'DELETE' && r.status() === 200),
+    page.getByText(/Fall \(severity: HIGH\)/).locator('..').getByRole('button', { name: 'Delete' }).click(),
+  ]);
   const incCount = await page.evaluate(async (rid) => {
-    const r = await fetch(`${location.origin}/api/residents/${rid}/incidents?limit=10`, { credentials: 'include' });
-    if (!r.ok) return 0; const j = await r.json(); return (j.items || []).length as number;
+    const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
+    for (let i = 0; i < 20; i++) {
+      const r = await fetch(`${location.origin}/api/residents/${rid}/incidents?limit=10`, { credentials: 'include' });
+      if (r.ok) { const j = await r.json(); if ((j.items || []).length === 0) return 0; }
+      await sleep(200);
+    }
+    return 1;
   }, residentId);
   expect(incCount).toBe(0);
 

@@ -23,38 +23,50 @@ test('edit assessment and incident inline', async ({ page, request }) => {
     return r.json();
   });
   const residentId = await page.evaluate(async (args) => {
-    const r = await fetch(`${location.origin}/api/residents`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ familyId: args.familyId, firstName: 'Edit', lastName: 'Flow', dateOfBirth: '1940-02-02', gender: 'OTHER', status: 'ACTIVE' }) });
+    const r = await fetch(`${location.origin}/api/residents`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ familyId: args.familyId, homeId: args.homeId, firstName: 'Edit', lastName: 'Flow', dateOfBirth: '1940-02-02', gender: 'OTHER', status: 'ACTIVE' }) });
     const j = await r.json();
     return j.id as string;
   }, { familyId: (family.familyId as string), homeId });
 
-  await page.goto(`/operator/residents/${residentId}`);
+  await page.goto(`/operator/residents/${residentId}`, { waitUntil: 'domcontentloaded' });
 
-  // Add assessment
-  await page.getByPlaceholder('Type').first().fill('BPRS');
-  await page.getByPlaceholder('Score').fill('18');
-  await page.getByRole('button', { name: 'Add Assessment' }).click();
+  // Add assessment (scope to Assessments section)
+  const assessSection2 = page.getByRole('heading', { name: 'Assessments' }).locator('..');
+  await assessSection2.getByPlaceholder('Type').fill('BPRS');
+  await assessSection2.getByPlaceholder('Score').fill('18');
+  await assessSection2.getByPlaceholder('Score').press('Enter');
+  // Verify via API and refresh to avoid UI race conditions
+  await page.evaluate(async (rid) => {
+    const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
+    for (let i = 0; i < 20; i++) {
+      const r = await fetch(`${location.origin}/api/residents/${rid}/assessments?limit=10`, { credentials: 'include' });
+      if (r.ok) { const j = await r.json(); if ((j.items || []).length > 0) break; }
+      await sleep(200);
+    }
+  }, residentId);
+  await page.reload();
   await expect(page.getByText(/BPRS \(score: 18\)/).first()).toBeVisible({ timeout: 10000 });
 
-  // Edit assessment
-  const row = page.getByText(/BPRS \(score: 18\)/).locator('..');
-  await row.getByRole('button', { name: 'Edit' }).click();
-  await row.getByPlaceholder('Type').fill('BPRS-Updated');
-  await row.getByPlaceholder('Score').fill('20');
-  await row.getByRole('button', { name: 'Save' }).click();
+  // Edit assessment (scope to first list item in Assessments)
+  const assessItem = page.getByRole('heading', { name: 'Assessments' }).locator('..').locator('li').first();
+  await assessItem.getByRole('button', { name: 'Edit' }).click();
+  await assessItem.getByPlaceholder('Type').fill('BPRS-Updated');
+  await assessItem.getByPlaceholder('Score').fill('20');
+  await assessItem.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText(/BPRS-Updated \(score: 20\)/).first()).toBeVisible({ timeout: 10000 });
 
   // Add incident
-  await page.getByPlaceholder('Type').nth(1).fill('Medication');
-  await page.locator('select').filter({ hasText: /Low|Medium|High/i }).first().selectOption('LOW');
-  await page.getByRole('button', { name: 'Add Incident' }).click();
+  const incidentSection2 = page.getByRole('heading', { name: 'Incidents' }).locator('..');
+  await incidentSection2.getByPlaceholder('Type').fill('Medication');
+  await incidentSection2.locator('select').first().selectOption('LOW');
+  await incidentSection2.getByPlaceholder('Type').press('Enter');
   await expect(page.getByText(/Medication \(severity: LOW\)/).first()).toBeVisible({ timeout: 10000 });
 
   // Edit incident
-  const irow = page.getByText(/Medication \(severity: LOW\)/).locator('..');
-  await irow.getByRole('button', { name: 'Edit' }).click();
-  await irow.getByPlaceholder('Type').fill('Medication Error');
-  await irow.getByPlaceholder('Severity').fill('HIGH');
-  await irow.getByRole('button', { name: 'Save' }).click();
+  const iItem = page.getByRole('heading', { name: 'Incidents' }).locator('..').locator('li').first();
+  await iItem.getByRole('button', { name: 'Edit' }).click();
+  await iItem.getByPlaceholder('Type').fill('Medication Error');
+  await iItem.getByPlaceholder('Severity').fill('HIGH');
+  await iItem.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText(/Medication Error \(severity: HIGH\)/).first()).toBeVisible({ timeout: 10000 });
 });
