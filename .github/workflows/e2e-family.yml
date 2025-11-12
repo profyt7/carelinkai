@@ -28,8 +28,6 @@ jobs:
 
     env:
       # App runtime
-      # Use test mode so CI-only dev endpoints are enabled when ALLOW_DEV_ENDPOINTS=1
-      NODE_ENV: test
       NODE_OPTIONS: --max-old-space-size=4096
       NEXTAUTH_URL: http://localhost:3000
       NEXTAUTH_SECRET: testsecret_e2e_123
