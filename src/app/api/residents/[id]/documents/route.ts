@@ -15,6 +15,8 @@ const CreateDocSchema = z.object({
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
+    const t0 = Date.now();
+    Sentry.addBreadcrumb({ category: 'api', message: 'documents_get_start', level: 'info', data: { residentId: params.id } });
     const { session, error } = await requireOperatorOrAdmin();
     if (error) return error;
 
@@ -27,7 +29,13 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     if ((session as any).user.role === 'OPERATOR') {
       const me = await prisma.user.findUnique({ where: { email: (session as any).user.email! }, select: { id: true } });
       const op = me ? await prisma.operator.findUnique({ where: { userId: me.id }, select: { id: true } }) : null;
-      if (!op || resident.home?.operatorId !== op.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      if (!op || resident.home?.operatorId !== op.id) {
+        Sentry.captureMessage('documents_get_forbidden', {
+          level: 'warning',
+          extra: { residentId: resident.id, opFound: !!op, residentOpId: resident.home?.operatorId, opId: op?.id }
+        });
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403, headers: { 'Cache-Control': 'no-store' } });
+      }
     }
 
     const url = new URL(req.url);
@@ -37,15 +45,20 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       orderBy: { createdAt: 'desc' },
       take,
     });
-    return NextResponse.json({ items });
+    const dur = Date.now() - t0;
+    Sentry.addBreadcrumb({ category: 'api', message: 'documents_get_ok', level: 'info', data: { residentId: resident.id, count: items.length, dur } });
+    return NextResponse.json({ items }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (e) {
+    Sentry.captureException(e, { extra: { route: 'documents_get' } });
     console.error('documents GET error', e);
-    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Server error' }, { status: 500, headers: { 'Cache-Control': 'no-store' } });
   }
 }
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
+    const t0 = Date.now();
+    Sentry.addBreadcrumb({ category: 'api', message: 'documents_post_start', level: 'info', data: { residentId: params.id } });
     const { session, error } = await requireOperatorOrAdmin();
     if (error) return error;
 
@@ -58,7 +71,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     if ((session as any).user.role === 'OPERATOR') {
       const me = await prisma.user.findUnique({ where: { email: (session as any).user.email! }, select: { id: true } });
       const op = me ? await prisma.operator.findUnique({ where: { userId: me.id }, select: { id: true } }) : null;
-      if (!op || resident.home?.operatorId !== op.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      if (!op || resident.home?.operatorId !== op.id) {
+        Sentry.captureMessage('documents_post_forbidden', {
+          level: 'warning',
+          extra: { residentId: resident.id, opFound: !!op, residentOpId: resident.home?.operatorId, opId: op?.id }
+        });
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403, headers: { 'Cache-Control': 'no-store' } });
+      }
     }
 
     const body = await req.json();
@@ -77,11 +96,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       },
     });
 
-    Sentry.addBreadcrumb({ category: 'resident', message: 'document_created', level: 'info', data: { residentId: resident.id, documentId: doc.id } });
+    const dur = Date.now() - t0;
+    Sentry.addBreadcrumb({ category: 'resident', message: 'document_created', level: 'info', data: { residentId: resident.id, documentId: doc.id, dur } });
     await createAuditLogFromRequest(req, 'CREATE', 'Document', doc.id, 'Created resident document');
-    return NextResponse.json({ id: doc.id });
+    return NextResponse.json({ id: doc.id }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (e: any) {
+    Sentry.captureException(e, { extra: { route: 'documents_post' } });
     console.error('documents POST error', e);
-    return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
+    return NextResponse.json({ error: 'Invalid payload' }, { status: 400, headers: { 'Cache-Control': 'no-store' } });
   }
 }
