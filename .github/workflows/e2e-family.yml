@@ -5,11 +5,12 @@ on:
     branches: [ "feat/**", "main", "master" ]
   pull_request:
     branches: [ "**" ]
+  workflow_dispatch:
 
 jobs:
   e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     services:
       postgres:
         image: postgres:15
@@ -70,7 +71,7 @@ jobs:
             DATABASE_URL=postgresql://postgres:postgres@localhost:5432/carelinkai_marketplace?schema=public 
             npm run dev
         run: |
-          npx playwright test e2e/family-*.spec.ts e2e/residents-*.spec.ts --reporter=line
+          npx playwright test e2e/family-*.spec.ts e2e/residents-*.spec.ts --reporter=line,html --trace on
 
       - name: Upload Playwright test artifacts (always)
         if: always()
@@ -81,3 +82,4 @@ jobs:
             test-results
             playwright-report
           if-no-files-found: ignore
+          retention-days: 7
