@@ -64,9 +64,14 @@ test('edit assessment and incident inline', async ({ page, request }) => {
 
   // Edit incident
   const iItem = page.getByRole('heading', { name: 'Incidents' }).locator('..').locator('li').first();
+  await iItem.scrollIntoViewIfNeeded();
   await iItem.getByRole('button', { name: 'Edit' }).click();
   await iItem.getByPlaceholder('Type').fill('Medication Error');
   await iItem.getByPlaceholder('Severity').fill('HIGH');
-  await iItem.getByRole('button', { name: 'Save' }).click();
+  // Ensure the Save button is fully actionable (no overlays intercepting)
+  const saveBtn = iItem.getByRole('button', { name: 'Save' });
+  await saveBtn.scrollIntoViewIfNeeded();
+  await saveBtn.waitFor({ state: 'visible' });
+  await saveBtn.click();
   await expect(page.getByText(/Medication Error \(severity: HIGH\)/).first()).toBeVisible({ timeout: 10000 });
 });
