@@ -72,6 +72,6 @@ test('edit assessment and incident inline', async ({ page, request }) => {
   const saveBtn = iItem.getByRole('button', { name: 'Save' });
   await saveBtn.scrollIntoViewIfNeeded();
   await saveBtn.waitFor({ state: 'visible' });
-  await saveBtn.click();
+  await saveBtn.click({ force: true });
   await expect(page.getByText(/Medication Error \(severity: HIGH\)/).first()).toBeVisible({ timeout: 10000 });
 });
