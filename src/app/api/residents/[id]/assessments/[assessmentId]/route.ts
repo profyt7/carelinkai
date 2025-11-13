@@ -5,6 +5,7 @@ import { createAuditLogFromRequest } from '@/lib/audit';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 
+export const dynamic = 'force-dynamic';
 async function canAccess(sessionEmail: string | null | undefined, residentId: string) {
   if (!sessionEmail) return false;
   const user = await prisma.user.findUnique({ where: { email: sessionEmail }, select: { id: true, role: true } });
@@ -31,7 +32,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (!parsed.success) return NextResponse.json({ error: 'Invalid body', details: parsed.error.format() }, { status: 400 });
     const updated = await prisma.assessmentResult.update({ where: { id: params.assessmentId }, data: parsed.data, select: { id: true } });
     await createAuditLogFromRequest(req, AuditAction.UPDATE, 'AssessmentResult', updated.id, 'Updated assessment result', { residentId: params.id });
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true }, { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } });
   } catch (e) {
     console.error('Assessment update error', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
@@ -47,7 +48,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     if (!found || found.residentId !== params.id) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     await prisma.assessmentResult.delete({ where: { id: found.id } });
     await createAuditLogFromRequest(req, AuditAction.DELETE, 'AssessmentResult', found.id, 'Deleted assessment result', { residentId: params.id });
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true }, { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } });
   } catch (e) {
     console.error('Assessment delete error', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });

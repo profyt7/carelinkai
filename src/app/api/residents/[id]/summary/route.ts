@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { requireOperatorOrAdmin } from '@/lib/rbac';
 import PDFDocument from 'pdfkit';
 
+export const dynamic = 'force-dynamic';
+
 // Assumptions:
 // - Generates an operational summary PDF for a resident.
 // - RBAC: Admins can access any resident; Operators only within their homes.

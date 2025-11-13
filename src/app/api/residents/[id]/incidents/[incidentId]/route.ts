@@ -5,6 +5,8 @@ import { createAuditLogFromRequest } from '@/lib/audit';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 
+export const dynamic = 'force-dynamic';
+
 async function canAccess(sessionEmail: string | null | undefined, residentId: string) {
   if (!sessionEmail) return false;
   const user = await prisma.user.findUnique({ where: { email: sessionEmail }, select: { id: true, role: true } });
@@ -38,7 +40,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (data.occurredAt) data.occurredAt = new Date(data.occurredAt);
     const updated = await prisma.residentIncident.update({ where: { id: params.incidentId }, data, select: { id: true } });
     await createAuditLogFromRequest(req, AuditAction.UPDATE, 'ResidentIncident', updated.id, 'Updated incident', { residentId: params.id });
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true }, { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } });
   } catch (e) {
     console.error('Incident update error', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
@@ -54,7 +56,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     if (!found || found.residentId !== params.id) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     await prisma.residentIncident.delete({ where: { id: found.id } });
     await createAuditLogFromRequest(req, AuditAction.DELETE, 'ResidentIncident', found.id, 'Deleted incident', { residentId: params.id });
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true }, { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } });
   } catch (e) {
     console.error('Incident delete error', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
