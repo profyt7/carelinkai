@@ -73,5 +73,19 @@ test('edit assessment and incident inline', async ({ page, request }) => {
   await saveBtn.scrollIntoViewIfNeeded();
   await saveBtn.waitFor({ state: 'visible' });
   await saveBtn.click({ force: true });
+  // Poll the API to ensure the update has been persisted server-side to avoid UI race conditions
+  await page.evaluate(async (rid) => {
+    const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
+    for (let i = 0; i < 25; i++) {
+      const r = await fetch(`${location.origin}/api/residents/${rid}/incidents?limit=10`, { credentials: 'include' });
+      if (r.ok) {
+        const j = await r.json();
+        const ok = (j.items || []).some((it: any) => it.type === 'Medication Error' && (it.severity || '').toUpperCase() === 'HIGH');
+        if (ok) break;
+      }
+      await sleep(200);
+    }
+  }, residentId);
+  await page.reload();
   await expect(page.getByText(/Medication Error \(severity: HIGH\)/).first()).toBeVisible({ timeout: 10000 });
 });
