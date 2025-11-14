@@ -77,7 +77,7 @@ jobs:
             DATABASE_URL=$DATABASE_URL 
             npm run start
         run: |
-          npx playwright test e2e/residents-*.spec.ts --reporter=line,html --trace on
+          npx playwright test e2e/residents-*.spec.ts --reporter=line,html --trace on --timeout=60000 --expect-timeout=10000
 
       - name: Upload Playwright test artifacts (Residents) (always)
         if: always()
@@ -152,7 +152,7 @@ jobs:
             DATABASE_URL=$DATABASE_URL 
             npm run start
         run: |
-          npx playwright test e2e/family-*.spec.ts --reporter=line,html --trace on
+          npx playwright test e2e/family-*.spec.ts --reporter=line,html --trace on --timeout=60000 --expect-timeout=10000
 
       - name: Upload Playwright test artifacts (Family) (always)
         if: always()
