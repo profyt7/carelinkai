@@ -66,6 +66,9 @@ test('edit assessment and incident inline', async ({ page, request }) => {
   const iItem = page.getByRole('heading', { name: 'Incidents' }).locator('..').locator('li').first();
   await iItem.scrollIntoViewIfNeeded();
   await iItem.getByRole('button', { name: 'Edit' }).click();
+  // Wait for inline edit inputs to render after toggling edit mode
+  await iItem.getByPlaceholder('Type').waitFor({ state: 'visible', timeout: 15000 });
+  await iItem.getByPlaceholder('Severity').waitFor({ state: 'visible', timeout: 15000 });
   await iItem.getByPlaceholder('Type').fill('Medication Error');
   await iItem.getByPlaceholder('Severity').fill('HIGH');
   // Ensure the Save button is fully actionable (no overlays intercepting)
@@ -73,7 +76,21 @@ test('edit assessment and incident inline', async ({ page, request }) => {
   await saveBtn.scrollIntoViewIfNeeded();
   await saveBtn.waitFor({ state: 'visible' });
   await saveBtn.click({ force: true });
-  // Poll the API to ensure the update persisted await page.evaluate(async (rid) => { const sleep = (ms) => new Promise(r => setTimeout(r, ms)); for (let i = 0; i < 25; i++) { const r = await fetch(${location.origin}/api/residents/${rid}/incidents?limit=10, { credentials: 'include' }); if (r.ok) { const j = await r.json(); const ok = (j.items || []).some((it) => it.type === 'Medication Error' && (it.severity || '').toUpperCase() === 'HIGH'); if (ok) break; } await sleep(200); } }, residentId); await page.reload();
-  
+  // Poll API to ensure the update persisted server-side before asserting UI
+  await page.evaluate(async (rid) => {
+    const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
+    for (let i = 0; i < 25; i++) {
+      try {
+        const r = await fetch(`${location.origin}/api/residents/${rid}/incidents?limit=10`, { credentials: 'include' });
+        if (r.ok) {
+          const j = await r.json();
+          const ok = (j.items || []).some((it: any) => (it.type || '') === 'Medication Error' && (String(it.severity || '').toUpperCase() === 'HIGH'));
+          if (ok) break;
+        }
+      } catch {}
+      await sleep(200);
+    }
+  }, residentId);
+  await page.reload();
   await expect(page.getByText(/Medication Error \(severity: HIGH\)/).first()).toBeVisible({ timeout: 10000 });
 });
