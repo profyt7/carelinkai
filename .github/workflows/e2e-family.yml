@@ -7,6 +7,13 @@ on:
     branches: [ "**" ]
   workflow_dispatch:
 
+  permissions:
+  contents: read
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   e2e-residents:
     runs-on: ubuntu-latest
