@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireOperatorOrAdmin } from '@/lib/rbac';
@@ -35,14 +37,14 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     if (session!.user!.role === 'OPERATOR') {
       const me = await prisma.user.findUnique({ where: { email: session!.user!.email! }, select: { id: true } });
       const op = me ? await prisma.operator.findUnique({ where: { userId: me.id }, select: { id: true } }) : null;
-      if (!op || resident.home?.operatorId !== op.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      if (!op || resident.home?.operatorId !== op.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403, headers: { 'Cache-Control': 'no-store' } });
     }
 
     const contacts = await prisma.residentContact.findMany({ where: { residentId: params.id }, orderBy: { createdAt: 'asc' } });
-    return NextResponse.json({ items: contacts });
+    return NextResponse.json({ items: contacts }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (e) {
     console.error('contacts GET error', e);
-    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Server error' }, { status: 500, headers: { 'Cache-Control': 'no-store' } });
   }
 }
 
@@ -60,7 +62,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     if (session!.user!.role === 'OPERATOR') {
       const me = await prisma.user.findUnique({ where: { email: session!.user!.email! }, select: { id: true } });
       const op = me ? await prisma.operator.findUnique({ where: { userId: me.id }, select: { id: true } }) : null;
-      if (!op || resident.home?.operatorId !== op.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      if (!op || resident.home?.operatorId !== op.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403, headers: { 'Cache-Control': 'no-store' } });
     }
 
     const body = await req.json().catch(() => ({}));
@@ -84,9 +86,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
     Sentry.addBreadcrumb({ category: 'resident', message: 'contacts_updated', level: 'info', data: { residentId: resident.id, count: items.length } });
     await createAuditLogFromRequest(req, 'UPDATE', 'ResidentContact', resident.id, 'Updated resident contacts');
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (e: any) {
     console.error('contacts PUT error', e);
-    return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
+    return NextResponse.json({ error: 'Invalid payload' }, { status: 400, headers: { 'Cache-Control': 'no-store' } });
   }
 }

@@ -1,15 +1,14 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { cookies, headers } from 'next/headers';
+import { getBaseUrl } from '@/lib/http';
 import { EditResidentForm } from '@/components/operator/residents/EditResidentForm';
 
 async function fetchResident(id: string) {
   const cookieHeader = cookies().toString();
   const h = headers();
-  const proto = h.get('x-forwarded-proto') ?? 'https';
-  const host = h.get('host') ?? '';
-  const origin = `${proto}://${host}`;
-  const res = await fetch(`${origin}/api/residents/${id}`, {
+  const base = getBaseUrl(h);
+  const res = await fetch(`${base}/api/residents/${id}`, {
     cache: 'no-store',
     headers: { cookie: cookieHeader },
   });

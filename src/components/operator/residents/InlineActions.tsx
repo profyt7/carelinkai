@@ -1,5 +1,6 @@
 "use client";
-import { useTransition, useState } from 'react';
+import { useTransition, useState, useRef } from 'react';
+import { toast } from 'react-hot-toast';
 
 type HomeOption = { id: string; name: string };
 
@@ -7,7 +8,7 @@ export function InlineActions({ id, status, homes = [] as HomeOption[] }: { id: 
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
   const [showTransfer, setShowTransfer] = useState(false);
-  const [targetHomeId, setTargetHomeId] = useState<string>(homes[0]?.id ?? "");
+  const selectRef = useRef<HTMLSelectElement | null>(null);
   async function call(path: string, body: any) {
     setErr(null);
     const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -16,6 +17,7 @@ export function InlineActions({ id, status, homes = [] as HomeOption[] }: { id: 
       setErr(j.error || 'Action failed');
       return false;
     }
+    toast.success('Success');
     return true;
   }
   const today = new Date().toISOString().slice(0, 10);
@@ -25,34 +27,33 @@ export function InlineActions({ id, status, homes = [] as HomeOption[] }: { id: 
         <button
           className="btn btn-xs"
           disabled={pending}
-          onClick={() => start(async () => { await call(`/api/residents/${id}/admit`, { admissionDate: today }); location.reload(); })}
+          onClick={() => start(async () => { const ok = await call(`/api/residents/${id}/admit`, { admissionDate: today }); if (ok) location.reload(); })}
         >Admit</button>
       ) : (
         <>
           <button
             className="btn btn-xs"
             disabled={pending}
-            onClick={() => start(async () => { await call(`/api/residents/${id}/discharge`, { dischargeDate: today, status: 'DISCHARGED' }); location.reload(); })}
+            onClick={() => start(async () => { const ok = await call(`/api/residents/${id}/discharge`, { dischargeDate: today, status: 'DISCHARGED' }); if (ok) location.reload(); })}
           >Discharge</button>
           <button
             className="btn btn-xs btn-danger"
             disabled={pending}
-            onClick={() => start(async () => { await call(`/api/residents/${id}/discharge`, { dischargeDate: today, status: 'DECEASED' }); location.reload(); })}
+            onClick={() => start(async () => { const ok = await call(`/api/residents/${id}/discharge`, { dischargeDate: today, status: 'DECEASED' }); if (ok) location.reload(); })}
           >Deceased</button>
           <div className="relative inline-flex items-center">
             <button
               type="button"
               className="btn btn-xs"
               onClick={() => setShowTransfer((v) => !v)}
-              disabled={pending}
             >Transfer</button>
             {showTransfer && (
               <div className="absolute z-10 top-full right-0 mt-1 p-2 bg-white border rounded shadow min-w-[220px]">
                 <div className="flex items-center gap-2">
                   <select
                     className="border rounded px-2 py-1 text-xs max-w-[160px]"
-                    value={targetHomeId}
-                    onChange={(e) => setTargetHomeId(e.target.value)}
+                    ref={selectRef}
+                    defaultValue=""
                   >
                     <option value="">Select home…</option>
                     {homes.map((h) => (
@@ -61,9 +62,10 @@ export function InlineActions({ id, status, homes = [] as HomeOption[] }: { id: 
                   </select>
                   <button
                     className="btn btn-xs"
-                    disabled={pending || !targetHomeId}
                     onClick={() => start(async () => {
-                      const ok = await call(`/api/residents/${id}/transfer`, { homeId: targetHomeId, effectiveDate: new Date().toISOString() });
+                      const selected = selectRef.current?.value || "";
+                      if (!selected) { setErr('Select a home'); return; }
+                      const ok = await call(`/api/residents/${id}/transfer`, { homeId: selected, effectiveDate: new Date().toISOString() });
                       if (ok) {
                         setShowTransfer(false);
                         location.reload();

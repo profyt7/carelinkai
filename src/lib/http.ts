@@ -9,3 +9,11 @@ export function getOriginFromHeaders(h: HeaderGetter): string {
     return '';
   }
 }
+
+export function getBaseUrl(h: HeaderGetter): string {
+  const origin = getOriginFromHeaders(h);
+  if (origin) return origin;
+  const envUrl = (process.env['NEXT_PUBLIC_APP_URL'] || process.env['APP_URL'] || '').toString().trim();
+  if (envUrl) return envUrl;
+  return 'http://127.0.0.1:3000';
+}

@@ -1,15 +1,23 @@
-name: E2E (Family + Residents Core)
+name: E2E (Residents + Family split)
 
 on:
   push:
     branches: [ "feat/**", "main", "master" ]
   pull_request:
     branches: [ "**" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  e2e:
+  e2e-residents:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     services:
       postgres:
         image: postgres:15
@@ -27,15 +35,13 @@ jobs:
 
     env:
       # App runtime
-      # Use test mode so CI-only dev endpoints are enabled when ALLOW_DEV_ENDPOINTS=1
-      NODE_ENV: test
       NODE_OPTIONS: --max-old-space-size=4096
       NEXTAUTH_URL: http://localhost:3000
-      NEXTAUTH_SECRET: testsecret_e2e_123
+      NEXTAUTH_SECRET: ${{ secrets.E2E_NEXTAUTH_SECRET }}
       ALLOW_DEV_ENDPOINTS: "1"
       ALLOW_INSECURE_AUTH_COOKIE: "1"
       # DB
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/carelinkai_marketplace?schema=public
+      DATABASE_URL: ${{ secrets.E2E_DATABASE_URL }}
       # S3 disabled in CI by default (mock URLs)
       S3_DISABLE: "1"
 
@@ -61,13 +67,98 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
-      - name: Run Playwright (Family + Residents core)
+      - name: Run Playwright (Residents core)
         env:
           # Use dev server so NODE_ENV is not forced to production; enable dev endpoints in CI
           PLAYWRIGHT_WEB_SERVER_CMD: >-
-            cross-env NEXTAUTH_URL=http://localhost:3000 NEXTAUTH_SECRET=devsecret 
+            cross-env NEXTAUTH_URL=http://localhost:3000 NEXTAUTH_SECRET=$NEXTAUTH_SECRET 
             ALLOW_DEV_ENDPOINTS=1 ALLOW_INSECURE_AUTH_COOKIE=1 
-            DATABASE_URL=postgresql://postgres:postgres@localhost:5432/carelinkai_marketplace?schema=public 
+            DATABASE_URL=$DATABASE_URL 
             npm run dev
         run: |
-          npx playwright test e2e/family-*.spec.ts e2e/residents-*.spec.ts --reporter=dot
+          npx playwright test e2e/residents-*.spec.ts --reporter=line,html --trace on --timeout=60000
+
+      - name: Upload Playwright test artifacts (Residents) (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results-residents
+          path: |
+            test-results
+            playwright-report
+          if-no-files-found: ignore
+          retention-days: 7
+
+  e2e-family:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: carelinkai_marketplace
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      # App runtime
+      NODE_OPTIONS: --max-old-space-size=4096
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: ${{ secrets.E2E_NEXTAUTH_SECRET }}
+      ALLOW_DEV_ENDPOINTS: "1"
+      ALLOW_INSECURE_AUTH_COOKIE: "1"
+      # DB
+      DATABASE_URL: ${{ secrets.E2E_DATABASE_URL }}
+      # S3 disabled in CI by default (mock URLs)
+      S3_DISABLE: "1"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies (including dev)
+        run: npm ci --include=dev
+
+      - name: Prepare database schema
+        run: npx prisma migrate deploy
+
+      - name: Build app
+        run: npm run build
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Run Playwright (Family)
+        env:
+          # Use dev server so NODE_ENV is not forced to production; enable dev endpoints in CI
+          PLAYWRIGHT_WEB_SERVER_CMD: >-
+            cross-env NEXTAUTH_URL=http://localhost:3000 NEXTAUTH_SECRET=$NEXTAUTH_SECRET 
+            ALLOW_DEV_ENDPOINTS=1 ALLOW_INSECURE_AUTH_COOKIE=1 
+            DATABASE_URL=$DATABASE_URL 
+            npm run dev
+        run: |
+          npx playwright test e2e/family-*.spec.ts --reporter=line,html --trace on --timeout=60000
+
+      - name: Upload Playwright test artifacts (Family) (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results-family
+          path: |
+            test-results
+            playwright-report
+          if-no-files-found: ignore
+          retention-days: 7

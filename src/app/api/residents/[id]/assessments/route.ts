@@ -5,6 +5,8 @@ import { createAuditLogFromRequest } from "@/lib/audit";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 // prisma singleton
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
@@ -19,7 +21,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       take: limit,
       select: { id: true, type: true, score: true, data: true, createdAt: true },
     });
-    return NextResponse.json({ items });
+    return NextResponse.json({ items }, { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } });
   } catch (e) {
     console.error("Assessments list error", e);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
@@ -39,7 +41,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     const { type, score, data } = parsed.data;
     const created = await prisma.assessmentResult.create({ data: { residentId: params.id, type, score: score ?? null, data: data ?? null }, select: { id: true } });
     await createAuditLogFromRequest(req, AuditAction.CREATE, 'AssessmentResult', created.id, 'Created assessment result', { residentId: params.id, type });
-    return NextResponse.json({ success: true, id: created.id }, { status: 201 });
+    return NextResponse.json({ success: true, id: created.id }, { status: 201, headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } });
   } catch (e) {
     console.error("Assessments create error", e);
     return NextResponse.json({ error: "Server error" }, { status: 500 });

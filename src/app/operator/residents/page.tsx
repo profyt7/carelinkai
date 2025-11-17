@@ -1,21 +1,20 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { cookies, headers } from 'next/headers';
+import { getBaseUrl } from '@/lib/http';
 import { MOCK_RESIDENTS } from '@/lib/mock/residents';
 import { InlineActions, StatusPill } from '@/components/operator/residents/InlineActions';
 
 async function fetchResidents(params: { q?: string; status?: string; homeId?: string; familyId?: string; cursor?: string }) {
   const cookieHeader = cookies().toString();
-  const h = headers();
-  const proto = h.get('x-forwarded-proto') ?? 'https';
-  const host = h.get('host') ?? '';
-  const origin = `${proto}://${host}`;
   const qParam = params.q ? `&q=${encodeURIComponent(params.q)}` : '';
   const sParam = params.status ? `&status=${encodeURIComponent(params.status)}` : '';
   const hParam = params.homeId ? `&homeId=${encodeURIComponent(params.homeId)}` : '';
   const fParam = params.familyId ? `&familyId=${encodeURIComponent(params.familyId)}` : '';
   const cParam = params.cursor ? `&cursor=${encodeURIComponent(params.cursor)}` : '';
-  const res = await fetch(`${origin}/api/residents?limit=50${qParam}${sParam}${hParam}${fParam}${cParam}`, {
+  const h = headers();
+  const base = getBaseUrl(h);
+  const res = await fetch(`${base}/api/residents?limit=50${qParam}${sParam}${hParam}${fParam}${cParam}`, {
     cache: 'no-store',
     headers: { cookie: cookieHeader },
   });
@@ -27,32 +26,28 @@ async function fetchHomes() {
   // Server-side same-origin fetch with cookies for RBAC scoping to operator homes
   const cookieHeader = cookies().toString();
   const h = headers();
-  const proto = h.get('x-forwarded-proto') ?? 'https';
-  const host = h.get('host') ?? '';
-  const origin = `${proto}://${host}`;
-  const res = await fetch(`${origin}/api/operator/homes`, { cache: 'no-store', headers: { cookie: cookieHeader } });
+  const base = getBaseUrl(h);
+  const res = await fetch(`${base}/api/operator/homes`, { cache: 'no-store', headers: { cookie: cookieHeader } });
   if (!res.ok) return { homes: [] as Array<{ id: string; name: string }> };
   const json = await res.json();
   return { homes: (json.homes ?? []).map((h: any) => ({ id: h.id, name: h.name })) };
 }
 
-export default async function ResidentsPage({ searchParams }: { searchParams?: { q?: string; status?: string; homeId?: string; familyId?: string; cursor?: string } }) {
+export default async function ResidentsPage({ searchParams }: { searchParams?: { q?: string; status?: string; homeId?: string; familyId?: string; cursor?: string; live?: string } }) {
   if (process.env['NEXT_PUBLIC_RESIDENTS_ENABLED'] === 'false') return notFound();
   const mockCookie = cookies().get('carelink_mock_mode')?.value?.toString().trim().toLowerCase() || '';
   const showMock = ['1','true','yes','on'].includes(mockCookie);
+  const liveCookie = cookies().get('carelink_show_live')?.value?.toString().trim().toLowerCase() || '';
+  const forceLive = ['1','true','yes','on'].includes(liveCookie) || ['1','true','yes','on'].includes((searchParams?.live ?? '').toString().trim().toLowerCase());
   const q = searchParams?.q?.toString() || '';
   const status = searchParams?.status?.toString() || '';
   const homeId = searchParams?.homeId?.toString() || '';
   const familyId = searchParams?.familyId?.toString() || '';
   const cursor = searchParams?.cursor?.toString() || '';
-  const data = showMock ? MOCK_RESIDENTS : await fetchResidents({ q, status, homeId, familyId, cursor });
+  const data = showMock && !forceLive ? MOCK_RESIDENTS : await fetchResidents({ q, status, homeId, familyId, cursor });
   const { homes } = showMock ? { homes: [] as Array<{ id: string; name: string }> } : await fetchHomes();
   const items: Array<{ id: string; firstName: string; lastName: string; status: string }> = Array.isArray(data) ? data : (data.items ?? []);
   const nextCursor = Array.isArray(data) ? null : (data.nextCursor ?? null);
-  const h = headers();
-  const proto = h.get('x-forwarded-proto') ?? 'https';
-  const host = h.get('host') ?? '';
-  const origin = `${proto}://${host}`;
   return (
     <div className="p-4 sm:p-6">
       <div className="flex items-center justify-between">
@@ -84,8 +79,24 @@ export default async function ResidentsPage({ searchParams }: { searchParams?: {
             <input type="text" name="familyId" placeholder="Family ID" defaultValue={familyId} className="border rounded px-2 py-1 text-sm" />
             <button className="btn btn-sm" type="submit">Search</button>
           </form>
+          {showMock && (
+            <form action="/operator/residents" className="inline">
+              <input type="hidden" name="live" value={forceLive ? '' : '1'} />
+              <button
+                className="btn btn-sm"
+                formAction={(async () => {
+                  'use server';
+                  const cookieStore = cookies();
+                  try { cookieStore.set('carelink_show_live', forceLive ? '0' : '1', { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', path: '/', maxAge: 60*60*6 }); } catch {}
+                })}
+                type="submit"
+              >
+                {forceLive ? 'Showing Live' : 'Show Live Data'}
+              </button>
+            </form>
+          )}
           {/* Assumption: same-origin CSV export endpoint; preserves current filters; filename hint for UX */}
-          <a className="btn btn-sm" download="residents.csv" href={`${origin}/api/residents?limit=1000${q ? `&q=${encodeURIComponent(q)}` : ''}${status ? `&status=${encodeURIComponent(status)}` : ''}${homeId ? `&homeId=${encodeURIComponent(homeId)}` : ''}${familyId ? `&familyId=${encodeURIComponent(familyId)}` : ''}&format=csv`}>
+          <a className="btn btn-sm" download="residents.csv" href={`/api/residents?limit=1000${q ? `&q=${encodeURIComponent(q)}` : ''}${status ? `&status=${encodeURIComponent(status)}` : ''}${homeId ? `&homeId=${encodeURIComponent(homeId)}` : ''}${familyId ? `&familyId=${encodeURIComponent(familyId)}` : ''}&format=csv`}>
             Export CSV
           </a>
           <Link href="/operator/residents/new" className="btn btn-sm">New Resident</Link>

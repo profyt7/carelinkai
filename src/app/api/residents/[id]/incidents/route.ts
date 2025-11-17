@@ -5,6 +5,9 @@ import { createAuditLogFromRequest } from "@/lib/audit";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 
+// Ensure no caching and dynamic execution in CI/SSR contexts
+export const dynamic = "force-dynamic";
+
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const { error } = await requireOperatorOrAdmin();
@@ -17,7 +20,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       take: limit,
       select: { id: true, type: true, severity: true, description: true, occurredAt: true },
     });
-    return NextResponse.json({ items });
+    return NextResponse.json({ items }, { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } });
   } catch (e) {
     console.error("Incidents list error", e);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
@@ -37,7 +40,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     const { type, severity, description, occurredAt } = parsed.data;
     const created = await prisma.residentIncident.create({ data: { residentId: params.id, type, severity, description: description ?? null, occurredAt: new Date(occurredAt) }, select: { id: true } });
     await createAuditLogFromRequest(req, AuditAction.CREATE, 'ResidentIncident', created.id, 'Created incident', { residentId: params.id, type, severity });
-    return NextResponse.json({ success: true, id: created.id }, { status: 201 });
+    return NextResponse.json({ success: true, id: created.id }, { status: 201, headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } });
   } catch (e) {
     console.error("Incidents create error", e);
     return NextResponse.json({ error: "Server error" }, { status: 500 });

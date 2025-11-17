@@ -20,6 +20,8 @@ const nextAuthHandler = NextAuth(authOptions);
 const limiter = rateLimit({ interval: 60_000, limit: 10, uniqueTokenPerInterval: 5000 });
 
 async function withRateLimit(req: NextRequest) {
+  // Bypass rate limit in CI/e2e/dev flows when explicitly enabled
+  if (process.env['ALLOW_DEV_ENDPOINTS'] === '1') return;
   const ip = (req.headers.get('x-forwarded-for') || (req as any).ip || 'unknown').split(',')[0].trim();
   await limiter.check(10, `auth:${ip}`);
 }

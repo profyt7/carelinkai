@@ -1,6 +1,7 @@
 "use client";
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'react-hot-toast';
 
 export function StatusActions({ residentId, status }: { residentId: string; status: string }) {
   const [date, setDate] = useState<string>(new Date().toISOString().slice(0, 10));
@@ -20,6 +21,7 @@ export function StatusActions({ residentId, status }: { residentId: string; stat
       setError(j.error || 'Failed to admit');
       return;
     }
+    toast.success('Admitted');
     startTransition(() => router.refresh());
   }
 
@@ -35,6 +37,7 @@ export function StatusActions({ residentId, status }: { residentId: string; stat
       setError(j.error || 'Failed to discharge');
       return;
     }
+    toast.success(type === 'DECEASED' ? 'Marked deceased' : 'Discharged');
     startTransition(() => router.refresh());
   }
 
