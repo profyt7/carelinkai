@@ -45,9 +45,9 @@ export default defineConfig({
   },
   projects,
   webServer: {
-    command: webCommand,
-    url: process.env['PLAYWRIGHT_BASE_URL'] || 'http://localhost:3000',
-    reuseExistingServer: !process.env['CI'],
-    timeout: 180_000,
-  },
+  command: process.env.PW_USE_START ? 'npm run start' : 'npm run dev',
+  url: 'http://localhost:3000',
+  reuseExistingServer: !process.env.CI,
+  timeout: 120000, // <— set or increase to 120s
+},
 });
