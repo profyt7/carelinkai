@@ -23,6 +23,7 @@ jobs:
       postgres:
         image: postgres:15
         env:
+          PW_USE_START: '1' 
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: carelinkai_marketplace
@@ -97,6 +98,7 @@ jobs:
       postgres:
         image: postgres:15
         env:
+          PW_USE_START: '1' 
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: carelinkai_marketplace
