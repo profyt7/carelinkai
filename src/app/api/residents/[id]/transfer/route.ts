@@ -104,7 +104,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       { newHomeId: homeId, effectiveDate: effectiveDate ?? null }
     );
 
-    return NextResponse.json({ success: true, id: result.id });
+    return NextResponse.json(
+      { success: true, id: result.id },
+      { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } }
+    );
   } catch (e) {
     console.error('Resident transfer error', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
