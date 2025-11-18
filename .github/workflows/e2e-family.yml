@@ -16,14 +16,14 @@ concurrency:
 
 jobs:
   e2e-residents:
-    needs: e2e-residents
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      PW_USE_START: '1'
     services:
       postgres:
         image: postgres:15
         env:
-          PW_USE_START: '1' 
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: carelinkai_marketplace
@@ -70,13 +70,6 @@ jobs:
         run: npx playwright install --with-deps
 
       - name: Run Playwright (Residents core)
-        env:
-          # Use dev server so NODE_ENV is not forced to production; enable dev endpoints in CI
-          PLAYWRIGHT_WEB_SERVER_CMD: >-
-            cross-env NEXTAUTH_URL=http://localhost:3000 NEXTAUTH_SECRET=$NEXTAUTH_SECRET 
-            ALLOW_DEV_ENDPOINTS=1 ALLOW_INSECURE_AUTH_COOKIE=1 
-            DATABASE_URL=$DATABASE_URL 
-            npm run dev
         run: |
           npx playwright test e2e/residents-*.spec.ts --reporter=line,html --trace on --timeout=60000
 
@@ -92,13 +85,15 @@ jobs:
           retention-days: 7
 
   e2e-family:
+    needs: e2e-residents
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      PW_USE_START: '1'
     services:
       postgres:
         image: postgres:15
         env:
-          PW_USE_START: '1' 
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: carelinkai_marketplace
@@ -145,13 +140,6 @@ jobs:
         run: npx playwright install --with-deps
 
       - name: Run Playwright (Family)
-        env:
-          # Use dev server so NODE_ENV is not forced to production; enable dev endpoints in CI
-          PLAYWRIGHT_WEB_SERVER_CMD: >-
-            cross-env NEXTAUTH_URL=http://localhost:3000 NEXTAUTH_SECRET=$NEXTAUTH_SECRET 
-            ALLOW_DEV_ENDPOINTS=1 ALLOW_INSECURE_AUTH_COOKIE=1 
-            DATABASE_URL=$DATABASE_URL 
-            npm run dev
         run: |
           npx playwright test e2e/family-*.spec.ts --reporter=line,html --trace on --timeout=60000
 
