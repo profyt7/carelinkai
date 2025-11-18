@@ -16,6 +16,7 @@ concurrency:
 
 jobs:
   e2e-residents:
+    needs: e2e-residents
     runs-on: ubuntu-latest
     timeout-minutes: 45
     services:
