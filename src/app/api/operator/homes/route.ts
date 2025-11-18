@@ -1,11 +1,10 @@
-﻿import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient, UserRole } from "@prisma/client";
+import { NextRequest, NextResponse } from "next/server";
+import { UserRole } from "@prisma/client";
 import { requireOperatorOrAdmin, requireAnyRole } from "@/lib/rbac";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
-
-const prisma = new PrismaClient();
 
 export async function GET() {
   const { session, error } = await requireOperatorOrAdmin();
@@ -70,7 +69,5 @@ export async function POST(req: NextRequest) {
   } catch (e) {
     console.error('Create home failed', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }
