@@ -1,8 +1,7 @@
 ﻿import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient, UserRole, ResidentStatus } from '@prisma/client';
+import { UserRole, ResidentStatus } from '@prisma/client';
 import { requireOperatorOrAdmin } from '@/lib/rbac';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 async function ensureAccess(userEmail: string, residentId: string) {
   const user = await prisma.user.findUnique({ where: { email: userEmail } });
@@ -40,8 +39,6 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   } catch (e) {
     console.error('Resident get error', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -63,7 +60,5 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   } catch (e) {
     console.error('Resident update error', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }
