@@ -22,7 +22,7 @@ export function IncidentsList({ residentId, items }: { residentId: string; items
   async function onSave(id: string) {
     const body: any = {};
     if (form.type.trim()) body.type = form.type.trim();
-    if (form.severity.trim()) body.severity = form.severity.trim();
+    if (form.severity.trim()) body.severity = form.severity.trim().toUpperCase();
     const r = await fetch(`/api/residents/${residentId}/incidents/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     if (!r.ok) { toast.error('Update failed'); return; }
     toast.success('Updated');

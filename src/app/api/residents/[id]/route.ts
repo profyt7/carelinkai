@@ -1,8 +1,9 @@
-﻿import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient, UserRole, ResidentStatus } from '@prisma/client';
-import { requireOperatorOrAdmin } from '@/lib/rbac';
+﻿export const dynamic = 'force-dynamic';
 
-const prisma = new PrismaClient();
+import { NextRequest, NextResponse } from 'next/server';
+import { UserRole, ResidentStatus } from '@prisma/client';
+import { requireOperatorOrAdmin } from '@/lib/rbac';
+import { prisma } from '@/lib/prisma';
 
 async function ensureAccess(userEmail: string, residentId: string) {
   const user = await prisma.user.findUnique({ where: { email: userEmail } });
@@ -34,14 +35,12 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
         createdAt: true, updatedAt: true,
       },
     });
-    if (!resident) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    if (!resident) return NextResponse.json({ error: 'Not found' }, { status: 404, headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } });
     console.log('Resident API GET ok', params.id);
-    return NextResponse.json({ resident });
+    return NextResponse.json({ resident }, { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } });
   } catch (e) {
     console.error('Resident get error', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -63,7 +62,5 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   } catch (e) {
     console.error('Resident update error', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }

@@ -27,6 +27,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const { session, error } = await requireOperatorOrAdmin();
     if (error) return error;
     if (!(await canAccess(session!.user!.email, params.id))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    // Ensure the incident belongs to the resident before updating
+    const current = await prisma.residentIncident.findUnique({ where: { id: params.incidentId }, select: { id: true, residentId: true } });
+    if (!current || current.residentId !== params.id) return NextResponse.json({ error: 'Not found' }, { status: 404, headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } });
     const body = await req.json().catch(() => ({}));
     const Schema = z.object({
       type: z.string().min(1).optional(),
@@ -37,10 +40,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const parsed = Schema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: 'Invalid body', details: parsed.error.format() }, { status: 400 });
     const data: any = { ...parsed.data };
+    if (typeof data.severity === 'string') data.severity = String(data.severity).toUpperCase();
     if (data.occurredAt) data.occurredAt = new Date(data.occurredAt);
-    const updated = await prisma.residentIncident.update({ where: { id: params.incidentId }, data, select: { id: true } });
+    const updated = await prisma.residentIncident.update({ where: { id: params.incidentId }, data, select: { id: true, type: true, severity: true } });
     await createAuditLogFromRequest(req, AuditAction.UPDATE, 'ResidentIncident', updated.id, 'Updated incident', { residentId: params.id });
-    return NextResponse.json({ success: true }, { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } });
+    return NextResponse.json({ success: true, incident: updated }, { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } });
   } catch (e) {
     console.error('Incident update error', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
