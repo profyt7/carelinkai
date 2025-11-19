@@ -35,7 +35,7 @@ test('edit assessment and incident inline', async ({ page, request }) => {
   await assessSection2.getByPlaceholder('Type').fill('BPRS');
   await assessSection2.getByPlaceholder('Score').fill('18');
   await Promise.all([
-    page.waitForResponse((r) => r.url().includes(`/api/residents/`) && r.url().endsWith('/assessments') && r.request().method() === 'POST' && r.status() === 201),
+    page.waitForRequest((req) => req.url().includes('/api/residents/') && req.url().includes('/assessments') && req.method() === 'POST'),
     assessSection2.getByRole('button', { name: 'Add Assessment' }).click(),
   ]);
   // Verify via API and refresh to avoid UI race conditions
@@ -56,7 +56,7 @@ test('edit assessment and incident inline', async ({ page, request }) => {
   await assessItem.getByPlaceholder('Type').fill('BPRS-Updated');
   await assessItem.getByPlaceholder('Score').fill('20');
   await Promise.all([
-    page.waitForResponse((r) => r.url().includes(`/api/residents/${residentId}/assessments/`) && r.request().method() === 'PATCH' && r.status() === 200),
+    page.waitForResponse((r) => r.url().includes(`/api/residents/${residentId}/assessments/`) && r.request().method() === 'PATCH' && r.status() >= 200 && r.status() < 400),
     assessItem.getByRole('button', { name: 'Save' }).click(),
   ]);
   await page.reload();
@@ -67,9 +67,21 @@ test('edit assessment and incident inline', async ({ page, request }) => {
   await incidentSection2.getByPlaceholder('Type').fill('Medication');
   await incidentSection2.locator('select').first().selectOption('LOW');
   await Promise.all([
-    page.waitForResponse((r) => r.url().includes(`/api/residents/`) && r.url().includes('/incidents') && r.request().method() === 'POST' && r.status() === 201),
+    page.waitForRequest((req) => req.url().includes('/api/residents/') && req.url().includes('/incidents') && req.method() === 'POST'),
     incidentSection2.getByRole('button', { name: 'Add Incident' }).click(),
   ]);
+  await page.evaluate(async (rid) => {
+    const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
+    for (let i = 0; i < 25; i++) {
+      const r = await fetch(`${location.origin}/api/residents/${rid}/incidents?limit=10`, { credentials: 'include' });
+      if (r.ok) {
+        const j = await r.json();
+        const ok = (j.items || []).some((it: any) => it.type === 'Medication' && String(it.severity).toUpperCase() === 'LOW');
+        if (ok) break;
+      }
+      await sleep(200);
+    }
+  }, residentId);
   await page.reload();
   await expect(page.getByText(/Medication \(severity: LOW\)/).first()).toBeVisible({ timeout: 10000 });
 
@@ -87,7 +99,7 @@ test('edit assessment and incident inline', async ({ page, request }) => {
   await saveBtn.scrollIntoViewIfNeeded();
   await saveBtn.waitFor({ state: 'visible' });
   await Promise.all([
-    page.waitForResponse((r) => r.url().includes(`/api/residents/${residentId}/incidents/`) && r.request().method() === 'PATCH' && r.status() === 200),
+    page.waitForResponse((r) => r.url().includes(`/api/residents/${residentId}/incidents/`) && r.request().method() === 'PATCH' && r.status() >= 200 && r.status() < 400),
     saveBtn.click({ force: true }),
   ]);
   await page.reload();

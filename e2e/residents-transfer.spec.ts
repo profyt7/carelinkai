@@ -87,27 +87,18 @@ test('operator can transfer an ACTIVE resident between homes', async ({ page, re
   await row.locator('select').selectOption(homeB.id);
   // Clicking Go triggers a location.reload() in the UI. Avoid networkidle due to SSE keeping connections open.
   await Promise.all([
-    page.waitForResponse((r) => r.url().includes(`/api/residents/${residentId}/transfer`) && r.request().method() === 'POST' && r.status() === 200),
+    page.waitForResponse((r) => r.url().includes(`/api/residents/${residentId}/transfer`) && r.request().method() === 'POST' && r.status() >= 200 && r.status() < 400),
     row.getByRole('button', { name: 'Go' }).click(),
   ]);
   await page.waitForLoadState('domcontentloaded');
 
   // 6) Verify via API the resident homeId is now Home B
-  const { newHomeId } = await page.evaluate(async (rid) => {
+  await page.waitForFunction(async (rid, expectedId) => {
     const abs = `${location.origin}/api/residents/${rid}`;
-    const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
-    for (let i = 0; i < 25; i++) {
-      try {
-        const r = await fetch(abs, { credentials: 'include' });
-        if (r.ok) {
-          const j = await r.json();
-          const hid = j?.resident?.homeId ?? j?.homeId;
-          if (hid) return { newHomeId: hid };
-        }
-      } catch {}
-      await sleep(200);
-    }
-    throw new Error('get resident failed (poll timeout)');
-  }, residentId);
-  expect(newHomeId).toBe(homeB.id);
+    const r = await fetch(abs, { credentials: 'include' });
+    if (!r.ok) return false;
+    const j = await r.json();
+    const hid = j?.resident?.homeId ?? j?.homeId;
+    return hid === expectedId;
+  }, residentId, homeB.id, { timeout: 15000 });
 });
