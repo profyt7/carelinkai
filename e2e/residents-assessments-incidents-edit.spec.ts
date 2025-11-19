@@ -53,22 +53,10 @@ test('assessments + incidents CRUD and profile edit', async ({ page, request }) 
   const assessSection = page.getByRole('heading', { name: 'Assessments' }).locator('..');
   await assessSection.getByPlaceholder('Type').fill('MMSE');
   await assessSection.getByPlaceholder('Score').fill('25');
-  await assessSection.getByPlaceholder('Score').press('Enter');
-  // Robustness: poll API for assessment before asserting UI; then reload
-  await page.evaluate(async (rid) => {
-    const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
-    for (let i = 0; i < 20; i++) {
-      try {
-        const r = await fetch(`${location.origin}/api/residents/${rid}/assessments?limit=10`, { credentials: 'include' });
-        if (r.ok) {
-          const j = await r.json();
-          const ok = (j.items || []).some((it: any) => it.type === 'MMSE' && Number(it.score) === 25);
-          if (ok) break;
-        }
-      } catch {}
-      await sleep(200);
-    }
-  }, residentId);
+  await Promise.all([
+    page.waitForResponse((r) => r.url().includes(`/api/residents/${residentId}/assessments`) && r.request().method() === 'POST' && r.status() === 201),
+    assessSection.getByRole('button', { name: 'Add Assessment' }).click(),
+  ]);
   await page.reload();
   await expect(page.getByText(/MMSE \(score: 25\)/).first()).toBeVisible({ timeout: 10000 });
 
@@ -99,22 +87,10 @@ test('assessments + incidents CRUD and profile edit', async ({ page, request }) 
   const incidentSection = page.getByRole('heading', { name: 'Incidents' }).locator('..');
   await incidentSection.getByPlaceholder('Type').fill('Fall');
   await incidentSection.locator('select').first().selectOption('HIGH');
-  await incidentSection.getByPlaceholder('Type').press('Enter');
-  // Robustness: poll API for incident before asserting UI; then reload
-  await page.evaluate(async (rid) => {
-    const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
-    for (let i = 0; i < 20; i++) {
-      try {
-        const r = await fetch(`${location.origin}/api/residents/${rid}/incidents?limit=10`, { credentials: 'include' });
-        if (r.ok) {
-          const j = await r.json();
-          const ok = (j.items || []).some((it: any) => it.type === 'Fall' && (it.severity || '').toUpperCase() === 'HIGH');
-          if (ok) break;
-        }
-      } catch {}
-      await sleep(200);
-    }
-  }, residentId);
+  await Promise.all([
+    page.waitForResponse((r) => r.url().includes(`/api/residents/${residentId}/incidents`) && r.request().method() === 'POST' && r.status() === 201),
+    incidentSection.getByRole('button', { name: 'Add Incident' }).click(),
+  ]);
   await page.reload();
   await expect(page.getByText(/Fall \(severity: HIGH\)/).first()).toBeVisible({ timeout: 10000 });
 

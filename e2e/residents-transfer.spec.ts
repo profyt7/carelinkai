@@ -87,9 +87,10 @@ test('operator can transfer an ACTIVE resident between homes', async ({ page, re
   await row.locator('select').selectOption(homeB.id);
   // Clicking Go triggers a location.reload() in the UI. Avoid networkidle due to SSE keeping connections open.
   await Promise.all([
-    page.waitForLoadState('domcontentloaded'),
+    page.waitForResponse((r) => r.url().includes(`/api/residents/${residentId}/transfer`) && r.request().method() === 'POST' && r.status() === 200),
     row.getByRole('button', { name: 'Go' }).click(),
   ]);
+  await page.waitForLoadState('domcontentloaded');
 
   // 6) Verify via API the resident homeId is now Home B
   const { newHomeId } = await page.evaluate(async (rid) => {

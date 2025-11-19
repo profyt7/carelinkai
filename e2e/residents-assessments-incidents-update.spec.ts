@@ -34,7 +34,10 @@ test('edit assessment and incident inline', async ({ page, request }) => {
   const assessSection2 = page.getByRole('heading', { name: 'Assessments' }).locator('..');
   await assessSection2.getByPlaceholder('Type').fill('BPRS');
   await assessSection2.getByPlaceholder('Score').fill('18');
-  await assessSection2.getByPlaceholder('Score').press('Enter');
+  await Promise.all([
+    page.waitForResponse((r) => r.url().includes(`/api/residents/`) && r.url().endsWith('/assessments') && r.request().method() === 'POST' && r.status() === 201),
+    assessSection2.getByRole('button', { name: 'Add Assessment' }).click(),
+  ]);
   // Verify via API and refresh to avoid UI race conditions
   await page.evaluate(async (rid) => {
     const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
@@ -52,14 +55,22 @@ test('edit assessment and incident inline', async ({ page, request }) => {
   await assessItem.getByRole('button', { name: 'Edit' }).click();
   await assessItem.getByPlaceholder('Type').fill('BPRS-Updated');
   await assessItem.getByPlaceholder('Score').fill('20');
-  await assessItem.getByRole('button', { name: 'Save' }).click();
+  await Promise.all([
+    page.waitForResponse((r) => r.url().includes(`/api/residents/${residentId}/assessments/`) && r.request().method() === 'PATCH' && r.status() === 200),
+    assessItem.getByRole('button', { name: 'Save' }).click(),
+  ]);
+  await page.reload();
   await expect(page.getByText(/BPRS-Updated \(score: 20\)/).first()).toBeVisible({ timeout: 10000 });
 
   // Add incident
   const incidentSection2 = page.getByRole('heading', { name: 'Incidents' }).locator('..');
   await incidentSection2.getByPlaceholder('Type').fill('Medication');
   await incidentSection2.locator('select').first().selectOption('LOW');
-  await incidentSection2.getByPlaceholder('Type').press('Enter');
+  await Promise.all([
+    page.waitForResponse((r) => r.url().includes(`/api/residents/`) && r.url().includes('/incidents') && r.request().method() === 'POST' && r.status() === 201),
+    incidentSection2.getByRole('button', { name: 'Add Incident' }).click(),
+  ]);
+  await page.reload();
   await expect(page.getByText(/Medication \(severity: LOW\)/).first()).toBeVisible({ timeout: 10000 });
 
   // Edit incident
@@ -75,22 +86,10 @@ test('edit assessment and incident inline', async ({ page, request }) => {
   const saveBtn = iItem.getByRole('button', { name: 'Save' });
   await saveBtn.scrollIntoViewIfNeeded();
   await saveBtn.waitFor({ state: 'visible' });
-  await saveBtn.click({ force: true });
-  // Poll API to ensure the update persisted server-side before asserting UI
-  await page.evaluate(async (rid) => {
-    const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
-    for (let i = 0; i < 25; i++) {
-      try {
-        const r = await fetch(`${location.origin}/api/residents/${rid}/incidents?limit=10`, { credentials: 'include' });
-        if (r.ok) {
-          const j = await r.json();
-          const ok = (j.items || []).some((it: any) => (it.type || '') === 'Medication Error' && (String(it.severity || '').toUpperCase() === 'HIGH'));
-          if (ok) break;
-        }
-      } catch {}
-      await sleep(200);
-    }
-  }, residentId);
+  await Promise.all([
+    page.waitForResponse((r) => r.url().includes(`/api/residents/${residentId}/incidents/`) && r.request().method() === 'PATCH' && r.status() === 200),
+    saveBtn.click({ force: true }),
+  ]);
   await page.reload();
   await expect(page.getByText(/Medication Error \(severity: HIGH\)/).first()).toBeVisible({ timeout: 10000 });
 });
