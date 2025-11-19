@@ -34,10 +34,7 @@ test('edit assessment and incident inline', async ({ page, request }) => {
   const assessSection2 = page.getByRole('heading', { name: 'Assessments' }).locator('..');
   await assessSection2.getByPlaceholder('Type').fill('BPRS');
   await assessSection2.getByPlaceholder('Score').fill('18');
-  await Promise.all([
-    page.waitForRequest((req) => req.url().includes('/api/residents/') && req.url().includes('/assessments') && req.method() === 'POST'),
-    assessSection2.getByRole('button', { name: 'Add Assessment' }).click(),
-  ]);
+  await assessSection2.getByRole('button', { name: 'Add Assessment' }).click();
   // Verify via API and refresh to avoid UI race conditions
   await page.evaluate(async (rid) => {
     const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
@@ -66,10 +63,7 @@ test('edit assessment and incident inline', async ({ page, request }) => {
   const incidentSection2 = page.getByRole('heading', { name: 'Incidents' }).locator('..');
   await incidentSection2.getByPlaceholder('Type').fill('Medication');
   await incidentSection2.locator('select').first().selectOption('LOW');
-  await Promise.all([
-    page.waitForRequest((req) => req.url().includes('/api/residents/') && req.url().includes('/incidents') && req.method() === 'POST'),
-    incidentSection2.getByRole('button', { name: 'Add Incident' }).click(),
-  ]);
+  await incidentSection2.getByRole('button', { name: 'Add Incident' }).click();
   await page.evaluate(async (rid) => {
     const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
     for (let i = 0; i < 25; i++) {

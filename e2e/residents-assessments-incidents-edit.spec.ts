@@ -53,10 +53,7 @@ test('assessments + incidents CRUD and profile edit', async ({ page, request }) 
   const assessSection = page.getByRole('heading', { name: 'Assessments' }).locator('..');
   await assessSection.getByPlaceholder('Type').fill('MMSE');
   await assessSection.getByPlaceholder('Score').fill('25');
-  await Promise.all([
-    page.waitForRequest((req) => req.url().includes(`/api/residents/${residentId}/assessments`) && req.method() === 'POST'),
-    assessSection.getByRole('button', { name: 'Add Assessment' }).click(),
-  ]);
+  await assessSection.getByRole('button', { name: 'Add Assessment' }).click();
   // Poll API until the item appears, then reload to reflect it in UI
   await page.evaluate(async (rid) => {
     const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
@@ -100,10 +97,7 @@ test('assessments + incidents CRUD and profile edit', async ({ page, request }) 
   const incidentSection = page.getByRole('heading', { name: 'Incidents' }).locator('..');
   await incidentSection.getByPlaceholder('Type').fill('Fall');
   await incidentSection.locator('select').first().selectOption('HIGH');
-  await Promise.all([
-    page.waitForRequest((req) => req.url().includes(`/api/residents/${residentId}/incidents`) && req.method() === 'POST'),
-    incidentSection.getByRole('button', { name: 'Add Incident' }).click(),
-  ]);
+  await incidentSection.getByRole('button', { name: 'Add Incident' }).click();
   await page.evaluate(async (rid) => {
     const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
     for (let i = 0; i < 25; i++) {
