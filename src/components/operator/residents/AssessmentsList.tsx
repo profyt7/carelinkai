@@ -9,6 +9,24 @@ export function AssessmentsList({ residentId, items }: { residentId: string; ite
   const router = useRouter();
   const [editing, setEditing] = React.useState<string | null>(null);
   const [form, setForm] = React.useState<{ type: string; score: string }>({ type: '', score: '' });
+  const [list, setList] = React.useState<Item[]>(items);
+
+  // Fallback: if SSR provided no items, fetch client-side to avoid any stale SSR/cache issues
+  React.useEffect(() => {
+    let cancelled = false;
+    async function loadIfEmpty() {
+      try {
+        if ((list?.length ?? 0) > 0) return;
+        const r = await fetch(`/api/residents/${residentId}/assessments?limit=10`, { credentials: 'include' });
+        if (!r.ok) return;
+        const j = await r.json();
+        if (!cancelled && Array.isArray(j.items)) setList(j.items as Item[]);
+      } catch {}
+    }
+    loadIfEmpty();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [residentId]);
   async function onDelete(id: string) {
     if (!confirm('Delete this assessment?')) return;
     const r = await fetch(`/api/residents/${residentId}/assessments/${id}`, { method: 'DELETE', credentials: 'include' });
@@ -17,6 +35,8 @@ export function AssessmentsList({ residentId, items }: { residentId: string; ite
       return;
     }
     toast.success('Deleted');
+    // Optimistically update list; also trigger a refresh to keep SSR in sync
+    setList((prev) => prev.filter((a) => a.id !== id));
     router.refresh();
   }
   async function onSave(id: string) {
@@ -27,11 +47,16 @@ export function AssessmentsList({ residentId, items }: { residentId: string; ite
     if (!r.ok) { toast.error('Update failed'); return; }
     toast.success('Updated');
     setEditing(null);
+    // Soft refresh list from API to reflect changes
+    try {
+      const rr = await fetch(`/api/residents/${residentId}/assessments?limit=10`, { credentials: 'include' });
+      if (rr.ok) { const j = await rr.json(); if (Array.isArray(j.items)) setList(j.items as Item[]); }
+    } catch {}
     router.refresh();
   }
   return (
     <ul className="text-sm list-disc ml-4">
-      {items.map((a) => (
+      {(list || []).map((a) => (
         <li key={a.id} className="flex items-center gap-2">
           {editing === a.id ? (
             <div className="flex items-center gap-2">
