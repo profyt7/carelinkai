@@ -36,23 +36,20 @@ test('edit assessment and incident inline', async ({ page, request }) => {
     return j.id as string;
   }, { familyId: (family.familyId as string), homeId });
 
-  await page.goto(`/operator/residents/${residentId}`, { waitUntil: 'domcontentloaded' });
-
-  // Seed initial assessment via API to focus this spec on inline editing UX
-  await page.evaluate(async (rid) => {
-    const r0 = await fetch(`${location.origin}/api/residents/${rid}/assessments`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-      body: JSON.stringify({ type: 'BPRS', score: 18 }),
+  // Pre-seed initial assessment BEFORE navigation to remove race
+  {
+    const createA = await request.post(`/api/residents/${residentId}/assessments`, {
+      data: { type: 'BPRS', score: 18 },
     });
-    if (!r0.ok) throw new Error('seed assessment failed');
-    const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
-    for (let i = 0; i < 20; i++) {
-      const r = await fetch(`${location.origin}/api/residents/${rid}/assessments?limit=10`, { credentials: 'include' });
-      if (r.ok) { const j = await r.json(); if ((j.items || []).length > 0) break; }
-      await sleep(200);
+    expect(createA.ok()).toBeTruthy();
+    for (let i = 0; i < 50; i++) {
+      const g = await request.get(`/api/residents/${residentId}/assessments?limit=10`);
+      if (g.ok()) { const j = await g.json(); if ((j.items || []).some((it: any) => it.type === 'BPRS' && Number(it.score) === 18)) break; }
+      await new Promise(r => setTimeout(r, 200));
     }
-  }, residentId);
-  await page.evaluate(() => location.reload());
+  }
+
+  await page.goto(`/operator/residents/${residentId}`, { waitUntil: 'domcontentloaded' });
   await expect(page.getByText(/BPRS \(score: 18\)/).first()).toBeVisible({ timeout: 30000 });
 
   // Edit assessment (scope to first list item in Assessments)
@@ -66,25 +63,18 @@ test('edit assessment and incident inline', async ({ page, request }) => {
   ]);
   await expect(page.getByText(/BPRS-Updated \(score: 20\)/).first()).toBeVisible({ timeout: 30000 });
 
-  // Seed incident via API, then reload to reflect in UI
-  await page.evaluate(async (rid) => {
-    const r0 = await fetch(`${location.origin}/api/residents/${rid}/incidents`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-      body: JSON.stringify({ type: 'Medication', severity: 'LOW', occurredAt: new Date().toISOString() }),
+  // Pre-seed incident BEFORE navigation as well, already done for assessment; verify visible item (Medication LOW)
+  {
+    const createI = await request.post(`/api/residents/${residentId}/incidents`, {
+      data: { type: 'Medication', severity: 'LOW', occurredAt: new Date().toISOString() },
     });
-    if (!r0.ok) throw new Error('seed incident failed');
-    const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
-    for (let i = 0; i < 25; i++) {
-      const r = await fetch(`${location.origin}/api/residents/${rid}/incidents?limit=10`, { credentials: 'include' });
-      if (r.ok) {
-        const j = await r.json();
-        const ok = (j.items || []).some((it: any) => it.type === 'Medication' && String(it.severity).toUpperCase() === 'LOW');
-        if (ok) break;
-      }
-      await sleep(200);
+    expect(createI.ok()).toBeTruthy();
+    for (let i = 0; i < 50; i++) {
+      const g = await request.get(`/api/residents/${residentId}/incidents?limit=10`);
+      if (g.ok()) { const j = await g.json(); if ((j.items || []).some((it: any) => it.type === 'Medication' && String(it.severity).toUpperCase() === 'LOW')) break; }
+      await new Promise(r => setTimeout(r, 200));
     }
-  }, residentId);
-  await page.evaluate(() => location.reload());
+  }
   await expect(page.getByText(/Medication \(severity: LOW\)/).first()).toBeVisible({ timeout: 30000 });
 
   // Edit incident

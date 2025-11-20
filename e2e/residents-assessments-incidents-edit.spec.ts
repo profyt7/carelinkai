@@ -54,29 +54,40 @@ test('assessments + incidents CRUD and profile edit', async ({ page, request }) 
     return j.id as string;
   }, { familyId: (family.familyId as string), homeId });
 
+  // Pre-seed assessment and incident BEFORE navigating, to avoid race with initial page data fetch
+  {
+    const createA = await request.post(`/api/residents/${residentId}/assessments`, {
+      data: { type: 'MMSE', score: 25 },
+    });
+    expect(createA.ok()).toBeTruthy();
+    // Wait until GET reflects the new assessment
+    for (let i = 0; i < 50; i++) {
+      const g = await request.get(`/api/residents/${residentId}/assessments?limit=10`);
+      if (g.ok()) {
+        const j = await g.json();
+        if ((j.items || []).some((it: any) => it.type === 'MMSE' && Number(it.score) === 25)) break;
+      }
+      await new Promise(r => setTimeout(r, 200));
+    }
+  }
+  {
+    const createI = await request.post(`/api/residents/${residentId}/incidents`, {
+      data: { type: 'Fall', severity: 'HIGH', occurredAt: new Date().toISOString() },
+    });
+    expect(createI.ok()).toBeTruthy();
+    for (let i = 0; i < 50; i++) {
+      const g = await request.get(`/api/residents/${residentId}/incidents?limit=10`);
+      if (g.ok()) {
+        const j = await g.json();
+        if ((j.items || []).some((it: any) => it.type === 'Fall' && String(it.severity).toUpperCase() === 'HIGH')) break;
+      }
+      await new Promise(r => setTimeout(r, 200));
+    }
+  }
+
   await page.goto(`/operator/residents/${residentId}`, { waitUntil: 'domcontentloaded' });
   await expect(page.getByRole('heading', { name: 'Assessments' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Incidents' })).toBeVisible();
-
-  // Seed assessment directly via API (more reliable than UI submit in CI), then hard reload via the browser
-  await page.evaluate(async (rid) => {
-    const r = await fetch(`${location.origin}/api/residents/${rid}/assessments`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-      body: JSON.stringify({ type: 'MMSE', score: 25 }),
-    });
-    if (!r.ok) throw new Error('seed assessment failed');
-    const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
-    for (let i = 0; i < 25; i++) {
-      const r = await fetch(`${location.origin}/api/residents/${rid}/assessments?limit=10`, { credentials: 'include' });
-      if (r.ok) {
-        const j = await r.json();
-        const ok = (j.items || []).some((it: any) => it.type === 'MMSE' && Number(it.score) === 25);
-        if (ok) break;
-      }
-      await sleep(200);
-    }
-  }, residentId);
-  await page.evaluate(() => location.reload());
   await expect(page.getByText(/MMSE \(score: 25\)/).first()).toBeVisible({ timeout: 30000 });
 
   // Delete assessment
@@ -102,25 +113,7 @@ test('assessments + incidents CRUD and profile edit', async ({ page, request }) 
   }, residentId);
   expect(assessCount).toBe(0);
 
-  // Add incident via API seed, then hard reload to reflect in UI
-  await page.evaluate(async (rid) => {
-    const r0 = await fetch(`${location.origin}/api/residents/${rid}/incidents`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-      body: JSON.stringify({ type: 'Fall', severity: 'HIGH', occurredAt: new Date().toISOString() }),
-    });
-    if (!r0.ok) throw new Error('seed incident failed');
-    const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
-    for (let i = 0; i < 25; i++) {
-      const r = await fetch(`${location.origin}/api/residents/${rid}/incidents?limit=10`, { credentials: 'include' });
-      if (r.ok) {
-        const j = await r.json();
-        const ok = (j.items || []).some((it: any) => it.type === 'Fall' && String(it.severity).toUpperCase() === 'HIGH');
-        if (ok) break;
-      }
-      await sleep(200);
-    }
-  }, residentId);
-  await page.evaluate(() => location.reload());
+  // Incident was pre-seeded; verify it is visible
   await expect(page.getByText(/Fall \(severity: HIGH\)/).first()).toBeVisible({ timeout: 30000 });
 
   // Delete incident
