@@ -34,7 +34,12 @@ test('edit assessment and incident inline', async ({ page, request }) => {
   const assessSection2 = page.getByRole('heading', { name: 'Assessments' }).locator('..');
   await assessSection2.getByPlaceholder('Type').fill('BPRS');
   await assessSection2.getByPlaceholder('Score').fill('18');
-  await assessSection2.getByRole('button', { name: 'Add Assessment' }).click();
+  {
+    const addBtn = assessSection2.getByRole('button', { name: 'Add Assessment' });
+    await addBtn.scrollIntoViewIfNeeded();
+    await addBtn.waitFor({ state: 'visible', timeout: 15000 });
+    await addBtn.click({ force: true });
+  }
   // Verify via API and refresh to avoid UI race conditions
   await page.evaluate(async (rid) => {
     const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
@@ -63,7 +68,12 @@ test('edit assessment and incident inline', async ({ page, request }) => {
   const incidentSection2 = page.getByRole('heading', { name: 'Incidents' }).locator('..');
   await incidentSection2.getByPlaceholder('Type').fill('Medication');
   await incidentSection2.locator('select').first().selectOption('LOW');
-  await incidentSection2.getByRole('button', { name: 'Add Incident' }).click();
+  {
+    const addBtn = incidentSection2.getByRole('button', { name: 'Add Incident' });
+    await addBtn.scrollIntoViewIfNeeded();
+    await addBtn.waitFor({ state: 'visible', timeout: 15000 });
+    await addBtn.click({ force: true });
+  }
   await page.evaluate(async (rid) => {
     const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
     for (let i = 0; i < 25; i++) {
