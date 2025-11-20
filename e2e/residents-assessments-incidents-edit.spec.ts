@@ -4,6 +4,15 @@ import { test, expect } from '@playwright/test';
 // - Dev endpoints enabled; using browser-based login for cookies
 
 test('assessments + incidents CRUD and profile edit', async ({ page, request }) => {
+  // Surface browser console and network statuses for debugging in CI
+  page.on('console', (msg) => console.log('[browser]', msg.type(), msg.text()));
+  page.on('response', async (res) => {
+    const url = res.url();
+    const method = res.request().method();
+    if (url.includes('/api/residents/') && (url.includes('/assessments') || url.includes('/incidents')) && ['POST','PATCH','DELETE'].includes(method)) {
+      console.log('[api]', method, url, res.status());
+    }
+  });
   await page.goto('/');
 
   // Seed operator
