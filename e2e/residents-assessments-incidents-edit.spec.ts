@@ -72,7 +72,7 @@ test('assessments + incidents CRUD and profile edit', async ({ page, request }) 
       await sleep(200);
     }
   }, residentId);
-  await page.reload();
+  await page.reload({ waitUntil: 'domcontentloaded' });
   await expect(page.getByText(/MMSE \(score: 25\)/).first()).toBeVisible({ timeout: 10000 });
 
   // Delete assessment
@@ -120,7 +120,7 @@ test('assessments + incidents CRUD and profile edit', async ({ page, request }) 
       await sleep(200);
     }
   }, residentId);
-  await page.reload();
+  await page.reload({ waitUntil: 'domcontentloaded' });
   await expect(page.getByText(/Fall \(severity: HIGH\)/).first()).toBeVisible({ timeout: 10000 });
 
   // Delete incident

@@ -49,7 +49,7 @@ test('edit assessment and incident inline', async ({ page, request }) => {
       await sleep(200);
     }
   }, residentId);
-  await page.reload();
+  await page.reload({ waitUntil: 'domcontentloaded' });
   await expect(page.getByText(/BPRS \(score: 18\)/).first()).toBeVisible({ timeout: 10000 });
 
   // Edit assessment (scope to first list item in Assessments)
@@ -61,7 +61,7 @@ test('edit assessment and incident inline', async ({ page, request }) => {
     page.waitForResponse((r) => r.url().includes(`/api/residents/${residentId}/assessments/`) && r.request().method() === 'PATCH' && r.status() >= 200 && r.status() < 400),
     assessItem.getByRole('button', { name: 'Save' }).click(),
   ]);
-  await page.reload();
+  await page.reload({ waitUntil: 'domcontentloaded' });
   await expect(page.getByText(/BPRS-Updated \(score: 20\)/).first()).toBeVisible({ timeout: 10000 });
 
   // Add incident
