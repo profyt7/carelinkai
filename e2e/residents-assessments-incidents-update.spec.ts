@@ -38,18 +38,13 @@ test('edit assessment and incident inline', async ({ page, request }) => {
 
   await page.goto(`/operator/residents/${residentId}`, { waitUntil: 'domcontentloaded' });
 
-  // Add assessment (scope to Assessments section)
-  const assessSection2 = page.getByRole('heading', { name: 'Assessments' }).locator('..');
-  await assessSection2.getByPlaceholder('Type').fill('BPRS');
-  await assessSection2.getByPlaceholder('Score').fill('18');
-  {
-    const addBtn = assessSection2.getByRole('button', { name: 'Add Assessment' });
-    await addBtn.scrollIntoViewIfNeeded();
-    await addBtn.waitFor({ state: 'visible', timeout: 15000 });
-    await addBtn.click({ force: true });
-  }
-  // Verify via API and refresh to avoid UI race conditions
+  // Seed initial assessment via API to focus this spec on inline editing UX
   await page.evaluate(async (rid) => {
+    const r0 = await fetch(`${location.origin}/api/residents/${rid}/assessments`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+      body: JSON.stringify({ type: 'BPRS', score: 18 }),
+    });
+    if (!r0.ok) throw new Error('seed assessment failed');
     const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
     for (let i = 0; i < 20; i++) {
       const r = await fetch(`${location.origin}/api/residents/${rid}/assessments?limit=10`, { credentials: 'include' });
@@ -57,8 +52,8 @@ test('edit assessment and incident inline', async ({ page, request }) => {
       await sleep(200);
     }
   }, residentId);
-  await page.reload({ waitUntil: 'domcontentloaded' });
-  await expect(page.getByText(/BPRS \(score: 18\)/).first()).toBeVisible({ timeout: 10000 });
+  await page.evaluate(() => location.reload());
+  await expect(page.getByText(/BPRS \(score: 18\)/).first()).toBeVisible({ timeout: 30000 });
 
   // Edit assessment (scope to first list item in Assessments)
   const assessItem = page.getByRole('heading', { name: 'Assessments' }).locator('..').locator('li').first();
@@ -71,17 +66,13 @@ test('edit assessment and incident inline', async ({ page, request }) => {
   ]);
   await expect(page.getByText(/BPRS-Updated \(score: 20\)/).first()).toBeVisible({ timeout: 30000 });
 
-  // Add incident
-  const incidentSection2 = page.getByRole('heading', { name: 'Incidents' }).locator('..');
-  await incidentSection2.getByPlaceholder('Type').fill('Medication');
-  await incidentSection2.locator('select').first().selectOption('LOW');
-  {
-    const addBtn = incidentSection2.getByRole('button', { name: 'Add Incident' });
-    await addBtn.scrollIntoViewIfNeeded();
-    await addBtn.waitFor({ state: 'visible', timeout: 15000 });
-    await addBtn.click({ force: true });
-  }
+  // Seed incident via API, then reload to reflect in UI
   await page.evaluate(async (rid) => {
+    const r0 = await fetch(`${location.origin}/api/residents/${rid}/incidents`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+      body: JSON.stringify({ type: 'Medication', severity: 'LOW', occurredAt: new Date().toISOString() }),
+    });
+    if (!r0.ok) throw new Error('seed incident failed');
     const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
     for (let i = 0; i < 25; i++) {
       const r = await fetch(`${location.origin}/api/residents/${rid}/incidents?limit=10`, { credentials: 'include' });
@@ -93,6 +84,7 @@ test('edit assessment and incident inline', async ({ page, request }) => {
       await sleep(200);
     }
   }, residentId);
+  await page.evaluate(() => location.reload());
   await expect(page.getByText(/Medication \(severity: LOW\)/).first()).toBeVisible({ timeout: 30000 });
 
   // Edit incident

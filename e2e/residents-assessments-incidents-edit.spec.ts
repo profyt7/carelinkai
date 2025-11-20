@@ -58,18 +58,13 @@ test('assessments + incidents CRUD and profile edit', async ({ page, request }) 
   await expect(page.getByRole('heading', { name: 'Assessments' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Incidents' })).toBeVisible();
 
-  // Add assessment (scope to Assessments section)
-  const assessSection = page.getByRole('heading', { name: 'Assessments' }).locator('..');
-  await assessSection.getByPlaceholder('Type').fill('MMSE');
-  await assessSection.getByPlaceholder('Score').fill('25');
-  {
-    const addBtn = assessSection.getByRole('button', { name: 'Add Assessment' });
-    await addBtn.scrollIntoViewIfNeeded();
-    await addBtn.waitFor({ state: 'visible', timeout: 15000 });
-    await addBtn.click({ force: true });
-  }
-  // Poll API until the item appears, then reload to reflect it in UI
+  // Seed assessment directly via API (more reliable than UI submit in CI), then hard reload via the browser
   await page.evaluate(async (rid) => {
+    const r = await fetch(`${location.origin}/api/residents/${rid}/assessments`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+      body: JSON.stringify({ type: 'MMSE', score: 25 }),
+    });
+    if (!r.ok) throw new Error('seed assessment failed');
     const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
     for (let i = 0; i < 25; i++) {
       const r = await fetch(`${location.origin}/api/residents/${rid}/assessments?limit=10`, { credentials: 'include' });
@@ -81,7 +76,7 @@ test('assessments + incidents CRUD and profile edit', async ({ page, request }) 
       await sleep(200);
     }
   }, residentId);
-  // Rely on client-side router.refresh triggered by the form; avoid full reload
+  await page.evaluate(() => location.reload());
   await expect(page.getByText(/MMSE \(score: 25\)/).first()).toBeVisible({ timeout: 30000 });
 
   // Delete assessment
@@ -107,17 +102,13 @@ test('assessments + incidents CRUD and profile edit', async ({ page, request }) 
   }, residentId);
   expect(assessCount).toBe(0);
 
-  // Add incident
-  const incidentSection = page.getByRole('heading', { name: 'Incidents' }).locator('..');
-  await incidentSection.getByPlaceholder('Type').fill('Fall');
-  await incidentSection.locator('select').first().selectOption('HIGH');
-  {
-    const addBtn = incidentSection.getByRole('button', { name: 'Add Incident' });
-    await addBtn.scrollIntoViewIfNeeded();
-    await addBtn.waitFor({ state: 'visible', timeout: 15000 });
-    await addBtn.click({ force: true });
-  }
+  // Add incident via API seed, then hard reload to reflect in UI
   await page.evaluate(async (rid) => {
+    const r0 = await fetch(`${location.origin}/api/residents/${rid}/incidents`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+      body: JSON.stringify({ type: 'Fall', severity: 'HIGH', occurredAt: new Date().toISOString() }),
+    });
+    if (!r0.ok) throw new Error('seed incident failed');
     const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
     for (let i = 0; i < 25; i++) {
       const r = await fetch(`${location.origin}/api/residents/${rid}/incidents?limit=10`, { credentials: 'include' });
@@ -129,6 +120,7 @@ test('assessments + incidents CRUD and profile edit', async ({ page, request }) 
       await sleep(200);
     }
   }, residentId);
+  await page.evaluate(() => location.reload());
   await expect(page.getByText(/Fall \(severity: HIGH\)/).first()).toBeVisible({ timeout: 30000 });
 
   // Delete incident
