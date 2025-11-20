@@ -69,12 +69,12 @@ jobs:
 
       - name: Run Playwright (Residents core)
         env:
-          # Use dev server so NODE_ENV is not forced to production; enable dev endpoints in CI
+          # Run production server for stability; still enable dev endpoints and use CI DB/secret
           PLAYWRIGHT_WEB_SERVER_CMD: >-
             cross-env NEXTAUTH_URL=http://localhost:3000 NEXTAUTH_SECRET=$NEXTAUTH_SECRET 
             ALLOW_DEV_ENDPOINTS=1 ALLOW_INSECURE_AUTH_COOKIE=1 
             DATABASE_URL=$DATABASE_URL 
-            npm run dev
+            npm run start
         run: |
           npx playwright test e2e/residents-*.spec.ts --reporter=line,html --trace on --timeout=60000
 
@@ -143,12 +143,12 @@ jobs:
 
       - name: Run Playwright (Family)
         env:
-          # Use dev server so NODE_ENV is not forced to production; enable dev endpoints in CI
+          # Run production server for stability; still enable dev endpoints and use CI DB/secret
           PLAYWRIGHT_WEB_SERVER_CMD: >-
             cross-env NEXTAUTH_URL=http://localhost:3000 NEXTAUTH_SECRET=$NEXTAUTH_SECRET 
             ALLOW_DEV_ENDPOINTS=1 ALLOW_INSECURE_AUTH_COOKIE=1 
             DATABASE_URL=$DATABASE_URL 
-            npm run dev
+            npm run start
         run: |
           npx playwright test e2e/family-*.spec.ts --reporter=line,html --trace on --timeout=60000
 
