@@ -16,11 +16,19 @@ export function AssessmentsList({ residentId, items }: { residentId: string; ite
     let cancelled = false;
     async function loadIfEmpty() {
       try {
-        if ((list?.length ?? 0) > 0) return;
+        if ((list?.length ?? 0) > 0) {
+          console.log('[AssessmentsList] skip fallback: already have', list.length, 'items');
+          return;
+        }
+        console.log('[AssessmentsList] fallback fetch start', { residentId });
         const r = await fetch(`/api/residents/${residentId}/assessments?limit=10`, { credentials: 'include' });
+        console.log('[AssessmentsList] fallback fetch status', r.status);
         if (!r.ok) return;
         const j = await r.json();
-        if (!cancelled && Array.isArray(j.items)) setList(j.items as Item[]);
+        if (!cancelled && Array.isArray(j.items)) {
+          console.log('[AssessmentsList] fallback fetched items', j.items.length);
+          setList(j.items as Item[]);
+        }
       } catch {}
     }
     loadIfEmpty();

@@ -9,7 +9,7 @@ test('assessments + incidents CRUD and profile edit', async ({ page, request }) 
   page.on('response', async (res) => {
     const url = res.url();
     const method = res.request().method();
-    if (url.includes('/api/residents/') && (url.includes('/assessments') || url.includes('/incidents')) && ['POST','PATCH','DELETE'].includes(method)) {
+    if (url.includes('/api/residents/') && (url.includes('/assessments') || url.includes('/incidents'))) {
       console.log('[api]', method, url, res.status());
     }
   });
