@@ -36,17 +36,11 @@ test('edit assessment and incident inline', async ({ page, request }) => {
     return j.id as string;
   }, { familyId: (family.familyId as string), homeId });
 
-  // Pre-seed initial assessment BEFORE navigation using browser context (carries auth cookies)
-  await page.evaluate(async (rid) => {
-    const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
-    const r0 = await fetch(`${location.origin}/api/residents/${rid}/assessments`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ type: 'BPRS', score: 18 }) });
-    if (!r0.ok) throw new Error('seed assessment failed');
-    for (let i = 0; i < 50; i++) {
-      const g = await fetch(`${location.origin}/api/residents/${rid}/assessments?limit=10`, { credentials: 'include', cache: 'no-store' as RequestCache });
-      if (g.ok) { const j = await g.json(); if ((j.items || []).some((it: any) => it.type === 'BPRS' && Number(it.score) === 18)) break; }
-      await sleep(200);
-    }
-  }, residentId);
+  // Pre-seed via dedicated DEV endpoint (transactional) BEFORE navigation
+  const seedA = await request.post('/api/dev/seed-resident-assessments-incidents', {
+    data: { residentId, assessments: [{ type: 'BPRS', score: 18 }], incidents: [] },
+  });
+  expect(seedA.ok()).toBeTruthy();
 
   await page.goto(`/operator/residents/${residentId}`, { waitUntil: 'domcontentloaded' });
   await expect(page.getByText(/BPRS \(score: 18\)/).first()).toBeVisible({ timeout: 30000 });
@@ -62,17 +56,10 @@ test('edit assessment and incident inline', async ({ page, request }) => {
   ]);
   await expect(page.getByText(/BPRS-Updated \(score: 20\)/).first()).toBeVisible({ timeout: 30000 });
 
-  // Pre-seed incident BEFORE navigation as well (using browser context)
-  await page.evaluate(async (rid) => {
-    const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
-    const r0 = await fetch(`${location.origin}/api/residents/${rid}/incidents`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ type: 'Medication', severity: 'LOW', occurredAt: new Date().toISOString() }) });
-    if (!r0.ok) throw new Error('seed incident failed');
-    for (let i = 0; i < 50; i++) {
-      const g = await fetch(`${location.origin}/api/residents/${rid}/incidents?limit=10`, { credentials: 'include', cache: 'no-store' as RequestCache });
-      if (g.ok) { const j = await g.json(); if ((j.items || []).some((it: any) => it.type === 'Medication' && String(it.severity).toUpperCase() === 'LOW')) break; }
-      await sleep(200);
-    }
-  }, residentId);
+  const seedI = await request.post('/api/dev/seed-resident-assessments-incidents', {
+    data: { residentId, assessments: [], incidents: [{ type: 'Medication', severity: 'LOW', occurredAt: new Date().toISOString() }] },
+  });
+  expect(seedI.ok()).toBeTruthy();
   await expect(page.getByText(/Medication \(severity: LOW\)/).first()).toBeVisible({ timeout: 30000 });
 
   // Edit incident
