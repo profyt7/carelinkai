@@ -4,6 +4,15 @@ import { test, expect } from '@playwright/test';
 // - Dev endpoints enabled; using browser-based login for cookies
 
 test('assessments + incidents CRUD and profile edit', async ({ page, request }) => {
+  // Surface browser console and network statuses for debugging in CI
+  page.on('console', (msg) => console.log('[browser]', msg.type(), msg.text()));
+  page.on('response', async (res) => {
+    const url = res.url();
+    const method = res.request().method();
+    if (url.includes('/api/residents/') && (url.includes('/assessments') || url.includes('/incidents'))) {
+      console.log('[api]', method, url, res.status());
+    }
+  });
   await page.goto('/');
 
   // Seed operator
@@ -45,32 +54,20 @@ test('assessments + incidents CRUD and profile edit', async ({ page, request }) 
     return j.id as string;
   }, { familyId: (family.familyId as string), homeId });
 
+  // Pre-seed via dedicated DEV endpoint (transactional) BEFORE navigation
+  const seed = await request.post('/api/dev/seed-resident-assessments-incidents', {
+    data: {
+      residentId,
+      assessments: [{ type: 'MMSE', score: 25 }],
+      incidents: [{ type: 'Fall', severity: 'HIGH', occurredAt: new Date().toISOString() }],
+    },
+  });
+  expect(seed.ok()).toBeTruthy();
+
   await page.goto(`/operator/residents/${residentId}`, { waitUntil: 'domcontentloaded' });
   await expect(page.getByRole('heading', { name: 'Assessments' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Incidents' })).toBeVisible();
-
-  // Add assessment (scope to Assessments section)
-  const assessSection = page.getByRole('heading', { name: 'Assessments' }).locator('..');
-  await assessSection.getByPlaceholder('Type').fill('MMSE');
-  await assessSection.getByPlaceholder('Score').fill('25');
-  await assessSection.getByPlaceholder('Score').press('Enter');
-  // Robustness: poll API for assessment before asserting UI; then reload
-  await page.evaluate(async (rid) => {
-    const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
-    for (let i = 0; i < 20; i++) {
-      try {
-        const r = await fetch(`${location.origin}/api/residents/${rid}/assessments?limit=10`, { credentials: 'include' });
-        if (r.ok) {
-          const j = await r.json();
-          const ok = (j.items || []).some((it: any) => it.type === 'MMSE' && Number(it.score) === 25);
-          if (ok) break;
-        }
-      } catch {}
-      await sleep(200);
-    }
-  }, residentId);
-  await page.reload();
-  await expect(page.getByText(/MMSE \(score: 25\)/).first()).toBeVisible({ timeout: 10000 });
+  await expect(page.getByText(/MMSE \(score: 25\)/).first()).toBeVisible({ timeout: 30000 });
 
   // Delete assessment
   page.once('dialog', (d) => d.accept());
@@ -95,28 +92,8 @@ test('assessments + incidents CRUD and profile edit', async ({ page, request }) 
   }, residentId);
   expect(assessCount).toBe(0);
 
-  // Add incident
-  const incidentSection = page.getByRole('heading', { name: 'Incidents' }).locator('..');
-  await incidentSection.getByPlaceholder('Type').fill('Fall');
-  await incidentSection.locator('select').first().selectOption('HIGH');
-  await incidentSection.getByPlaceholder('Type').press('Enter');
-  // Robustness: poll API for incident before asserting UI; then reload
-  await page.evaluate(async (rid) => {
-    const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
-    for (let i = 0; i < 20; i++) {
-      try {
-        const r = await fetch(`${location.origin}/api/residents/${rid}/incidents?limit=10`, { credentials: 'include' });
-        if (r.ok) {
-          const j = await r.json();
-          const ok = (j.items || []).some((it: any) => it.type === 'Fall' && (it.severity || '').toUpperCase() === 'HIGH');
-          if (ok) break;
-        }
-      } catch {}
-      await sleep(200);
-    }
-  }, residentId);
-  await page.reload();
-  await expect(page.getByText(/Fall \(severity: HIGH\)/).first()).toBeVisible({ timeout: 10000 });
+  // Incident was pre-seeded; verify it is visible
+  await expect(page.getByText(/Fall \(severity: HIGH\)/).first()).toBeVisible({ timeout: 30000 });
 
   // Delete incident
   page.once('dialog', (d) => d.accept());

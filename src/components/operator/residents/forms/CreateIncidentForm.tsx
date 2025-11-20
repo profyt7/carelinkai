@@ -18,6 +18,7 @@ export function CreateIncidentForm({ residentId }: { residentId: string }) {
       const res = await fetch(`/api/residents/${residentId}/incidents`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error('Failed');

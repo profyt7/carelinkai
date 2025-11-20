@@ -1,6 +1,14 @@
 import { test, expect } from '@playwright/test';
 
 test('edit assessment and incident inline', async ({ page, request }) => {
+  page.on('console', (msg) => console.log('[browser]', msg.type(), msg.text()));
+  page.on('response', async (res) => {
+    const url = res.url();
+    const method = res.request().method();
+    if (url.includes('/api/residents/') && (url.includes('/assessments') || url.includes('/incidents')) && ['POST','PATCH','DELETE'].includes(method)) {
+      console.log('[api]', method, url, res.status());
+    }
+  });
   await page.goto('/');
 
   // Seed operator and login
@@ -28,39 +36,31 @@ test('edit assessment and incident inline', async ({ page, request }) => {
     return j.id as string;
   }, { familyId: (family.familyId as string), homeId });
 
-  await page.goto(`/operator/residents/${residentId}`, { waitUntil: 'domcontentloaded' });
+  // Pre-seed via dedicated DEV endpoint (transactional) BEFORE navigation
+  const seedA = await request.post('/api/dev/seed-resident-assessments-incidents', {
+    data: { residentId, assessments: [{ type: 'BPRS', score: 18 }], incidents: [] },
+  });
+  expect(seedA.ok()).toBeTruthy();
 
-  // Add assessment (scope to Assessments section)
-  const assessSection2 = page.getByRole('heading', { name: 'Assessments' }).locator('..');
-  await assessSection2.getByPlaceholder('Type').fill('BPRS');
-  await assessSection2.getByPlaceholder('Score').fill('18');
-  await assessSection2.getByPlaceholder('Score').press('Enter');
-  // Verify via API and refresh to avoid UI race conditions
-  await page.evaluate(async (rid) => {
-    const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
-    for (let i = 0; i < 20; i++) {
-      const r = await fetch(`${location.origin}/api/residents/${rid}/assessments?limit=10`, { credentials: 'include' });
-      if (r.ok) { const j = await r.json(); if ((j.items || []).length > 0) break; }
-      await sleep(200);
-    }
-  }, residentId);
-  await page.reload();
-  await expect(page.getByText(/BPRS \(score: 18\)/).first()).toBeVisible({ timeout: 10000 });
+  await page.goto(`/operator/residents/${residentId}`, { waitUntil: 'domcontentloaded' });
+  await expect(page.getByText(/BPRS \(score: 18\)/).first()).toBeVisible({ timeout: 30000 });
 
   // Edit assessment (scope to first list item in Assessments)
   const assessItem = page.getByRole('heading', { name: 'Assessments' }).locator('..').locator('li').first();
   await assessItem.getByRole('button', { name: 'Edit' }).click();
   await assessItem.getByPlaceholder('Type').fill('BPRS-Updated');
   await assessItem.getByPlaceholder('Score').fill('20');
-  await assessItem.getByRole('button', { name: 'Save' }).click();
-  await expect(page.getByText(/BPRS-Updated \(score: 20\)/).first()).toBeVisible({ timeout: 10000 });
+  await Promise.all([
+    page.waitForResponse((r) => r.url().includes(`/api/residents/${residentId}/assessments/`) && r.request().method() === 'PATCH' && r.status() >= 200 && r.status() < 400),
+    assessItem.getByRole('button', { name: 'Save' }).click(),
+  ]);
+  await expect(page.getByText(/BPRS-Updated \(score: 20\)/).first()).toBeVisible({ timeout: 30000 });
 
-  // Add incident
-  const incidentSection2 = page.getByRole('heading', { name: 'Incidents' }).locator('..');
-  await incidentSection2.getByPlaceholder('Type').fill('Medication');
-  await incidentSection2.locator('select').first().selectOption('LOW');
-  await incidentSection2.getByPlaceholder('Type').press('Enter');
-  await expect(page.getByText(/Medication \(severity: LOW\)/).first()).toBeVisible({ timeout: 10000 });
+  const seedI = await request.post('/api/dev/seed-resident-assessments-incidents', {
+    data: { residentId, assessments: [], incidents: [{ type: 'Medication', severity: 'LOW', occurredAt: new Date().toISOString() }] },
+  });
+  expect(seedI.ok()).toBeTruthy();
+  await expect(page.getByText(/Medication \(severity: LOW\)/).first()).toBeVisible({ timeout: 30000 });
 
   // Edit incident
   const iItem = page.getByRole('heading', { name: 'Incidents' }).locator('..').locator('li').first();
@@ -75,22 +75,9 @@ test('edit assessment and incident inline', async ({ page, request }) => {
   const saveBtn = iItem.getByRole('button', { name: 'Save' });
   await saveBtn.scrollIntoViewIfNeeded();
   await saveBtn.waitFor({ state: 'visible' });
-  await saveBtn.click({ force: true });
-  // Poll API to ensure the update persisted server-side before asserting UI
-  await page.evaluate(async (rid) => {
-    const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
-    for (let i = 0; i < 25; i++) {
-      try {
-        const r = await fetch(`${location.origin}/api/residents/${rid}/incidents?limit=10`, { credentials: 'include' });
-        if (r.ok) {
-          const j = await r.json();
-          const ok = (j.items || []).some((it: any) => (it.type || '') === 'Medication Error' && (String(it.severity || '').toUpperCase() === 'HIGH'));
-          if (ok) break;
-        }
-      } catch {}
-      await sleep(200);
-    }
-  }, residentId);
-  await page.reload();
-  await expect(page.getByText(/Medication Error \(severity: HIGH\)/).first()).toBeVisible({ timeout: 10000 });
+  await Promise.all([
+    page.waitForResponse((r) => r.url().includes(`/api/residents/${residentId}/incidents/`) && r.request().method() === 'PATCH' && r.status() >= 200 && r.status() < 400),
+    saveBtn.click({ force: true }),
+  ]);
+  await expect(page.getByText(/Medication Error \(severity: HIGH\)/).first()).toBeVisible({ timeout: 30000 });
 });

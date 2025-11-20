@@ -35,11 +35,16 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     const { error } = await requireOperatorOrAdmin();
     if (error) return error;
     const body = await req.json().catch(() => ({}));
+    try { console.log('[assessments] POST body', { residentId: params.id, body }); } catch {}
     const Schema = z.object({ type: z.string().min(1), score: z.number().int().nullable().optional(), data: z.any().optional() });
     const parsed = Schema.safeParse(body);
-    if (!parsed.success) return NextResponse.json({ error: "Invalid body", details: parsed.error.format() }, { status: 400 });
+    if (!parsed.success) {
+      try { console.warn('[assessments] invalid body', parsed.error.flatten()); } catch {}
+      return NextResponse.json({ error: "Invalid body", details: parsed.error.format() }, { status: 400 });
+    }
     const { type, score, data } = parsed.data;
     const created = await prisma.assessmentResult.create({ data: { residentId: params.id, type, score: score ?? null, data: data ?? null }, select: { id: true } });
+    try { console.log('[assessments] created', created.id); } catch {}
     await createAuditLogFromRequest(req, AuditAction.CREATE, 'AssessmentResult', created.id, 'Created assessment result', { residentId: params.id, type });
     return NextResponse.json({ success: true, id: created.id }, { status: 201, headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } });
   } catch (e) {

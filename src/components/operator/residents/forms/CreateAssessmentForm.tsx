@@ -16,6 +16,8 @@ export function CreateAssessmentForm({ residentId }: { residentId: string }) {
       const res = await fetch(`/api/residents/${residentId}/assessments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        // Explicitly include credentials to ensure auth cookies are sent in CI/e2e
+        credentials: 'include',
         body: JSON.stringify({ type, score: score === '' ? null : Number(score) }),
       });
       if (!res.ok) throw new Error('Failed');
