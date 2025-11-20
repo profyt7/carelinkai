@@ -11,7 +11,7 @@ export function IncidentsList({ residentId, items }: { residentId: string; items
   const [form, setForm] = React.useState<{ type: string; severity: string }>({ type: '', severity: '' });
   async function onDelete(id: string) {
     if (!confirm('Delete this incident?')) return;
-    const r = await fetch(`/api/residents/${residentId}/incidents/${id}`, { method: 'DELETE' });
+    const r = await fetch(`/api/residents/${residentId}/incidents/${id}`, { method: 'DELETE', credentials: 'include' });
     if (!r.ok) {
       toast.error('Delete failed');
       return;
@@ -23,7 +23,7 @@ export function IncidentsList({ residentId, items }: { residentId: string; items
     const body: any = {};
     if (form.type.trim()) body.type = form.type.trim();
     if (form.severity.trim()) body.severity = form.severity.trim();
-    const r = await fetch(`/api/residents/${residentId}/incidents/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const r = await fetch(`/api/residents/${residentId}/incidents/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify(body) });
     if (!r.ok) { toast.error('Update failed'); return; }
     toast.success('Updated');
     setEditing(null);

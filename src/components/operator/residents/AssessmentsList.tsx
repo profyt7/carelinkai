@@ -11,7 +11,7 @@ export function AssessmentsList({ residentId, items }: { residentId: string; ite
   const [form, setForm] = React.useState<{ type: string; score: string }>({ type: '', score: '' });
   async function onDelete(id: string) {
     if (!confirm('Delete this assessment?')) return;
-    const r = await fetch(`/api/residents/${residentId}/assessments/${id}`, { method: 'DELETE' });
+    const r = await fetch(`/api/residents/${residentId}/assessments/${id}`, { method: 'DELETE', credentials: 'include' });
     if (!r.ok) {
       toast.error('Delete failed');
       return;
@@ -23,7 +23,7 @@ export function AssessmentsList({ residentId, items }: { residentId: string; ite
     const body: any = {};
     if (form.type.trim()) body.type = form.type.trim();
     if (form.score.trim()) body.score = Number(form.score);
-    const r = await fetch(`/api/residents/${residentId}/assessments/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const r = await fetch(`/api/residents/${residentId}/assessments/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify(body) });
     if (!r.ok) { toast.error('Update failed'); return; }
     toast.success('Updated');
     setEditing(null);
