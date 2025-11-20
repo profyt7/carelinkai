@@ -54,36 +54,26 @@ test('assessments + incidents CRUD and profile edit', async ({ page, request }) 
     return j.id as string;
   }, { familyId: (family.familyId as string), homeId });
 
-  // Pre-seed assessment and incident BEFORE navigating, to avoid race with initial page data fetch
-  {
-    const createA = await request.post(`/api/residents/${residentId}/assessments`, {
-      data: { type: 'MMSE', score: 25 },
-    });
-    expect(createA.ok()).toBeTruthy();
-    // Wait until GET reflects the new assessment
+  // Pre-seed assessment and incident BEFORE navigating, using browser context (includes auth cookies)
+  await page.evaluate(async (rid) => {
+    const postJSON = async (url: string, body: any) => {
+      const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify(body) });
+      if (!r.ok) throw new Error('seed failed ' + url + ' ' + r.status);
+    };
+    const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
+    await postJSON(`${location.origin}/api/residents/${rid}/assessments`, { type: 'MMSE', score: 25 });
     for (let i = 0; i < 50; i++) {
-      const g = await request.get(`/api/residents/${residentId}/assessments?limit=10`);
-      if (g.ok()) {
-        const j = await g.json();
-        if ((j.items || []).some((it: any) => it.type === 'MMSE' && Number(it.score) === 25)) break;
-      }
-      await new Promise(r => setTimeout(r, 200));
+      const g = await fetch(`${location.origin}/api/residents/${rid}/assessments?limit=10`, { credentials: 'include', cache: 'no-store' as RequestCache });
+      if (g.ok) { const j = await g.json(); if ((j.items || []).some((it: any) => it.type === 'MMSE' && Number(it.score) === 25)) break; }
+      await sleep(200);
     }
-  }
-  {
-    const createI = await request.post(`/api/residents/${residentId}/incidents`, {
-      data: { type: 'Fall', severity: 'HIGH', occurredAt: new Date().toISOString() },
-    });
-    expect(createI.ok()).toBeTruthy();
+    await postJSON(`${location.origin}/api/residents/${rid}/incidents`, { type: 'Fall', severity: 'HIGH', occurredAt: new Date().toISOString() });
     for (let i = 0; i < 50; i++) {
-      const g = await request.get(`/api/residents/${residentId}/incidents?limit=10`);
-      if (g.ok()) {
-        const j = await g.json();
-        if ((j.items || []).some((it: any) => it.type === 'Fall' && String(it.severity).toUpperCase() === 'HIGH')) break;
-      }
-      await new Promise(r => setTimeout(r, 200));
+      const g = await fetch(`${location.origin}/api/residents/${rid}/incidents?limit=10`, { credentials: 'include', cache: 'no-store' as RequestCache });
+      if (g.ok) { const j = await g.json(); if ((j.items || []).some((it: any) => it.type === 'Fall' && String(it.severity).toUpperCase() === 'HIGH')) break; }
+      await sleep(200);
     }
-  }
+  }, residentId);
 
   await page.goto(`/operator/residents/${residentId}`, { waitUntil: 'domcontentloaded' });
   await expect(page.getByRole('heading', { name: 'Assessments' })).toBeVisible();
