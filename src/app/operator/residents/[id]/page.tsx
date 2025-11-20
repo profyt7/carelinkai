@@ -13,6 +13,9 @@ import { DocumentsPanel } from '@/components/operator/residents/DocumentsPanel';
 import { AssessmentsList } from '@/components/operator/residents/AssessmentsList';
 import { IncidentsList } from '@/components/operator/residents/IncidentsList';
 
+// Ensure this page is always rendered dynamically so server-side fetches see fresh data
+export const dynamic = 'force-dynamic';
+
 async function fetchResident(id: string) {
   const cookieHeader = cookies().toString();
   const h = headers();
