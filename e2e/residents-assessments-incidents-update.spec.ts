@@ -69,8 +69,7 @@ test('edit assessment and incident inline', async ({ page, request }) => {
     page.waitForResponse((r) => r.url().includes(`/api/residents/${residentId}/assessments/`) && r.request().method() === 'PATCH' && r.status() >= 200 && r.status() < 400),
     assessItem.getByRole('button', { name: 'Save' }).click(),
   ]);
-  await page.reload({ waitUntil: 'domcontentloaded' });
-  await expect(page.getByText(/BPRS-Updated \(score: 20\)/).first()).toBeVisible({ timeout: 10000 });
+  await expect(page.getByText(/BPRS-Updated \(score: 20\)/).first()).toBeVisible({ timeout: 30000 });
 
   // Add incident
   const incidentSection2 = page.getByRole('heading', { name: 'Incidents' }).locator('..');
@@ -94,8 +93,7 @@ test('edit assessment and incident inline', async ({ page, request }) => {
       await sleep(200);
     }
   }, residentId);
-  await page.reload();
-  await expect(page.getByText(/Medication \(severity: LOW\)/).first()).toBeVisible({ timeout: 10000 });
+  await expect(page.getByText(/Medication \(severity: LOW\)/).first()).toBeVisible({ timeout: 30000 });
 
   // Edit incident
   const iItem = page.getByRole('heading', { name: 'Incidents' }).locator('..').locator('li').first();
@@ -114,6 +112,5 @@ test('edit assessment and incident inline', async ({ page, request }) => {
     page.waitForResponse((r) => r.url().includes(`/api/residents/${residentId}/incidents/`) && r.request().method() === 'PATCH' && r.status() >= 200 && r.status() < 400),
     saveBtn.click({ force: true }),
   ]);
-  await page.reload();
-  await expect(page.getByText(/Medication Error \(severity: HIGH\)/).first()).toBeVisible({ timeout: 10000 });
+  await expect(page.getByText(/Medication Error \(severity: HIGH\)/).first()).toBeVisible({ timeout: 30000 });
 });

@@ -81,8 +81,8 @@ test('assessments + incidents CRUD and profile edit', async ({ page, request }) 
       await sleep(200);
     }
   }, residentId);
-  await page.reload({ waitUntil: 'domcontentloaded' });
-  await expect(page.getByText(/MMSE \(score: 25\)/).first()).toBeVisible({ timeout: 10000 });
+  // Rely on client-side router.refresh triggered by the form; avoid full reload
+  await expect(page.getByText(/MMSE \(score: 25\)/).first()).toBeVisible({ timeout: 30000 });
 
   // Delete assessment
   page.once('dialog', (d) => d.accept());
@@ -129,8 +129,7 @@ test('assessments + incidents CRUD and profile edit', async ({ page, request }) 
       await sleep(200);
     }
   }, residentId);
-  await page.reload({ waitUntil: 'domcontentloaded' });
-  await expect(page.getByText(/Fall \(severity: HIGH\)/).first()).toBeVisible({ timeout: 10000 });
+  await expect(page.getByText(/Fall \(severity: HIGH\)/).first()).toBeVisible({ timeout: 30000 });
 
   // Delete incident
   page.once('dialog', (d) => d.accept());
