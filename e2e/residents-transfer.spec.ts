@@ -84,7 +84,10 @@ test('operator can transfer an ACTIVE resident between homes', async ({ page, re
   // 5) Find the exact row for this resident by Details link containing the residentId
   const row = page.locator('tr', { has: page.locator(`a[href="/operator/residents/${residentId}"]`) }).first();
   await row.getByRole('button', { name: 'Transfer' }).click();
-  await row.locator('select').selectOption(homeB.id);
+  const select = row.locator('select');
+  await select.waitFor({ state: 'visible' });
+  await select.selectOption(homeB.id);
+  await expect(select).toHaveValue(homeB.id);
   // Clicking Go triggers a location.reload() in the UI. Avoid networkidle due to SSE; wait for domcontentloaded
   await Promise.all([
     page.waitForLoadState('domcontentloaded'),
