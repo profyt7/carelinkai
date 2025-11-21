@@ -93,23 +93,48 @@ test('operator can transfer an ACTIVE resident between homes', async ({ page, re
     page.waitForLoadState('domcontentloaded'),
     row.getByRole('button', { name: 'Go' }).click(),
   ]);
+  // Best-effort settle to avoid "execution context destroyed" during follow-up page.evaluate
+  // Some environments trigger an additional reload; guard by waiting for 'load' with a short timeout.
+  try {
+    await page.waitForLoadState('load', { timeout: 5000 });
+  } catch {}
 
   // 6) Verify via API the resident homeId is now Home B
-  const { newHomeId } = await page.evaluate(async (rid) => {
-    const abs = `${location.origin}/api/residents/${rid}`;
-    const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
-    for (let i = 0; i < 25; i++) {
-      try {
-        const r = await fetch(abs, { credentials: 'include' });
-        if (r.ok) {
-          const j = await r.json();
-          const hid = j?.resident?.homeId ?? j?.homeId;
-          if (hid) return { newHomeId: hid };
-        }
-      } catch {}
-      await sleep(200);
+  // Perform verification with retry in case a navigation happens mid-evaluate.
+  async function readHomeId(): Promise<string> {
+    return await page.evaluate(async (rid) => {
+      const abs = `${location.origin}/api/residents/${rid}`;
+      const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
+      for (let i = 0; i < 100; i++) { // up to ~10s
+        try {
+          const r = await fetch(abs, { credentials: 'include' });
+          if (r.ok) {
+            const j = await r.json();
+            const hid = j?.resident?.homeId ?? j?.homeId;
+            if (hid) return hid as string;
+          }
+        } catch {}
+        await sleep(100);
+      }
+      throw new Error('get resident failed (poll timeout)');
+    }, residentId);
+  }
+
+  let newHomeId: string | null = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      newHomeId = await readHomeId();
+      break;
+    } catch (e: any) {
+      const msg = String(e?.message || e);
+      if (msg.includes('Execution context was destroyed')) {
+        // Wait for page to fully settle and retry
+        try { await page.waitForLoadState('load', { timeout: 5000 }); } catch {}
+        continue;
+      }
+      throw e;
     }
-    throw new Error('get resident failed (poll timeout)');
-  }, residentId);
+  }
+  if (!newHomeId) throw new Error('failed to read new home id');
   expect(newHomeId).toBe(homeB.id);
 });
