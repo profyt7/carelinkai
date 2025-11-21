@@ -76,13 +76,14 @@ jobs:
             DATABASE_URL=$DATABASE_URL 
             npm run start
         run: |
-          # Run expanded set: transfer, summary, contacts, documents, compliance
+          # Run expanded set: transfer, summary, contacts, documents, compliance, csv-export
           npx playwright test \
             e2e/residents-transfer.spec.ts \
             e2e/residents-summary.spec.ts \
             e2e/residents-contacts.spec.ts \
             e2e/residents-documents.spec.ts \
             e2e/residents-compliance.spec.ts \
+            e2e/residents-csv-export.spec.ts \
             --workers=1 --reporter=line,html --trace on --timeout=60000
 
       - name: Upload Playwright test artifacts (Residents) (always)
