@@ -76,8 +76,12 @@ jobs:
             DATABASE_URL=$DATABASE_URL 
             npm run start
         run: |
-          # Run only the stabilized transfer spec for this PR
-          npx playwright test e2e/residents-transfer.spec.ts --workers=1 --reporter=line,html --trace on --timeout=60000
+          # Run stabilized set: transfer, summary, contacts
+          npx playwright test \
+            e2e/residents-transfer.spec.ts \
+            e2e/residents-summary.spec.ts \
+            e2e/residents-contacts.spec.ts \
+            --workers=1 --reporter=line,html --trace on --timeout=60000
 
       - name: Upload Playwright test artifacts (Residents) (always)
         if: always()
