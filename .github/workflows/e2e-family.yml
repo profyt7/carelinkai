@@ -76,8 +76,14 @@ jobs:
             DATABASE_URL=$DATABASE_URL 
             npm run start
         run: |
-          # Temporarily scope to assessments/incidents specs to stabilize update flow
+          # Re-enable full Residents suite now that it is stable
           npx playwright test \
+            e2e/residents-transfer.spec.ts \
+            e2e/residents-summary.spec.ts \
+            e2e/residents-contacts.spec.ts \
+            e2e/residents-documents.spec.ts \
+            e2e/residents-compliance.spec.ts \
+            e2e/residents-csv-export.spec.ts \
             e2e/residents-assessments-incidents-edit.spec.ts \
             e2e/residents-assessments-incidents-update.spec.ts \
             --workers=1 --reporter=line,html --trace on --timeout=60000
