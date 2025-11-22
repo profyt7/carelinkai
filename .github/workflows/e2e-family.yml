@@ -17,6 +17,10 @@ concurrency:
 jobs:
   e2e-residents:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
     timeout-minutes: 45
     services:
       postgres:
@@ -90,7 +94,7 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
-      - name: Run Playwright (Residents core)
+      - name: Run Playwright (Residents core) (shard ${{ matrix.shard }}/2)
         env:
           # Run production server for stability; still enable dev endpoints and use CI DB/secret
           PLAYWRIGHT_WEB_SERVER_CMD: >-
@@ -110,13 +114,13 @@ jobs:
             e2e/residents-csv-export.spec.ts \
             e2e/residents-assessments-incidents-edit.spec.ts \
             e2e/residents-assessments-incidents-update.spec.ts \
-            --workers=1 --reporter=line,html --trace on --timeout=60000
+            --workers=1 --shard=${{ matrix.shard }}/2 --reporter=line,html --trace on --timeout=60000
 
-      - name: Upload Playwright test artifacts (Residents) (always)
+      - name: Upload Playwright test artifacts (Residents shard ${{ matrix.shard }}) (always)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-test-results-residents
+          name: playwright-test-results-residents-shard-${{ matrix.shard }}
           path: |
             test-results
             playwright-report
