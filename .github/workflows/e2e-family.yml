@@ -63,7 +63,9 @@ jobs:
       - name: Get Playwright version
         id: pw-version
         shell: bash
-        run: echo "version=$(node -p \"require('playwright/package.json').version\")" >> "$GITHUB_OUTPUT"
+        run: |
+          v=$(npx playwright --version | awk '{print $2}')
+          echo "version=$v" >> "$GITHUB_OUTPUT"
 
       - name: Cache Playwright browsers
         uses: actions/cache@v4
@@ -169,7 +171,9 @@ jobs:
       - name: Get Playwright version
         id: pw-version
         shell: bash
-        run: echo "version=$(node -p \"require('playwright/package.json').version\")" >> "$GITHUB_OUTPUT"
+        run: |
+          v=$(npx playwright --version | awk '{print $2}')
+          echo "version=$v" >> "$GITHUB_OUTPUT"
 
       - name: Cache Playwright browsers
         uses: actions/cache@v4
