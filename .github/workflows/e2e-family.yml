@@ -40,6 +40,8 @@ jobs:
       NEXTAUTH_SECRET: ${{ secrets.E2E_NEXTAUTH_SECRET }}
       ALLOW_DEV_ENDPOINTS: "1"
       ALLOW_INSECURE_AUTH_COOKIE: "1"
+      # Cache Playwright browsers to speed up CI
+      PLAYWRIGHT_BROWSERS_PATH: ~/.cache/ms-playwright
       # DB
       DATABASE_URL: ${{ secrets.E2E_DATABASE_URL }}
       # S3 disabled in CI by default (mock URLs)
@@ -57,6 +59,25 @@ jobs:
 
       - name: Install dependencies (including dev)
         run: npm ci --include=dev
+
+      - name: Get Playwright version
+        id: pw-version
+        shell: bash
+        run: echo "version=$(node -p \"require('playwright/package.json').version\")" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-browsers-${{ runner.os }}-${{ steps.pw-version.outputs.version }}
+
+      - name: Cache Next.js build cache
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: next-cache-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            next-cache-${{ runner.os }}-
 
       - name: Prepare database schema
         run: npx prisma migrate deploy
@@ -125,6 +146,8 @@ jobs:
       NEXTAUTH_SECRET: ${{ secrets.E2E_NEXTAUTH_SECRET }}
       ALLOW_DEV_ENDPOINTS: "1"
       ALLOW_INSECURE_AUTH_COOKIE: "1"
+      # Cache Playwright browsers to speed up CI
+      PLAYWRIGHT_BROWSERS_PATH: ~/.cache/ms-playwright
       # DB
       DATABASE_URL: ${{ secrets.E2E_DATABASE_URL }}
       # S3 disabled in CI by default (mock URLs)
@@ -142,6 +165,25 @@ jobs:
 
       - name: Install dependencies (including dev)
         run: npm ci --include=dev
+
+      - name: Get Playwright version
+        id: pw-version
+        shell: bash
+        run: echo "version=$(node -p \"require('playwright/package.json').version\")" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-browsers-${{ runner.os }}-${{ steps.pw-version.outputs.version }}
+
+      - name: Cache Next.js build cache
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: next-cache-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            next-cache-${{ runner.os }}-
 
       - name: Prepare database schema
         run: npx prisma migrate deploy
