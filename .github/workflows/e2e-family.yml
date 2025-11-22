@@ -129,6 +129,10 @@ jobs:
 
   e2e-family:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
     timeout-minutes: 45
     services:
       postgres:
@@ -202,7 +206,7 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
-      - name: Run Playwright (Family)
+      - name: Run Playwright (Family) (shard ${{ matrix.shard }}/2)
         env:
           # Use production server for stability; enable dev endpoints in CI
           PLAYWRIGHT_WEB_SERVER_CMD: >-
@@ -211,13 +215,13 @@ jobs:
             DATABASE_URL=$DATABASE_URL 
             npm run start
         run: |
-          npx playwright test e2e/family-*.spec.ts --reporter=line,html --trace on --timeout=60000
+          npx playwright test e2e/family-*.spec.ts --reporter=line,html --trace retain-on-failure --shard=${{ matrix.shard }}/2 --timeout=60000
 
-      - name: Upload Playwright test artifacts (Family) (always)
+      - name: Upload Playwright test artifacts (Family shard ${{ matrix.shard }}) (always)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-test-results-family
+          name: playwright-test-results-family-shard-${{ matrix.shard }}
           path: |
             test-results
             playwright-report
