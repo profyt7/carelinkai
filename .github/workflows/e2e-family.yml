@@ -79,6 +79,7 @@ jobs:
           # Re-enable full Residents suite now that it is stable
           npx playwright test \
             e2e/residents-transfer.spec.ts \
+            e2e/residents-lifecycle.spec.ts \
             e2e/residents-summary.spec.ts \
             e2e/residents-contacts.spec.ts \
             e2e/residents-documents.spec.ts \
