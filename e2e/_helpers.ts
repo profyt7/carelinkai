@@ -79,3 +79,22 @@ export async function editResidentName(page: Page, newFirst: string) {
   await page.getByRole('button', { name: 'Save Changes' }).click();
   await expect(page.getByRole('heading', { name: new RegExp(newFirst) })).toBeVisible({ timeout: 15000 });
 }
+
+// Family helpers
+export async function upsertFamily(request: APIRequestContext, email: string) {
+  const res = await request.post('/api/dev/upsert-family', {
+    data: { email },
+  });
+  if (!res.ok()) throw new Error('upsert-family failed');
+  const j = await res.json();
+  return j as { success: boolean; familyId: string };
+}
+
+export async function seedFamilyResident(request: APIRequestContext, args: { familyId: string; firstName?: string; lastName?: string }) {
+  const res = await request.post('/api/dev/seed-family-resident', {
+    data: { familyId: args.familyId, firstName: args.firstName, lastName: args.lastName },
+  });
+  if (!res.ok()) throw new Error('seed-family-resident failed');
+  const j = await res.json();
+  return j as { success: boolean; residentId: string };
+}

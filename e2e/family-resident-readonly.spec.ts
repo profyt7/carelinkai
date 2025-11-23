@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { upsertFamily, seedFamilyResident, loginAs } from './_helpers';
 
 // Assumptions:
 // - Built server started via `npm run start:e2e` with ALLOW_DEV_ENDPOINTS=1
@@ -9,36 +10,17 @@ test.describe('Family Portal - Resident Read-only Views', () => {
     // 1) Upsert a family account
     const famEmail = `family.e2e+${Date.now()}@carelinkai.com`;
     await page.goto('/');
-    const upsertRes = await page.evaluate(async (email) => {
-      const res = await fetch(`${location.origin}/api/dev/upsert-family`, {
-        method: 'POST', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ email })
-      });
-      return res.json();
-    }, famEmail) as any;
-    expect(upsertRes?.success).toBeTruthy();
+    const upsertRes = await upsertFamily(page.request, famEmail);
+    expect(upsertRes.success).toBeTruthy();
     const familyId = upsertRes.familyId as string;
 
     // 2) Seed a resident for this family with contacts and compliance
-    const seedRes = await page.evaluate(async (familyId) => {
-      const res = await fetch(`${location.origin}/api/dev/seed-family-resident`, {
-        method: 'POST', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ familyId })
-      });
-      return res.json();
-    }, familyId) as any;
-    expect(seedRes?.success).toBeTruthy();
+    const seedRes = await seedFamilyResident(page.request, { familyId });
+    expect(seedRes.success).toBeTruthy();
     const residentId = seedRes.residentId as string;
 
     // 3) Login as this family user via dev helper
-    const loginRes = await page.evaluate(async (email) => {
-      const res = await fetch(`${location.origin}/api/dev/login`, {
-        method: 'POST', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ email })
-      });
-      return res.json();
-    }, famEmail) as any;
-    expect(loginRes?.ok).toBeTruthy();
+    await loginAs(page, famEmail);
 
     // 4) Navigate to family resident page
     await page.goto(`/family/residents/${residentId}`);
