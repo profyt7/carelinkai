@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { upsertOperator, loginAs, getFirstHomeId, getFamilyId, createResident } from './_helpers';
 
 // Assumptions:
 // - Dev endpoints are enabled in CI via dev server with ALLOW_DEV_ENDPOINTS=1
@@ -8,54 +9,16 @@ import { test, expect } from '@playwright/test';
 test('resident documents: add and delete document via UI', async ({ page, request }) => {
   await page.goto('/');
 
-  // 1) Seed operator and login
-  const up = await request.post('/api/dev/upsert-operator', {
-    data: { email: 'op-docs@example.com', companyName: 'Docs Ops', homes: [{ name: 'Docs Home', capacity: 5 }] },
-  });
-  expect(up.ok()).toBeTruthy();
-
-  const devLoginOk = await page.evaluate(async () => {
-    const r = await fetch(`${location.origin}/api/dev/login`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'op-docs@example.com' })
-    });
-    return r.ok;
-  });
-  expect(devLoginOk).toBeTruthy();
+  // 1) Seed operator and login via helpers
+  await upsertOperator(request, 'op-docs@example.com', { companyName: 'Docs Ops', homes: [{ name: 'Docs Home', capacity: 5 }] });
+  await loginAs(page, 'op-docs@example.com');
 
   // Resolve operator home id to ensure resident is within accessible scope
-  const homeId = await page.evaluate(async () => {
-    const r = await fetch(`${location.origin}/api/operator/homes`, { credentials: 'include' });
-    if (!r.ok) return null;
-    const j = await r.json();
-    return (j.homes && j.homes.length > 0) ? (j.homes[0].id as string) : null;
-  });
+  const homeId = await getFirstHomeId(page);
 
   // 2) Create family and resident
-  const family = await page.evaluate(async () => {
-    const r = await fetch(`${location.origin}/api/user/family`, { credentials: 'include' });
-    if (!r.ok) throw new Error('family failed');
-    return r.json();
-  });
-
-  const residentId = await page.evaluate(async (args) => {
-    const r = await fetch(`${location.origin}/api/residents`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({
-        familyId: args.familyId,
-        homeId: args.homeId,
-        firstName: 'Doc',
-        lastName: ' Test',
-        dateOfBirth: '1955-05-05',
-        gender: 'MALE',
-        status: 'ACTIVE'
-      }),
-    });
-    if (!r.ok) throw new Error('resident create failed');
-    const j = await r.json();
-    return j.id as string;
-  }, { familyId: (family.familyId as string), homeId });
+  const familyId = await getFamilyId(page);
+  const residentId = await createResident(page, { familyId, homeId, firstName: 'Doc', lastName: 'Test' });
 
   // 3) Navigate to resident page and open Documents panel
   await page.goto(`/operator/residents/${residentId}`, { waitUntil: 'domcontentloaded' });

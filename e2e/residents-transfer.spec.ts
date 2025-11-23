@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { upsertOperator, loginAs, getOperatorHomes, getFamilyId, createResident } from './_helpers';
 
 // Assumptions:
 // - Dev endpoints are enabled in CI via npm run dev server with ALLOW_DEV_ENDPOINTS=1
@@ -12,70 +13,24 @@ test('operator can transfer an ACTIVE resident between homes', async ({ page, re
   const HOME_A = `Transfer Home A ${ts}`;
   const HOME_B = `Transfer Home B ${ts}`;
   // 1) Ensure operator with two homes exists
-  const up = await request.post('/api/dev/upsert-operator', {
-    data: {
-      email: 'op-transfer@example.com',
-      companyName: 'Transfer Ops',
-      homes: [
-        { name: HOME_A, capacity: 10 },
-        { name: HOME_B, capacity: 10 },
-      ],
-    },
-  });
-  expect(up.ok()).toBeTruthy();
-  const upJson = await up.json();
-  const ensuredHomes = upJson.homes as Array<{ id: string; name: string }>;
+  await upsertOperator(request, 'op-transfer@example.com', { companyName: 'Transfer Ops', homes: [
+    { name: HOME_A, capacity: 10 },
+    { name: HOME_B, capacity: 10 },
+  ]});
 
   // 2) Log in as operator (browser context so auth cookie is set correctly)
-  const devLoginOk = await page.evaluate(async () => {
-    const abs = `${location.origin}/api/dev/login`;
-    const r = await fetch(abs, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'op-transfer@example.com' }),
-    });
-    return r.ok;
-  });
-  expect(devLoginOk).toBeTruthy();
+  await loginAs(page, 'op-transfer@example.com');
 
   // Get authoritative homes list from authenticated operator context
-  const operatorHomes = await page.evaluate(async () => {
-    const r = await fetch(`${location.origin}/api/operator/homes`, { credentials: 'include' });
-    if (!r.ok) throw new Error('fetch homes failed');
-    return r.json();
-  });
-  const namesToIds = new Map<string, string>((operatorHomes.homes as Array<{id:string; name:string}>).map(h => [h.name, h.id]));
+  const operatorHomes = await getOperatorHomes(page);
+  const namesToIds = new Map<string, string>(operatorHomes.map(h => [h.name, h.id]));
   const homeA = { id: namesToIds.get(HOME_A)!, name: HOME_A };
   const homeB = { id: namesToIds.get(HOME_B)!, name: HOME_B };
 
   // 3) Create family and resident directly via API, admitted to Home A
   // Create family for current user
-  const family = await page.evaluate(async () => {
-    const abs = `${location.origin}/api/user/family`;
-    const r = await fetch(abs, { credentials: 'include' });
-    if (!r.ok) throw new Error('family failed');
-    return r.json();
-  });
-  const residentId = await page.evaluate(async (args) => {
-    const abs = `${location.origin}/api/residents`;
-    const r = await fetch(abs, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({
-        familyId: args.familyId,
-        firstName: 'Trans',
-        lastName: 'Fer',
-        dateOfBirth: '1950-01-01',
-        gender: 'FEMALE',
-        status: 'ACTIVE',
-        homeId: args.homeAId,
-      }),
-    });
-    if (!r.ok) throw new Error('resident create failed');
-    const j = await r.json();
-    return j.id as string;
-  }, { familyId: (family.familyId as string), homeAId: homeA.id as string });
+  const familyId = await getFamilyId(page);
+  const residentId = await createResident(page, { familyId, homeId: homeA.id, firstName: 'Trans', lastName: 'Fer' });
 
   // 4) Navigate to operator residents page
   await page.goto('/operator/residents');

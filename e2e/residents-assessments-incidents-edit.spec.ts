@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { upsertOperator, loginAs, getFirstHomeId, getFamilyId, createResident } from './_helpers';
 
 // Assumptions:
 // - Dev endpoints enabled; using browser-based login for cookies
@@ -6,44 +7,16 @@ import { test, expect } from '@playwright/test';
 test('assessments + incidents CRUD and profile edit', async ({ page, request }) => {
   await page.goto('/');
 
-  // Seed operator
-  const up = await request.post('/api/dev/upsert-operator', {
-    data: { email: 'op-ai@example.com', companyName: 'AI Ops', homes: [{ name: 'AI Home', capacity: 6 }] },
-  });
-  expect(up.ok()).toBeTruthy();
-
-  // Login
-  const loggedIn = await page.evaluate(async () => {
-    const r = await fetch(`${location.origin}/api/dev/login`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'op-ai@example.com' })
-    });
-    return r.ok;
-  });
-  expect(loggedIn).toBeTruthy();
+  // Seed operator and login via helpers
+  await upsertOperator(request, 'op-ai@example.com', { companyName: 'AI Ops', homes: [{ name: 'AI Home', capacity: 6 }] });
+  await loginAs(page, 'op-ai@example.com');
 
   // Resolve operator home id to scope resident correctly
-  const homeId = await page.evaluate(async () => {
-    const r = await fetch(`${location.origin}/api/operator/homes`, { credentials: 'include' });
-    if (!r.ok) return null;
-    const j = await r.json();
-    return (j.homes && j.homes.length > 0) ? (j.homes[0].id as string) : null;
-  });
+  const homeId = await getFirstHomeId(page);
 
   // Create family + resident
-  const family = await page.evaluate(async () => {
-    const r = await fetch(`${location.origin}/api/user/family`, { credentials: 'include' });
-    if (!r.ok) throw new Error('family failed');
-    return r.json();
-  });
-  const residentId = await page.evaluate(async (args) => {
-    const r = await fetch(`${location.origin}/api/residents`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-      body: JSON.stringify({ familyId: args.familyId, homeId: args.homeId, firstName: 'Assess', lastName: 'Inc', dateOfBirth: '1944-04-04', gender: 'OTHER', status: 'ACTIVE' })
-    });
-    if (!r.ok) throw new Error('resident create failed');
-    const j = await r.json();
-    return j.id as string;
-  }, { familyId: (family.familyId as string), homeId });
+  const familyId = await getFamilyId(page);
+  const residentId = await createResident(page, { familyId, homeId, firstName: 'Assess', lastName: 'Inc' });
 
   await page.goto(`/operator/residents/${residentId}`, { waitUntil: 'domcontentloaded' });
   await expect(page.getByRole('heading', { name: 'Assessments' })).toBeVisible();
