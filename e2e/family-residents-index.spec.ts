@@ -1,33 +1,21 @@
 import { test, expect } from '@playwright/test';
+import { upsertFamily, seedFamilyResident, loginAs } from './_helpers';
 
 test.describe('Family Portal - Residents Index', () => {
   test('lists residents and navigates to detail', async ({ page }) => {
     await page.goto('/');
     const famEmail = `family.index+${Date.now()}@carelinkai.com`;
     // Upsert family
-    const up = await page.evaluate(async (email) => {
-      const r = await fetch('/api/dev/upsert-family', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email }) });
-      return r.json();
-    }, famEmail);
-    expect(up?.success).toBeTruthy();
+    const up = await upsertFamily(page.request, famEmail);
+    expect(up.success).toBeTruthy();
 
     // Seed two residents
-    const r1 = await page.evaluate(async (familyId) => {
-      const r = await fetch('/api/dev/seed-family-resident', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ familyId, firstName: 'Alpha', lastName: 'Resident' }) });
-      return r.json();
-    }, up.familyId);
-    const r2 = await page.evaluate(async (familyId) => {
-      const r = await fetch('/api/dev/seed-family-resident', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ familyId, firstName: 'Beta', lastName: 'Resident' }) });
-      return r.json();
-    }, up.familyId);
-    expect(r1?.success && r2?.success).toBeTruthy();
+    const r1 = await seedFamilyResident(page.request, { familyId: up.familyId, firstName: 'Alpha', lastName: 'Resident' });
+    const r2 = await seedFamilyResident(page.request, { familyId: up.familyId, firstName: 'Beta', lastName: 'Resident' });
+    expect(r1.success && r2.success).toBeTruthy();
 
     // Login as family
-    const login = await page.evaluate(async (email) => {
-      const r = await fetch('/api/dev/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email }) });
-      return r.ok;
-    }, famEmail);
-    expect(login).toBeTruthy();
+    await loginAs(page, famEmail);
 
     // Navigate to residents index and assert rows
     await page.goto('/family/residents');

@@ -1,27 +1,18 @@
 import { test, expect } from '@playwright/test';
+import { upsertFamily, seedFamilyResident, loginAs } from './_helpers';
 
 test('Family Portal - Notifications shows due soon and overdue counts', async ({ page }) => {
   await page.goto('/');
   const famEmail = `family.notify+${Date.now()}@carelinkai.com`;
-  const up = await page.evaluate(async (email) => {
-    const r = await fetch('/api/dev/upsert-family', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email }) });
-    return r.json();
-  }, famEmail);
-  expect(up?.success).toBeTruthy();
+  const up = await upsertFamily(page.request, famEmail);
+  expect(up.success).toBeTruthy();
 
   // Seed one resident with due soon + overdue items
-  const seed = await page.evaluate(async (familyId) => {
-    const r = await fetch('/api/dev/seed-family-resident', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ familyId, firstName: 'Notif', lastName: 'Test' }) });
-    return r.json();
-  }, up.familyId);
-  expect(seed?.success).toBeTruthy();
+  const seed = await seedFamilyResident(page.request, { familyId: up.familyId, firstName: 'Notif', lastName: 'Test' });
+  expect(seed.success).toBeTruthy();
 
   // Login as family
-  const login = await page.evaluate(async (email) => {
-    const r = await fetch('/api/dev/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email }) });
-    return r.ok;
-  }, famEmail);
-  expect(login).toBeTruthy();
+  await loginAs(page, famEmail);
 
   await page.goto('/family/notifications');
   await expect(page.getByRole('heading', { name: 'Notifications' })).toBeVisible();
