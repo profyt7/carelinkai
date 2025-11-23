@@ -114,7 +114,7 @@ jobs:
             e2e/residents-csv-export.spec.ts \
             e2e/residents-assessments-incidents-edit.spec.ts \
             e2e/residents-assessments-incidents-update.spec.ts \
-            --workers=1 --shard=${{ matrix.shard }}/2 --reporter=line,html --trace on --timeout=60000
+            --workers=1 --shard=${{ matrix.shard }}/2 --reporter=line,blob --trace on --timeout=60000
 
       - name: Upload Playwright test artifacts (Residents shard ${{ matrix.shard }}) (always)
         if: always()
@@ -123,7 +123,7 @@ jobs:
           name: playwright-test-results-residents-shard-${{ matrix.shard }}
           path: |
             test-results
-            playwright-report
+            blob-report
           if-no-files-found: ignore
           retention-days: 7
 
@@ -215,7 +215,7 @@ jobs:
             DATABASE_URL=$DATABASE_URL 
             npm run start
         run: |
-          npx playwright test e2e/family-*.spec.ts --reporter=line,html --trace retain-on-failure --shard=${{ matrix.shard }}/2 --timeout=60000
+          npx playwright test e2e/family-*.spec.ts --reporter=line,blob --trace retain-on-failure --shard=${{ matrix.shard }}/2 --timeout=60000
 
       - name: Upload Playwright test artifacts (Family shard ${{ matrix.shard }}) (always)
         if: always()
@@ -224,6 +224,72 @@ jobs:
           name: playwright-test-results-family-shard-${{ matrix.shard }}
           path: |
             test-results
-            playwright-report
+            blob-report
           if-no-files-found: ignore
           retention-days: 7
+
+  e2e-merge-reports:
+    name: Merge Playwright reports
+    runs-on: ubuntu-latest
+    needs: [e2e-residents, e2e-family]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies (including dev)
+        run: npm ci --include=dev
+
+      - name: Download Residents shard 1
+        uses: actions/download-artifact@v4
+        with:
+          name: playwright-test-results-residents-shard-1
+          path: merged/residents-1
+
+      - name: Download Residents shard 2
+        uses: actions/download-artifact@v4
+        with:
+          name: playwright-test-results-residents-shard-2
+          path: merged/residents-2
+
+      - name: Download Family shard 1
+        uses: actions/download-artifact@v4
+        with:
+          name: playwright-test-results-family-shard-1
+          path: merged/family-1
+
+      - name: Download Family shard 2
+        uses: actions/download-artifact@v4
+        with:
+          name: playwright-test-results-family-shard-2
+          path: merged/family-2
+
+      - name: Merge blob reports into a single HTML report
+        run: |
+          mkdir -p merged/all-blobs
+          # Copy the contents of each shard's blob-report into a single directory
+          cp -r merged/residents-1/blob-report/* merged/all-blobs/ || true
+          cp -r merged/residents-2/blob-report/* merged/all-blobs/ || true
+          cp -r merged/family-1/blob-report/* merged/all-blobs/ || true
+          cp -r merged/family-2/blob-report/* merged/all-blobs/ || true
+          ls -la merged/all-blobs
+          npx playwright merge-reports --reporter html merged/all-blobs
+
+      - name: Upload merged Playwright HTML report
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-merged
+          path: playwright-report
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Add job summary
+        shell: bash
+        run: |
+          echo "## Playwright merged report" >> "$GITHUB_STEP_SUMMARY"
+          echo "Merged HTML report uploaded as artifact: playwright-report-merged" >> "$GITHUB_STEP_SUMMARY"
