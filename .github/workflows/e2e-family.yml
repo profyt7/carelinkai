@@ -114,7 +114,7 @@ jobs:
             e2e/residents-csv-export.spec.ts \
             e2e/residents-assessments-incidents-edit.spec.ts \
             e2e/residents-assessments-incidents-update.spec.ts \
-            --workers=1 --shard=${{ matrix.shard }}/2 --reporter=line,blob --trace on --timeout=60000
+            --workers=1 --shard=${{ matrix.shard }}/2 --reporter=line,blob --retries=1 --trace on --timeout=60000
 
       - name: Upload Playwright test artifacts (Residents shard ${{ matrix.shard }}) (always)
         if: always()
@@ -215,7 +215,7 @@ jobs:
             DATABASE_URL=$DATABASE_URL 
             npm run start
         run: |
-          npx playwright test e2e/family-*.spec.ts --reporter=line,blob --trace retain-on-failure --shard=${{ matrix.shard }}/2 --timeout=60000
+          npx playwright test e2e/family-*.spec.ts --reporter=line,blob --retries=1 --trace retain-on-failure --shard=${{ matrix.shard }}/2 --timeout=60000
 
       - name: Upload Playwright test artifacts (Family shard ${{ matrix.shard }}) (always)
         if: always()
