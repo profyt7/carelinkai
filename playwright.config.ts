@@ -39,9 +39,9 @@ export default defineConfig({
   use: {
     baseURL: process.env['PLAYWRIGHT_BASE_URL'] || 'http://localhost:3000',
     extraHTTPHeaders: { 'x-e2e-bypass': '1' },
-    trace: process.env['CI'] ? 'on' : 'on-first-retry',
-    screenshot: process.env['CI'] ? 'on' : 'only-on-failure',
-    video: process.env['CI'] ? 'on' : 'retain-on-failure',
+    trace: process.env['CI'] ? 'retain-on-failure' : 'on-first-retry',
+    screenshot: process.env['CI'] ? 'only-on-failure' : 'only-on-failure',
+    video: process.env['CI'] ? 'retain-on-failure' : 'retain-on-failure',
   },
   projects,
   webServer: {
