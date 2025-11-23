@@ -272,10 +272,12 @@ jobs:
       - name: Merge blob reports into a single HTML report
         run: |
           mkdir -p merged/all-blobs
-          cp -r merged/residents-1/blob-report merged/all-blobs/residents-1
-          cp -r merged/residents-2/blob-report merged/all-blobs/residents-2
-          cp -r merged/family-1/blob-report merged/all-blobs/family-1
-          cp -r merged/family-2/blob-report merged/all-blobs/family-2
+          # Copy the contents of each shard's blob-report into a single directory
+          cp -r merged/residents-1/blob-report/* merged/all-blobs/ || true
+          cp -r merged/residents-2/blob-report/* merged/all-blobs/ || true
+          cp -r merged/family-1/blob-report/* merged/all-blobs/ || true
+          cp -r merged/family-2/blob-report/* merged/all-blobs/ || true
+          ls -la merged/all-blobs
           npx playwright merge-reports --reporter html merged/all-blobs
 
       - name: Upload merged Playwright HTML report
