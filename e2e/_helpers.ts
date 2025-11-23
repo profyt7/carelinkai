@@ -1,7 +1,15 @@
 import { Page, APIRequestContext, expect } from '@playwright/test';
 
-export async function upsertOperator(request: APIRequestContext, email: string) {
-  await request.post('/api/dev/upsert-operator', { data: { email, companyName: 'Ops', homes: [{ name: 'Home A', capacity: 4 }] } });
+type HomeSeed = { name: string; capacity: number };
+
+export async function upsertOperator(
+  request: APIRequestContext,
+  email: string,
+  opts?: { companyName?: string; homes?: HomeSeed[] }
+) {
+  const companyName = opts?.companyName ?? 'Ops';
+  const homes = opts?.homes ?? [{ name: 'Home A', capacity: 4 }];
+  await request.post('/api/dev/upsert-operator', { data: { email, companyName, homes } });
 }
 
 export async function loginAs(page: Page, email: string) {
@@ -12,6 +20,15 @@ export async function loginAs(page: Page, email: string) {
       body: JSON.stringify({ email: e }),
     });
   }, email);
+}
+
+export async function getOperatorHomes(page: Page) {
+  return await page.evaluate(async () => {
+    const r = await fetch(`${location.origin}/api/operator/homes`, { credentials: 'include' });
+    if (!r.ok) return [] as Array<{ id: string; name: string }>;
+    const j = await r.json();
+    return (j.homes || []) as Array<{ id: string; name: string }>;
+  });
 }
 
 export async function getFirstHomeId(page: Page) {

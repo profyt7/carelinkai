@@ -1,32 +1,19 @@
 import { test, expect } from '@playwright/test';
+import { upsertOperator, loginAs, getFirstHomeId, getFamilyId, createResident } from './_helpers';
 
 test('edit assessment and incident inline', async ({ page, request }) => {
   await page.goto('/');
 
-  // Seed operator and login
-  await request.post('/api/dev/upsert-operator', { data: { email: 'op-ai2@example.com', companyName: 'AI Ops 2', homes: [{ name: 'AI Home 2', capacity: 4 }] } });
-  await page.evaluate(async () => {
-    await fetch(`${location.origin}/api/dev/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'op-ai2@example.com' }) });
-  });
+  // Seed operator and login via helpers
+  await upsertOperator(request, 'op-ai2@example.com', { companyName: 'AI Ops 2', homes: [{ name: 'AI Home 2', capacity: 4 }] });
+  await loginAs(page, 'op-ai2@example.com');
 
   // Resolve operator home id for RBAC-conformant access
-  const homeId = await page.evaluate(async () => {
-    const r = await fetch(`${location.origin}/api/operator/homes`, { credentials: 'include' });
-    if (!r.ok) return null;
-    const j = await r.json();
-    return (j.homes && j.homes.length > 0) ? (j.homes[0].id as string) : null;
-  });
+  const homeId = await getFirstHomeId(page);
 
   // Create family + resident
-  const family = await page.evaluate(async () => {
-    const r = await fetch(`${location.origin}/api/user/family`, { credentials: 'include' });
-    return r.json();
-  });
-  const residentId = await page.evaluate(async (args) => {
-    const r = await fetch(`${location.origin}/api/residents`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ familyId: args.familyId, homeId: args.homeId, firstName: 'Edit', lastName: 'Flow', dateOfBirth: '1940-02-02', gender: 'OTHER', status: 'ACTIVE' }) });
-    const j = await r.json();
-    return j.id as string;
-  }, { familyId: (family.familyId as string), homeId });
+  const familyId = await getFamilyId(page);
+  const residentId = await createResident(page, { familyId, homeId, firstName: 'Edit', lastName: 'Flow' });
 
   await page.goto(`/operator/residents/${residentId}`, { waitUntil: 'domcontentloaded' });
 

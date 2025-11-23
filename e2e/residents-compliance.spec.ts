@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { upsertOperator, loginAs, getFirstHomeId, getFamilyId, createResident } from './_helpers';
 
 // [non-bypass] to run only in the non-bypass project locally
 test.describe('[non-bypass] Operator Residents: Compliance end-to-end', () => {
@@ -10,55 +11,18 @@ test.describe('[non-bypass] Operator Residents: Compliance end-to-end', () => {
   test('create resident, add compliance item, mark complete, verify summary', async ({ page, context }) => {
     // Seed operator and a home (use in-page fetch for server readiness and cookie context)
     await page.goto('/');
-    const homeId: string = await page.evaluate(async (args) => {
-      const r = await fetch('/api/dev/upsert-operator', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: args.email, password: args.password, companyName: 'E2E Operator Inc.' }) });
-      if (!r.ok) throw new Error('seed failed');
-      const j = await r.json();
-      return j.homeId as string;
-    }, { email: OP_EMAIL, password: OP_PASSWORD });
+    await upsertOperator(page.request, OP_EMAIL, { companyName: 'E2E Operator Inc.', homes: [{ name: 'Compliance Home', capacity: 5 }] });
+    const homeId: string | null = await getFirstHomeId(page);
 
     // Establish session via dev helper to avoid UI flakiness in CI-like runs
     // Use in-page fetch so Set-Cookie is applied to browser context reliably
-    const devLoginOk = await page.evaluate(async (email) => {
-      try {
-        const r = await fetch('/api/dev/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email })
-        });
-        return r.ok;
-      } catch { return false; }
-    }, OP_EMAIL);
-    expect(devLoginOk).toBeTruthy();
+    await loginAs(page, OP_EMAIL);
 
     // Acquire/ensure a familyId to associate the resident (use in-page fetch to include cookies)
-    const familyId: string = await page.evaluate(async () => {
-      const r = await fetch('/api/user/family', { credentials: 'include' });
-      if (!r.ok) throw new Error('family failed');
-      const j = await r.json();
-      return j.familyId as string;
-    });
+    const familyId: string = await getFamilyId(page);
 
     // Create a resident associated with this operator's home (in-page fetch for auth)
-    const residentId: string = await page.evaluate(async (args) => {
-      const r = await fetch('/api/residents', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          familyId: args.familyId,
-          homeId: args.homeId,
-          firstName: 'E2E',
-          lastName: 'Resident',
-          dateOfBirth: '1940-01-01',
-          gender: 'FEMALE',
-          status: 'ACTIVE',
-        })
-      });
-      if (!r.ok) throw new Error('resident create failed');
-      const j = await r.json();
-      return j.id as string;
-    }, { familyId, homeId });
+    const residentId: string = await createResident(page, { familyId, homeId, firstName: 'E2E', lastName: 'Resident' });
 
     // Navigate to lightweight compliance-only page to avoid SSR streaming hangs in dev
     await page.goto(`/operator/residents/${residentId}/compliance`, { waitUntil: 'domcontentloaded' });
