@@ -271,12 +271,12 @@ jobs:
 
       - name: Merge blob reports into a single HTML report
         run: |
-          npx playwright merge-reports \
-            --reporter html \
-            merged/residents-1/blob-report \
-            merged/residents-2/blob-report \
-            merged/family-1/blob-report \
-            merged/family-2/blob-report
+          mkdir -p merged/all-blobs
+          cp -r merged/residents-1/blob-report merged/all-blobs/residents-1
+          cp -r merged/residents-2/blob-report merged/all-blobs/residents-2
+          cp -r merged/family-1/blob-report merged/all-blobs/family-1
+          cp -r merged/family-2/blob-report merged/all-blobs/family-2
+          npx playwright merge-reports --reporter html merged/all-blobs
 
       - name: Upload merged Playwright HTML report
         uses: actions/upload-artifact@v4
