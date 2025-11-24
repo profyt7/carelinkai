@@ -76,6 +76,7 @@ export default function MessagesPage() {
   const [error, setError] = useState<string | null>(null);
   const [isMobileView, setIsMobileView] = useState(false);
   const [showThreadList, setShowThreadList] = useState(true);
+  const [query, setQuery] = useState('');
 
   // Check for mobile view
   useEffect(() => {
@@ -285,6 +286,8 @@ export default function MessagesPage() {
                   type="text"
                   placeholder="Search messages"
                   className="w-full bg-transparent text-sm focus:outline-none"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
                 />
               </div>
             </div>
@@ -303,7 +306,16 @@ export default function MessagesPage() {
                 </div>
               ) : (
                 <div>
-                  {threads.map((thread) => (
+                  {(
+                    (query.trim().length > 0
+                      ? threads.filter((t) => {
+                          const q = query.trim().toLowerCase();
+                          const name = `${t.user.firstName} ${t.user.lastName}`.toLowerCase();
+                          const last = (t.lastMessage?.content || '').toLowerCase();
+                          return name.includes(q) || last.includes(q);
+                        })
+                      : threads)
+                  ).map((thread) => (
                     <div
                       key={thread.user.id}
                       className={`cursor-pointer border-b border-neutral-100 p-4 hover:bg-neutral-50 ${
