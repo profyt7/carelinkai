@@ -1,5 +1,7 @@
 # CareLinkAI
 
+[![E2E Residents + Family](https://github.com/profyt7/carelinkai/actions/workflows/e2e-family.yml/badge.svg?branch=main)](https://github.com/profyt7/carelinkai/actions/workflows/e2e-family.yml)
+
 Connecting families, assisted-living operators, and caregivers through AI-powered placement, staffing, and billing — all in one HIPAA-ready Progressive Web App.
 
 > “The smarter way to place loved ones & staff your care home.”
@@ -98,6 +100,8 @@ See docs/DEVELOPMENT.md for a fuller local setup and testing guide.
 For production deployment guidance, see docs/DEPLOYMENT.md.
 
 Pull requests must pass ESLint, type-check, and Jest suites (CI pipeline provided in `.github/workflows`).
+
+Nightly E2E status: see the badge above; failures automatically open a GitHub issue with links to the merged Playwright HTML report.
 
 ---
 
