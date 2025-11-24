@@ -10,6 +10,7 @@ import { CreateIncidentForm } from '@/components/operator/residents/forms/Create
 import { CompliancePanel } from '@/components/operator/residents/CompliancePanel';
 import { ContactsPanel } from '@/components/operator/residents/ContactsPanel';
 import { DocumentsPanel } from '@/components/operator/residents/DocumentsPanel';
+import { TimelinePanel } from '@/components/operator/residents/TimelinePanel';
 import { AssessmentsList } from '@/components/operator/residents/AssessmentsList';
 import { IncidentsList } from '@/components/operator/residents/IncidentsList';
 
@@ -100,6 +101,7 @@ export default async function ResidentDetail({ params }: { params: { id: string 
         <section className="lg:col-span-3">
           <DocumentsPanel residentId={resident.id} />
         </section>
+        <TimelinePanel residentId={resident.id} />
         <section className="card">
           <h2 className="font-semibold mb-2 text-neutral-800">Assessments</h2>
           <AssessmentsList residentId={resident.id} items={(assessments.items ?? []) as any[]} />
