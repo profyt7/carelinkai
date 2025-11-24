@@ -1,4 +1,4 @@
-import { Page, APIRequestContext, expect } from '@playwright/test';
+import { expect, type Page, type APIRequestContext } from '@playwright/test';
 
 type HomeSeed = { name: string; capacity: number };
 
