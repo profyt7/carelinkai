@@ -77,6 +77,12 @@ export default function MessagesPage() {
   const [isMobileView, setIsMobileView] = useState(false);
   const [showThreadList, setShowThreadList] = useState(true);
   const [query, setQuery] = useState('');
+  const [showNewMessage, setShowNewMessage] = useState(false);
+  const [caregivers, setCaregivers] = useState<
+    Array<{ employmentId: string; caregiverId: string; name: string; email: string; isActive: boolean }>
+  >([]);
+  const [isLoadingCaregivers, setIsLoadingCaregivers] = useState(false);
+  const [pickerQuery, setPickerQuery] = useState('');
 
   // Check for mobile view
   useEffect(() => {
@@ -280,15 +286,40 @@ export default function MessagesPage() {
           <div className={`border-r border-neutral-200 ${isMobileView ? 'w-full' : 'w-1/3'}`}>
             {/* Thread search */}
             <div className="border-b border-neutral-200 p-4">
-              <div className="flex items-center rounded-full border border-neutral-300 bg-neutral-50 px-3 py-2">
-                <FiSearch className="mr-2 text-neutral-500" />
-                <input
-                  type="text"
-                  placeholder="Search messages"
-                  className="w-full bg-transparent text-sm focus:outline-none"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                />
+              <div className="flex items-center gap-2">
+                <div className="flex flex-1 items-center rounded-full border border-neutral-300 bg-neutral-50 px-3 py-2">
+                  <FiSearch className="mr-2 text-neutral-500" />
+                  <input
+                    type="text"
+                    placeholder="Search messages"
+                    className="w-full bg-transparent text-sm focus:outline-none"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                  />
+                </div>
+                <button
+                  className="rounded-full border border-neutral-300 px-3 py-2 text-sm hover:bg-neutral-50"
+                  onClick={async () => {
+                    setShowNewMessage(true);
+                    if (caregivers.length === 0 && !isLoadingCaregivers) {
+                      setIsLoadingCaregivers(true);
+                      try {
+                        const res = await fetch('/api/operator/caregivers');
+                        if (res.ok) {
+                          const data = await res.json();
+                          setCaregivers(data.caregivers || []);
+                        }
+                      } catch (e) {
+                        console.error('Failed to load caregivers', e);
+                        setError('Failed to load caregivers');
+                      } finally {
+                        setIsLoadingCaregivers(false);
+                      }
+                    }
+                  }}
+                >
+                  New message
+                </button>
               </div>
             </div>
             
@@ -441,6 +472,72 @@ export default function MessagesPage() {
           </div>
         )}
         </div>
+
+        {/* New Message Picker Modal */}
+        {showNewMessage && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
+            <div className="w-full max-w-lg rounded-lg bg-white shadow-lg">
+              <div className="flex items-center justify-between border-b px-4 py-3">
+                <h3 className="font-medium">Start a new message</h3>
+                <button
+                  className="rounded-full p-2 text-neutral-500 hover:bg-neutral-100"
+                  onClick={() => setShowNewMessage(false)}
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="p-4">
+                <div className="mb-3 flex items-center rounded-full border border-neutral-300 bg-neutral-50 px-3 py-2">
+                  <FiSearch className="mr-2 text-neutral-500" />
+                  <input
+                    type="text"
+                    placeholder="Search caregivers by name or email"
+                    className="w-full bg-transparent text-sm focus:outline-none"
+                    value={pickerQuery}
+                    onChange={(e) => setPickerQuery(e.target.value)}
+                  />
+                </div>
+                <div className="max-h-80 overflow-y-auto">
+                  {isLoadingCaregivers ? (
+                    <div className="flex items-center justify-center py-8 text-neutral-500">Loading…</div>
+                  ) : caregivers.length === 0 ? (
+                    <div className="py-8 text-center text-neutral-500">No caregivers available</div>
+                  ) : (
+                    (pickerQuery.trim()
+                      ? caregivers.filter((c) => {
+                          const q = pickerQuery.trim().toLowerCase();
+                          return (
+                            (c.name || '').toLowerCase().includes(q) ||
+                            (c.email || '').toLowerCase().includes(q)
+                          );
+                        })
+                      : caregivers
+                    ).map((c) => (
+                      <button
+                        key={c.employmentId}
+                        className="flex w-full items-center justify-between border-b px-3 py-3 text-left hover:bg-neutral-50"
+                        onClick={async () => {
+                          setShowNewMessage(false);
+                          setPickerQuery('');
+                          setQuery('');
+                          setSelectedThreadUserId(c.caregiverId);
+                          await fetchMessages(c.caregiverId);
+                          if (isMobileView) setShowThreadList(false);
+                        }}
+                      >
+                        <div>
+                          <div className="font-medium">{c.name}</div>
+                          <div className="text-xs text-neutral-500">{c.email}</div>
+                        </div>
+                        <span className="text-sm text-primary-600">Message</span>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* Error Toast */}
         {error && (
