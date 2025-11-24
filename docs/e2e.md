@@ -28,11 +28,18 @@ Helpers in `e2e/_helpers.ts` wrap these flows (`upsertOperator`, `loginAs`, `get
 - Runs against a production build for stability (`npm run start`) with dev endpoints enabled.
 - Sharding:
   - Residents and Family jobs each run as 2 matrix shards with `--workers=1` per shard to minimize flakiness.
+- Retries:
+  - CI uses `--retries=1` to smooth out rare, non-deterministic flakes without masking issues.
 - Caching:
   - Playwright browsers cached at `~/.cache/ms-playwright`.
   - Next.js build cache at `.next/cache`.
 - Artifacts:
+  - Shards emit Playwright `blob` reports. A merge job produces a single HTML report artifact named `playwright-report-merged`.
   - `trace`, `screenshot`, `video` are `retain-on-failure` in CI.
+
+### Accessing merged HTML report in CI
+
+- Open the workflow run → Artifacts → download `playwright-report-merged` → open `index.html` locally.
 
 ## Conventions
 
