@@ -12,6 +12,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 concurrency:
   group: e2e-${{ github.ref }}
@@ -296,3 +297,35 @@ jobs:
         run: |
           echo "## Playwright merged report" >> "$GITHUB_STEP_SUMMARY"
           echo "Merged HTML report uploaded as artifact: playwright-report-merged" >> "$GITHUB_STEP_SUMMARY"
+
+  e2e-notify-failure:
+    name: Nightly failure notifier
+    runs-on: ubuntu-latest
+    needs: [e2e-residents, e2e-family, e2e-merge-reports]
+    if: ${{ always() && github.event_name == 'schedule' && (needs.e2e-residents.result == 'failure' || needs.e2e-family.result == 'failure' || needs.e2e-merge-reports.result == 'failure') }}
+    steps:
+      - name: Open or update failure issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const today = new Date().toISOString().slice(0,10);
+            const title = `Nightly E2E failed - ${today}`;
+            const body = [
+              'Nightly E2E run failed.',
+              '',
+              `Workflow run: ${runUrl}`,
+              '',
+              'Artifacts:',
+              '- Download "playwright-report-merged" and open index.html.',
+            ].join('\n');
+            // Search for existing open issue with this title
+            const { data } = await github.rest.search.issuesAndPullRequests({
+              q: `repo:${context.repo.owner}/${context.repo.repo} is:issue is:open in:title "${title}"`
+            });
+            if (data.items && data.items.length > 0) {
+              const number = data.items[0].number;
+              await github.rest.issues.createComment({ ...context.repo, issue_number: number, body });
+            } else {
+              await github.rest.issues.create({ ...context.repo, title, body, labels: ['e2e','nightly','ci'] });
+            }
