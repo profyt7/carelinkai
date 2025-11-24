@@ -329,3 +329,25 @@ jobs:
             } else {
               await github.rest.issues.create({ ...context.repo, title, body, labels: ['e2e','nightly','ci'] });
             }
+
+  e2e-notify-success:
+    name: Nightly success autoclose
+    runs-on: ubuntu-latest
+    needs: [e2e-residents, e2e-family, e2e-merge-reports]
+    if: ${{ github.event_name == 'schedule' && needs.e2e-residents.result == 'success' && needs.e2e-family.result == 'success' && needs.e2e-merge-reports.result == 'success' }}
+    steps:
+      - name: Close open nightly failure issues
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const note = `Nightly E2E is green. Workflow run: ${runUrl}`;
+            // Find any open issues labeled e2e+nightly with failure title
+            const query = `repo:${context.repo.owner}/${context.repo.repo} is:issue is:open label:e2e label:nightly in:title "Nightly E2E failed -"`;
+            const { data } = await github.rest.search.issuesAndPullRequests({ q: query });
+            if (data.items && data.items.length > 0) {
+              for (const it of data.items) {
+                await github.rest.issues.createComment({ ...context.repo, issue_number: it.number, body: note });
+                await github.rest.issues.update({ ...context.repo, issue_number: it.number, state: 'closed' });
+              }
+            }
