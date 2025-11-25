@@ -1,6 +1,10 @@
 name: Post Deploy Synthetics
 
-on: [push, workflow_dispatch]
+on:
+  push:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [post-deploy-synthetics]
 
 jobs:
   smoke:
