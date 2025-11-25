@@ -83,6 +83,7 @@ export default function MessagesPage() {
   >([]);
   const [isLoadingCaregivers, setIsLoadingCaregivers] = useState(false);
   const [pickerQuery, setPickerQuery] = useState('');
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   // Check for mobile view
   useEffect(() => {
@@ -104,6 +105,54 @@ export default function MessagesPage() {
       fetchThreads();
     }
   }, [status]);
+
+  // Fetch current user id for SSE subscriptions
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/profile');
+        if (res.ok) {
+          const json = await res.json();
+          const id = json?.data?.user?.id as string | undefined;
+          if (id) setCurrentUserId(id);
+        }
+      } catch {
+        /* ignore */
+      }
+    })();
+  }, []);
+
+  // SSE: subscribe to message events for the current user
+  useEffect(() => {
+    if (!currentUserId) return;
+    const es = new EventSource(`/api/sse?topics=${encodeURIComponent(`notifications:${currentUserId}`)}`);
+
+    const onCreated = (e: MessageEvent) => {
+      try {
+        const data = JSON.parse(e.data || '{}');
+        const senderId = data?.senderId as string | undefined;
+        // Always refresh threads to update ordering/unread
+        fetchThreads();
+        // Refresh open conversation if inbound from selected partner
+        if (senderId && selectedThreadUserId && senderId === selectedThreadUserId) {
+          fetchMessages(selectedThreadUserId);
+        }
+      } catch {
+        // no-op
+      }
+    };
+    const onRead = () => {
+      fetchThreads();
+    };
+    es.addEventListener('message:created', onCreated as EventListener);
+    es.addEventListener('message:read', onRead as EventListener);
+    return () => {
+      es.removeEventListener('message:created', onCreated as EventListener);
+      es.removeEventListener('message:read', onRead as EventListener);
+      es.close();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUserId, selectedThreadUserId]);
 
   // Fetch threads
   const fetchThreads = async () => {
