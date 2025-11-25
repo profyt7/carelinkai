@@ -15,6 +15,11 @@ interface RateLimitEntry {
   resetTime: number;
 }
 
+// Use a single, process-wide cleanup interval for in-memory fallback to avoid
+// leaking multiple timers across imports/tests. The timer is unref()'d so it
+// won't keep the Node.js process alive.
+let __inMemoryCleanupInterval__: NodeJS.Timeout | undefined;
+
 export function rateLimit(options: RateLimitOptions) {
   const { interval, limit, uniqueTokenPerInterval = 500 } = options;
 
@@ -52,7 +57,13 @@ export function rateLimit(options: RateLimitOptions) {
 
   if (!redis) {
     // Run cleanup every interval only when using in-memory fallback
-    setInterval(cleanup, interval);
+    if (!__inMemoryCleanupInterval__) {
+      __inMemoryCleanupInterval__ = setInterval(cleanup, interval);
+      // Do not keep the process alive because of this timer (important for Jest/CI)
+      if (typeof __inMemoryCleanupInterval__.unref === 'function') {
+        __inMemoryCleanupInterval__.unref();
+      }
+    }
   }
 
   return {

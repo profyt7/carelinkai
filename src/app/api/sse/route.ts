@@ -35,32 +35,36 @@ export async function GET(request: NextRequest) {
   }
 
   // Create a new stream for SSE
+  let heartbeatInterval: ReturnType<typeof setInterval> | undefined;
+  let subscription: { unsubscribe: () => void } | undefined;
   const stream = new ReadableStream({
     start(controller) {
       console.log(`[SSE] New connection established for topics: ${topics.join(', ')}`);
-      
+
       // Subscribe to the requested topics
-      const subscription = subscribe(topics, controller);
-      
+      subscription = subscribe(topics, controller);
+
       // Send initial comment line (for keep-alive)
       controller.enqueue(new TextEncoder().encode(": SSE connection established\n\n"));
-      
+
       // Send ready event with subscribed topics
       controller.enqueue(
         new TextEncoder().encode(`event: ready\ndata: ${JSON.stringify({ topics })}\n\n`)
       );
-      
+
       // Set up heartbeat interval (25 seconds)
-      const heartbeatInterval = setInterval(() => {
+      heartbeatInterval = setInterval(() => {
         sendHeartbeat(controller);
       }, 25000);
-      
-      // Clean up on close
-      return () => {
-        console.log(`[SSE] Connection closed for topics: ${topics.join(', ')}`);
-        clearInterval(heartbeatInterval);
-        subscription.unsubscribe();
-      };
+      // Do not keep the process alive because of this timer
+      if (typeof (heartbeatInterval as any).unref === 'function') {
+        (heartbeatInterval as any).unref();
+      }
+    },
+    cancel() {
+      console.log(`[SSE] Connection closed for topics: ${topics.join(', ')}`);
+      if (heartbeatInterval) clearInterval(heartbeatInterval);
+      if (subscription) subscription.unsubscribe();
     }
   });
   
