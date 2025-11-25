@@ -1,14 +1,11 @@
 name: Post Deploy Synthetics
 
-on:
-  push:
-    branches: [ main ]
-  workflow_dispatch:
+on: [push, workflow_dispatch]
 
 jobs:
   smoke:
-    # Run synthetics only when explicitly enabled OR when deploy credentials are present.
-    if: ${{ (vars.SYNTHETICS_ENABLED == '1') || (secrets.RENDER_DEPLOY_HOOK_URL != '') || (secrets.RENDER_API_KEY != '' && secrets.RENDER_SERVICE_ID != '') }}
+    # Run synthetics when explicitly enabled or when deploy hook is configured
+    if: ${{ vars.SYNTHETICS_ENABLED == '1' || secrets.RENDER_DEPLOY_HOOK_URL != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
