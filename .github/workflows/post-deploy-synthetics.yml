@@ -8,18 +8,27 @@ on:
 
 jobs:
   smoke:
-    # Run synthetics when explicitly enabled or when deploy hook is configured
-    if: ${{ vars.SYNTHETICS_ENABLED == '1' || secrets.RENDER_DEPLOY_HOOK_URL != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      - name: Decide run gate
+        id: gate
+        shell: bash
+        run: |
+          if [ "${{ vars.SYNTHETICS_ENABLED }}" = "1" ] || [ -n "${{ secrets.RENDER_DEPLOY_HOOK_URL }}" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
       - name: Install jq
+        if: ${{ steps.gate.outputs.run == 'true' }}
         shell: bash
         run: |
           sudo apt-get update -y
           sudo apt-get install -y jq
 
       - name: Wait for Render deploy to go live
+        if: ${{ steps.gate.outputs.run == 'true' }}
         shell: bash
         env:
           HEALTH_URL: https://carelinkai.onrender.com/api/health
@@ -35,6 +44,7 @@ jobs:
           exit 1
 
       - name: Synthetic checks
+        if: ${{ steps.gate.outputs.run == 'true' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -52,6 +62,7 @@ jobs:
           echo "All synthetic checks passed."
 
       - name: Check SSE endpoint (ready event)
+        if: ${{ steps.gate.outputs.run == 'true' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -68,7 +79,7 @@ jobs:
 
       - name: Synthetic (optional): operator login + create/view resident
         # Allow either repository Variables or Secrets to provide credentials
-        if: ${{ (vars.OP_EMAIL != '' && vars.OP_PASSWORD != '') || (secrets.OP_EMAIL != '' && secrets.OP_PASSWORD != '') }}
+        if: ${{ steps.gate.outputs.run == 'true' && ((vars.OP_EMAIL != '' && vars.OP_PASSWORD != '') || (secrets.OP_EMAIL != '' && secrets.OP_PASSWORD != '')) }}
         env:
           BASE: https://carelinkai.onrender.com
           VAR_OP_EMAIL: ${{ vars.OP_EMAIL }}
