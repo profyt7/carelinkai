@@ -50,6 +50,21 @@ jobs:
           done
           echo "All synthetic checks passed."
 
+      - name: Check SSE endpoint (ready event)
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=https://carelinkai.onrender.com
+          echo "Probing SSE endpoint..."
+          # Read a few lines within timeout and assert 'event: ready' is present
+          OUT=$(curl -sS --max-time 5 "$BASE/api/sse?topics=synthetic" | head -n 5 || true)
+          echo "$OUT"
+          if ! echo "$OUT" | grep -qi "event: ready"; then
+            echo "SSE did not emit 'ready' event within timeout" >&2
+            exit 1
+          fi
+          echo "SSE ready event received."
+
       - name: Synthetic (optional): operator login + create/view resident
         # Allow either repository Variables or Secrets to provide credentials
         if: ${{ (vars.OP_EMAIL != '' && vars.OP_PASSWORD != '') || (secrets.OP_EMAIL != '' && secrets.OP_PASSWORD != '') }}
