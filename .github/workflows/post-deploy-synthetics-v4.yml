@@ -29,7 +29,12 @@ jobs:
         run: |
           set -euo pipefail
           echo "connecting to $SSE_URL"
-          if curl -sS -N --max-time 10 -H "Accept: text/event-stream" "$SSE_URL" | grep -m1 -E "^event: ready"; then
+          # Temporarily disable pipefail so a timeout/SIGPIPE from curl doesn't mask a successful grep match
+          set +o pipefail
+          curl -sS -N --max-time 10 -H "Accept: text/event-stream" "$SSE_URL" | grep -m1 -E "^event: ready" >/dev/null
+          rc=$?
+          set -o pipefail
+          if [ "$rc" -eq 0 ]; then
             echo "SSE ready event observed"
           else
             echo "SSE ready event NOT observed" >&2
