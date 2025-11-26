@@ -10,6 +10,9 @@ on:
         default: false
   repository_dispatch:
     types: [post-deploy-synthetics]
+  workflow_run:
+    workflows: ["Header Health Check"]
+    types: [completed]
 
 permissions:
   contents: read
