@@ -22,6 +22,10 @@ jobs:
         run: echo "Manual wrapper started for ${{ github.repository }}@${{ github.ref_name }} (${GITHUB_SHA})"
 
   run:
+    permissions:
+      contents: read
+      actions: read
+      issues: write
     uses: profyt7/carelinkai/.github/workflows/post-deploy-synthetics-reusable.yml@main
     with:
       simulate_failure: ${{ inputs.simulate_failure }}
