@@ -8,6 +8,8 @@ on:
         required: false
         type: boolean
         default: false
+  repository_dispatch:
+    types: [post-deploy-synthetics]
 
 permissions:
   contents: read
@@ -29,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Simulate failure (optional)
-        if: ${{ inputs.simulate_failure }}
+        if: ${{ inputs.simulate_failure || github.event.client_payload.simulate_failure }}
         run: |
           echo "Simulating failure per input simulate_failure=true"
           exit 1
