@@ -17,6 +17,10 @@ permissions:
   actions: read
   issues: write
 
+concurrency:
+  group: post-deploy-synthetics-v4-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   ping:
     runs-on: ubuntu-latest
@@ -216,3 +220,62 @@ jobs:
           msg="Post-deploy Synthetics v4 FAILED on ${GITHUB_REF_NAME}. Run: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
           payload=$(printf '{"text":"%s"}' "$msg")
           curl -sS -X POST -H 'Content-type: application/json' --data "$payload" "$SLACK_WEBHOOK_URL" || true
+
+  cleanup-on-success:
+    name: Close failure issue(s) on success
+    needs: [ping]
+    if: success()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Find open failure issues
+        id: find
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          q="repo:${GITHUB_REPOSITORY} state:open in:title 'Post-deploy synthetics v4 failure'"
+          resp=$(gh api -X GET "search/issues" -f q="$q")
+          echo "$resp" | python3 - <<'PY'
+          import json, sys
+          data=json.load(sys.stdin)
+          nums=[item['number'] for item in data.get('items',[])]
+          print('numbers='+' '.join(map(str,nums)))
+          PY
+          # python prints to stdout, capture last line
+          nums_line=$(tail -n1 <<< "$resp") || true
+          # Fallback: parse via jq if available; else rely on gh step outputs below
+          :
+      - name: Close issues
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          q="repo:${GITHUB_REPOSITORY} state:open in:title 'Post-deploy synthetics v4 failure'"
+          url="https://api.github.com/search/issues?q=$(python3 - <<'PY'
+import os,urllib.parse
+print(urllib.parse.quote(os.environ['Q']))
+PY
+)"
+          data=$(curl -sS -H "Authorization: Bearer ${GITHUB_TOKEN}" -H 'Accept: application/vnd.github+json' "$url")
+          python3 - <<'PY'
+import json, os, urllib.request
+repo=os.environ['GITHUB_REPOSITORY']
+token=os.environ['GITHUB_TOKEN']
+items=json.loads(os.environ['data'])['items'] if os.environ.get('data') else []
+for it in items:
+  num=it['number']
+  comment_url=f'https://api.github.com/repos/{repo}/issues/{num}/comments'
+  patch_url=f'https://api.github.com/repos/{repo}/issues/{num}'
+  msg=f"Closing as resolved by successful run https://github.com/{repo}/actions/runs/{os.environ.get('GITHUB_RUN_ID')}"
+  req=urllib.request.Request(comment_url, data=json.dumps({'body':msg}).encode(), headers={'Authorization':f'Bearer {token}','Accept':'application/vnd.github+json'})
+  urllib.request.urlopen(req).read()
+  req=urllib.request.Request(patch_url, data=json.dumps({'state':'closed'}).encode(), headers={'Authorization':f'Bearer {token}','Accept':'application/vnd.github+json'})
+  req.get_method=lambda: 'PATCH'
+  urllib.request.urlopen(req).read()
+print(f'Closed {len(items)} issue(s).')
+PY
