@@ -22,3 +22,16 @@ jobs:
             echo "Health endpoint returned $code" >&2
             exit 1
           fi
+      - name: SSE ready check
+        shell: bash
+        env:
+          SSE_URL: https://carelinkai.onrender.com/api/sse?topics=system
+        run: |
+          set -euo pipefail
+          echo "connecting to $SSE_URL"
+          if curl -sS -N --max-time 10 -H "Accept: text/event-stream" "$SSE_URL" | grep -m1 -E "^event: ready"; then
+            echo "SSE ready event observed"
+          else
+            echo "SSE ready event NOT observed" >&2
+            exit 1
+          fi
