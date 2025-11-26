@@ -33,8 +33,38 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
+      - name: Resolve simulate flag
+        id: resolve
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os
+          p = os.environ.get('GITHUB_EVENT_PATH')
+          with open(p, 'r') as f:
+            e = json.load(f)
+          sim = False
+          # workflow_dispatch inputs
+          inputs = e.get('inputs') or {}
+          v = inputs.get('simulate_failure')
+          if isinstance(v, str):
+            sim = v.lower() in ('1','true','yes','on')
+          elif isinstance(v, bool):
+            sim = v
+          # repository_dispatch client_payload
+          cp = e.get('client_payload') or {}
+          v2 = cp.get('simulate_failure')
+          if isinstance(v2, str):
+            if v2.lower() in ('1','true','yes','on'):
+              sim = True
+          elif isinstance(v2, bool):
+            if v2:
+              sim = True
+          with open(os.environ['GITHUB_OUTPUT'],'a') as out:
+            out.write(f"simulate={'true' if sim else 'false'}\n")
+          PY
       - name: Simulate failure (optional)
-        if: ${{ inputs.simulate_failure || github.event.client_payload.simulate_failure }}
+        if: ${{ steps.resolve.outputs.simulate == 'true' }}
         run: |
           echo "Simulating failure per input simulate_failure=true"
           exit 1
