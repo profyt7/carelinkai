@@ -61,13 +61,11 @@ jobs:
           echo "SSE ready event received."
 
       - name: Synthetic (optional): operator login + create/view resident
-        if: ${{ (vars.OP_EMAIL != '' && vars.OP_PASSWORD != '') || (secrets.OP_EMAIL != '' && secrets.OP_PASSWORD != '') }}
+        if: ${{ secrets.OP_EMAIL != '' && secrets.OP_PASSWORD != '' }}
         env:
           BASE: https://carelinkai.onrender.com
-          VAR_OP_EMAIL: ${{ vars.OP_EMAIL }}
-          VAR_OP_PASSWORD: ${{ vars.OP_PASSWORD }}
-          SEC_OP_EMAIL: ${{ secrets.OP_EMAIL }}
-          SEC_OP_PASSWORD: ${{ secrets.OP_PASSWORD }}
+          OP_EMAIL: ${{ secrets.OP_EMAIL }}
+          OP_PASSWORD: ${{ secrets.OP_PASSWORD }}
           S3_DISABLE: 1
         shell: bash
         run: |
@@ -75,8 +73,6 @@ jobs:
           echo "Attempting credentials login for operator to exercise residents API..."
           tmpdir=$(mktemp -d)
           COOKIES="$tmpdir/cookies.txt"
-          OP_EMAIL="${SEC_OP_EMAIL:-${VAR_OP_EMAIL:-}}"
-          OP_PASSWORD="${SEC_OP_PASSWORD:-${VAR_OP_PASSWORD:-}}"
           if [ -z "$OP_EMAIL" ] || [ -z "$OP_PASSWORD" ]; then
             echo "Credentials not set; skipping"
             exit 0
