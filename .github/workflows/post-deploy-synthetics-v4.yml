@@ -3,6 +3,13 @@ name: Post Deploy Synthetics (v4 minimal)
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      simulate_failure:
+        description: "Force a failure to verify notifications"
+        required: false
+        type: boolean
+        default: false
 
 # Minimum permissions for jobs in this workflow; issues: write is needed for failure notifications
 permissions:
@@ -14,6 +21,22 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
+      - name: Determine simulation flag
+        id: sim
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ github.event.inputs.simulate_failure }}" = "true" ]; then
+            echo "value=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Simulate failure (optional)
+        if: ${{ steps.sim.outputs.value == 'true' }}
+        run: |
+          echo "Simulating failure per input simulate_failure=true"
+          exit 1
+
       - name: Say hello
         run: echo "v4 minimal job started"
       - name: Health check
@@ -119,8 +142,12 @@ jobs:
         id: compose
         shell: bash
         run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ github.event.inputs.simulate_failure }}" = "true" ]; then
+            echo "title=Post-deploy synthetics v4 failure (SIMULATED)" >> "$GITHUB_OUTPUT"
+          else
+            echo "title=Post-deploy synthetics v4 failure" >> "$GITHUB_OUTPUT"
+          fi
           {
-            echo "title=Post-deploy synthetics v4 failure";
             echo "body<<EOF";
             echo "Post-deploy Synthetics v4 failed.";
             echo;
