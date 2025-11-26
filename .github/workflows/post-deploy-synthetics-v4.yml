@@ -10,3 +10,15 @@ jobs:
     steps:
       - name: Say hello
         run: echo "v4 minimal job started"
+      - name: Health check
+        shell: bash
+        env:
+          HEALTH_URL: https://carelinkai.onrender.com/api/health
+        run: |
+          set -euo pipefail
+          code=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL" || true)
+          echo "health -> $code"
+          if [ "$code" != "200" ]; then
+            echo "Health endpoint returned $code" >&2
+            exit 1
+          fi
