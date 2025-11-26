@@ -41,7 +41,6 @@ jobs:
             exit 1
           fi
       - name: Operator login + protected API check (optional)
-        if: ${{ secrets.OP_EMAIL != '' && secrets.OP_PASSWORD != '' }}
         shell: bash
         env:
           BASE_URL: https://carelinkai.onrender.com
@@ -51,6 +50,12 @@ jobs:
           set -euo pipefail
           workdir=$(mktemp -d)
           jar="$workdir/cookies.txt"
+
+          # Skip if secrets are not configured
+          if [ -z "${OP_EMAIL:-}" ] || [ -z "${OP_PASSWORD:-}" ]; then
+            echo "OP_EMAIL/OP_PASSWORD not set; skipping operator check"
+            exit 0
+          fi
 
           echo "Attempting dev login (if enabled) ..."
           code=$(curl -sS -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: application/json" -c "$jar" -b "$jar" "$BASE_URL/api/dev/login" -d "{\"email\":\"$OP_EMAIL\"}" || true)
