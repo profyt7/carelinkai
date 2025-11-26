@@ -3,9 +3,6 @@ name: Post Deploy Synthetics (Push Trigger)
 on:
   push:
     branches: [ main ]
-    paths:
-      - 'docs/synthetics/trigger-*.md'
-      - '.github/workflows/post-deploy-synthetics-v3.yml'
 
 jobs:
   smoke:
