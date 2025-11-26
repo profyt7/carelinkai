@@ -20,7 +20,7 @@ permissions:
   issues: write
 
 concurrency:
-  group: post-deploy-synthetics-manual-${{ github.ref }}
+  group: post-deploy-synthetics-manual-${{ github.ref || format('run-{0}', github.run_id) }}
   cancel-in-progress: false
 
 jobs:
