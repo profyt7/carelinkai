@@ -281,3 +281,16 @@ for it in items:
   urllib.request.urlopen(req).read()
 print(f'Closed {len(items)} issue(s).')
 PY
+      - name: Slack success (optional)
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${SLACK_WEBHOOK_URL:-}" ]; then
+            echo "SLACK_WEBHOOK_URL not set; skipping Slack notification"
+            exit 0
+          fi
+          msg="Post-deploy Synthetics v4 SUCCESS on ${GITHUB_REF_NAME}. Run: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}. Any failure issues have been auto-closed."
+          payload=$(printf '{"text":"%s"}' "$msg")
+          curl -sS -X POST -H 'Content-type: application/json' --data "$payload" "$SLACK_WEBHOOK_URL" || true
