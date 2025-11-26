@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   run:
-    uses: ./.github/workflows/post-deploy-synthetics-reusable.yml
+    uses: profyt7/carelinkai/.github/workflows/post-deploy-synthetics-reusable.yml@main
     with:
       simulate_failure: ${{ inputs.simulate_failure }}
     secrets: inherit
