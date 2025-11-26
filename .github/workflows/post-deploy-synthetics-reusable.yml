@@ -111,7 +111,7 @@ jobs:
   notify-on-failure:
     name: Create issue on failure
     needs: [ping]
-    if: ${{ always() }}
+    if: ${{ needs.ping.result == 'failure' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -140,7 +140,6 @@ jobs:
           }
 
       - name: Create or update GitHub issue
-        if: ${{ needs.ping.result == 'failure' }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
           TITLE: ${{ steps.compose.outputs.title }}
@@ -176,7 +175,6 @@ jobs:
           PY
 
       - name: Slack notify (optional)
-        if: ${{ needs.ping.result == 'failure' }}
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         shell: bash
