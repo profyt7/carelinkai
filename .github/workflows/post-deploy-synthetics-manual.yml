@@ -15,6 +15,12 @@ permissions:
   issues: write
 
 jobs:
+  kickoff:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kickoff
+        run: echo "Manual wrapper started for ${{ github.repository }}@${{ github.ref_name }} (${GITHUB_SHA})"
+
   run:
     uses: profyt7/carelinkai/.github/workflows/post-deploy-synthetics-reusable.yml@main
     with:
