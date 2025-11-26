@@ -4,6 +4,12 @@ on:
   push:
     branches: [ main ]
 
+# Minimum permissions for jobs in this workflow; issues: write is needed for failure notifications
+permissions:
+  contents: read
+  actions: read
+  issues: write
+
 jobs:
   ping:
     runs-on: ubuntu-latest
@@ -99,3 +105,87 @@ jobs:
             exit 1
           fi
           echo "Operator login and protected API check passed"
+
+  notify-on-failure:
+    name: Create issue on failure
+    needs: [ping]
+    if: failure()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Compose failure message
+        id: compose
+        shell: bash
+        run: |
+          {
+            echo "title=Post-deploy synthetics v4 failure";
+            echo "body<<EOF";
+            echo "Post-deploy Synthetics v4 failed.";
+            echo;
+            echo "Repository: ${GITHUB_REPOSITORY}";
+            echo "Branch: ${GITHUB_REF_NAME}";
+            echo "SHA: ${GITHUB_SHA}";
+            echo "Run: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}";
+            echo "Actor: ${GITHUB_ACTOR}";
+            echo "Event: ${GITHUB_EVENT_NAME}";
+            echo "Attempt: ${GITHUB_RUN_ATTEMPT}";
+            echo "Time: ${GITHUB_RUN_STARTED_AT}";
+            echo;
+            echo "Please investigate the failing step(s) in the linked run.";
+            echo "EOF";
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create or update GitHub issue
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          TITLE: ${{ steps.compose.outputs.title }}
+          BODY: ${{ steps.compose.outputs.body }}
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json, os, urllib.parse, urllib.request
+
+          repo = os.environ['GITHUB_REPOSITORY']
+          token = os.environ['GITHUB_TOKEN']
+          title = os.environ['TITLE']
+          body = os.environ['BODY']
+
+          # Search for an open issue with the exact same title
+          q = f'repo:{repo} state:open in:title "{title}"'
+          url = f'https://api.github.com/search/issues?q={urllib.parse.quote(q)}'
+          req = urllib.request.Request(url, headers={'Authorization': f'Bearer {token}', 'Accept': 'application/vnd.github+json'})
+          with urllib.request.urlopen(req) as r:
+            data = json.load(r)
+
+          if data.get('total_count', 0) > 0:
+            issue = data['items'][0]
+            num = issue['number']
+            comment_url = f'https://api.github.com/repos/{repo}/issues/{num}/comments'
+            payload = json.dumps({"body": body}).encode()
+            req = urllib.request.Request(comment_url, data=payload, headers={'Authorization': f'Bearer {token}', 'Accept': 'application/vnd.github+json'})
+            with urllib.request.urlopen(req) as r:
+              print(f'Commented on existing issue #{num}, status {r.status}')
+          else:
+            create_url = f'https://api.github.com/repos/{repo}/issues'
+            payload = json.dumps({"title": title, "body": body}).encode()
+            req = urllib.request.Request(create_url, data=payload, headers={'Authorization': f'Bearer {token}', 'Accept': 'application/vnd.github+json'})
+            with urllib.request.urlopen(req) as r:
+              resp = json.load(r)
+              print(f'Created issue #{resp.get("number")}')
+          PY
+
+      - name: Slack notify (optional)
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${SLACK_WEBHOOK_URL:-}" ]; then
+            echo "SLACK_WEBHOOK_URL not set; skipping Slack notification"
+            exit 0
+          fi
+          msg="Post-deploy Synthetics v4 FAILED on ${GITHUB_REF_NAME}. Run: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          payload=$(printf '{"text":"%s"}' "$msg")
+          curl -sS -X POST -H 'Content-type: application/json' --data "$payload" "$SLACK_WEBHOOK_URL" || true
