@@ -1,0 +1,24 @@
+name: Post Deploy Synthetics (entry)
+
+on:
+  repository_dispatch:
+    types: [post-deploy-synthetics]
+  workflow_run:
+    workflows: ["Header Health Check"]
+    types: [completed]
+
+permissions:
+  contents: read
+  actions: read
+  issues: write
+
+concurrency:
+  group: post-deploy-synthetics-entry-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  run-reusable:
+    uses: ./.github/workflows/post-deploy-synthetics-reusable.yml
+    with:
+      simulate_failure: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.simulate_failure || false }}
+    secrets: inherit
