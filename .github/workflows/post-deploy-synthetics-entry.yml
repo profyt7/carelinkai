@@ -17,8 +17,45 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    outputs:
+      simulate: ${{ steps.resolve.outputs.simulate }}
+    steps:
+      - name: Resolve simulate flag
+        id: resolve
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os
+          p = os.environ.get('GITHUB_EVENT_PATH')
+          with open(p, 'r') as f:
+            e = json.load(f)
+          sim = False
+          # repository_dispatch client_payload
+          cp = e.get('client_payload') or {}
+          v = cp.get('simulate_failure')
+          if isinstance(v, str):
+            sim = v.lower() in ('1','true','yes','on')
+          elif isinstance(v, bool):
+            sim = v
+          # workflow_dispatch inputs (fallback)
+          inputs = e.get('inputs') or {}
+          v2 = inputs.get('simulate_failure')
+          if isinstance(v2, str):
+            if v2.lower() in ('1','true','yes','on'):
+              sim = True
+          elif isinstance(v2, bool):
+            if v2:
+              sim = True
+          with open(os.environ['GITHUB_OUTPUT'],'a') as out:
+            out.write(f"simulate={'true' if sim else 'false'}\n")
+          PY
+
   run-reusable:
+    needs: resolve
     uses: ./.github/workflows/post-deploy-synthetics-reusable.yml
     with:
-      simulate_failure: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.simulate_failure || false }}
+      simulate_failure: ${{ needs.resolve.outputs.simulate == 'true' }}
     secrets: inherit
