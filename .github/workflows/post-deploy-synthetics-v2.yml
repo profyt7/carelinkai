@@ -2,6 +2,8 @@ name: Post Deploy Synthetics (Manual)
 
 on:
   workflow_dispatch:
+  repository_dispatch:
+    types: [synthetics_v2]
 
 jobs:
   smoke:
