@@ -5,6 +5,8 @@ on:
     branches: [ main ]
     paths:
       - .github/workflows/post-deploy-synthetics-entry3.yml
+  repository_dispatch:
+    types: [post-deploy-synthetics-entry3]
   workflow_dispatch:
     inputs:
       simulate_failure:
@@ -19,8 +21,33 @@ jobs:
     steps:
       - name: Hello
         run: echo "entry v3 started"
+      - name: Resolve simulate flag
+        id: res
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json, os
+          p = os.environ.get('GITHUB_EVENT_PATH')
+          sim = 'false'
+          try:
+            with open(p) as f:
+              ev = json.load(f)
+            # workflow_dispatch
+            inputs = ev.get('inputs') or {}
+            if str(inputs.get('simulate_failure', 'false')).lower() in ('1','true','yes','on'):
+              sim = 'true'
+            # repository_dispatch
+            cp = ev.get('client_payload') or {}
+            if str(cp.get('simulate_failure', 'false')).lower() in ('1','true','yes','on'):
+              sim = 'true'
+          except Exception as e:
+            pass
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
+            out.write(f"simulate={sim}\n")
+          print(f"simulate={sim}")
+          PY
       - name: Simulate failure (optional)
-        if: ${{ inputs.simulate_failure == true }}
+        if: ${{ steps.res.outputs.simulate == 'true' }}
         run: |
           echo "Simulating failure per input simulate_failure=true"
           exit 1
