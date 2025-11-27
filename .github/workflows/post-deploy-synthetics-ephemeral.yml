@@ -10,6 +10,12 @@ on:
         required: false
   repository_dispatch:
     types: [post-deploy-synthetics-ephemeral]
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/post-deploy-synthetics-ephemeral.yml'
+  schedule:
+    - cron: '*/30 * * * *'
 
 jobs:
   ping:
