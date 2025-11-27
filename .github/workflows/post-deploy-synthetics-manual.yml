@@ -1,6 +1,10 @@
 name: Post Deploy Synthetics (manual)
 
 on:
+  push:
+    branches: [ main ]
+    paths:
+      - .github/workflows/post-deploy-synthetics-manual.yml
   workflow_dispatch:
     inputs:
       simulate_failure:
