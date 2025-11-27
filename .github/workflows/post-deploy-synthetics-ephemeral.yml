@@ -1,0 +1,184 @@
+name: Post Deploy Synthetics (ephemeral)
+
+on:
+  workflow_dispatch:
+    inputs:
+      simulate_failure:
+        description: "Simulate a failing run"
+        type: boolean
+        default: false
+        required: false
+  repository_dispatch:
+    types: [post-deploy-synthetics-ephemeral]
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hello
+        run: echo "ephemeral workflow started"
+      - name: Resolve simulate flag
+        id: res
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json, os
+          p = os.environ.get('GITHUB_EVENT_PATH')
+          sim = 'false'
+          try:
+            with open(p) as f:
+              ev = json.load(f)
+            # workflow_dispatch
+            inputs = ev.get('inputs') or {}
+            if str(inputs.get('simulate_failure', 'false')).lower() in ('1','true','yes','on'):
+              sim = 'true'
+            # repository_dispatch
+            cp = ev.get('client_payload') or {}
+            if str(cp.get('simulate_failure', 'false')).lower() in ('1','true','yes','on'):
+              sim = 'true'
+          except Exception:
+            pass
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
+            out.write(f"simulate={sim}\n")
+          print(f"simulate={sim}")
+          PY
+      - name: Simulate failure (optional)
+        if: ${{ steps.res.outputs.simulate == 'true' }}
+        run: |
+          echo "Simulating failure per simulate flag"
+          exit 1
+      - name: Health check
+        shell: bash
+        env:
+          HEALTH_URL: https://carelinkai.onrender.com/api/health
+        run: |
+          set -euo pipefail
+          code=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL" || true)
+          echo "health -> $code"
+          if [ "$code" != "200" ]; then
+            echo "Health endpoint returned $code" >&2
+            exit 1
+          fi
+      - name: SSE ready check
+        shell: bash
+        env:
+          SSE_URL: https://carelinkai.onrender.com/api/sse?topics=system
+        run: |
+          set -euo pipefail
+          echo "connecting to $SSE_URL"
+          set +o pipefail
+          curl -sS -N --max-time 10 -H "Accept: text/event-stream" "$SSE_URL" | grep -m1 -E "^event: ready" >/dev/null
+          rc=$?
+          set -o pipefail
+          if [ "$rc" -eq 0 ]; then
+            echo "SSE ready event observed"
+          else
+            echo "SSE ready event NOT observed" >&2
+            exit 1
+          fi
+
+  notify-on-failure:
+    name: Create issue on failure
+    needs: [ping]
+    if: ${{ needs.ping.result == 'failure' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Compose failure message
+        id: compose
+        shell: bash
+        run: |
+          {
+            echo "title=Post-deploy Synthetics ephemeral failure" >> "$GITHUB_OUTPUT"
+            echo "body<<EOF";
+            echo "Post-deploy Synthetics ephemeral failed.";
+            echo;
+            echo "Repository: ${GITHUB_REPOSITORY}";
+            echo "Branch: ${GITHUB_REF_NAME}";
+            echo "SHA: ${GITHUB_SHA}";
+            echo "Run: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}";
+            echo "Actor: ${GITHUB_ACTOR}";
+            echo "Event: ${GITHUB_EVENT_NAME}";
+            echo "Attempt: ${GITHUB_RUN_ATTEMPT}";
+            echo "Time: ${GITHUB_RUN_STARTED_AT}";
+            echo;
+            echo "Please investigate the failing step(s) in the linked run.";
+            echo "EOF";
+          }
+
+      - name: Create or update GitHub issue
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          TITLE: ${{ steps.compose.outputs.title }}
+          BODY: ${{ steps.compose.outputs.body }}
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json, os, urllib.parse, urllib.request
+          repo = os.environ['GITHUB_REPOSITORY']
+          token = os.environ['GITHUB_TOKEN']
+          title = os.environ['TITLE']
+          body = os.environ['BODY']
+          q = f'repo:{repo} state:open in:title "{title}"'
+          url = f'https://api.github.com/search/issues?q={urllib.parse.quote(q)}'
+          req = urllib.request.Request(url, headers={'Authorization': f'Bearer {token}', 'Accept': 'application/vnd.github+json'})
+          with urllib.request.urlopen(req) as r:
+            data = json.load(r)
+          if data.get('total_count', 0) > 0:
+            issue = data['items'][0]
+            num = issue['number']
+            comment_url = f'https://api.github.com/repos/{repo}/issues/{num}/comments'
+            payload = json.dumps({"body": body}).encode()
+            req = urllib.request.Request(comment_url, data=payload, headers={'Authorization': f'Bearer {token}', 'Accept': 'application/vnd.github+json'})
+            with urllib.request.urlopen(req) as r:
+              print(f'Commented on existing issue #{num}, status {r.status}')
+          else:
+            create_url = f'https://api.github.com/repos/{repo}/issues'
+            payload = json.dumps({"title": title, "body": body}).encode()
+            req = urllib.request.Request(create_url, data=payload, headers={'Authorization': f'Bearer {token}', 'Accept': 'application/vnd.github+json'})
+            with urllib.request.urlopen(req) as r:
+              resp = json.load(r)
+              print(f'Created issue #{resp.get("number")}')
+          PY
+
+  cleanup-on-success:
+    name: Close failure issue(s) on success
+    needs: [ping]
+    if: success()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Close issues
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          q="repo:${GITHUB_REPOSITORY} state:open in:title 'Post-deploy Synthetics ephemeral failure'"
+          url="https://api.github.com/search/issues?q=$(python3 - <<'PY'
+import os,urllib.parse
+print(urllib.parse.quote(os.environ['Q']))
+PY
+)"
+          data=$(curl -sS -H "Authorization: Bearer ${GITHUB_TOKEN}" -H 'Accept: application/vnd.github+json' "$url")
+          python3 - <<'PY'
+import json, os, urllib.request
+repo=os.environ['GITHUB_REPOSITORY']
+token=os.environ['GITHUB_TOKEN']
+items=json.loads(os.environ['data'])['items'] if os.environ.get('data') else []
+for it in items:
+  num=it['number']
+  comment_url=f'https://api.github.com/repos/{repo}/issues/{num}/comments'
+  patch_url=f'https://api.github.com/repos/{repo}/issues/{num}'
+  msg=f"Closing as resolved by successful run https://github.com/{repo}/actions/runs/{os.environ.get('GITHUB_RUN_ID')}"
+  req=urllib.request.Request(comment_url, data=json.dumps({'body':msg}).encode(), headers={'Authorization':f'Bearer {token}','Accept':'application/vnd.github+json'})
+  urllib.request.urlopen(req).read()
+  req=urllib.request.Request(patch_url, data=json.dumps({'state':'closed'}).encode(), headers={'Authorization':f'Bearer {token}','Accept':'application/vnd.github+json'})
+  req.get_method=lambda: 'PATCH'
+  urllib.request.urlopen(req).read()
+print(f'Closed {len(items)} issue(s).')
+PY
