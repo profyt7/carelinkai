@@ -148,6 +148,16 @@ jobs:
               resp = json.load(r)
               print(f'Created issue #{resp.get("number")}')
           PY
+      - name: Slack notify (failure)
+        if: ${{ env.SLACK_WEBHOOK_URL != '' }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          text="❌ Synthetics FAILED for ${GITHUB_REPOSITORY}@${GITHUB_REF_NAME} — run ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          payload=$(printf '{"text":"%s"}' "${text}")
+          curl -sS -X POST -H 'Content-type: application/json' --data "${payload}" "${SLACK_WEBHOOK_URL}" >/dev/null
 
   cleanup-on-success:
     name: Close failure issue(s) on success
@@ -188,3 +198,13 @@ for it in items:
   urllib.request.urlopen(req).read()
 print(f'Closed {len(items)} issue(s).')
 PY
+      - name: Slack notify (success)
+        if: ${{ env.SLACK_WEBHOOK_URL != '' }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          text="✅ Synthetics SUCCESS for ${GITHUB_REPOSITORY}@${GITHUB_REF_NAME} — run ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          payload=$(printf '{"text":"%s"}' "${text}")
+          curl -sS -X POST -H 'Content-type: application/json' --data "${payload}" "${SLACK_WEBHOOK_URL}" >/dev/null
