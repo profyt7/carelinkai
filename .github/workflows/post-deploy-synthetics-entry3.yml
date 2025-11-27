@@ -1,0 +1,55 @@
+name: Post Deploy Synthetics (entry v3)
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - .github/workflows/post-deploy-synthetics-entry3.yml
+  workflow_dispatch:
+    inputs:
+      simulate_failure:
+        description: "Simulate a failing run"
+        type: boolean
+        default: false
+        required: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hello
+        run: echo "entry v3 started"
+      - name: Simulate failure (optional)
+        if: ${{ inputs.simulate_failure == true }}
+        run: |
+          echo "Simulating failure per input simulate_failure=true"
+          exit 1
+      - name: Health check
+        shell: bash
+        env:
+          HEALTH_URL: https://carelinkai.onrender.com/api/health
+        run: |
+          set -euo pipefail
+          code=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL" || true)
+          echo "health -> $code"
+          if [ "$code" != "200" ]; then
+            echo "Health endpoint returned $code" >&2
+            exit 1
+          fi
+      - name: SSE ready check
+        shell: bash
+        env:
+          SSE_URL: https://carelinkai.onrender.com/api/sse?topics=system
+        run: |
+          set -euo pipefail
+          echo "connecting to $SSE_URL"
+          set +o pipefail
+          curl -sS -N --max-time 10 -H "Accept: text/event-stream" "$SSE_URL" | grep -m1 -E "^event: ready" >/dev/null
+          rc=$?
+          set -o pipefail
+          if [ "$rc" -eq 0 ]; then
+            echo "SSE ready event observed"
+          else
+            echo "SSE ready event NOT observed" >&2
+            exit 1
+          fi
