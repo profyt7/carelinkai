@@ -15,6 +15,14 @@ function parseOnParam(v: string | null): boolean | null {
 
 export async function GET(req: NextRequest) {
   try {
+    // Avoid build/prerender errors: during `next build` there is no request context for next-auth headers()
+    if (process.env.NEXT_PHASE === "phase-production-build") {
+      return NextResponse.json(
+        { success: false, message: "Unavailable during build" },
+        { status: 200, headers: { "Cache-Control": "no-store" } }
+      );
+    }
+
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -80,7 +88,10 @@ export async function GET(req: NextRequest) {
 
     return res;
   } catch (err: any) {
-    console.error("mock-mode toggle error:", err);
+    // Reduce build noise: only log server errors outside of build phase
+    if (process.env.NEXT_PHASE !== "phase-production-build" && process.env.NODE_ENV === "production") {
+      console.error("mock-mode toggle error:", err);
+    }
     return NextResponse.json(
       { success: false, message: "Failed to toggle mock mode" },
       { status: 500 }
