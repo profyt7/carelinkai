@@ -5,6 +5,13 @@ import * as Sentry from '@sentry/nextjs';
 Sentry.init({
   dsn: process.env['NEXT_PUBLIC_SENTRY_DSN'] || process.env['SENTRY_DSN'] || '',
   tracesSampleRate: Number(process.env['NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE'] || process.env['SENTRY_TRACES_SAMPLE_RATE'] || 0.1),
+  environment: process.env['NEXT_PUBLIC_SENTRY_ENVIRONMENT'] || process.env.NODE_ENV,
+  release: (() => {
+    const version = process.env['NEXT_PUBLIC_APP_VERSION'] || process.env['npm_package_version'];
+    const sha = process.env['NEXT_PUBLIC_COMMIT_SHA'];
+    if (sha) return `${version || '0.0.0'}@${String(sha).slice(0, 7)}`;
+    return version ? `v${version}` : undefined;
+  })(),
   replaysSessionSampleRate: 0.0,
   replaysOnErrorSampleRate: 0.0,
   beforeSend(event) {

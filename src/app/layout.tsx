@@ -99,6 +99,23 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
+// Version/commit info for footer diagnostics
+const _appVersion = process.env['APP_VERSION'] || process.env['npm_package_version'] || '0.0.0';
+const _commitSha = (
+  process.env['RENDER_GIT_COMMIT'] ||
+  process.env['VERCEL_GIT_COMMIT_SHA'] ||
+  process.env['GITHUB_SHA'] ||
+  process.env['GIT_COMMIT'] ||
+  process.env['NEXT_PUBLIC_COMMIT_SHA'] || ''
+).slice(0, 7);
+const _branch = (
+  process.env['RENDER_GIT_BRANCH'] ||
+  process.env['VERCEL_GIT_COMMIT_REF'] ||
+  process.env['GITHUB_REF_NAME'] ||
+  process.env['GIT_BRANCH'] || ''
+);
+const _versionLabel = `v${_appVersion}${_branch ? ` • ${_branch}` : ''}${_commitSha ? `@${_commitSha}` : ''}`;
+
 export default function RootLayout({
   children,
 }: {
@@ -195,6 +212,14 @@ export default function RootLayout({
                 <main id="main-content" className="flex-1">
                   {children}
                 </main>
+
+                {/* Global footer with version and commit diagnostics */}
+                <footer className="border-t border-neutral-200/70 bg-white/60 py-2 text-xs text-neutral-500">
+                  <div className="mx-auto flex max-w-7xl items-center justify-between px-4">
+                    <span>CareLinkAI</span>
+                    <span suppressHydrationWarning>{_versionLabel}</span>
+                  </div>
+                </footer>
               </div>
 
               {/* Global toaster for notifications */}
