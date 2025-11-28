@@ -83,6 +83,66 @@ jobs:
             exit 1
           fi
 
+      - name: Operator login + protected API check (optional)
+        shell: bash
+        env:
+          BASE_URL: https://carelinkai.onrender.com
+          OP_EMAIL: ${{ secrets.OP_EMAIL }}
+          OP_PASSWORD: ${{ secrets.OP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          workdir=$(mktemp -d)
+          jar="$workdir/cookies.txt"
+
+          # Skip if secrets are not configured
+          if [ -z "${OP_EMAIL:-}" ] || [ -z "${OP_PASSWORD:-}" ]; then
+            echo "OP_EMAIL/OP_PASSWORD not set; skipping operator check"
+            exit 0
+          fi
+
+          echo "Attempting dev login (if enabled) ..."
+          code=$(curl -sS -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: application/json" -c "$jar" -b "$jar" "$BASE_URL/api/dev/login" -d "{\"email\":\"$OP_EMAIL\"}" || true)
+          if [ "$code" = "200" ]; then
+            echo "Dev login succeeded"
+          else
+            echo "Dev login not available (code $code). Falling back to credentials login ..."
+
+            # Get CSRF token
+            csrf=$(curl -sS -c "$jar" -b "$jar" -H "Accept: application/json" "$BASE_URL/api/auth/csrf" | python3 -c "import sys,json; print(json.load(sys.stdin).get('csrfToken',''))" || true)
+            if [ -z "${csrf:-}" ]; then
+              echo "Failed to obtain CSRF token" >&2
+              exit 1
+            fi
+
+            # Credentials login via NextAuth
+            resp=$(curl -sS -o /dev/null -w "%{http_code}" -L -c "$jar" -b "$jar" -H "Content-Type: application/x-www-form-urlencoded" \
+              --data-urlencode "csrfToken=$csrf" \
+              --data-urlencode "email=$OP_EMAIL" \
+              --data-urlencode "password=$OP_PASSWORD" \
+              --data-urlencode "callbackUrl=/" \
+              "$BASE_URL/api/auth/callback/credentials" || true)
+            if [ "$resp" != "200" ] && [ "$resp" != "302" ] && [ "$resp" != "303" ]; then
+              echo "Credentials login failed with HTTP $resp" >&2
+              exit 1
+            fi
+          fi
+
+          # Ensure a NextAuth session cookie exists
+          if ! grep -q 'next-auth.session-token' "$jar" && ! grep -q '__Secure-next-auth.session-token' "$jar"; then
+            echo "No NextAuth session cookie found after login" >&2
+            echo "Cookie jar contents:"; cat "$jar" || true
+            exit 1
+          fi
+
+          # Access operator-only endpoint to verify role-based access
+          code=$(curl -sS -o /dev/null -w "%{http_code}" -b "$jar" "$BASE_URL/api/operator/homes" || true)
+          echo "operator homes -> $code"
+          if [ "$code" != "200" ]; then
+            echo "Operator endpoint access failed ($code)" >&2
+            exit 1
+          fi
+          echo "Operator login and protected API check passed"
+
   notify-on-failure:
     name: Create issue on failure
     needs: [ping]
