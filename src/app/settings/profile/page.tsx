@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { z } from "zod";
+import DashboardLayout from "@/components/layout/DashboardLayout";
 import { 
   FiUser, 
   FiMail, 
@@ -1194,15 +1195,10 @@ export default function ProfileSettings() {
   }
   
   return (
+    <DashboardLayout title="Settings • Profile" showSearch={false}>
     <div className="container mx-auto max-w-4xl px-4 py-8">
       <div className="mb-8 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-neutral-800">Profile Settings</h1>
-        <Link
-          href="/dashboard"
-          className="rounded-md bg-neutral-100 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-200"
-        >
-          Back to Dashboard
-        </Link>
       </div>
       
       {message.text && (
@@ -1538,21 +1534,15 @@ export default function ProfileSettings() {
         </form>
       </div>
       
-      <div className="mt-6 flex justify-between">
+      <div className="mt-6 flex justify-start">
         <Link
           href="/settings/account"
           className="text-sm font-medium text-primary-600 hover:text-primary-500"
         >
           Account Settings
         </Link>
-        
-        <Link
-          href="/dashboard"
-          className="text-sm font-medium text-neutral-600 hover:text-neutral-500"
-        >
-          Back to Dashboard
-        </Link>
       </div>
     </div>
+    </DashboardLayout>
   );
 }

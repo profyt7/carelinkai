@@ -62,7 +62,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { name: "Dashboard", icon: <FiHome size={20} />, href: "/dashboard", showInMobileBar: true },
   { name: "Search Homes", icon: <FiSearch size={20} />, href: "/search", showInMobileBar: false },
-  { name: "AI Match", icon: <FiSearch size={20} />, href: "/homes/match", showInMobileBar: false, roleRestriction: ["FAMILY", "OPERATOR", "ADMIN"] },
+  { name: "AI", icon: <FiSearch size={20} />, href: "/homes/match", showInMobileBar: false, roleRestriction: ["FAMILY", "OPERATOR", "ADMIN"] },
   // Marketplace (feature-flagged)
   { name: "Marketplace", icon: <FiUsers size={20} />, href: "/marketplace", showInMobileBar: true },
   { name: "Operator", icon: <FiHome size={20} />, href: "/operator", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN"] },
@@ -76,7 +76,7 @@ const navItems: NavItem[] = [
   { name: "Family", icon: <FiUsers size={20} />, href: "/family", showInMobileBar: true },
   { name: "Finances", icon: <FiDollarSign size={20} />, href: "/settings/payouts", showInMobileBar: true },
   { name: "Messages", icon: <FiMessageSquare size={20} />, href: "/messages", showInMobileBar: true },
-  { name: "Settings", icon: <FiSettings size={20} />, href: "/settings/profile", showInMobileBar: false },
+  { name: "Settings", icon: <FiSettings size={20} />, href: "/settings", showInMobileBar: false },
   // Admin-only tools section
   { 
     name: "Admin Tools", 
@@ -409,11 +409,15 @@ export default function DashboardLayout({
                 item.name !== "Marketplace" || marketplaceEnabled
           );
           // Determine the most specific (longest) matching href for current pathname
-          const hrefs = visibleNavItems.map((i) => (
-            i.name === 'Caregivers' && String(userRole).toUpperCase() === 'CAREGIVER'
-              ? '/settings/profile'
-              : i.href
-          ));
+          const hrefs = visibleNavItems.map((i) => {
+            if (i.name === 'Caregivers') {
+              const role = String(userRole).toUpperCase();
+              if (role === 'OPERATOR' || role === 'ADMIN') return '/operator/caregivers';
+              if (role === 'CAREGIVER') return '/settings/profile';
+              return '/marketplace?tab=caregivers';
+            }
+            return i.href;
+          });
           const longestMatch = hrefs
             .filter((h) => pathname === h || pathname?.startsWith(`${h}/`))
             .sort((a, b) => b.length - a.length)[0];
@@ -421,9 +425,15 @@ export default function DashboardLayout({
           return (
             <nav className="sidebar-nav mt-4" aria-label="Sidebar navigation">
               {visibleNavItems.map((item) => {
-                const computedHref = (item.name === 'Caregivers' && String(userRole).toUpperCase() === 'CAREGIVER')
-                  ? '/settings/profile'
-                  : item.href;
+              const computedHref = (() => {
+                if (item.name === 'Caregivers') {
+                  const role = String(userRole).toUpperCase();
+                  if (role === 'OPERATOR' || role === 'ADMIN') return '/operator/caregivers';
+                  if (role === 'CAREGIVER') return '/settings/profile';
+                  return '/marketplace?tab=caregivers';
+                }
+                return item.href;
+              })();
                 const isActive = computedHref === longestMatch || pathname === computedHref;
                 return (
             <Link
