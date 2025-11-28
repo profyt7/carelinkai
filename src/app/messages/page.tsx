@@ -10,6 +10,7 @@ import ChatInterface, {
 } from '@/components/messaging/ChatInterface';
 import Image from 'next/image';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 // Types for API responses
 interface ThreadUser {
@@ -68,6 +69,9 @@ interface MessagesResponse {
 
 export default function MessagesPage() {
   const { data: session, status } = useSession();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [threads, setThreads] = useState<Thread[]>([]);
   const [selectedThreadUserId, setSelectedThreadUserId] = useState<string | null>(null);
   const [conversation, setConversation] = useState<Conversation | null>(null);
@@ -105,6 +109,17 @@ export default function MessagesPage() {
       fetchThreads();
     }
   }, [status]);
+
+  // Hydrate selected conversation from URL (?userId=...)
+  useEffect(() => {
+    const id = searchParams?.get('userId');
+    if (id && id !== selectedThreadUserId) {
+      setSelectedThreadUserId(id);
+      // Attempt to fetch messages for deep link
+      fetchMessages(id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   // Fetch current user id for SSE subscriptions
   useEffect(() => {
@@ -252,6 +267,14 @@ export default function MessagesPage() {
   const handleSelectThread = (partnerId: string) => {
     setSelectedThreadUserId(partnerId);
     fetchMessages(partnerId);
+    // Persist in URL for deep linking and reload resilience
+    try {
+      const params = new URLSearchParams(searchParams?.toString());
+      params.set('userId', partnerId);
+      router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    } catch {
+      // no-op
+    }
   };
 
   // Send message handler
@@ -313,6 +336,15 @@ export default function MessagesPage() {
   // Handle back button in mobile view
   const handleBackToThreads = () => {
     setShowThreadList(true);
+    // Remove userId from URL when navigating back to list
+    try {
+      const params = new URLSearchParams(searchParams?.toString());
+      params.delete('userId');
+      const qs = params.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    } catch {
+      // no-op
+    }
   };
 
   // Loading state
@@ -344,6 +376,7 @@ export default function MessagesPage() {
                     className="w-full bg-transparent text-sm focus:outline-none"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
+                    aria-label="Search messages"
                   />
                 </div>
                 <button
@@ -510,6 +543,14 @@ export default function MessagesPage() {
                   height="70vh"
                   className="rounded-none border-0 shadow-none"
                 />
+              ) : selectedThreadUserId && isLoadingMessages ? (
+                // Lightweight loading skeleton while messages load
+                <div className="flex h-full flex-col gap-3 p-4">
+                  <div className="h-5 w-1/2 animate-pulse rounded bg-neutral-200" />
+                  <div className="h-24 w-2/3 animate-pulse rounded bg-neutral-100" />
+                  <div className="ml-auto h-24 w-2/3 animate-pulse rounded bg-neutral-100" />
+                  <div className="h-5 w-1/3 animate-pulse rounded bg-neutral-200" />
+                </div>
               ) : (
                 <div className="flex h-full flex-col items-center justify-center p-4 text-center">
                   <FiMessageSquare className="mb-4 h-16 w-16 text-neutral-200" />
@@ -544,6 +585,7 @@ export default function MessagesPage() {
                     className="w-full bg-transparent text-sm focus:outline-none"
                     value={pickerQuery}
                     onChange={(e) => setPickerQuery(e.target.value)}
+                    aria-label="Search caregivers"
                   />
                 </div>
                 <div className="max-h-80 overflow-y-auto">
@@ -572,6 +614,14 @@ export default function MessagesPage() {
                           setSelectedThreadUserId(c.caregiverId);
                           await fetchMessages(c.caregiverId);
                           if (isMobileView) setShowThreadList(false);
+                          // Persist in URL
+                          try {
+                            const params = new URLSearchParams(searchParams?.toString());
+                            params.set('userId', c.caregiverId);
+                            router.push(`${pathname}?${params.toString()}`, { scroll: false });
+                          } catch {
+                            // no-op
+                          }
                         }}
                       >
                         <div>

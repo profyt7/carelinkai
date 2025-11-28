@@ -19,7 +19,7 @@ export default function SettingsIndexPage() {
     ...(role === "CAREGIVER" ? [
       { href: "/settings/credentials", title: "Credentials", desc: "Licenses & docs", icon: <FiFileText className="h-5 w-5" /> },
     ] : []),
-    { href: "/settings/pwa", title: "App", desc: "Install & device", icon: <FiSmartphone className="h-5 w-5" /> },
+    { href: "/settings/pwa", title: "App & Devices", desc: "Install & devices", icon: <FiSmartphone className="h-5 w-5" /> },
   ];
 
   return (
