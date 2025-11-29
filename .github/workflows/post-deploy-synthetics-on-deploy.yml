@@ -1,0 +1,43 @@
+name: Post-deploy Synthetics (trigger after deploy)
+
+on:
+  workflow_run:
+    workflows: ["Deploy to Render (env-aware)"]
+    types: [completed]
+
+jobs:
+  trigger-ephemeral-synthetics:
+    name: Trigger ephemeral synthetics via repository_dispatch
+    if: >-
+      ${{ github.event.workflow_run.conclusion == 'success' &&
+          github.event.workflow_run.head_branch == 'main' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Dispatch post-deploy synthetics
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+          REF: ${{ github.event.workflow_run.head_branch }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          body=$(cat <<JSON
+          {"event_type":"post-deploy-synthetics-ephemeral",
+           "client_payload":{
+             "reason":"workflow_run:Deploy to Render (env-aware)",
+             "sha":"${SHA}",
+             "ref":"${REF}",
+             "source_run_id":"${GITHUB_RUN_ID}"
+           }}
+          JSON
+          )
+          curl -sS -X POST \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'Content-Type: application/json' \
+            --data "${body}" \
+            "https://api.github.com/repos/${REPO}/dispatches"
+          echo "repository_dispatch sent for post-deploy-synthetics-ephemeral"
