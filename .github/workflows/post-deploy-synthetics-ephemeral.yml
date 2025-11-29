@@ -16,6 +16,13 @@ on:
     types: [post-deploy-synthetics-ephemeral]
   schedule:
     - cron: '*/30 * * * *'
+  workflow_call:
+    inputs:
+      simulate_failure:
+        description: "Simulate a failing run"
+        type: boolean
+        required: false
+        default: false
 
 jobs:
   ping:
