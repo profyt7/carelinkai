@@ -6,7 +6,7 @@ concurrency:
 
 on:
   workflow_run:
-    workflows: ["Deploy to Render (env-aware)"]
+    # Listen to all completed workflow runs, we'll gate by name/branch below
     types: [completed]
 
 jobs:
@@ -14,6 +14,7 @@ jobs:
     name: Run checks
     if: >-
       ${{ github.event.workflow_run.conclusion == 'success' &&
+          github.event.workflow_run.name == 'Deploy to Render (env-aware)' &&
           github.event.workflow_run.head_branch == 'main' }}
     runs-on: ubuntu-latest
     steps:
