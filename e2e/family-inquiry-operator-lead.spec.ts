@@ -11,7 +11,26 @@ async function uiLogin(page, email: string, password: string) {
   await page.getByLabel(/Password/i).fill(password);
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   // Either dashboard or search depending on role
-  await page.waitForURL('**/{dashboard,search,operator,marketplace,settings}**', { timeout: 30000 }).catch(() => {});
+  await page.waitForURL('**/{dashboard,search,operator,marketplace,settings}**', { timeout: 15000 }).catch(() => {});
+}
+
+async function ensureFamilyAccount(page, email: string, password: string) {
+  // Visit register and complete 3-step form for FAMILY
+  await page.goto('/auth/register', { waitUntil: 'domcontentloaded' });
+  // Step 1
+  await page.getByLabel(/Email Address/i).fill(email);
+  await page.getByLabel(/^Password$/i).fill(password);
+  await page.getByLabel(/Confirm Password/i).fill(password);
+  await page.getByRole('button', { name: 'Next' }).click();
+  // Step 2
+  await page.getByLabel(/First Name/i).fill('E2E');
+  await page.getByLabel(/Last Name/i).fill('Family');
+  await page.getByRole('button', { name: 'Next' }).click();
+  // Step 3 (role defaults to Family). Agree to terms and submit.
+  await page.getByLabel(/I agree to the/i).check();
+  await page.getByRole('button', { name: /Create Account/i }).click();
+  // Wait for redirect to login
+  await page.waitForURL('**/auth/login**', { timeout: 30000 }).catch(() => {});
 }
 
 test('Family → inquiry → Operator lead management', async ({ browser, request }) => {
@@ -62,12 +81,17 @@ test('Family → inquiry → Operator lead management', async ({ browser, reques
   const famPage = await famCtx.newPage();
   // Best-effort: ensure family exists (dev endpoint may be disabled on staging; ignore failures)
   try {
-    const r = await request.post('/api/dev/upsert-family', { data: { email: FAMILY_EMAIL } });
+    const r = await request.post('/api/dev/upsert-family', { data: { email: FAMILY_EMAIL, password: FAMILY_PASS } });
     if (!r.ok()) {
       // ignore
     }
   } catch {}
   await uiLogin(famPage, FAMILY_EMAIL, FAMILY_PASS);
+  // If still not logged in (e.g., user doesn't exist and dev endpoint is disabled), register via UI and retry login
+  if (!/\/(dashboard|search|operator|marketplace|settings)\b/.test(famPage.url())) {
+    await ensureFamilyAccount(famPage, FAMILY_EMAIL, FAMILY_PASS);
+    await uiLogin(famPage, FAMILY_EMAIL, FAMILY_PASS);
+  }
 
   const inquiryRes = await famPage.evaluate(async ({ homeId, uniq }) => {
     const payload = {
