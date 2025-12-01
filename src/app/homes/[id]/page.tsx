@@ -251,8 +251,9 @@ export default function HomeDetailPage() {
   const { id } = params;
   
   // State for the home data
-  const [home, setHome] = useState(MOCK_HOME);
-  const [isLoading, setIsLoading] = useState(false);
+  const [home, setHome] = useState<any | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isFavorite, setIsFavorite] = useState(false);
   
   // State for active tab
@@ -262,7 +263,7 @@ export default function HomeDetailPage() {
   const [pricingEstimate, setPricingEstimate] = useState<PricingEstimate | null>(null);
   
   // State for activity calendar
-  const [selectedDate, setSelectedDate] = useState<string>("");
+  const [selectedDate, setSelectedDate] = useState<any>("");
   
   // State for inquiry form
   const [inquiryForm, setInquiryForm] = useState({
@@ -295,48 +296,42 @@ export default function HomeDetailPage() {
   const contactRef = useRef<HTMLDivElement>(null);
   const bookingRef = useRef<HTMLDivElement>(null);
   
-  // Runtime mock toggle fetched from API
-  const [showMock, setShowMock] = useState(false);
+  // Fetch home data from API
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    const run = async () => {
       try {
-        const res = await fetch('/api/runtime/mocks', { cache: 'no-store', credentials: 'include' as RequestCredentials });
-        if (!res.ok) return;
-        const j = await res.json();
-        if (!cancelled) setShowMock(!!j?.show);
-      } catch {
-        if (!cancelled) setShowMock(false);
+        setIsLoading(true);
+        setError(null);
+        const homeId = String(id ?? '').trim();
+        if (!homeId) throw new Error('Missing home id');
+        const res = await fetch(`/api/homes/${homeId}`, { cache: 'no-store' });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({} as any));
+          throw new Error(data?.message || res.statusText || 'Failed to load');
+        }
+        const json = await res.json();
+        if (!cancelled) setHome(json.data);
+      } catch (e: any) {
+        if (!cancelled) setError(e?.message || 'Failed to load home');
+      } finally {
+        if (!cancelled) setIsLoading(false);
       }
-    })();
+    };
+    run();
     return () => { cancelled = true; };
-  }, []);
-
-  // Fetch home data (mock only when toggle enabled)
-  useEffect(() => {
-    setIsLoading(true);
-    if (!showMock) {
-      setIsLoading(false);
-      return;
-    }
-    // Simulate API call for mock data
-    const t = setTimeout(() => {
-      setHome(MOCK_HOME);
-      setIsLoading(false);
-    }, 500);
-    return () => clearTimeout(t);
-  }, [id, showMock]);
+  }, [id]);
   
   // Set initial selected date for activities
   useEffect(() => {
-    if (home.activities && home.activities.length > 0) {
-      const uniqueDates = [...new Set(home.activities.map(activity => activity.date))];
+    if (home?.activities && home.activities.length > 0) {
+      const uniqueDates = [...new Set(home.activities.map((activity: any) => activity.date))];
       if (uniqueDates.length > 0) {
         const firstDate = uniqueDates[0];
         if (firstDate) setSelectedDate(firstDate);
       }
     }
-  }, [home.activities]);
+  }, [home?.activities]);
   
   // Handle inquiry form changes
   const handleInquiryChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -357,12 +352,38 @@ export default function HomeDetailPage() {
   };
   
   // Handle inquiry submission
-  const handleInquirySubmit = (e: React.FormEvent) => {
+  const [submittingInquiry, setSubmittingInquiry] = useState(false);
+  const handleInquirySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // In a real app, we would submit the inquiry to the API
-    // For now, we'll just advance the booking step
-    setBookingStep(2);
+    if (submittingInquiry) return;
+    setSubmittingInquiry(true);
+    try {
+      const homeId = String(id ?? '').trim();
+      const res = await fetch('/api/inquiries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          homeId,
+          name: inquiryForm.name,
+          email: inquiryForm.email,
+          phone: inquiryForm.phone,
+          residentName: inquiryForm.residentName || undefined,
+          moveInTimeframe: inquiryForm.moveInTimeframe || undefined,
+          careNeeded: inquiryForm.careNeeded,
+          message: inquiryForm.message || undefined,
+          source: 'home_detail',
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error || res.statusText || 'Failed to submit');
+      }
+      setBookingStep(2);
+    } catch (err: any) {
+      alert(err?.message || 'Failed to submit inquiry');
+    } finally {
+      setSubmittingInquiry(false);
+    }
   };
   
   // Handle tour scheduling
@@ -431,13 +452,13 @@ export default function HomeDetailPage() {
   };
   
   // Get activities for selected date
-  const getActivitiesForDate = (date: string) => {
-    return home.activities.filter(activity => activity.date === date);
+  const getActivitiesForDate = (date: string): any[] => {
+    return (home?.activities || []).filter((activity: any) => activity.date === date);
   };
   
   // Get unique activity dates
-  const getUniqueDates = () => {
-    return [...new Set(home.activities.map(activity => activity.date))];
+  const getUniqueDates = (): string[] => {
+    return [...new Set((home?.activities || []).map((activity: any) => activity.date))] as string[];
   };
   
   // Toggle amenity category expansion
@@ -456,20 +477,19 @@ export default function HomeDetailPage() {
     );
   }
 
-  // When mock mode is disabled, show a simple placeholder instead of demo content
-  if (!showMock) {
+  if (error) {
     return (
       <DashboardLayout title="Home Details">
         <div className="p-4 md:p-6">
-          <div className="rounded-lg border border-neutral-200 bg-white p-6">
-            <h2 className="text-xl font-semibold text-neutral-800 mb-2">Listing details</h2>
-            <p className="text-neutral-600">This demo listing is hidden because mock mode is off.</p>
-            <p className="mt-3 text-sm text-neutral-600">Enable runtime mock mode to preview this page with sample data.</p>
+          <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-red-700">
+            <h2 className="mb-2 text-xl font-semibold">Unable to load listing</h2>
+            <p>{error}</p>
           </div>
         </div>
       </DashboardLayout>
     );
   }
+  if (!home) return null;
   
   return (
     <DashboardLayout title={`Home Details - ${home.name}`}>
@@ -706,7 +726,7 @@ export default function HomeDetailPage() {
               
               {/* Care levels */}
               <div className="mb-4 flex flex-wrap gap-2">
-                {home.careLevel.map((level) => (
+                {home.careLevel.map((level: string) => (
                   <span
                     key={level}
                     className="rounded-full bg-neutral-100 px-3 py-1 text-sm font-medium text-neutral-700"
@@ -774,14 +794,14 @@ export default function HomeDetailPage() {
               <h2 className="mb-4 text-xl font-semibold text-neutral-800">Amenities & Services</h2>
               
               <div className="rounded-lg border border-neutral-200 bg-white">
-                {home.amenities.map((category, index) => (
+                {home.amenities.map((category: any, index: number) => (
                   <div 
                     key={category.category} 
                     className={`p-6 ${index !== home.amenities.length - 1 ? "border-b border-neutral-200" : ""}`}
                   >
                     <h3 className="mb-3 text-lg font-medium text-neutral-800">{category.category}</h3>
                     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
-                      {(amenitiesExpanded[category.category] ? category.items : category.items.slice(0, 6)).map(item => (
+                      {(amenitiesExpanded[category.category] ? category.items : category.items.slice(0, 6)).map((item: string) => (
                         <div key={item} className="flex items-center">
                           <FiCheck className="mr-2 h-5 w-5 text-success-500" />
                           <span className="text-neutral-700">{item}</span>
@@ -829,7 +849,7 @@ export default function HomeDetailPage() {
               <h2 className="mb-4 text-xl font-semibold text-neutral-800">Our Team</h2>
               
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                {home.staff.map((member) => (
+                {home.staff.map((member: any) => (
                   <div key={member.id} className="overflow-hidden rounded-lg border border-neutral-200 bg-white transition-shadow hover:shadow-md">
                     <div className="aspect-w-1 aspect-h-1 relative w-full">
                       <Image
@@ -857,7 +877,7 @@ export default function HomeDetailPage() {
                 {/* Date selector */}
                 <div className="mb-6 overflow-x-auto">
                   <div className="flex space-x-2">
-                    {getUniqueDates().map((date) => (
+                    {getUniqueDates().map((date: string) => (
                       <button
                         key={date}
                         onClick={() => setSelectedDate(date)}
@@ -875,7 +895,7 @@ export default function HomeDetailPage() {
                 
                 {/* Activities for selected date */}
                 <div className="space-y-4">
-                  {getActivitiesForDate(selectedDate).map((activity) => (
+                  {getActivitiesForDate(selectedDate).map((activity: any) => (
                     <div key={activity.id} className="flex rounded-lg border border-neutral-100 bg-neutral-50 p-4">
                       <div className="mr-4 flex h-14 w-14 flex-col items-center justify-center rounded-lg bg-primary-100 text-primary-700">
                         <FiActivity className="h-6 w-6" />
@@ -918,7 +938,7 @@ export default function HomeDetailPage() {
               </div>
               
               <div className="space-y-4">
-                {home.reviewsList.map((review) => (
+                {home.reviewsList.map((review: any) => (
                   <div key={review.id} className="rounded-lg border border-neutral-200 bg-white p-6">
                     <div className="mb-3 flex items-center justify-between">
                       <div>
@@ -1251,9 +1271,10 @@ export default function HomeDetailPage() {
                       <div className="mb-4">
                         <button
                           type="submit"
-                          className="w-full rounded-md bg-primary-500 py-2 font-medium text-white hover:bg-primary-600"
+                          disabled={submittingInquiry}
+                          className="w-full rounded-md bg-primary-500 py-2 font-medium text-white hover:bg-primary-600 disabled:bg-neutral-300 disabled:text-neutral-500"
                         >
-                          Continue to Schedule Tour
+                          {submittingInquiry ? 'Submitting…' : 'Continue to Schedule Tour'}
                         </button>
                       </div>
                       
@@ -1277,7 +1298,7 @@ export default function HomeDetailPage() {
                           Select Date
                         </label>
                         <div className="grid grid-cols-3 gap-2">
-                          {home.availableDates.slice(0, 6).map((date) => (
+                          {home.availableDates.slice(0, 6).map((date: string) => (
                             <button
                               key={date}
                               type="button"
