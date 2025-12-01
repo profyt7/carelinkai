@@ -280,6 +280,9 @@ export default function HomeDetailPage() {
     tourDate: "",
     tourTime: ""
   });
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   
   // State for booking step
   const [bookingStep, setBookingStep] = useState(0); // 0: not started, 1: inquiry form, 2: tour scheduling, 3: submitted
@@ -385,22 +388,67 @@ export default function HomeDetailPage() {
     });
   };
   
-  // Handle inquiry submission
+  // Handle inquiry submission (step 1 validation → go to step 2)
   const handleInquirySubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // In a real app, we would submit the inquiry to the API
-    // For now, we'll just advance the booking step
+    const errs: Record<string, string> = {};
+    if (!inquiryForm.name.trim()) errs["name"] = "Name is required";
+    if (!inquiryForm.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inquiryForm.email)) errs["email"] = "Valid email is required";
+    if (!Array.isArray(inquiryForm.careNeeded) || inquiryForm.careNeeded.length === 0) errs["careNeeded"] = "Please select at least one care service";
+    setFormErrors(errs);
+    if (Object.keys(errs).length > 0) return;
+
     setBookingStep(2);
   };
   
   // Handle tour scheduling
-  const handleTourSchedule = (e: React.FormEvent) => {
+  const handleTourSchedule = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // In a real app, we would submit the tour schedule to the API
-    // For now, we'll just advance the booking step
-    setBookingStep(3);
+    setSubmitError(null);
+
+    // Compose ISO tour date-time if both provided
+    let tourDateIso: string | undefined = undefined;
+    if (inquiryForm.tourDate && inquiryForm.tourTime) {
+      try {
+        const [hmm = '0:00', ampm = 'AM'] = inquiryForm.tourTime.split(" ");
+        const [hh = '0', mm = '0'] = hmm.split(":");
+        let hours = parseInt(hh, 10) % 12 + (ampm?.toUpperCase() === "PM" ? 12 : 0);
+        const dt = new Date(inquiryForm.tourDate);
+        dt.setHours(hours, parseInt(mm || "0", 10), 0, 0);
+        tourDateIso = dt.toISOString();
+      } catch {}
+    }
+
+    try {
+      setSubmitting(true);
+      const res = await fetch('/api/inquiries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          homeId: String(id),
+          name: inquiryForm.name.trim(),
+          email: inquiryForm.email.trim(),
+          phone: inquiryForm.phone.trim() || undefined,
+          residentName: inquiryForm.residentName.trim() || undefined,
+          moveInTimeframe: inquiryForm.moveInTimeframe || undefined,
+          careNeeded: inquiryForm.careNeeded,
+          message: inquiryForm.message.trim() || undefined,
+          tourDate: tourDateIso,
+          source: 'home_detail',
+        }),
+      });
+      if (!res.ok) {
+        const msg = res.status === 400 ? 'Please check your details and try again.' : 'Something went wrong. Please try again later.';
+        setSubmitError(msg);
+        return;
+      }
+      // Success → show confirmation
+      setBookingStep(3);
+    } catch (err: any) {
+      setSubmitError('Network error. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
   
   // Handle tab changes with scrolling
@@ -1335,9 +1383,11 @@ export default function HomeDetailPage() {
                           name="name"
                           value={inquiryForm.name}
                           onChange={handleInquiryChange}
-                          required
-                          className="form-input w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                          className={`form-input w-full rounded-md shadow-sm focus:border-primary-500 focus:ring-primary-500 ${formErrors['name'] ? 'border-red-400' : 'border-neutral-300'}`}
                         />
+                        {formErrors['name'] && (
+                          <p className="mt-1 text-xs text-red-600">{formErrors['name']}</p>
+                        )}
                       </div>
                       
                       <div className="mb-3">
@@ -1350,14 +1400,16 @@ export default function HomeDetailPage() {
                           name="email"
                           value={inquiryForm.email}
                           onChange={handleInquiryChange}
-                          required
-                          className="form-input w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                          className={`form-input w-full rounded-md shadow-sm focus:border-primary-500 focus:ring-primary-500 ${formErrors['email'] ? 'border-red-400' : 'border-neutral-300'}`}
                         />
+                        {formErrors['email'] && (
+                          <p className="mt-1 text-xs text-red-600">{formErrors['email']}</p>
+                        )}
                       </div>
                       
                       <div className="mb-3">
                         <label htmlFor="phone" className="mb-1 block text-sm font-medium text-neutral-700">
-                          Phone Number*
+                          Phone Number (optional)
                         </label>
                         <input
                           type="tel"
@@ -1365,7 +1417,6 @@ export default function HomeDetailPage() {
                           name="phone"
                           value={inquiryForm.phone}
                           onChange={handleInquiryChange}
-                          required
                           className="form-input w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
                         />
                       </div>
@@ -1445,6 +1496,9 @@ export default function HomeDetailPage() {
                             </label>
                           </div>
                         </div>
+                        {formErrors['careNeeded'] && (
+                          <p className="mt-1 text-xs text-red-600">{formErrors['careNeeded']}</p>
+                        )}
                       </div>
                       
                       <div className="mb-4">
@@ -1486,6 +1540,11 @@ export default function HomeDetailPage() {
                     </p>
                     
                     <form onSubmit={handleTourSchedule}>
+                      {submitError && (
+                        <div className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                          {submitError}
+                        </div>
+                      )}
                       <div className="mb-4">
                         <label htmlFor="tourDate" className="mb-1 block text-sm font-medium text-neutral-700">
                           Select Date
@@ -1539,10 +1598,10 @@ export default function HomeDetailPage() {
                       <div className="mb-4">
                         <button
                           type="submit"
-                          disabled={!inquiryForm.tourDate || !inquiryForm.tourTime}
+                          disabled={submitting || !inquiryForm.tourDate || !inquiryForm.tourTime}
                           className="w-full rounded-md bg-primary-500 py-2 font-medium text-white hover:bg-primary-600 disabled:bg-neutral-300 disabled:text-neutral-500"
                         >
-                          Schedule Tour
+                          {submitting ? 'Submitting…' : 'Schedule Tour'}
                         </button>
                       </div>
                       
