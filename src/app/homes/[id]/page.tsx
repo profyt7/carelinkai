@@ -386,12 +386,40 @@ export default function HomeDetailPage() {
   };
   
   // Handle inquiry submission
-  const handleInquirySubmit = (e: React.FormEvent) => {
+  const [submittingInquiry, setSubmittingInquiry] = useState(false);
+  const handleInquirySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // In a real app, we would submit the inquiry to the API
-    // For now, we'll just advance the booking step
-    setBookingStep(2);
+    if (submittingInquiry) return;
+    setSubmittingInquiry(true);
+    try {
+      const homeId = String(id ?? '').trim();
+      if (!homeId) throw new Error('Missing home id');
+      const res = await fetch('/api/inquiries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          homeId,
+          name: inquiryForm.name,
+          email: inquiryForm.email,
+          phone: inquiryForm.phone,
+          residentName: inquiryForm.residentName || undefined,
+          moveInTimeframe: inquiryForm.moveInTimeframe || undefined,
+          careNeeded: inquiryForm.careNeeded,
+          message: inquiryForm.message || undefined,
+          source: 'home_detail',
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error || res.statusText || 'Failed to submit');
+      }
+      // Proceed to tour scheduling
+      setBookingStep(2);
+    } catch (err: any) {
+      alert(err?.message || 'Failed to submit inquiry');
+    } finally {
+      setSubmittingInquiry(false);
+    }
   };
   
   // Handle tour scheduling
@@ -1465,9 +1493,10 @@ export default function HomeDetailPage() {
                       <div className="mb-4">
                         <button
                           type="submit"
-                          className="w-full rounded-md bg-primary-500 py-2 font-medium text-white hover:bg-primary-600"
+                          disabled={submittingInquiry}
+                          className={`w-full rounded-md py-2 font-medium text-white ${submittingInquiry ? 'bg-neutral-300' : 'bg-primary-500 hover:bg-primary-600'}`}
                         >
-                          Continue to Schedule Tour
+                          {submittingInquiry ? 'Submitting...' : 'Continue to Schedule Tour'}
                         </button>
                       </div>
                       
