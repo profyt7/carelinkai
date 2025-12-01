@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
 
-const FAMILY_EMAIL = process.env.E2E_FAMILY_EMAIL || 'family.demo1@example.com';
-const FAMILY_PASS = process.env.E2E_FAMILY_PASS || 'Care123!';
-const OP_EMAIL = process.env.E2E_OPERATOR_EMAIL || 'operator1@example.com';
+const FAMILY_EMAIL = process.env.E2E_FAMILY_EMAIL || 'family.demo1@carelinkai.com';
+const FAMILY_PASS = process.env.E2E_FAMILY_PASS || 'Family123!';
+const OP_EMAIL = process.env.E2E_OPERATOR_EMAIL || 'operator@carelinkai.com';
 const OP_PASS = process.env.E2E_OPERATOR_PASS || 'Operator123!';
 
 async function uiLogin(page, email: string, password: string) {
@@ -14,7 +14,7 @@ async function uiLogin(page, email: string, password: string) {
   await page.waitForURL('**/{dashboard,search,operator,marketplace,settings}**', { timeout: 30000 }).catch(() => {});
 }
 
-test('Family → inquiry → Operator lead management', async ({ browser }) => {
+test('Family → inquiry → Operator lead management', async ({ browser, request }) => {
   const uniq = `E2E-${Date.now()}`;
 
   // 1) Login as operator to pick a home ID owned by this operator
@@ -60,6 +60,13 @@ test('Family → inquiry → Operator lead management', async ({ browser }) => {
   // 2) Login as family and submit inquiry to that home via API
   const famCtx = await browser.newContext();
   const famPage = await famCtx.newPage();
+  // Best-effort: ensure family exists (dev endpoint may be disabled on staging; ignore failures)
+  try {
+    const r = await request.post('/api/dev/upsert-family', { data: { email: FAMILY_EMAIL } });
+    if (!r.ok()) {
+      // ignore
+    }
+  } catch {}
   await uiLogin(famPage, FAMILY_EMAIL, FAMILY_PASS);
 
   const inquiryRes = await famPage.evaluate(async ({ homeId, uniq }) => {
