@@ -112,3 +112,37 @@ jobs:
           msg="${emoji} Post-deploy synthetics: ${status} — ${RUN_URL}"
           payload=$(printf '{"text":"%s"}' "${msg}")
           curl -fsSL -X POST -H 'Content-type: application/json' --data "${payload}" "${SLACK_WEBHOOK_URL}"
+
+  operator-check:
+    name: Operator session check (optional)
+    needs: [synthetics]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify operator auth with signed JWT cookie
+        env:
+          SYNTH_OP_EMAIL: ${{ secrets.SYNTH_OP_EMAIL }}
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+        run: |
+          set -e
+          if [ -z "${SYNTH_OP_EMAIL:-}" ] || [ -z "${NEXTAUTH_SECRET:-}" ]; then
+            echo "No SYNTH_OP_EMAIL/NEXTAUTH_SECRET; skipping operator check."
+            exit 0
+          fi
+          header='{"alg":"HS256","typ":"JWT"}'
+          now=$(date +%s)
+          exp=$((now+600))
+          payload=$(printf '{"email":"%s","role":"OPERATOR","name":"Synthetics Ops","exp":%s}' "${SYNTH_OP_EMAIL}" "${exp}")
+          b64url() { openssl base64 -A | tr '+/' '-_' | tr -d '='; }
+          header_b64=$(printf '%s' "$header" | b64url)
+          payload_b64=$(printf '%s' "$payload" | b64url)
+          to_sign="$header_b64.$payload_b64"
+          signature=$(printf '%s' "$to_sign" | openssl dgst -binary -sha256 -hmac "$NEXTAUTH_SECRET" | openssl base64 -A | tr '+/' '-_' | tr -d '=')
+          token="$to_sign.$signature"
+          url="https://carelinkai.onrender.com/api/protected/ping"
+          code=$(curl -s -o /dev/null -w "%{http_code}" -H "Cookie: __Secure-next-auth.session-token=$token; next-auth.session-token=$token" "$url" || true)
+          echo "operator ping -> $code"
+          if [ "$code" != "200" ]; then
+            echo "Operator check failed with code $code" >&2
+            exit 1
+          fi
