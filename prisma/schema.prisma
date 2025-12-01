@@ -609,6 +609,8 @@ model Inquiry {
   homeId       String
   status       InquiryStatus @default(NEW)
   message      String?       @db.Text
+  /// Operator-internal notes for this lead (not visible to families)
+  internalNotes String?      @db.Text
   tourDate     DateTime?
   aiMatchScore Float? // AI-generated placement likelihood score
 

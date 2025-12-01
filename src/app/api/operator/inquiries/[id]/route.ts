@@ -9,6 +9,64 @@ export const revalidate = 0;
 
 const prisma = new PrismaClient();
 
+export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+    if (!user || (user.role !== UserRole.OPERATOR && user.role !== UserRole.ADMIN)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const inquiry = await prisma.inquiry.findUnique({
+      where: { id: params.id },
+      include: {
+        home: { select: { id: true, name: true, operatorId: true } },
+        family: {
+          select: {
+            id: true,
+            user: { select: { firstName: true, lastName: true, email: true, phone: true } },
+          },
+        },
+      },
+    });
+    if (!inquiry) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+    if (user.role !== UserRole.ADMIN) {
+      const operator = await prisma.operator.findUnique({ where: { userId: user.id } });
+      if (!operator || inquiry.home.operatorId !== operator.id) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+    }
+
+    const data = {
+      id: inquiry.id,
+      status: inquiry.status,
+      createdAt: inquiry.createdAt.toISOString(),
+      tourDate: inquiry.tourDate ? inquiry.tourDate.toISOString() : null,
+      message: inquiry.message || null,
+      internalNotes: inquiry.internalNotes || '',
+      home: { id: inquiry.home.id, name: inquiry.home.name },
+      family: {
+        id: inquiry.family.id,
+        name: [inquiry.family.user.firstName, inquiry.family.user.lastName].filter(Boolean).join(' '),
+        email: inquiry.family.user.email,
+        phone: inquiry.family.user.phone || null,
+      },
+    };
+
+    return NextResponse.json({ inquiry: data });
+  } catch (e) {
+    console.error('Get inquiry failed', e);
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
 const PatchSchema = z.object({
   status: z.nativeEnum(InquiryStatus).optional(),
   tourDate: z.string().datetime().nullable().optional(),
