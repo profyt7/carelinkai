@@ -253,6 +253,9 @@ export default function HomeDetailPage() {
   // State for the home data
   const [home, setHome] = useState(MOCK_HOME);
   const [isLoading, setIsLoading] = useState(false);
+  // Real data states (used when mock mode is off)
+  const [realHome, setRealHome] = useState<any | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [isFavorite, setIsFavorite] = useState(false);
   
   // State for active tab
@@ -312,19 +315,45 @@ export default function HomeDetailPage() {
     return () => { cancelled = true; };
   }, []);
 
-  // Fetch home data (mock only when toggle enabled)
+  // Fetch data
   useEffect(() => {
-    setIsLoading(true);
-    if (!showMock) {
-      setIsLoading(false);
-      return;
+    let cancelled = false;
+    const fetchReal = async () => {
+      setIsLoading(true);
+      setLoadError(null);
+      try {
+        const res = await fetch(`/api/homes/${id}`, { cache: 'no-store', credentials: 'include' as RequestCredentials });
+        if (!res.ok) {
+          const msg = `Failed to load listing (${res.status})`;
+          if (!cancelled) setLoadError(msg);
+          return;
+        }
+        const j = await res.json();
+        if (!j?.success || !j?.data) {
+          if (!cancelled) setLoadError('Malformed response');
+          return;
+        }
+        if (!cancelled) setRealHome(j.data);
+      } catch (e: any) {
+        if (!cancelled) setLoadError(e?.message || 'Network error');
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+
+    if (showMock) {
+      // Simulate API call for mock data
+      const t = setTimeout(() => {
+        setHome(MOCK_HOME);
+        setIsLoading(false);
+      }, 400);
+      return () => clearTimeout(t);
+    } else {
+      fetchReal();
+      return () => {
+        cancelled = true;
+      };
     }
-    // Simulate API call for mock data
-    const t = setTimeout(() => {
-      setHome(MOCK_HOME);
-      setIsLoading(false);
-    }, 500);
-    return () => clearTimeout(t);
   }, [id, showMock]);
   
   // Set initial selected date for activities
@@ -456,15 +485,200 @@ export default function HomeDetailPage() {
     );
   }
 
-  // When mock mode is disabled, show a simple placeholder instead of demo content
+  // Real-data rendering when mock mode is disabled
   if (!showMock) {
+    if (isLoading) {
+      return (
+        <div className="flex h-screen items-center justify-center">
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-neutral-200 border-t-primary-500"></div>
+        </div>
+      );
+    }
+
+    if (loadError) {
+      return (
+        <DashboardLayout title="Home Details">
+          <div className="p-4 md:p-6">
+            <div className="rounded-lg border border-red-200 bg-red-50 p-6">
+              <h2 className="text-lg font-semibold text-red-700 mb-2">Could not load listing</h2>
+              <p className="text-red-700">{loadError}</p>
+            </div>
+          </div>
+        </DashboardLayout>
+      );
+    }
+
+    if (!realHome) {
+      return (
+        <DashboardLayout title="Home Details">
+          <div className="p-4 md:p-6">
+            <div className="rounded-lg border border-neutral-200 bg-white p-6">
+              <p className="text-neutral-600">No data found.</p>
+            </div>
+          </div>
+        </DashboardLayout>
+      );
+    }
+
+    const addrText = typeof realHome.address === 'object' && realHome.address
+      ? [realHome.address.street, realHome.address.city && `${realHome.address.city}, ${realHome.address.state}`, realHome.address.zipCode].filter(Boolean).join(', ')
+      : '';
+    const photos = (realHome.photos || []).map((p: any) => ({ id: p.id, url: p.url, caption: p.caption || '' }));
+
     return (
-      <DashboardLayout title="Home Details">
-        <div className="p-4 md:p-6">
-          <div className="rounded-lg border border-neutral-200 bg-white p-6">
-            <h2 className="text-xl font-semibold text-neutral-800 mb-2">Listing details</h2>
-            <p className="text-neutral-600">This demo listing is hidden because mock mode is off.</p>
-            <p className="mt-3 text-sm text-neutral-600">Enable runtime mock mode to preview this page with sample data.</p>
+      <DashboardLayout title={`Home Details - ${realHome.name}`}>
+        <div className="min-h-screen bg-neutral-50 pb-28">
+          {/* Back */}
+          <div className="sticky top-0 z-20 bg-white shadow-sm">
+            <div className="container mx-auto px-4 py-4">
+              <div className="flex items-center justify-between">
+                <button onClick={() => router.back()} className="flex items-center text-sm font-medium text-neutral-600 hover:text-neutral-800">
+                  <FiArrowLeft className="mr-1 h-4 w-4" />
+                  Back to Search
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Photos */}
+          <div className="container mx-auto px-4 pt-6">
+            <PhotoGallery photos={photos} />
+          </div>
+
+          {/* Content */}
+          <div className="container mx-auto px-4 py-6">
+            <div className="flex flex-col lg:flex-row lg:space-x-8">
+              <div className="flex-1">
+                {/* Header */}
+                <div className="mb-6">
+                  <div className="flex flex-wrap items-start justify-between">
+                    <div>
+                      <h1 className="text-2xl font-bold text-neutral-800 md:text-3xl">{realHome.name}</h1>
+                      <div className="mt-1 flex items-center">
+                        <FiMapPin className="mr-1 h-4 w-4 text-neutral-500" />
+                        <span className="text-sm text-neutral-600">{addrText}</span>
+                      </div>
+                    </div>
+                    <div className="mt-2 flex items-center md:mt-0">
+                      {realHome.rating != null && (
+                        <>
+                          <div className="flex items-center text-amber-500">
+                            <FiStar className="fill-current" />
+                            <span className="ml-1 font-medium text-neutral-800">{realHome.rating.toFixed(1)}</span>
+                          </div>
+                          <span className="ml-1 text-sm text-neutral-500">({realHome.reviewCount} reviews)</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Key details */}
+                  <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+                    <div className="rounded-lg border border-neutral-200 bg-white p-3">
+                      <div className="flex items-center text-neutral-600">
+                        <FiUsers className="mr-2 h-5 w-5" />
+                        <div>
+                          <p className="text-xs">Capacity</p>
+                          <p className="font-medium">{realHome.capacity} Residents</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="rounded-lg border border-neutral-200 bg-white p-3">
+                      <div className="flex items-center text-neutral-600">
+                        <FiHome className="mr-2 h-5 w-5" />
+                        <div>
+                          <p className="text-xs">Availability</p>
+                          <p className="font-medium">{realHome.availability > 0 ? `${realHome.availability} Spots` : 'Waitlist'}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="rounded-lg border border-neutral-200 bg-white p-3">
+                      <div className="flex items-center text-neutral-600">
+                        <FiDollarSign className="mr-2 h-5 w-5" />
+                        <div>
+                          <p className="text-xs">Starting At</p>
+                          <p className="font-medium">{realHome.priceRange?.formattedMin || (realHome.priceRange?.min ? formatCurrency(realHome.priceRange.min) : '—')}/mo</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="rounded-lg border border-neutral-200 bg-white p-3">
+                      <div className="flex items-center text-neutral-600">
+                        <FiAward className="mr-2 h-5 w-5" />
+                        <div>
+                          <p className="text-xs">Care Levels</p>
+                          <p className="text-sm">{(realHome.careLevel || []).join(', ').replaceAll('_', ' ')}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Description */}
+                <div className="mb-6 rounded-lg border border-neutral-200 bg-white p-6">
+                  <p className="text-neutral-700 whitespace-pre-line">{realHome.description}</p>
+                </div>
+
+                {/* Amenities */}
+                {Array.isArray(realHome.amenities) && realHome.amenities.length > 0 && (
+                  <div className="mb-8">
+                    <h2 className="mb-4 text-xl font-semibold text-neutral-800">Amenities & Services</h2>
+                    <div className="rounded-lg border border-neutral-200 bg-white p-6">
+                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
+                        {realHome.amenities.map((a: string) => (
+                          <div key={a} className="flex items-center">
+                            <FiCheck className="mr-2 h-5 w-5 text-success-500" />
+                            <span className="text-neutral-700">{a}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Location */}
+                <div className="mb-8">
+                  <h2 className="mb-4 text-xl font-semibold text-neutral-800">Location</h2>
+                  <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white">
+                    <div className="h-80 w-full">
+                      {realHome.address?.coordinates && (
+                        <SimpleMap homes={[realHome]} />
+                      )}
+                    </div>
+                    <div className="p-6">
+                      <div className="flex items-start">
+                        <FiMapPinOutline className="mr-3 h-5 w-5 text-neutral-500" />
+                        <div>
+                          <h3 className="font-medium text-neutral-800">Address</h3>
+                          <p className="text-neutral-600">{addrText}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sidebar (reuse inquiry CTA) */}
+              <div className="mt-8 w-full lg:mt-0 lg:w-80">
+                <div className="sticky top-20">
+                  <div className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+                    <h3 className="mb-3 text-lg font-semibold text-neutral-800">Interested in {realHome.name}?</h3>
+                    <p className="mb-4 text-sm text-neutral-600">
+                      {realHome.availability > 0 ? `${realHome.availability} spots available. Schedule a tour or send an inquiry.` : 'Currently on waitlist. Send an inquiry to learn more.'}
+                    </p>
+                    <div className="space-y-3">
+                      <Link href={`/inquiry?homeId=${realHome.id}`} className="flex w-full items-center justify-center rounded-md bg-primary-500 px-4 py-2 font-medium text-white hover:bg-primary-600">
+                        <FiCalendar className="mr-2 h-5 w-5" />
+                        Schedule a Tour
+                      </Link>
+                      <Link href={`/inquiry?homeId=${realHome.id}`} className="flex w-full items-center justify-center rounded-md border border-neutral-300 bg-white px-4 py-2 font-medium text-neutral-700 hover:bg-neutral-50">
+                        <FiMessageSquare className="mr-2 h-5 w-5" />
+                        Send Inquiry
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </DashboardLayout>
