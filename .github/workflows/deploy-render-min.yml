@@ -84,3 +84,31 @@ jobs:
             echo "SSE ready event NOT observed" >&2
             exit 1
           fi
+
+  notify:
+    name: Post-deploy synthetics notification
+    needs: [synthetics]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Slack (success/failure)
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          RESULT: ${{ needs.synthetics.result }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -e
+          if [ -z "${SLACK_WEBHOOK_URL:-}" ]; then
+            echo "No SLACK_WEBHOOK_URL configured; skipping Slack notification."
+            exit 0
+          fi
+          if [ "${RESULT}" = "success" ]; then
+            status="SUCCESS"
+            emoji="✅"
+          else
+            status="FAILURE"
+            emoji="❌"
+          fi
+          msg="${emoji} Post-deploy synthetics: ${status} — ${RUN_URL}"
+          payload=$(printf '{"text":"%s"}' "${msg}")
+          curl -fsSL -X POST -H 'Content-type: application/json' --data "${payload}" "${SLACK_WEBHOOK_URL}"
