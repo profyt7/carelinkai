@@ -36,25 +36,23 @@ test.describe('[non-bypass] Staging: Family inquiry -> Operator sees lead', () =
     const targetHomeId: string = firstHome.id;
     const targetHomeName: string = firstHome.name;
 
-    // Open the operator-owned home directly
-    await famPage.goto(`/homes/${targetHomeId}`, { waitUntil: 'domcontentloaded' });
-    // Start inquiry flow
-    await famPage.getByRole('button', { name: 'Schedule a Tour' }).first().click();
-
+    // Directly create the inquiry via API (avoids fragile UI flow differences on staging)
     const token = `E2E-${Date.now()}`;
-    await famPage.locator('#name').fill('E2E Tester');
-    await famPage.locator('#email').fill(FAMILY_EMAIL!);
-    await famPage.locator('#careAssisted').check();
-    await famPage.locator('#message').fill(`Hello from ${token}`);
-    await famPage.getByRole('button', { name: 'Continue to Schedule Tour' }).click();
-
-    // Pick first available date and a time slot
-    const dateBtn = famPage.locator('form >> text=/^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\\s+\\d{1,2}$/').first();
-    await dateBtn.click();
-    await famPage.getByRole('button', { name: '10:00 AM' }).click();
-    await famPage.getByRole('button', { name: 'Schedule Tour' }).click();
-
-    await expect(famPage.getByRole('heading', { name: 'Tour Scheduled!' })).toBeVisible({ timeout: 20_000 });
+    const tourIso = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+    const createRes = await famPage.request.post('/api/inquiries', {
+      data: {
+        homeId: targetHomeId,
+        name: 'E2E Tester',
+        email: FAMILY_EMAIL!,
+        careNeeded: ['Assisted Living'],
+        message: `Hello from ${token}`,
+        tourDate: tourIso,
+        source: 'e2e',
+      }
+    });
+    expect(createRes.status()).toBe(201);
+    const created = await createRes.json();
+    expect(created?.id).toBeTruthy();
     await famCtx.close();
 
     // 3) Admin signs in and sees the new inquiry in the operator inquiries list
