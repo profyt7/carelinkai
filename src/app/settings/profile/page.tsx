@@ -48,6 +48,9 @@ const caregiverSchema = baseProfileSchema.extend({
   bio: z.string().optional().nullable(),
   yearsExperience: z.number().int().min(0).optional().nullable(),
   hourlyRate: z.number().min(0).optional().nullable(),
+  specialties: z.array(z.string()).optional(),
+  settings: z.array(z.string()).optional(),
+  careTypes: z.array(z.string()).optional(),
 });
 
 const affiliateSchema = baseProfileSchema.extend({
@@ -120,6 +123,11 @@ export default function ProfileSettings() {
     file: null as File | null
   });
   const [credErrors, setCredErrors] = useState<any>({});
+  
+  // Marketplace categories (options)
+  const [specialtyOptions, setSpecialtyOptions] = useState<{ slug: string; name: string }[]>([]);
+  const [settingOptions, setSettingOptions] = useState<{ slug: string; name: string }[]>([]);
+  const [careTypeOptions, setCareTypeOptions] = useState<{ slug: string; name: string }[]>([]);
 
   // Fetch profile data from API
   const fetchProfileData = useCallback(async () => {
@@ -195,6 +203,23 @@ export default function ProfileSettings() {
     }
   }, []);
   
+  // Load marketplace categories (for caregiver selections)
+  const fetchCategories = useCallback(async () => {
+    try {
+      const res = await fetch("/api/marketplace/categories", { cache: "no-store" });
+      if (!res.ok) return;
+      const payload = await res.json();
+      const data = payload?.data || {};
+      const mapItems = (items: any[] = []) => items.map((i: any) => ({ slug: i.slug, name: i.name }));
+      setSpecialtyOptions(mapItems(data.SPECIALTY));
+      setSettingOptions(mapItems(data.SETTING));
+      setCareTypeOptions(mapItems(data.CARE_TYPE));
+    } catch (e) {
+      // non-blocking
+      console.warn("Failed to load marketplace categories", e);
+    }
+  }, []);
+  
   // Fetch profile data
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -204,8 +229,9 @@ export default function ProfileSettings() {
     
     if (status === "authenticated") {
       fetchProfileData();
+      fetchCategories();
     }
-  }, [status, router, fetchProfileData]);
+  }, [status, router, fetchProfileData, fetchCategories]);
   
   // Fetch credentials if user is a caregiver
   useEffect(() => {
@@ -330,6 +356,9 @@ export default function ProfileSettings() {
           bio: data.bio || "",
           yearsExperience: data.yearsExperience || "",
           hourlyRate: data.hourlyRate || "",
+          specialties: Array.isArray(data.specialties) ? data.specialties : [],
+          settings: Array.isArray(data.settings) ? data.settings : [],
+          careTypes: Array.isArray(data.careTypes) ? data.careTypes : [],
         };
       case "AFFILIATE":
         return {
@@ -376,6 +405,15 @@ export default function ProfileSettings() {
     const { name, value } = e.target;
     const numValue = value === "" ? "" : Number(value);
     setFormData((prev: any) => ({ ...prev, [name]: numValue }));
+  };
+  
+  // Toggle array item helper
+  const toggleArrayValue = (key: string, value: string) => {
+    setFormData((prev: any) => {
+      const curr: string[] = Array.isArray(prev[key]) ? prev[key] : [];
+      const exists = curr.includes(value);
+      return { ...prev, [key]: exists ? curr.filter((v) => v !== value) : [...curr, value] };
+    });
   };
   
   // Handle credential input changes
@@ -876,6 +914,90 @@ export default function ProfileSettings() {
               {errors.bio && (
                 <p className="mt-1 text-sm text-red-600">{errors.bio}</p>
               )}
+            </div>
+
+            {/* Skills & Tags */}
+            <div className="col-span-6 mt-6">
+              <h3 className="text-lg font-medium text-neutral-800">Skills & Tags</h3>
+              <p className="mt-1 text-sm text-neutral-500">Select your specialties, work settings, and care types. These power marketplace search and filters.</p>
+            </div>
+            
+            {/* Specialties */}
+            <div className="col-span-6">
+              <label className="block text-sm font-medium text-neutral-700 mb-2">Specialties</label>
+              <div className="flex flex-wrap gap-2">
+                {specialtyOptions.length === 0 ? (
+                  <span className="text-sm text-neutral-500">Loading specialties…</span>
+                ) : (
+                  specialtyOptions.map((opt) => (
+                    <button
+                      key={opt.slug}
+                      type="button"
+                      onClick={() => toggleArrayValue("specialties", opt.slug)}
+                      className={`px-3 py-1 rounded-full border text-sm ${
+                        (formData.specialties || []).includes(opt.slug)
+                          ? "bg-primary-600 text-white border-primary-600"
+                          : "bg-white text-neutral-700 border-neutral-300"
+                      }`}
+                      aria-pressed={(formData.specialties || []).includes(opt.slug)}
+                    >
+                      {opt.name}
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Settings */}
+            <div className="col-span-6">
+              <label className="block text-sm font-medium text-neutral-700 mb-2">Settings</label>
+              <div className="flex flex-wrap gap-2">
+                {settingOptions.length === 0 ? (
+                  <span className="text-sm text-neutral-500">Loading settings…</span>
+                ) : (
+                  settingOptions.map((opt) => (
+                    <button
+                      key={opt.slug}
+                      type="button"
+                      onClick={() => toggleArrayValue("settings", opt.slug)}
+                      className={`px-3 py-1 rounded-full border text-sm ${
+                        (formData.settings || []).includes(opt.slug)
+                          ? "bg-primary-600 text-white border-primary-600"
+                          : "bg-white text-neutral-700 border-neutral-300"
+                      }`}
+                      aria-pressed={(formData.settings || []).includes(opt.slug)}
+                    >
+                      {opt.name}
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Care Types */}
+            <div className="col-span-6">
+              <label className="block text-sm font-medium text-neutral-700 mb-2">Care Types</label>
+              <div className="flex flex-wrap gap-2">
+                {careTypeOptions.length === 0 ? (
+                  <span className="text-sm text-neutral-500">Loading care types…</span>
+                ) : (
+                  careTypeOptions.map((opt) => (
+                    <button
+                      key={opt.slug}
+                      type="button"
+                      onClick={() => toggleArrayValue("careTypes", opt.slug)}
+                      className={`px-3 py-1 rounded-full border text-sm ${
+                        (formData.careTypes || []).includes(opt.slug)
+                          ? "bg-primary-600 text-white border-primary-600"
+                          : "bg-white text-neutral-700 border-neutral-300"
+                      }`}
+                      aria-pressed={(formData.careTypes || []).includes(opt.slug)}
+                    >
+                      {opt.name}
+                    </button>
+                  ))
+                )}
+              </div>
             </div>
             
             <div className="col-span-6 sm:col-span-3">

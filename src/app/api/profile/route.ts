@@ -14,7 +14,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient, UserRole, AuditAction } from "@prisma/client";
+import { PrismaClient, UserRole, AuditAction, CategoryType } from "@prisma/client";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth-db-simple";
 import { z } from "zod";
@@ -50,6 +50,10 @@ const caregiverProfileSchema = baseProfileSchema.extend({
   yearsExperience: z.number().int().min(0).optional().nullable(),
   hourlyRate: z.number().min(0).optional().nullable(),
   availability: z.record(z.any()).optional(),
+  // new editable marketplace facets (validated as string arrays; values further filtered against DB categories)
+  specialties: z.array(z.string()).max(50).optional(),
+  settings: z.array(z.string()).max(20).optional(),
+  careTypes: z.array(z.string()).max(20).optional(),
 });
 
 // Affiliate role specific schema
@@ -159,6 +163,9 @@ export async function GET(request: NextRequest) {
             yearsExperience: true,
             hourlyRate: true,
             availability: true,
+            specialties: true,
+            settings: true,
+            careTypes: true,
             credentials: {
               select: {
                 id: true,
@@ -395,15 +402,45 @@ export async function PATCH(request: NextRequest) {
           break;
           
         case UserRole.CAREGIVER:
-          if ('bio' in roleSpecificFields || 'yearsExperience' in roleSpecificFields || 
-              'hourlyRate' in roleSpecificFields || 'availability' in roleSpecificFields) {
+          if (
+            'bio' in roleSpecificFields ||
+            'yearsExperience' in roleSpecificFields ||
+            'hourlyRate' in roleSpecificFields ||
+            'availability' in roleSpecificFields ||
+            'specialties' in roleSpecificFields ||
+            'settings' in roleSpecificFields ||
+            'careTypes' in roleSpecificFields
+          ) {
+            // Fetch allowed category slugs for validation/sanitization
+            const [specialtyCats, settingCats, careTypeCats] = await Promise.all([
+              prisma.marketplaceCategory.findMany({ where: { type: CategoryType.SPECIALTY, isActive: true }, select: { slug: true } }),
+              prisma.marketplaceCategory.findMany({ where: { type: CategoryType.SETTING, isActive: true }, select: { slug: true } }),
+              prisma.marketplaceCategory.findMany({ where: { type: CategoryType.CARE_TYPE, isActive: true }, select: { slug: true } }),
+            ]);
+            const allowedSpecialties = new Set(specialtyCats.map((c) => c.slug));
+            const allowedSettings = new Set(settingCats.map((c) => c.slug));
+            const allowedCareTypes = new Set(careTypeCats.map((c) => c.slug));
+
+            const cleanSpecialties: string[] | undefined = Array.isArray(rs.specialties)
+              ? Array.from(new Set((rs.specialties as string[]).map((s) => String(s).trim().toLowerCase()))).filter((s) => allowedSpecialties.has(s))
+              : undefined;
+            const cleanSettings: string[] | undefined = Array.isArray(rs.settings)
+              ? Array.from(new Set((rs.settings as string[]).map((s) => String(s).trim().toLowerCase()))).filter((s) => allowedSettings.has(s))
+              : undefined;
+            const cleanCareTypes: string[] | undefined = Array.isArray(rs.careTypes)
+              ? Array.from(new Set((rs.careTypes as string[]).map((s) => String(s).trim().toLowerCase()))).filter((s) => allowedCareTypes.has(s))
+              : undefined;
+
             roleSpecificUpdate = await prisma.caregiver.update({
               where: { userId },
               data: {
                 bio: rs.bio,
                 yearsExperience: rs.yearsExperience,
                 hourlyRate: rs.hourlyRate,
-                availability: rs.availability
+                availability: rs.availability,
+                ...(cleanSpecialties !== undefined ? { specialties: cleanSpecialties } : {}),
+                ...(cleanSettings !== undefined ? { settings: cleanSettings } : {}),
+                ...(cleanCareTypes !== undefined ? { careTypes: cleanCareTypes } : {}),
               }
             });
           }
