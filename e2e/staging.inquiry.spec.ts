@@ -14,7 +14,7 @@ test.describe('[non-bypass] Staging: Family login → inquiry endpoint presence'
     await page.goto('/auth/login');
     await page.getByLabel('Email address').fill(famEmail);
     await page.getByLabel('Password').fill(famPass);
-    await page.getByRole('button', { name: /sign in/i }).click();
+    await page.getByRole('button', { name: 'Sign in', exact: true }).click();
     await page.waitForURL(/\/dashboard/i, { timeout: 30000 });
 
     // Probe the inquiries API. We don't assert 200 because business validation
