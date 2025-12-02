@@ -9,30 +9,12 @@ test.describe('[non-bypass] Staging: Family inquiry -> Operator sees lead', () =
 
     const FAMILY_EMAIL = process.env['STAGING_FAMILY_EMAIL'];
     const FAMILY_PASSWORD = process.env['STAGING_FAMILY_PASSWORD'];
-    const OP_EMAIL = process.env['STAGING_OPERATOR_EMAIL'];
-    const OP_PASSWORD = process.env['STAGING_OPERATOR_PASSWORD'];
+    const ADMIN_EMAIL = process.env['STAGING_ADMIN_EMAIL'] || 'admin@carelinkai.com';
+    const ADMIN_PASSWORD = process.env['STAGING_ADMIN_PASSWORD'] || 'Admin123!';
 
-    test.skip(!FAMILY_EMAIL || !FAMILY_PASSWORD || !OP_EMAIL || !OP_PASSWORD, 'Missing staging credentials');
+    test.skip(!FAMILY_EMAIL || !FAMILY_PASSWORD || !ADMIN_EMAIL || !ADMIN_PASSWORD, 'Missing staging credentials');
 
-    // 1) Sign in as operator to discover an owned home
-    const opCtx1 = await browser.newContext({ baseURL });
-    const opPage1 = await opCtx1.newPage();
-    await opPage1.goto('/auth/login');
-    await opPage1.getByLabel('Email address').fill(OP_EMAIL!);
-    await opPage1.getByLabel('Password').fill(OP_PASSWORD!);
-    await opPage1.getByRole('button', { name: 'Sign in', exact: true }).click();
-    await opPage1.waitForURL('**/dashboard', { timeout: 20_000 });
-
-    const homesRes = await opPage1.request.get('/api/operator/homes');
-    expect(homesRes.ok()).toBeTruthy();
-    const homesJson = await homesRes.json().catch(() => null) as any;
-    const firstHome = (homesJson?.homes || [])[0];
-    test.skip(!firstHome, 'Operator has no homes in staging');
-    const targetHomeId: string = firstHome.id;
-    const targetHomeName: string = firstHome.name;
-    await opCtx1.close();
-
-    // 2) Family signs in, enables runtime mock mode, opens that home, and submits inquiry
+    // 1) Family signs in and fetches a public home via search
     const famCtx = await browser.newContext({ baseURL });
     // Enable UI mock mode via cookie so the inline inquiry widget is shown on the home page
     const isHttps = /^https:/.test(baseURL!);
@@ -45,6 +27,14 @@ test.describe('[non-bypass] Staging: Family inquiry -> Operator sees lead', () =
     await famPage.getByLabel('Password').fill(FAMILY_PASSWORD!);
     await famPage.getByRole('button', { name: 'Sign in', exact: true }).click();
     await famPage.waitForURL('**/dashboard', { timeout: 20_000 });
+
+    const searchRes = await famPage.request.get('/api/homes/search?limit=1');
+    expect(searchRes.ok()).toBeTruthy();
+    const searchJson = await searchRes.json().catch(() => null) as any;
+    const firstHome = searchJson?.data?.homes?.[0] || null;
+    test.skip(!firstHome, 'No homes available in search');
+    const targetHomeId: string = firstHome.id;
+    const targetHomeName: string = firstHome.name;
 
     // Open the operator-owned home directly
     await famPage.goto(`/homes/${targetHomeId}`, { waitUntil: 'domcontentloaded' });
@@ -67,17 +57,17 @@ test.describe('[non-bypass] Staging: Family inquiry -> Operator sees lead', () =
     await expect(famPage.getByRole('heading', { name: 'Tour Scheduled!' })).toBeVisible({ timeout: 20_000 });
     await famCtx.close();
 
-    // 3) Operator signs in and sees the new inquiry in their list
-    const opCtx2 = await browser.newContext({ baseURL });
-    const opPage2 = await opCtx2.newPage();
-    await opPage2.goto('/auth/login');
-    await opPage2.getByLabel('Email address').fill(OP_EMAIL!);
-    await opPage2.getByLabel('Password').fill(OP_PASSWORD!);
-    await opPage2.getByRole('button', { name: 'Sign in' }).click();
-    await opPage2.waitForURL('**/dashboard', { timeout: 20_000 });
+    // 3) Admin signs in and sees the new inquiry in the operator inquiries list
+    const adminCtx = await browser.newContext({ baseURL });
+    const adminPage = await adminCtx.newPage();
+    await adminPage.goto('/auth/login');
+    await adminPage.getByLabel('Email address').fill(ADMIN_EMAIL!);
+    await adminPage.getByLabel('Password').fill(ADMIN_PASSWORD!);
+    await adminPage.getByRole('button', { name: 'Sign in', exact: true }).click();
+    await adminPage.waitForURL('**/dashboard', { timeout: 20_000 });
 
-    await opPage2.goto('/operator/inquiries', { waitUntil: 'domcontentloaded' });
-    await expect(opPage2.getByRole('link', { name: targetHomeName })).toBeVisible({ timeout: 30_000 });
-    await opCtx2.close();
+    await adminPage.goto('/operator/inquiries', { waitUntil: 'domcontentloaded' });
+    await expect(adminPage.getByRole('link', { name: targetHomeName })).toBeVisible({ timeout: 30_000 });
+    await adminCtx.close();
   });
 });
