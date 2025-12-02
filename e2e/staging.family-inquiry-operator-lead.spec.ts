@@ -20,7 +20,7 @@ test.describe('[non-bypass] Staging: Family inquiry -> Operator sees lead', () =
     await opPage1.goto('/auth/login');
     await opPage1.getByLabel('Email address').fill(OP_EMAIL!);
     await opPage1.getByLabel('Password').fill(OP_PASSWORD!);
-    await opPage1.getByRole('button', { name: 'Sign in' }).click();
+    await opPage1.getByRole('button', { name: 'Sign in', exact: true }).click();
     await opPage1.waitForURL('**/dashboard', { timeout: 20_000 });
 
     const homesRes = await opPage1.request.get('/api/operator/homes');
@@ -43,7 +43,7 @@ test.describe('[non-bypass] Staging: Family inquiry -> Operator sees lead', () =
     await famPage.goto('/auth/login');
     await famPage.getByLabel('Email address').fill(FAMILY_EMAIL!);
     await famPage.getByLabel('Password').fill(FAMILY_PASSWORD!);
-    await famPage.getByRole('button', { name: 'Sign in' }).click();
+    await famPage.getByRole('button', { name: 'Sign in', exact: true }).click();
     await famPage.waitForURL('**/dashboard', { timeout: 20_000 });
 
     // Open the operator-owned home directly
