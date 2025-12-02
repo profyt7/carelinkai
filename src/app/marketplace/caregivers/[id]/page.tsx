@@ -29,7 +29,8 @@ async function getCaregiverById(id: string) {
               }
             }
           }
-        }
+        },
+        
       }
     });
 
@@ -74,6 +75,33 @@ async function getCaregiverById(id: string) {
       badges.push('Top Rated');
     }
 
+    // Availability summary (optional)
+    let availabilitySummary: string | null = null;
+    try {
+      const a: any = (caregiver as any).availability || null;
+      const weekly = a?.weekly;
+      if (weekly) {
+        const days = ["mon","tue","wed","thu","fri","sat","sun"] as const;
+        const labels: Record<(typeof days)[number], string> = { mon: "Mon", tue: "Tue", wed: "Wed", thu: "Thu", fri: "Fri", sat: "Sat", sun: "Sun" };
+        const presentDays = days.filter((d) => Array.isArray(weekly[d]) && weekly[d].length > 0);
+        if (presentDays.length === 5 && presentDays.every((d, i) => d === days[i])) {
+          // Mon-Fri present
+          const first = weekly.mon?.[0];
+          const allSame = days.slice(0,5).every((d) => weekly[d]?.length === 1 && weekly[d][0].start === first?.start && weekly[d][0].end === first?.end);
+          if (first && allSame) {
+            availabilitySummary = `Generally available Mon–Fri ${first.start}–${first.end}`;
+          }
+        }
+        if (!availabilitySummary && presentDays.length > 0) {
+          const parts = presentDays.map((d) => {
+            const b = weekly[d][0];
+            return `${labels[d]}${b ? ` ${b.start}–${b.end}` : ''}`;
+          });
+          availabilitySummary = `Generally available: ${parts.join(', ')}`;
+        }
+      }
+    } catch {}
+
     return {
       id: caregiver.id,
       userId: caregiver.userId,
@@ -88,7 +116,8 @@ async function getCaregiverById(id: string) {
       photoUrl,
       ratingAverage: reviewStats._avg.rating ? Number(reviewStats._avg.rating.toFixed(1)) : 0,
       reviewCount: reviewStats._count._all,
-      badges
+      badges,
+      availabilitySummary
     };
   } catch (error) {
     console.error("Error fetching caregiver:", error);
@@ -216,6 +245,15 @@ export default async function CaregiverDetailPage({
                     <p className="mt-1 text-lg font-semibold">
                       {caregiver.yearsExperience} {caregiver.yearsExperience === 1 ? 'Year' : 'Years'}
                     </p>
+                  </div>
+                </div>
+              )}
+              {caregiver.availabilitySummary && (
+                <div className="flex items-center">
+                  <FiClock className="mr-2 text-gray-500" size={20} />
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500">Availability</h3>
+                    <p className="mt-1 text-lg font-semibold">{caregiver.availabilitySummary}</p>
                   </div>
                 </div>
               )}

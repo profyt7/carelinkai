@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { FiUser, FiShield, FiBell, FiDollarSign, FiFileText, FiSmartphone } from "react-icons/fi";
+import { FiUser, FiShield, FiBell, FiDollarSign, FiFileText, FiSmartphone, FiClock } from "react-icons/fi";
 
 export default function SettingsIndexPage() {
   const { data: session } = useSession();
@@ -17,6 +17,7 @@ export default function SettingsIndexPage() {
     { href: "/settings/notifications", title: "Notifications", desc: "Email & in-app", icon: <FiBell className="h-5 w-5" /> },
     { href: payoutsHref, title: "Payouts", desc: "Payments & transfers", icon: <FiDollarSign className="h-5 w-5" /> },
     ...(role === "CAREGIVER" ? [
+      { href: "/settings/availability", title: "Availability", desc: "Set your schedule", icon: <FiClock className="h-5 w-5" /> },
       { href: "/settings/credentials", title: "Credentials", desc: "Licenses & docs", icon: <FiFileText className="h-5 w-5" /> },
     ] : []),
     { href: "/settings/pwa", title: "App & Devices", desc: "Install & devices", icon: <FiSmartphone className="h-5 w-5" /> },
