@@ -27,6 +27,19 @@ const webCommand = process.env['PW_USE_START'] === '1'
   : (process.env['PLAYWRIGHT_WEB_SERVER_CMD'] ||
      'cross-env NEXTAUTH_URL=http://localhost:3000 NEXTAUTH_SECRET=devsecret ALLOW_DEV_ENDPOINTS=1 ALLOW_INSECURE_AUTH_COOKIE=1 DATABASE_URL=postgresql://postgres:postgres@localhost:5434/carelinkai_marketplace?schema=public npm run dev');
 
+const isRemoteBase = (() => {
+  const u = process.env['PLAYWRIGHT_BASE_URL'] || '';
+  if (!u) return false;
+  try {
+    const url = new URL(u);
+    const host = url.hostname || '';
+    const isLocal = host === 'localhost' || host === '127.0.0.1' || host === '::1';
+    return !isLocal;
+  } catch {
+    return false;
+  }
+})();
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: false,
@@ -44,7 +57,8 @@ export default defineConfig({
     video: process.env['CI'] ? 'retain-on-failure' : 'retain-on-failure',
   },
   projects,
-  webServer: {
+  // Disable local webServer when pointing to a remote baseURL
+  webServer: isRemoteBase ? undefined : {
     command: webCommand,
     url: process.env['PLAYWRIGHT_BASE_URL'] || 'http://localhost:3000',
     reuseExistingServer: !process.env['CI'],
