@@ -13,6 +13,8 @@ type InquiryDetail = {
   tourDate: string | null;
   message: string | null;
   internalNotes: string;
+  operatorResponse: string | null;
+  operatorResponseAt: string | null;
   home: { id: string; name: string };
   family: { id: string; name: string; email: string; phone: string | null };
 };
@@ -27,6 +29,8 @@ export default function OperatorLeadDetailPage() {
   const [notes, setNotes] = useState('');
   const [savingNotes, setSavingNotes] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [response, setResponse] = useState('');
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -40,6 +44,7 @@ export default function OperatorLeadDetailPage() {
         if (cancelled) return;
         setData(j.inquiry);
         setNotes(j.inquiry.internalNotes || '');
+        setResponse('');
       } catch (e: any) {
         if (!cancelled) setError(e?.message || 'Failed to load');
       } finally {
@@ -96,6 +101,30 @@ export default function OperatorLeadDetailPage() {
       alert(e?.message || 'Failed to save notes');
     } finally {
       setSavingNotes(false);
+    }
+  };
+
+  const sendResponse = async () => {
+    if (!data || sending || !response.trim()) return;
+    setSending(true);
+    try {
+      const res = await fetch(`/api/operator/inquiries/${data.id}/respond`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: response.trim() }),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.statusText);
+      const j = await res.json();
+      setData({
+        ...data,
+        operatorResponse: j.operatorResponse || response.trim(),
+        operatorResponseAt: j.operatorResponseAt || new Date().toISOString(),
+      });
+      setResponse('');
+    } catch (e: any) {
+      alert(e?.message || 'Failed to send response');
+    } finally {
+      setSending(false);
     }
   };
 
@@ -207,6 +236,28 @@ export default function OperatorLeadDetailPage() {
                 ))}
               </select>
             </div>
+          </div>
+
+          {/* Response to Family */}
+          <div className="rounded-lg border border-neutral-200 bg-white p-4">
+            <div className="mb-2 flex items-center justify-between">
+              <div className="text-sm font-medium text-neutral-800">Response to Family</div>
+              <button onClick={sendResponse} disabled={sending || !response.trim()} className="rounded-md bg-primary-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-600 disabled:bg-neutral-300">
+                {sending ? 'Sending…' : 'Send response'}
+              </button>
+            </div>
+            {data.operatorResponse && (
+              <div className="mb-3 rounded-md border border-neutral-200 bg-neutral-50 p-3 text-sm text-neutral-800">
+                <div className="mb-1 text-xs text-neutral-500">Last sent {data.operatorResponseAt ? new Date(data.operatorResponseAt).toLocaleString() : ''}</div>
+                <div className="whitespace-pre-wrap">{data.operatorResponse}</div>
+              </div>
+            )}
+            <textarea
+              className="h-32 w-full rounded-md border border-neutral-300 p-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+              value={response}
+              onChange={(e) => setResponse(e.target.value)}
+              placeholder="Write a message to the family (they'll receive this by email)."
+            />
           </div>
         </div>
       </div>

@@ -10,7 +10,7 @@
 | Leads list               | Operator | See list of incoming leads                   | DONE   | `/operator/inquiries` lists DB inquiries with filtering by operator scope. |
 | Lead status updates      | Operator | Change & persist lead status                 | DONE   | PATCH `/api/operator/inquiries/[id]` updates status (with RBAC). |
 | Lead details/notes       | Operator | View full inquiry + add notes                | DONE   | Detail page at /operator/inquiries/[id]; GET + PATCH (/api/operator/inquiries/[id]); notes via PATCH /api/operator/inquiries/[id]/notes. |
-| Operator → Family reply  | Operator | Some form of response/messaging              | TODO   | No cross-party messaging implemented. |
+| Operator → Family reply  | Operator | Some form of response/messaging              | DONE   | Operators can send a response on the Lead detail; stored on Lead and optional email sent to family. |
 | Edit listing             | Operator | Edit listing & reflect changes for families  | DONE   | Edit UI at /operator/homes/[id]/edit patches /api/operator/homes/[id]; changes reflect in search and Family home detail. |
 | AI matching intake       | Family   | Intake → recommended homes list              | DONE   | `/homes/match` posts to `/api/ai/match/resident`; semantic + structured scoring. |
 
