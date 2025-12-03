@@ -191,7 +191,7 @@ export default function AvailabilitySettingsPage() {
     <DashboardLayout title="Availability">
       <div className="max-w-4xl mx-auto p-4 sm:p-6">
         <h1 className="text-2xl font-semibold mb-2">Availability</h1>
-        <p className="text-gray-600 mb-6">Set the days and times youâ€™re available to work. You can add weekly hours and optionally repeat them for multiple weeks.</p>
+        <p className="text-gray-600 mb-6">Set the days and times you're available to work. You can add weekly hours and optionally repeat them for multiple weeks.</p>
 
         {message.type && (
           <div className={`mb-4 rounded-md p-3 text-sm ${message.type === "success" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
@@ -239,7 +239,7 @@ export default function AvailabilitySettingsPage() {
         {/* Existing slots */}
         <div className="space-y-6">
           {loading ? (
-            <div className="text-gray-500">Loadingâ€¦</div>
+            <div className="text-gray-500">Loading...</div>
           ) : slots.length === 0 ? (
             <div className="text-gray-600">No availability yet. Add your first slot above.</div>
           ) : (
@@ -260,7 +260,7 @@ export default function AvailabilitySettingsPage() {
                           <div className="flex-1 text-sm text-gray-800">
                             <div>
                               <span className="font-medium">{new Date(s.startTime).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
-                              <span className="mx-2 text-gray-500">â€“</span>
+                              <span className="mx-2 text-gray-500">to</span>
                               <span className="font-medium">{new Date(s.endTime).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
                             </div>
                           </div>
@@ -290,3 +290,4 @@ export default function AvailabilitySettingsPage() {
     </DashboardLayout>
   );
 }
+
