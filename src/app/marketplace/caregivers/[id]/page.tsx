@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
-import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
-import { getMockCaregiverById } from "@/lib/mock/caregivers";
+import { getServerSession } from "next-auth";
+import authOptions from "@/lib/auth";
 import Image from "next/image";
 import Link from "next/link";
-import { FiMapPin, FiDollarSign, FiClock, FiCheckCircle } from "react-icons/fi";
+import { FiMapPin, FiDollarSign, FiClock, FiCheckCircle, FiFileText } from "react-icons/fi";
 import RequestShiftForm from "@/components/marketplace/RequestShiftForm";
 import CaregiverReviewForm from "@/components/marketplace/CaregiverReviewForm";
 import CaregiverReviewsList from "@/components/marketplace/CaregiverReviewsList";
@@ -74,6 +74,40 @@ async function getCaregiverById(id: string) {
       badges.push('Top Rated');
     }
 
+        // Availability: next 30 days, ordered
+    const now = new Date();
+    const to = new Date();
+    to.setDate(to.getDate() + 30);
+    const availability = await prisma.availabilitySlot.findMany({
+      where: {
+        userId: caregiver.userId,
+        startTime: { lt: to },
+        endTime: { gt: now },
+      },
+      orderBy: { startTime: 'asc' },
+      take: 20,
+      select: {
+        id: true,
+        startTime: true,
+        endTime: true,
+        isAvailable: true,
+      },
+    });
+
+    // Credentials (basic fields only)
+    const credentials = await prisma.credential.findMany({
+      where: { caregiverId: caregiver.id },
+      orderBy: { expirationDate: 'asc' },
+      select: {
+        id: true,
+        type: true,
+        isVerified: true,
+        documentUrl: true,
+        issueDate: true,
+        expirationDate: true,
+      },
+    });
+
     return {
       id: caregiver.id,
       userId: caregiver.userId,
@@ -88,7 +122,9 @@ async function getCaregiverById(id: string) {
       photoUrl,
       ratingAverage: reviewStats._avg.rating ? Number(reviewStats._avg.rating.toFixed(1)) : 0,
       reviewCount: reviewStats._count._all,
-      badges
+      badges,
+      availability,
+      credentials
     };
   } catch (error) {
     console.error("Error fetching caregiver:", error);
@@ -101,6 +137,8 @@ export default async function CaregiverDetailPage({
 }: {
   params: { id: string };
 }) {
+    const session: any = await getServerSession(authOptions as any);
+  const canViewOperatorOnly = (session?.user as any)?.role === "OPERATOR" || (session?.user as any)?.role === "ADMIN";
   const caregiver = await getCaregiverById(params.id);
 
   if (!caregiver) {
@@ -125,7 +163,7 @@ export default async function CaregiverDetailPage({
         }
         aria-hidden="true"
       >
-        ‚òÖ
+        √É∆í√Ü*Äô√É*Äö√Ç*¢√É∆í√¢*Ç¨*π√É*Ä¶√¢*Ç¨≈ì√É∆í√Ç*¢√É*¢√¢*Ç¨≈°√Ç*¨√É*Äö√Ç*¶
       </span>
     ));
 
@@ -249,7 +287,65 @@ export default async function CaregiverDetailPage({
             )}
           </div>
           
-          {/* CTA Buttons */}
+
+            {/* Availability (read-only) */}
+            <div className="mb-6">
+              <h2 className="text-lg font-medium text-gray-900 mb-2">Availability (next 30 days)</h2>
+              {caregiver.availability && caregiver.availability.length > 0 ? (
+                <ul className="divide-y rounded-md border">
+                  {caregiver.availability.map((slot: any) => (
+                    <li key={slot.id} className="p-3 flex items-center justify-between text-sm">
+                      <span className="text-gray-700">
+                        {new Date(slot.startTime).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                      </span>
+                      <span className="text-gray-600">
+                        {new Date(slot.startTime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                        <span className="mx-2 text-gray-400">√É∆í√Ü*Äô√É*Äö√Ç*¢√É∆í√Ç*¢√É*¢√¢*Äö*¨√Ö*°√É*Äö√Ç*¨√É∆í√Ç*¢√É*¢√¢*Ç¨≈°√Ç*¨√É*Ä¶√¢*Ç¨≈ì</span>
+                        {new Date(slot.endTime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-gray-600">No availability published.</p>
+              )}
+            </div>
+
+            {/* Credentials (Operator/Admin view only) */}
+            <div className="mb-6">
+              <h2 className="text-lg font-medium text-gray-900 mb-2">Credentials</h2>
+              {canViewOperatorOnly ? (
+                caregiver.credentials && caregiver.credentials.length > 0 ? (
+                  <ul className="divide-y rounded-md border">
+                    {caregiver.credentials.map((c: any) => (
+                      <li key={c.id} className="p-3 flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2">
+                          <FiFileText className="text-gray-500" />
+                          <div>
+                            <div className="font-medium text-gray-800">{c.type}</div>
+                            <div className="text-gray-500 text-xs">
+                              Issued {new Date(c.issueDate).toLocaleDateString()} √É∆í√Ü*Äô√É*¢√¢*Äö*¨√Ö*°√É∆í√¢*Ç¨≈°√É*Äö√Ç*∑ Expires {new Date(c.expirationDate).toLocaleDateString()}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs ${c.isVerified ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                            {c.isVerified ? 'Verified' : 'Unverified'}
+                          </span>
+                          {c.documentUrl && (
+                            <a href={c.documentUrl} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline">View</a>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-gray-600">No credentials uploaded.</p>
+                )
+              ) : (
+                <p className="text-gray-600">Operator access required to view credentials.</p>
+              )}
+            </div>          {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4">
             <Link 
               href="/messages" 
@@ -298,3 +394,4 @@ export default async function CaregiverDetailPage({
     </div>
   );
 }
+
