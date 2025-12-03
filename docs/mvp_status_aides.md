@@ -1,4 +1,4 @@
-# CareLinkAI – Phase 1 MVP Status Matrix (Aide / Caregiver Marketplace)
+﻿# CareLinkAI – Phase 1 MVP Status Matrix (Aide / Caregiver Marketplace)
 
 | Area                     | Role      | Capability                                          | Status | Notes / Gaps |
 |--------------------------|-----------|-----------------------------------------------------|--------|--------------|
@@ -11,7 +11,7 @@
 | Aide search list         | Operator  | Browse/search list of aides                         | DONE   | Marketplace caregiver list implemented. API: /api/marketplace/caregivers; UI: /marketplace (Caregivers tab/cards). |
 | Aide filters             | Operator  | Filter aides by location, skills, availability      | WIP    | Filters: q, city/state, radius, rate, experience, specialties, settings, careTypes implemented. No availability-based filter. |
 | Aide detail view         | Operator  | View aide profile, skills, docs, availability       | WIP    | Detail shows photo, bio, rate, experience, specialties, reviews, hire request. No availability calendar or docs listing surfaced. UI: /marketplace/caregivers/[id]. |
-| Operator → Aide contact  | Operator  | Send an initial contact / message to aide           | WIP    | Messaging system exists (/api/messages, /messages). New message picker lists employed caregivers; marketplace "Message" button doesn’t deep link to caregiver. |
+| Operator → Aide contact  | Operator  | Send an initial contact / message to aide           | DONE   | Caregiver detail links to /messages?userId=<caregiverUserId> for Operators; unauthenticated users are redirected to login with callback. Thread is created on first message and reused thereafter. |
 | Aide → Operator reply    | Aide      | Respond to operator (basic 2-way communication)     | DONE   | Two-way messaging works with SSE notifications. APIs: /api/messages, /api/messages/threads; UI: /messages. |
 | Aide visibility control  | Aide      | Set profile as active/paused in marketplace         | TODO   | No visibility toggle/field on Caregiver or UI to pause/hide from marketplace. |
 | Admin aide oversight     | Admin     | List/search aides; view profiles & status           | TODO   | No admin-facing list/search for caregivers; operator endpoints cover only employed caregivers. |
