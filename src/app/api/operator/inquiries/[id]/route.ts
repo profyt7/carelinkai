@@ -49,6 +49,8 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       tourDate: inquiry.tourDate ? inquiry.tourDate.toISOString() : null,
       message: inquiry.message || null,
       internalNotes: inquiry.internalNotes || '',
+      operatorResponse: inquiry.operatorResponse || null,
+      operatorResponseAt: inquiry.operatorResponseAt ? inquiry.operatorResponseAt.toISOString() : null,
       home: { id: inquiry.home.id, name: inquiry.home.name },
       family: {
         id: inquiry.family.id,

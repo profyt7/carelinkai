@@ -611,6 +611,9 @@ model Inquiry {
   message      String?       @db.Text
   /// Operator-internal notes for this lead (not visible to families)
   internalNotes String?      @db.Text
+  /// Last response message sent by the operator to the family (Phase 1)
+  operatorResponse String?   @db.Text
+  operatorResponseAt DateTime?
   tourDate     DateTime?
   aiMatchScore Float? // AI-generated placement likelihood score
 
