@@ -44,6 +44,12 @@ export async function GET(request: Request) {
     const lat = searchParams.get('lat') ? parseFloat(searchParams.get('lat')!) : null;
     const lng = searchParams.get('lng') ? parseFloat(searchParams.get('lng')!) : null;
     const radiusMiles = searchParams.get('radiusMiles') ? parseFloat(searchParams.get('radiusMiles')!) : null;
+    // Availability filter params
+    const availableOnDayParam = searchParams.get('availableOnDay');
+    const availableBetweenParam = searchParams.get('availableBetween');
+    const availableStartParam = searchParams.get('availableStart');
+    const availableEndParam = searchParams.get('availableEnd');
+
     
     // Pagination parameters (supports cursor or page)
     const cursor = searchParams.get('cursor');
@@ -200,6 +206,87 @@ export async function GET(request: Request) {
       };
     }
     
+    // Availability filter: restrict caregivers by AvailabilitySlot over next 30 days
+    try {
+      const dayNameToIndex: Record<string, number> = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6 } as any;
+      const parseDaysInline = (v: string | null): number[] | null => {
+        if (!v) return null;
+        const parts = v.split(',').map(s => s.trim()).filter(Boolean);
+        if (parts.length === 0) return null;
+        const days: number[] = [];
+        for (const p of parts) {
+          const n = Number(p);
+          if (!Number.isNaN(n) && n >= 0 && n <= 6) { days.push(n); continue; }
+          const idx = (dayNameToIndex as any)[p.toLowerCase()];
+          if (typeof idx === 'number') days.push(idx);
+        }
+        return days.length > 0 ? Array.from(new Set(days)) : null;
+      };
+      const parseTimeInline = (t: string): { h: number; m: number } | null => {
+        const m = t.match(/^\s*(\d{1,2})(?::(\d{2}))?\s*$/);
+        if (!m) return null;
+        let h = Math.min(23, Math.max(0, parseInt(m[1]!, 10)));
+        let min = m[2] ? Math.min(59, Math.max(0, parseInt(m[2]!, 10))) : 0;
+        return { h, m: min };
+      };
+      const parseBetweenInline = (v: string | null): { start: { h: number; m: number }; end: { h: number; m: number } } | null => {
+        if (!v) return null;
+        const m = v.match(/^\s*([^\-]+)\-([^\-]+)\s*$/);
+        if (!m) return null;
+        const a = parseTimeInline(m[1]!);
+        const b = parseTimeInline(m[2]!);
+        if (!a || !b) return null;
+        return { start: a, end: b };
+      };
+      const selectedDays = parseDaysInline(availableOnDayParam);
+      const between = availableBetweenParam ? parseBetweenInline(availableBetweenParam) : null;
+      const startParsed = availableStartParam ? parseTimeInline(availableStartParam) : null;
+      const endParsed = availableEndParam ? parseTimeInline(availableEndParam) : null;
+      const timeRange = ((): any => { if (between) return between; if (startParsed && endParsed) return { start: startParsed, end: endParsed }; return null; })();
+      if (selectedDays || timeRange) {
+        const now = new Date();
+        const windows: { start: Date; end: Date }[] = [];
+        const daysToScan = 30;
+        for (let i = 0; i < daysToScan; i++) {
+          const d = new Date(now);
+          d.setHours(0, 0, 0, 0);
+          d.setDate(d.getDate() + i);
+          const dow = d.getDay();
+          if (selectedDays && !selectedDays.includes(dow)) continue;
+          if (timeRange) {
+            const s = new Date(d);
+            s.setHours(timeRange.start.h, timeRange.start.m, 0, 0);
+            const e = new Date(d);
+            e.setHours(timeRange.end.h, timeRange.end.m, 0, 0);
+            if (e <= s) continue;
+            windows.push({ start: s, end: e });
+          } else {
+            const s = new Date(d);
+            const e = new Date(d);
+            e.setHours(23, 59, 59, 999);
+            windows.push({ start: s, end: e });
+          }
+        }
+        if (windows.length > 0) {
+          const distinctUsers = await prisma.availabilitySlot.findMany({
+            where: {
+              isAvailable: true,
+              OR: windows.map(w => ({ startTime: { lt: w.end }, endTime: { gt: w.start } }))
+            },
+            select: { userId: true },
+            distinct: ['userId']
+          });
+          const userIds = Array.from(new Set(distinctUsers.map(r => r.userId)));
+          if (userIds.length === 0) {
+            return NextResponse.json(
+              { data: [], pagination: { page, pageSize, total: 0, hasMore: false, cursor: null } },
+              { status: 200, headers: { 'Cache-Control': 'public, max-age=15, s-maxage=15, stale-while-revalidate=60', ...(typeof __rl_caregivers_get !== 'undefined' ? buildRateLimitHeaders(__rl_caregivers_get.rr, __rl_caregivers_get.limit) : {}) } }
+            );
+          }
+          (where as any).userId = { in: userIds } as any;
+        }
+      }
+    } catch {}
     // Radius filtering support
     const useRadius = !!(lat !== null && lng !== null && radiusMiles !== null && !Number.isNaN(radiusMiles));
     let caregivers: any[] = [];
