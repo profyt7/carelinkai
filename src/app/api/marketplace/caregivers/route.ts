@@ -41,14 +41,71 @@ export async function GET(request: Request) {
     const specialties = searchParams.get('specialties')?.split(',').filter(Boolean);
     const settings = searchParams.get('settings')?.split(',').filter(Boolean);
     const careTypes = searchParams.get('careTypes')?.split(',').filter(Boolean);
+    const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1;
+    const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 20;
+    // pageSize parsed above
+
+    // Availability filters (30-day window)
+    const availableOnDayRaw = searchParams.get('availableOnDay');
+    const availableStartRaw = searchParams.get('availableStart');
+    const availableEndRaw = searchParams.get('availableEnd');
+    const hasAvailFilters = Boolean(availableOnDayRaw || availableStartRaw || availableEndRaw);
+
+    let allowedUserIds: string[] | null = null;
+    if (hasAvailFilters) {
+      const dayMap: Record<string, number> = {
+        sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6,
+      };
+      const dow = availableOnDayRaw ? (dayMap[String(availableOnDayRaw).toLowerCase()] ?? null) : null;
+      const parseHM = (s: string) => {
+        const parts = s.split(':');
+        const h = parseInt(parts[0] ?? '', 10);
+        const m = parseInt(parts[1] ?? '0', 10);
+        
+        if (Number.isNaN(h)) return null;
+        return (h * 60) + (Number.isNaN(m) ? 0 : m);
+      };
+      const qStart = availableStartRaw ? parseHM(availableStartRaw) : null;
+      const qEnd = availableEndRaw ? parseHM(availableEndRaw) : null;
+      const minutesOfDay = (d: Date) => d.getHours() * 60 + d.getMinutes();
+      const overlaps = (s: number, e: number, qs: number | null, qe: number | null) => {
+        if (qs == null && qe == null) return true;
+        if (qs != null && qe != null) return s < qe && e > qs;
+        if (qs != null) return s <= qs && e > qs;
+        if (qe != null) return s < qe && e >= qe;
+        return true;
+      };
+      const startWindow = new Date(); startWindow.setHours(0, 0, 0, 0);
+      const endWindow = new Date(startWindow); endWindow.setDate(endWindow.getDate() + 30);
+      const slots = await prisma.availabilitySlot.findMany({
+        where: { isAvailable: true, startTime: { gte: startWindow }, endTime: { lte: endWindow } },
+        select: { userId: true, startTime: true, endTime: true },
+        orderBy: { startTime: 'asc' },
+        take: 5000,
+      });
+      const idsSet = new Set<string>();
+      for (const s of slots) {
+        const sd = new Date(s.startTime); const ed = new Date(s.endTime);
+        if (dow != null && sd.getDay() !== dow) continue;
+        const sm = minutesOfDay(sd); const em = minutesOfDay(ed);
+        if (overlaps(sm, em, qStart, qEnd)) idsSet.add(s.userId);
+      }
+      allowedUserIds = Array.from(idsSet);
+      if (allowedUserIds.length === 0) {
+        return NextResponse.json(
+          { data: [], pagination: { page, pageSize, total: 0, hasMore: false, cursor: null } },
+          { status: 200, headers: { 'Cache-Control': 'public, max-age=15, s-maxage=15, stale-while-revalidate=60', ...(typeof __rl_caregivers_get !== 'undefined' ? buildRateLimitHeaders(__rl_caregivers_get.rr, __rl_caregivers_get.limit) : {}) } }
+        );
+      }
+    }
     const lat = searchParams.get('lat') ? parseFloat(searchParams.get('lat')!) : null;
     const lng = searchParams.get('lng') ? parseFloat(searchParams.get('lng')!) : null;
     const radiusMiles = searchParams.get('radiusMiles') ? parseFloat(searchParams.get('radiusMiles')!) : null;
     
     // Pagination parameters (supports cursor or page)
     const cursor = searchParams.get('cursor');
-    const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1;
-    const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 20;
+    // page parsed above
+    // pageSize parsed above
     
     // Sorting parameter: recency (default), rateAsc, rateDesc, experienceDesc, distanceAsc (when using radius)
     const sortBy = searchParams.get('sortBy') || 'recency';
@@ -135,6 +192,9 @@ export async function GET(request: Request) {
 
     // Build where clause for filtering
     const where: any = {};
+    if (allowedUserIds) {
+      where.userId = { in: allowedUserIds };
+    }
     
     // Text search in bio or name
     if (q) {
