@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getMockCaregiverById } from "@/lib/mock/caregivers";
 import Image from "next/image";
 import Link from "next/link";
+import MessageCaregiverButton from "@/components/messaging/MessageCaregiverButton";
 import { FiMapPin, FiDollarSign, FiClock, FiCheckCircle, FiShield } from "react-icons/fi";
 import RequestShiftForm from "@/components/marketplace/RequestShiftForm";
 import CaregiverReviewForm from "@/components/marketplace/CaregiverReviewForm";
@@ -367,4 +368,5 @@ export default async function CaregiverDetailPage({
     </div>
   );
 }
+
 
