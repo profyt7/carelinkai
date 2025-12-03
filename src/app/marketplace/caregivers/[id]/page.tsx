@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getMockCaregiverById } from "@/lib/mock/caregivers";
 import Image from "next/image";
 import Link from "next/link";
+import MessageCaregiverButton from "@/components/marketplace/MessageCaregiverButton";
 import { FiMapPin, FiDollarSign, FiClock, FiCheckCircle } from "react-icons/fi";
 import RequestShiftForm from "@/components/marketplace/RequestShiftForm";
 import CaregiverReviewForm from "@/components/marketplace/CaregiverReviewForm";
@@ -251,12 +252,7 @@ export default async function CaregiverDetailPage({
           
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4">
-            <Link 
-              href="/messages" 
-              className="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md transition-colors text-center"
-            >
-              Message
-            </Link>
+            <MessageCaregiverButton caregiverUserId={caregiver.userId} caregiverDetailPath={`/marketplace/caregivers/${caregiver.id}`} className="flex-1" />
             <Link 
               href={`/dashboard/inquiries?caregiverId=${caregiver.id}`}
               className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2 px-4 rounded-md transition-colors text-center"
@@ -298,3 +294,5 @@ export default async function CaregiverDetailPage({
     </div>
   );
 }
+
+
