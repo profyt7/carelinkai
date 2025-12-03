@@ -1,10 +1,11 @@
-import { notFound } from "next/navigation";
+﻿import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { getMockCaregiverById } from "@/lib/mock/caregivers";
 import Image from "next/image";
 import Link from "next/link";
-import { FiMapPin, FiDollarSign, FiClock, FiCheckCircle } from "react-icons/fi";
+import MessageCaregiverButton from "@/components/messaging/MessageCaregiverButton";
+import { FiMapPin, FiDollarSign, FiClock, FiCheckCircle, FiShield } from "react-icons/fi";
 import RequestShiftForm from "@/components/marketplace/RequestShiftForm";
 import CaregiverReviewForm from "@/components/marketplace/CaregiverReviewForm";
 import CaregiverReviewsList from "@/components/marketplace/CaregiverReviewsList";
@@ -74,6 +75,27 @@ async function getCaregiverById(id: string) {
       badges.push('Top Rated');
     }
 
+
+    // Availability (next 30 days)
+    const now = new Date();
+    const in30 = new Date(now);
+    in30.setDate(in30.getDate() + 30);
+    const slots = await prisma.availabilitySlot.findMany({
+      where: {
+        userId: caregiver.userId,
+        endTime: { gte: now },
+        startTime: { lte: in30 },
+      },
+      orderBy: { startTime: 'asc' },
+      select: { id: true, startTime: true, endTime: true, isAvailable: true },
+    });
+
+    // Credentials
+    const credentials = await prisma.credential.findMany({
+      where: { caregiverId: caregiver.id },
+      orderBy: { type: 'asc' },
+      select: { id: true, type: true, isVerified: true },
+    });
     return {
       id: caregiver.id,
       userId: caregiver.userId,
@@ -88,7 +110,9 @@ async function getCaregiverById(id: string) {
       photoUrl,
       ratingAverage: reviewStats._avg.rating ? Number(reviewStats._avg.rating.toFixed(1)) : 0,
       reviewCount: reviewStats._count._all,
-      badges
+      badges,
+      availability: slots,
+      credentials: credentials
     };
   } catch (error) {
     console.error("Error fetching caregiver:", error);
@@ -249,7 +273,53 @@ export default async function CaregiverDetailPage({
             )}
           </div>
           
-          {/* CTA Buttons */}
+
+            {/* Availability */}
+            <div className="mb-6">
+              <h2 className="text-lg font-medium text-gray-900 mb-2">Availability</h2>
+              {!caregiver.availability || caregiver.availability.length === 0 ? (
+                <div className="text-sm text-gray-500">No availability provided.</div>
+              ) : (
+                <ul className="space-y-2">
+                  {caregiver.availability.map((s: any) => {
+                    const start = new Date(s.startTime);
+                    const end = new Date(s.endTime);
+                    const day = start.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+                    const st = start.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+                    const et = end.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+                    return (
+                      <li key={s.id} className="text-sm flex items-center gap-2">
+                        <FiClock className="text-gray-500" />
+                        <span>{day}</span>
+                        <span className="text-gray-500">{st} - {et}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+
+            {/* Credentials */}
+            <div className="mb-6">
+              <h2 className="text-lg font-medium text-gray-900 mb-2">Credentials</h2>
+              {!caregiver.credentials || caregiver.credentials.length === 0 ? (
+                <div className="text-sm text-gray-500">No credentials uploaded.</div>
+              ) : (
+                <ul className="divide-y divide-gray-200 rounded border">
+                  {caregiver.credentials.map((c: any) => (
+                    <li key={c.id} className="p-3 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <FiShield className="text-gray-500" />
+                        <span className="text-sm font-medium">{String(c.type).replace(/[-_]/g, ' ')}</span>
+                      </div>
+                      <span className={"text-xs px-2 py-0.5 rounded-full " + (c.isVerified ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-700")}>
+                        {c.isVerified ? 'Verified' : 'Unverified'}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>          {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4">
             <Link 
               href="/messages" 
@@ -298,3 +368,5 @@ export default async function CaregiverDetailPage({
     </div>
   );
 }
+
+
