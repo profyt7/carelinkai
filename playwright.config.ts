@@ -1,5 +1,17 @@
 import { defineConfig, devices } from '@playwright/test';
 
+// Resolve baseURL and whether it's a remote (non-local) target
+const baseURL = process.env['PLAYWRIGHT_BASE_URL'] || 'http://localhost:3000';
+const isRemoteTarget = (() => {
+  try {
+    const u = new URL(baseURL);
+    const host = u.hostname || '';
+    return !/^(localhost|127\.0\.0\.1)$/i.test(host);
+  } catch {
+    return false;
+  }
+})();
+
 // Loosen project typing to avoid Next.js type-checker conflicts during app build
 const projects: any[] = [
   {
@@ -9,6 +21,7 @@ const projects: any[] = [
 ];
 
 // Only include the non-bypass credentials project for local/dev runs, not in CI
+// Also useful for staging/remote runs to ensure no bypass headers are sent.
 if (!process.env['CI']) {
   projects.push({
     name: 'chromium-no-bypass',
@@ -21,7 +34,7 @@ if (!process.env['CI']) {
   } as any);
 }
 
-// For non-bypass (local only), optionally run against built server to improve stability
+// For local runs, optionally run against built server to improve stability
 const webCommand = process.env['PW_USE_START'] === '1'
   ? 'npm run start:e2e'
   : (process.env['PLAYWRIGHT_WEB_SERVER_CMD'] ||
@@ -37,16 +50,17 @@ export default defineConfig({
   workers: process.env['CI'] ? 2 : 1,
   reporter: 'list',
   use: {
-    baseURL: process.env['PLAYWRIGHT_BASE_URL'] || 'http://localhost:3000',
+    baseURL,
     extraHTTPHeaders: { 'x-e2e-bypass': '1' },
     trace: process.env['CI'] ? 'retain-on-failure' : 'on-first-retry',
     screenshot: process.env['CI'] ? 'only-on-failure' : 'only-on-failure',
     video: process.env['CI'] ? 'retain-on-failure' : 'retain-on-failure',
   },
   projects,
-  webServer: {
+  // If targeting a remote/staging URL, do NOT start a local dev server.
+  webServer: isRemoteTarget ? undefined : {
     command: webCommand,
-    url: process.env['PLAYWRIGHT_BASE_URL'] || 'http://localhost:3000',
+    url: baseURL,
     reuseExistingServer: !process.env['CI'],
     timeout: 180_000,
   },
