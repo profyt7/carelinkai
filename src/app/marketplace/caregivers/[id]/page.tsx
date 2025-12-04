@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getMockCaregiverById } from "@/lib/mock/caregivers";
 import Image from "next/image";
 import Link from "next/link";
-import { FiMapPin, FiDollarSign, FiClock, FiCheckCircle } from "react-icons/fi";
+import { FiMapPin, FiDollarSign, FiClock, FiCheckCircle, FiCalendar } from "react-icons/fi";
 import RequestShiftForm from "@/components/marketplace/RequestShiftForm";
 import CaregiverReviewForm from "@/components/marketplace/CaregiverReviewForm";
 import CaregiverReviewsList from "@/components/marketplace/CaregiverReviewsList";

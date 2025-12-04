@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { FiCalendar, FiClock, FiPlus, FiTrash2, FiEdit, FiSave, FiX } from 'react-icons/fi';
 import DashboardLayout from '@/components/layout/DashboardLayout';
@@ -33,13 +33,7 @@ export default function AvailabilityPage() {
     recurrenceEnd: '',
   });
 
-  useEffect(() => {
-    if (status === 'authenticated' && session?.user?.role === 'CAREGIVER') {
-      fetchAvailability();
-    }
-  }, [status, session, currentWeekStart]);
-
-  const fetchAvailability = async () => {
+  const fetchAvailability = useCallback(async () => {
     try {
       setIsLoading(true);
       const weekEnd = endOfWeek(currentWeekStart, { weekStartsOn: 1 });
@@ -59,7 +53,13 @@ export default function AvailabilityPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [currentWeekStart]);
+
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user?.role === 'CAREGIVER') {
+      fetchAvailability();
+    }
+  }, [status, session, currentWeekStart, fetchAvailability]);
 
   const handleAddSlot = async (e: React.FormEvent) => {
     e.preventDefault();
