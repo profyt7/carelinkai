@@ -29,6 +29,17 @@ async function getCaregiverById(id: string) {
               }
             }
           }
+        },
+        credentials: {
+          where: {
+            isVerified: true,
+            expirationDate: {
+              gte: new Date() // Only show non-expired credentials
+            }
+          },
+          orderBy: {
+            expirationDate: 'desc'
+          }
         }
       }
     });
@@ -42,6 +53,25 @@ async function getCaregiverById(id: string) {
       where: { caregiverId: id },
       _avg: { rating: true },
       _count: { _all: true }
+    });
+    
+    // Get availability slots for the next 7 days
+    const today = new Date();
+    const nextWeek = new Date(today);
+    nextWeek.setDate(today.getDate() + 7);
+    
+    const availabilitySlots = await prisma.availabilitySlot.findMany({
+      where: {
+        userId: caregiver.userId,
+        startTime: {
+          gte: today,
+          lte: nextWeek
+        },
+        isAvailable: true
+      },
+      orderBy: {
+        startTime: 'asc'
+      }
     });
 
     // Resolve profile image URL
@@ -88,7 +118,19 @@ async function getCaregiverById(id: string) {
       photoUrl,
       ratingAverage: reviewStats._avg.rating ? Number(reviewStats._avg.rating.toFixed(1)) : 0,
       reviewCount: reviewStats._count._all,
-      badges
+      badges,
+      credentials: caregiver.credentials.map(cred => ({
+        id: cred.id,
+        type: cred.type,
+        issueDate: cred.issueDate.toISOString(),
+        expirationDate: cred.expirationDate.toISOString(),
+        isVerified: cred.isVerified,
+      })),
+      availabilitySlots: availabilitySlots.map(slot => ({
+        id: slot.id,
+        startTime: slot.startTime.toISOString(),
+        endTime: slot.endTime.toISOString(),
+      })),
     };
   } catch (error) {
     console.error("Error fetching caregiver:", error);
@@ -247,12 +289,79 @@ export default async function CaregiverDetailPage({
                 </div>
               </div>
             )}
+            
+            {/* Credentials & Certifications */}
+            {caregiver.credentials && caregiver.credentials.length > 0 && (
+              <div className="mb-6">
+                <h2 className="text-lg font-medium text-gray-900 mb-2">Credentials & Certifications</h2>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="space-y-3">
+                    {caregiver.credentials.map((credential: any) => (
+                      <div key={credential.id} className="flex items-start justify-between">
+                        <div className="flex items-start">
+                          <FiCheckCircle className="text-green-500 mt-1 mr-2 flex-shrink-0" size={16} />
+                          <div>
+                            <p className="font-medium text-gray-900">{credential.type}</p>
+                            <p className="text-sm text-gray-500">
+                              Expires: {new Date(credential.expirationDate).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        {credential.isVerified && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                            Verified
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Availability Calendar */}
+            {caregiver.availabilitySlots && caregiver.availabilitySlots.length > 0 && (
+              <div className="mb-6">
+                <h2 className="text-lg font-medium text-gray-900 mb-2">Availability (Next 7 Days)</h2>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="space-y-2">
+                    {caregiver.availabilitySlots.map((slot: any) => {
+                      const startDate = new Date(slot.startTime);
+                      const endDate = new Date(slot.endTime);
+                      const isSameDay = startDate.toDateString() === endDate.toDateString();
+                      
+                      return (
+                        <div key={slot.id} className="flex items-center justify-between bg-white rounded p-3 border border-gray-200">
+                          <div className="flex items-center">
+                            <FiCalendar className="text-primary-600 mr-3 flex-shrink-0" size={18} />
+                            <div>
+                              <p className="font-medium text-gray-900">
+                                {startDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                              </p>
+                              <p className="text-sm text-gray-500">
+                                {startDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} - {endDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                              </p>
+                            </div>
+                          </div>
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            Available
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                <p className="text-sm text-gray-500 mt-2">
+                  Contact the caregiver to schedule a time or request additional availability.
+                </p>
+              </div>
+            )}
           </div>
           
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4">
             <Link 
-              href="/messages" 
+              href={`/messages?userId=${caregiver.userId}`}
               className="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md transition-colors text-center"
             >
               Message

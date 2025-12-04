@@ -7,6 +7,7 @@ import Link from 'next/link';
 interface CaregiverCardProps {
   caregiver: {
     id: string;
+    userId?: string;
     name: string;
     city: string | null;
     state: string | null;
@@ -217,10 +218,23 @@ const CaregiverCard: React.FC<CaregiverCardProps> = ({ caregiver }) => {
           </div>
         )}
         
-        {/* CTA button */}
-        <Link href={`/marketplace/caregivers/${caregiver.id}`} className="block w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md transition-colors text-center">
-          View Profile
-        </Link>
+        {/* CTA buttons */}
+        <div className="grid grid-cols-2 gap-2">
+          <Link 
+            href={`/marketplace/caregivers/${caregiver.id}`} 
+            className="block bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md transition-colors text-center text-sm"
+          >
+            View Profile
+          </Link>
+          {caregiver.userId && (
+            <Link 
+              href={`/messages?userId=${caregiver.userId}`}
+              className="block bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2 px-4 rounded-md transition-colors text-center text-sm border border-gray-300"
+            >
+              Message
+            </Link>
+          )}
+        </div>
       </div>
     </div>
   );

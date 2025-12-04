@@ -105,6 +105,11 @@ export default function MarketplacePage() {
   const [minRate, setMinRate] = useState(""); // $/hr  (string keeps empty/unset)
   const [maxRate, setMaxRate] = useState("");
   const [minExperience, setMinExperience] = useState("");
+  
+  /* ---------------- Caregiver availability filters ------------------ */
+  const [availableDate, setAvailableDate] = useState("");
+  const [availableStartTime, setAvailableStartTime] = useState("");
+  const [availableEndTime, setAvailableEndTime] = useState("");
 
   /* ---------------- Job-specific filters (place-holders) ------------ */
   const [zip, setZip] = useState("");
@@ -429,6 +434,9 @@ export default function MarketplacePage() {
     setMinRate(valOrEmpty("minRate"));
     setMaxRate(valOrEmpty("maxRate"));
     setMinExperience(valOrEmpty("minExperience"));
+    setAvailableDate(valOrEmpty("availableDate"));
+    setAvailableStartTime(valOrEmpty("availableStartTime"));
+    setAvailableEndTime(valOrEmpty("availableEndTime"));
     const cgPageFromUrl = parseInt(sp.get("page") || "1", 10);
     if (!Number.isNaN(cgPageFromUrl) && cgPageFromUrl > 0) setCgPage(cgPageFromUrl);
     const cgSortBy = sp.get("sortBy") as any;
@@ -494,6 +502,9 @@ export default function MarketplacePage() {
           setMinRate(v("minRate"));
           setMaxRate(v("maxRate"));
           setMinExperience(v("minExperience"));
+          setAvailableDate(v("availableDate"));
+          setAvailableStartTime(v("availableStartTime"));
+          setAvailableEndTime(v("availableEndTime"));
           const spCgPage = parseInt(savedParams.get("page") || "1", 10);
           if (!Number.isNaN(spCgPage) && spCgPage > 0) setCgPage(spCgPage);
           const spCgSort = savedParams.get("sortBy") as any;
@@ -561,6 +572,9 @@ export default function MarketplacePage() {
     setOrDel("minRate", debouncedMinRate);
     setOrDel("maxRate", debouncedMaxRate);
     setOrDel("minExperience", debouncedMinExperience);
+    setOrDel("availableDate", availableDate);
+    setOrDel("availableStartTime", availableStartTime);
+    setOrDel("availableEndTime", availableEndTime);
     if (cgShortlistOnly) params.set("shortlist", "1"); else params.delete("shortlist");
     params.set("page", String(cgPage));
     params.set("sortBy", cgSort);
@@ -575,7 +589,7 @@ export default function MarketplacePage() {
     }
     try { localStorage.setItem(LAST_TAB_KEY, "caregivers"); localStorage.setItem(LS_KEYS.caregivers, params.toString()); } catch {}
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, settings, careTypes, debouncedMinRate, debouncedMaxRate, debouncedMinExperience, cgPage, cgSort, cgRadius, cgGeoLat, cgGeoLng, cgShortlistOnly, router, pathname, searchParams]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, settings, careTypes, debouncedMinRate, debouncedMaxRate, debouncedMinExperience, availableDate, availableStartTime, availableEndTime, cgPage, cgSort, cgRadius, cgGeoLat, cgGeoLng, cgShortlistOnly, router, pathname, searchParams]);
 
   // Keep URL in sync when on jobs tab (debounced inputs)
   useEffect(() => {
@@ -717,6 +731,9 @@ export default function MarketplacePage() {
         if (debouncedMinRate) params.set("minRate", debouncedMinRate);
         if (debouncedMaxRate) params.set("maxRate", debouncedMaxRate);
         if (debouncedMinExperience) params.set("minExperience", debouncedMinExperience);
+        if (availableDate) params.set("availableDate", availableDate);
+        if (availableStartTime) params.set("availableStartTime", availableStartTime);
+        if (availableEndTime) params.set("availableEndTime", availableEndTime);
         if (cgRadius && cgGeoLat !== null && cgGeoLng !== null) {
           params.set("radiusMiles", cgRadius);
           params.set("lat", String(cgGeoLat));
@@ -745,7 +762,7 @@ export default function MarketplacePage() {
     return () => {
       controller.abort();
     };
-  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, settings, careTypes, debouncedMinRate, debouncedMaxRate, debouncedMinExperience, cgPage, cgSort, cgRadius, cgGeoLat, cgGeoLng, cgCursor, showMock, MOCK_CAREGIVERS]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, settings, careTypes, debouncedMinRate, debouncedMaxRate, debouncedMinExperience, availableDate, availableStartTime, availableEndTime, cgPage, cgSort, cgRadius, cgGeoLat, cgGeoLng, cgCursor, showMock, MOCK_CAREGIVERS]);
 
   // Reset caregivers list when non-page filters change
   const cgQueryKey = useMemo(() => JSON.stringify({
@@ -753,8 +770,9 @@ export default function MarketplacePage() {
     q: debouncedSearch, city: debouncedCity, state: debouncedState,
     specialties, settings, careTypes,
     minRate: debouncedMinRate, maxRate: debouncedMaxRate, minExp: debouncedMinExperience,
+    availableDate, availableStartTime, availableEndTime,
     radius: cgRadius, lat: cgGeoLat, lng: cgGeoLng, sort: cgSort
-  }), [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, settings, careTypes, debouncedMinRate, debouncedMaxRate, debouncedMinExperience, cgRadius, cgGeoLat, cgGeoLng, cgSort]);
+  }), [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, settings, careTypes, debouncedMinRate, debouncedMaxRate, debouncedMinExperience, availableDate, availableStartTime, availableEndTime, cgRadius, cgGeoLat, cgGeoLng, cgSort]);
   const cgPrevKeyRef = useRef<string>(cgQueryKey);
   useEffect(() => {
     if (activeTab !== 'caregivers') return;
@@ -980,6 +998,9 @@ export default function MarketplacePage() {
     setMinRate('');
     setMaxRate('');
     setMinExperience('');
+    setAvailableDate('');
+    setAvailableStartTime('');
+    setAvailableEndTime('');
     setCgRadius('');
     setCgGeoLat(null);
     setCgGeoLng(null);
@@ -1150,6 +1171,53 @@ export default function MarketplacePage() {
                         className="w-full px-3 py-2 border border-gray-300 rounded-md"
                       />
                     </div>
+                    
+                    {/* Availability Filters */}
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <h4 className="font-medium text-sm mb-2">Availability</h4>
+                      <div className="mb-3">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Available Date</label>
+                        <input 
+                          type="date" 
+                          value={availableDate} 
+                          onChange={(e) => setAvailableDate(e.target.value)} 
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 mb-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
+                          <input 
+                            type="time" 
+                            value={availableStartTime} 
+                            onChange={(e) => setAvailableStartTime(e.target.value)} 
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">End Time</label>
+                          <input 
+                            type="time" 
+                            value={availableEndTime} 
+                            onChange={(e) => setAvailableEndTime(e.target.value)} 
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                          />
+                        </div>
+                      </div>
+                      {(availableDate || availableStartTime || availableEndTime) && (
+                        <button
+                          onClick={() => {
+                            setAvailableDate("");
+                            setAvailableStartTime("");
+                            setAvailableEndTime("");
+                          }}
+                          className="text-xs text-primary-600 hover:text-primary-700 underline"
+                        >
+                          Clear availability filters
+                        </button>
+                      )}
+                    </div>
+                    
                     <div className="mt-4">
                       <h4 className="font-medium text-sm mb-2">Specialties</h4>
                       {(categories['SPECIALTY'] || []).map((specialty) => (

@@ -117,9 +117,13 @@ export default function MessagesPage() {
       setSelectedThreadUserId(id);
       // Attempt to fetch messages for deep link
       fetchMessages(id);
+      // On mobile, hide the thread list to show the conversation
+      if (isMobileView) {
+        setShowThreadList(false);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
+  }, [searchParams, isMobileView]);
 
   // Fetch current user id for SSE subscriptions
   useEffect(() => {

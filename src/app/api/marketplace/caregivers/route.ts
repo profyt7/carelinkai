@@ -45,6 +45,11 @@ export async function GET(request: Request) {
     const lng = searchParams.get('lng') ? parseFloat(searchParams.get('lng')!) : null;
     const radiusMiles = searchParams.get('radiusMiles') ? parseFloat(searchParams.get('radiusMiles')!) : null;
     
+    // Availability filters
+    const availableDate = searchParams.get('availableDate'); // ISO date string
+    const availableStartTime = searchParams.get('availableStartTime'); // HH:MM format
+    const availableEndTime = searchParams.get('availableEndTime'); // HH:MM format
+    
     // Pagination parameters (supports cursor or page)
     const cursor = searchParams.get('cursor');
     const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1;
@@ -198,6 +203,63 @@ export async function GET(request: Request) {
       where.careTypes = {
         hasSome: careTypes
       };
+    }
+    
+    // Availability filtering
+    // If availability filters are provided, we need to find caregivers who have availability slots matching the criteria
+    let availableCaregiverIds: string[] | null = null;
+    if (availableDate && availableStartTime && availableEndTime) {
+      try {
+        // Parse the date and time filters
+        const targetDate = new Date(availableDate);
+        const [startHour, startMin] = availableStartTime.split(':').map(Number);
+        const [endHour, endMin] = availableEndTime.split(':').map(Number);
+        
+        // Create datetime objects for the requested time range
+        const requestedStart = new Date(targetDate);
+        requestedStart.setHours(startHour, startMin, 0, 0);
+        
+        const requestedEnd = new Date(targetDate);
+        requestedEnd.setHours(endHour, endMin, 0, 0);
+        
+        // Find availability slots that overlap with the requested time
+        const availableSlots = await prisma.availabilitySlot.findMany({
+          where: {
+            isAvailable: true,
+            startTime: { lte: requestedEnd },
+            endTime: { gte: requestedStart },
+          },
+          select: {
+            userId: true,
+          },
+        });
+        
+        // Get unique user IDs
+        const userIds = [...new Set(availableSlots.map(slot => slot.userId))];
+        
+        // Find caregiver IDs for these users
+        const caregiversWithAvailability = await prisma.caregiver.findMany({
+          where: {
+            userId: { in: userIds },
+          },
+          select: {
+            id: true,
+          },
+        });
+        
+        availableCaregiverIds = caregiversWithAvailability.map(cg => cg.id);
+        
+        // If no caregivers match availability, add a condition that will return no results
+        if (availableCaregiverIds.length === 0) {
+          where.id = { in: [] }; // No results
+        } else {
+          // Add to where clause
+          where.id = { in: availableCaregiverIds };
+        }
+      } catch (error) {
+        console.error('Error filtering by availability:', error);
+        // Continue without availability filtering if there's an error
+      }
     }
     
     // Radius filtering support
