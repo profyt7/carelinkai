@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useSession } from "next-auth/react";
@@ -17,8 +17,8 @@ export default function SettingsIndexPage() {
     { href: "/settings/notifications", title: "Notifications", desc: "Email & in-app", icon: <FiBell className="h-5 w-5" /> },
     { href: payoutsHref, title: "Payouts", desc: "Payments & transfers", icon: <FiDollarSign className="h-5 w-5" /> },
     ...(role === "CAREGIVER" ? [
-      { href: "/settings/credentials", title: "Credentials", desc: "Licenses & docs", icon: <FiFileText className="h-5 w-5" /> },
       { href: "/settings/availability", title: "Availability", desc: "Working hours", icon: <FiClock className="h-5 w-5" /> },
+      { href: "/settings/credentials", title: "Credentials", desc: "Licenses & docs", icon: <FiFileText className="h-5 w-5" /> },
     ] : []),
     { href: "/settings/pwa", title: "App & Devices", desc: "Install & devices", icon: <FiSmartphone className="h-5 w-5" /> },
   ];
@@ -51,6 +51,3 @@ export default function SettingsIndexPage() {
     </DashboardLayout>
   );
 }
-
-
-
