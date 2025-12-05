@@ -11,10 +11,10 @@
 | Provider search list  | Operator  | Browse/search list of providers                  | DONE   | API: `GET /api/marketplace/providers` (Prisma-backed). UI: `/marketplace` (Providers tab) and `/marketplace/providers`. Renders real Provider records (id, name, description, city/state, serviceTypes, coverageRadius). |
 | Provider filters      | Operator  | Filter providers by location, service type, etc. | DONE   | Filters wired to DB: `q` (name/bio), `city`, `state`, `services` (array overlap), optional `radiusMiles` with `lat/lng` (approx. city-center distance). Sorting: `distanceAsc` supported when radius provided; rating/price sorts are placeholders until those fields exist. |
 | Provider detail view  | Operator  | View provider profile, services, docs            | DONE   | API: `GET /api/marketplace/providers/[id]` (Prisma-backed). UI: `/marketplace/providers/[id]`. Shows name, description, services, coverage area (city/state, radius). Pricing/ratings badges are placeholders for future models. |
-| Operator → Provider contact | Operator | Send initial contact / request to provider | TODO   |              |
-| Provider → Operator reply | Provider | Respond to operator (basic 2-way comms)   | TODO   |              |
-| Provider visibility   | Provider  | Set profile as active/paused in marketplace      | TODO   |              |
-| Admin provider oversight | Admin  | List/search providers; view profiles & status    | TODO   |              |
+| Operator → Provider contact | Operator | Send initial contact / request to provider | WIP    | Generic messaging exists (API: POST /api/messages, UI: /messages). Provider detail has "Message provider" CTA linking to /messages, but no deep link to preselect provider user; marketplace Provider payload does not include userId. |
+| Provider → Operator reply | Provider | Respond to operator (basic 2-way comms)   | WIP    | Possible via /messages UI and messages APIs; no provider-specific thread bootstrapping from marketplace yet. |
+| Provider visibility   | Provider  | Set profile as active/paused in marketplace      | TODO   | No visibility field on Provider model; no UI/API to toggle. |
+| Admin provider oversight | Admin  | List/search providers; view profiles & status    | TODO   | No admin endpoints or UI for providers found. |
 
 Legend:
 
