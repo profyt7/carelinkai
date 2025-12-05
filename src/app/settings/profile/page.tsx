@@ -51,6 +51,7 @@ const caregiverSchema = baseProfileSchema.extend({
   specialties: z.array(z.string()).optional(),
   settings: z.array(z.string()).optional(),
   careTypes: z.array(z.string()).optional(),
+  isVisibleInMarketplace: z.boolean().optional(),
 });
 
 const affiliateSchema = baseProfileSchema.extend({
@@ -359,6 +360,7 @@ export default function ProfileSettings() {
           specialties: Array.isArray(data.specialties) ? data.specialties : [],
           settings: Array.isArray(data.settings) ? data.settings : [],
           careTypes: Array.isArray(data.careTypes) ? data.careTypes : [],
+          isVisibleInMarketplace: typeof data.isVisibleInMarketplace === 'boolean' ? data.isVisibleInMarketplace : true,
         };
       case "AFFILIATE":
         return {
@@ -998,6 +1000,29 @@ export default function ProfileSettings() {
                   ))
                 )}
               </div>
+            </div>
+
+            {/* Marketplace Visibility */}
+            <div className="col-span-6 mt-6">
+              <h3 className="text-lg font-medium text-neutral-800">Marketplace Visibility</h3>
+              <p className="mt-1 text-sm text-neutral-500">
+                Control whether your profile appears in the public caregiver marketplace search. You can pause visibility anytime without deleting your account.
+              </p>
+              <div className="mt-3 flex items-center gap-3">
+                <input
+                  id="isVisibleInMarketplace"
+                  type="checkbox"
+                  checked={Boolean(formData.isVisibleInMarketplace ?? true)}
+                  onChange={(e) => setFormData((prev: any) => ({ ...prev, isVisibleInMarketplace: e.target.checked }))}
+                  className="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                />
+                <label htmlFor="isVisibleInMarketplace" className="text-sm text-neutral-800">
+                  Show my profile in marketplace search
+                </label>
+              </div>
+              <p className="mt-1 text-xs text-neutral-500">
+                Note: Hiding your profile removes you from marketplace results, but admins can still view your account.
+              </p>
             </div>
             
             <div className="col-span-6 sm:col-span-3">

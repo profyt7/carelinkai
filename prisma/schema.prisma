@@ -246,6 +246,8 @@ model Caregiver {
   // New marketplace facets
   settings                 String[]              @default([])
   careTypes                String[]              @default([])
+  /// Whether the caregiver profile is visible in the public marketplace search
+  isVisibleInMarketplace   Boolean               @default(true)
 
   // Marketplace relations
   marketplaceApplications MarketplaceApplication[]
@@ -263,6 +265,7 @@ model Caregiver {
   @@index([hourlyRate])
   @@index([yearsExperience])
   @@index([createdAt])
+  @@index([isVisibleInMarketplace])
 }
 
 model Affiliate {

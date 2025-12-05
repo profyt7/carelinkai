@@ -139,7 +139,7 @@ export async function GET(request: Request) {
     }
 
     // Build where clause for filtering
-    const where: any = {};
+    const where: any = { isVisibleInMarketplace: true };
     
     // Text search in bio or name
     if (q) {
