@@ -37,7 +37,7 @@ const registrationSchema = z.object({
   firstName: z.string().min(2, "First name must be at least 2 characters"),
   lastName: z.string().min(2, "Last name must be at least 2 characters"),
   phone: z.string().optional(),
-  role: z.enum(["FAMILY", "OPERATOR", "CAREGIVER", "AFFILIATE"]),
+  role: z.enum(["FAMILY", "OPERATOR", "CAREGIVER", "AFFILIATE", "PROVIDER"]),
   agreeToTerms: z.boolean().refine(val => val === true, {
     message: "You must agree to the terms and conditions"
   })
@@ -278,6 +278,21 @@ export async function POST(request: NextRequest) {
           });
           break;
           
+        case "PROVIDER":
+          await tx.provider.create({
+            data: {
+              userId: user.id,
+              name: `${firstName} ${lastName}`,
+              bio: null,
+              logoUrl: null,
+              serviceTypes: [],
+              coverageCity: null,
+              coverageState: null,
+              coverageRadius: null,
+            },
+          });
+          break;
+
         case "OPERATOR":
           await tx.operator.create({
             data: {

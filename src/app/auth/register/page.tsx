@@ -25,7 +25,7 @@ import {
 } from "react-icons/fi";
 
 // Types from schema
-type UserRole = "FAMILY" | "OPERATOR" | "CAREGIVER" | "AFFILIATE";
+type UserRole = "FAMILY" | "OPERATOR" | "CAREGIVER" | "AFFILIATE" | "PROVIDER";
 
 type FormData = {
   email: string;
@@ -62,6 +62,12 @@ const roleOptions = [
     id: "AFFILIATE", 
     label: "Affiliate Partner", 
     description: "I refer clients to care homes",
+    icon: <FiUsers className="h-5 w-5" />
+  },
+  { 
+    id: "PROVIDER", 
+    label: "Service Provider", 
+    description: "I offer services (PT, OT, transport, etc.) to homes/families",
     icon: <FiUsers className="h-5 w-5" />
   }
 ];
