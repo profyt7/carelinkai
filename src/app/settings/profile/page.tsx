@@ -48,6 +48,7 @@ const caregiverSchema = baseProfileSchema.extend({
   bio: z.string().optional().nullable(),
   yearsExperience: z.number().int().min(0).optional().nullable(),
   hourlyRate: z.number().min(0).optional().nullable(),
+  isVisibleInMarketplace: z.boolean().optional(),
   specialties: z.array(z.string()).optional(),
   settings: z.array(z.string()).optional(),
   careTypes: z.array(z.string()).optional(),
@@ -356,6 +357,7 @@ export default function ProfileSettings() {
           bio: data.bio || "",
           yearsExperience: data.yearsExperience || "",
           hourlyRate: data.hourlyRate || "",
+          isVisibleInMarketplace: typeof data.isVisibleInMarketplace === 'boolean' ? data.isVisibleInMarketplace : true,
           specialties: Array.isArray(data.specialties) ? data.specialties : [],
           settings: Array.isArray(data.settings) ? data.settings : [],
           careTypes: Array.isArray(data.careTypes) ? data.careTypes : [],
@@ -899,6 +901,27 @@ export default function ProfileSettings() {
       case "CAREGIVER":
         return (
           <>
+            {/* Visibility Toggle */}
+            <div className="col-span-6">
+              <h3 className="text-lg font-medium text-neutral-800">Marketplace Visibility</h3>
+              <p className="mt-1 text-sm text-neutral-500">
+                When turned off, your profile will not appear in the public marketplace or search results.
+              </p>
+              <div className="mt-3 flex items-center">
+                <input
+                  id="isVisibleInMarketplace"
+                  name="isVisibleInMarketplace"
+                  type="checkbox"
+                  checked={Boolean(formData.isVisibleInMarketplace ?? true)}
+                  onChange={(e) => setFormData((prev: any) => ({ ...prev, isVisibleInMarketplace: e.target.checked }))}
+                  className="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-600"
+                />
+                <label htmlFor="isVisibleInMarketplace" className="ml-2 block text-sm text-neutral-700">
+                  Show my profile in the marketplace
+                </label>
+              </div>
+            </div>
+
             <div className="col-span-6">
               <label htmlFor="bio" className="block text-sm font-medium text-neutral-700">
                 Professional Bio

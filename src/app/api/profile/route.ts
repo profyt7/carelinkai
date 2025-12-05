@@ -50,6 +50,8 @@ const caregiverProfileSchema = baseProfileSchema.extend({
   yearsExperience: z.number().int().min(0).optional().nullable(),
   hourlyRate: z.number().min(0).optional().nullable(),
   availability: z.record(z.any()).optional(),
+  // new visibility toggle
+  isVisibleInMarketplace: z.boolean().optional(),
   // new editable marketplace facets (validated as string arrays; values further filtered against DB categories)
   specialties: z.array(z.string()).max(50).optional(),
   settings: z.array(z.string()).max(20).optional(),
@@ -163,6 +165,7 @@ export async function GET(request: NextRequest) {
             yearsExperience: true,
             hourlyRate: true,
             availability: true,
+            isVisibleInMarketplace: true,
             specialties: true,
             settings: true,
             careTypes: true,
@@ -407,6 +410,7 @@ export async function PATCH(request: NextRequest) {
             'yearsExperience' in roleSpecificFields ||
             'hourlyRate' in roleSpecificFields ||
             'availability' in roleSpecificFields ||
+            'isVisibleInMarketplace' in roleSpecificFields ||
             'specialties' in roleSpecificFields ||
             'settings' in roleSpecificFields ||
             'careTypes' in roleSpecificFields
@@ -438,6 +442,7 @@ export async function PATCH(request: NextRequest) {
                 yearsExperience: rs.yearsExperience,
                 hourlyRate: rs.hourlyRate,
                 availability: rs.availability,
+                isVisibleInMarketplace: rs.isVisibleInMarketplace,
                 ...(cleanSpecialties !== undefined ? { specialties: cleanSpecialties } : {}),
                 ...(cleanSettings !== undefined ? { settings: cleanSettings } : {}),
                 ...(cleanCareTypes !== undefined ? { careTypes: cleanCareTypes } : {}),

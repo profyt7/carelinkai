@@ -242,6 +242,8 @@ model Caregiver {
   backgroundCheckStatus    BackgroundCheckStatus @default(NOT_STARTED)
   backgroundCheckProvider  String?
   backgroundCheckReportUrl String?
+  /// Controls whether caregiver appears in the public marketplace/search
+  isVisibleInMarketplace   Boolean               @default(true)
   specialties              String[]
   // New marketplace facets
   settings                 String[]              @default([])

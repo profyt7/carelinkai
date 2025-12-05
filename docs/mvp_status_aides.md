@@ -13,7 +13,7 @@
 | Aide detail view         | Operator  | View aide profile, skills, docs, availability       | DONE   | Detail shows photo, bio, rate, experience, specialties, reviews, hire request. Availability calendar (next 7 days) and verified credentials/docs now surfaced on profile. UI: /marketplace/caregivers/[id]. |
 | Operator → Aide contact  | Operator  | Send an initial contact / message to aide           | DONE   | Messaging system exists (/api/messages, /messages). Marketplace "Message" buttons now deep-link to caregiver conversation via ?userId= query param; mobile view handling added; messaging accessible from both card and detail views. |
 | Aide → Operator reply    | Aide      | Respond to operator (basic 2-way communication)     | DONE   | Two-way messaging works with SSE notifications. APIs: /api/messages, /api/messages/threads; UI: /messages. |
-| Aide visibility control  | Aide      | Set profile as active/paused in marketplace         | TODO   | No visibility toggle/field on Caregiver or UI to pause/hide from marketplace. |
+| Aide visibility control  | Aide      | Set profile as active/paused in marketplace         | DONE   | Field: Caregiver.isVisibleInMarketplace (default true). UI: /settings/profile → “Marketplace Visibility” toggle. API: PATCH /api/profile accepts isVisibleInMarketplace for CAREGIVER. Marketplace API (/api/marketplace/caregivers) filters to only isVisibleInMarketplace=true (including ids param). |
 | Admin aide oversight     | Admin     | List/search aides; view profiles & status           | TODO   | No admin-facing list/search for caregivers; operator endpoints cover only employed caregivers. |
 
 Legend:

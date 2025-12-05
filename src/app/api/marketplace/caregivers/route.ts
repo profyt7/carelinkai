@@ -62,7 +62,7 @@ export async function GET(request: Request) {
     // If explicit IDs are provided, short-circuit to fetch those caregivers only
     if (ids && ids.length > 0) {
       const caregivers = await prisma.caregiver.findMany({
-        where: { id: { in: ids } },
+        where: { id: { in: ids }, isVisibleInMarketplace: true },
         include: {
           user: {
             select: {
@@ -139,7 +139,7 @@ export async function GET(request: Request) {
     }
 
     // Build where clause for filtering
-    const where: any = {};
+    const where: any = { isVisibleInMarketplace: true };
     
     // Text search in bio or name
     if (q) {
