@@ -2,9 +2,9 @@
 
 | Area                  | Role      | Capability                                       | Status | Notes / Gaps |
 |-----------------------|-----------|--------------------------------------------------|--------|--------------|
-| Provider signup       | Provider  | Create account and log in                        | TODO   |              |
-| Provider profile      | Provider  | Create/edit profile (name, services, bio, logo)  | TODO   |              |
-| Provider services     | Provider  | Define service types & coverage area             | TODO   |              |
+| Provider signup       | Provider  | Create account and log in                        | DONE   | API: `/api/auth/register` now accepts role `PROVIDER` and creates Provider record. UI: `/auth/register` includes Provider option. |
+| Provider profile      | Provider  | Create/edit profile (name, services, bio, logo)  | DONE   | API: `GET/PATCH /api/provider/profile` with validation. UI: `/settings/provider` to edit name, bio, logo, services, coverage. Logo upload uses `/api/profile/photo`. |
+| Provider services     | Provider  | Define service types & coverage area             | DONE   | Services sourced from `MarketplaceCategory` (SERVICE). Coverage city/state/radius persisted on Provider. |
 | Provider availability | Provider  | Set/update availability (if applicable)          | TODO   |              |
 | Provider documents    | Provider  | Upload licenses/insurance docs                   | TODO   |              |
 | Provider verification | Admin     | Mark provider as verified / pending / rejected   | TODO   |              |
