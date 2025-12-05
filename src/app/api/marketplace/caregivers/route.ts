@@ -139,7 +139,7 @@ export async function GET(request: Request) {
     }
 
     // Build where clause for filtering
-    const where: any = {};
+    const where: any = { isVisibleInMarketplace: true };
     
     // Text search in bio or name
     if (q) {
@@ -217,10 +217,10 @@ export async function GET(request: Request) {
         
         // Create datetime objects for the requested time range
         const requestedStart = new Date(targetDate);
-        requestedStart.setHours(startHour, startMin, 0, 0);
+        requestedStart.setHours(startHour ?? 0, startMin ?? 0, 0, 0);
         
         const requestedEnd = new Date(targetDate);
-        requestedEnd.setHours(endHour, endMin, 0, 0);
+        requestedEnd.setHours(endHour ?? 0, endMin ?? 0, 0, 0);
         
         // Find availability slots that overlap with the requested time
         const availableSlots = await prisma.availabilitySlot.findMany({
@@ -398,6 +398,11 @@ export async function GET(request: Request) {
       // rating data
       const ratingInfo = reviewMap.get(caregiver.id) ?? { avg: 0, count: 0 };
 
+      // Compute rating average safely
+      const ratingAverage = typeof ratingInfo.avg === 'number'
+        ? Number(ratingInfo.avg.toFixed(1))
+        : 0;
+
       return {
         id: caregiver.id,
         userId: caregiver.user.id,
@@ -410,7 +415,7 @@ export async function GET(request: Request) {
         bio: caregiver.bio || null,
         backgroundCheckStatus: caregiver.backgroundCheckStatus,
         photoUrl,
-        ratingAverage: Number(ratingInfo.avg?.toFixed(1)) || 0,
+        ratingAverage,
         reviewCount: ratingInfo.count,
         badges: deriveBadges(
           ratingInfo.avg ?? 0,

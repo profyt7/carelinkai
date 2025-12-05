@@ -176,7 +176,7 @@ export default function AvailabilityPage() {
 
   if (status === 'loading' || isLoading) {
     return (
-      <DashboardLayout>
+      <DashboardLayout title="Settings • Availability">
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
@@ -189,7 +189,7 @@ export default function AvailabilityPage() {
 
   if (session?.user?.role !== 'CAREGIVER') {
     return (
-      <DashboardLayout>
+      <DashboardLayout title="Settings • Availability">
         <div className="max-w-4xl mx-auto p-6">
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <p className="text-yellow-800">This page is only accessible to caregivers.</p>
@@ -202,7 +202,7 @@ export default function AvailabilityPage() {
   const weekDays = getWeekDays();
 
   return (
-    <DashboardLayout>
+    <DashboardLayout title="Settings • Availability">
       <div className="max-w-6xl mx-auto p-4 md:p-6">
         {/* Header */}
         <div className="mb-6">
@@ -243,7 +243,7 @@ export default function AvailabilityPage() {
             ← Previous Week
           </button>
           <h2 className="text-lg font-semibold">
-            {format(weekDays[0], 'MMM d')} - {format(weekDays[6], 'MMM d, yyyy')}
+            {format(weekDays[0] ?? new Date(), 'MMM d')} - {format(weekDays[6] ?? new Date(), 'MMM d, yyyy')}
           </h2>
           <button
             onClick={() => navigateWeek('next')}

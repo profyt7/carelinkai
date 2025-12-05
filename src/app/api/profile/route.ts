@@ -54,6 +54,8 @@ const caregiverProfileSchema = baseProfileSchema.extend({
   specialties: z.array(z.string()).max(50).optional(),
   settings: z.array(z.string()).max(20).optional(),
   careTypes: z.array(z.string()).max(20).optional(),
+  // marketplace visibility toggle
+  isVisibleInMarketplace: z.boolean().optional(),
 });
 
 // Affiliate role specific schema
@@ -166,6 +168,7 @@ export async function GET(request: NextRequest) {
             specialties: true,
             settings: true,
             careTypes: true,
+            isVisibleInMarketplace: true,
             credentials: {
               select: {
                 id: true,
@@ -409,7 +412,8 @@ export async function PATCH(request: NextRequest) {
             'availability' in roleSpecificFields ||
             'specialties' in roleSpecificFields ||
             'settings' in roleSpecificFields ||
-            'careTypes' in roleSpecificFields
+            'careTypes' in roleSpecificFields ||
+            'isVisibleInMarketplace' in roleSpecificFields
           ) {
             // Fetch allowed category slugs for validation/sanitization
             const [specialtyCats, settingCats, careTypeCats] = await Promise.all([
@@ -441,6 +445,7 @@ export async function PATCH(request: NextRequest) {
                 ...(cleanSpecialties !== undefined ? { specialties: cleanSpecialties } : {}),
                 ...(cleanSettings !== undefined ? { settings: cleanSettings } : {}),
                 ...(cleanCareTypes !== undefined ? { careTypes: cleanCareTypes } : {}),
+                ...(rs.isVisibleInMarketplace !== undefined ? { isVisibleInMarketplace: !!rs.isVisibleInMarketplace } : {}),
               }
             });
           }
