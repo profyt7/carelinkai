@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { rateLimitAsync, getClientIp, buildRateLimitHeaders } from '@/lib/rateLimit';
+import { prisma } from '@/lib/prisma';
 
 /**
  * GET /api/marketplace/providers
@@ -50,93 +51,141 @@ export async function GET(request: Request) {
     const cursor = searchParams.get('cursor');
     const sortBy = (searchParams.get('sortBy') || 'ratingDesc') as 'ratingDesc' | 'rateAsc' | 'rateDesc' | 'distanceAsc';
     
-    // Generate mock providers
-    let providers = generateMockProviders(q || '');
-    
-    // Apply filters
+    // Build DB filter
+    const where: any = { };
     if (q) {
-      const searchLower = q.toLowerCase();
-      providers = providers.filter(provider => 
-        provider.name.toLowerCase().includes(searchLower) ||
-        provider.description.toLowerCase().includes(searchLower)
-      );
+      where.OR = [
+        { name: { contains: q, mode: 'insensitive' as const } },
+        { bio: { contains: q, mode: 'insensitive' as const } },
+      ];
     }
-    
     if (city) {
-      const cityLower = city.toLowerCase();
-      providers = providers.filter(provider => 
-        provider.city.toLowerCase().includes(cityLower)
-      );
+      where.coverageCity = { contains: city, mode: 'insensitive' };
     }
-    
     if (state) {
-      const stateLower = state.toLowerCase();
-      providers = providers.filter(provider => 
-        provider.state.toLowerCase().includes(stateLower)
-      );
+      where.coverageState = { contains: state, mode: 'insensitive' };
     }
-    
     if (services && services.length > 0) {
-      providers = providers.filter(provider => 
-        services.some(service => provider.services.includes(service))
+      where.serviceTypes = { hasSome: services };
+    }
+
+    const useRadius = !!(lat !== null && lng !== null && radiusMiles !== null && !Number.isNaN(radiusMiles));
+
+    // Cursor-based pagination when not using radius search
+    if (!useRadius) {
+      const take = Math.min(Math.max(pageSize, 1), 50) + 1; // fetch one extra for hasMore
+      const rows = await prisma.provider.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        take,
+        ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+        select: {
+          id: true,
+          name: true,
+          bio: true,
+          serviceTypes: true,
+          coverageCity: true,
+          coverageState: true,
+          coverageRadius: true,
+        },
+      });
+      const totalCount = await prisma.provider.count({ where });
+      const slice = rows.slice(0, pageSize);
+      const nextCursor = rows[pageSize]?.id ?? null;
+      const hasMore = Boolean(nextCursor);
+
+      const data = slice.map((p) => ({
+        id: p.id,
+        name: p.name ?? 'Provider',
+        type: 'TRANSPORTATION',
+        city: p.coverageCity ?? '',
+        state: p.coverageState ?? '',
+        services: p.serviceTypes ?? [],
+        description: p.bio ?? '',
+        hourlyRate: null,
+        perMileRate: null,
+        ratingAverage: 0,
+        reviewCount: 0,
+        badges: [],
+        coverageRadius: p.coverageRadius ?? null,
+        availableHours: 'N/A',
+      }));
+
+      return NextResponse.json(
+        {
+          data,
+          pagination: {
+            page,
+            pageSize,
+            total: totalCount,
+            totalPages: Math.ceil(totalCount / pageSize),
+            hasMore,
+            cursor: nextCursor,
+          },
+        },
+        { status: 200, headers: { 'Cache-Control': 'public, max-age=15, s-maxage=15, stale-while-revalidate=60', ...(typeof __rl_providers_get !== 'undefined' ? buildRateLimitHeaders(__rl_providers_get.rr, __rl_providers_get.limit) : {}) } }
       );
     }
-    
-    // Apply optional radius filtering (dev-only mock; approximate by city center)
-    const useRadius = !!(lat !== null && lng !== null && radiusMiles !== null && !Number.isNaN(radiusMiles));
-    if (useRadius) {
-      providers = providers
-        .map((p) => ({
-          ...p,
-          distanceMiles: cityDistanceMiles(lat!, lng!, p.city, p.state)
-        }))
-        .filter((p) => p.distanceMiles <= (radiusMiles as number));
+
+    // Radius search: approximate by city center and sort by distance client-side
+    const baselineTake = 200; // cap to avoid excessive memory
+    const rows = await prisma.provider.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: baselineTake,
+      select: {
+        id: true,
+        name: true,
+        bio: true,
+        serviceTypes: true,
+        coverageCity: true,
+        coverageState: true,
+        coverageRadius: true,
+      },
+    });
+    let enriched = rows.map((p) => {
+      const cityName = p.coverageCity ?? '';
+      const stateName = p.coverageState ?? '';
+      const dist = cityDistanceMiles(lat!, lng!, cityName, stateName);
+      return {
+        id: p.id,
+        name: p.name ?? 'Provider',
+        type: 'TRANSPORTATION',
+        city: cityName,
+        state: stateName,
+        services: p.serviceTypes ?? [],
+        description: p.bio ?? '',
+        hourlyRate: null,
+        perMileRate: null,
+        ratingAverage: 0,
+        reviewCount: 0,
+        badges: [],
+        coverageRadius: p.coverageRadius ?? null,
+        availableHours: 'N/A',
+        distanceMiles: dist,
+      } as any;
+    });
+    enriched = enriched.filter((p) => p.distanceMiles <= (radiusMiles as number));
+    if (sortBy === 'distanceAsc') {
+      enriched.sort((a, b) => (a.distanceMiles ?? Infinity) - (b.distanceMiles ?? Infinity));
     }
 
-    // Apply sorting
-    if (sortBy === 'distanceAsc' && useRadius) {
-      providers.sort((a: any, b: any) => (a.distanceMiles ?? Infinity) - (b.distanceMiles ?? Infinity));
-    } else if (sortBy === 'ratingDesc') {
-      providers.sort((a, b) => {
-        if (b.ratingAverage !== a.ratingAverage) return b.ratingAverage - a.ratingAverage;
-        return (b.reviewCount || 0) - (a.reviewCount || 0);
-      });
-    } else if (sortBy === 'rateAsc' || sortBy === 'rateDesc') {
-      const priceOf = (p: any) => {
-        if (typeof p.hourlyRate === 'number') return p.hourlyRate;
-        if (typeof p.perMileRate === 'number') return p.perMileRate * 20; // approximate conversion
-        return Number.POSITIVE_INFINITY;
-      };
-      providers.sort((a, b) => {
-        const av = priceOf(a);
-        const bv = priceOf(b);
-        return sortBy === 'rateAsc' ? av - bv : bv - av;
-      });
-    }
-
-    // Apply pagination (prefer cursor-style for deterministic infinite scroll)
-    const totalCount = providers.length;
-    let startIdx = (page - 1) * pageSize;
-    if (cursor) {
-      const curIdx = providers.findIndex(p => p.id === cursor);
-      startIdx = curIdx >= 0 ? curIdx + 1 : 0;
-    }
-    const slice = providers.slice(startIdx, startIdx + pageSize + 1);
-    const data = slice.slice(0, pageSize);
-    const nextCursor = slice[pageSize]?.id ?? null;
-    const hasMore = Boolean(nextCursor);
+    const totalCount = enriched.length;
+    const startIdx = Math.max((page - 1) * pageSize, 0);
+    const pageItems = enriched.slice(startIdx, startIdx + pageSize);
+    const hasMore = startIdx + pageSize < totalCount;
 
     return NextResponse.json(
-      { 
-        data,
+      {
+        data: pageItems,
         pagination: {
           page,
           pageSize,
           total: totalCount,
           totalPages: Math.ceil(totalCount / pageSize),
           hasMore,
-          cursor: nextCursor,
-        }
+          cursor: null,
+        },
       },
       { status: 200, headers: { 'Cache-Control': 'public, max-age=15, s-maxage=15, stale-while-revalidate=60', ...(typeof __rl_providers_get !== 'undefined' ? buildRateLimitHeaders(__rl_providers_get.rr, __rl_providers_get.limit) : {}) } }
     );
