@@ -1059,24 +1059,39 @@ export default function MarketplacePage() {
         {/* Tabs */}
         <div className="mb-4 border-b border-gray-200">
           <nav className="-mb-px flex space-x-6" aria-label="Tabs">
-            {["caregivers", "jobs", "providers"].map((t) => (
-              <button
-                key={t}
-                onClick={() => setActiveTab(t as any)}
-                className={
-                  "whitespace-nowrap border-b-2 px-1 pb-2 text-sm font-medium " +
-                  (activeTab === t
-                    ? "border-primary-600 text-primary-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300")
-                }
-              >
-                {t === "caregivers"
-                  ? `Caregivers${cgTotal ? ` (${cgTotal})` : ""}`
-                  : t === "jobs"
-                  ? `Jobs${jobTotal ? ` (${jobTotal})` : ""}`
-                  : `Providers${providerTotal ? ` (${providerTotal})` : ""}`}
-              </button>
-            ))}
+            <Link
+              href="/marketplace"
+              className={
+                "whitespace-nowrap border-b-2 px-1 pb-2 text-sm font-medium " +
+                (activeTab === "caregivers"
+                  ? "border-primary-600 text-primary-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300")
+              }
+            >
+              Caregivers{cgTotal ? ` (${cgTotal})` : ""}
+            </Link>
+            <Link
+              href="/marketplace?tab=jobs"
+              className={
+                "whitespace-nowrap border-b-2 px-1 pb-2 text-sm font-medium " +
+                (activeTab === "jobs"
+                  ? "border-primary-600 text-primary-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300")
+              }
+            >
+              Jobs{jobTotal ? ` (${jobTotal})` : ""}
+            </Link>
+            <Link
+              href="/marketplace/providers"
+              className={
+                "whitespace-nowrap border-b-2 px-1 pb-2 text-sm font-medium " +
+                (activeTab === "providers"
+                  ? "border-primary-600 text-primary-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300")
+              }
+            >
+              Providers{providerTotal ? ` (${providerTotal})` : ""}
+            </Link>
           </nav>
         </div>
 
