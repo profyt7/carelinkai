@@ -2,7 +2,7 @@
 
 | Area                  | Role      | Capability                                       | Status | Notes / Gaps |
 |-----------------------|-----------|--------------------------------------------------|--------|--------------|
-| Provider signup       | Provider  | Create account and log in                        | TODO   |              |
+| Provider signup       | Provider  | Create account and log in                        | DONE   | API: /api/auth/register accepts PROVIDER and auto-creates Provider record. UI: /auth/register shows Provider option. Post-signup access to /settings/provider. |
 | Provider profile      | Provider  | Create/edit profile (name, services, bio, logo)  | TODO   |              |
 | Provider services     | Provider  | Define service types & coverage area             | TODO   |              |
 | Provider availability | Provider  | Set/update availability (if applicable)          | TODO   |              |
