@@ -59,6 +59,24 @@ const affiliateSchema = baseProfileSchema.extend({
   commissionRate: z.number().min(0).max(100).optional().nullable(),
 });
 
+const providerSchema = baseProfileSchema.extend({
+  businessName: z.string().min(2, "Business name must be at least 2 characters"),
+  contactName: z.string().min(2, "Contact name must be at least 2 characters"),
+  contactEmail: z.string().email("Invalid email address"),
+  contactPhone: z.string().optional().nullable(),
+  bio: z.string().optional().nullable(),
+  website: z.string().url("Invalid website URL").optional().or(z.literal("")),
+  insuranceInfo: z.string().optional().nullable(),
+  licenseNumber: z.string().optional().nullable(),
+  yearsInBusiness: z.number().int().min(0).optional().nullable(),
+  serviceTypes: z.array(z.string()).min(1, "Select at least one service type"),
+  coverageArea: z.object({
+    cities: z.array(z.string()).optional(),
+    states: z.array(z.string()).optional(),
+    zipCodes: z.array(z.string()).optional(),
+  }).optional().nullable(),
+});
+
 // Address schema
 const addressSchema = z.object({
   street: z.string().min(3, "Street address must be at least 3 characters"),
@@ -234,9 +252,9 @@ export default function ProfileSettings() {
     }
   }, [status, router, fetchProfileData, fetchCategories]);
   
-  // Fetch credentials if user is a caregiver
+  // Fetch credentials if user is a caregiver or provider
   useEffect(() => {
-    if (userRole === "CAREGIVER") {
+    if (userRole === "CAREGIVER" || userRole === "PROVIDER") {
       fetchCredentials();
     }
   }, [userRole]);
@@ -312,7 +330,12 @@ export default function ProfileSettings() {
   const fetchCredentials = async () => {
     try {
       setCredLoading(true);
-      const res = await fetch("/api/caregiver/credentials", {
+      // Use appropriate API endpoint based on user role
+      const endpoint = userRole === "PROVIDER" 
+        ? "/api/provider/credentials" 
+        : "/api/caregiver/credentials";
+        
+      const res = await fetch(endpoint, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -366,6 +389,20 @@ export default function ProfileSettings() {
         return {
           organization: data.organization || "",
           commissionRate: data.commissionRate || "",
+        };
+      case "PROVIDER":
+        return {
+          businessName: data.businessName || "",
+          contactName: data.contactName || "",
+          contactEmail: data.contactEmail || "",
+          contactPhone: data.contactPhone || "",
+          bio: data.bio || "",
+          website: data.website || "",
+          insuranceInfo: data.insuranceInfo || "",
+          licenseNumber: data.licenseNumber || "",
+          yearsInBusiness: data.yearsInBusiness || "",
+          serviceTypes: Array.isArray(data.serviceTypes) ? data.serviceTypes : [],
+          coverageArea: data.coverageArea || { cities: [], states: [], zipCodes: [] },
         };
       default:
         return {};
@@ -467,6 +504,9 @@ export default function ProfileSettings() {
           break;
         case "AFFILIATE":
           schema = affiliateSchema;
+          break;
+        case "PROVIDER":
+          schema = providerSchema;
           break;
         default:
           schema = baseProfileSchema;
@@ -1302,6 +1342,316 @@ export default function ProfileSettings() {
               {errors.commissionRate && (
                 <p className="mt-1 text-sm text-red-600">{errors.commissionRate}</p>
               )}
+            </div>
+          </>
+        );
+      
+      case "PROVIDER":
+        const serviceTypeOptions = [
+          { value: "transportation", label: "Transportation" },
+          { value: "meal-prep", label: "Meal Preparation" },
+          { value: "housekeeping", label: "Housekeeping" },
+          { value: "personal-care", label: "Personal Care" },
+          { value: "companionship", label: "Companionship" },
+          { value: "medical-services", label: "Medical Services" },
+          { value: "home-modification", label: "Home Modification" },
+          { value: "respite-care", label: "Respite Care" },
+        ];
+
+        return (
+          <>
+            {/* Business Information */}
+            <div className="col-span-6">
+              <h3 className="text-lg font-medium text-neutral-800">Business Information</h3>
+              <p className="mt-1 text-sm text-neutral-500">
+                Provide your business details that will be displayed in the provider marketplace.
+              </p>
+            </div>
+
+            <div className="col-span-6">
+              <label htmlFor="businessName" className="block text-sm font-medium text-neutral-700">
+                Business Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="businessName"
+                id="businessName"
+                required
+                value={formData.businessName || ""}
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+              />
+              {errors.businessName && (
+                <p className="mt-1 text-sm text-red-600">{errors.businessName}</p>
+              )}
+            </div>
+
+            <div className="col-span-6 sm:col-span-3">
+              <label htmlFor="contactName" className="block text-sm font-medium text-neutral-700">
+                Contact Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="contactName"
+                id="contactName"
+                required
+                value={formData.contactName || ""}
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+              />
+              {errors.contactName && (
+                <p className="mt-1 text-sm text-red-600">{errors.contactName}</p>
+              )}
+            </div>
+
+            <div className="col-span-6 sm:col-span-3">
+              <label htmlFor="contactEmail" className="block text-sm font-medium text-neutral-700">
+                Contact Email <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="email"
+                name="contactEmail"
+                id="contactEmail"
+                required
+                value={formData.contactEmail || ""}
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+              />
+              {errors.contactEmail && (
+                <p className="mt-1 text-sm text-red-600">{errors.contactEmail}</p>
+              )}
+            </div>
+
+            <div className="col-span-6 sm:col-span-3">
+              <label htmlFor="contactPhone" className="block text-sm font-medium text-neutral-700">
+                Contact Phone
+              </label>
+              <input
+                type="tel"
+                name="contactPhone"
+                id="contactPhone"
+                value={formData.contactPhone || ""}
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+              />
+              {errors.contactPhone && (
+                <p className="mt-1 text-sm text-red-600">{errors.contactPhone}</p>
+              )}
+            </div>
+
+            <div className="col-span-6 sm:col-span-3">
+              <label htmlFor="yearsInBusiness" className="block text-sm font-medium text-neutral-700">
+                Years in Business
+              </label>
+              <input
+                type="number"
+                name="yearsInBusiness"
+                id="yearsInBusiness"
+                min="0"
+                value={formData.yearsInBusiness || ""}
+                onChange={handleNumericChange}
+                className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+              />
+              {errors.yearsInBusiness && (
+                <p className="mt-1 text-sm text-red-600">{errors.yearsInBusiness}</p>
+              )}
+            </div>
+
+            <div className="col-span-6">
+              <label htmlFor="website" className="block text-sm font-medium text-neutral-700">
+                Website
+              </label>
+              <input
+                type="url"
+                name="website"
+                id="website"
+                placeholder="https://example.com"
+                value={formData.website || ""}
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+              />
+              {errors.website && (
+                <p className="mt-1 text-sm text-red-600">{errors.website}</p>
+              )}
+            </div>
+
+            <div className="col-span-6">
+              <label htmlFor="bio" className="block text-sm font-medium text-neutral-700">
+                Business Description
+              </label>
+              <textarea
+                name="bio"
+                id="bio"
+                rows={4}
+                value={formData.bio || ""}
+                onChange={handleInputChange}
+                placeholder="Describe your business, services, and what makes you unique..."
+                className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+              />
+              {errors.bio && (
+                <p className="mt-1 text-sm text-red-600">{errors.bio}</p>
+              )}
+            </div>
+
+            {/* Service Types */}
+            <div className="col-span-6 mt-6">
+              <h3 className="text-lg font-medium text-neutral-800">Services Offered</h3>
+              <p className="mt-1 text-sm text-neutral-500">
+                Select the types of services your business provides. <span className="text-red-500">*</span>
+              </p>
+            </div>
+
+            <div className="col-span-6">
+              <div className="flex flex-wrap gap-2">
+                {serviceTypeOptions.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => toggleArrayValue("serviceTypes", opt.value)}
+                    className={`px-3 py-1 rounded-full border text-sm ${
+                      (formData.serviceTypes || []).includes(opt.value)
+                        ? "bg-primary-600 text-white border-primary-600"
+                        : "bg-white text-neutral-700 border-neutral-300"
+                    }`}
+                    aria-pressed={(formData.serviceTypes || []).includes(opt.value)}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              {errors.serviceTypes && (
+                <p className="mt-1 text-sm text-red-600">{errors.serviceTypes}</p>
+              )}
+            </div>
+
+            {/* Licensing & Insurance */}
+            <div className="col-span-6 mt-6">
+              <h3 className="text-lg font-medium text-neutral-800">Licensing & Insurance</h3>
+              <p className="mt-1 text-sm text-neutral-500">
+                Optional but recommended. Upload credentials in the Credentials section below.
+              </p>
+            </div>
+
+            <div className="col-span-6 sm:col-span-3">
+              <label htmlFor="licenseNumber" className="block text-sm font-medium text-neutral-700">
+                License Number
+              </label>
+              <input
+                type="text"
+                name="licenseNumber"
+                id="licenseNumber"
+                value={formData.licenseNumber || ""}
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+              />
+              {errors.licenseNumber && (
+                <p className="mt-1 text-sm text-red-600">{errors.licenseNumber}</p>
+              )}
+            </div>
+
+            <div className="col-span-6 sm:col-span-3">
+              <label htmlFor="insuranceInfo" className="block text-sm font-medium text-neutral-700">
+                Insurance Information
+              </label>
+              <input
+                type="text"
+                name="insuranceInfo"
+                id="insuranceInfo"
+                placeholder="e.g., General liability, $1M coverage"
+                value={formData.insuranceInfo || ""}
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+              />
+              {errors.insuranceInfo && (
+                <p className="mt-1 text-sm text-red-600">{errors.insuranceInfo}</p>
+              )}
+            </div>
+
+            {/* Coverage Area */}
+            <div className="col-span-6 mt-6">
+              <h3 className="text-lg font-medium text-neutral-800">Coverage Area</h3>
+              <p className="mt-1 text-sm text-neutral-500">
+                Specify the geographic areas where you provide services. Enter comma-separated values.
+              </p>
+            </div>
+
+            <div className="col-span-6 sm:col-span-3">
+              <label htmlFor="coverageAreaCities" className="block text-sm font-medium text-neutral-700">
+                Cities
+              </label>
+              <input
+                type="text"
+                name="coverageAreaCities"
+                id="coverageAreaCities"
+                placeholder="Seattle, Bellevue, Redmond"
+                value={(formData.coverageArea?.cities || []).join(", ")}
+                onChange={(e) => {
+                  const cities = e.target.value.split(",").map(c => c.trim()).filter(c => c);
+                  setFormData((prev: any) => ({
+                    ...prev,
+                    coverageArea: { ...prev.coverageArea, cities }
+                  }));
+                }}
+                className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+              />
+            </div>
+
+            <div className="col-span-6 sm:col-span-2">
+              <label htmlFor="coverageAreaStates" className="block text-sm font-medium text-neutral-700">
+                States
+              </label>
+              <input
+                type="text"
+                name="coverageAreaStates"
+                id="coverageAreaStates"
+                placeholder="WA, OR"
+                value={(formData.coverageArea?.states || []).join(", ")}
+                onChange={(e) => {
+                  const states = e.target.value.split(",").map(s => s.trim().toUpperCase()).filter(s => s);
+                  setFormData((prev: any) => ({
+                    ...prev,
+                    coverageArea: { ...prev.coverageArea, states }
+                  }));
+                }}
+                className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+              />
+            </div>
+
+            <div className="col-span-6 sm:col-span-1">
+              <label htmlFor="coverageAreaZipCodes" className="block text-sm font-medium text-neutral-700">
+                ZIP Codes
+              </label>
+              <input
+                type="text"
+                name="coverageAreaZipCodes"
+                id="coverageAreaZipCodes"
+                placeholder="98101, 98104"
+                value={(formData.coverageArea?.zipCodes || []).join(", ")}
+                onChange={(e) => {
+                  const zipCodes = e.target.value.split(",").map(z => z.trim()).filter(z => z);
+                  setFormData((prev: any) => ({
+                    ...prev,
+                    coverageArea: { ...prev.coverageArea, zipCodes }
+                  }));
+                }}
+                className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+              />
+            </div>
+
+            {/* Credentials Section */}
+            <div className="col-span-6 mt-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-neutral-800">Credentials</h3>
+                <Link
+                  href="/settings/credentials"
+                  className="text-sm font-medium text-primary-600 hover:text-primary-700"
+                >
+                  Open full page
+                </Link>
+              </div>
+              <p className="mt-1 text-sm text-neutral-500">
+                Add your professional credentials, licenses, and insurance documents. Visit the full credentials page for detailed management.
+              </p>
             </div>
           </>
         );
