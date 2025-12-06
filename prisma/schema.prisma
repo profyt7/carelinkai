@@ -183,6 +183,7 @@ model Family {
   wallet              FamilyWallet?
   favorites           FavoriteHome[]
   caregiverShortlists FavoriteCaregiver[]
+  providerShortlists  FavoriteProvider[]
 
   // Family collaboration relationships
   members              FamilyMember[]
@@ -313,8 +314,9 @@ model Provider {
   coverageArea Json? // { cities: [], states: [], zipCodes: [] }
 
   // Relationships
-  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  credentials ProviderCredential[]
+  user                  User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credentials           ProviderCredential[]
+  shortlistedByFamilies FavoriteProvider[]
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -1847,4 +1849,24 @@ model FavoriteCaregiver {
   @@unique([familyId, caregiverId])
   @@index([familyId])
   @@index([caregiverId])
+}
+
+/// Families can favorite Providers to build shortlists
+model FavoriteProvider {
+  id         String @id @default(cuid())
+  familyId   String
+  providerId String
+
+  // Relations
+  family   Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  provider Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Constraints and Indexes
+  @@unique([familyId, providerId])
+  @@index([familyId])
+  @@index([providerId])
 }

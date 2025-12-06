@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { FiMapPin, FiStar, FiSearch, FiFilter, FiCheckCircle, FiLoader } from "react-icons/fi";
+import { useSession } from "next-auth/react";
+import { FiMapPin, FiStar, FiSearch, FiFilter, FiCheckCircle, FiLoader, FiHeart } from "react-icons/fi";
 
 type Provider = {
   id: string;
@@ -30,9 +31,14 @@ const serviceTypeOptions = [
 ];
 
 export default function ProvidersPage() {
+  const { data: session } = useSession();
   const [providers, setProviders] = useState<Provider[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Favorite state
+  const PR_FAV_KEY = 'marketplace:provider-favorites:v1';
+  const [providerFavorites, setProviderFavorites] = useState<Set<string>>(new Set());
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState("");
@@ -46,6 +52,55 @@ export default function ProvidersPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const pageSize = 12;
+
+  // Load provider favorites on mount
+  useEffect(() => {
+    const load = async () => {
+      if (session?.user?.role === 'FAMILY') {
+        try {
+          const res = await fetch('/api/marketplace/provider-favorites', { cache: 'no-store' });
+          if (res.ok) {
+            const j = await res.json();
+            const ids = new Set<string>(j?.data || []);
+            setProviderFavorites(ids);
+            try { localStorage.setItem(PR_FAV_KEY, JSON.stringify(Array.from(ids))); } catch {}
+            return;
+          }
+        } catch {}
+      }
+      try { const raw = localStorage.getItem(PR_FAV_KEY); if (raw) setProviderFavorites(new Set(JSON.parse(raw))); } catch {}
+    };
+    load();
+  }, [session?.user?.role, PR_FAV_KEY]);
+
+  // Toggle provider favorite
+  const toggleProviderFavorite = useCallback(async (providerId: string) => {
+    setProviderFavorites((prev) => {
+      const next = new Set(prev);
+      if (next.has(providerId)) next.delete(providerId); else next.add(providerId);
+      try { localStorage.setItem(PR_FAV_KEY, JSON.stringify(Array.from(next))); } catch {}
+      return next;
+    });
+    if (session?.user?.role === 'FAMILY') {
+      try {
+        if (providerFavorites.has(providerId)) {
+          const res = await fetch(`/api/marketplace/provider-favorites?providerId=${encodeURIComponent(providerId)}`, { method: 'DELETE' });
+          if (!res.ok) throw new Error('unfav failed');
+        } else {
+          const res = await fetch('/api/marketplace/provider-favorites', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ providerId }) });
+          if (!res.ok) throw new Error('fav failed');
+        }
+      } catch {
+        // rollback
+        setProviderFavorites((prev) => {
+          const next = new Set(prev);
+          if (next.has(providerId)) next.delete(providerId); else next.add(providerId);
+          try { localStorage.setItem(PR_FAV_KEY, JSON.stringify(Array.from(next))); } catch {}
+          return next;
+        });
+      }
+    }
+  }, [session?.user?.role, providerFavorites, PR_FAV_KEY]);
 
   useEffect(() => {
     fetchProviders();
@@ -266,9 +321,29 @@ export default function ProvidersPage() {
                       <h3 className="text-lg font-semibold text-neutral-900 flex-1">
                         {provider.businessName}
                       </h3>
-                      {provider.isVerified && (
-                        <FiCheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 ml-2" title="Verified Provider" />
-                      )}
+                      <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                        {provider.isVerified && (
+                          <FiCheckCircle className="h-5 w-5 text-green-500" title="Verified Provider" />
+                        )}
+                        {/* Favorite Heart Icon */}
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            toggleProviderFavorite(provider.id);
+                          }}
+                          className="text-gray-400 hover:text-red-500 transition-colors"
+                          title={providerFavorites.has(provider.id) ? "Remove from favorites" : "Add to favorites"}
+                        >
+                          <FiHeart
+                            className={`h-5 w-5 ${
+                              providerFavorites.has(provider.id)
+                                ? "fill-red-500 text-red-500"
+                                : ""
+                            }`}
+                          />
+                        </button>
+                      </div>
                     </div>
 
                     {location && (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
@@ -15,7 +15,8 @@ import {
   FiLoader,
   FiBriefcase,
   FiCalendar,
-  FiAward
+  FiAward,
+  FiHeart
 } from "react-icons/fi";
 
 type Provider = {
@@ -71,12 +72,78 @@ export default function ProviderDetailPage() {
   const [provider, setProvider] = useState<Provider | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Favorite state
+  const PR_FAV_KEY = 'marketplace:provider-favorites:v1';
+  const [isFavorite, setIsFavorite] = useState(false);
 
   useEffect(() => {
     if (providerId) {
       fetchProviderDetails();
+      loadFavoriteStatus();
     }
   }, [providerId]);
+
+  // Load favorite status
+  const loadFavoriteStatus = async () => {
+    if (session?.user?.role === 'FAMILY') {
+      try {
+        const res = await fetch('/api/marketplace/provider-favorites', { cache: 'no-store' });
+        if (res.ok) {
+          const j = await res.json();
+          const ids = new Set<string>(j?.data || []);
+          setIsFavorite(ids.has(providerId));
+          return;
+        }
+      } catch {}
+    }
+    // Fallback to localStorage
+    try {
+      const raw = localStorage.getItem(PR_FAV_KEY);
+      if (raw) {
+        const ids = new Set<string>(JSON.parse(raw));
+        setIsFavorite(ids.has(providerId));
+      }
+    } catch {}
+  };
+
+  // Toggle favorite
+  const toggleFavorite = useCallback(async () => {
+    const wasFavorite = isFavorite;
+    setIsFavorite(!isFavorite);
+    
+    // Update localStorage
+    try {
+      const raw = localStorage.getItem(PR_FAV_KEY);
+      const ids = new Set<string>(raw ? JSON.parse(raw) : []);
+      if (isFavorite) ids.delete(providerId);
+      else ids.add(providerId);
+      localStorage.setItem(PR_FAV_KEY, JSON.stringify(Array.from(ids)));
+    } catch {}
+    
+    // Sync with server if family
+    if (session?.user?.role === 'FAMILY') {
+      try {
+        if (isFavorite) {
+          const res = await fetch(`/api/marketplace/provider-favorites?providerId=${encodeURIComponent(providerId)}`, { method: 'DELETE' });
+          if (!res.ok) throw new Error('unfav failed');
+        } else {
+          const res = await fetch('/api/marketplace/provider-favorites', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ providerId }) });
+          if (!res.ok) throw new Error('fav failed');
+        }
+      } catch {
+        // Rollback
+        setIsFavorite(wasFavorite);
+        try {
+          const raw = localStorage.getItem(PR_FAV_KEY);
+          const ids = new Set<string>(raw ? JSON.parse(raw) : []);
+          if (wasFavorite) ids.add(providerId);
+          else ids.delete(providerId);
+          localStorage.setItem(PR_FAV_KEY, JSON.stringify(Array.from(ids)));
+        } catch {}
+      }
+    }
+  }, [isFavorite, providerId, session?.user?.role, PR_FAV_KEY]);
 
   const fetchProviderDetails = async () => {
     try {
@@ -172,6 +239,18 @@ export default function ProviderDetailPage() {
                     Contact: {provider.contactName}
                   </p>
                 </div>
+                {/* Favorite Button */}
+                <button
+                  onClick={toggleFavorite}
+                  className="text-gray-400 hover:text-red-500 transition-colors p-2"
+                  title={isFavorite ? "Remove from favorites" : "Add to favorites"}
+                >
+                  <FiHeart
+                    className={`h-7 w-7 ${
+                      isFavorite ? "fill-red-500 text-red-500" : ""
+                    }`}
+                  />
+                </button>
               </div>
 
               {/* Quick Info */}
