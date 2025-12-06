@@ -12,19 +12,19 @@ Confirmed branch state:
 
 | Area                       | Role      | Capability                                       | Status | Notes / Gaps |
 |----------------------------|-----------|--------------------------------------------------|--------|--------------|
-| Provider signup            | Provider  | Create account and log in                        | TODO   | No PROVIDER role/model in schema; registration UI/API exclude PROVIDER. |
-| Provider profile           | Provider  | Create/edit profile (name, services, bio, logo)  | TODO   | No `/settings/provider` UI or `/api/provider/*` endpoints on this branch. |
-| Provider services          | Provider  | Define service types & coverage area             | TODO   | No Provider settings UI/API present. |
-| Provider availability      | Provider  | Set/update availability (if applicable)          | TODO   | No availability for Provider implemented. |
-| Provider documents         | Provider  | Upload licenses/insurance docs                   | TODO   | Not implemented for Provider. |
-| Provider verification      | Admin     | Mark provider as verified / pending / rejected   | DONE   | Admin APIs/UI: `GET /api/admin/providers`, `GET/PATCH /api/admin/providers/[id]`; pages: `/admin/providers`, `/admin/providers/[id]`. |
-| Provider search list       | Operator  | Browse/search list of providers                  | DONE   | DB-backed `GET /api/marketplace/providers`; UI `/marketplace/providers` shows real data. |
-| Provider filters           | Operator  | Filter providers by location, service type, etc. | DONE   | Supports `q, city, state, services` with pagination; client filter controls implemented. |
-| Provider detail view       | Operator  | View provider profile, services, docs            | DONE   | DB-backed `GET /api/marketplace/providers/[id]`; UI consumes real API. |
-| Operator → Provider contact| Operator  | Send initial contact / request to provider       | DONE   | Detail page deep-links to `/messages?userId={provider.userId}`. |
-| Provider → Operator reply  | Provider  | Respond to operator (basic 2-way comms)          | WIP    | Messaging exists, but no PROVIDER role path in registration; depends on having a user account mapped to provider. |
-| Provider visibility        | Provider  | Set profile as active/paused in marketplace      | WIP    | Marketplace honors `isVisibleInMarketplace`; Admin can toggle in `/admin/providers/[id]`; missing provider self-serve settings page. |
-| Admin provider oversight   | Admin     | List/search providers; view profiles & status    | DONE   | Implemented endpoints/UI with verify/visibility controls. |
+| Provider signup            | Provider  | Create account and log in                        | TODO   | No `PROVIDER` in `UserRole` and no `Provider` model in `prisma/schema.prisma`; registration API (`src/app/api/auth/register/route.ts`) and UI (`src/app/auth/register/page.tsx`) exclude Provider. |
+| Provider profile           | Provider  | Create/edit profile (name, services, bio, logo)  | TODO   | No Provider-facing `/api/provider/*` routes or `/settings/provider` UI. |
+| Provider services          | Provider  | Define service types & coverage area             | TODO   | No settings UI/API for Provider serviceTypes/coverage fields on this branch. |
+| Provider availability      | Provider  | Set/update availability (if applicable)          | TODO   | No Provider availability; existing availability page targets Caregivers only: `src/app/settings/availability/page.tsx`. |
+| Provider documents         | Provider  | Upload licenses/insurance docs                   | TODO   | No Provider document endpoints/UI present. |
+| Provider verification      | Admin     | Mark provider as verified / pending / rejected   | WIP    | Endpoints/UI exist: `GET /api/admin/providers`, `GET/PATCH /api/admin/providers/[id]`; pages `/admin/providers`, `/admin/providers/[id]`. However, `Provider` model is absent in schema, so these cannot operate against the DB on this branch. |
+| Provider search list       | Operator  | Browse/search list of providers                  | WIP    | `GET /api/marketplace/providers` attempts Prisma-backed queries with `isVisibleInMarketplace && isVerified`; UI `/marketplace/providers` calls this and renders filters. Lacks `Provider` model in schema → not functional end-to-end. |
+| Provider filters           | Operator  | Filter providers by location, service type, etc. | WIP    | Client filter controls implemented (q/city/state/services) in `src/app/marketplace/providers/page.tsx`; API accepts these params but relies on missing `Provider` model. |
+| Provider detail view       | Operator  | View provider profile, services, docs            | WIP    | Page `src/app/marketplace/providers/[id]/page.tsx` calls `GET /api/marketplace/providers/[id]` (Prisma-backed) → depends on absent `Provider` model. |
+| Operator → Provider contact| Operator  | Send initial contact / request to provider       | WIP    | Detail CTA deep-links to `/messages?userId={provider.userId}`, but provider retrieval depends on DB model absent on this branch. Messaging itself works. |
+| Provider → Operator reply  | Provider  | Respond to operator (basic 2-way comms)          | WIP    | Messaging system (`/messages`, `/api/messages*`) is role-agnostic, but there is no Provider role or account path; participation would require a regular user mapped to a provider record (missing). |
+| Provider visibility        | Provider  | Set profile as active/paused in marketplace      | TODO   | Code references `isVisibleInMarketplace`, but there is no Provider settings UI/API; Admin toggles exist in UI/APIs yet DB model is missing, so no effective persistence. |
+| Admin provider oversight   | Admin     | List/search providers; view profiles & status    | WIP    | Admin list/detail pages and APIs exist, but due to missing `Provider` model they are not operational on this branch. |
 
 Legend:
 
