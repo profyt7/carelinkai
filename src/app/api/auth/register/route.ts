@@ -37,7 +37,7 @@ const registrationSchema = z.object({
   firstName: z.string().min(2, "First name must be at least 2 characters"),
   lastName: z.string().min(2, "Last name must be at least 2 characters"),
   phone: z.string().optional(),
-  role: z.enum(["FAMILY", "OPERATOR", "CAREGIVER", "AFFILIATE"]),
+  role: z.enum(["FAMILY", "OPERATOR", "CAREGIVER", "AFFILIATE", "PROVIDER"]),
   agreeToTerms: z.boolean().refine(val => val === true, {
     message: "You must agree to the terms and conditions"
   })
@@ -309,6 +309,27 @@ export async function POST(request: NextRequest) {
               organization: null,
               commissionRate: null,
               paymentDetails: {} // Empty JSON object for payment details
+            }
+          });
+          break;
+          
+        case "PROVIDER":
+          await tx.provider.create({
+            data: {
+              userId: user.id,
+              businessName: `${firstName} ${lastName}`, // Default business name from user's name
+              contactName: `${firstName} ${lastName}`,
+              contactEmail: normalizedEmail,
+              contactPhone: phone || null,
+              bio: null,
+              website: null,
+              insuranceInfo: null,
+              licenseNumber: null,
+              yearsInBusiness: null,
+              isVerified: false,
+              isActive: true,
+              serviceTypes: [], // Empty array, provider can add services later
+              coverageArea: {} // Empty JSON object for coverage area
             }
           });
           break;
