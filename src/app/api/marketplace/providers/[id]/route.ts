@@ -1,68 +1,117 @@
-import { NextResponse } from 'next/server';
-import { rateLimitAsync, getClientIp, buildRateLimitHeaders } from '@/lib/rateLimit';
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
-// Reuse the mock generator from the index route by copying minimal logic
-function createSeededRandom(seed: string): () => number {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) { hash = ((hash << 5) - hash) + seed.charCodeAt(i); hash &= hash; }
-  let state = hash || 1;
-  return function() { state = (state * 1664525 + 1013904223) % 2147483647; return state / 2147483647; };
-}
-
-export async function GET(request: Request, { params }: { params: { id: string } }) {
-  // Feature flag aligned with list route
-  const providersEnabled = process.env['NEXT_PUBLIC_PROVIDERS_ENABLED'] !== 'false';
-  if (!providersEnabled) {
-    return NextResponse.json({ error: 'Providers feature disabled' }, { status: 404 });
-  }
-  const { id } = params;
+/**
+ * GET /api/marketplace/providers/[id]
+ * 
+ * Fetches a single provider by ID with full details
+ */
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const key = getClientIp(request);
-    const limit = 60;
-    const rr = await rateLimitAsync({ name: 'providers:id:GET', key, limit, windowMs: 60_000 });
-    if (!rr.allowed) {
+    const { id } = params;
+    
+    if (!id) {
       return NextResponse.json(
-        { error: 'Rate limit exceeded' },
-        { status: 429, headers: { ...buildRateLimitHeaders(rr, limit), 'Retry-After': '60' } }
+        { error: 'Provider ID is required' },
+        { status: 400 }
       );
     }
-
-    // Deterministically generate a single provider from its id
-    const rand = createSeededRandom(id);
-    const cities = ['San Francisco','Oakland','San Jose','Berkeley','Palo Alto','Mountain View','Sunnyvale','Santa Clara','Fremont','Hayward'];
-    const companyNames = ['Reliable Transport','Senior Rides','MediMove','ComfortRide','CareVan','Golden Years Transit','AccessWheels','MobilityPlus','SafeJourney','SilverTransit'];
-    const services = ['medical-appointments','grocery-shopping','pharmacy-pickup','social-outings','airport-transfers','wheelchair-accessible','door-to-door','long-distance','scheduled-service'];
-    const badges = ['Licensed & Insured','On-Time Guarantee','Wheelchair Accessible','Trained Drivers','Background Checked'];
-    const pick = <T,>(arr: T[]) => arr[Math.floor(rand() * arr.length)];
-    const pickMany = (arr: string[], n: number) => {
-      const a = [...arr].sort(() => rand() - 0.5); return a.slice(0, Math.max(1, Math.min(n, a.length)));
+    
+    // Fetch provider with all related data
+    const provider = await prisma.provider.findUnique({
+      where: { id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+            profileImageUrl: true,
+            createdAt: true,
+          },
+        },
+        credentials: {
+          where: {
+            status: 'VERIFIED' // Only show verified credentials in public view
+          },
+          select: {
+            id: true,
+            type: true,
+            status: true,
+            expiresAt: true,
+            verifiedAt: true,
+          },
+        },
+      },
+    });
+    
+    if (!provider) {
+      return NextResponse.json(
+        { error: 'Provider not found' },
+        { status: 404 }
+      );
+    }
+    
+    // Check if provider is active
+    if (!provider.isActive) {
+      return NextResponse.json(
+        { error: 'Provider is not currently active' },
+        { status: 404 }
+      );
+    }
+    
+    // Format photo URL
+    let photoUrl = null as string | null;
+    if (provider.user.profileImageUrl) {
+      if (typeof provider.user.profileImageUrl === 'string') {
+        photoUrl = provider.user.profileImageUrl;
+      } else if ((provider.user.profileImageUrl as any).large) {
+        photoUrl = (provider.user.profileImageUrl as any).large;
+      } else if ((provider.user.profileImageUrl as any).medium) {
+        photoUrl = (provider.user.profileImageUrl as any).medium;
+      } else if ((provider.user.profileImageUrl as any).thumbnail) {
+        photoUrl = (provider.user.profileImageUrl as any).thumbnail;
+      }
+    }
+    
+    // Format response
+    const formattedProvider = {
+      id: provider.id,
+      userId: provider.user.id,
+      businessName: provider.businessName,
+      contactName: provider.contactName,
+      contactEmail: provider.contactEmail,
+      contactPhone: provider.contactPhone,
+      bio: provider.bio,
+      website: provider.website,
+      insuranceInfo: provider.insuranceInfo,
+      licenseNumber: provider.licenseNumber,
+      yearsInBusiness: provider.yearsInBusiness,
+      isVerified: provider.isVerified,
+      serviceTypes: provider.serviceTypes || [],
+      coverageArea: provider.coverageArea,
+      photoUrl,
+      credentials: provider.credentials,
+      memberSince: provider.createdAt,
     };
-
-    const data = {
-      id,
-      name: pick(companyNames),
-      type: 'TRANSPORTATION',
-      city: pick(cities),
-      state: 'CA',
-      services: pickMany(services, 5),
-      description: 'Safe, reliable senior transportation with accessibility support and trained drivers.',
-      hourlyRate: rand() < 0.6 ? (30 + Math.floor(rand() * 31)) : null,
-      perMileRate: rand() >= 0.6 ? parseFloat((1.5 + rand() * 2).toFixed(2)) : null,
-      ratingAverage: parseFloat((3.5 + rand() * 1.5).toFixed(1)),
-      reviewCount: 5 + Math.floor(rand() * 200),
-      badges: pickMany(badges, 3),
-      coverageRadius: 10 + Math.floor(rand() * 31),
-      availableHours: '24/7'
-    };
-
-    return NextResponse.json({ data }, { status: 200, headers: { 'Cache-Control': 'public, max-age=15, s-maxage=15, stale-while-revalidate=60', ...buildRateLimitHeaders(rr, limit) } });
-  } catch (e) {
-    console.error('GET /api/marketplace/providers/[id] error', e);
-    return NextResponse.json({ error: 'Failed to fetch provider' }, { status: 500 });
+    
+    return NextResponse.json(
+      { data: formattedProvider },
+      { 
+        status: 200, 
+        headers: { 'Cache-Control': 'public, max-age=60, s-maxage=60, stale-while-revalidate=120' } 
+      }
+    );
+  } catch (error) {
+    console.error('Error fetching provider:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch provider' },
+      { status: 500 }
+    );
   }
 }
-
-export function POST() { return NextResponse.json({ error: 'Method not allowed' }, { status: 405 }); }
-export function PUT() { return NextResponse.json({ error: 'Method not allowed' }, { status: 405 }); }
-export function PATCH() { return NextResponse.json({ error: 'Method not allowed' }, { status: 405 }); }
-export function DELETE() { return NextResponse.json({ error: 'Method not allowed' }, { status: 405 }); }
