@@ -3,11 +3,14 @@ import { headers, cookies } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
 import { getMockProviderById } from "@/lib/mock/marketplace";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 type Provider = {
   id: string;
+  userId?: string;
   name: string;
   type: string;
   city: string;
@@ -81,6 +84,12 @@ export default async function ProviderDetailPage({ params }: { params: { id: str
   if (!provider) notFound();
 
   const location = [provider.city, provider.state].filter(Boolean).join(", ");
+  const session = await getServerSession(authOptions);
+  const isOperator = (session?.user as any)?.role === 'OPERATOR';
+  const isAuthed = !!session?.user;
+  const messagesHref = isAuthed
+    ? (provider.userId ? `/messages?userId=${encodeURIComponent(provider.userId)}` : '/messages')
+    : `/auth/login?callbackUrl=${encodeURIComponent(`/marketplace/providers/${params.id}`)}`;
 
   // Helper to render rating stars
   const filled = Math.round(provider.ratingAverage || 0);
@@ -188,9 +197,19 @@ export default async function ProviderDetailPage({ params }: { params: { id: str
 
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row gap-3">
-            <Link href="/messages" className="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md text-center">
-              Message provider
-            </Link>
+            {isOperator ? (
+              <Link href={messagesHref} className="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md text-center">
+                Message provider
+              </Link>
+            ) : (
+              <span
+                className={`flex-1 rounded-md py-2 px-4 text-center font-medium ${isAuthed ? 'bg-gray-200 text-gray-500' : 'bg-primary-600 text-white hover:bg-primary-700'}`}
+              >
+                {isAuthed ? 'Message provider (Operators only)' : (
+                  <Link href={messagesHref}>Message provider</Link>
+                )}
+              </span>
+            )}
             <Link href="/dashboard/inquiries" className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2 px-4 rounded-md text-center">
               Request a ride/quote
             </Link>

@@ -20,6 +20,7 @@ enum UserRole {
   ADMIN
   AFFILIATE
   STAFF
+  PROVIDER
 }
 
 enum UserStatus {
@@ -99,6 +100,7 @@ model User {
   operator  Operator?
   caregiver Caregiver?
   affiliate Affiliate?
+  provider  Provider?
 
   // Common relationships
   addresses                 Address[]
@@ -287,6 +289,30 @@ model Affiliate {
   // Indexes
   @@index([userId])
   @@index([affiliateCode])
+}
+
+/// External service providers that offer services to operators/families
+model Provider {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  name           String?
+  bio            String?  @db.Text
+  logoUrl        String?
+  serviceTypes   String[] @default([])
+  coverageCity   String?
+  coverageState  String?
+  coverageRadius Int?
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([userId])
+  @@index([coverageCity, coverageState])
 }
 
 // ==================== ASSISTED LIVING HOME MODELS ====================

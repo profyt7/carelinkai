@@ -1,13 +1,6 @@
 import { NextResponse } from 'next/server';
 import { rateLimitAsync, getClientIp, buildRateLimitHeaders } from '@/lib/rateLimit';
-
-// Reuse the mock generator from the index route by copying minimal logic
-function createSeededRandom(seed: string): () => number {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) { hash = ((hash << 5) - hash) + seed.charCodeAt(i); hash &= hash; }
-  let state = hash || 1;
-  return function() { state = (state * 1664525 + 1013904223) % 2147483647; return state / 2147483647; };
-}
+import { prisma } from '@/lib/prisma';
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   // Feature flag aligned with list route
@@ -27,32 +20,38 @@ export async function GET(request: Request, { params }: { params: { id: string }
       );
     }
 
-    // Deterministically generate a single provider from its id
-    const rand = createSeededRandom(id);
-    const cities = ['San Francisco','Oakland','San Jose','Berkeley','Palo Alto','Mountain View','Sunnyvale','Santa Clara','Fremont','Hayward'];
-    const companyNames = ['Reliable Transport','Senior Rides','MediMove','ComfortRide','CareVan','Golden Years Transit','AccessWheels','MobilityPlus','SafeJourney','SilverTransit'];
-    const services = ['medical-appointments','grocery-shopping','pharmacy-pickup','social-outings','airport-transfers','wheelchair-accessible','door-to-door','long-distance','scheduled-service'];
-    const badges = ['Licensed & Insured','On-Time Guarantee','Wheelchair Accessible','Trained Drivers','Background Checked'];
-    const pick = <T,>(arr: T[]) => arr[Math.floor(rand() * arr.length)];
-    const pickMany = (arr: string[], n: number) => {
-      const a = [...arr].sort(() => rand() - 0.5); return a.slice(0, Math.max(1, Math.min(n, a.length)));
-    };
-
+    const p = await prisma.provider.findUnique({
+      where: { id },
+      select: {
+        userId: true,
+        id: true,
+        name: true,
+        bio: true,
+        serviceTypes: true,
+        coverageCity: true,
+        coverageState: true,
+        coverageRadius: true,
+      },
+    });
+    if (!p) {
+      return NextResponse.json({ error: 'Provider not found' }, { status: 404 });
+    }
     const data = {
-      id,
-      name: pick(companyNames),
+      id: p.id,
+      userId: p.userId,
+      name: p.name ?? 'Provider',
       type: 'TRANSPORTATION',
-      city: pick(cities),
-      state: 'CA',
-      services: pickMany(services, 5),
-      description: 'Safe, reliable senior transportation with accessibility support and trained drivers.',
-      hourlyRate: rand() < 0.6 ? (30 + Math.floor(rand() * 31)) : null,
-      perMileRate: rand() >= 0.6 ? parseFloat((1.5 + rand() * 2).toFixed(2)) : null,
-      ratingAverage: parseFloat((3.5 + rand() * 1.5).toFixed(1)),
-      reviewCount: 5 + Math.floor(rand() * 200),
-      badges: pickMany(badges, 3),
-      coverageRadius: 10 + Math.floor(rand() * 31),
-      availableHours: '24/7'
+      city: p.coverageCity ?? '',
+      state: p.coverageState ?? '',
+      services: p.serviceTypes ?? [],
+      description: p.bio ?? '',
+      hourlyRate: null,
+      perMileRate: null,
+      ratingAverage: 0,
+      reviewCount: 0,
+      badges: [],
+      coverageRadius: p.coverageRadius ?? null,
+      availableHours: 'N/A',
     };
 
     return NextResponse.json({ data }, { status: 200, headers: { 'Cache-Control': 'public, max-age=15, s-maxage=15, stale-while-revalidate=60', ...buildRateLimitHeaders(rr, limit) } });
