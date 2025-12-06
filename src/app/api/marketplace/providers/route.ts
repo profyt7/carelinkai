@@ -80,6 +80,7 @@ export async function GET(request: Request) {
         take,
         ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
         select: {
+          userId: true,
           id: true,
           name: true,
           bio: true,
@@ -96,6 +97,7 @@ export async function GET(request: Request) {
 
       const data = slice.map((p) => ({
         id: p.id,
+        userId: p.userId,
         name: p.name ?? 'Provider',
         type: 'TRANSPORTATION',
         city: p.coverageCity ?? '',
@@ -134,6 +136,7 @@ export async function GET(request: Request) {
       orderBy: { createdAt: 'desc' },
       take: baselineTake,
       select: {
+        userId: true,
         id: true,
         name: true,
         bio: true,
@@ -149,6 +152,7 @@ export async function GET(request: Request) {
       const dist = cityDistanceMiles(lat!, lng!, cityName, stateName);
       return {
         id: p.id,
+        userId: p.userId,
         name: p.name ?? 'Provider',
         type: 'TRANSPORTATION',
         city: cityName,

@@ -23,6 +23,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
     const p = await prisma.provider.findUnique({
       where: { id },
       select: {
+        userId: true,
         id: true,
         name: true,
         bio: true,
@@ -37,6 +38,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
     }
     const data = {
       id: p.id,
+      userId: p.userId,
       name: p.name ?? 'Provider',
       type: 'TRANSPORTATION',
       city: p.coverageCity ?? '',
