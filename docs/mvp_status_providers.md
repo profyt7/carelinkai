@@ -17,14 +17,14 @@ Confirmed branch state:
 | Provider services          | Provider  | Define service types & coverage area             | TODO   | No Provider settings UI/API present. |
 | Provider availability      | Provider  | Set/update availability (if applicable)          | TODO   | No availability for Provider implemented. |
 | Provider documents         | Provider  | Upload licenses/insurance docs                   | TODO   | Not implemented for Provider. |
-| Provider verification      | Admin     | Mark provider as verified / pending / rejected   | TODO   | No admin Provider endpoints/UI on this branch. |
-| Provider search list       | Operator  | Browse/search list of providers                  | WIP    | UI at `/marketplace/providers`; served from mock API (`/api/marketplace/providers`). |
-| Provider filters           | Operator  | Filter providers by location, service type, etc. | WIP    | Filters supported in mock API params; UI lacks real filter controls; results are mock-backed. |
-| Provider detail view       | Operator  | View provider profile, services, docs            | WIP    | Page `/marketplace/providers/[id]` uses mock API; CTA links to `/messages`. |
-| Operator → Provider contact| Operator  | Send initial contact / request to provider       | WIP    | CTA to `/messages` without user linkage (no provider userId/deep link). |
-| Provider → Operator reply  | Provider  | Respond to operator (basic 2-way comms)          | WIP    | Messaging is role-agnostic at `/messages`, but no PROVIDER role exists; cannot represent a Provider replying. |
-| Provider visibility        | Provider  | Set profile as active/paused in marketplace      | TODO   | No Provider settings UI/API to control visibility. |
-| Admin provider oversight   | Admin     | List/search providers; view profiles & status    | TODO   | No `/api/admin/providers` or `/admin/providers` on this branch. |
+| Provider verification      | Admin     | Mark provider as verified / pending / rejected   | DONE   | Admin APIs/UI: `GET /api/admin/providers`, `GET/PATCH /api/admin/providers/[id]`; pages: `/admin/providers`, `/admin/providers/[id]`. |
+| Provider search list       | Operator  | Browse/search list of providers                  | DONE   | DB-backed `GET /api/marketplace/providers`; UI `/marketplace/providers` shows real data. |
+| Provider filters           | Operator  | Filter providers by location, service type, etc. | DONE   | Supports `q, city, state, services` with pagination; client filter controls implemented. |
+| Provider detail view       | Operator  | View provider profile, services, docs            | DONE   | DB-backed `GET /api/marketplace/providers/[id]`; UI consumes real API. |
+| Operator → Provider contact| Operator  | Send initial contact / request to provider       | DONE   | Detail page deep-links to `/messages?userId={provider.userId}`. |
+| Provider → Operator reply  | Provider  | Respond to operator (basic 2-way comms)          | WIP    | Messaging exists, but no PROVIDER role path in registration; depends on having a user account mapped to provider. |
+| Provider visibility        | Provider  | Set profile as active/paused in marketplace      | WIP    | Marketplace honors `isVisibleInMarketplace`; Admin can toggle in `/admin/providers/[id]`; missing provider self-serve settings page. |
+| Admin provider oversight   | Admin     | List/search providers; view profiles & status    | DONE   | Implemented endpoints/UI with verify/visibility controls. |
 
 Legend:
 
