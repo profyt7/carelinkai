@@ -32,7 +32,7 @@ const credentialSchema = z
   );
 
 export default function CredentialsSettingsPage() {
-  const { status } = useSession();
+  const { data: session, status } = useSession();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [message, setMessage] = useState<{ type: string; text: string }>({
@@ -51,10 +51,19 @@ export default function CredentialsSettingsPage() {
   });
   const [credErrors, setCredErrors] = useState<any>({});
 
+  // Get user role from session
+  const userRole = session?.user?.role;
+
+  // Determine API endpoint based on role
+  const getCredentialsEndpoint = () => {
+    return userRole === "PROVIDER" ? "/api/provider/credentials" : "/api/caregiver/credentials";
+  };
+
   const fetchCredentials = useCallback(async () => {
     try {
       setCredLoading(true);
-      const res = await fetch("/api/caregiver/credentials");
+      const endpoint = getCredentialsEndpoint();
+      const res = await fetch(endpoint);
       if (!res.ok) throw new Error("Failed to fetch credentials");
       const data = await res.json();
       setCredentials(data.credentials || []);
@@ -63,11 +72,13 @@ export default function CredentialsSettingsPage() {
     } finally {
       setCredLoading(false);
     }
-  }, []);
+  }, [userRole]);
 
   useEffect(() => {
-    if (status === "authenticated") fetchCredentials();
-  }, [status, fetchCredentials]);
+    if (status === "authenticated" && (userRole === "CAREGIVER" || userRole === "PROVIDER")) {
+      fetchCredentials();
+    }
+  }, [status, userRole, fetchCredentials]);
 
   const formatDate = (s: string) => new Date(s).toLocaleDateString();
 
@@ -121,8 +132,10 @@ export default function CredentialsSettingsPage() {
     try {
       setCredSaving(true);
       let documentUrl = "";
+      const baseEndpoint = userRole === "PROVIDER" ? "/api/provider/credentials" : "/api/caregiver/credentials";
+      
       if (newCred.file) {
-        const urlRes = await fetch("/api/caregiver/credentials/upload-url", {
+        const urlRes = await fetch(`${baseEndpoint}/upload-url`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -140,7 +153,7 @@ export default function CredentialsSettingsPage() {
         if (!uploadRes.ok) throw new Error("Upload failed");
         documentUrl = urlData.fileUrl;
       }
-      const credRes = await fetch("/api/caregiver/credentials", {
+      const credRes = await fetch(baseEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -166,7 +179,8 @@ export default function CredentialsSettingsPage() {
   const handleDeleteCredential = async (id: string) => {
     if (!confirm("Delete this credential?")) return;
     try {
-      const res = await fetch(`/api/caregiver/credentials/${id}`, {
+      const baseEndpoint = userRole === "PROVIDER" ? "/api/provider/credentials" : "/api/caregiver/credentials";
+      const res = await fetch(`${baseEndpoint}/${id}`, {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Failed to delete");
