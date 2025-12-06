@@ -15,6 +15,7 @@
         "seed": "ts-node --transpile-only prisma/seed.ts",
         "seed:residents-prompt": "ts-node --transpile-only prisma/seed-residents-prompt.ts",
         "seed:marketplace-demo": "ts-node --transpile-only prisma/seed-marketplace-demo.ts",
+        "seed:providers": "tsx prisma/seed-providers.ts",
         "generate:vapid": "node scripts/generate-vapid.js --update-env",
         "generate:icons": "node scripts/generate-pwa-icons.js",
         "test:pwa": "node scripts/test-pwa.js",
