@@ -17,6 +17,7 @@ enum UserRole {
   FAMILY
   OPERATOR
   CAREGIVER
+  PROVIDER
   ADMIN
   AFFILIATE
   STAFF
@@ -98,6 +99,7 @@ model User {
   family    Family?
   operator  Operator?
   caregiver Caregiver?
+  provider  Provider?
   affiliate Affiliate?
 
   // Common relationships
@@ -266,6 +268,41 @@ model Caregiver {
   @@index([yearsExperience])
   @@index([createdAt])
   @@index([isVisibleInMarketplace])
+}
+
+model Provider {
+  id                     String   @id @default(cuid())
+  userId                 String   @unique
+
+  // Basic profile
+  name                   String?
+  bio                    String?   @db.Text
+  logoUrl                String?
+  serviceTypes           String[]  @default([])
+
+  // Coverage / service area
+  coverageCity           String?
+  coverageState          String?
+  coverageRadius         Int?
+
+  // Marketplace visibility & verification
+  isVisibleInMarketplace Boolean   @default(true)
+  isVerified             Boolean   @default(false)
+  verifiedBy             String?
+  verifiedAt             DateTime?
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([userId])
+  @@index([isVisibleInMarketplace])
+  @@index([isVerified])
+  @@index([coverageCity, coverageState])
 }
 
 model Affiliate {
