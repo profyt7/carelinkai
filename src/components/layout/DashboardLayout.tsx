@@ -24,7 +24,8 @@ import {
   FiChevronDown,
   FiLogOut,
   FiArrowUp,
-  FiMoreHorizontal
+  FiMoreHorizontal,
+  FiHeart
 } from "react-icons/fi";
 // Real-time notification center
 import NotificationCenter from "../notifications/NotificationCenter";
@@ -126,6 +127,9 @@ export default function DashboardLayout({
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [pullDownDistance, setPullDownDistance] = useState(0);
   
+  // Favorites count
+  const [favoritesCount, setFavoritesCount] = useState(0);
+  
   // Refs for DOM elements
   const sidebarRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -200,6 +204,33 @@ export default function DashboardLayout({
       }, 300);
     }
   }, [showMobileSearch]);
+
+  // Fetch favorites count when user is authenticated
+  useEffect(() => {
+    const fetchFavoritesCount = async () => {
+      if (session?.user) {
+        try {
+          const res = await fetch('/api/favorites/all', { cache: 'no-store' });
+          if (res.ok) {
+            const data = await res.json();
+            setFavoritesCount(data.data?.counts?.total || 0);
+          }
+        } catch (error) {
+          // Silently fail - count badge will just show 0
+          console.error('Failed to fetch favorites count:', error);
+        }
+      } else {
+        setFavoritesCount(0);
+      }
+    };
+    
+    fetchFavoritesCount();
+    
+    // Refresh favorites count every 30 seconds
+    const interval = setInterval(fetchFavoritesCount, 30000);
+    
+    return () => clearInterval(interval);
+  }, [session?.user]);
 
   // Compute E2E bypass (env flag OR cookie set by middleware)
   const e2eEnvBypass = process.env['NODE_ENV'] !== 'production' && process.env['NEXT_PUBLIC_E2E_AUTH_BYPASS'] === '1';
@@ -553,6 +584,21 @@ export default function DashboardLayout({
             
             {/* Real-time notifications */}
             <NotificationCenter />
+
+            {/* Favorites button */}
+            <Link
+              href="/favorites"
+              className="relative p-2 rounded-md hover:bg-neutral-100 transition-colors"
+              aria-label={`Favorites${favoritesCount > 0 ? ` (${favoritesCount})` : ''}`}
+              title="View your favorites"
+            >
+              <FiHeart size={22} className={favoritesCount > 0 ? "text-rose-600" : "text-neutral-600"} />
+              {favoritesCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-rose-600 text-xs font-medium text-white">
+                  {favoritesCount > 99 ? '99+' : favoritesCount}
+                </span>
+              )}
+            </Link>
 
             {/* PWA Install button (desktop only) */}
             {!isMobile && (
