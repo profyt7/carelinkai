@@ -12,19 +12,19 @@ Confirmed branch state:
 
 | Area                       | Role      | Capability                                       | Status | Notes / Gaps |
 |----------------------------|-----------|--------------------------------------------------|--------|--------------|
-| Provider signup            | Provider  | Create account and log in                        | TODO   | No PROVIDER role/model in schema; registration UI/API exclude PROVIDER. |
-| Provider profile           | Provider  | Create/edit profile (name, services, bio, logo)  | TODO   | No `/settings/provider` UI or `/api/provider/*` endpoints on this branch. |
-| Provider services          | Provider  | Define service types & coverage area             | TODO   | No Provider settings UI/API present. |
-| Provider availability      | Provider  | Set/update availability (if applicable)          | TODO   | No availability for Provider implemented. |
-| Provider documents         | Provider  | Upload licenses/insurance docs                   | TODO   | Not implemented for Provider. |
-| Provider verification      | Admin     | Mark provider as verified / pending / rejected   | TODO   | No admin Provider endpoints/UI on this branch. |
-| Provider search list       | Operator  | Browse/search list of providers                  | WIP    | UI at `/marketplace/providers`; served from mock API (`/api/marketplace/providers`). |
-| Provider filters           | Operator  | Filter providers by location, service type, etc. | WIP    | Filters supported in mock API params; UI lacks real filter controls; results are mock-backed. |
-| Provider detail view       | Operator  | View provider profile, services, docs            | WIP    | Page `/marketplace/providers/[id]` uses mock API; CTA links to `/messages`. |
-| Operator → Provider contact| Operator  | Send initial contact / request to provider       | WIP    | CTA to `/messages` without user linkage (no provider userId/deep link). |
-| Provider → Operator reply  | Provider  | Respond to operator (basic 2-way comms)          | WIP    | Messaging is role-agnostic at `/messages`, but no PROVIDER role exists; cannot represent a Provider replying. |
-| Provider visibility        | Provider  | Set profile as active/paused in marketplace      | TODO   | No Provider settings UI/API to control visibility. |
-| Admin provider oversight   | Admin     | List/search providers; view profiles & status    | TODO   | No `/api/admin/providers` or `/admin/providers` on this branch. |
+| Provider signup            | Provider  | Create account and log in                        | DONE   | `UserRole.PROVIDER` exists in `prisma/schema.prisma`; API allows PROVIDER and creates linked record: `src/app/api/auth/register/route.ts`; UI exposes Provider option: `src/app/auth/register/page.tsx`. |
+| Provider profile           | Provider  | Create/edit profile (name, services, bio, logo)  | DONE   | Provider settings page `/settings/provider`: `src/app/settings/provider/page.tsx`; API GET/PATCH at `src/app/api/provider/profile/route.ts` with validation and audit. |
+| Provider services          | Provider  | Define service types & coverage area             | DONE   | Persisted fields: `serviceTypes`, `coverageCity/state/radius` in `Provider` model; editable via `/settings/provider`; sanitized against `MarketplaceCategory` SERVICE slugs in API. |
+| Provider availability      | Provider  | Set/update availability (if applicable)          | TODO   | No provider-specific availability; existing page targets caregivers only: `src/app/settings/availability/page.tsx` hitting `/api/caregiver/availability`. |
+| Provider documents         | Provider  | Upload licenses/insurance docs                   | TODO   | No provider document upload endpoints/UI on this branch. |
+| Provider verification      | Admin     | Mark provider as verified / pending / rejected   | WIP    | Schema fields exist: `isVerified`, `verifiedBy`, `verifiedAt` (`prisma/schema.prisma`); no admin endpoints or UI to action verification. |
+| Provider search list       | Operator  | Browse/search list of providers                  | WIP    | UI at `/marketplace/providers`: `src/app/marketplace/providers/page.tsx`; data from mock API `GET /api/marketplace/providers` (mock generator in `src/app/api/marketplace/providers/route.ts`). |
+| Provider filters           | Operator  | Filter providers by location, service type, etc. | WIP    | Mock API supports `q, city, state, services, radiusMiles` filters; UI has no filter controls (server fetch only). Results are mock-backed. |
+| Provider detail view       | Operator  | View provider profile, services, docs            | WIP    | Page `/marketplace/providers/[id]`: `src/app/marketplace/providers/[id]/page.tsx`; fetches mock-backed API `GET /api/marketplace/providers/[id]`; no real documents. |
+| Operator → Provider contact| Operator  | Send initial contact / request to provider       | WIP    | Detail CTA links to `/messages` without provider userId deep-link; messages API supports sending but provider list is mock so no user mapping. |
+| Provider → Operator reply  | Provider  | Respond to operator (basic 2-way comms)          | DONE   | Messaging is role-agnostic: `/messages` UI (`src/app/messages/page.tsx`) + `/api/messages` allow any authenticated user (incl. PROVIDER) to read/reply; deep-link via `?userId=` supported. |
+| Provider visibility        | Provider  | Set profile as active/paused in marketplace      | WIP    | Field `isVisibleInMarketplace` exists and is editable via `/settings/provider`; marketplace list is mock and does not respect this yet. |
+| Admin provider oversight   | Admin     | List/search providers; view profiles & status    | TODO   | No `/api/admin/providers*` or `/admin/providers*` present; only admin caregivers/tools exist. |
 
 Legend:
 
