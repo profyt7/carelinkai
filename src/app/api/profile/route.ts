@@ -65,6 +65,22 @@ const affiliateProfileSchema = baseProfileSchema.extend({
   paymentDetails: z.record(z.any()).optional(),
 });
 
+// Provider role specific schema
+const providerProfileSchema = baseProfileSchema.extend({
+  businessName: z.string().min(2, "Business name must be at least 2 characters").optional(),
+  contactName: z.string().min(2, "Contact name must be at least 2 characters").optional(),
+  contactEmail: z.string().email("Invalid email address").optional(),
+  contactPhone: z.string().optional().nullable(),
+  bio: z.string().optional().nullable(),
+  website: z.string().url("Invalid website URL").optional().nullable(),
+  insuranceInfo: z.string().optional().nullable(),
+  licenseNumber: z.string().optional().nullable(),
+  yearsInBusiness: z.number().int().min(0).optional().nullable(),
+  serviceTypes: z.array(z.string()).max(50).optional(),
+  coverageArea: z.record(z.any()).optional(),
+  isActive: z.boolean().optional(),
+});
+
 /**
  * GET handler to retrieve user profile
  */
@@ -204,6 +220,37 @@ export async function GET(request: NextRequest) {
         });
         break;
         
+      case UserRole.PROVIDER:
+        roleSpecificData = await prisma.provider.findUnique({
+          where: { userId },
+          select: {
+            id: true,
+            businessName: true,
+            contactName: true,
+            contactEmail: true,
+            contactPhone: true,
+            bio: true,
+            website: true,
+            insuranceInfo: true,
+            licenseNumber: true,
+            yearsInBusiness: true,
+            isVerified: true,
+            isActive: true,
+            serviceTypes: true,
+            coverageArea: true,
+            credentials: {
+              select: {
+                id: true,
+                type: true,
+                status: true,
+                expiresAt: true,
+                verifiedAt: true,
+              }
+            }
+          }
+        });
+        break;
+        
       case UserRole.ADMIN:
         // Admin role doesn't have specific profile data
         roleSpecificData = { isAdmin: true };
@@ -320,6 +367,9 @@ export async function PATCH(request: NextRequest) {
         break;
       case UserRole.AFFILIATE:
         validationResult = affiliateProfileSchema.safeParse(body);
+        break;
+      case UserRole.PROVIDER:
+        validationResult = providerProfileSchema.safeParse(body);
         break;
       default:
         validationResult = baseProfileSchema.safeParse(body);
@@ -461,6 +511,43 @@ export async function PATCH(request: NextRequest) {
                 commissionRate: rs.commissionRate,
                 paymentDetails: rs.paymentDetails
               }
+            });
+          }
+          break;
+          
+        case UserRole.PROVIDER:
+          if (
+            'businessName' in roleSpecificFields ||
+            'contactName' in roleSpecificFields ||
+            'contactEmail' in roleSpecificFields ||
+            'contactPhone' in roleSpecificFields ||
+            'bio' in roleSpecificFields ||
+            'website' in roleSpecificFields ||
+            'insuranceInfo' in roleSpecificFields ||
+            'licenseNumber' in roleSpecificFields ||
+            'yearsInBusiness' in roleSpecificFields ||
+            'serviceTypes' in roleSpecificFields ||
+            'coverageArea' in roleSpecificFields ||
+            'isActive' in roleSpecificFields
+          ) {
+            // Prepare update data
+            const updateData: any = {};
+            if (rs.businessName !== undefined) updateData.businessName = rs.businessName;
+            if (rs.contactName !== undefined) updateData.contactName = rs.contactName;
+            if (rs.contactEmail !== undefined) updateData.contactEmail = rs.contactEmail;
+            if (rs.contactPhone !== undefined) updateData.contactPhone = rs.contactPhone;
+            if (rs.bio !== undefined) updateData.bio = rs.bio;
+            if (rs.website !== undefined) updateData.website = rs.website;
+            if (rs.insuranceInfo !== undefined) updateData.insuranceInfo = rs.insuranceInfo;
+            if (rs.licenseNumber !== undefined) updateData.licenseNumber = rs.licenseNumber;
+            if (rs.yearsInBusiness !== undefined) updateData.yearsInBusiness = rs.yearsInBusiness;
+            if (rs.serviceTypes !== undefined) updateData.serviceTypes = rs.serviceTypes;
+            if (rs.coverageArea !== undefined) updateData.coverageArea = rs.coverageArea;
+            if (rs.isActive !== undefined) updateData.isActive = rs.isActive;
+            
+            roleSpecificUpdate = await prisma.provider.update({
+              where: { userId },
+              data: updateData
             });
           }
           break;
