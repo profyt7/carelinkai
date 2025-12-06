@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
+import { isMockModeEnabled } from '@/lib/mockMode';
+import { generateMockProviders, filterMockProviders } from '@/lib/mock/providers';
 
 /**
  * GET /api/marketplace/providers
@@ -8,10 +10,69 @@ import { Prisma } from '@prisma/client';
  * Fetches providers with optional filters
  * Supports filtering by: q, serviceType, city, state, verified
  * Supports pagination with page and pageSize parameters
+ * 
+ * Mock Mode Support:
+ * - When carelink_mock_mode cookie is set to "1", returns mock data
+ * - This allows admins to toggle between real and mock data via /admin/tools
  */
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
+    
+    // Check if mock mode is enabled via cookie or environment variable
+    const useMockData = isMockModeEnabled(request);
+    
+    // If mock mode is enabled, return mock data
+    if (useMockData) {
+      // Extract filter parameters for mock data filtering
+      const q = searchParams.get('q') || undefined;
+      const serviceType = searchParams.get('serviceType') || undefined;
+      const city = searchParams.get('city') || undefined;
+      const state = searchParams.get('state') || undefined;
+      const verified = searchParams.get('verified') || undefined;
+      const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1;
+      const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!, 10) : 20;
+      
+      // Generate mock providers
+      const allMockProviders = generateMockProviders(12);
+      
+      // Apply filters
+      const filteredProviders = filterMockProviders(allMockProviders, {
+        q,
+        serviceType,
+        city,
+        state,
+        verified,
+      });
+      
+      // Apply pagination
+      const skip = (page - 1) * pageSize;
+      const paginatedProviders = filteredProviders.slice(skip, skip + pageSize);
+      const totalCount = filteredProviders.length;
+      const totalPages = Math.ceil(totalCount / pageSize);
+      const hasNextPage = page < totalPages;
+      
+      return NextResponse.json(
+        {
+          data: paginatedProviders,
+          pagination: {
+            page,
+            pageSize,
+            total: totalCount,
+            totalPages,
+            hasNextPage,
+          },
+          _mockMode: true, // Indicate that this is mock data
+        },
+        { 
+          status: 200, 
+          headers: { 
+            'Cache-Control': 'no-store', // Don't cache mock data
+            'X-Mock-Data': 'true' 
+          } 
+        }
+      );
+    }
     
     // Extract filter parameters
     const idsParam = searchParams.get('ids');
@@ -206,6 +267,36 @@ export async function GET(request: Request) {
     );
   } catch (error) {
     console.error('Error fetching providers:', error);
+    
+    // In development mode OR if mock mode is enabled, return mock data as fallback
+    const useMockData = isMockModeEnabled(request) || process.env.NODE_ENV === 'development';
+    
+    if (useMockData) {
+      const mockProviders = generateMockProviders(12);
+      
+      return NextResponse.json(
+        {
+          data: mockProviders,
+          pagination: {
+            page: 1,
+            pageSize: 20,
+            total: mockProviders.length,
+            totalPages: 1,
+            hasNextPage: false,
+          },
+          _mockMode: true,
+          _fallback: true, // Indicate this is a fallback response
+        },
+        { 
+          status: 200,
+          headers: {
+            'Cache-Control': 'no-store',
+            'X-Mock-Data': 'true'
+          }
+        }
+      );
+    }
+    
     return NextResponse.json(
       { error: 'Failed to fetch providers' },
       { status: 500 }

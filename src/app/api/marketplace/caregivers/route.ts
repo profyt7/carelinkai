@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth/next';
 import authOptions from '@/lib/auth';
 import { Prisma } from '@prisma/client';
 import { rateLimitAsync, getClientIp, buildRateLimitHeaders } from '@/lib/rateLimit';
+import { isMockModeEnabled } from '@/lib/mockMode';
 
 /**
  * GET /api/marketplace/caregivers
@@ -11,6 +12,10 @@ import { rateLimitAsync, getClientIp, buildRateLimitHeaders } from '@/lib/rateLi
  * Fetches caregivers with optional filters
  * Supports filtering by: q, city, state, minRate, maxRate, minExperience, specialties
  * Supports pagination with page and pageSize parameters
+ * 
+ * Mock Mode Support:
+ * - When carelink_mock_mode cookie is set to "1", returns mock data when no results found
+ * - This allows admins to toggle between real and mock data via /admin/tools
  */
 export async function GET(request: Request) {
   try {
@@ -427,8 +432,9 @@ export async function GET(request: Request) {
       };
     });
     
-    // In development, if no results or error occurs, return mock data
-    if (process.env.NODE_ENV === 'development' && formattedCaregivers.length === 0) {
+    // If mock mode is enabled OR in development, return mock data when no results found
+    const useMockData = isMockModeEnabled(request) || process.env.NODE_ENV === 'development';
+    if (useMockData && formattedCaregivers.length === 0) {
       // Fetch specialties from DB for more realistic mock data
       let specialtyCategories: string[] = [];
       try {
@@ -480,8 +486,9 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error('Error fetching caregivers:', error);
     
-    // In development, return mock data on error
-    if (process.env.NODE_ENV === 'development') {
+    // If mock mode is enabled OR in development, return mock data on error
+    const useMockData = isMockModeEnabled(request) || process.env.NODE_ENV === 'development';
+    if (useMockData) {
       const mockCaregivers = generateMockCaregivers(12);
       
       return NextResponse.json(
