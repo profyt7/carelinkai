@@ -20,6 +20,7 @@ enum UserRole {
   ADMIN
   AFFILIATE
   STAFF
+  PROVIDER
 }
 
 enum UserStatus {
@@ -99,6 +100,7 @@ model User {
   operator  Operator?
   caregiver Caregiver?
   affiliate Affiliate?
+  provider  Provider?
 
   // Common relationships
   addresses                 Address[]
@@ -289,6 +291,76 @@ model Affiliate {
   @@index([affiliateCode])
 }
 
+model Provider {
+  id              String  @id @default(cuid())
+  userId          String  @unique
+  businessName    String
+  contactName     String
+  contactEmail    String
+  contactPhone    String?
+  bio             String? @db.Text
+  website         String?
+  insuranceInfo   String? @db.Text // Insurance accepted, coverage details
+  licenseNumber   String?
+  yearsInBusiness Int?
+  isVerified      Boolean @default(false)
+  isActive        Boolean @default(true)
+
+  // Service offerings - array of service types
+  serviceTypes String[]
+
+  // Coverage area - JSON structure for cities, states, zip codes
+  coverageArea Json? // { cities: [], states: [], zipCodes: [] }
+
+  // Relationships
+  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credentials ProviderCredential[]
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([userId])
+  @@index([businessName])
+  @@index([isVerified])
+  @@index([isActive])
+  @@index([serviceTypes])
+  @@index([createdAt])
+}
+
+enum CredentialStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  EXPIRED
+}
+
+model ProviderCredential {
+  id          String           @id @default(cuid())
+  providerId  String
+  type        String // License, Insurance, Certification, etc.
+  documentUrl String?
+  status      CredentialStatus @default(PENDING)
+  verifiedAt  DateTime?
+  verifiedBy  String? // Admin user ID who verified
+  expiresAt   DateTime?
+  notes       String?          @db.Text
+
+  // Relationships
+  provider Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([providerId])
+  @@index([type])
+  @@index([status])
+  @@index([expiresAt])
+}
+
 // ==================== ASSISTED LIVING HOME MODELS ====================
 
 enum HomeStatus {
@@ -426,11 +498,11 @@ model Resident {
   notes             String?        @db.Text // Encrypted
 
   // Relationships
-  family       Family              @relation(fields: [familyId], references: [id], onDelete: Cascade)
-  home         AssistedLivingHome? @relation(fields: [homeId], references: [id])
-  bookings     Booking[]
-  careTimeline CareTimelineEvent[]
-  documents    Document[]
+  family            Family                   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  home              AssistedLivingHome?      @relation(fields: [homeId], references: [id])
+  bookings          Booking[]
+  careTimeline      CareTimelineEvent[]
+  documents         Document[]
   assessmentResults AssessmentResult[]
   residentIncidents ResidentIncident[]
   residentNotes     ResidentNote[]
@@ -456,14 +528,14 @@ model Resident {
 
 /// Primary and secondary contacts for a resident (e.g., family members, care proxy)
 model ResidentContact {
-  id          String   @id @default(cuid())
-  residentId  String
-  name        String
+  id           String  @id @default(cuid())
+  residentId   String
+  name         String
   relationship String?
-  email       String?
-  phone       String?
-  isPrimary   Boolean  @default(false)
-  preferences Json?
+  email        String?
+  phone        String?
+  isPrimary    Boolean @default(false)
+  preferences  Json?
 
   // Relations
   resident Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
@@ -472,10 +544,10 @@ model ResidentContact {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([residentId, email])
   // Indexes
   @@index([residentId])
   @@index([isPrimary])
-  @@unique([residentId, email])
 }
 
 /// Compliance tasks/items tracked per resident (e.g., TB test, flu shot, care plan review)
@@ -485,14 +557,14 @@ enum ComplianceStatus {
 }
 
 model ResidentComplianceItem {
-  id          String            @id @default(cuid())
+  id          String           @id @default(cuid())
   residentId  String
-  type        String            // e.g., TB_TEST, FLU_SHOT, CARE_PLAN_REVIEW
+  type        String // e.g., TB_TEST, FLU_SHOT, CARE_PLAN_REVIEW
   title       String
-  notes       String?           @db.Text
-  owner       String?           // optional owner/assignee
-  status      ComplianceStatus  @default(OPEN)
-  severity    String?           // LOW|MEDIUM|HIGH (free-form for now)
+  notes       String?          @db.Text
+  owner       String? // optional owner/assignee
+  status      ComplianceStatus @default(OPEN)
+  severity    String? // LOW|MEDIUM|HIGH (free-form for now)
   dueDate     DateTime?
   completedAt DateTime?
 
@@ -533,7 +605,7 @@ model CareTimelineEvent {
 
 /// Clinical assessment results recorded for a resident
 model AssessmentResult {
-  id         String   @id @default(cuid())
+  id         String @id @default(cuid())
   residentId String
   type       String
   score      Int?
@@ -574,10 +646,10 @@ model ResidentIncident {
 
 /// Free-form notes on a resident with role-based visibility
 model ResidentNote {
-  id              String          @id @default(cuid())
+  id              String         @id @default(cuid())
   residentId      String
-  visibility      NoteVisibility  @default(INTERNAL)
-  content         String          @db.Text
+  visibility      NoteVisibility @default(INTERNAL)
+  content         String         @db.Text
   createdByUserId String?
 
   // Relations
@@ -607,15 +679,15 @@ enum InquiryStatus {
 }
 
 model Inquiry {
-  id           String        @id @default(cuid())
-  familyId     String
-  homeId       String
-  status       InquiryStatus @default(NEW)
-  message      String?       @db.Text
+  id            String        @id @default(cuid())
+  familyId      String
+  homeId        String
+  status        InquiryStatus @default(NEW)
+  message       String?       @db.Text
   /// Operator-internal notes for this lead (not visible to families)
-  internalNotes String?      @db.Text
-  tourDate     DateTime?
-  aiMatchScore Float? // AI-generated placement likelihood score
+  internalNotes String?       @db.Text
+  tourDate      DateTime?
+  aiMatchScore  Float? // AI-generated placement likelihood score
 
   // Relationships
   family  Family             @relation(fields: [familyId], references: [id], onDelete: Cascade)
@@ -1392,10 +1464,10 @@ model FamilyMember {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([familyId, userId])
   @@index([familyId])
   @@index([userId])
   @@index([status])
-  @@unique([familyId, userId])
 }
 
 enum FamilyDocumentType {
