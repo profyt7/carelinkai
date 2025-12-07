@@ -18,6 +18,7 @@ import {
   FiAward,
   FiHeart
 } from "react-icons/fi";
+import RequestCareButton from "@/components/marketplace/RequestCareButton";
 
 type Provider = {
   id: string;
@@ -470,18 +471,28 @@ export default function ProviderDetailPage() {
                   )}
                 </div>
 
-                <div className="mt-6">
+                <div className="mt-6 space-y-3">
+                  {/* Request Care Button - Primary CTA */}
+                  <RequestCareButton
+                    targetType="PROVIDER"
+                    targetId={provider.id}
+                    targetName={provider.businessName}
+                    className="w-full inline-flex items-center justify-center px-4 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                  />
+
+                  {/* Send Message Button - Secondary CTA */}
                   <button
                     onClick={handleContactProvider}
-                    className="w-full inline-flex items-center justify-center px-4 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                    className="w-full inline-flex items-center justify-center px-4 py-3 border border-neutral-300 text-base font-medium rounded-md text-neutral-700 bg-white hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
                   >
                     <FiMessageCircle className="mr-2 h-5 w-5" />
                     Send Message
                   </button>
-                  <p className="mt-2 text-xs text-neutral-500 text-center">
+                  
+                  <p className="text-xs text-neutral-500 text-center">
                     {status !== "authenticated"
-                      ? "Sign in to send a message"
-                      : "Start a conversation with this provider"}
+                      ? "Sign in to request care or send a message"
+                      : "Request care to start the inquiry process"}
                   </p>
                 </div>
               </div>

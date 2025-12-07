@@ -8,6 +8,7 @@ import { FiMapPin, FiDollarSign, FiClock, FiCheckCircle, FiCalendar } from "reac
 import RequestShiftForm from "@/components/marketplace/RequestShiftForm";
 import CaregiverReviewForm from "@/components/marketplace/CaregiverReviewForm";
 import CaregiverReviewsList from "@/components/marketplace/CaregiverReviewsList";
+import RequestCareButton from "@/components/marketplace/RequestCareButton";
 
 export const dynamic = "force-dynamic";
 
@@ -235,6 +236,21 @@ export default async function CaregiverDetailPage({
         
         {/* Body */}
         <div className="p-6">
+          {/* Request Care CTA - Prominent placement */}
+          <div className="mb-6 bg-primary-50 border border-primary-200 rounded-lg p-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Interested in hiring {caregiver.name}?
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Submit a care inquiry to connect with this caregiver and discuss your needs.
+            </p>
+            <RequestCareButton
+              targetType="AIDE"
+              targetId={caregiver.id}
+              targetName={caregiver.name}
+            />
+          </div>
+
           {/* Details section */}
           <div className="mb-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
