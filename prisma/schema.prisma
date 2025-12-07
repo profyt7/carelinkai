@@ -132,6 +132,7 @@ model User {
   // Marketplace relationships
   marketplaceListings MarketplaceListing[] @relation("UserListings")
   approvedTimesheets  Timesheet[]
+  assignedLeads       Lead[]               @relation("AssignedLeads")
 
   // Timestamps
   createdAt   DateTime  @default(now())
@@ -175,6 +176,17 @@ model Family {
   emergencyContact String?
   emergencyPhone   String?
 
+  // Primary contact and relationship info
+  primaryContactName      String?
+  phone                   String?
+  relationshipToRecipient String? // e.g., "Spouse", "Child", "Sibling", "Friend"
+
+  // Care context fields (snapshot for quick reference)
+  recipientAge     Int?
+  primaryDiagnosis String? @db.Text
+  mobilityLevel    String? // e.g., "Independent", "Needs Assistance", "Wheelchair"
+  careNotes        String? @db.Text
+
   // Relationships
   user                User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   residents           Resident[]
@@ -184,6 +196,7 @@ model Family {
   favorites           FavoriteHome[]
   caregiverShortlists FavoriteCaregiver[]
   providerShortlists  FavoriteProvider[]
+  leads               Lead[] // New: Family → Aide/Provider inquiries
 
   // Family collaboration relationships
   members              FamilyMember[]
@@ -257,6 +270,7 @@ model Caregiver {
   marketplaceHires        MarketplaceHire[]
   favoriteListings        FavoriteListing[]
   shortlistedByFamilies   FavoriteCaregiver[]
+  leads                   Lead[]                   @relation("LeadToAide")
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -317,6 +331,7 @@ model Provider {
   user                  User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   credentials           ProviderCredential[]
   shortlistedByFamilies FavoriteProvider[]
+  leads                 Lead[]               @relation("LeadToProvider")
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -680,6 +695,19 @@ enum InquiryStatus {
   CLOSED_LOST
 }
 
+enum LeadTargetType {
+  AIDE
+  PROVIDER
+}
+
+enum LeadStatus {
+  NEW
+  IN_REVIEW
+  CONTACTED
+  CLOSED
+  CANCELLED
+}
+
 model Inquiry {
   id            String        @id @default(cuid())
   familyId      String
@@ -705,6 +733,53 @@ model Inquiry {
   @@index([homeId])
   @@index([status])
   @@index([tourDate])
+}
+
+/// Lead/Inquiry model for Family → Aide/Provider marketplace inquiries
+/// Uses polymorphic pattern to support both AIDE and PROVIDER targets
+model Lead {
+  id         String         @id @default(cuid())
+  familyId   String
+  targetType LeadTargetType // AIDE or PROVIDER
+
+  // Polymorphic target references - only one should be set based on targetType
+  aideId     String? // Foreign key to Caregiver when targetType=AIDE
+  providerId String? // Foreign key to Provider when targetType=PROVIDER
+
+  status  LeadStatus @default(NEW)
+  message String?    @db.Text // Initial inquiry message from Family
+
+  // Care details snapshot (at time of inquiry)
+  preferredStartDate   DateTime?
+  expectedHoursPerWeek Int?
+  location             String? // City, State or general location
+
+  // Operator management
+  operatorNotes      String? @db.Text // Internal notes for operators
+  assignedOperatorId String? // Optional: assign lead to specific operator
+
+  // Soft delete support
+  deletedAt DateTime?
+
+  // Relationships
+  family           Family     @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  aide             Caregiver? @relation("LeadToAide", fields: [aideId], references: [id], onDelete: Cascade)
+  provider         Provider?  @relation("LeadToProvider", fields: [providerId], references: [id], onDelete: Cascade)
+  assignedOperator User?      @relation("AssignedLeads", fields: [assignedOperatorId], references: [id])
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([familyId])
+  @@index([targetType])
+  @@index([aideId])
+  @@index([providerId])
+  @@index([status])
+  @@index([assignedOperatorId])
+  @@index([createdAt])
+  @@index([deletedAt]) // For soft delete queries
 }
 
 enum BookingStatus {
