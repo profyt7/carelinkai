@@ -756,16 +756,30 @@ export default function ProfileSettings() {
           text: "Profile photo uploaded successfully!",
         });
         
-        // Set preview
+        // Set preview immediately
         if (data.data.photoUrls.medium) {
           setPhotoPreview(data.data.photoUrls.medium);
         } else if (data.data.photoUrls.thumbnail) {
           setPhotoPreview(data.data.photoUrls.thumbnail);
         }
         
-        // Refresh profile data and session (remove image from JWT)
-        fetchProfileData();
+        // Force session refresh by calling the session endpoint
+        // This triggers the JWT callback to fetch fresh data from the database
+        await fetch("/api/auth/session", { 
+          method: "GET",
+          cache: "no-store"
+        });
+        
+        // Now get the updated session
         await getSession();
+        
+        // Refresh profile data to ensure everything is in sync
+        await fetchProfileData();
+        
+        // Force a small delay to ensure session is fully updated
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
       } else {
         setMessage({
           type: "error",
@@ -807,11 +821,25 @@ export default function ProfileSettings() {
           text: "Profile photo removed successfully!",
         });
         
-        // Clear preview
+        // Clear preview immediately
         setPhotoPreview(null);
         
-        // Refresh profile data
-        fetchProfileData();
+        // Force session refresh by calling the session endpoint
+        await fetch("/api/auth/session", { 
+          method: "GET",
+          cache: "no-store"
+        });
+        
+        // Now get the updated session
+        await getSession();
+        
+        // Refresh profile data to ensure everything is in sync
+        await fetchProfileData();
+        
+        // Force a small delay to ensure session is fully updated
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
       } else {
         setMessage({
           type: "error",
