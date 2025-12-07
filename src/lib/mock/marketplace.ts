@@ -120,6 +120,108 @@ export function getMockCaregiverById(id: string) {
   return MOCK_CAREGIVERS.find(c => c.id === id) || null;
 }
 
+/**
+ * Get mock caregiver detail (for /marketplace/caregivers/[id] page)
+ * Returns full detail object matching the structure expected by the detail page
+ */
+export function getMockCaregiverDetail(id: string) {
+  const caregiver = getMockCaregiverById(id);
+  if (!caregiver) return null;
+
+  // Generate a mock userId (for messaging deep-links)
+  const userId = `user_${id}`;
+
+  // Generate mock credentials (2-3 per caregiver)
+  const credentials = [];
+  if (caregiver.backgroundCheckStatus === 'CLEAR') {
+    credentials.push({
+      id: `cred_${id}_1`,
+      type: 'CNA',
+      issueDate: new Date(Date.now() - 365 * 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 years ago
+      expirationDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year from now
+      isVerified: true,
+    });
+    credentials.push({
+      id: `cred_${id}_2`,
+      type: 'CPR',
+      issueDate: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString(), // 6 months ago
+      expirationDate: new Date(Date.now() + 548 * 24 * 60 * 60 * 1000).toISOString(), // 18 months from now
+      isVerified: true,
+    });
+  }
+
+  // Generate mock availability slots for next 7 days
+  const availabilitySlots = [];
+  const today = new Date();
+  for (let i = 1; i <= 7; i++) {
+    const slotDate = new Date(today);
+    slotDate.setDate(today.getDate() + i);
+    
+    // Morning slot
+    const morningStart = new Date(slotDate);
+    morningStart.setHours(9, 0, 0, 0);
+    const morningEnd = new Date(slotDate);
+    morningEnd.setHours(12, 0, 0, 0);
+    
+    // Afternoon slot (every other day)
+    if (i % 2 === 0) {
+      const afternoonStart = new Date(slotDate);
+      afternoonStart.setHours(14, 0, 0, 0);
+      const afternoonEnd = new Date(slotDate);
+      afternoonEnd.setHours(18, 0, 0, 0);
+      
+      availabilitySlots.push({
+        id: `slot_${id}_${i}_afternoon`,
+        startTime: afternoonStart.toISOString(),
+        endTime: afternoonEnd.toISOString(),
+      });
+    }
+    
+    availabilitySlots.push({
+      id: `slot_${id}_${i}_morning`,
+      startTime: morningStart.toISOString(),
+      endTime: morningEnd.toISOString(),
+    });
+  }
+
+  // Generate badges
+  const badges: string[] = [];
+  if (caregiver.backgroundCheckStatus === 'CLEAR') {
+    badges.push('Background Check Clear');
+  }
+  if (caregiver.yearsExperience && caregiver.yearsExperience >= 5) {
+    badges.push('Experienced Professional');
+  }
+  if (credentials.length >= 2) {
+    badges.push('Certified');
+  }
+
+  // Calculate mock ratings
+  const baseRating = caregiver.backgroundCheckStatus === 'CLEAR' ? 4.5 : 3.8;
+  const experienceBonus = Math.min((caregiver.yearsExperience || 0) * 0.05, 0.5);
+  const ratingAverage = Math.min(baseRating + experienceBonus, 5.0);
+  const reviewCount = Math.floor((caregiver.yearsExperience || 1) * 3.5);
+
+  return {
+    id: caregiver.id,
+    userId,
+    name: caregiver.name,
+    city: caregiver.city,
+    state: caregiver.state,
+    hourlyRate: caregiver.hourlyRate,
+    yearsExperience: caregiver.yearsExperience,
+    specialties: caregiver.specialties,
+    bio: caregiver.bio,
+    photoUrl: caregiver.photoUrl,
+    backgroundCheckStatus: caregiver.backgroundCheckStatus,
+    ratingAverage,
+    reviewCount,
+    badges,
+    credentials,
+    availabilitySlots,
+  };
+}
+
 export function getMockListingById(id: string) {
   return MOCK_LISTINGS.find(l => l.id === id) || null;
 }

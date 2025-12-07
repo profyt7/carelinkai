@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
-import { getMockCaregiverById } from "@/lib/mock/caregivers";
+import { getMockCaregiverDetail } from "@/lib/mock/marketplace";
+import { isMockModeEnabledFromCookies } from "@/lib/mockMode";
 import Image from "next/image";
 import Link from "next/link";
 import { FiMapPin, FiDollarSign, FiClock, FiCheckCircle, FiCalendar } from "react-icons/fi";
@@ -144,7 +145,19 @@ export default async function CaregiverDetailPage({
 }: {
   params: { id: string };
 }) {
-  const caregiver = await getCaregiverById(params.id);
+  // Check mock mode first
+  const cookieStore = cookies();
+  const isMockMode = isMockModeEnabledFromCookies(cookieStore);
+  
+  let caregiver;
+  
+  if (isMockMode) {
+    // Use mock data for testing/demo
+    caregiver = getMockCaregiverDetail(params.id);
+  } else {
+    // Use real database data
+    caregiver = await getCaregiverById(params.id);
+  }
 
   if (!caregiver) {
     notFound();
