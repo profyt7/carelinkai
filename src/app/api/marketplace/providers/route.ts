@@ -121,12 +121,27 @@ export async function GET(request: Request) {
           else if ((provider.user.profileImageUrl as any).large) photoUrl = (provider.user.profileImageUrl as any).large;
         }
         
+        // Extract city and state from coverageArea
+        let city = null;
+        let state = null;
+        if (provider.coverageArea && typeof provider.coverageArea === 'object') {
+          const coverage = provider.coverageArea as any;
+          if (Array.isArray(coverage.cities) && coverage.cities.length > 0) {
+            city = coverage.cities[0];
+          }
+          if (Array.isArray(coverage.states) && coverage.states.length > 0) {
+            state = coverage.states[0];
+          }
+        }
+        
         return {
           id: provider.id,
           userId: provider.user.id,
           businessName: provider.businessName,
           contactName: provider.contactName,
           bio: provider.bio || null,
+          city,
+          state,
           serviceTypes: provider.serviceTypes || [],
           coverageArea: provider.coverageArea,
           yearsInBusiness: provider.yearsInBusiness,
@@ -135,6 +150,8 @@ export async function GET(request: Request) {
           photoUrl,
           credentialCount: provider.credentials.length,
           verifiedCredentialCount: provider.credentials.filter((c: any) => c.status === 'VERIFIED').length,
+          ratingAverage: 0, // Placeholder - TODO: calculate from reviews
+          reviewCount: 0, // Placeholder - TODO: count from reviews
         };
       });
 
@@ -232,12 +249,27 @@ export async function GET(request: Request) {
         else if ((provider.user.profileImageUrl as any).large) photoUrl = (provider.user.profileImageUrl as any).large;
       }
       
+      // Extract city and state from coverageArea
+      let city = null;
+      let state = null;
+      if (provider.coverageArea && typeof provider.coverageArea === 'object') {
+        const coverage = provider.coverageArea as any;
+        if (Array.isArray(coverage.cities) && coverage.cities.length > 0) {
+          city = coverage.cities[0];
+        }
+        if (Array.isArray(coverage.states) && coverage.states.length > 0) {
+          state = coverage.states[0];
+        }
+      }
+      
       return {
         id: provider.id,
         userId: provider.user.id,
         businessName: provider.businessName,
         contactName: provider.contactName,
         bio: provider.bio || null,
+        city,
+        state,
         serviceTypes: provider.serviceTypes || [],
         coverageArea: provider.coverageArea,
         yearsInBusiness: provider.yearsInBusiness,
@@ -246,6 +278,8 @@ export async function GET(request: Request) {
         photoUrl,
         credentialCount: provider.credentials.length,
         verifiedCredentialCount: provider.credentials.filter((c: any) => c.status === 'VERIFIED').length,
+        ratingAverage: 0, // Placeholder - TODO: calculate from reviews
+        reviewCount: 0, // Placeholder - TODO: count from reviews
       };
     });
     

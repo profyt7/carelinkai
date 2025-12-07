@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { FiMapPin, FiStar, FiSearch, FiFilter, FiCheckCircle, FiLoader, FiHeart } from "react-icons/fi";
 import MarketplaceTabs from "@/components/marketplace/MarketplaceTabs";
+import ProviderCard from "@/components/marketplace/ProviderCard";
 
 type Provider = {
   id: string;
@@ -18,6 +19,11 @@ type Provider = {
   yearsInBusiness: number | null;
   credentialCount: number;
   verifiedCredentialCount: number;
+  photoUrl?: string | null;
+  ratingAverage?: number | null;
+  reviewCount?: number | null;
+  hourlyRate?: number | null;
+  distanceMiles?: number;
 };
 
 const serviceTypeOptions = [
@@ -314,98 +320,14 @@ export default function ProvidersPage() {
       {/* Provider Grid */}
       {!loading && !error && providers.length > 0 && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {providers.map((provider) => {
-              const location = [provider.city, provider.state].filter(Boolean).join(", ");
-              
-              return (
-                <div
-                  key={provider.id}
-                  className="bg-white rounded-lg shadow border border-neutral-200 overflow-hidden hover:shadow-lg transition-shadow"
-                >
-                  <div className="p-6">
-                    <div className="flex items-start justify-between mb-3">
-                      <h3 className="text-lg font-semibold text-neutral-900 flex-1">
-                        {provider.businessName}
-                      </h3>
-                      <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                        {provider.isVerified && (
-                          <FiCheckCircle className="h-5 w-5 text-green-500" title="Verified Provider" />
-                        )}
-                        {/* Favorite Heart Icon */}
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            toggleProviderFavorite(provider.id);
-                          }}
-                          className="text-gray-400 hover:text-red-500 transition-colors"
-                          title={providerFavorites.has(provider.id) ? "Remove from favorites" : "Add to favorites"}
-                        >
-                          <FiHeart
-                            className={`h-5 w-5 ${
-                              providerFavorites.has(provider.id)
-                                ? "fill-red-500 text-red-500"
-                                : ""
-                            }`}
-                          />
-                        </button>
-                      </div>
-                    </div>
-
-                    {location && (
-                      <div className="flex items-center text-sm text-neutral-600 mb-3">
-                        <FiMapPin className="h-4 w-4 mr-1" />
-                        {location}
-                      </div>
-                    )}
-
-                    {provider.bio && (
-                      <p className="text-sm text-neutral-700 line-clamp-3 mb-4">
-                        {provider.bio}
-                      </p>
-                    )}
-
-                    {/* Service Types */}
-                    {provider.serviceTypes.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {provider.serviceTypes.slice(0, 3).map((service) => {
-                          const serviceLabel = serviceTypeOptions.find(opt => opt.value === service)?.label || service;
-                          return (
-                            <span
-                              key={service}
-                              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800"
-                            >
-                              {serviceLabel}
-                            </span>
-                          );
-                        })}
-                        {provider.serviceTypes.length > 3 && (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-800">
-                            +{provider.serviceTypes.length - 3} more
-                          </span>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Credentials Info */}
-                    {provider.verifiedCredentialCount > 0 && (
-                      <div className="text-xs text-neutral-600 mb-4">
-                        {provider.verifiedCredentialCount} verified credential{provider.verifiedCredentialCount !== 1 ? 's' : ''}
-                      </div>
-                    )}
-
-                    {/* CTA */}
-                    <Link
-                      href={`/marketplace/providers/${provider.id}`}
-                      className="block w-full text-center bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
-                    >
-                      View Details
-                    </Link>
-                  </div>
-                </div>
-              );
-            })}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
+            {providers.map((provider) => (
+              <ProviderCard
+                key={provider.id}
+                provider={provider}
+                serviceTypeOptions={serviceTypeOptions}
+              />
+            ))}
           </div>
 
           {/* Pagination */}

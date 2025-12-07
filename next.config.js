@@ -11,7 +11,7 @@ const cspBase = [
   // Connections: self + Stripe APIs
   "connect-src 'self' https://api.stripe.com",
   // Images: self + data/blob and known hosts
-  "img-src 'self' data: blob: http://localhost:3000 http://localhost:5002 https://media2.dev.to/dynamic/image/width=1280,height=720,fit=cover,gravity=auto,format=auto/https%3A%2F%2Fdev-to-uploads.s3.amazonaws.com%2Fuploads%2Farticles%2Fbrfj77msig1j3b39vshj.png https://picsum.photos https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8dXNlciUyMHByb2ZpbGV8ZW58MHx8MHx8fDA%3D https://placehold.co https://ui-avatars.com https://i.ytimg.com/vi/vtPI8I2wZRs/sddefault.jpg https://images.unsplash.com https://a.tile.openstreetmap.org https://b.tile.openstreetmap.org https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/Tiled_web_map_numbering.png/320px-Tiled_web_map_numbering.png
+  "img-src 'self' data: blob: http://localhost:3000 http://localhost:5002 https://media2.dev.to https://dev-to-uploads.s3.amazonaws.com https://picsum.photos https://images.unsplash.com https://placehold.co https://ui-avatars.com https://i.ytimg.com https://a.tile.openstreetmap.org https://b.tile.openstreetmap.org https://upload.wikimedia.org",
   // Styles: allow inline for Tailwind runtime classes; restrict to fonts domain
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   // Fonts
