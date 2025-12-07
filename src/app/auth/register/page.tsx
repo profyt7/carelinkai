@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import axios from "axios";
+import { signIn } from "next-auth/react";
 
 // Icons
 import { 
@@ -123,13 +124,39 @@ export default function RegisterPage() {
       // Call registration API
       const response = await axios.post("/api/auth/register", registrationData);
 
-      // Show success message
+      // Show success message briefly
       setSuccess(true);
 
-      // Redirect to login after successful registration
-      setTimeout(() => {
-        router.push("/auth/login?registered=true");
-      }, 3000);
+      // Auto-login and redirect based on role
+      // Wait a moment to show success message
+      setTimeout(async () => {
+        try {
+          // Attempt to sign in the user automatically
+          const signInResult = await signIn("credentials", {
+            email: data.email,
+            password: data.password,
+            redirect: false,
+          });
+
+          if (signInResult?.ok) {
+            // Redirect based on role
+            if (data.role === "FAMILY") {
+              // Family users go to onboarding
+              router.push("/settings/family?onboarding=true");
+            } else {
+              // Other users go to dashboard
+              router.push("/dashboard");
+            }
+          } else {
+            // If auto-login fails, redirect to login page
+            router.push("/auth/login?registered=true");
+          }
+        } catch (signInError) {
+          console.error("Auto sign-in error:", signInError);
+          // Fall back to manual login
+          router.push("/auth/login?registered=true");
+        }
+      }, 2000);
     } catch (error: any) {
       console.error("Registration error:", error);
       setError(
@@ -179,6 +206,7 @@ export default function RegisterPage() {
 
   // Success state after registration
   if (success) {
+    const isFamilyRole = currentRole === "FAMILY";
     return (
       <div className="min-h-screen flex items-center justify-center bg-neutral-50">
         <div className="p-8 bg-white rounded-lg shadow-md w-full max-w-md">
@@ -190,7 +218,10 @@ export default function RegisterPage() {
             </div>
             <h1 className="text-2xl font-bold text-neutral-800">Registration Successful!</h1>
             <p className="mt-2 text-neutral-600">
-              Your account has been created. Redirecting you to login...
+              {isFamilyRole 
+                ? "Welcome! Let's set up your care profile..."
+                : "Your account has been created. Redirecting you..."
+              }
             </p>
           </div>
         </div>

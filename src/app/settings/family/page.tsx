@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { z } from "zod";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
@@ -87,6 +87,10 @@ const MOBILITY_OPTIONS = [
 export default function FamilySettingsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  // Check if user is coming from onboarding flow
+  const isOnboarding = searchParams.get("onboarding") === "true";
 
   // Form state
   const [formData, setFormData] = useState({
@@ -132,12 +136,22 @@ export default function FamilySettingsPage() {
           careNotes: profile.careNotes || "",
         });
         setNeedsSetup(false);
+        
+        // Show onboarding message if coming from registration
+        if (isOnboarding) {
+          setMessage({
+            type: "success",
+            text: "Welcome! You can update your care profile anytime. This information helps us connect you with the right caregivers and providers.",
+          });
+        }
       } else if (res.status === 404 && data.needsSetup) {
         // Profile doesn't exist yet - show empty form
         setNeedsSetup(true);
         setMessage({
           type: "info",
-          text: "Welcome! Please complete your Family profile to get started.",
+          text: isOnboarding 
+            ? "Welcome to CareLinkAI! Let's set up your care profile to help us find the best matches for your needs."
+            : "Welcome! Please complete your Family profile to get started.",
         });
       } else {
         throw new Error(data.message || "Failed to fetch profile");
@@ -151,7 +165,7 @@ export default function FamilySettingsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isOnboarding]);
 
   // Check authentication and role
   useEffect(() => {

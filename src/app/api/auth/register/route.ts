@@ -271,9 +271,18 @@ export async function POST(request: NextRequest) {
           await tx.family.create({
             data: {
               userId: user.id,
-              // Optional fields can be added later by the user
+              // Emergency contact fields (legacy)
               emergencyContact: null,
-              emergencyPhone: null
+              emergencyPhone: null,
+              // Primary contact info (new care context fields)
+              primaryContactName: null,
+              phone: phone || null, // Use registration phone if provided
+              relationshipToRecipient: null,
+              // Care recipient details
+              recipientAge: null,
+              primaryDiagnosis: null,
+              mobilityLevel: null,
+              careNotes: null
             }
           });
           break;
