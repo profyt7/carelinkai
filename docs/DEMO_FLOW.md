@@ -220,6 +220,28 @@ This document provides a **5-10 minute scripted demo** covering the key workflow
 3. Point out caregiver cards with background check status
 4. **Say:** "This ensures only qualified, vetted caregivers appear in our marketplace."
 
+#### Step 5: View Platform Metrics
+1. Navigate to `/admin/metrics`
+2. **Say:** "Our metrics dashboard gives us real-time visibility into platform health and growth."
+3. Scroll through the dashboard sections:
+   - **Overview Cards:** Point out total users, leads, active aides, and active providers
+   - **User Metrics:** Show growth by role (family, caregivers, providers)
+   - **Lead Metrics:** Highlight leads by status and target type
+   - **Marketplace Metrics:** Point out verified vs unverified providers, background check status
+   - **Engagement Metrics:** Show message activity
+4. **Say:** "This helps us track growth, identify bottlenecks, and measure platform traction."
+5. Point to specific metrics:
+   - "We've had X new families sign up in the last 7 days"
+   - "We have Y leads in 'IN_REVIEW' status - these need operator attention"
+   - "Z% of our providers are verified, showing our commitment to quality"
+6. **Say:** "These metrics help us make data-driven decisions about where to focus our efforts."
+
+**Use Case for Investors:**
+- Emphasize growth metrics (new users last 7/30 days)
+- Highlight lead volume as proof of demand
+- Show provider verification as quality indicator
+- Point out engagement metrics (messages) as usage proof
+
 ---
 
 ## 🎬 Demo Wrap-Up
@@ -301,6 +323,7 @@ This document provides a **5-10 minute scripted demo** covering the key workflow
 | **Credentials** | `/settings/credentials` | Credential management |
 | **Admin Providers** | `/admin/providers` | Provider admin |
 | **Admin Aides** | `/admin/aides` | Caregiver admin |
+| **Admin Metrics** | `/admin/metrics` | Platform analytics dashboard |
 
 ---
 
@@ -334,12 +357,18 @@ Include all 5 flows above plus:
 - Show full end-to-end flow
 - Emphasize marketplace network effects
 - Highlight scalability (multiple operators, providers, families)
-- Discuss future features (AI matching, analytics)
+- **Demo the metrics dashboard** (`/admin/metrics`) to show:
+  - Platform growth (new users by role)
+  - Lead volume and conversion (proof of demand)
+  - Supply-side health (active providers and caregivers)
+  - Engagement levels (message activity)
+- Discuss future features (AI matching, advanced analytics)
 
 ---
 
 ## Related Documentation
 
 - [DEMO_ACCOUNTS.md](./DEMO_ACCOUNTS.md) - Full account details and test data
+- [METRICS_OVERVIEW.md](./METRICS_OVERVIEW.md) - Platform metrics and analytics documentation
 - [PROVIDER_MVP_IMPLEMENTATION_SUMMARY.md](../PROVIDER_MVP_IMPLEMENTATION_SUMMARY.md) - Provider technical documentation
 - [family_profile_implementation.md](../family_profile_implementation.md) - Family technical documentation
