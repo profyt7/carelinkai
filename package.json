@@ -16,6 +16,7 @@
         "seed:residents-prompt": "ts-node --transpile-only prisma/seed-residents-prompt.ts",
         "seed:marketplace-demo": "ts-node --transpile-only prisma/seed-marketplace-demo.ts",
         "seed:providers": "ts-node --transpile-only --compiler-options '{\"module\":\"commonjs\",\"moduleResolution\":\"node\"}' prisma/seed-providers.ts",
+        "seed:demo": "ts-node --transpile-only --compiler-options '{\"module\":\"commonjs\",\"moduleResolution\":\"node\"}' prisma/seed-demo.ts",
         "generate:vapid": "node scripts/generate-vapid.js --update-env",
         "generate:icons": "node scripts/generate-pwa-icons.js",
         "test:pwa": "node scripts/test-pwa.js",
