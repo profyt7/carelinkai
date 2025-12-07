@@ -68,6 +68,7 @@ const navItems: NavItem[] = [
   { name: "Marketplace", icon: <FiUsers size={20} />, href: "/marketplace", showInMobileBar: true },
   { name: "Operator", icon: <FiHome size={20} />, href: "/operator", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN"] },
   { name: "Inquiries", icon: <FiFileText size={20} />, href: "/dashboard/inquiries", showInMobileBar: false },
+  { name: "Leads", icon: <FiUsers size={20} />, href: "/operator/leads", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN"] },
   { name: "Residents", icon: <FiUsers size={20} />, href: "/operator/residents", showInMobileBar: true, roleRestriction: ["OPERATOR", "ADMIN"] },
   { name: "Caregivers", icon: <FiUsers size={20} />, href: "/marketplace?tab=caregivers", showInMobileBar: false },
   { name: "Calendar", icon: <FiCalendar size={20} />, href: "/calendar", showInMobileBar: true },
