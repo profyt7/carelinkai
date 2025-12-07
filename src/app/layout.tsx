@@ -14,7 +14,7 @@ export const fetchCache = "force-no-store";
 
 // PWA Manager & notifications
 import PWAManager from "../components/pwa/PWAManager";
-import { Toaster } from "react-hot-toast";
+import { ToastProvider } from "../components/ui/toast-provider";
 
 // Load Inter font with Latin subset for performance
 const inter = Inter({
@@ -223,13 +223,7 @@ export default function RootLayout({
               </div>
 
               {/* Global toaster for notifications */}
-              <Toaster
-                position="top-center"
-                toastOptions={{
-                  className: "text-sm",
-                  duration: 4000,
-                }}
-              />
+              <ToastProvider />
               
             </PWAManager>
           </Providers>
