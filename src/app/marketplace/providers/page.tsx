@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { FiMapPin, FiStar, FiSearch, FiFilter, FiCheckCircle, FiLoader, FiHeart } from "react-icons/fi";
+import MarketplaceTabs from "@/components/marketplace/MarketplaceTabs";
 
 type Provider = {
   id: string;
@@ -147,6 +148,12 @@ export default function ProvidersPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+      {/* Marketplace Tabs */}
+      <MarketplaceTabs
+        activeTab="providers"
+        providersCount={totalPages > 0 ? undefined : 0}
+      />
+
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-neutral-900">Service Providers</h1>

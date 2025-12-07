@@ -11,6 +11,7 @@ import { fetchJsonCached } from "@/lib/fetchCache";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { VirtuosoGrid } from "react-virtuoso";
 import { MOCK_CATEGORIES as SHARED_MOCK_CATEGORIES, MOCK_CAREGIVERS as SHARED_MOCK_CAREGIVERS, MOCK_LISTINGS as SHARED_MOCK_LISTINGS, MOCK_PROVIDERS as SHARED_MOCK_PROVIDERS } from "@/lib/mock/marketplace";
+import MarketplaceTabs from "@/components/marketplace/MarketplaceTabs";
 
 const LAST_TAB_KEY = "marketplace:lastTab";
 const LS_KEYS = {
@@ -1056,44 +1057,13 @@ export default function MarketplacePage() {
 
   return (
       <div className="px-4 md:px-6 py-4">
-        {/* Tabs */}
-        <div className="mb-4 border-b border-gray-200">
-          <nav className="-mb-px flex space-x-6" aria-label="Tabs">
-            <Link
-              href="/marketplace"
-              className={
-                "whitespace-nowrap border-b-2 px-1 pb-2 text-sm font-medium " +
-                (activeTab === "caregivers"
-                  ? "border-primary-600 text-primary-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300")
-              }
-            >
-              Caregivers{cgTotal ? ` (${cgTotal})` : ""}
-            </Link>
-            <Link
-              href="/marketplace?tab=jobs"
-              className={
-                "whitespace-nowrap border-b-2 px-1 pb-2 text-sm font-medium " +
-                (activeTab === "jobs"
-                  ? "border-primary-600 text-primary-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300")
-              }
-            >
-              Jobs{jobTotal ? ` (${jobTotal})` : ""}
-            </Link>
-            <Link
-              href="/marketplace/providers"
-              className={
-                "whitespace-nowrap border-b-2 px-1 pb-2 text-sm font-medium " +
-                (activeTab === "providers"
-                  ? "border-primary-600 text-primary-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300")
-              }
-            >
-              Providers{providerTotal ? ` (${providerTotal})` : ""}
-            </Link>
-          </nav>
-        </div>
+        {/* Marketplace Tabs */}
+        <MarketplaceTabs
+          activeTab={activeTab}
+          caregiversCount={cgTotal}
+          jobsCount={jobTotal}
+          providersCount={providerTotal}
+        />
 
         {/* Two-column layout */}
         <div className="flex md:space-x-6">
