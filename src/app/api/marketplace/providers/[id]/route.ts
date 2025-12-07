@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { isMockModeEnabled } from '@/lib/mockMode';
+import { getMockProviderDetail } from '@/lib/mock/providers';
 
 /**
  * GET /api/marketplace/providers/[id]
  * 
  * Fetches a single provider by ID with full details
+ * Supports mock mode for development and testing
  */
 export async function GET(
   request: NextRequest,
@@ -20,7 +23,54 @@ export async function GET(
       );
     }
     
-    // Fetch provider with all related data
+    // Check if mock mode is enabled
+    const mockMode = isMockModeEnabled(request);
+    
+    // Handle mock provider requests
+    if (mockMode && id.startsWith('mock-')) {
+      const mockProvider = getMockProviderDetail(id);
+      
+      if (!mockProvider) {
+        return NextResponse.json(
+          { error: 'Provider not found' },
+          { status: 404 }
+        );
+      }
+      
+      // Format response to match the expected structure
+      const formattedProvider = {
+        id: mockProvider.id,
+        userId: mockProvider.userId,
+        businessName: mockProvider.businessName,
+        contactName: mockProvider.contactName,
+        contactEmail: mockProvider.contactEmail,
+        contactPhone: mockProvider.contactPhone,
+        bio: mockProvider.bio,
+        website: mockProvider.website,
+        insuranceInfo: mockProvider.insuranceInfo,
+        licenseNumber: mockProvider.licenseNumber,
+        yearsInBusiness: mockProvider.yearsInBusiness,
+        isVerified: mockProvider.isVerified,
+        serviceTypes: mockProvider.serviceTypes,
+        coverageArea: mockProvider.coverageArea,
+        photoUrl: mockProvider.photoUrl,
+        credentials: mockProvider.credentials,
+        memberSince: mockProvider.memberSince,
+      };
+      
+      return NextResponse.json(
+        { data: formattedProvider },
+        { 
+          status: 200,
+          headers: {
+            'Cache-Control': 'public, max-age=60, s-maxage=60, stale-while-revalidate=120',
+            'X-Mock-Data': 'true'
+          }
+        }
+      );
+    }
+    
+    // Fetch real provider with all related data
     const provider = await prisma.provider.findUnique({
       where: { id },
       include: {

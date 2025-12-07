@@ -245,3 +245,152 @@ export function filterMockProviders(
   
   return filtered;
 }
+
+/**
+ * Extended Provider Detail Interface
+ * For individual provider detail pages
+ */
+export interface MockProviderDetail {
+  id: string;
+  userId: string;
+  businessName: string;
+  contactName: string;
+  contactEmail: string;
+  contactPhone: string | null;
+  bio: string;
+  website: string | null;
+  insuranceInfo: string | null;
+  licenseNumber: string | null;
+  yearsInBusiness: number;
+  isVerified: boolean;
+  isActive: boolean;
+  serviceTypes: string[];
+  coverageArea: {
+    cities: string[];
+    states: string[];
+    zipCodes: string[];
+  };
+  photoUrl: string | null;
+  credentials: Array<{
+    id: string;
+    type: string;
+    status: string;
+    expiresAt: string | null;
+    verifiedAt: string | null;
+  }>;
+  memberSince: string;
+}
+
+/**
+ * Generate detailed mock provider data for a specific provider ID
+ * Used for provider detail pages
+ * 
+ * @param providerId - The mock provider ID (e.g., "mock-provider-1")
+ * @returns Detailed provider object or null if not found
+ */
+export function getMockProviderDetail(providerId: string): MockProviderDetail | null {
+  // Extract provider number from ID
+  const match = providerId.match(/mock-provider-(\d+)/);
+  if (!match) return null;
+  
+  const providerIndex = parseInt(match[1], 10) - 1;
+  
+  // Generate base mock providers
+  const mockProviders = generateMockProviders(20);
+  
+  if (providerIndex < 0 || providerIndex >= mockProviders.length) {
+    return null;
+  }
+  
+  const baseProvider = mockProviders[providerIndex];
+  
+  // Generate detailed data
+  const firstName = baseProvider.contactName.split(' ')[0];
+  const lastName = baseProvider.contactName.split(' ')[1] || 'Smith';
+  
+  // Generate contact info
+  const emailDomain = baseProvider.businessName.toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '');
+  const contactEmail = `${firstName.toLowerCase()}.${lastName.toLowerCase()}@${emailDomain}.com`;
+  const contactPhone = `(${Math.floor(Math.random() * 900) + 100}) ${Math.floor(Math.random() * 900) + 100}-${Math.floor(Math.random() * 9000) + 1000}`;
+  
+  // Generate insurance and license info
+  const insuranceInfo = baseProvider.isVerified 
+    ? `General Liability: $2,000,000 | Professional Liability: $1,000,000 | Workers' Compensation: Active`
+    : `General Liability: $1,000,000`;
+  
+  const licenseNumber = baseProvider.isVerified
+    ? `CA-${String(providerIndex + 1000).padStart(6, '0')}`
+    : null;
+  
+  // Generate credentials
+  const credentialTypes = [
+    'Business License',
+    'General Liability Insurance',
+    'Professional Liability Insurance',
+    'Workers\' Compensation Insurance',
+    'CPR Certification',
+    'First Aid Certification',
+    'Background Check',
+    'TB Test',
+  ];
+  
+  const credentials = [];
+  const credentialCount = baseProvider.isVerified ? 5 : 3;
+  
+  for (let i = 0; i < credentialCount; i++) {
+    const credType = credentialTypes[i % credentialTypes.length];
+    const isVerified = baseProvider.isVerified ? (i < 4) : (i < 1);
+    
+    // Generate expiration date (1-3 years from now)
+    const expiresAt = new Date();
+    expiresAt.setFullYear(expiresAt.getFullYear() + Math.floor(Math.random() * 3) + 1);
+    
+    // Generate verified date (2-6 months ago)
+    const verifiedAt = new Date();
+    verifiedAt.setMonth(verifiedAt.getMonth() - Math.floor(Math.random() * 5) - 2);
+    
+    credentials.push({
+      id: `mock-credential-${providerId}-${i + 1}`,
+      type: credType,
+      status: isVerified ? 'VERIFIED' : 'PENDING',
+      expiresAt: expiresAt.toISOString(),
+      verifiedAt: isVerified ? verifiedAt.toISOString() : null,
+    });
+  }
+  
+  // Generate ZIP codes for coverage area
+  const zipCodes = [];
+  const baseZip = 94000 + Math.floor(Math.random() * 500);
+  for (let i = 0; i < 10; i++) {
+    zipCodes.push(String(baseZip + i));
+  }
+  
+  // Member since date (based on years in business)
+  const memberSince = new Date();
+  memberSince.setFullYear(memberSince.getFullYear() - baseProvider.yearsInBusiness);
+  
+  return {
+    id: providerId,
+    userId: baseProvider.userId,
+    businessName: baseProvider.businessName,
+    contactName: baseProvider.contactName,
+    contactEmail,
+    contactPhone,
+    bio: baseProvider.bio,
+    website: baseProvider.website,
+    insuranceInfo,
+    licenseNumber,
+    yearsInBusiness: baseProvider.yearsInBusiness,
+    isVerified: baseProvider.isVerified,
+    isActive: true,
+    serviceTypes: baseProvider.serviceTypes,
+    coverageArea: {
+      cities: baseProvider.coverageArea.cities || [],
+      states: baseProvider.coverageArea.states || ['CA'],
+      zipCodes,
+    },
+    photoUrl: baseProvider.photoUrl,
+    credentials,
+    memberSince: memberSince.toISOString(),
+  };
+}
