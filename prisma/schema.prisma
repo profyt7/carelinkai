@@ -509,10 +509,12 @@ model Resident {
   dateOfBirth       DateTime
   gender            String
   status            ResidentStatus @default(INQUIRY)
-  careNeeds         Json? // Store care needs as JSON
-  medicalConditions String?        @db.Text // Encrypted
-  medications       String?        @db.Text // Encrypted
-  notes             String?        @db.Text // Encrypted
+  careNeeds            Json? // Store care needs as JSON
+  medicalConditions    String?        @db.Text // Encrypted
+  medications          String?        @db.Text // Encrypted
+  allergies            String?        @db.Text // Encrypted
+  dietaryRestrictions  String?        @db.Text // Encrypted
+  notes                String?        @db.Text // Encrypted
 
   // Relationships
   family            Family                   @relation(fields: [familyId], references: [id], onDelete: Cascade)

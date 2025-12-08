@@ -34,6 +34,10 @@ export default async function EditResidentPage({ params }: { params: { id: strin
         status: r.status,
         dateOfBirth: r.dateOfBirth,
         homeId: r.homeId,
+        medicalConditions: r.medicalConditions,
+        medications: r.medications,
+        allergies: r.allergies,
+        dietaryRestrictions: r.dietaryRestrictions,
       }} />
     </div>
   );

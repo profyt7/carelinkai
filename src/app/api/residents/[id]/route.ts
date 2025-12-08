@@ -31,7 +31,8 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       where: { id: params.id },
       select: {
         id: true, firstName: true, lastName: true, status: true, dateOfBirth: true, gender: true, homeId: true,
-        createdAt: true, updatedAt: true,
+        createdAt: true, updatedAt: true, archivedAt: true,
+        medicalConditions: true, medications: true, allergies: true, dietaryRestrictions: true,
       },
     });
     if (!resident) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -57,6 +58,20 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     for (const k of ['firstName', 'lastName', 'gender', 'homeId'] as const) if (body[k] !== undefined) data[k] = body[k];
     if (body.status) data.status = body.status as ResidentStatus;
     if (body.dateOfBirth) data.dateOfBirth = new Date(body.dateOfBirth);
+    
+    // Medical information fields (encrypted at rest)
+    if (body.medicalConditions !== undefined) {
+      data.medicalConditions = body.medicalConditions ? String(body.medicalConditions).slice(0, 2000) : null;
+    }
+    if (body.medications !== undefined) {
+      data.medications = body.medications ? String(body.medications).slice(0, 2000) : null;
+    }
+    if (body.allergies !== undefined) {
+      data.allergies = body.allergies ? String(body.allergies).slice(0, 1000) : null;
+    }
+    if (body.dietaryRestrictions !== undefined) {
+      data.dietaryRestrictions = body.dietaryRestrictions ? String(body.dietaryRestrictions).slice(0, 1000) : null;
+    }
 
     const updated = await prisma.resident.update({ where: { id: params.id }, data, select: { id: true } });
     return NextResponse.json({ success: true, id: updated.id });
