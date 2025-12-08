@@ -17,7 +17,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import DashboardLayout from "@/components/layout/DashboardLayout";
 import Breadcrumbs from "@/components/ui/breadcrumbs";
 import LeadStatusBadge from "@/components/operator/LeadStatusBadge";
 import LeadTargetTypeBadge from "@/components/operator/LeadTargetTypeBadge";
@@ -225,40 +224,35 @@ export default function OperatorLeadsListPage() {
   // Loading state
   if (sessionStatus === "loading" || loading) {
     return (
-      <DashboardLayout title="Lead Management" showSearch={false}>
-        <div className="p-6 flex items-center justify-center">
-          <FiLoader className="animate-spin text-primary-500" size={32} />
-        </div>
-      </DashboardLayout>
+      <div className="p-6 flex items-center justify-center">
+        <FiLoader className="animate-spin text-primary-500" size={32} />
+      </div>
     );
   }
 
   // Error state
   if (error) {
     return (
-      <DashboardLayout title="Lead Management" showSearch={false}>
-        <div className="p-6">
-          <div className="rounded-lg border border-red-200 bg-red-50 p-4 flex items-start gap-3">
-            <FiAlertCircle className="text-red-600 mt-0.5" size={20} />
-            <div>
-              <h3 className="font-medium text-red-800">Error Loading Leads</h3>
-              <p className="text-sm text-red-700 mt-1">{error}</p>
-              <button
-                onClick={() => fetchLeads(currentPage)}
-                className="mt-3 text-sm text-red-600 hover:text-red-800 font-medium"
-              >
-                Try Again
-              </button>
-            </div>
+      <div className="p-6">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 flex items-start gap-3">
+          <FiAlertCircle className="text-red-600 mt-0.5" size={20} />
+          <div>
+            <h3 className="font-medium text-red-800">Error Loading Leads</h3>
+            <p className="text-sm text-red-700 mt-1">{error}</p>
+            <button
+              onClick={() => fetchLeads(currentPage)}
+              className="mt-3 text-sm text-red-600 hover:text-red-800 font-medium"
+            >
+              Try Again
+            </button>
           </div>
         </div>
-      </DashboardLayout>
+      </div>
     );
   }
 
   return (
-    <DashboardLayout title="Lead Management" showSearch={false}>
-      <div className="p-4 sm:p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-6">
         <Breadcrumbs items={[
           { label: 'Operator', href: '/operator' },
           { label: 'Caregiver Leads' }
@@ -463,6 +457,5 @@ export default function OperatorLeadsListPage() {
           </div>
         )}
       </div>
-    </DashboardLayout>
   );
 }

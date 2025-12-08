@@ -1,11 +1,8 @@
-import { PrismaClient } from '@prisma/client';
-import DashboardLayout from '@/components/layout/DashboardLayout';
+import { prisma } from '@/lib/prisma';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
 import Link from 'next/link';
 import EmptyState from '@/components/ui/empty-state';
 import { FiBriefcase } from 'react-icons/fi';
-
-const prisma = new PrismaClient();
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -17,8 +14,7 @@ export default async function OperatorCaregiversPage() {
   });
 
   return (
-    <DashboardLayout title="Operator • Caregivers" showSearch={false}>
-      <div className="p-6">
+    <div className="p-6">
         <Breadcrumbs items={[
           { label: 'Operator', href: '/operator' },
           { label: 'Caregivers' }
@@ -88,6 +84,5 @@ export default async function OperatorCaregiversPage() {
           </div>
         )}
       </div>
-    </DashboardLayout>
   );
 }
