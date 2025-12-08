@@ -77,6 +77,58 @@ After logging in as **demo.admin@carelinkai.test**:
 
 ---
 
+## 📋 Demo Residents Data
+
+CareLinkAI includes **12 demo residents** with realistic profiles to showcase the Residents module functionality. These can be viewed by operators at `/operator/residents`.
+
+### Demo Residents List
+
+| Name | Age | Gender | Status | Room | Payer | Photo |
+|------|-----|--------|--------|------|-------|-------|
+| Alice Morgan | 78 | Female | Active | 101 | Medicare | ✓ |
+| Benjamin Lee | 82 | Male | Inquiry | - | Private | - |
+| Carla Rodriguez | 75 | Female | Active | 205A | Medicaid | ✓ |
+| Daniel Ng | 88 | Male | Pending | - | Medicare | - |
+| Ella Chen | 71 | Female | Active | 312 | Private | ✓ |
+| Frank Ibrahim | 85 | Male | Active | B-204 | Medicare | - |
+| Grace Kim | 92 | Female | Discharged | - | Medicaid | - |
+| Hector Garcia | 79 | Male | Active | 118 | Medicare | ✓ |
+| Isla Patel | 73 | Female | Pending | - | Private | - |
+| Jack Olsen | 86 | Male | Inquiry | - | Medicare | - |
+| Kara Singh | 77 | Female | Active | 220 | Private | ✓ |
+| Leo Mendes | 84 | Male | Active | 315 | Medicaid | - |
+
+### Resident Features Demonstrated
+
+- **Varied demographics:** Ages 71-92, mixed gender, diverse names
+- **Multiple statuses:** Active (7), Inquiry (2), Pending (2), Discharged (1)
+- **Room assignments:** Active residents have room numbers
+- **Payer types:** Medicare, Medicaid, Private insurance
+- **Medical information:** Allergies and dietary restrictions included
+- **Profile photos:** 5 residents have placeholder photos
+- **Complete records:** Each resident has contacts, compliance items, assessments, incidents, and notes
+
+### Seeding Demo Data
+
+To populate the database with demo residents:
+
+```bash
+npx ts-node --transpile-only prisma/seed-residents-demo.ts
+```
+
+This creates:
+- 2 demo family accounts (family@carelinkai.com, family2@carelinkai.com)
+- 12 demo residents distributed between the families
+- 2 contacts per resident
+- 2 compliance items per resident (1 open, 1 completed)
+- 1 assessment, 1 incident, and 1 note per resident
+
+**Related Accounts:**
+- family@carelinkai.com / Family123!
+- family2@carelinkai.com / Family123!
+
+---
+
 ## 🎯 Demo Flow (10 minutes)
 
 ### Part 1: Family Flow (3 minutes)

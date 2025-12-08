@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/layout/DashboardLayout';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
 import toast from 'react-hot-toast';
 
@@ -134,13 +133,12 @@ export default function NewResidentPage() {
   };
 
   return (
-    <DashboardLayout title="Add New Resident" showSearch={false}>
-      <div className="p-4 sm:p-6 max-w-3xl">
-        <Breadcrumbs items={[
-          { label: 'Operator', href: '/operator' },
-          { label: 'Residents', href: '/operator/residents' },
-          { label: 'New' }
-        ]} />
+    <div className="p-4 sm:p-6 max-w-3xl">
+      <Breadcrumbs items={[
+        { label: 'Operator', href: '/operator' },
+        { label: 'Residents', href: '/operator/residents' },
+        { label: 'New' }
+      ]} />
 
         <div className="rounded-lg border border-neutral-200 bg-white p-6">
           <h2 className="text-xl font-semibold text-neutral-800 mb-6">Resident Information</h2>
@@ -341,7 +339,6 @@ export default function NewResidentPage() {
             </div>
           </form>
         </div>
-      </div>
-    </DashboardLayout>
+    </div>
   );
 }
