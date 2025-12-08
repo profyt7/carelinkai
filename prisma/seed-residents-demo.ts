@@ -267,13 +267,15 @@ async function main() {
     // Add 2-4 family contacts per resident
     const numFamilyContacts = 2 + Math.floor(Math.random() * 3); // 2-4
     for (let i = 0; i < numFamilyContacts; i++) {
-      const contact = familyContacts[i % familyContacts.length];
-      await prisma.familyContact.create({ 
-        data: { 
-          residentId: created.id, 
-          ...contact,
-        } 
-      });
+      const contactTemplate = familyContacts[i % familyContacts.length];
+      if (contactTemplate) {
+        await prisma.familyContact.create({ 
+          data: { 
+            residentId: created.id, 
+            ...contactTemplate,
+          } 
+        });
+      }
     }
     
     // Clinical assessments (3-5 per resident)
@@ -290,6 +292,8 @@ async function main() {
     
     for (let i = 0; i < numAssessments; i++) {
       const assessment = assessmentTypes[i % assessmentTypes.length];
+      if (!assessment) continue;
+      
       const daysAgo = Math.floor(Math.random() * 90); // Within last 90 days
       const conductedDate = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000);
       
@@ -311,7 +315,7 @@ async function main() {
             dressing: 'independent',
             eating: 'independent',
             toileting: 'assisted'
-          } : null
+          } as any : null
         } 
       });
     }
@@ -357,6 +361,8 @@ async function main() {
       const numIncidents = Math.floor(Math.random() * 3) + 1; // 1-3 incidents
       for (let i = 0; i < numIncidents; i++) {
         const incident = incidentScenarios[i % incidentScenarios.length];
+        if (!incident) continue;
+        
         const daysAgo = Math.floor(Math.random() * 60); // Within last 60 days
         const occurredDate = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000);
         const reportedDate = new Date(occurredDate.getTime() + Math.random() * 60 * 60 * 1000); // Reported within 1 hour
@@ -368,14 +374,14 @@ async function main() {
             severity: incident.severity, 
             status: incident.status,
             occurredAt: occurredDate,
-            description: incident.description,
-            location: incident.location,
+            description: incident.description ?? null,
+            location: incident.location ?? null,
             reportedBy: staffNames[Math.floor(Math.random() * staffNames.length)],
             reportedAt: reportedDate,
-            witnessedBy: incident.witnessedBy,
-            actionsTaken: incident.actionsTaken,
+            witnessedBy: incident.witnessedBy ?? null,
+            actionsTaken: incident.actionsTaken ?? null,
             followUpRequired: incident.followUpRequired,
-            resolutionNotes: incident.resolutionNotes,
+            resolutionNotes: incident.resolutionNotes ?? null,
             resolvedAt: incident.status === 'RESOLVED' ? new Date(occurredDate.getTime() + 24 * 60 * 60 * 1000) : null,
             resolvedBy: incident.status === 'RESOLVED' ? staffNames[Math.floor(Math.random() * staffNames.length)] : null
           } 

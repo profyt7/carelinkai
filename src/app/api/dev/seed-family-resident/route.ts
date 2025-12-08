@@ -49,9 +49,9 @@ export async function POST(request: NextRequest) {
     // Create compliance items from body or defaults
     const now = new Date();
     const compliance = (body.compliance as any[]) ?? [
-      { type: 'FLU_SHOT', title: 'Flu Shot', status: 'COMPLETED', completedAt: now },
-      { type: 'TB_TEST', title: 'TB Test', status: 'OPEN', dueDate: new Date(now.getTime() + 7*24*60*60*1000) },
-      { type: 'CARE_PLAN', title: 'Care Plan Review', status: 'OPEN', dueDate: new Date(now.getTime() - 3*24*60*60*1000) },
+      { type: 'IMMUNIZATION_RECORDS', title: 'Flu Shot', status: 'CURRENT', issuedDate: now, expiryDate: new Date(now.getTime() + 365*24*60*60*1000) },
+      { type: 'HEALTH_ASSESSMENTS', title: 'TB Test', status: 'EXPIRING_SOON', issuedDate: new Date(now.getTime() - 350*24*60*60*1000), expiryDate: new Date(now.getTime() + 15*24*60*60*1000) },
+      { type: 'CARE_PLANS', title: 'Care Plan Review', status: 'CURRENT', issuedDate: new Date(now.getTime() - 60*24*60*60*1000), expiryDate: new Date(now.getTime() + 30*24*60*60*1000) },
     ];
     if (compliance?.length) {
       await prisma.residentComplianceItem.createMany({
@@ -60,11 +60,12 @@ export async function POST(request: NextRequest) {
           type: i.type,
           title: i.title,
           notes: i.notes ?? null,
-          owner: i.owner ?? null,
-          status: (i.status === 'COMPLETED' ? ComplianceStatus.COMPLETED : ComplianceStatus.OPEN),
-          severity: i.severity ?? null,
-          dueDate: i.dueDate ? new Date(i.dueDate) : null,
-          completedAt: i.completedAt ? new Date(i.completedAt) : (i.status === 'COMPLETED' ? now : null),
+          status: (i.status ?? 'CURRENT') as any,
+          issuedDate: i.issuedDate ? new Date(i.issuedDate) : null,
+          expiryDate: i.expiryDate ? new Date(i.expiryDate) : null,
+          documentUrl: i.documentUrl ?? null,
+          verifiedBy: i.verifiedBy ?? null,
+          verifiedAt: i.verifiedAt ? new Date(i.verifiedAt) : null,
         })),
       });
     }

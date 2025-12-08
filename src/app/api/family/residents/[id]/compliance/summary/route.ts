@@ -32,16 +32,16 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const in14 = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
     const [open, completed, dueSoon, overdue] = await Promise.all([
       prisma.residentComplianceItem.count({
-        where: { residentId: resident.id, status: 'OPEN' as any },
+        where: { residentId: resident.id, status: { in: ['CURRENT', 'EXPIRING_SOON', 'EXPIRED'] as any[] } },
       }),
       prisma.residentComplianceItem.count({
-        where: { residentId: resident.id, status: 'COMPLETED' as any },
+        where: { residentId: resident.id, status: 'CURRENT' as any },
       }),
       prisma.residentComplianceItem.count({
-        where: { residentId: resident.id, status: 'OPEN' as any, dueDate: { gte: now, lte: in14 } },
+        where: { residentId: resident.id, status: 'EXPIRING_SOON' as any },
       }),
       prisma.residentComplianceItem.count({
-        where: { residentId: resident.id, status: 'OPEN' as any, dueDate: { lt: now } },
+        where: { residentId: resident.id, status: 'EXPIRED' as any },
       }),
     ]);
 

@@ -21,22 +21,22 @@ export default async function FamilyNotificationsPage() {
   const [dueSoon, overdue] = await Promise.all([
     prisma.residentComplianceItem.findMany({
       where: {
-        status: 'OPEN' as any,
-        dueDate: { gte: now, lte: soon },
+        status: 'EXPIRING_SOON' as any,
+        expiryDate: { gte: now, lte: soon },
         resident: { familyId: membership.familyId },
       },
-      select: { id: true, dueDate: true, resident: { select: { id: true, firstName: true, lastName: true } } },
-      orderBy: { dueDate: 'asc' },
+      select: { id: true, expiryDate: true, resident: { select: { id: true, firstName: true, lastName: true } } },
+      orderBy: { expiryDate: 'asc' },
       take: 50,
     }),
     prisma.residentComplianceItem.findMany({
       where: {
-        status: 'OPEN' as any,
-        dueDate: { lt: now },
+        status: 'EXPIRED' as any,
+        expiryDate: { lt: now },
         resident: { familyId: membership.familyId },
       },
-      select: { id: true, dueDate: true, resident: { select: { id: true, firstName: true, lastName: true } } },
-      orderBy: { dueDate: 'asc' },
+      select: { id: true, expiryDate: true, resident: { select: { id: true, firstName: true, lastName: true } } },
+      orderBy: { expiryDate: 'asc' },
       take: 50,
     }),
   ]);
@@ -65,7 +65,7 @@ export default async function FamilyNotificationsPage() {
               {dueSoon.map((i) => (
                 <li key={i.id} className="py-2 text-sm flex items-center justify-between">
                   <div className="text-neutral-800">Compliance due soon for {i.resident.firstName} {i.resident.lastName}</div>
-                  <div className="text-xs text-neutral-500 ml-3 whitespace-nowrap">{new Date(i.dueDate as any).toLocaleDateString()}</div>
+                  <div className="text-xs text-neutral-500 ml-3 whitespace-nowrap">{new Date(i.expiryDate as any).toLocaleDateString()}</div>
                 </li>
               ))}
             </ul>
@@ -80,7 +80,7 @@ export default async function FamilyNotificationsPage() {
               {overdue.map((i) => (
                 <li key={i.id} className="py-2 text-sm flex items-center justify-between">
                   <div className="text-neutral-800">Compliance overdue for {i.resident.firstName} {i.resident.lastName}</div>
-                  <div className="text-xs text-neutral-500 ml-3 whitespace-nowrap">{new Date(i.dueDate as any).toLocaleDateString()}</div>
+                  <div className="text-xs text-neutral-500 ml-3 whitespace-nowrap">{new Date(i.expiryDate as any).toLocaleDateString()}</div>
                 </li>
               ))}
             </ul>

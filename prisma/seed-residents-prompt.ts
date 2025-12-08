@@ -185,10 +185,11 @@ async function addFacilityCompliance(homeIds: string[], residentIds: string[]) {
     await prisma.residentComplianceItem.create({
       data: {
         residentId: anyResident,
-        type: 'CARE_PLAN_REVIEW',
+        type: 'CARE_PLANS',
         title: 'Quarterly Care Plan Review',
-        status: ComplianceStatus.OPEN,
-        dueDate: new Date(Date.now() + 14 * 86400000),
+        status: ComplianceStatus.CURRENT,
+        issuedDate: new Date(Date.now() - 14 * 86400000),
+        expiryDate: new Date(Date.now() + 76 * 86400000),
       },
     });
   }

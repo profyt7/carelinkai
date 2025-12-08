@@ -33,7 +33,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
 
     const body = await req.json().catch(() => ({}));
-    const { status, title, notes, owner, severity, dueDate, completedAt } = body || {};
+    const { status, title, notes, issuedDate, expiryDate, documentUrl, verifiedBy, verifiedAt } = body || {};
 
     const updated = await prisma.residentComplianceItem.update({
       where: { id: params.itemId },
@@ -41,14 +41,16 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         status,
         title,
         notes,
-        owner,
-        severity,
-        dueDate: dueDate ? new Date(dueDate) : undefined,
-        completedAt: completedAt ? new Date(completedAt) : undefined,
+        issuedDate: issuedDate ? new Date(issuedDate) : undefined,
+        expiryDate: expiryDate ? new Date(expiryDate) : undefined,
+        documentUrl: documentUrl ?? undefined,
+        verifiedBy: verifiedBy ?? undefined,
+        verifiedAt: verifiedAt ? new Date(verifiedAt) : undefined,
       },
       select: {
-        id: true, type: true, title: true, notes: true, owner: true, severity: true,
-        status: true, dueDate: true, completedAt: true,
+        id: true, type: true, title: true, notes: true, status: true, 
+        issuedDate: true, expiryDate: true, documentUrl: true, 
+        verifiedBy: true, verifiedAt: true,
       },
     });
 
