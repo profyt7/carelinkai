@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import DashboardLayout from "@/components/layout/DashboardLayout";
-import { PrismaClient, UserRole } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
+import { UserRole } from "@prisma/client";
 import { cookies } from "next/headers";
 import { MOCK_HOMES } from "@/lib/mock/homes";
 import Link from "next/link";
@@ -11,8 +11,6 @@ import { FiHome } from "react-icons/fi";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
-
-const prisma = new PrismaClient();
 
 export default async function OperatorHomesPage({ searchParams }: { searchParams?: { operatorId?: string } }) {
   const session = await getServerSession(authOptions);
@@ -34,8 +32,7 @@ export default async function OperatorHomesPage({ searchParams }: { searchParams
       });
 
   return (
-    <DashboardLayout title="Homes" showSearch={false}>
-      <div className="p-4 sm:p-6">
+    <div className="p-4 sm:p-6">
         <Breadcrumbs items={[
           { label: 'Operator', href: '/operator' },
           { label: 'Homes' }
@@ -103,6 +100,5 @@ export default async function OperatorHomesPage({ searchParams }: { searchParams
           )}
         </div>
       </div>
-    </DashboardLayout>
   );
 }
