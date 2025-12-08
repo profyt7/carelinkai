@@ -27,6 +27,7 @@ export async function GET(req: NextRequest) {
     const familyId = (searchParams.get('familyId') || '').trim();
     const cursor = (searchParams.get('cursor') || '').trim();
     const format = (searchParams.get('format') || '').trim().toLowerCase();
+    const showArchived = searchParams.get('showArchived') === 'true';
     let limit = parseInt(searchParams.get('limit') || '50', 10);
     if (Number.isNaN(limit) || limit <= 0) limit = 50;
     if (limit > 200) limit = 200;
@@ -53,6 +54,12 @@ export async function GET(req: NextRequest) {
     if (status) where.status = status as any;
     if (homeId) where.homeId = homeId;
     if (familyId) where.familyId = familyId;
+    
+    // Filter archived residents: by default exclude them, unless showArchived=true
+    if (!showArchived) {
+      where.archivedAt = null;
+    }
+    
     if (allowedHomeIds) {
       // Show only residents in operator-managed homes; allow nulls only when explicitly filtered by homeId=null (not supported here)
       where.homeId = where.homeId ? where.homeId : { in: allowedHomeIds };

@@ -536,11 +536,13 @@ model Resident {
   updatedAt     DateTime  @updatedAt
   admissionDate DateTime?
   dischargeDate DateTime?
+  archivedAt    DateTime? // Soft delete timestamp
 
   // Indexes
   @@index([familyId])
   @@index([homeId])
   @@index([status])
+  @@index([archivedAt])
 }
 
 /// Primary and secondary contacts for a resident (e.g., family members, care proxy)

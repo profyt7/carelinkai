@@ -7,6 +7,7 @@ import { getBaseUrl } from '@/lib/http';
 import { getMockResident, getMockAssessments, getMockIncidents, getMockNotes } from '@/lib/mock/residents';
 import { prisma } from '@/lib/prisma';
 import { StatusActions } from '@/components/operator/residents/StatusActions';
+import { ArchiveButton } from '@/components/operator/residents/ArchiveButton';
 import { CreateNoteForm } from '@/components/operator/residents/forms/CreateNoteForm';
 import { CreateAssessmentForm } from '@/components/operator/residents/forms/CreateAssessmentForm';
 import { CreateIncidentForm } from '@/components/operator/residents/forms/CreateIncidentForm';
@@ -104,13 +105,19 @@ export default async function ResidentDetail({ params }: { params: { id: string 
         { label: 'Residents', href: '/operator/residents' },
         { label: `${resident.firstName} ${resident.lastName}` }
       ]} />
-      <h1 className="text-xl sm:text-2xl font-semibold mt-2 text-neutral-800">{resident.firstName} {resident.lastName}</h1>
-      <div className="flex items-center gap-3">
-        <p className="text-sm text-neutral-600">Status: {resident.status}</p>
-        <Link href={`/operator/residents/${resident.id}/edit`} className="text-sm text-primary-600 hover:underline">Edit</Link>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-semibold text-neutral-800">{resident.firstName} {resident.lastName}</h1>
+          <div className="flex items-center gap-3 mt-1">
+            <p className="text-sm text-neutral-600">Status: {resident.status}</p>
+            <Link href={`/operator/residents/${resident.id}/edit`} className="text-sm text-primary-600 hover:underline">Edit</Link>
+            <a href={`/api/residents/${resident.id}/summary`} target="_blank" className="text-sm text-primary-600 hover:underline">Open Summary PDF</a>
+          </div>
+        </div>
+        {!resident.archivedAt && (
+          <ArchiveButton residentId={resident.id} residentName={`${resident.firstName} ${resident.lastName}`} />
+        )}
       </div>
-      {/* Downloadable PDF summary for operations use */}
-      <a href={`/api/residents/${resident.id}/summary`} target="_blank" className="text-sm text-primary-600 hover:underline">Open Summary PDF</a>
       <StatusActions residentId={resident.id} status={resident.status} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
