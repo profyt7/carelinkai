@@ -1,6 +1,7 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import Breadcrumbs from '@/components/ui/breadcrumbs';
 import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import UnassignShiftButton from '@/components/operator/UnassignShiftButton';
@@ -25,6 +26,10 @@ export default async function OperatorShiftsPage() {
   return (
     <DashboardLayout title="Shifts" showSearch={false}>
       <div className="p-4 sm:p-6">
+        <Breadcrumbs items={[
+          { label: 'Operator', href: '/operator' },
+          { label: 'Shifts' }
+        ]} />
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold">Shifts</h2>
           <div className="flex gap-2">

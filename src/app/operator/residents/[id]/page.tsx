@@ -13,6 +13,7 @@ import { DocumentsPanel } from '@/components/operator/residents/DocumentsPanel';
 import { TimelinePanel } from '@/components/operator/residents/TimelinePanel';
 import { AssessmentsList } from '@/components/operator/residents/AssessmentsList';
 import { IncidentsList } from '@/components/operator/residents/IncidentsList';
+import Breadcrumbs from '@/components/ui/breadcrumbs';
 
 async function fetchResident(id: string) {
   const cookieHeader = cookies().toString();
@@ -81,7 +82,11 @@ export default async function ResidentDetail({ params }: { params: { id: string 
   }
   return (
     <div className="p-4 sm:p-6">
-      <Link href="/operator/residents" className="text-sm text-neutral-600 hover:underline">Back</Link>
+      <Breadcrumbs items={[
+        { label: 'Operator', href: '/operator' },
+        { label: 'Residents', href: '/operator/residents' },
+        { label: `${resident.firstName} ${resident.lastName}` }
+      ]} />
       <h1 className="text-xl sm:text-2xl font-semibold mt-2 text-neutral-800">{resident.firstName} {resident.lastName}</h1>
       <div className="flex items-center gap-3">
         <p className="text-sm text-neutral-600">Status: {resident.status}</p>

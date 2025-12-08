@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import Breadcrumbs from '@/components/ui/breadcrumbs';
 import toast from 'react-hot-toast';
 
 export default function OperatorProfilePage() {
@@ -136,15 +137,10 @@ export default function OperatorProfilePage() {
   return (
     <DashboardLayout title="Operator Profile" showSearch={false}>
       <div className="p-4 sm:p-6 max-w-3xl">
-        {/* Breadcrumb */}
-        <div className="mb-4">
-          <button
-            onClick={() => router.push('/settings')}
-            className="text-sm text-neutral-600 hover:text-neutral-800"
-          >
-            ← Back to Settings
-          </button>
-        </div>
+        <Breadcrumbs items={[
+          { label: 'Settings', href: '/settings' },
+          { label: 'Operator Profile' }
+        ]} />
 
         <div className="rounded-lg border border-neutral-200 bg-white p-6">
           <div className="mb-6">

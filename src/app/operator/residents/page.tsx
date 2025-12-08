@@ -4,6 +4,7 @@ import { cookies, headers } from 'next/headers';
 import { getBaseUrl } from '@/lib/http';
 import { MOCK_RESIDENTS } from '@/lib/mock/residents';
 import { InlineActions, StatusPill } from '@/components/operator/residents/InlineActions';
+import Breadcrumbs from '@/components/ui/breadcrumbs';
 
 async function fetchResidents(params: { q?: string; status?: string; homeId?: string; familyId?: string; cursor?: string }) {
   const cookieHeader = cookies().toString();
@@ -50,6 +51,10 @@ export default async function ResidentsPage({ searchParams }: { searchParams?: {
   const nextCursor = Array.isArray(data) ? null : (data.nextCursor ?? null);
   return (
     <div className="p-4 sm:p-6">
+      <Breadcrumbs items={[
+        { label: 'Operator', href: '/operator' },
+        { label: 'Residents' }
+      ]} />
       <div className="flex items-center justify-between">
         <h1 className="text-xl sm:text-2xl font-semibold text-neutral-800">Residents</h1>
         <div className="flex items-center gap-3">

@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient, UserRole } from '@prisma/client';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import Breadcrumbs from '@/components/ui/breadcrumbs';
 import NewShiftForm from '@/components/operator/NewShiftForm';
 
 const prisma = new PrismaClient();
@@ -23,6 +24,11 @@ export default async function NewShiftPage() {
   return (
     <DashboardLayout title="Create Shift" showSearch={false}>
       <div className="p-4 sm:p-6">
+        <Breadcrumbs items={[
+          { label: 'Operator', href: '/operator' },
+          { label: 'Shifts', href: '/operator/shifts' },
+          { label: 'New Shift' }
+        ]} />
         <NewShiftForm homes={homes} />
       </div>
     </DashboardLayout>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import Breadcrumbs from '@/components/ui/breadcrumbs';
 import toast from 'react-hot-toast';
 
 type HomeOption = {
@@ -135,15 +136,11 @@ export default function NewResidentPage() {
   return (
     <DashboardLayout title="Add New Resident" showSearch={false}>
       <div className="p-4 sm:p-6 max-w-3xl">
-        {/* Breadcrumb */}
-        <div className="mb-4">
-          <button
-            onClick={() => router.push('/operator/residents')}
-            className="text-sm text-neutral-600 hover:text-neutral-800"
-          >
-            ← Back to Residents
-          </button>
-        </div>
+        <Breadcrumbs items={[
+          { label: 'Operator', href: '/operator' },
+          { label: 'Residents', href: '/operator/residents' },
+          { label: 'New' }
+        ]} />
 
         <div className="rounded-lg border border-neutral-200 bg-white p-6">
           <h2 className="text-xl font-semibold text-neutral-800 mb-6">Resident Information</h2>

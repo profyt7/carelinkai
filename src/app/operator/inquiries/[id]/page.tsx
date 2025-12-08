@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Link from 'next/link';
 import { InquiryStatus } from '@prisma/client';
+import Breadcrumbs from '@/components/ui/breadcrumbs';
 
 type InquiryDetail = {
   id: string;
@@ -122,12 +123,11 @@ export default function OperatorLeadDetailPage() {
   return (
     <DashboardLayout title={`Lead - ${data.home.name}`} showSearch={false}>
       <div className="p-4 sm:p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <button className="text-sm text-neutral-600 hover:text-neutral-800" onClick={() => router.push('/operator/inquiries')}>
-            ← Back to Leads
-          </button>
-          <Link className="text-sm text-primary-600 hover:underline" href={`/homes/${data.home.id}`}>View Listing</Link>
-        </div>
+        <Breadcrumbs items={[
+          { label: 'Operator', href: '/operator' },
+          { label: 'Inquiries', href: '/operator/inquiries' },
+          { label: `#${id.slice(0, 8)}` }
+        ]} />
 
         {/* Summary card */}
         <div className="rounded-lg border border-neutral-200 bg-white p-4">

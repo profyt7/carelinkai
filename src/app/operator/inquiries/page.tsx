@@ -3,6 +3,7 @@ import { authOptions } from '@/lib/auth';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { PrismaClient, UserRole } from '@prisma/client';
 import OperatorInquiriesTable from '@/components/operator/OperatorInquiriesTable';
+import Breadcrumbs from '@/components/ui/breadcrumbs';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -34,6 +35,10 @@ export default async function OperatorInquiriesPage() {
   return (
     <DashboardLayout title="Inquiries" showSearch={false}>
       <div className="p-4 sm:p-6">
+        <Breadcrumbs items={[
+          { label: 'Operator', href: '/operator' },
+          { label: 'Inquiries' }
+        ]} />
         <OperatorInquiriesTable initial={initial} />
       </div>
     </DashboardLayout>

@@ -21,6 +21,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import Breadcrumbs from "@/components/ui/breadcrumbs";
 import LeadStatusBadge from "@/components/operator/LeadStatusBadge";
 import LeadTargetTypeBadge from "@/components/operator/LeadTargetTypeBadge";
 import { LeadStatus, LeadTargetType } from "@prisma/client";
@@ -288,6 +289,11 @@ export default function OperatorLeadDetailPage() {
   return (
     <DashboardLayout title={`Lead - ${getTargetName()}`} showSearch={false}>
       <div className="p-4 sm:p-6 space-y-6">
+        <Breadcrumbs items={[
+          { label: 'Operator', href: '/operator' },
+          { label: 'Leads', href: '/operator/leads' },
+          { label: `#${lead.id.substring(0, 8)}` }
+        ]} />
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <button

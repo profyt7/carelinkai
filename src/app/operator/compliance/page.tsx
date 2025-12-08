@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import Breadcrumbs from "@/components/ui/breadcrumbs";
 import ComplianceQuickActions from "@/components/operator/ComplianceQuickActions";
 import { PrismaClient, UserRole } from "@prisma/client";
 
@@ -49,6 +50,10 @@ export default async function OperatorCompliancePage({ searchParams }: { searchP
   return (
     <DashboardLayout title="Compliance" showSearch={false}>
       <div className="p-4 sm:p-6 space-y-6">
+        <Breadcrumbs items={[
+          { label: 'Operator', href: '/operator' },
+          { label: 'Compliance' }
+        ]} />
         {/* Quick create forms for licenses and inspections with Home selection */}
         <ComplianceQuickActions homes={homes} />
         {isAdmin && (

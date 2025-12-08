@@ -5,6 +5,7 @@ import { PrismaClient, UserRole } from "@prisma/client";
 import { cookies } from "next/headers";
 import { MOCK_HOMES } from "@/lib/mock/homes";
 import Link from "next/link";
+import Breadcrumbs from "@/components/ui/breadcrumbs";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -33,6 +34,10 @@ export default async function OperatorHomesPage({ searchParams }: { searchParams
   return (
     <DashboardLayout title="Homes" showSearch={false}>
       <div className="p-4 sm:p-6">
+        <Breadcrumbs items={[
+          { label: 'Operator', href: '/operator' },
+          { label: 'Homes' }
+        ]} />
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold">Your Homes</h2>
           {!showMock && (

@@ -2,6 +2,7 @@
 
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import PhotoGalleryManager from '@/components/operator/homes/PhotoGalleryManager';
+import Breadcrumbs from '@/components/ui/breadcrumbs';
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import toast from 'react-hot-toast';
@@ -206,15 +207,11 @@ export default function EditHomePage() {
   return (
     <DashboardLayout title="Edit Home" showSearch={false}>
       <div className="p-4 sm:p-6 max-w-4xl">
-        {/* Breadcrumb */}
-        <div className="mb-4">
-          <button
-            onClick={() => router.push('/operator/homes')}
-            className="text-sm text-neutral-600 hover:text-neutral-800"
-          >
-            ← Back to Homes
-          </button>
-        </div>
+        <Breadcrumbs items={[
+          { label: 'Operator', href: '/operator' },
+          { label: 'Homes', href: '/operator/homes' },
+          { label: form.name || 'Edit' }
+        ]} />
 
         <div className="rounded-lg border border-neutral-200 bg-white p-6">
           <h2 className="text-xl font-semibold text-neutral-800 mb-6">Edit Home Details</h2>

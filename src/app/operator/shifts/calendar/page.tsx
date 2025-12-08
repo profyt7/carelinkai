@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient, UserRole } from '@prisma/client';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import Breadcrumbs from '@/components/ui/breadcrumbs';
 import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
@@ -44,6 +45,11 @@ export default async function ShiftsCalendarPage() {
   return (
     <DashboardLayout title="Shifts Calendar" showSearch={false}>
       <div className="p-4 sm:p-6">
+        <Breadcrumbs items={[
+          { label: 'Operator', href: '/operator' },
+          { label: 'Shifts', href: '/operator/shifts' },
+          { label: 'Calendar' }
+        ]} />
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold">This Week</h2>
           <div className="flex gap-2">

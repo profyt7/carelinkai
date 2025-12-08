@@ -18,6 +18,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import Breadcrumbs from "@/components/ui/breadcrumbs";
 import LeadStatusBadge from "@/components/operator/LeadStatusBadge";
 import LeadTargetTypeBadge from "@/components/operator/LeadTargetTypeBadge";
 import LeadFilters, { LeadFiltersState } from "@/components/operator/LeadFilters";
@@ -258,6 +259,10 @@ export default function OperatorLeadsListPage() {
   return (
     <DashboardLayout title="Lead Management" showSearch={false}>
       <div className="p-4 sm:p-6 space-y-6">
+        <Breadcrumbs items={[
+          { label: 'Operator', href: '/operator' },
+          { label: 'Leads' }
+        ]} />
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
