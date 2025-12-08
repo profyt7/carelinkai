@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import Breadcrumbs from '@/components/ui/breadcrumbs';
 import Link from 'next/link';
 
 const prisma = new PrismaClient();
@@ -16,6 +17,10 @@ export default async function OperatorCaregiversPage() {
   return (
     <DashboardLayout title="Operator • Caregivers" showSearch={false}>
       <div className="p-6">
+        <Breadcrumbs items={[
+          { label: 'Operator', href: '/operator' },
+          { label: 'Caregivers' }
+        ]} />
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold">Caregiver Employments</h2>
           <Link href="/operator/caregivers/new" className="btn btn-primary">New Employment</Link>

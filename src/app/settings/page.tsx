@@ -16,6 +16,9 @@ export default function SettingsIndexPage() {
     ...(role === "FAMILY" ? [
       { href: "/settings/family", title: "Family Profile", desc: "Care context & details", icon: <FiUser className="h-5 w-5" /> },
     ] : []),
+    ...(role === "OPERATOR" ? [
+      { href: "/settings/operator", title: "Operator Profile", desc: "Company & business info", icon: <FiUser className="h-5 w-5" /> },
+    ] : []),
     { href: "/settings/account", title: "Account", desc: "Password, security", icon: <FiShield className="h-5 w-5" /> },
     { href: "/settings/notifications", title: "Notifications", desc: "Email & in-app", icon: <FiBell className="h-5 w-5" /> },
     { href: payoutsHref, title: "Payouts", desc: "Payments & transfers", icon: <FiDollarSign className="h-5 w-5" /> },

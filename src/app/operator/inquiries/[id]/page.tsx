@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Link from 'next/link';
 import { InquiryStatus } from '@prisma/client';
+import Breadcrumbs from '@/components/ui/breadcrumbs';
 
 type InquiryDetail = {
   id: string;
@@ -122,12 +123,11 @@ export default function OperatorLeadDetailPage() {
   return (
     <DashboardLayout title={`Lead - ${data.home.name}`} showSearch={false}>
       <div className="p-4 sm:p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <button className="text-sm text-neutral-600 hover:text-neutral-800" onClick={() => router.push('/operator/inquiries')}>
-            ← Back to Leads
-          </button>
-          <Link className="text-sm text-primary-600 hover:underline" href={`/homes/${data.home.id}`}>View Listing</Link>
-        </div>
+        <Breadcrumbs items={[
+          { label: 'Operator', href: '/operator' },
+          { label: 'Inquiries', href: '/operator/inquiries' },
+          { label: `#${id.slice(0, 8)}` }
+        ]} />
 
         {/* Summary card */}
         <div className="rounded-lg border border-neutral-200 bg-white p-4">
@@ -152,11 +152,38 @@ export default function OperatorLeadDetailPage() {
           <div className="space-y-6 lg:col-span-2">
             {/* Family contact */}
             <div className="rounded-lg border border-neutral-200 bg-white p-4">
-              <div className="mb-3 text-sm font-medium text-neutral-800">Family Contact</div>
+              <div className="mb-3 flex items-center justify-between">
+                <div className="text-sm font-medium text-neutral-800">Family Contact</div>
+                <div className="flex items-center gap-2">
+                  <Link
+                    href={`/families/${data.family.id}`}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 bg-neutral-100 text-neutral-700 text-sm font-medium rounded-md hover:bg-neutral-200 transition"
+                  >
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    View Profile
+                  </Link>
+                  <Link
+                    href={`/messages?userId=${data.family.id}`}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-600 text-white text-sm font-medium rounded-md hover:bg-primary-700 transition"
+                  >
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                    Message
+                  </Link>
+                </div>
+              </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <div className="text-xs text-neutral-500">Name</div>
-                  <div className="font-medium text-neutral-900">{data.family.name}</div>
+                  <Link
+                    href={`/families/${data.family.id}`}
+                    className="font-medium text-primary-600 hover:underline"
+                  >
+                    {data.family.name}
+                  </Link>
                 </div>
                 <div>
                   <div className="text-xs text-neutral-500">Email</div>

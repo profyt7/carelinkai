@@ -1,6 +1,7 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import Breadcrumbs from '@/components/ui/breadcrumbs';
 import { PrismaClient, UserRole } from '@prisma/client';
 import Link from 'next/link';
 import { parseS3Url, createSignedGetUrl } from '@/lib/storage';
@@ -44,6 +45,11 @@ export default async function OperatorHomeManagePage({ params, searchParams }: {
   return (
     <DashboardLayout title="Manage Home" showSearch={false}>
       <div className="p-4 sm:p-6 space-y-6">
+        <Breadcrumbs items={[
+          { label: 'Operator', href: '/operator' },
+          { label: 'Homes', href: '/operator/homes' },
+          { label: home.name }
+        ]} />
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold">{home.name}</h2>
           <div className="flex gap-2">
