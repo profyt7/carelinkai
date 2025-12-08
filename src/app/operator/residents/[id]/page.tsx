@@ -1,8 +1,11 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { cookies, headers } from 'next/headers';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { getBaseUrl } from '@/lib/http';
 import { getMockResident, getMockAssessments, getMockIncidents, getMockNotes } from '@/lib/mock/residents';
+import { prisma } from '@/lib/prisma';
 import { StatusActions } from '@/components/operator/residents/StatusActions';
 import { CreateNoteForm } from '@/components/operator/residents/forms/CreateNoteForm';
 import { CreateAssessmentForm } from '@/components/operator/residents/forms/CreateAssessmentForm';
@@ -11,6 +14,8 @@ import { CompliancePanel } from '@/components/operator/residents/CompliancePanel
 import { ContactsPanel } from '@/components/operator/residents/ContactsPanel';
 import { DocumentsPanel } from '@/components/operator/residents/DocumentsPanel';
 import { TimelinePanel } from '@/components/operator/residents/TimelinePanel';
+import { ResidentTimeline } from '@/components/operator/residents/ResidentTimeline';
+import { ResidentNotes } from '@/components/operator/residents/ResidentNotes';
 import { AssessmentsList } from '@/components/operator/residents/AssessmentsList';
 import { IncidentsList } from '@/components/operator/residents/IncidentsList';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
@@ -42,6 +47,18 @@ async function fetchSection(id: string, section: 'assessments' | 'incidents' | '
 
 export default async function ResidentDetail({ params }: { params: { id: string } }) {
   if (process.env['NEXT_PUBLIC_RESIDENTS_ENABLED'] === 'false') return notFound();
+  
+  // Get current user for notes editing permissions
+  const session = await getServerSession(authOptions);
+  let currentUserId: string | undefined;
+  if (session?.user?.email) {
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { id: true },
+    });
+    currentUserId = user?.id;
+  }
+  
   const mockCookie = cookies().get('carelink_mock_mode')?.value?.toString().trim().toLowerCase() || '';
   const showMock = ['1','true','yes','on'].includes(mockCookie);
   let resident: any;
@@ -106,25 +123,31 @@ export default async function ResidentDetail({ params }: { params: { id: string 
         <section className="lg:col-span-3">
           <DocumentsPanel residentId={resident.id} />
         </section>
-        <TimelinePanel residentId={resident.id} />
-        <section className="card">
-          <h2 className="font-semibold mb-2 text-neutral-800">Assessments</h2>
-          <AssessmentsList residentId={resident.id} items={(assessments.items ?? []) as any[]} />
-          <CreateAssessmentForm residentId={resident.id} />
+        
+        {/* Timeline Section - Enhanced */}
+        <section className="lg:col-span-2 card">
+          <h2 className="font-semibold mb-4 text-neutral-800 text-lg">Resident Timeline</h2>
+          <ResidentTimeline residentId={resident.id} />
         </section>
-        <section className="card">
-          <h2 className="font-semibold mb-2 text-neutral-800">Incidents</h2>
-          <IncidentsList residentId={resident.id} items={(incidents.items ?? []) as any[]} />
-          <CreateIncidentForm residentId={resident.id} />
+        
+        {/* Quick Actions */}
+        <section className="lg:col-span-1 space-y-6">
+          <section className="card">
+            <h2 className="font-semibold mb-2 text-neutral-800">Assessments</h2>
+            <AssessmentsList residentId={resident.id} items={(assessments.items ?? []) as any[]} />
+            <CreateAssessmentForm residentId={resident.id} />
+          </section>
+          <section className="card">
+            <h2 className="font-semibold mb-2 text-neutral-800">Incidents</h2>
+            <IncidentsList residentId={resident.id} items={(incidents.items ?? []) as any[]} />
+            <CreateIncidentForm residentId={resident.id} />
+          </section>
         </section>
-        <section className="card">
-          <h2 className="font-semibold mb-2 text-neutral-800">Notes</h2>
-          <ul className="text-sm list-disc ml-4">
-            {(notes.items ?? []).map((n: any) => (
-              <li key={n.id}>{n.content}</li>
-            ))}
-          </ul>
-          <CreateNoteForm residentId={resident.id} />
+        
+        {/* Notes Section - Enhanced (Full Width) */}
+        <section className="lg:col-span-3 card">
+          <h2 className="font-semibold mb-4 text-neutral-800 text-lg">Resident Notes</h2>
+          <ResidentNotes residentId={resident.id} currentUserId={currentUserId} />
         </section>
       </div>
     </div>
