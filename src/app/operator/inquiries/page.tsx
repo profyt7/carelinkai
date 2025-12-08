@@ -42,8 +42,17 @@ export default async function OperatorInquiriesPage({
       <div className="p-4 sm:p-6">
         <Breadcrumbs items={[
           { label: 'Operator', href: '/operator' },
-          { label: 'Inquiries' }
+          { label: 'Home Inquiries' }
         ]} />
+        
+        {/* Help text */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold text-neutral-900 mb-2">Home Inquiries</h1>
+          <p className="text-sm text-neutral-600">
+            Manage inquiries from families interested in your assisted living homes. Track their status from initial contact to placement.
+          </p>
+        </div>
+
         <InquiriesFilterPanel 
           homes={homes}
           initialFilters={searchParams}

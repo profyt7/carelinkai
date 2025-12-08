@@ -261,14 +261,14 @@ export default function OperatorLeadsListPage() {
       <div className="p-4 sm:p-6 space-y-6">
         <Breadcrumbs items={[
           { label: 'Operator', href: '/operator' },
-          { label: 'Leads' }
+          { label: 'Caregiver Leads' }
         ]} />
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-neutral-900">Leads</h1>
+            <h1 className="text-2xl font-bold text-neutral-900">Caregiver Leads</h1>
             <p className="text-sm text-neutral-600 mt-1">
-              Manage family inquiries for aides and providers
+              Manage family inquiries for in-home caregivers and service providers. These are different from Home Inquiries which are requests for assisted living placements.
             </p>
           </div>
           <div className="text-sm text-neutral-600">
