@@ -856,3 +856,108 @@ None identified. All navigation issues from Priority 1 and 2 have been resolved.
 ✅ **Documentation updated**
 
 **Status:** Ready for production deployment pending successful QA testing.
+
+
+
+---
+
+## Layout Fix (December 8, 2024)
+
+### Issues Fixed
+
+**Branch:** `fix/operator-layout`
+
+#### 1. Double Sidebar Bug
+- **Problem:** Multiple operator pages displayed two stacked sidebars
+- **Affected Pages:** `/operator/leads`, `/operator/caregivers`, `/operator/inquiries`, `/operator/homes`, `/operator/analytics`, `/operator/billing`, `/operator/compliance`, `/operator/shifts`
+- **Root Cause:** Pages were wrapping themselves in `<DashboardLayout>` when `src/app/operator/layout.tsx` already provides that wrapper
+- **Solution:** Removed nested `<DashboardLayout>` from all affected pages
+- **Status:** ✅ Fixed
+
+#### 2. Prisma Client Multiple Instances
+- **Problem:** Pages were creating new `PrismaClient()` instances instead of using singleton
+- **Impact:** Potential connection pool exhaustion and runtime errors
+- **Solution:** Replaced `new PrismaClient()` with import from `@/lib/prisma`
+- **Status:** ✅ Fixed
+
+#### 3. Layout Pattern Documentation
+- **Problem:** No documentation of correct layout pattern
+- **Risk:** Future regressions from developers copying old patterns
+- **Solution:** Added comprehensive documentation to `src/app/operator/layout.tsx` with correct vs incorrect pattern examples
+- **Status:** ✅ Fixed
+
+### Correct Layout Pattern
+
+**✅ Correct (use this):**
+```tsx
+// src/app/operator/some-page/page.tsx
+export default function OperatorPage() {
+  return (
+    <div className="p-6">
+      <h1>Page Title</h1>
+      {/* Page content */}
+    </div>
+  );
+}
+```
+
+**❌ Wrong (don't do this):**
+```tsx
+import DashboardLayout from "@/components/layout/DashboardLayout";
+
+export default function OperatorPage() {
+  return (
+    <DashboardLayout>  {/* Creates double sidebar! */}
+      <div className="p-6">
+        <h1>Page Title</h1>
+      </div>
+    </DashboardLayout>
+  );
+}
+```
+
+### Files Changed
+
+**Layout Documentation:**
+- `src/app/operator/layout.tsx` - Added 40+ lines of pattern documentation
+
+**Page Fixes (8 pages):**
+- `src/app/operator/leads/page.tsx`
+- `src/app/operator/caregivers/page.tsx`
+- `src/app/operator/inquiries/page.tsx`
+- `src/app/operator/homes/page.tsx`
+- `src/app/operator/analytics/page.tsx`
+- `src/app/operator/billing/page.tsx`
+- `src/app/operator/compliance/page.tsx`
+- `src/app/operator/shifts/page.tsx`
+
+**Prisma Singleton (7 pages):**
+- `src/app/operator/page.tsx`
+- `src/app/operator/caregivers/page.tsx`
+- `src/app/operator/inquiries/page.tsx`
+- `src/app/operator/homes/page.tsx`
+- `src/app/operator/analytics/page.tsx`
+- `src/app/operator/billing/page.tsx`
+- `src/app/operator/compliance/page.tsx`
+
+### Testing Results
+
+✅ **All Tests Passed:**
+- Single sidebar on all operator pages
+- All functionality intact (filters, tables, pagination, forms)
+- No console errors
+- Mobile responsive
+- No regressions in other areas (Aide/Provider marketplaces, Family, Admin)
+
+### Git Commits
+
+1. `9ddea20` - docs(operator): Add layout pattern documentation
+2. `ddb4622` - fix(operator): Use Prisma singleton
+3. `485b219` - fix(operator): Remove nested layout from leads and caregivers
+4. `2319ead` - fix(operator): Remove nested layout from inquiries and homes
+5. `ca383fd` - fix(operator): Standardize pattern across remaining pages
+
+### Related Documentation
+
+- `OPERATOR_LAYOUT_FIX_SUMMARY.md` - Comprehensive fix documentation
+- `src/app/operator/layout.tsx` - Layout pattern reference
