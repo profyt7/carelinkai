@@ -285,7 +285,7 @@ export default function InquiriesFilterPanel({ homes, initialFilters = {} }: Inq
         </div>
       )}
 
-      {/* Inquiries Table */}
+      {/* Inquiries Table/Cards */}
       <div className="rounded-lg border border-neutral-200 bg-white overflow-hidden">
         {loading ? (
           <div className="p-6 flex items-center justify-center">
@@ -298,47 +298,100 @@ export default function InquiriesFilterPanel({ homes, initialFilters = {} }: Inq
             </div>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-neutral-200">
-              <thead className="bg-neutral-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                    Home
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                    Family
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                    Created
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                    Tour Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-neutral-200">
-                {inquiries.map((inquiry) => (
-                  <tr key={inquiry.id} className="hover:bg-neutral-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-neutral-900">
-                      {inquiry.home.name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600">
-                      {inquiry.family.name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600">
-                      {new Date(inquiry.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600">
-                      {inquiry.tourDate ? new Date(inquiry.tourDate).toLocaleDateString() : '—'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+          <>
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="min-w-full divide-y divide-neutral-200">
+                <thead className="bg-neutral-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                      Home
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                      Family
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                      Created
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                      Tour Date
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-neutral-200">
+                  {inquiries.map((inquiry) => (
+                    <tr key={inquiry.id} className="hover:bg-neutral-50 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-neutral-900">
+                        {inquiry.home.name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600">
+                        {inquiry.family.name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600">
+                        {new Date(inquiry.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600">
+                        {inquiry.tourDate ? new Date(inquiry.tourDate).toLocaleDateString() : '—'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                          inquiry.status === 'NEW' ? 'bg-red-100 text-red-800' :
+                          inquiry.status === 'CONTACTED' ? 'bg-blue-100 text-blue-800' :
+                          inquiry.status === 'TOUR_SCHEDULED' ? 'bg-yellow-100 text-yellow-800' :
+                          inquiry.status === 'TOUR_COMPLETED' ? 'bg-purple-100 text-purple-800' :
+                          inquiry.status === 'PLACEMENT_OFFERED' ? 'bg-indigo-100 text-indigo-800' :
+                          inquiry.status === 'PLACEMENT_ACCEPTED' ? 'bg-green-100 text-green-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {inquiry.status.replace(/_/g, ' ')}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <Link
+                          href={`/operator/inquiries/${inquiry.id}`}
+                          className="text-primary-600 hover:text-primary-900"
+                        >
+                          View Details
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                  {inquiries.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-12 text-center">
+                        <div className="text-neutral-500">
+                          <p className="text-lg font-medium mb-2">No inquiries found</p>
+                          <p className="text-sm">
+                            {hasActiveFilters
+                              ? 'Try adjusting your filters'
+                              : 'When families express interest in your homes, they\'ll appear here.'}
+                          </p>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden divide-y divide-neutral-200">
+              {inquiries.map((inquiry) => (
+                <Link
+                  key={inquiry.id}
+                  href={`/operator/inquiries/${inquiry.id}`}
+                  className="block p-4 hover:bg-neutral-50 transition-colors"
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-start justify-between">
+                      <div className="font-medium text-neutral-900">{inquiry.home.name}</div>
+                      <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full flex-shrink-0 ml-2 ${
                         inquiry.status === 'NEW' ? 'bg-red-100 text-red-800' :
                         inquiry.status === 'CONTACTED' ? 'bg-blue-100 text-blue-800' :
                         inquiry.status === 'TOUR_SCHEDULED' ? 'bg-yellow-100 text-yellow-800' :
@@ -349,34 +402,31 @@ export default function InquiriesFilterPanel({ homes, initialFilters = {} }: Inq
                       }`}>
                         {inquiry.status.replace(/_/g, ' ')}
                       </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <Link
-                        href={`/operator/inquiries/${inquiry.id}`}
-                        className="text-primary-600 hover:text-primary-900"
-                      >
-                        View Details
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-                {inquiries.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center">
-                      <div className="text-neutral-500">
-                        <p className="text-lg font-medium mb-2">No inquiries found</p>
-                        <p className="text-sm">
-                          {hasActiveFilters
-                            ? 'Try adjusting your filters'
-                            : 'When families express interest in your homes, they\'ll appear here.'}
-                        </p>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                    </div>
+                    <div className="text-sm text-neutral-600">{inquiry.family.name}</div>
+                    <div className="flex items-center justify-between text-xs text-neutral-500">
+                      <span>Created: {new Date(inquiry.createdAt).toLocaleDateString()}</span>
+                      {inquiry.tourDate && (
+                        <span>Tour: {new Date(inquiry.tourDate).toLocaleDateString()}</span>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              ))}
+              {inquiries.length === 0 && (
+                <div className="px-4 py-12 text-center">
+                  <div className="text-neutral-500">
+                    <p className="text-lg font-medium mb-2">No inquiries found</p>
+                    <p className="text-sm">
+                      {hasActiveFilters
+                        ? 'Try adjusting your filters'
+                        : 'When families express interest in your homes, they\'ll appear here.'}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </>
         )}
       </div>
 
