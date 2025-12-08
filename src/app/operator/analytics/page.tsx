@@ -1,15 +1,13 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import DashboardLayout from "@/components/layout/DashboardLayout";
 import Breadcrumbs from "@/components/ui/breadcrumbs";
-import { PrismaClient, UserRole } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
+import { UserRole } from "@prisma/client";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement } from 'chart.js';
 import { Doughnut, Bar } from 'react-chartjs-2';
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
-
-const prisma = new PrismaClient();
 
 export default async function OperatorAnalyticsPage({ searchParams }: { searchParams?: { operatorId?: string, range?: string, export?: string } }) {
   const session = await getServerSession(authOptions);
@@ -96,8 +94,7 @@ export default async function OperatorAnalyticsPage({ searchParams }: { searchPa
   }
 
   return (
-    <DashboardLayout title="Analytics" showSearch={false}>
-      <div className="p-4 sm:p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-6">
         <Breadcrumbs items={[
           { label: 'Operator', href: '/operator' },
           { label: 'Analytics' }
@@ -169,6 +166,5 @@ export default async function OperatorAnalyticsPage({ searchParams }: { searchPa
           </form>
         </div>
       </div>
-    </DashboardLayout>
   );
 }

@@ -1,15 +1,13 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import DashboardLayout from "@/components/layout/DashboardLayout";
 import Breadcrumbs from "@/components/ui/breadcrumbs";
-import { PrismaClient, UserRole } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
+import { UserRole } from "@prisma/client";
 import { formatCurrency } from "@/lib/utils";
 import { Decimal } from "@prisma/client/runtime/library";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
-
-const prisma = new PrismaClient();
 
 export default async function OperatorBillingPage({ searchParams }: { searchParams?: { operatorId?: string } }) {
   const session = await getServerSession(authOptions);
@@ -53,8 +51,7 @@ export default async function OperatorBillingPage({ searchParams }: { searchPara
     : 'All Operators';
 
   return (
-    <DashboardLayout title="Billing" showSearch={false}>
-      <div className="p-4 sm:p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-6">
         <Breadcrumbs items={[
           { label: 'Operator', href: '/operator' },
           { label: 'Billing' }
@@ -139,6 +136,5 @@ export default async function OperatorBillingPage({ searchParams }: { searchPara
           </div>
         </div>
       </div>
-    </DashboardLayout>
   );
 }
