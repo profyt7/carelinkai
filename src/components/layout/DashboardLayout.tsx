@@ -85,7 +85,7 @@ const navItems: NavItem[] = [
     icon: <FiTool size={20} />, 
     href: "/admin/tools", 
     showInMobileBar: false,
-    roleRestriction: ["ADMIN", "STAFF"] 
+    roleRestriction: ["ADMIN"] 
   },
   { name: "Help", icon: <FiHelpCircle size={20} />, href: "/help", showInMobileBar: false },
 ];
