@@ -1,11 +1,9 @@
-import DashboardLayout from '@/components/layout/DashboardLayout';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
 import NewEmploymentForm from '@/components/operator/NewEmploymentForm';
 
 export default function NewCaregiverEmploymentPage() {
   return (
-    <DashboardLayout title="New Caregiver Employment" showSearch={false}>
-      <div className="p-6 max-w-2xl">
+    <div className="p-6 max-w-2xl">
         <Breadcrumbs items={[
           { label: 'Operator', href: '/operator' },
           { label: 'Caregivers', href: '/operator/caregivers' },
@@ -16,6 +14,5 @@ export default function NewCaregiverEmploymentPage() {
           <NewEmploymentForm />
         </div>
       </div>
-    </DashboardLayout>
   );
 }

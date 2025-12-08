@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useParams, useRouter } from "next/navigation";
 import { UserRole } from "@prisma/client";
-import DashboardLayout from "@/components/layout/DashboardLayout";
 
 type Credential = {
   id: string;
@@ -114,8 +113,7 @@ export default function AdminAideDetailPage() {
   if (!isAuthorized) return null;
 
   return (
-    <DashboardLayout title="Admin • Aide Details">
-      <div className="px-4 py-6">
+    <div className="px-4 py-6">
         {loading && <div className="text-neutral-600">Loading…</div>}
         {error && !loading && (
           <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-amber-800">{error}</div>
@@ -183,6 +181,5 @@ export default function AdminAideDetailPage() {
           </div>
         )}
       </div>
-    </DashboardLayout>
   );
 }

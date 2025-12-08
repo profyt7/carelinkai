@@ -1,6 +1,5 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import DashboardLayout from "@/components/layout/DashboardLayout";
 import Breadcrumbs from "@/components/ui/breadcrumbs";
 import { PrismaClient, UserRole } from "@prisma/client";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement } from 'chart.js';
@@ -96,8 +95,7 @@ export default async function OperatorAnalyticsPage({ searchParams }: { searchPa
   }
 
   return (
-    <DashboardLayout title="Analytics" showSearch={false}>
-      <div className="p-4 sm:p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-6">
         <Breadcrumbs items={[
           { label: 'Operator', href: '/operator' },
           { label: 'Analytics' }
@@ -169,6 +167,5 @@ export default async function OperatorAnalyticsPage({ searchParams }: { searchPa
           </form>
         </div>
       </div>
-    </DashboardLayout>
   );
 }

@@ -5,7 +5,6 @@ import { useSession } from "next-auth/react";
 import { useParams, useRouter } from "next/navigation";
 import { UserRole } from "@prisma/client";
 import Link from "next/link";
-import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
   FiCheckCircle,
   FiXCircle,
@@ -178,8 +177,7 @@ export default function AdminProviderDetailPage() {
   if (!isAuthorized) return null;
 
   return (
-    <DashboardLayout title="Admin • Provider Details">
-      <div className="px-4 py-6">
+    <div className="px-4 py-6">
         {/* Back Button */}
         <div className="mb-4">
           <Link
@@ -519,6 +517,5 @@ export default function AdminProviderDetailPage() {
           </div>
         )}
       </div>
-    </DashboardLayout>
   );
 }

@@ -1,6 +1,5 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import DashboardLayout from '@/components/layout/DashboardLayout';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
 import { PrismaClient, UserRole } from '@prisma/client';
 import Link from 'next/link';
@@ -26,9 +25,7 @@ export default async function OperatorHomeManagePage({ params, searchParams }: {
   });
   if (!home) {
     return (
-      <DashboardLayout title="Manage Home" showSearch={false}>
-        <div className="p-6">Home not found.</div>
-      </DashboardLayout>
+      <div className="p-6">Home not found.</div>
     );
   }
 
@@ -43,8 +40,7 @@ export default async function OperatorHomeManagePage({ params, searchParams }: {
   const primaryUrl = await signed(primaryRaw?.url || null);
 
   return (
-    <DashboardLayout title="Manage Home" showSearch={false}>
-      <div className="p-4 sm:p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-6">
         <Breadcrumbs items={[
           { label: 'Operator', href: '/operator' },
           { label: 'Homes', href: '/operator/homes' },
@@ -100,6 +96,5 @@ export default async function OperatorHomeManagePage({ params, searchParams }: {
           </div>
         </div>
       </div>
-    </DashboardLayout>
   );
 }

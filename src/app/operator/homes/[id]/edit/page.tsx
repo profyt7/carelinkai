@@ -1,6 +1,5 @@
 "use client";
 
-import DashboardLayout from '@/components/layout/DashboardLayout';
 import PhotoGalleryManager from '@/components/operator/homes/PhotoGalleryManager';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
 import { useEffect, useState } from 'react';
@@ -196,17 +195,14 @@ export default function EditHomePage() {
 
   if (loading) {
     return (
-      <DashboardLayout title="Edit Home" showSearch={false}>
-        <div className="p-6">
+      <div className="p-6">
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-neutral-200 border-t-primary-500" />
         </div>
-      </DashboardLayout>
     );
   }
 
   return (
-    <DashboardLayout title="Edit Home" showSearch={false}>
-      <div className="p-4 sm:p-6 max-w-4xl">
+    <div className="p-4 sm:p-6 max-w-4xl">
         <Breadcrumbs items={[
           { label: 'Operator', href: '/operator' },
           { label: 'Homes', href: '/operator/homes' },
@@ -488,6 +484,5 @@ export default function EditHomePage() {
           </form>
         </div>
       </div>
-    </DashboardLayout>
   );
 }

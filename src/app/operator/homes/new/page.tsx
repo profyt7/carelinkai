@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/layout/DashboardLayout';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
 import toast from 'react-hot-toast';
 
@@ -156,8 +155,7 @@ export default function NewHomePage() {
   };
 
   return (
-    <DashboardLayout title="Add New Home" showSearch={false}>
-      <div className="p-4 sm:p-6 max-w-4xl">
+    <div className="p-4 sm:p-6 max-w-4xl">
         <Breadcrumbs items={[
           { label: 'Operator', href: '/operator' },
           { label: 'Homes', href: '/operator/homes' },
@@ -461,6 +459,5 @@ export default function NewHomePage() {
           </form>
         </div>
       </div>
-    </DashboardLayout>
   );
 }

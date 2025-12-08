@@ -1,6 +1,5 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import DashboardLayout from '@/components/layout/DashboardLayout';
 import { PrismaClient, UserRole } from '@prisma/client';
 import InquiriesFilterPanel from '@/components/operator/InquiriesFilterPanel';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
@@ -38,8 +37,7 @@ export default async function OperatorInquiriesPage({
     : [];
 
   return (
-    <DashboardLayout title="Inquiries" showSearch={false}>
-      <div className="p-4 sm:p-6">
+    <div className="p-4 sm:p-6">
         <Breadcrumbs items={[
           { label: 'Operator', href: '/operator' },
           { label: 'Home Inquiries' }
@@ -58,6 +56,5 @@ export default async function OperatorInquiriesPage({
           initialFilters={searchParams}
         />
       </div>
-    </DashboardLayout>
   );
 }

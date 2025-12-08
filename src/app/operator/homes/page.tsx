@@ -1,6 +1,5 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import DashboardLayout from "@/components/layout/DashboardLayout";
 import { PrismaClient, UserRole } from "@prisma/client";
 import { cookies } from "next/headers";
 import { MOCK_HOMES } from "@/lib/mock/homes";
@@ -34,8 +33,7 @@ export default async function OperatorHomesPage({ searchParams }: { searchParams
       });
 
   return (
-    <DashboardLayout title="Homes" showSearch={false}>
-      <div className="p-4 sm:p-6">
+    <div className="p-4 sm:p-6">
         <Breadcrumbs items={[
           { label: 'Operator', href: '/operator' },
           { label: 'Homes' }
@@ -103,6 +101,5 @@ export default async function OperatorHomesPage({ searchParams }: { searchParams
           )}
         </div>
       </div>
-    </DashboardLayout>
   );
 }

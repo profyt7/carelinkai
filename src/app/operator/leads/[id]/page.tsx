@@ -20,7 +20,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import DashboardLayout from "@/components/layout/DashboardLayout";
 import Breadcrumbs from "@/components/ui/breadcrumbs";
 import LeadStatusBadge from "@/components/operator/LeadStatusBadge";
 import LeadTargetTypeBadge from "@/components/operator/LeadTargetTypeBadge";
@@ -249,19 +248,16 @@ export default function OperatorLeadDetailPage() {
   // Loading state
   if (loading) {
     return (
-      <DashboardLayout title="Lead Details" showSearch={false}>
-        <div className="p-6 flex items-center justify-center">
+      <div className="p-6 flex items-center justify-center">
           <FiLoader className="animate-spin text-primary-500" size={32} />
         </div>
-      </DashboardLayout>
     );
   }
 
   // Error state
   if (error && !lead) {
     return (
-      <DashboardLayout title="Lead Details" showSearch={false}>
-        <div className="p-6">
+      <div className="p-6">
           <div className="rounded-lg border border-red-200 bg-red-50 p-4 flex items-start gap-3">
             <FiAlertCircle className="text-red-600 mt-0.5" size={20} />
             <div>
@@ -276,7 +272,6 @@ export default function OperatorLeadDetailPage() {
             </div>
           </div>
         </div>
-      </DashboardLayout>
     );
   }
 
@@ -287,8 +282,7 @@ export default function OperatorLeadDetailPage() {
   const statusOptions: LeadStatus[] = ["NEW", "IN_REVIEW", "CONTACTED", "CLOSED", "CANCELLED"];
 
   return (
-    <DashboardLayout title={`Lead - ${getTargetName()}`} showSearch={false}>
-      <div className="p-4 sm:p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-6">
         <Breadcrumbs items={[
           { label: 'Operator', href: '/operator' },
           { label: 'Leads', href: '/operator/leads' },
@@ -649,6 +643,5 @@ export default function OperatorLeadDetailPage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
   );
 }

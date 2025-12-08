@@ -1,7 +1,6 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient, UserRole } from '@prisma/client';
-import DashboardLayout from '@/components/layout/DashboardLayout';
 import AssignShiftForm from '@/components/operator/AssignShiftForm';
 
 const prisma = new PrismaClient();
@@ -38,8 +37,7 @@ export default async function AssignShiftPage({ params }: { params: { id: string
   }
 
   return (
-    <DashboardLayout title={`Assign Shift - ${shift.home.name}`} showSearch={false}>
-      <div className="p-4 sm:p-6 space-y-4">
+    <div className="p-4 sm:p-6 space-y-4">
         <div className="card p-4">
           <div className="text-sm text-neutral-600">Home</div>
           <div className="font-medium">{shift.home.name}</div>
@@ -60,6 +58,5 @@ export default async function AssignShiftPage({ params }: { params: { id: string
         </div>
         <AssignShiftForm shiftId={shift.id} caregivers={caregivers} initialCaregiverId={shift.caregiverId} />
       </div>
-    </DashboardLayout>
   );
 }

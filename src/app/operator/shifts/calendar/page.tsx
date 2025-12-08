@@ -1,7 +1,6 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient, UserRole } from '@prisma/client';
-import DashboardLayout from '@/components/layout/DashboardLayout';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
 import Link from 'next/link';
 
@@ -43,8 +42,7 @@ export default async function ShiftsCalendarPage() {
   const days = Array.from({ length: 7 }).map((_, i) => addDays(start, i));
 
   return (
-    <DashboardLayout title="Shifts Calendar" showSearch={false}>
-      <div className="p-4 sm:p-6">
+    <div className="p-4 sm:p-6">
         <Breadcrumbs items={[
           { label: 'Operator', href: '/operator' },
           { label: 'Shifts', href: '/operator/shifts' },
@@ -94,6 +92,5 @@ export default async function ShiftsCalendarPage() {
           })}
         </div>
       </div>
-    </DashboardLayout>
   );
 }

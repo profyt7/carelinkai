@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/layout/DashboardLayout';
 import Link from 'next/link';
 import { InquiryStatus } from '@prisma/client';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
@@ -102,27 +101,22 @@ export default function OperatorLeadDetailPage() {
 
   if (loading) {
     return (
-      <DashboardLayout title="Inquiry Details">
-        <div className="p-6">
+      <div className="p-6">
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-neutral-200 border-t-primary-500" />
         </div>
-      </DashboardLayout>
     );
   }
 
   if (error || !data) {
     return (
-      <DashboardLayout title="Inquiry Details">
-        <div className="p-6">
+      <div className="p-6">
           <div className="rounded-md border border-red-200 bg-red-50 p-4 text-red-700">{error || 'Not found'}</div>
         </div>
-      </DashboardLayout>
     );
   }
 
   return (
-    <DashboardLayout title={`Lead - ${data.home.name}`} showSearch={false}>
-      <div className="p-4 sm:p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-6">
         <Breadcrumbs items={[
           { label: 'Operator', href: '/operator' },
           { label: 'Inquiries', href: '/operator/inquiries' },
@@ -237,6 +231,5 @@ export default function OperatorLeadDetailPage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
   );
 }

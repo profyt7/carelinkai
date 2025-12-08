@@ -5,7 +5,6 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { UserRole } from "@prisma/client";
-import DashboardLayout from "@/components/layout/DashboardLayout";
 import { FiCheckCircle, FiXCircle, FiAlertCircle, FiChevronRight } from "react-icons/fi";
 
 type ProviderListItem = {
@@ -104,8 +103,7 @@ export default function AdminProvidersListPage() {
   if (!isAuthorized) return null;
 
   return (
-    <DashboardLayout title="Admin • Providers">
-      <div className="px-4 py-6">
+    <div className="px-4 py-6">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-neutral-900">Provider Management</h1>
           <p className="mt-1 text-neutral-600">
@@ -344,6 +342,5 @@ export default function AdminProvidersListPage() {
           )}
         </div>
       </div>
-    </DashboardLayout>
   );
 }

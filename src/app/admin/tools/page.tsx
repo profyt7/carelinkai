@@ -5,7 +5,6 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { UserRole } from "@prisma/client";
-import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
   FiMail,
   FiToggleLeft,
@@ -194,8 +193,7 @@ export default function AdminToolsPage() {
   }
 
   return (
-    <DashboardLayout title="Admin Tools">
-      <div className="px-4 py-6">
+    <div className="px-4 py-6">
         {/* Page Header */}
         <div className="mb-8 border-b border-neutral-200 pb-5">
           <h1 className="text-3xl font-bold text-neutral-800">Admin Tools</h1>
@@ -419,6 +417,5 @@ export default function AdminToolsPage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
   );
 }

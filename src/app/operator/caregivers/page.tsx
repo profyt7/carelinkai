@@ -1,5 +1,4 @@
 import { PrismaClient } from '@prisma/client';
-import DashboardLayout from '@/components/layout/DashboardLayout';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
 import Link from 'next/link';
 import EmptyState from '@/components/ui/empty-state';
@@ -17,8 +16,7 @@ export default async function OperatorCaregiversPage() {
   });
 
   return (
-    <DashboardLayout title="Operator • Caregivers" showSearch={false}>
-      <div className="p-6">
+    <div className="p-6">
         <Breadcrumbs items={[
           { label: 'Operator', href: '/operator' },
           { label: 'Caregivers' }
@@ -88,6 +86,5 @@ export default async function OperatorCaregiversPage() {
           </div>
         )}
       </div>
-    </DashboardLayout>
   );
 }

@@ -5,7 +5,6 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { UserRole } from "@prisma/client";
-import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
   FiUsers,
   FiFileText,
@@ -204,8 +203,7 @@ export default function AdminMetricsPage() {
   // ========== RENDER ==========
 
   return (
-    <DashboardLayout title="Admin • Platform Metrics">
-      <div className="px-4 py-6">
+    <div className="px-4 py-6">
         <div className="mb-6 flex items-start justify-between">
           <div>
             <h1 className="text-2xl font-bold text-neutral-900">Platform Metrics</h1>
@@ -739,6 +737,5 @@ export default function AdminMetricsPage() {
           </div>
         )}
       </div>
-    </DashboardLayout>
   );
 }

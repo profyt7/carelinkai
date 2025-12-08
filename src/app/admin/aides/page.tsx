@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { UserRole } from "@prisma/client";
-import DashboardLayout from "@/components/layout/DashboardLayout";
 
 type CaregiverListItem = {
   id: string;
@@ -98,8 +97,7 @@ export default function AdminAidesListPage() {
   if (!isAuthorized) return null;
 
   return (
-    <DashboardLayout title="Admin • Aides">
-      <div className="px-4 py-6">
+    <div className="px-4 py-6">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end">
           <div className="flex-1">
             <label className="block text-sm text-neutral-600 mb-1">Search (name or email)</label>
@@ -176,6 +174,5 @@ export default function AdminAidesListPage() {
           </div>
         )}
       </div>
-    </DashboardLayout>
   );
 }
