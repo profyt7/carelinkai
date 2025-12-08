@@ -25,7 +25,9 @@
         "cron:schedule": "node scripts/run-cron.js --mode schedule",
         "cron:run": "node scripts/run-cron.js",
         "type-check": "tsc -p tsconfig.json --noEmit",
-        "migrate:deploy": "prisma migrate deploy"
+        "migrate:deploy": "prisma migrate deploy",
+        "migrate:resolve": "bash scripts/resolve-failed-migration.sh",
+        "migrate:resolve-manual": "prisma migrate resolve --rolled-back 20251208170953_add_assessments_incidents_fields"
     },
     "prisma": {
         "seed": "ts-node --transpile-only prisma/seed.ts"
