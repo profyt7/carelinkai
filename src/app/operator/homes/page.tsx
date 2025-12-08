@@ -6,6 +6,8 @@ import { cookies } from "next/headers";
 import { MOCK_HOMES } from "@/lib/mock/homes";
 import Link from "next/link";
 import Breadcrumbs from "@/components/ui/breadcrumbs";
+import EmptyState from "@/components/ui/empty-state";
+import { FiHome } from "react-icons/fi";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -85,8 +87,16 @@ export default async function OperatorHomesPage({ searchParams }: { searchParams
                 </div>
               ))}
               {homes!.length === 0 && (
-                <div className="card">
-                  <div className="text-neutral-600">No homes yet. Click "Add Home" to create your first community.</div>
+                <div className="col-span-full">
+                  <EmptyState
+                    icon={FiHome}
+                    title="No homes listed yet"
+                    description="Add your first assisted living home to start receiving inquiries from families looking for care."
+                    action={{
+                      label: "Add Home",
+                      href: `/operator/homes/new${operatorOverrideId ? `?operatorId=${operatorOverrideId}` : ''}`
+                    }}
+                  />
                 </div>
               )}
             </>

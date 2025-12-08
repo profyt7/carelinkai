@@ -5,6 +5,8 @@ import { getBaseUrl } from '@/lib/http';
 import { MOCK_RESIDENTS } from '@/lib/mock/residents';
 import { InlineActions, StatusPill } from '@/components/operator/residents/InlineActions';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
+import EmptyState from '@/components/ui/empty-state';
+import { FiUsers } from 'react-icons/fi';
 
 async function fetchResidents(params: { q?: string; status?: string; homeId?: string; familyId?: string; cursor?: string }) {
   const cookieHeader = cookies().toString();
@@ -107,34 +109,43 @@ export default async function ResidentsPage({ searchParams }: { searchParams?: {
           <Link href="/operator/residents/new" className="btn btn-sm">New Resident</Link>
         </div>
       </div>
-      <div className="mt-6 overflow-x-auto">
-        <table className="min-w-full divide-y divide-neutral-200">
-          <thead>
-            <tr>
-              <th className="px-4 py-2 text-left text-sm font-medium text-neutral-700">Name</th>
-              <th className="px-4 py-2 text-left text-sm font-medium text-neutral-700">Status</th>
-              <th className="px-4 py-2" />
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-neutral-100 bg-white">
-            {items.map((r) => (
-              <tr key={r.id}>
-                <td className="px-4 py-2 text-sm text-neutral-800">{r.firstName} {r.lastName}</td>
-                <td className="px-4 py-2 text-sm text-neutral-700"><StatusPill status={r.status} /></td>
-                <td className="px-4 py-2 text-right flex items-center gap-3 justify-end">
-                  <InlineActions id={r.id} status={r.status} homes={homes} />
-                  <Link className="text-primary-600 hover:underline text-sm" href={`/operator/residents/${r.id}`}>Details</Link>
-                </td>
-              </tr>
-            ))}
-            {items.length === 0 && (
+      {items.length === 0 ? (
+        <div className="mt-6">
+          <EmptyState
+            icon={FiUsers}
+            title="No residents yet"
+            description="Add residents to track their care and information. Start by creating your first resident profile."
+            action={{
+              label: "Add Resident",
+              href: "/operator/residents/new"
+            }}
+          />
+        </div>
+      ) : (
+        <div className="mt-6 overflow-x-auto">
+          <table className="min-w-full divide-y divide-neutral-200">
+            <thead>
               <tr>
-                <td className="px-4 py-6 text-sm text-neutral-500" colSpan={3}>No residents found.</td>
+                <th className="px-4 py-2 text-left text-sm font-medium text-neutral-700">Name</th>
+                <th className="px-4 py-2 text-left text-sm font-medium text-neutral-700">Status</th>
+                <th className="px-4 py-2" />
               </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody className="divide-y divide-neutral-100 bg-white">
+              {items.map((r) => (
+                <tr key={r.id}>
+                  <td className="px-4 py-2 text-sm text-neutral-800">{r.firstName} {r.lastName}</td>
+                  <td className="px-4 py-2 text-sm text-neutral-700"><StatusPill status={r.status} /></td>
+                  <td className="px-4 py-2 text-right flex items-center gap-3 justify-end">
+                    <InlineActions id={r.id} status={r.status} homes={homes} />
+                    <Link className="text-primary-600 hover:underline text-sm" href={`/operator/residents/${r.id}`}>Details</Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
       {nextCursor && (
         <div className="mt-4">
           <Link className="btn btn-sm" href={`/operator/residents?${new URLSearchParams({ q, status, homeId, familyId, cursor: nextCursor }).toString()}`}>Next</Link>
