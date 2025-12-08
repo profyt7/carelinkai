@@ -27,7 +27,7 @@
         "type-check": "tsc -p tsconfig.json --noEmit",
         "migrate:deploy": "prisma migrate deploy",
         "migrate:resolve": "bash scripts/resolve-failed-migration.sh",
-        "migrate:resolve-manual": "prisma migrate resolve --rolled-back 20251208170953_add_assessments_incidents_fields"
+        "migrate:resolve-manual": "prisma migrate resolve --rolled-back 20251208170953_add_assessments_incidents_fields && prisma migrate resolve --rolled-back 20251208170953_add_assessments_incidents_fields.failed_backup"
     },
     "prisma": {
         "seed": "ts-node --transpile-only prisma/seed.ts"

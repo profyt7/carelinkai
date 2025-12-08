@@ -2,23 +2,51 @@
 
 ## Issue Summary
 
-**Failed Migration**: `20251208170953_add_assessments_incidents_fields`  
+**Failed Migrations**: 
+1. `20251208170953_add_assessments_incidents_fields` (original)
+2. `20251208170953_add_assessments_incidents_fields.failed_backup` (backup attempt)
+
 **Database**: PostgreSQL (`carelinkai_db`) on Render  
 **Error Code**: P3009 - Migration failed in the target database  
-**Root Cause**: The migration started but didn't complete successfully, leaving it in a "failed" state in the `_prisma_migrations` table
+**Root Cause**: BOTH migrations are recorded as "failed" in the `_prisma_migrations` table from previous deployment attempts
+
+## The `_prisma_migrations` Table Issue
+
+**Critical Understanding**: Even though we removed the `.failed_backup` folder from the codebase, the **database still has a record** of both migrations in the `_prisma_migrations` table:
+
+```sql
+-- Example of what's in the database:
+SELECT migration_name, finished_at, rolled_back_at, applied_steps_count 
+FROM _prisma_migrations 
+WHERE migration_name LIKE '20251208170953%';
+
+-- Results show:
+-- 1. 20251208170953_add_assessments_incidents_fields (status: failed)
+-- 2. 20251208170953_add_assessments_incidents_fields.failed_backup (status: failed)
+```
+
+**Why This Happens**: When Prisma attempts to apply a migration, it immediately creates a record in `_prisma_migrations` with a timestamp. If the migration fails mid-execution, that record remains marked as "failed". Removing the migration folder from the codebase does NOT remove this database record.
+
+**Why Both Must Be Resolved**: Prisma checks the `_prisma_migrations` table before applying new migrations. If ANY migration is in a "failed" state, it blocks all subsequent migrations. Therefore, we must mark BOTH failed records as "rolled back" before deploying the new safe migration.
 
 ## Impact
 
-- New migrations cannot be applied until the failed migration is resolved
+- New migrations cannot be applied until BOTH failed migrations are resolved
 - Phase 2 features (Assessments and Incidents tabs) may have incomplete database schema
 - Production deployments are blocked
+- The error message references the `.failed_backup` migration even though the folder no longer exists in the codebase
 
 ## Solution Overview
 
 This fix includes:
-1. **Migration Resolution Script**: Marks the failed migration as "rolled back"
+1. **Migration Resolution Script**: Marks **BOTH** failed migrations as "rolled back"
 2. **New Idempotent Migration**: Safely adds all required fields (can run multiple times)
 3. **Comprehensive Testing**: Verification steps to ensure success
+
+**Key Changes in This Update**:
+- ✅ `scripts/resolve-failed-migration.sh` now resolves both migrations
+- ✅ `package.json` `migrate:resolve-manual` script chains both resolution commands
+- ✅ Documentation explains the database table issue clearly
 
 ---
 
@@ -57,7 +85,7 @@ This script will:
 - Check if `DATABASE_URL` is set
 - Show current migration status
 - Ask for confirmation
-- Mark the failed migration as "rolled back"
+- Mark **BOTH** failed migrations as "rolled back"
 - Show updated migration status
 
 **Expected Output:**
@@ -66,16 +94,24 @@ This script will:
 
 📋 Current migration status:
 ----------------------------
-[Shows migration status including failed migration]
+[Shows migration status including both failed migrations]
 
-⚠️  This script will mark the failed migration as rolled back:
-   Migration: 20251208170953_add_assessments_incidents_fields
+⚠️  This script will mark BOTH failed migrations as rolled back:
+   Migration 1: 20251208170953_add_assessments_incidents_fields
+   Migration 2: 20251208170953_add_assessments_incidents_fields.failed_backup
+
+ℹ️  Note: The .failed_backup migration was recorded in the database
+   during a previous deployment attempt, even though the folder
+   was removed from the codebase.
 
 Do you want to proceed? (yes/no): yes
 
-🔄 Marking failed migration as rolled back...
+🔄 Resolving failed migrations...
 
-✅ Migration marked as rolled back successfully
+1️⃣  Resolving: 20251208170953_add_assessments_incidents_fields
+2️⃣  Resolving: 20251208170953_add_assessments_incidents_fields.failed_backup
+
+✅ Both migrations marked as rolled back successfully
 ```
 
 #### 3. Deploy the New Migration
@@ -128,15 +164,16 @@ npx prisma migrate status
 
 You should see the failed migration listed.
 
-#### 3. Mark Migration as Rolled Back
+#### 3. Mark Both Migrations as Rolled Back
 
 ```bash
 npm run migrate:resolve-manual
 ```
 
-Or directly:
+Or directly (both commands required):
 ```bash
 npx prisma migrate resolve --rolled-back "20251208170953_add_assessments_incidents_fields"
+npx prisma migrate resolve --rolled-back "20251208170953_add_assessments_incidents_fields.failed_backup"
 ```
 
 #### 4. Deploy New Migration
@@ -477,8 +514,9 @@ npm run prisma:studio
 
 ## Summary
 
-✅ **Problem**: Failed migration blocking deployments  
-✅ **Solution**: Resolve failed migration + apply new idempotent migration  
+✅ **Problem**: TWO failed migrations blocking deployments (original + .failed_backup)  
+✅ **Root Cause**: Database `_prisma_migrations` table has records for both migrations  
+✅ **Solution**: Resolve BOTH failed migrations + apply new idempotent migration  
 ✅ **Safety**: New migration can run multiple times safely  
 ✅ **Verification**: Multiple verification steps provided  
 ✅ **Support**: Comprehensive troubleshooting included  
@@ -488,5 +526,5 @@ npm run prisma:studio
 ---
 
 **Last Updated**: December 8, 2025  
-**Version**: 1.0  
+**Version**: 1.1 (Updated to resolve both failed migrations)  
 **Status**: Ready for Production Deployment

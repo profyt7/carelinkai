@@ -1,7 +1,9 @@
 #!/bin/bash
 
 # Migration Resolution Script for CareLinkAI
-# This script resolves the failed migration: 20251208170953_add_assessments_incidents_fields
+# This script resolves BOTH failed migrations:
+#   1. 20251208170953_add_assessments_incidents_fields
+#   2. 20251208170953_add_assessments_incidents_fields.failed_backup
 # Run this script on the production database before deploying the new migration
 
 set -e  # Exit on error
@@ -28,8 +30,13 @@ npx prisma migrate status || true
 echo ""
 
 # Ask for confirmation
-echo "⚠️  This script will mark the failed migration as rolled back:"
-echo "   Migration: 20251208170953_add_assessments_incidents_fields"
+echo "⚠️  This script will mark BOTH failed migrations as rolled back:"
+echo "   Migration 1: 20251208170953_add_assessments_incidents_fields"
+echo "   Migration 2: 20251208170953_add_assessments_incidents_fields.failed_backup"
+echo ""
+echo "ℹ️  Note: The .failed_backup migration was recorded in the database"
+echo "   during a previous deployment attempt, even though the folder"
+echo "   was removed from the codebase."
 echo ""
 read -p "Do you want to proceed? (yes/no): " -r
 echo ""
@@ -39,14 +46,21 @@ if [[ ! $REPLY =~ ^[Yy][Ee][Ss]$ ]]; then
   exit 1
 fi
 
-echo "🔄 Marking failed migration as rolled back..."
+echo "🔄 Resolving failed migrations..."
 echo ""
 
-# Resolve the failed migration
-npx prisma migrate resolve --rolled-back "20251208170953_add_assessments_incidents_fields"
+# Resolve the original failed migration
+echo "1️⃣  Resolving: 20251208170953_add_assessments_incidents_fields"
+npx prisma migrate resolve --rolled-back "20251208170953_add_assessments_incidents_fields" || echo "⚠️  Migration 1 may already be resolved"
 
 echo ""
-echo "✅ Migration marked as rolled back successfully"
+
+# Resolve the backup failed migration
+echo "2️⃣  Resolving: 20251208170953_add_assessments_incidents_fields.failed_backup"
+npx prisma migrate resolve --rolled-back "20251208170953_add_assessments_incidents_fields.failed_backup" || echo "⚠️  Migration 2 may already be resolved"
+
+echo ""
+echo "✅ Both migrations marked as rolled back successfully"
 echo ""
 
 # Show updated migration status
