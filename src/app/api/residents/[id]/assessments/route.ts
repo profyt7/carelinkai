@@ -17,9 +17,21 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const limit = Math.min(Number(url.searchParams.get("limit") || "25"), 100);
     const items = await prisma.assessmentResult.findMany({
       where: { residentId: params.id },
-      orderBy: { createdAt: "desc" },
+      orderBy: { conductedAt: "desc" },
       take: limit,
-      select: { id: true, type: true, score: true, data: true, createdAt: true },
+      select: { 
+        id: true, 
+        type: true, 
+        score: true, 
+        data: true, 
+        status: true,
+        conductedBy: true,
+        conductedAt: true,
+        notes: true,
+        recommendations: true,
+        createdAt: true,
+        updatedAt: true
+      },
     });
     return NextResponse.json({ items }, { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } });
   } catch (e) {
@@ -35,11 +47,33 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     const { error } = await requireOperatorOrAdmin();
     if (error) return error;
     const body = await req.json().catch(() => ({}));
-    const Schema = z.object({ type: z.string().min(1), score: z.number().int().nullable().optional(), data: z.any().optional() });
+    const Schema = z.object({ 
+      type: z.string().min(1), 
+      score: z.number().int().nullable().optional(), 
+      data: z.any().optional(),
+      status: z.string().optional(),
+      conductedBy: z.string().optional(),
+      conductedAt: z.string().datetime().optional(),
+      notes: z.string().optional(),
+      recommendations: z.string().optional()
+    });
     const parsed = Schema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: "Invalid body", details: parsed.error.format() }, { status: 400 });
-    const { type, score, data } = parsed.data;
-    const created = await prisma.assessmentResult.create({ data: { residentId: params.id, type, score: score ?? null, data: data ?? null }, select: { id: true } });
+    const { type, score, data, status, conductedBy, conductedAt, notes, recommendations } = parsed.data;
+    const created = await prisma.assessmentResult.create({ 
+      data: { 
+        residentId: params.id, 
+        type, 
+        score: score ?? null, 
+        data: data ?? null,
+        status: status ?? null,
+        conductedBy: conductedBy ?? null,
+        conductedAt: conductedAt ? new Date(conductedAt) : new Date(),
+        notes: notes ?? null,
+        recommendations: recommendations ?? null
+      }, 
+      select: { id: true } 
+    });
     await createAuditLogFromRequest(req, AuditAction.CREATE, 'AssessmentResult', created.id, 'Created assessment result', { residentId: params.id, type });
     return NextResponse.json({ success: true, id: created.id }, { status: 201, headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } });
   } catch (e) {

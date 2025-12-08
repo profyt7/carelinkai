@@ -177,31 +177,111 @@ async function main() {
       },
     ]});
     
-    // Clinical assessments
-    await prisma.assessmentResult.create({ 
-      data: { 
-        residentId: created.id, 
-        type: 'ADL', 
-        score: Math.floor(15 + Math.random() * 10), 
-        data: { 
-          ambulation: ['independent', 'assisted', 'wheelchair'][Math.floor(Math.random() * 3)],
-          bathing: 'assisted',
-          dressing: 'independent'
-        } 
-      } 
-    });
+    // Clinical assessments (3-5 per resident)
+    const assessmentTypes = [
+      { type: 'ADL', status: 'COMPLETED', notes: 'Resident shows good independence in most daily activities. Requires minimal assistance with bathing.', recommendations: 'Continue current care plan. Monitor for any changes in mobility.' },
+      { type: 'COGNITIVE', status: 'COMPLETED', notes: 'Memory recall is fair. Oriented to person and place, occasionally confused about time.', recommendations: 'Consider memory exercises and cognitive stimulation activities.' },
+      { type: 'NUTRITIONAL', status: 'COMPLETED', notes: 'Appetite is good. Weight stable. Adequate hydration observed.', recommendations: 'Maintain current dietary plan. Continue monitoring weight weekly.' },
+      { type: 'FALL_RISK', status: 'COMPLETED', notes: 'Moderate fall risk due to occasional balance issues. Uses walker consistently.', recommendations: 'Ensure walker is always within reach. Consider physical therapy for balance training.' },
+      { type: 'PAIN', status: 'IN_PROGRESS', notes: 'Reports mild arthritis pain, rated 3/10. Pain management effective.', recommendations: 'Continue current pain medication schedule. Re-assess in 2 weeks.' },
+    ];
     
-    // Incidents (only for active residents)
-    if (status === 'ACTIVE' && Math.random() > 0.5) {
-      await prisma.residentIncident.create({ 
+    const staffNames = ['Sarah Johnson, RN', 'Michael Chen, LPN', 'Emily Rodriguez, RN', 'David Kim, MD'];
+    const numAssessments = Math.floor(Math.random() * 3) + 3; // 3-5 assessments
+    
+    for (let i = 0; i < numAssessments; i++) {
+      const assessment = assessmentTypes[i % assessmentTypes.length];
+      const daysAgo = Math.floor(Math.random() * 90); // Within last 90 days
+      const conductedDate = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000);
+      
+      await prisma.assessmentResult.create({ 
         data: { 
           residentId: created.id, 
-          type: 'Fall', 
-          severity: 'LOW', 
-          occurredAt: new Date(Date.now() - Math.random() * 60 * 24 * 60 * 60 * 1000), 
-          description: 'Minor fall in room. No injuries reported. Resident was assisted back to bed.' 
+          type: assessment.type, 
+          score: assessment.type === 'ADL' ? Math.floor(15 + Math.random() * 10) : 
+                 assessment.type === 'COGNITIVE' ? Math.floor(20 + Math.random() * 10) : 
+                 assessment.type === 'PAIN' ? Math.floor(Math.random() * 10) : null,
+          status: assessment.status,
+          conductedBy: staffNames[Math.floor(Math.random() * staffNames.length)],
+          conductedAt: conductedDate,
+          notes: assessment.notes,
+          recommendations: assessment.recommendations,
+          data: assessment.type === 'ADL' ? { 
+            ambulation: ['independent', 'assisted', 'wheelchair'][Math.floor(Math.random() * 3)],
+            bathing: 'assisted',
+            dressing: 'independent',
+            eating: 'independent',
+            toileting: 'assisted'
+          } : null
         } 
       });
+    }
+    
+    // Incidents (1-3 per active resident)
+    const incidentScenarios = [
+      { 
+        type: 'FALL_NO_INJURY', 
+        severity: 'MODERATE', 
+        status: 'RESOLVED',
+        description: 'Resident slipped while walking to bathroom. No injuries sustained. Vital signs normal.',
+        location: `Room ${roomNumber || 'Common Area'}`,
+        witnessedBy: 'Mary Thompson, CNA',
+        actionsTaken: 'Assisted resident back to bed. Conducted full assessment. No injuries found. Monitored for 2 hours.',
+        resolutionNotes: 'Resident stable. Reminded to use call button for assistance. No follow-up needed.',
+        followUpRequired: false
+      },
+      { 
+        type: 'MEDICATION_ERROR_MISSED_DOSE', 
+        severity: 'MINOR', 
+        status: 'RESOLVED',
+        description: 'Morning medication dose was missed due to resident being at appointment.',
+        location: 'Medication Room',
+        witnessedBy: null,
+        actionsTaken: 'Contacted physician. Administered dose upon return. No adverse effects noted.',
+        resolutionNotes: 'Medication schedule adjusted for appointment days. Incident documented and reviewed.',
+        followUpRequired: false
+      },
+      { 
+        type: 'BEHAVIORAL_WANDERING', 
+        severity: 'MODERATE', 
+        status: 'UNDER_REVIEW',
+        description: 'Resident found in wrong wing. Appeared confused but not distressed.',
+        location: 'North Wing Hallway',
+        witnessedBy: 'Security Staff',
+        actionsTaken: 'Gently redirected resident back to room. Offered snack and reassurance.',
+        resolutionNotes: null,
+        followUpRequired: true
+      },
+    ];
+    
+    if (status === 'ACTIVE') {
+      const numIncidents = Math.floor(Math.random() * 3) + 1; // 1-3 incidents
+      for (let i = 0; i < numIncidents; i++) {
+        const incident = incidentScenarios[i % incidentScenarios.length];
+        const daysAgo = Math.floor(Math.random() * 60); // Within last 60 days
+        const occurredDate = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000);
+        const reportedDate = new Date(occurredDate.getTime() + Math.random() * 60 * 60 * 1000); // Reported within 1 hour
+        
+        await prisma.residentIncident.create({ 
+          data: { 
+            residentId: created.id, 
+            type: incident.type, 
+            severity: incident.severity, 
+            status: incident.status,
+            occurredAt: occurredDate,
+            description: incident.description,
+            location: incident.location,
+            reportedBy: staffNames[Math.floor(Math.random() * staffNames.length)],
+            reportedAt: reportedDate,
+            witnessedBy: incident.witnessedBy,
+            actionsTaken: incident.actionsTaken,
+            followUpRequired: incident.followUpRequired,
+            resolutionNotes: incident.resolutionNotes,
+            resolvedAt: incident.status === 'RESOLVED' ? new Date(occurredDate.getTime() + 24 * 60 * 60 * 1000) : null,
+            resolvedBy: incident.status === 'RESOLVED' ? staffNames[Math.floor(Math.random() * staffNames.length)] : null
+          } 
+        });
+      }
     }
     
     // Notes (3-5 realistic notes)

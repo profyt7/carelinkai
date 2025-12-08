@@ -27,10 +27,26 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (error) return error;
     if (!(await canAccess(session!.user!.email, params.id))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const body = await req.json().catch(() => ({}));
-    const Schema = z.object({ type: z.string().min(1).optional(), score: z.number().int().nullable().optional(), data: z.any().optional() });
+    const Schema = z.object({ 
+      type: z.string().min(1).optional(), 
+      score: z.number().int().nullable().optional(), 
+      data: z.any().optional(),
+      status: z.string().optional(),
+      conductedBy: z.string().optional(),
+      conductedAt: z.string().datetime().optional(),
+      notes: z.string().optional(),
+      recommendations: z.string().optional()
+    });
     const parsed = Schema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: 'Invalid body', details: parsed.error.format() }, { status: 400 });
-    const updated = await prisma.assessmentResult.update({ where: { id: params.assessmentId }, data: parsed.data, select: { id: true } });
+    
+    // Convert conductedAt string to Date if provided
+    const updateData: any = { ...parsed.data };
+    if (updateData.conductedAt) {
+      updateData.conductedAt = new Date(updateData.conductedAt);
+    }
+    
+    const updated = await prisma.assessmentResult.update({ where: { id: params.assessmentId }, data: updateData, select: { id: true } });
     await createAuditLogFromRequest(req, AuditAction.UPDATE, 'AssessmentResult', updated.id, 'Updated assessment result', { residentId: params.id });
     return NextResponse.json({ success: true }, { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } });
   } catch (e) {

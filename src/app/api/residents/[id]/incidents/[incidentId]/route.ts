@@ -31,13 +31,25 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const Schema = z.object({
       type: z.string().min(1).optional(),
       severity: z.string().min(1).optional(),
+      status: z.string().optional(),
       description: z.string().optional(),
       occurredAt: z.string().datetime().optional(),
+      location: z.string().optional(),
+      reportedBy: z.string().optional(),
+      reportedAt: z.string().datetime().optional(),
+      witnessedBy: z.string().optional(),
+      actionsTaken: z.string().optional(),
+      followUpRequired: z.boolean().optional(),
+      resolutionNotes: z.string().optional(),
+      resolvedAt: z.string().datetime().optional(),
+      resolvedBy: z.string().optional()
     });
     const parsed = Schema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: 'Invalid body', details: parsed.error.format() }, { status: 400 });
     const data: any = { ...parsed.data };
     if (data.occurredAt) data.occurredAt = new Date(data.occurredAt);
+    if (data.reportedAt) data.reportedAt = new Date(data.reportedAt);
+    if (data.resolvedAt) data.resolvedAt = new Date(data.resolvedAt);
     const updated = await prisma.residentIncident.update({ where: { id: params.incidentId }, data, select: { id: true } });
     await createAuditLogFromRequest(req, AuditAction.UPDATE, 'ResidentIncident', updated.id, 'Updated incident', { residentId: params.id });
     return NextResponse.json({ success: true }, { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } });

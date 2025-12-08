@@ -629,11 +629,16 @@ model CareTimelineEvent {
 
 /// Clinical assessment results recorded for a resident
 model AssessmentResult {
-  id         String @id @default(cuid())
-  residentId String
-  type       String
-  score      Int?
-  data       Json?
+  id            String   @id @default(cuid())
+  residentId    String
+  type          String
+  score         Int?
+  data          Json? // Assessment-specific data (structured assessment form)
+  status        String? // Status of the assessment (e.g., "COMPLETED", "IN_PROGRESS", "PENDING_REVIEW")
+  conductedBy   String? // Staff member who conducted the assessment
+  conductedAt   DateTime @default(now()) // When the assessment was conducted
+  notes         String?  @db.Text // Observations and notes
+  recommendations String? @db.Text // Recommendations based on assessment results
 
   // Relations
   resident Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
@@ -645,16 +650,29 @@ model AssessmentResult {
   // Indexes
   @@index([residentId])
   @@index([createdAt])
+  @@index([conductedAt])
+  @@index([type])
+  @@index([status])
 }
 
 /// Incident reports associated with a resident
 model ResidentIncident {
-  id          String   @id @default(cuid())
-  residentId  String
-  type        String
-  severity    String
-  occurredAt  DateTime
-  description String?  @db.Text
+  id                String    @id @default(cuid())
+  residentId        String
+  type              String // Fall, Medication Error, Behavioral, Medical Emergency, etc.
+  severity          String // Minor, Moderate, Severe, Critical
+  status            String    @default("REPORTED") // REPORTED, UNDER_REVIEW, RESOLVED, FOLLOW_UP_REQUIRED
+  occurredAt        DateTime
+  description       String?   @db.Text
+  location          String? // Location where incident occurred
+  reportedBy        String? // Staff member who reported the incident
+  reportedAt        DateTime  @default(now())
+  witnessedBy       String?   @db.Text // Witnesses (comma-separated or JSON)
+  actionsTaken      String?   @db.Text // Actions taken immediately following the incident
+  followUpRequired  Boolean   @default(false)
+  resolutionNotes   String?   @db.Text // Notes on how the incident was resolved
+  resolvedAt        DateTime?
+  resolvedBy        String? // Staff member who resolved the incident
 
   // Relations
   resident Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
@@ -666,6 +684,10 @@ model ResidentIncident {
   // Indexes
   @@index([residentId])
   @@index([occurredAt])
+  @@index([type])
+  @@index([severity])
+  @@index([status])
+  @@index([reportedAt])
 }
 
 /// Free-form notes on a resident with role-based visibility
