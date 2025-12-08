@@ -399,14 +399,17 @@ async function main() {
     ];
     
     for (let i = 0; i < 3 + Math.floor(Math.random() * 3); i++) {
-      await prisma.residentNote.create({ 
-        data: { 
-          residentId: created.id, 
-          content: noteContents[i % noteContents.length], 
-          visibility: 'INTERNAL' as any,
-          createdAt: new Date(Date.now() - (i * 2 + Math.random()) * 24 * 60 * 60 * 1000)
-        } 
-      });
+      const content = noteContents[i % noteContents.length];
+      if (content) {
+        await prisma.residentNote.create({ 
+          data: { 
+            residentId: created.id, 
+            content, 
+            visibility: 'INTERNAL' as any,
+            createdAt: new Date(Date.now() - (i * 2 + Math.random()) * 24 * 60 * 60 * 1000)
+          } 
+        });
+      }
     }
     
     // Timeline events (for active residents)

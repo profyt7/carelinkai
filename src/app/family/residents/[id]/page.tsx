@@ -85,14 +85,14 @@ export default async function FamilyResidentPage({ params }: Props) {
       where: {
         residentId: resident.id,
         status: 'OPEN' as any,
-        dueDate: { gte: now, lte: in14 },
+        expiryDate: { gte: now, lte: in14 },
       },
     }),
     prisma.residentComplianceItem.count({
       where: {
         residentId: resident.id,
         status: 'OPEN' as any,
-        dueDate: { lt: now },
+        expiryDate: { lt: now },
       },
     }),
   ]);
