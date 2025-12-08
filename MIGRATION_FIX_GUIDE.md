@@ -460,9 +460,18 @@ npm run prisma:studio
 - `package.json` - Added `migrate:resolve` and `migrate:resolve-manual` scripts
 - `MIGRATION_FIX_GUIDE.md` - This documentation
 
-### Files Renamed
+### Files Renamed/Moved
 
-- `prisma/migrations/20251208170953_add_assessments_incidents_fields/` → `20251208170953_add_assessments_incidents_fields.failed_backup/`
+- ~~`prisma/migrations/20251208170953_add_assessments_incidents_fields/` → `20251208170953_add_assessments_incidents_fields.failed_backup/`~~ (Initial rename - still in migrations directory)
+- **UPDATE (Dec 8, 2025)**: `prisma/migrations/20251208170953_add_assessments_incidents_fields.failed_backup/` → `backup/failed_migrations/20251208170953_add_assessments_incidents_fields.failed_backup/`
+
+### Why the Backup Was Moved
+
+**Issue Discovered**: Even with the `.failed_backup` suffix, Prisma was still attempting to apply the migration because it remained in the `prisma/migrations/` directory. Prisma treats ANY folder in the migrations directory as a valid migration, regardless of naming.
+
+**Solution**: The failed migration backup was moved out of the migrations directory entirely to `/backup/failed_migrations/` to ensure Prisma does not attempt to apply it during deployments.
+
+**Commit**: `f231e94` - "fix: Remove failed migration backup from migrations directory"
 
 ---
 
