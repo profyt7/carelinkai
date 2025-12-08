@@ -527,6 +527,7 @@ model Resident {
   residentNotes     ResidentNote[]
   contacts          ResidentContact[]
   complianceItems   ResidentComplianceItem[]
+  familyContacts    FamilyContact[]
 
   // Family collaboration relationships
   familyDocuments      FamilyDocument[]
@@ -576,21 +577,24 @@ model ResidentContact {
 
 /// Compliance tasks/items tracked per resident (e.g., TB test, flu shot, care plan review)
 enum ComplianceStatus {
-  OPEN
-  COMPLETED
+  CURRENT
+  EXPIRING_SOON
+  EXPIRED
+  NOT_REQUIRED
 }
 
 model ResidentComplianceItem {
   id          String           @id @default(cuid())
   residentId  String
-  type        String // e.g., TB_TEST, FLU_SHOT, CARE_PLAN_REVIEW
+  type        String // e.g., MEDICAL_RECORDS, INSURANCE, LEGAL_DOCUMENTS, CARE_PLANS
   title       String
   notes       String?          @db.Text
-  owner       String? // optional owner/assignee
-  status      ComplianceStatus @default(OPEN)
-  severity    String? // LOW|MEDIUM|HIGH (free-form for now)
-  dueDate     DateTime?
-  completedAt DateTime?
+  status      ComplianceStatus @default(CURRENT)
+  issuedDate  DateTime?
+  expiryDate  DateTime?
+  documentUrl String?
+  verifiedBy  String?
+  verifiedAt  DateTime?
 
   // Relations
   resident Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
@@ -602,7 +606,36 @@ model ResidentComplianceItem {
   // Indexes
   @@index([residentId])
   @@index([status])
-  @@index([dueDate])
+  @@index([expiryDate])
+  @@index([type])
+}
+
+/// Family contacts for resident - beyond emergency contacts (communication, permissions, visits)
+model FamilyContact {
+  id                String    @id @default(cuid())
+  residentId        String
+  name              String
+  relationship      String // Daughter, Son, Spouse, Sibling, etc.
+  phone             String?
+  email             String?
+  address           String?   @db.Text
+  isPrimaryContact  Boolean   @default(false)
+  permissionLevel   String    @default("VIEW_ONLY") // FULL_ACCESS, LIMITED_ACCESS, VIEW_ONLY, NO_ACCESS
+  contactPreference String?   @default("PHONE") // PHONE, EMAIL, TEXT, IN_PERSON, ANY
+  notes             String?   @db.Text
+  lastContactDate   DateTime?
+
+  // Relations
+  resident Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([residentId])
+  @@index([isPrimaryContact])
+  @@index([permissionLevel])
 }
 
 model CareTimelineEvent {

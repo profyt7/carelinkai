@@ -23,9 +23,11 @@ import { ResidentOverview } from '@/components/operator/residents/ResidentOvervi
 import { ResidentPhotoUpload } from '@/components/operator/residents/ResidentPhotoUpload';
 import { AssessmentsTab } from '@/components/operator/residents/AssessmentsTab';
 import { IncidentsTab } from '@/components/operator/residents/IncidentsTab';
+import { ComplianceTab } from '@/components/operator/residents/ComplianceTab';
+import { FamilyTab } from '@/components/operator/residents/FamilyTab';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
 import Image from 'next/image';
-import { FiEdit, FiFileText, FiUser, FiClipboard, FiAlertTriangle } from 'react-icons/fi';
+import { FiEdit, FiFileText, FiUser, FiClipboard, FiAlertTriangle, FiShield, FiUsers } from 'react-icons/fi';
 
 async function fetchResident(id: string) {
   const cookieHeader = cookies().toString();
@@ -154,6 +156,8 @@ export default async function ResidentDetail({ params, searchParams }: { params:
     { id: 'overview', label: 'Overview', icon: FiUser },
     { id: 'assessments', label: 'Assessments', icon: FiClipboard },
     { id: 'incidents', label: 'Incidents', icon: FiAlertTriangle },
+    { id: 'compliance', label: 'Compliance', icon: FiShield },
+    { id: 'family', label: 'Family', icon: FiUsers },
     { id: 'details', label: 'Details', icon: FiFileText },
   ];
   
@@ -277,6 +281,14 @@ export default async function ResidentDetail({ params, searchParams }: { params:
 
       {activeTab === 'incidents' && (
         <IncidentsTab residentId={resident.id} />
+      )}
+
+      {activeTab === 'compliance' && (
+        <ComplianceTab residentId={resident.id} />
+      )}
+
+      {activeTab === 'family' && (
+        <FamilyTab residentId={resident.id} />
       )}
 
       {activeTab === 'details' && (

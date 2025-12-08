@@ -148,34 +148,133 @@ async function main() {
       },
     ]});
     
-    // Compliance items (varied by status)
-    await prisma.residentComplianceItem.createMany({ data: [
-      { 
-        residentId: created.id, 
-        type: 'CARE_PLAN_REVIEW', 
-        title: 'Quarterly Care Plan Review', 
-        status: 'OPEN' as ComplianceStatus, 
-        dueDate: new Date(Date.now()+14*24*60*60*1000),
-        severity: 'MEDIUM'
-      },
-      { 
-        residentId: created.id, 
-        type: 'FLU_SHOT', 
-        title: 'Annual Flu Shot', 
-        status: 'COMPLETED' as ComplianceStatus, 
-        completedAt: new Date(Date.now() - 30*24*60*60*1000),
-        severity: 'LOW'
+    // Compliance items (varied by status) - Phase 3 schema
+    const complianceItems = [
+      {
+        type: 'MEDICAL_RECORDS',
+        title: 'Annual Physical Examination',
+        status: status === 'ACTIVE' ? 'CURRENT' : 'EXPIRING_SOON',
+        issuedDate: new Date(Date.now() - 180*24*60*60*1000),
+        expiryDate: new Date(Date.now() + (status === 'ACTIVE' ? 180 : 30)*24*60*60*1000),
+        notes: 'Comprehensive physical completed by Dr. Smith',
+        verifiedBy: 'Sarah Johnson, RN',
+        verifiedAt: new Date(Date.now() - 175*24*60*60*1000),
       },
       {
-        residentId: created.id,
-        type: 'TB_TEST',
-        title: 'Annual TB Test',
-        status: status === 'ACTIVE' ? 'COMPLETED' as ComplianceStatus : 'OPEN' as ComplianceStatus,
-        completedAt: status === 'ACTIVE' ? new Date(Date.now() - 90*24*60*60*1000) : null,
-        dueDate: status === 'ACTIVE' ? null : new Date(Date.now()+7*24*60*60*1000),
-        severity: 'HIGH'
+        type: 'INSURANCE',
+        title: 'Medicare Card on File',
+        status: 'CURRENT',
+        issuedDate: new Date(Date.now() - 365*24*60*60*1000),
+        expiryDate: new Date(Date.now() + 365*24*60*60*1000),
+        documentUrl: 'https://example.com/docs/medicare.pdf',
+        notes: 'Medicare Part A and B coverage verified',
+        verifiedBy: 'Admin Staff',
+        verifiedAt: new Date(Date.now() - 360*24*60*60*1000),
       },
-    ]});
+      {
+        type: 'IMMUNIZATION_RECORDS',
+        title: 'Annual Flu Vaccination',
+        status: 'CURRENT',
+        issuedDate: new Date(Date.now() - 60*24*60*60*1000),
+        expiryDate: new Date(Date.now() + 305*24*60*60*1000),
+        notes: 'Flu shot administered on-site',
+        verifiedBy: 'Emily Rodriguez, RN',
+        verifiedAt: new Date(Date.now() - 60*24*60*60*1000),
+      },
+      {
+        type: 'ADVANCE_DIRECTIVES',
+        title: 'Living Will and Healthcare Proxy',
+        status: 'CURRENT',
+        issuedDate: new Date(Date.now() - 730*24*60*60*1000),
+        documentUrl: 'https://example.com/docs/advance-directive.pdf',
+        notes: 'Updated advance directives on file',
+        verifiedBy: 'Legal Team',
+        verifiedAt: new Date(Date.now() - 730*24*60*60*1000),
+      },
+      {
+        type: 'CARE_PLANS',
+        title: 'Updated Care Plan',
+        status: Math.random() > 0.5 ? 'CURRENT' : 'EXPIRING_SOON',
+        issuedDate: new Date(Date.now() - 90*24*60*60*1000),
+        expiryDate: new Date(Date.now() + (Math.random() > 0.5 ? 90 : 15)*24*60*60*1000),
+        notes: 'Care plan reviewed and updated with family',
+        verifiedBy: 'Care Coordinator',
+        verifiedAt: new Date(Date.now() - 85*24*60*60*1000),
+      },
+    ];
+    
+    for (const item of complianceItems) {
+      await prisma.residentComplianceItem.create({ 
+        data: { 
+          residentId: created.id, 
+          ...item,
+          status: item.status as any,
+        } 
+      });
+    }
+    
+    // Family Contacts (2-4 per resident) - Phase 3
+    const familyContacts = [
+      {
+        name: `Sarah ${lastName}`,
+        relationship: 'Daughter',
+        phone: '(555) 234-5678',
+        email: `sarah.${lastName.toLowerCase()}@email.com`,
+        address: `123 Main St, Springfield, IL 62701`,
+        isPrimaryContact: true,
+        permissionLevel: 'FULL_ACCESS',
+        contactPreference: 'PHONE',
+        notes: 'Primary decision maker. Available during business hours.',
+        lastContactDate: new Date(Date.now() - Math.floor(Math.random() * 14)*24*60*60*1000),
+      },
+      {
+        name: `Michael ${lastName}`,
+        relationship: 'Son',
+        phone: '(555) 345-6789',
+        email: `michael.${lastName.toLowerCase()}@email.com`,
+        address: `456 Oak Ave, Chicago, IL 60614`,
+        isPrimaryContact: false,
+        permissionLevel: 'LIMITED_ACCESS',
+        contactPreference: 'EMAIL',
+        notes: 'Works overseas, prefers email communication.',
+        lastContactDate: new Date(Date.now() - Math.floor(Math.random() * 30)*24*60*60*1000),
+      },
+      {
+        name: `Jennifer ${lastName}-Smith`,
+        relationship: 'Grandchild',
+        phone: '(555) 456-7890',
+        email: `jennifer.smith@email.com`,
+        isPrimaryContact: false,
+        permissionLevel: 'VIEW_ONLY',
+        contactPreference: 'TEXT',
+        notes: 'Visits regularly on weekends. Very close to resident.',
+        lastContactDate: new Date(Date.now() - Math.floor(Math.random() * 7)*24*60*60*1000),
+      },
+      {
+        name: `Robert ${lastName} Sr.`,
+        relationship: 'Spouse',
+        phone: '(555) 567-8901',
+        email: `robert.${lastName.toLowerCase()}@email.com`,
+        address: `Same as resident`,
+        isPrimaryContact: false,
+        permissionLevel: 'FULL_ACCESS',
+        contactPreference: 'IN_PERSON',
+        notes: 'Lives nearby, visits daily.',
+        lastContactDate: new Date(Date.now() - 1*24*60*60*1000),
+      },
+    ];
+    
+    // Add 2-4 family contacts per resident
+    const numFamilyContacts = 2 + Math.floor(Math.random() * 3); // 2-4
+    for (let i = 0; i < numFamilyContacts; i++) {
+      const contact = familyContacts[i % familyContacts.length];
+      await prisma.familyContact.create({ 
+        data: { 
+          residentId: created.id, 
+          ...contact,
+        } 
+      });
+    }
     
     // Clinical assessments (3-5 per resident)
     const assessmentTypes = [
@@ -340,7 +439,8 @@ async function main() {
   console.log(`   📊 ${demoResidents.length} residents created with:`);
   console.log(`      • Profile photos and demographics`);
   console.log(`      • Emergency contacts (3 per resident)`);
-  console.log(`      • Compliance items and medical assessments`);
+  console.log(`      • Phase 2: Assessments (3-5) and Incidents (1-3)`);
+  console.log(`      • Phase 3: Compliance items (5) and Family contacts (2-4)`);
   console.log(`      • Care notes and timeline events`);
   console.log(`      • Varied statuses (Active, Inquiry, Pending)`);
   console.log(`   🏠 Ready for demo in Operator portal at /operator/residents`);
