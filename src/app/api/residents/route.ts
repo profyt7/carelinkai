@@ -69,7 +69,22 @@ export async function GET(req: NextRequest) {
       where,
       take: limit + 1, // over-fetch to determine next cursor
       orderBy: { id: 'asc' },
-      select: { id: true, firstName: true, lastName: true, status: true },
+      select: { 
+        id: true, 
+        firstName: true, 
+        lastName: true, 
+        status: true,
+        photoUrl: true,
+        dateOfBirth: true,
+        admissionDate: true,
+        careNeeds: true,
+        home: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      },
     };
     if (cursor) queryOpts.cursor = { id: cursor };
     if (cursor) queryOpts.skip = 1;
