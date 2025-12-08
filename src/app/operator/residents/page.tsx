@@ -8,16 +8,17 @@ import Breadcrumbs from '@/components/ui/breadcrumbs';
 import EmptyState from '@/components/ui/empty-state';
 import { FiUsers } from 'react-icons/fi';
 
-async function fetchResidents(params: { q?: string; status?: string; homeId?: string; familyId?: string; cursor?: string }) {
+async function fetchResidents(params: { q?: string; status?: string; homeId?: string; familyId?: string; cursor?: string; showArchived?: string }) {
   const cookieHeader = cookies().toString();
   const qParam = params.q ? `&q=${encodeURIComponent(params.q)}` : '';
   const sParam = params.status ? `&status=${encodeURIComponent(params.status)}` : '';
   const hParam = params.homeId ? `&homeId=${encodeURIComponent(params.homeId)}` : '';
   const fParam = params.familyId ? `&familyId=${encodeURIComponent(params.familyId)}` : '';
   const cParam = params.cursor ? `&cursor=${encodeURIComponent(params.cursor)}` : '';
+  const aParam = params.showArchived === 'true' ? '&showArchived=true' : '';
   const h = headers();
   const base = getBaseUrl(h);
-  const res = await fetch(`${base}/api/residents?limit=50${qParam}${sParam}${hParam}${fParam}${cParam}`, {
+  const res = await fetch(`${base}/api/residents?limit=50${qParam}${sParam}${hParam}${fParam}${cParam}${aParam}`, {
     cache: 'no-store',
     headers: { cookie: cookieHeader },
   });
@@ -36,7 +37,7 @@ async function fetchHomes() {
   return { homes: (json.homes ?? []).map((h: any) => ({ id: h.id, name: h.name })) };
 }
 
-export default async function ResidentsPage({ searchParams }: { searchParams?: { q?: string; status?: string; homeId?: string; familyId?: string; cursor?: string; live?: string } }) {
+export default async function ResidentsPage({ searchParams }: { searchParams?: { q?: string; status?: string; homeId?: string; familyId?: string; cursor?: string; live?: string; showArchived?: string } }) {
   if (process.env['NEXT_PUBLIC_RESIDENTS_ENABLED'] === 'false') return notFound();
   const mockCookie = cookies().get('carelink_mock_mode')?.value?.toString().trim().toLowerCase() || '';
   const showMock = ['1','true','yes','on'].includes(mockCookie);
@@ -47,7 +48,8 @@ export default async function ResidentsPage({ searchParams }: { searchParams?: {
   const homeId = searchParams?.homeId?.toString() || '';
   const familyId = searchParams?.familyId?.toString() || '';
   const cursor = searchParams?.cursor?.toString() || '';
-  const data = showMock && !forceLive ? MOCK_RESIDENTS : await fetchResidents({ q, status, homeId, familyId, cursor });
+  const showArchived = searchParams?.showArchived?.toString() || '';
+  const data = showMock && !forceLive ? MOCK_RESIDENTS : await fetchResidents({ q, status, homeId, familyId, cursor, showArchived });
   const { homes } = showMock ? { homes: [] as Array<{ id: string; name: string }> } : await fetchHomes();
   const items: Array<{ id: string; firstName: string; lastName: string; status: string }> = Array.isArray(data) ? data : (data.items ?? []);
   const nextCursor = Array.isArray(data) ? null : (data.nextCursor ?? null);
@@ -84,6 +86,16 @@ export default async function ResidentsPage({ searchParams }: { searchParams?: {
               ))}
             </select>
             <input type="text" name="familyId" placeholder="Family ID" defaultValue={familyId} className="border rounded px-2 py-1 text-sm" />
+            <label className="flex items-center gap-1 text-sm whitespace-nowrap">
+              <input
+                type="checkbox"
+                name="showArchived"
+                value="true"
+                defaultChecked={showArchived === 'true'}
+                className="rounded"
+              />
+              Show Archived
+            </label>
             <button className="btn btn-sm" type="submit">Search</button>
           </form>
           {showMock && (
