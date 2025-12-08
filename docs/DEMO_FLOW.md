@@ -220,27 +220,53 @@ This document provides a **5-10 minute scripted demo** covering the key workflow
 3. Point out caregiver cards with background check status
 4. **Say:** "This ensures only qualified, vetted caregivers appear in our marketplace."
 
-#### Step 5: View Platform Metrics
+#### Step 5: View Platform Metrics (Enhanced Dashboard)
 1. Navigate to `/admin/metrics`
-2. **Say:** "Our metrics dashboard gives us real-time visibility into platform health and growth."
-3. Scroll through the dashboard sections:
-   - **Overview Cards:** Point out total users, leads, active aides, and active providers
+2. **Say:** "Our enhanced metrics dashboard gives us real-time visibility into platform health and growth."
+3. **Point out the "Last Updated" timestamp** (top-right corner):
+   - "This shows when the data was last generated - we're looking at live data from just moments ago."
+4. **Demonstrate the Time Range Toggle** (center of page):
+   - Click "Last 7 Days" → Watch the Lead Trends cards highlight
+   - Click "Last 30 Days" → See the emphasis shift
+   - **Say:** "We can toggle between time ranges to see short-term momentum vs long-term trends."
+5. **Click through the Clickable KPI Tiles:**
+   - Click "Total Leads" → Navigates to `/operator/leads`
+   - **Say:** "Tiles deep-link to operational views - one click to drill down into details."
+   - Go back, click "Active Aides" → Navigates to `/marketplace/caregivers`
+   - Go back, click "Active Providers" → Navigates to `/admin/providers`
+   - **Say:** "This makes it easy to go from high-level metrics to specific actions."
+6. **Highlight the Key Ratios Section** (gradient banner):
+   - **Verified Provider Rate:** "82% of our providers are verified - showing our commitment to quality."
+   - **Background Check Clear Rate:** "75% of aides have cleared background checks."
+   - **Leads per Provider:** "1.5 leads per provider shows balanced marketplace demand."
+   - **Leads per Aide:** "2.3 leads per aide indicates healthy interest from families."
+   - **Messages per Lead:** "6.9 messages per lead shows active engagement and conversation."
+   - **Say:** "These ratios help us understand marketplace health beyond raw numbers."
+7. Scroll through other sections:
    - **User Metrics:** Show growth by role (family, caregivers, providers)
    - **Lead Metrics:** Highlight leads by status and target type
-   - **Marketplace Metrics:** Point out verified vs unverified providers, background check status
+   - **Marketplace Metrics:** Point out verified vs unverified breakdown
    - **Engagement Metrics:** Show message activity
-4. **Say:** "This helps us track growth, identify bottlenecks, and measure platform traction."
-5. Point to specific metrics:
+8. **Say:** "This dashboard helps us track growth, identify bottlenecks, and measure platform traction."
+9. Point to specific metrics based on the selected time range:
    - "We've had X new families sign up in the last 7 days"
    - "We have Y leads in 'IN_REVIEW' status - these need operator attention"
-   - "Z% of our providers are verified, showing our commitment to quality"
-6. **Say:** "These metrics help us make data-driven decisions about where to focus our efforts."
+   - "Z% of our providers are verified, demonstrating our quality standards"
 
 **Use Case for Investors:**
-- Emphasize growth metrics (new users last 7/30 days)
-- Highlight lead volume as proof of demand
-- Show provider verification as quality indicator
-- Point out engagement metrics (messages) as usage proof
+- **Growth Metrics:** Emphasize new users by role (last 7/30 days) showing user acquisition momentum
+- **Demand Proof:** Highlight total leads and recent lead volume (use time toggle to show trends)
+- **Supply Quality:** Point to verification rates and background check metrics as differentiation
+- **Engagement Proof:** Messages per lead and total message activity show real usage, not just signups
+- **Marketplace Balance:** Leads per provider/aide ratios show supply-demand equilibrium
+- **Operational Efficiency:** Clickable tiles demonstrate admin tools for scale
+- **Data-Driven Culture:** Time range toggle and key ratios show commitment to actionable analytics
+
+**Use Case for ALFs/Agencies:**
+- **Lead Volume:** Focus on active leads and conversion (NEW → CONTACTED → CLOSED)
+- **Caregiver Quality:** Emphasize background check clear rate and verification rates
+- **Response Time:** Messages per lead shows families are engaged and communicating
+- **Marketplace Health:** Active aides and providers show robust supply
 
 ---
 

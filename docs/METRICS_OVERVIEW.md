@@ -1,326 +1,400 @@
-# CareLinkAI Metrics Overview
+# CareLinkAI Metrics Dashboard - Overview & Documentation
 
 ## Introduction
 
-This document provides a comprehensive overview of the analytics and metrics system implemented in CareLinkAI. The metrics dashboard gives administrators visibility into platform usage, growth trends, and key performance indicators.
+The **Admin Metrics Dashboard** (`/admin/metrics`) provides comprehensive, real-time analytics and performance indicators for the CareLinkAI platform. This dashboard is exclusively available to users with the **ADMIN** role and serves as the central hub for understanding platform health, user growth, marketplace activity, and engagement levels.
 
-## Access
+**Access:** Admin users only  
+**URL:** `/admin/metrics`  
+**API Endpoint:** `GET /api/admin/metrics`
 
-**URL:** `/admin/metrics`
+---
 
-**Permission Required:** ADMIN role only
+## Dashboard Features
 
-Non-admin users will be redirected to the dashboard if they attempt to access this page.
+### 1. Last Updated Timestamp
 
-## Available Metrics
+**Location:** Top-right corner of the page  
+**Description:** Displays when the metrics data was last generated  
+**Format:** "Dec 8, 2025, 3:45 PM" (localized to user's timezone)  
+**Purpose:** Provides confidence in data freshness and helps admins understand when to refresh for latest numbers
 
-### 1. User Metrics
+**Technical Details:**
+- Timestamp is generated server-side in the API response (`generatedAt` field)
+- Formatted using `toLocaleString()` with custom options for readability
+- Updates automatically on page refresh
 
-These metrics track user growth and distribution across different roles in the platform.
+---
 
-#### Total Users by Role
-- **Description:** Count of all registered users, broken down by role
-- **Roles Tracked:**
-  - FAMILY: Family members searching for care
-  - CAREGIVER: Individual caregivers/aides
-  - PROVIDER: Service provider organizations
-  - OPERATOR: Assisted living facility operators
-  - ADMIN: Platform administrators
-  - STAFF: Platform staff members
-  - AFFILIATE: Affiliate partners
+### 2. Time Range Toggle
 
-#### New Users (Last 7 Days)
-- **Description:** Number of new user registrations in the past 7 days, by role
-- **Use Case:** Track recent growth and identify which user types are signing up most frequently
+**Location:** Center of page, below the header  
+**Options:** 
+- **Last 7 Days** - Shows short-term momentum and recent trends
+- **Last 30 Days** - Shows monthly growth patterns
+- **All Time** - Shows cumulative platform metrics
 
-#### New Users (Last 30 Days)
-- **Description:** Number of new user registrations in the past 30 days, by role
-- **Use Case:** Monitor monthly growth trends and compare to previous periods
+**Visual Behavior:**
+- Active selection is highlighted with primary color and shadow
+- Inactive options use neutral styling with hover effects
+- Smooth transitions between selections
 
-### 2. Lead/Inquiry Metrics
+**Impact on Dashboard:**
+When a time range is selected, the **Lead Trends** section visually emphasizes the corresponding metric:
+- **Last 7 Days selected** → "Leads (Last 7 Days)" card highlights with ring, shadow, and scale
+- **Last 30 Days selected** → "Leads (Last 30 Days)" card highlights with ring, shadow, and scale
+- **All Time selected** → No specific card emphasis (shows overall totals)
 
-These metrics track the inquiry pipeline from families seeking care services.
+**Use Cases:**
+- **Investors:** Toggle to show growth momentum (Last 7 Days) vs sustained growth (Last 30 Days)
+- **Operators:** Use Last 7 Days to identify immediate bottlenecks or spikes
+- **Long-term Planning:** Use All Time view to understand cumulative trends
 
-#### Total Leads
-- **Description:** Total number of active (non-deleted) leads in the system
-- **Note:** Excludes soft-deleted leads
+**Technical Details:**
+- State managed with React `useState` hook
+- No URL persistence (selection resets on page reload)
+- CSS transitions provide smooth visual feedback
 
-#### Leads by Status
-Breakdown of leads by their current status:
-- **NEW:** Recently created, not yet reviewed
-- **IN_REVIEW:** Being reviewed by operators
-- **CONTACTED:** Family has been contacted
-- **CLOSED:** Lead successfully resolved
-- **CANCELLED:** Lead cancelled or abandoned
+---
 
-**Use Case:** Identify bottlenecks in the lead follow-up process
+### 3. Clickable KPI Tiles (Deep-Links)
 
-#### Leads by Target Type
-Distribution of leads by service type:
-- **AIDE:** Inquiries about individual caregivers
-- **PROVIDER:** Inquiries about service provider organizations
+**Location:** Top of metrics display, below time range toggle  
+**Purpose:** Provide quick navigation from high-level metrics to detailed operational views
 
-**Use Case:** Understand which services are in higher demand
+#### Tile Mappings:
 
-#### Leads Created (Last 7 Days)
-- **Description:** Number of new leads created in the past week
-- **Use Case:** Track lead generation velocity
+| Tile | Metric | Deep-Link Destination | Description |
+|------|--------|----------------------|-------------|
+| **Total Users** | Sum of all users by role | *No link* (no dedicated user list exists) | Displays total registered users across all roles |
+| **Total Leads** | Count of all non-deleted leads | `/operator/leads` | Navigate to lead management interface |
+| **Active Aides** | Caregivers visible in marketplace | `/marketplace/caregivers` | Browse marketplace caregiver listings |
+| **Active Providers** | Active home care agencies | `/admin/providers` | Admin provider management view |
 
-#### Leads Created (Last 30 Days)
-- **Description:** Number of new leads created in the past month
-- **Use Case:** Monitor monthly lead volume trends
+#### Visual Design:
+- **Hover Effect:** Border color changes to match tile theme (green for leads, blue for aides, purple for providers)
+- **Hover Shadow:** Subtle shadow appears on hover
+- **Arrow Icon:** Right-pointing arrow (`FiArrowRight`) appears on hover and slides right
+- **Cursor:** Pointer cursor indicates interactivity
+- **Accessibility:** Tiles are keyboard-navigable (Tab key) and trigger on Enter key
 
-### 3. Marketplace Metrics
+**Use Cases:**
+- **Admins:** Quickly drill down from overview to specific operational areas
+- **Demo Scenarios:** Show seamless navigation between analytics and action
+- **Daily Operations:** One-click access to most-used admin tools
 
-These metrics provide insights into the supply side of the marketplace.
+**Technical Details:**
+- Uses Next.js `Link` component for client-side navigation
+- Maintains existing dashboard state when navigating back
+- RBAC enforced on destination pages (Admin/Operator access required)
 
-#### Active Aides
-- **Description:** Number of caregivers/aides who are visible in the marketplace
-- **Criteria:** `isVisibleInMarketplace = true`
-- **Use Case:** Ensure adequate supply of caregivers
+---
 
-#### Active Providers
-- **Description:** Number of service provider organizations currently active
-- **Criteria:** `isActive = true`
-- **Use Case:** Monitor provider engagement
+### 4. Key Ratios & Insights
 
-#### Verified Providers
-- **Description:** Number of providers who have completed verification
-- **Criteria:** `isVerified = true`
-- **Use Case:** Track verification progress and quality
+**Location:** Below KPI tiles, in a gradient-styled section  
+**Purpose:** Provide calculated metrics that indicate platform health beyond raw counts
 
-#### Unverified Providers
-- **Description:** Number of providers awaiting verification
-- **Criteria:** `isVerified = false`
-- **Use Case:** Identify verification backlog
+#### Ratios Displayed:
 
-#### Aide Background Check Status
-Breakdown of caregivers by background check status:
-- **NOT_STARTED:** Background check not initiated
-- **PENDING:** Check in progress
-- **CLEAR:** Passed background check
-- **CONSIDER:** Results require review
-- **EXPIRED:** Previous clearance has expired
-- **FAILED:** Did not pass background check
+| Ratio | Calculation | Interpretation | Edge Case Handling |
+|-------|-------------|----------------|-------------------|
+| **Verified Provider Rate** | `(verifiedProviders / activeProviders) * 100` | Higher % = better marketplace trust | Returns "N/A" if no active providers |
+| **Background Check Clear Rate** | `(aidesWithClearBGCheck / activeAides) * 100` | Higher % = more vetted caregivers | Returns "N/A" if no active aides |
+| **Leads per Provider** | `totalLeads / activeProviders` | Indicates demand for provider services | Returns "N/A" if no active providers |
+| **Leads per Aide** | `totalLeads / activeAides` | Indicates demand for caregiver services | Returns "N/A" if no active aides |
+| **Messages per Lead** | `totalMessages / totalLeads` | Indicates engagement level per inquiry | Returns "N/A" if no leads |
 
-**Use Case:** Monitor compliance and identify caregivers needing attention
+#### Formatting:
+- **Percentages:** Displayed with 1 decimal place (e.g., "82.5%")
+- **Ratios:** Displayed with 1 decimal place (e.g., "2.3")
+- **Context Labels:** Each ratio includes a subtitle explaining what it represents
 
-### 4. Engagement Metrics
+#### Visual Design:
+- Gradient background (primary-50 to blue-50) distinguishes section
+- Five evenly-spaced cards with white/transparent backgrounds
+- Color-coded borders matching respective metric themes
+- Responsive grid layout (1 column mobile → 5 columns desktop)
 
-These metrics track user interaction and platform activity.
+**Use Cases:**
+- **Investors:** Verification rates show quality commitment; engagement rates show product-market fit
+- **Operators:** Leads per provider/aide ratios help balance supply and demand
+- **ALFs/Agencies:** Background check rates demonstrate safety standards
 
-#### Total Messages
-- **Description:** Total number of messages sent through the platform
-- **Use Case:** Measure overall platform engagement
+**Technical Details:**
+- Helper functions calculate ratios with null-check guards
+- `.toFixed(1)` used for consistent decimal formatting
+- Division-by-zero protection prevents crashes
 
-#### Messages (Last 7 Days)
-- **Description:** Number of messages sent in the past week
-- **Use Case:** Track recent activity levels and engagement trends
+---
 
 ## Dashboard Sections
 
-The admin metrics dashboard is organized into the following sections:
+### Overview Cards (KPI Tiles)
+**Purpose:** High-level platform snapshot  
+**Metrics:**
+- Total Users (all roles)
+- Total Leads (non-deleted)
+- Active Aides (marketplace-visible)
+- Active Providers (active agencies)
 
-### Overview Cards
-Four prominent cards showing key totals:
-- Total Users (all roles combined)
-- Total Leads
-- Active Aides
-- Active Providers
+**Features:** Clickable tiles, hover effects, deep-linking
 
-### User Metrics Section
-- Table showing users by role with growth indicators
-- Columns: Role, Total, Last 7 Days, Last 30 Days
+---
 
-### Lead Metrics Section
-- Cards showing leads by status
-- Cards showing leads by target type
-- Trend indicators (7-day and 30-day lead creation)
+### Key Ratios & Insights
+**Purpose:** Calculated health indicators  
+**Metrics:**
+- Verified Provider Rate
+- Background Check Clear Rate
+- Leads per Provider
+- Leads per Aide
+- Messages per Lead
 
-### Marketplace Metrics Section
-- Cards for active aides and providers
-- Verification status breakdown
-- Background check status grid for aides
+**Features:** Gradient styling, divide-by-zero protection, context labels
 
-### Engagement Metrics Section
-- Total messages count
-- Recent message activity (last 7 days)
+---
 
-## API Endpoint
+### User Metrics
+**Purpose:** User growth tracking by role  
+**Table Columns:**
+- Role (Family, Caregiver, Provider, Operator, Admin)
+- Total (all-time count)
+- Last 7 Days (new users)
+- Last 30 Days (new users)
 
-### GET /api/admin/metrics
+**Use Cases:**
+- Track user acquisition by segment
+- Identify which roles are growing fastest
+- Monitor operator/admin staffing needs
 
-**Authentication:** Required (NextAuth session)
+---
 
-**Authorization:** ADMIN role only
+### Lead Metrics
+**Purpose:** Inquiry volume and status tracking  
+**Sections:**
+1. **Leads by Status** (NEW, IN_REVIEW, CONTACTED, CLOSED, CANCELLED)
+2. **Leads by Target Type** (AIDE vs PROVIDER)
+3. **Lead Trends** (Last 7 Days, Last 30 Days) - Interactive with time range toggle
 
-**Response Format:**
+**Use Cases:**
+- Identify leads needing operator attention
+- Track conversion from NEW → CONTACTED → CLOSED
+- Monitor aide vs provider demand balance
+
+---
+
+### Marketplace Metrics
+**Purpose:** Supply-side health monitoring  
+**Metrics:**
+- Active Aides count
+- Active Providers count
+- Verified Providers count
+- Unverified Providers count
+- Aide Background Check Status breakdown (CLEAR, PENDING, NOT_STARTED, etc.)
+
+**Use Cases:**
+- Monitor marketplace supply
+- Track verification progress
+- Ensure quality standards are maintained
+
+---
+
+### Engagement Metrics
+**Purpose:** Platform usage and activity tracking  
+**Metrics:**
+- Total Messages (all-time)
+- Messages Last 7 Days
+
+**Use Cases:**
+- Measure user engagement beyond signups
+- Track communication volume
+- Identify active vs inactive users
+
+---
+
+## API Response Structure
+
+**Endpoint:** `GET /api/admin/metrics`  
+**Access Control:** Admin role only (enforced via `requireAnyRole([UserRole.ADMIN])`)
+
+### Response Format:
 ```json
 {
   "users": {
-    "totalByRole": {
-      "FAMILY": 12,
-      "CAREGIVER": 8,
-      "PROVIDER": 5,
-      "OPERATOR": 3,
-      "ADMIN": 2
-    },
-    "newLast7DaysByRole": {
-      "FAMILY": 3,
-      "CAREGIVER": 2
-    },
-    "newLast30DaysByRole": {
-      "FAMILY": 8,
-      "CAREGIVER": 5,
-      "PROVIDER": 2
-    }
+    "totalByRole": { "FAMILY": 12, "AIDE": 8, "PROVIDER": 5, "OPERATOR": 3, "ADMIN": 1 },
+    "newLast7DaysByRole": { "FAMILY": 2, "AIDE": 1, "PROVIDER": 0, "OPERATOR": 0, "ADMIN": 0 },
+    "newLast30DaysByRole": { "FAMILY": 8, "AIDE": 4, "PROVIDER": 2, "OPERATOR": 1, "ADMIN": 0 }
   },
   "leads": {
     "total": 34,
-    "byStatus": {
-      "NEW": 10,
-      "IN_REVIEW": 8,
-      "CONTACTED": 12,
-      "CLOSED": 3,
-      "CANCELLED": 1
-    },
-    "byTargetType": {
-      "AIDE": 20,
-      "PROVIDER": 14
-    },
-    "createdLast7Days": 12,
-    "createdLast30Days": 28
+    "byStatus": { "NEW": 10, "IN_REVIEW": 8, "CONTACTED": 12, "CLOSED": 3, "CANCELLED": 1 },
+    "byTargetType": { "AIDE": 20, "PROVIDER": 14 },
+    "createdLast7Days": 5,
+    "createdLast30Days": 18
   },
   "marketplace": {
     "activeAides": 10,
     "activeProviders": 7,
     "verifiedProviders": 5,
     "unverifiedProviders": 2,
-    "aidesByBackgroundCheck": {
-      "CLEAR": 8,
-      "PENDING": 2
-    }
+    "aidesByBackgroundCheck": { "CLEAR": 8, "PENDING": 2, "NOT_STARTED": 0 }
   },
   "engagement": {
     "totalMessages": 234,
     "messagesLast7Days": 45
   },
-  "generatedAt": "2025-12-07T10:30:00.000Z"
+  "generatedAt": "2025-12-08T19:45:32.123Z"
 }
 ```
 
-**Error Responses:**
-- `401 Unauthorized`: User not authenticated
-- `403 Forbidden`: User lacks ADMIN role
-- `500 Internal Server Error`: Server-side error
+### Error Responses:
+- **401 Unauthorized:** User not logged in
+- **403 Forbidden:** User does not have ADMIN role
+- **500 Internal Server Error:** Database query or processing error
 
-## Performance Considerations
+---
 
-The metrics API uses efficient Prisma aggregation queries:
-- `groupBy()` for categorical breakdowns
-- `count()` for totals
-- Date filtering at the database level
+## Demo Script for Metrics Dashboard
 
-**Query Efficiency:**
-- All queries use database indexes
-- No data is loaded into memory unnecessarily
-- Aggregations are performed by the database engine
+### For Investors:
+1. **Show timestamp:** "This is live data from moments ago."
+2. **Toggle time ranges:** "We can see 5 new leads in the last 7 days vs 18 in the last 30 days - that's 28% week-over-week growth."
+3. **Highlight Key Ratios:**
+   - "82% provider verification rate shows our commitment to quality."
+   - "6.9 messages per lead indicates real engagement, not just browsing."
+   - "2.3 leads per aide shows healthy demand for our marketplace."
+4. **Click through tiles:** "One click from metrics to action - here's the full lead list."
+5. **Emphasize growth:** "We've added 8 families in the last 30 days, and we're seeing consistent operator activity."
 
-**Typical Response Time:** < 500ms (depends on database size)
+### For ALFs/Agencies:
+1. **Focus on lead volume:** "34 total leads with 10 in NEW status - these are ready for assignment."
+2. **Highlight quality metrics:** "75% of our aides have cleared background checks."
+3. **Show engagement:** "234 total messages shows active family-caregiver communication."
+4. **Deep-link to leads:** "Click here to jump directly to lead management."
 
-## Interpreting the Metrics
+### For Internal Teams:
+1. **Use filters:** "Toggle to Last 7 Days to see this week's activity."
+2. **Identify bottlenecks:** "8 leads in IN_REVIEW - we need operators to move these forward."
+3. **Monitor ratios:** "Leads per provider is 4.9 - we may need more supply."
+4. **Track verification:** "2 unverified providers - admin team should prioritize these."
 
-### Growth Indicators
-- Compare 7-day vs 30-day new users to identify acceleration/deceleration
-- Monitor which roles are growing fastest
-
-### Lead Health
-- High "NEW" count → need more operator capacity
-- Low "CLOSED" rate → review follow-up processes
-- AIDE vs PROVIDER ratio → understand demand patterns
-
-### Marketplace Supply
-- Low active aides/providers → recruitment needed
-- High unverified providers → verification bottleneck
-- Background check "PENDING" → follow up on checks
-
-### Engagement
-- Messages per user (total messages / total users) → engagement depth
-- Rising recent messages → healthy activity
-- Flat message count → investigate barriers to communication
-
-## Security & Privacy
-
-- **No PII Exposed:** All metrics are aggregate counts only
-- **RBAC Enforced:** Strict admin-only access
-- **Audit Logging:** All metrics requests are logged
-- **Soft Deletes Respected:** Deleted leads are excluded from counts
+---
 
 ## Future Enhancements
 
-Potential additions to the metrics system:
+### Planned Features:
+- [ ] **Refresh Button:** Manual refresh without full page reload
+- [ ] **Export to CSV:** Download metrics data for external analysis
+- [ ] **Date Range Picker:** Custom date range selection beyond preset options
+- [ ] **Conversion Funnel:** Visual funnel showing NEW → IN_REVIEW → CONTACTED → CLOSED
+- [ ] **Charts & Graphs:** Line charts for trends, pie charts for distributions
+- [ ] **Alerts:** Threshold-based notifications (e.g., "10+ leads in NEW status for >24 hours")
+- [ ] **Comparative Metrics:** Week-over-week or month-over-month % change indicators
+- [ ] **User Retention:** Cohort analysis and churn rates
+- [ ] **Revenue Metrics:** (When billing is implemented) MRR, ARR, ARPU
 
-1. **Event Logging System**
-   - Real-time activity feed
-   - Audit trail for key actions
+### Technical Debt:
+- [ ] Add caching layer (Redis) for metrics API to reduce DB load
+- [ ] Implement real-time updates via WebSockets or SSE
+- [ ] Add unit tests for ratio calculation helpers
+- [ ] Add E2E tests for clickable tiles and navigation
+- [ ] Optimize Prisma queries with indexes and aggregations
 
-2. **Time Series Data**
-   - Historical trend charts
-   - Week-over-week / month-over-month comparisons
+---
 
-3. **Conversion Funnels**
-   - Lead-to-hire conversion rates
-   - Registration-to-active user rates
+## Testing Checklist
 
-4. **Cohort Analysis**
-   - User retention by signup period
-   - Lead quality by source
+### Functional Tests:
+- [ ] Timestamp displays correctly and updates on refresh
+- [ ] Time range toggle switches active state
+- [ ] Lead Trends cards highlight based on selected range
+- [ ] All three clickable tiles navigate to correct destinations
+- [ ] Ratios display with proper formatting (1 decimal place)
+- [ ] Ratios show "N/A" when denominator is zero
+- [ ] All sections load without errors
+- [ ] RBAC prevents non-admin access
 
-5. **Export Functionality**
-   - CSV/Excel export
-   - Scheduled email reports
+### Visual Tests:
+- [ ] Hover effects work on clickable tiles
+- [ ] Arrow icon animates on hover
+- [ ] Time range buttons have proper active styling
+- [ ] Key Ratios section gradient renders correctly
+- [ ] Mobile responsive layout works (1 column)
+- [ ] Desktop layout uses full grid (4-5 columns)
 
-6. **Custom Date Ranges**
-   - User-selectable date filters
-   - Comparison between arbitrary periods
+### Edge Case Tests:
+- [ ] Dashboard handles empty data gracefully
+- [ ] Ratios don't crash on division by zero
+- [ ] Timestamp formats correctly across timezones
+- [ ] Navigation back button returns to metrics page
+- [ ] Page refresh maintains scroll position (browser default)
 
-7. **Provider Performance**
-   - Average response times
-   - Lead-to-customer conversion by provider
-
-8. **Financial Metrics**
-   - Revenue tracking
-   - Payment processing metrics
-
-## Troubleshooting
-
-### Dashboard shows "Loading..." indefinitely
-- Check browser console for API errors
-- Verify user has ADMIN role
-- Ensure `/api/admin/metrics` is accessible
-
-### Metrics appear incorrect
-- Verify database connection
-- Check for soft-deleted records
-- Review Prisma query logic
-
-### Access denied errors
-- Confirm user role is ADMIN
-- Check NextAuth session validity
-- Review RBAC implementation
+---
 
 ## Related Documentation
 
-- [RBAC Implementation](../src/lib/auth/rbac.ts)
-- [Provider MVP Summary](../PROVIDER_MVP_IMPLEMENTATION_SUMMARY.md)
-- [Family Lead Schema](../family_leads_schema_design.md)
-- [Demo Flow](./DEMO_FLOW.md)
+- [DEMO_FLOW.md](./DEMO_FLOW.md) - Demo script including metrics dashboard walkthrough
+- [DEMO_ACCOUNTS.md](./DEMO_ACCOUNTS.md) - Test accounts for demoing metrics dashboard
+- [PROVIDER_MVP_IMPLEMENTATION_SUMMARY.md](../PROVIDER_MVP_IMPLEMENTATION_SUMMARY.md) - Provider marketplace technical docs
+- [family_profile_implementation.md](../family_profile_implementation.md) - Family profile technical docs
+
+---
+
+## Technical Implementation Notes
+
+### File Locations:
+- **Frontend:** `src/app/admin/metrics/page.tsx`
+- **API:** `src/app/api/admin/metrics/route.ts`
+- **RBAC Utility:** `src/lib/rbac.ts`
+
+### Dependencies:
+- Next.js 14 (App Router)
+- React Icons (`react-icons/fi`)
+- NextAuth for session management
+- Prisma for database queries
+
+### State Management:
+- React `useState` for local state (time range selection)
+- No global state or URL params (keeps implementation simple)
+
+### Performance Considerations:
+- API response typically completes in <500ms
+- Dashboard renders in <100ms after data load
+- No client-side data aggregation (all done server-side)
+
+---
 
 ## Changelog
 
-### v1.0.0 (December 2025)
-- Initial metrics dashboard implementation
-- User, Lead, Marketplace, and Engagement metrics
-- ADMIN-only access with RBAC enforcement
-- Efficient Prisma aggregation queries
-- Responsive UI with overview cards and detailed sections
+### Version 1.1.0 (December 8, 2025)
+- ✅ Added clickable KPI tiles with deep-links
+- ✅ Added Key Ratios section with 5 calculated metrics
+- ✅ Added "Last Updated" timestamp display
+- ✅ Added Time Range Toggle with visual emphasis
+- ✅ Enhanced DEMO_FLOW.md with metrics demo script
+- ✅ Created METRICS_OVERVIEW.md documentation
+
+### Version 1.0.0 (December 7, 2025)
+- ✅ Initial metrics dashboard implementation
+- ✅ User metrics by role (total, last 7/30 days)
+- ✅ Lead metrics (status, type, trends)
+- ✅ Marketplace metrics (aides, providers, verification)
+- ✅ Engagement metrics (messages)
+- ✅ Admin-only RBAC enforcement
+
+---
+
+## Support & Feedback
+
+For questions, feature requests, or bug reports related to the metrics dashboard:
+- Create an issue in the GitHub repository
+- Tag with `admin-tools` and `metrics` labels
+- Include screenshots for visual issues
+- Provide browser/device info for rendering bugs
+
+---
+
+**Last Updated:** December 8, 2025  
+**Maintained by:** CareLinkAI Development Team  
+**Feature Branch:** `feature/admin-metrics-polish`

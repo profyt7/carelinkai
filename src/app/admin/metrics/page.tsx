@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { UserRole } from "@prisma/client";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
@@ -14,6 +15,7 @@ import {
   FiCheckCircle,
   FiAlertCircle,
   FiClock,
+  FiArrowRight,
 } from "react-icons/fi";
 
 // ========== TYPE DEFINITIONS ==========
@@ -56,6 +58,10 @@ export default function AdminMetricsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [metrics, setMetrics] = useState<MetricsData | null>(null);
+  
+  // Time range filter state
+  type TimeRange = "7days" | "30days" | "all";
+  const [selectedTimeRange, setSelectedTimeRange] = useState<TimeRange>("all");
 
   // Auth guard
   useEffect(() => {
@@ -107,6 +113,36 @@ export default function AdminMetricsPage() {
   const getTotalUsers = () => {
     if (!metrics) return 0;
     return Object.values(metrics.users.totalByRole).reduce((sum, count) => sum + count, 0);
+  };
+
+  // Ratio calculation helpers with divide-by-zero handling
+  const getVerifiedProviderRate = () => {
+    if (!metrics || metrics.marketplace.activeProviders === 0) return null;
+    return (
+      (metrics.marketplace.verifiedProviders / metrics.marketplace.activeProviders) *
+      100
+    ).toFixed(1);
+  };
+
+  const getVerifiedAideRate = () => {
+    if (!metrics || metrics.marketplace.activeAides === 0) return null;
+    const clearAides = metrics.marketplace.aidesByBackgroundCheck.CLEAR || 0;
+    return ((clearAides / metrics.marketplace.activeAides) * 100).toFixed(1);
+  };
+
+  const getLeadsPerProvider = () => {
+    if (!metrics || metrics.marketplace.activeProviders === 0) return null;
+    return (metrics.leads.total / metrics.marketplace.activeProviders).toFixed(1);
+  };
+
+  const getLeadsPerAide = () => {
+    if (!metrics || metrics.marketplace.activeAides === 0) return null;
+    return (metrics.leads.total / metrics.marketplace.activeAides).toFixed(1);
+  };
+
+  const getMessagesPerLead = () => {
+    if (!metrics || metrics.leads.total === 0) return null;
+    return (metrics.engagement.totalMessages / metrics.leads.total).toFixed(1);
   };
 
   const getRoleLabel = (role: string) => {
@@ -170,12 +206,71 @@ export default function AdminMetricsPage() {
   return (
     <DashboardLayout title="Admin • Platform Metrics">
       <div className="px-4 py-6">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-neutral-900">Platform Metrics</h1>
-          <p className="mt-1 text-neutral-600">
-            Comprehensive analytics and performance indicators for CareLinkAI.
-          </p>
+        <div className="mb-6 flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-neutral-900">Platform Metrics</h1>
+            <p className="mt-1 text-neutral-600">
+              Comprehensive analytics and performance indicators for CareLinkAI.
+            </p>
+          </div>
+          {/* Last Updated Timestamp */}
+          {metrics && (
+            <div className="flex items-center gap-2 px-4 py-2 bg-neutral-100 rounded-lg border border-neutral-200">
+              <FiClock className="h-4 w-4 text-neutral-600" />
+              <div className="text-right">
+                <p className="text-xs text-neutral-600">Last Updated</p>
+                <p className="text-sm font-medium text-neutral-900">
+                  {new Date(metrics.generatedAt).toLocaleString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                    hour12: true,
+                  })}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
+
+        {/* Time Range Toggle */}
+        {!loading && !error && metrics && (
+          <div className="mb-6 flex justify-center">
+            <div className="inline-flex items-center gap-1 p-1 bg-neutral-100 rounded-lg border border-neutral-200">
+              <button
+                onClick={() => setSelectedTimeRange("7days")}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                  selectedTimeRange === "7days"
+                    ? "bg-primary-600 text-white shadow-sm"
+                    : "text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50"
+                }`}
+              >
+                Last 7 Days
+              </button>
+              <button
+                onClick={() => setSelectedTimeRange("30days")}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                  selectedTimeRange === "30days"
+                    ? "bg-primary-600 text-white shadow-sm"
+                    : "text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50"
+                }`}
+              >
+                Last 30 Days
+              </button>
+              <button
+                onClick={() => setSelectedTimeRange("all")}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                  selectedTimeRange === "all"
+                    ? "bg-primary-600 text-white shadow-sm"
+                    : "text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50"
+                }`}
+              >
+                All Time
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Loading State */}
         {loading && (
@@ -198,9 +293,9 @@ export default function AdminMetricsPage() {
         {/* Metrics Display */}
         {!loading && !error && metrics && (
           <div className="space-y-6">
-            {/* Overview Cards */}
+            {/* Overview Cards - Clickable KPI Tiles */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Total Users */}
+              {/* Total Users - No specific deep-link route exists yet */}
               <div className="bg-white border border-neutral-200 rounded-lg p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -215,48 +310,157 @@ export default function AdminMetricsPage() {
                 </div>
               </div>
 
-              {/* Total Leads */}
-              <div className="bg-white border border-neutral-200 rounded-lg p-6">
+              {/* Total Leads - Deep-links to /operator/leads */}
+              <Link
+                href="/operator/leads"
+                className="bg-white border border-neutral-200 rounded-lg p-6 hover:border-green-300 hover:shadow-md transition-all duration-200 cursor-pointer group"
+              >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-neutral-600">Total Leads</p>
+                    <p className="text-sm text-neutral-600 group-hover:text-green-700 transition-colors">
+                      Total Leads
+                    </p>
                     <p className="text-3xl font-bold text-neutral-900 mt-1">
                       {metrics.leads.total}
                     </p>
                   </div>
-                  <div className="bg-green-100 rounded-full p-3">
-                    <FiFileText className="h-6 w-6 text-green-600" />
+                  <div className="flex items-center gap-2">
+                    <div className="bg-green-100 rounded-full p-3">
+                      <FiFileText className="h-6 w-6 text-green-600" />
+                    </div>
+                    <FiArrowRight className="h-4 w-4 text-neutral-400 group-hover:text-green-600 group-hover:translate-x-1 transition-all" />
                   </div>
                 </div>
-              </div>
+              </Link>
 
-              {/* Active Aides */}
-              <div className="bg-white border border-neutral-200 rounded-lg p-6">
+              {/* Active Aides - Deep-links to /marketplace/caregivers */}
+              <Link
+                href="/marketplace/caregivers"
+                className="bg-white border border-neutral-200 rounded-lg p-6 hover:border-blue-300 hover:shadow-md transition-all duration-200 cursor-pointer group"
+              >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-neutral-600">Active Aides</p>
+                    <p className="text-sm text-neutral-600 group-hover:text-blue-700 transition-colors">
+                      Active Aides
+                    </p>
                     <p className="text-3xl font-bold text-neutral-900 mt-1">
                       {metrics.marketplace.activeAides}
                     </p>
                   </div>
-                  <div className="bg-blue-100 rounded-full p-3">
-                    <FiShoppingBag className="h-6 w-6 text-blue-600" />
+                  <div className="flex items-center gap-2">
+                    <div className="bg-blue-100 rounded-full p-3">
+                      <FiShoppingBag className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <FiArrowRight className="h-4 w-4 text-neutral-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
                   </div>
                 </div>
-              </div>
+              </Link>
 
-              {/* Active Providers */}
-              <div className="bg-white border border-neutral-200 rounded-lg p-6">
+              {/* Active Providers - Deep-links to /admin/providers */}
+              <Link
+                href="/admin/providers"
+                className="bg-white border border-neutral-200 rounded-lg p-6 hover:border-purple-300 hover:shadow-md transition-all duration-200 cursor-pointer group"
+              >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-neutral-600">Active Providers</p>
+                    <p className="text-sm text-neutral-600 group-hover:text-purple-700 transition-colors">
+                      Active Providers
+                    </p>
                     <p className="text-3xl font-bold text-neutral-900 mt-1">
                       {metrics.marketplace.activeProviders}
                     </p>
                   </div>
-                  <div className="bg-purple-100 rounded-full p-3">
-                    <FiShoppingBag className="h-6 w-6 text-purple-600" />
+                  <div className="flex items-center gap-2">
+                    <div className="bg-purple-100 rounded-full p-3">
+                      <FiShoppingBag className="h-6 w-6 text-purple-600" />
+                    </div>
+                    <FiArrowRight className="h-4 w-4 text-neutral-400 group-hover:text-purple-600 group-hover:translate-x-1 transition-all" />
                   </div>
+                </div>
+              </Link>
+            </div>
+
+            {/* Key Ratios Section */}
+            <div className="bg-gradient-to-br from-primary-50 to-blue-50 border border-primary-200 rounded-lg p-6">
+              <h2 className="text-lg font-semibold text-neutral-900 mb-4 flex items-center">
+                <FiTrendingUp className="mr-2 h-5 w-5 text-primary-600" />
+                Key Ratios & Insights
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                {/* Verified Provider Rate */}
+                <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-primary-100">
+                  <p className="text-xs text-neutral-600 mb-1">Verified Provider Rate</p>
+                  {getVerifiedProviderRate() !== null ? (
+                    <p className="text-2xl font-bold text-primary-700">
+                      {getVerifiedProviderRate()}%
+                    </p>
+                  ) : (
+                    <p className="text-sm text-neutral-400 italic">N/A</p>
+                  )}
+                  <p className="text-xs text-neutral-500 mt-1">
+                    {metrics.marketplace.verifiedProviders} of {metrics.marketplace.activeProviders}
+                  </p>
+                </div>
+
+                {/* Verified Aide Rate */}
+                <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-green-100">
+                  <p className="text-xs text-neutral-600 mb-1">Background Check Clear</p>
+                  {getVerifiedAideRate() !== null ? (
+                    <p className="text-2xl font-bold text-green-700">
+                      {getVerifiedAideRate()}%
+                    </p>
+                  ) : (
+                    <p className="text-sm text-neutral-400 italic">N/A</p>
+                  )}
+                  <p className="text-xs text-neutral-500 mt-1">
+                    {metrics.marketplace.aidesByBackgroundCheck.CLEAR || 0} of{" "}
+                    {metrics.marketplace.activeAides} aides
+                  </p>
+                </div>
+
+                {/* Leads per Provider */}
+                <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-purple-100">
+                  <p className="text-xs text-neutral-600 mb-1">Leads per Provider</p>
+                  {getLeadsPerProvider() !== null ? (
+                    <p className="text-2xl font-bold text-purple-700">
+                      {getLeadsPerProvider()}
+                    </p>
+                  ) : (
+                    <p className="text-sm text-neutral-400 italic">N/A</p>
+                  )}
+                  <p className="text-xs text-neutral-500 mt-1">
+                    Avg. inquiry volume
+                  </p>
+                </div>
+
+                {/* Leads per Aide */}
+                <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-blue-100">
+                  <p className="text-xs text-neutral-600 mb-1">Leads per Aide</p>
+                  {getLeadsPerAide() !== null ? (
+                    <p className="text-2xl font-bold text-blue-700">
+                      {getLeadsPerAide()}
+                    </p>
+                  ) : (
+                    <p className="text-sm text-neutral-400 italic">N/A</p>
+                  )}
+                  <p className="text-xs text-neutral-500 mt-1">
+                    Avg. demand per aide
+                  </p>
+                </div>
+
+                {/* Messages per Lead */}
+                <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-indigo-100">
+                  <p className="text-xs text-neutral-600 mb-1">Messages per Lead</p>
+                  {getMessagesPerLead() !== null ? (
+                    <p className="text-2xl font-bold text-indigo-700">
+                      {getMessagesPerLead()}
+                    </p>
+                  ) : (
+                    <p className="text-sm text-neutral-400 italic">N/A</p>
+                  )}
+                  <p className="text-xs text-neutral-500 mt-1">
+                    Avg. engagement level
+                  </p>
                 </div>
               </div>
             </div>
@@ -359,22 +563,76 @@ export default function AdminMetricsPage() {
                 </div>
               </div>
 
-              {/* Lead Trends */}
+              {/* Lead Trends - With Time Range Emphasis */}
               <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-center p-4 bg-blue-50 rounded-lg">
-                  <FiTrendingUp className="h-8 w-8 text-blue-600 mr-3" />
+                <div
+                  className={`flex items-center p-4 rounded-lg transition-all duration-300 ${
+                    selectedTimeRange === "7days"
+                      ? "bg-blue-100 ring-2 ring-blue-400 shadow-md scale-105"
+                      : "bg-blue-50"
+                  }`}
+                >
+                  <FiTrendingUp
+                    className={`h-8 w-8 mr-3 transition-all ${
+                      selectedTimeRange === "7days" ? "text-blue-700" : "text-blue-600"
+                    }`}
+                  />
                   <div>
-                    <p className="text-sm text-blue-900">Leads (Last 7 Days)</p>
-                    <p className="text-2xl font-bold text-blue-900">
+                    <p
+                      className={`text-sm transition-all ${
+                        selectedTimeRange === "7days"
+                          ? "text-blue-900 font-semibold"
+                          : "text-blue-900"
+                      }`}
+                    >
+                      Leads (Last 7 Days)
+                      {selectedTimeRange === "7days" && (
+                        <span className="ml-2 text-xs bg-blue-700 text-white px-2 py-0.5 rounded-full">
+                          Selected
+                        </span>
+                      )}
+                    </p>
+                    <p
+                      className={`text-2xl font-bold transition-all ${
+                        selectedTimeRange === "7days" ? "text-blue-900" : "text-blue-900"
+                      }`}
+                    >
                       {metrics.leads.createdLast7Days}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center p-4 bg-green-50 rounded-lg">
-                  <FiTrendingUp className="h-8 w-8 text-green-600 mr-3" />
+                <div
+                  className={`flex items-center p-4 rounded-lg transition-all duration-300 ${
+                    selectedTimeRange === "30days"
+                      ? "bg-green-100 ring-2 ring-green-400 shadow-md scale-105"
+                      : "bg-green-50"
+                  }`}
+                >
+                  <FiTrendingUp
+                    className={`h-8 w-8 mr-3 transition-all ${
+                      selectedTimeRange === "30days" ? "text-green-700" : "text-green-600"
+                    }`}
+                  />
                   <div>
-                    <p className="text-sm text-green-900">Leads (Last 30 Days)</p>
-                    <p className="text-2xl font-bold text-green-900">
+                    <p
+                      className={`text-sm transition-all ${
+                        selectedTimeRange === "30days"
+                          ? "text-green-900 font-semibold"
+                          : "text-green-900"
+                      }`}
+                    >
+                      Leads (Last 30 Days)
+                      {selectedTimeRange === "30days" && (
+                        <span className="ml-2 text-xs bg-green-700 text-white px-2 py-0.5 rounded-full">
+                          Selected
+                        </span>
+                      )}
+                    </p>
+                    <p
+                      className={`text-2xl font-bold transition-all ${
+                        selectedTimeRange === "30days" ? "text-green-900" : "text-green-900"
+                      }`}
+                    >
                       {metrics.leads.createdLast30Days}
                     </p>
                   </div>
@@ -477,11 +735,6 @@ export default function AdminMetricsPage() {
                   </div>
                 </div>
               </div>
-            </div>
-
-            {/* Metadata */}
-            <div className="text-xs text-neutral-500 text-right">
-              Last updated: {new Date(metrics.generatedAt).toLocaleString()}
             </div>
           </div>
         )}
