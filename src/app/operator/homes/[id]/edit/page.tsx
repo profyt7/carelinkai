@@ -1,6 +1,7 @@
 "use client";
 
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import PhotoGalleryManager from '@/components/operator/homes/PhotoGalleryManager';
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import toast from 'react-hot-toast';
@@ -37,6 +38,7 @@ export default function EditHomePage() {
   const operatorId = (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('operatorId') : null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [photos, setPhotos] = useState<any[]>([]);
   const [form, setForm] = useState({
     name: '',
     description: '',
@@ -56,38 +58,40 @@ export default function EditHomePage() {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const res = await fetch(`/api/operator/homes/${id}`);
-        if (res.ok) {
-          const { data } = await res.json();
-          if (mounted && data) {
-            setForm({
-              name: data.name || '',
-              description: data.description || '',
-              capacity: data.capacity || 0,
-              careLevel: Array.isArray(data.careLevel) ? data.careLevel : [],
-              status: data.status || 'ACTIVE',
-              genderRestriction: data.genderRestriction || '',
-              amenities: Array.isArray(data.amenities) ? data.amenities : [],
-              priceMin: data.priceMin ?? '',
-              priceMax: data.priceMax ?? '',
-              street: data.address?.street || '',
-              street2: data.address?.street2 || '',
-              city: data.address?.city || '',
-              state: data.address?.state || '',
-              zipCode: data.address?.zipCode || '',
-            });
-          }
+  const loadHomeData = async () => {
+    try {
+      const res = await fetch(`/api/operator/homes/${id}`);
+      if (res.ok) {
+        const { data } = await res.json();
+        if (data) {
+          setForm({
+            name: data.name || '',
+            description: data.description || '',
+            capacity: data.capacity || 0,
+            careLevel: Array.isArray(data.careLevel) ? data.careLevel : [],
+            status: data.status || 'ACTIVE',
+            genderRestriction: data.genderRestriction || '',
+            amenities: Array.isArray(data.amenities) ? data.amenities : [],
+            priceMin: data.priceMin ?? '',
+            priceMax: data.priceMax ?? '',
+            street: data.address?.street || '',
+            street2: data.address?.street2 || '',
+            city: data.address?.city || '',
+            state: data.address?.state || '',
+            zipCode: data.address?.zipCode || '',
+          });
+          setPhotos(data.photos || []);
         }
-      } catch (e) {
-        console.error('Failed to load home', e);
       }
-      if (mounted) setLoading(false);
-    })();
-    return () => { mounted = false; };
+    } catch (e) {
+      console.error('Failed to load home', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadHomeData();
   }, [id]);
 
   const validateForm = () => {
@@ -458,6 +462,13 @@ export default function EditHomePage() {
                 ))}
               </div>
             </div>
+
+            {/* Photos */}
+            <PhotoGalleryManager
+              homeId={id}
+              photos={photos}
+              onPhotosChange={loadHomeData}
+            />
 
             {/* Form Actions */}
             <div className="flex items-center justify-end gap-3 pt-4 border-t">
