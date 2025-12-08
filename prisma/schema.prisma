@@ -533,6 +533,9 @@ model Resident {
   familyNotes          FamilyNote[]
   emergencyPreferences EmergencyPreference[]
 
+  // Additional fields
+  photoUrl      String? // Profile photo URL
+  
   // Timestamps
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt

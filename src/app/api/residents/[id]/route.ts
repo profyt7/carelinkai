@@ -31,7 +31,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       where: { id: params.id },
       select: {
         id: true, firstName: true, lastName: true, status: true, dateOfBirth: true, gender: true, homeId: true,
-        createdAt: true, updatedAt: true, archivedAt: true,
+        createdAt: true, updatedAt: true, archivedAt: true, photoUrl: true,
         medicalConditions: true, medications: true, allergies: true, dietaryRestrictions: true,
       },
     });

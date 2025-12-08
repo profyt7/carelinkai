@@ -4,6 +4,7 @@ import type { FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { FiAlertCircle } from 'react-icons/fi';
+import { ResidentPhotoUpload } from './ResidentPhotoUpload';
 
 type Resident = {
   id: string;
@@ -13,6 +14,7 @@ type Resident = {
   gender: string;
   status: string;
   homeId?: string | null;
+  photoUrl?: string | null;
   medicalConditions?: string | null;
   medications?: string | null;
   allergies?: string | null;
@@ -26,6 +28,7 @@ export function EditResidentForm({ resident }: { resident: Resident }) {
   const [gender, setGender] = useState(resident.gender);
   const [status, setStatus] = useState(resident.status);
   const [homeId, setHomeId] = useState(resident.homeId || '');
+  const [photoUrl, setPhotoUrl] = useState(resident.photoUrl || null);
   
   // Medical information fields
   const [medicalConditions, setMedicalConditions] = useState(resident.medicalConditions || '');
@@ -73,6 +76,17 @@ export function EditResidentForm({ resident }: { resident: Resident }) {
 
   return (
     <form onSubmit={onSubmit} className="mt-4 space-y-6">
+      {/* Photo Upload */}
+      <section className="border border-neutral-200 rounded-lg p-6 bg-white">
+        <h2 className="text-lg font-semibold text-neutral-800 mb-4 text-center">Profile Photo</h2>
+        <ResidentPhotoUpload
+          residentId={resident.id}
+          residentName={`${firstName} ${lastName}`}
+          currentPhotoUrl={photoUrl}
+          onPhotoUpdated={(url) => setPhotoUrl(url)}
+        />
+      </section>
+
       {/* Basic Information */}
       <section className="border border-neutral-200 rounded-lg p-4 bg-white">
         <h2 className="text-lg font-semibold text-neutral-800 mb-4">Basic Information</h2>
