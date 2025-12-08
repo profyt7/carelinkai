@@ -1,14 +1,13 @@
 import { getServerSession } from "next-auth";
 import { cookies } from "next/headers";
 import { authOptions } from "@/lib/auth";
-import { PrismaClient, UserRole } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
+import { UserRole } from "@prisma/client";
 import Link from "next/link";
 import { FiHome, FiUsers, FiTrendingUp, FiFileText, FiCreditCard, FiPlus, FiAlertCircle, FiClock } from "react-icons/fi";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
-
-const prisma = new PrismaClient();
 
 async function getSummary(userEmail?: string | null, operatorOverrideId?: string | null) {
   const user = userEmail
