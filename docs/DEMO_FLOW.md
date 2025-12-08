@@ -15,6 +15,68 @@ This document provides a **5-10 minute scripted demo** covering the key workflow
 
 ---
 
+## 📊 Persona Dashboards
+
+Each role lands on a personalized dashboard after login that shows relevant metrics and quick actions:
+
+### Family Dashboard (`/dashboard`)
+After logging in as **demo.family@carelinkai.test**:
+- **Tiles Display:**
+  - Home Inquiries count (active care home requests)
+  - Aide/Provider Requests count (open caregiver inquiries)
+  - Total Activity (sum of all active requests)
+- **Quick Actions:**
+  - Search Homes → Browse care facilities
+  - Find Caregivers → View aide marketplace
+  - Find Providers → View service providers
+- **Recent Activity:** List of recent inquiries with status badges
+
+### Operator Dashboard (`/operator`)
+After logging in as **demo.operator@carelinkai.test**:
+- **Tiles Display:**
+  - Total Homes managed
+  - Open Inquiries with NEW count highlighted
+  - Active Residents count
+  - Occupancy Rate (color-coded by percentage)
+- **Critical Alerts:** Banner for new inquiries and expiring licenses
+- **Recent Activity:** Table of 5 most recent inquiries
+- **Quick Actions:** Add Home, Add Resident, View Inquiries
+
+### Caregiver Dashboard (`/caregiver`)
+After logging in as **demo.aide@carelinkai.test**:
+- **Tiles Display:**
+  - Profile Visibility (Visible/Hidden in marketplace)
+  - Background Check status
+  - Active Requests count
+- **Alert:** Yellow banner if profile is hidden
+- **Recent Activity:** List of family inquiries
+- **Quick Actions:** Edit Profile, Upload Documents, Messages
+
+### Provider Dashboard (`/provider`)
+After logging in as **demo.provider@carelinkai.test**:
+- **Tiles Display:**
+  - New Inquiries (last 7 days)
+  - Active Inquiries count
+  - Verification Status
+- **Alert:** Yellow banner if not verified
+- **Recent Activity:** List of family inquiries
+- **Quick Actions:** Edit Profile, Upload Documents, Messages
+
+### Admin Dashboard (`/admin`)
+After logging in as **demo.admin@carelinkai.test**:
+- **Tiles Display:**
+  - Total Users count
+  - Total Inquiries (home + leads)
+  - Active Caregivers count
+  - Verified Providers count
+- **Alert:** Amber banner if credentials need review
+- **Quick Access:** Links to Caregivers, Providers, Analytics, Tools
+- **System Info:** Platform operational status
+
+**Demo Tip:** Start each persona demo by showing their dashboard to establish context and highlight role-specific features.
+
+---
+
 ## 🎯 Demo Flow (10 minutes)
 
 ### Part 1: Family Flow (3 minutes)
