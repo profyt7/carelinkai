@@ -65,6 +65,52 @@ enum BackgroundCheckStatus {
   FAILED
 }
 
+// ==================== CAREGIVER MANAGEMENT ENUMS ====================
+
+enum CertificationType {
+  CNA
+  HHA
+  CPR
+  FIRST_AID
+  MEDICATION_ADMINISTRATION
+  DEMENTIA_CARE
+  ALZHEIMERS_CARE
+  HOSPICE_CARE
+  WOUND_CARE
+  IV_THERAPY
+  OTHER
+}
+
+enum CertificationStatus {
+  CURRENT
+  EXPIRING_SOON
+  EXPIRED
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  PER_DIEM
+  CONTRACT
+}
+
+enum EmploymentStatus {
+  ACTIVE
+  INACTIVE
+  ON_LEAVE
+  TERMINATED
+}
+
+enum CaregiverDocumentType {
+  CERTIFICATION
+  BACKGROUND_CHECK
+  TRAINING
+  CONTRACT
+  IDENTIFICATION
+  REFERENCE
+  OTHER
+}
+
 model User {
   id              String     @id @default(cuid())
   email           String     @unique
@@ -247,13 +293,25 @@ model Caregiver {
   hourlyRate      Decimal? @db.Decimal(10, 2)
   availability    Json? // Store availability as JSON
 
+  // Enhanced profile fields
+  languages        String[]          @default([])
+  employmentType   EmploymentType?
+  employmentStatus EmploymentStatus  @default(ACTIVE)
+  hireDate         DateTime?
+  photoUrl         String?
+
   // Relationships
-  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
   credentials Credential[]
   employments CaregiverEmployment[]
   shifts      CaregiverShift[]
   reviews     CaregiverReview[]
   timesheets  Timesheet[]
+
+  // Phase 6: Caregiver Management relationships
+  certifications CaregiverCertification[]
+  assignments    CaregiverAssignment[]
+  documents      CaregiverDocument[]
 
   // Compliance & marketplace fields
   backgroundCheckStatus    BackgroundCheckStatus @default(NOT_STARTED)
@@ -284,6 +342,8 @@ model Caregiver {
   @@index([yearsExperience])
   @@index([createdAt])
   @@index([isVisibleInMarketplace])
+  @@index([employmentStatus])
+  @@index([employmentType])
 }
 
 model Affiliate {
@@ -306,6 +366,89 @@ model Affiliate {
   @@index([userId])
   @@index([affiliateCode])
 }
+// ==================== CAREGIVER MANAGEMENT MODELS ====================
+
+model CaregiverCertification {
+  id                    String              @id @default(cuid())
+  caregiverId           String
+  certificationType     CertificationType
+  certificationName     String? // Custom name for OTHER type
+  issueDate             DateTime
+  expiryDate            DateTime?
+  certificationNumber   String?
+  issuingOrganization   String?
+  documentUrl           String?
+  status                CertificationStatus @default(CURRENT)
+  notes                 String?             @db.Text
+  verifiedBy            String? // User ID who verified
+  verifiedAt            DateTime?
+
+  // Relationships
+  caregiver Caregiver @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([caregiverId])
+  @@index([status])
+  @@index([expiryDate])
+  @@index([certificationType])
+}
+
+model CaregiverAssignment {
+  id         String    @id @default(cuid())
+  caregiverId String
+  residentId String
+  isPrimary  Boolean   @default(false)
+  startDate  DateTime
+  endDate    DateTime?
+  notes      String?   @db.Text
+  assignedBy String? // User ID who created the assignment
+  assignedAt DateTime  @default(now())
+
+  // Relationships
+  caregiver Caregiver @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+  resident  Resident  @relation(fields: [residentId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([caregiverId])
+  @@index([residentId])
+  @@index([isPrimary])
+  @@index([startDate])
+  @@index([endDate])
+}
+
+model CaregiverDocument {
+  id           String                 @id @default(cuid())
+  caregiverId  String
+  documentType CaregiverDocumentType
+  title        String
+  description  String?                @db.Text
+  documentUrl  String
+  uploadDate   DateTime               @default(now())
+  expiryDate   DateTime?
+  uploadedBy   String? // User ID who uploaded
+
+  // Relationships
+  caregiver Caregiver @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([caregiverId])
+  @@index([documentType])
+  @@index([expiryDate])
+  @@index([uploadDate])
+}
+
 
 model Provider {
   id              String  @id @default(cuid())
@@ -530,6 +673,9 @@ model Resident {
   complianceItems   ResidentComplianceItem[]
   familyContacts    FamilyContact[]
   sourceInquiry     Inquiry?                 @relation("ConvertedFromInquiry")
+
+  // Phase 6: Caregiver Management relationships
+  caregiverAssignments CaregiverAssignment[]
 
   // Family collaboration relationships
   familyDocuments      FamilyDocument[]

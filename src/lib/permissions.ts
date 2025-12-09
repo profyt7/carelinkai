@@ -57,6 +57,9 @@ export const PERMISSIONS = {
   CAREGIVERS_UPDATE: "caregivers.update",
   CAREGIVERS_DELETE: "caregivers.delete",
   CAREGIVERS_VIEW_ALL: "caregivers.view_all",
+  CAREGIVERS_ASSIGN: "caregivers.assign", // Assign caregivers to residents
+  CAREGIVERS_MANAGE_CERTIFICATIONS: "caregivers.manage_certifications",
+  CAREGIVERS_MANAGE_DOCUMENTS: "caregivers.manage_documents",
   
   // Inquiry Permissions
   INQUIRIES_VIEW: "inquiries.view",
@@ -138,6 +141,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     PERMISSIONS.CAREGIVERS_VIEW,
     PERMISSIONS.CAREGIVERS_CREATE,
     PERMISSIONS.CAREGIVERS_UPDATE,
+    PERMISSIONS.CAREGIVERS_ASSIGN,
+    PERMISSIONS.CAREGIVERS_MANAGE_CERTIFICATIONS,
+    PERMISSIONS.CAREGIVERS_MANAGE_DOCUMENTS,
     
     // Inquiries - scoped to their homes
     PERMISSIONS.INQUIRIES_VIEW,
