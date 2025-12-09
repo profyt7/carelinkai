@@ -66,10 +66,10 @@ const navItems: NavItem[] = [
   { name: "AI", icon: <FiSearch size={20} />, href: "/homes/match", showInMobileBar: false, roleRestriction: ["FAMILY", "OPERATOR", "ADMIN"] },
   // Marketplace (feature-flagged)
   { name: "Marketplace", icon: <FiUsers size={20} />, href: "/marketplace", showInMobileBar: true },
-  { name: "Operator", icon: <FiHome size={20} />, href: "/operator", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN"] },
+  { name: "Operator", icon: <FiHome size={20} />, href: "/operator", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
   { name: "Inquiries", icon: <FiFileText size={20} />, href: "/dashboard/inquiries", showInMobileBar: false },
-  { name: "Leads", icon: <FiUsers size={20} />, href: "/operator/leads", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN"] },
-  { name: "Residents", icon: <FiUsers size={20} />, href: "/operator/residents", showInMobileBar: true, roleRestriction: ["OPERATOR", "ADMIN"] },
+  { name: "Leads", icon: <FiUsers size={20} />, href: "/operator/leads", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
+  { name: "Residents", icon: <FiUsers size={20} />, href: "/operator/residents", showInMobileBar: true, roleRestriction: ["OPERATOR", "ADMIN", "CAREGIVER", "STAFF"] },
   { name: "Caregivers", icon: <FiUsers size={20} />, href: "/marketplace?tab=caregivers", showInMobileBar: false },
   { name: "Calendar", icon: <FiCalendar size={20} />, href: "/calendar", showInMobileBar: true },
   // Shifts page

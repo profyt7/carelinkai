@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { FiPlus, FiEdit2, FiTrash2, FiEye, FiX, FiPhone, FiMail, FiMapPin, FiUser, FiStar, FiShield, FiMessageCircle } from 'react-icons/fi';
+import { PermissionGuard, ActionGuard, useHasPermission, useUserRole } from '@/hooks/usePermissions';
+import { PERMISSIONS } from '@/lib/permissions';
 
 // Relationship Options
 const RELATIONSHIPS = [
@@ -231,13 +233,15 @@ export function FamilyTab({ residentId }: { residentId: string }) {
           <h2 className="text-2xl font-bold text-neutral-900">Family & Contacts</h2>
           <p className="text-neutral-600 mt-1">Manage family relationships and communication</p>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium"
-        >
-          <FiPlus className="w-5 h-5" />
-          Add Family Contact
-        </button>
+        <ActionGuard resourceType="family_contact" action="create">
+          <button
+            onClick={() => setShowModal(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium"
+          >
+            <FiPlus className="w-5 h-5" />
+            Add Family Contact
+          </button>
+        </ActionGuard>
       </div>
 
       {/* Contacts Grid */}
@@ -246,13 +250,15 @@ export function FamilyTab({ residentId }: { residentId: string }) {
           <FiUser className="w-12 h-12 text-neutral-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-neutral-900 mb-2">No family contacts yet</h3>
           <p className="text-neutral-600 mb-4">Add family members to manage communication and permissions</p>
-          <button
-            onClick={() => setShowModal(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium"
-          >
-            <FiPlus className="w-5 h-5" />
-            Add Family Contact
-          </button>
+          <ActionGuard resourceType="family_contact" action="create">
+            <button
+              onClick={() => setShowModal(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium"
+            >
+              <FiPlus className="w-5 h-5" />
+              Add Family Contact
+            </button>
+          </ActionGuard>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -293,20 +299,24 @@ export function FamilyTab({ residentId }: { residentId: string }) {
                     >
                       <FiEye className="w-4 h-4" />
                     </button>
-                    <button
-                      onClick={() => openEditModal(contact)}
-                      className="p-1.5 text-neutral-600 hover:text-blue-600 hover:bg-neutral-50 rounded"
-                      title="Edit"
-                    >
-                      <FiEdit2 className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(contact.id)}
-                      className="p-1.5 text-neutral-600 hover:text-red-600 hover:bg-neutral-50 rounded"
-                      title="Delete"
-                    >
-                      <FiTrash2 className="w-4 h-4" />
-                    </button>
+                    <ActionGuard resourceType="family_contact" action="update">
+                      <button
+                        onClick={() => openEditModal(contact)}
+                        className="p-1.5 text-neutral-600 hover:text-blue-600 hover:bg-neutral-50 rounded"
+                        title="Edit"
+                      >
+                        <FiEdit2 className="w-4 h-4" />
+                      </button>
+                    </ActionGuard>
+                    <ActionGuard resourceType="family_contact" action="delete">
+                      <button
+                        onClick={() => handleDelete(contact.id)}
+                        className="p-1.5 text-neutral-600 hover:text-red-600 hover:bg-neutral-50 rounded"
+                        title="Delete"
+                      >
+                        <FiTrash2 className="w-4 h-4" />
+                      </button>
+                    </ActionGuard>
                   </div>
                 </div>
 

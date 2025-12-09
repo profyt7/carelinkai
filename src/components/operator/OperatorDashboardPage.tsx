@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { FiHome, FiUsers, FiTrendingUp, FiFileText, FiCreditCard, FiPlus, FiAlertCircle, FiClock } from "react-icons/fi";
+import { PermissionGuard, RoleGuard, useHasPermission } from '@/hooks/usePermissions';
+import { PERMISSIONS } from '@/lib/permissions';
 
 interface DashboardSummary {
   homes: number;
@@ -187,42 +189,48 @@ export default function OperatorDashboardPage() {
         <div className="rounded-lg border border-neutral-200 bg-white p-4">
           <h3 className="text-lg font-semibold text-neutral-800 mb-4">Quick Actions</h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <Link 
-              href="/operator/homes/new"
-              className="flex items-center gap-3 p-3 rounded-lg border-2 border-dashed border-primary-300 hover:border-primary-500 hover:bg-primary-50 transition-colors"
-            >
-              <div className="rounded-full bg-primary-100 p-2">
-                <FiPlus className="h-5 w-5 text-primary-600" />
-              </div>
-              <div>
-                <div className="font-medium text-neutral-800">Add Home</div>
-                <div className="text-xs text-neutral-500">Create new listing</div>
-              </div>
-            </Link>
-            <Link 
-              href="/operator/residents/new"
-              className="flex items-center gap-3 p-3 rounded-lg border-2 border-dashed border-green-300 hover:border-green-500 hover:bg-green-50 transition-colors"
-            >
-              <div className="rounded-full bg-green-100 p-2">
-                <FiPlus className="h-5 w-5 text-green-600" />
-              </div>
-              <div>
-                <div className="font-medium text-neutral-800">Add Resident</div>
-                <div className="text-xs text-neutral-500">Onboard new resident</div>
-              </div>
-            </Link>
-            <Link 
-              href="/operator/inquiries"
-              className="flex items-center gap-3 p-3 rounded-lg border-2 border-dashed border-blue-300 hover:border-blue-500 hover:bg-blue-50 transition-colors"
-            >
-              <div className="rounded-full bg-blue-100 p-2">
-                <FiFileText className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <div className="font-medium text-neutral-800">View Inquiries</div>
-                <div className="text-xs text-neutral-500">Manage leads</div>
-              </div>
-            </Link>
+            <PermissionGuard permission={PERMISSIONS.HOMES_CREATE}>
+              <Link 
+                href="/operator/homes/new"
+                className="flex items-center gap-3 p-3 rounded-lg border-2 border-dashed border-primary-300 hover:border-primary-500 hover:bg-primary-50 transition-colors"
+              >
+                <div className="rounded-full bg-primary-100 p-2">
+                  <FiPlus className="h-5 w-5 text-primary-600" />
+                </div>
+                <div>
+                  <div className="font-medium text-neutral-800">Add Home</div>
+                  <div className="text-xs text-neutral-500">Create new listing</div>
+                </div>
+              </Link>
+            </PermissionGuard>
+            <PermissionGuard permission={PERMISSIONS.RESIDENTS_CREATE}>
+              <Link 
+                href="/operator/residents/new"
+                className="flex items-center gap-3 p-3 rounded-lg border-2 border-dashed border-green-300 hover:border-green-500 hover:bg-green-50 transition-colors"
+              >
+                <div className="rounded-full bg-green-100 p-2">
+                  <FiPlus className="h-5 w-5 text-green-600" />
+                </div>
+                <div>
+                  <div className="font-medium text-neutral-800">Add Resident</div>
+                  <div className="text-xs text-neutral-500">Onboard new resident</div>
+                </div>
+              </Link>
+            </PermissionGuard>
+            <PermissionGuard permission={PERMISSIONS.INQUIRIES_VIEW}>
+              <Link 
+                href="/operator/inquiries"
+                className="flex items-center gap-3 p-3 rounded-lg border-2 border-dashed border-blue-300 hover:border-blue-500 hover:bg-blue-50 transition-colors"
+              >
+                <div className="rounded-full bg-blue-100 p-2">
+                  <FiFileText className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <div className="font-medium text-neutral-800">View Inquiries</div>
+                  <div className="text-xs text-neutral-500">Manage leads</div>
+                </div>
+              </Link>
+            </PermissionGuard>
           </div>
         </div>
 
