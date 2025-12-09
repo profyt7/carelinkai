@@ -8,7 +8,7 @@ export const revalidate = 0;
 
 const prisma = new PrismaClient();
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const { session, error } = await requireOperatorOrAdmin();
     if (error) return error;
@@ -17,25 +17,83 @@ export async function GET() {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const operator = user.role === UserRole.ADMIN ? null : await prisma.operator.findUnique({ where: { userId: user.id } });
-    const where = operator ? { operatorId: operator.id } : {};
+    // Get query parameters for filtering
+    const { searchParams } = new URL(request.url);
+    const status = searchParams.get('status');
+    const type = searchParams.get('type');
 
-    const employments = await prisma.caregiverEmployment.findMany({
-      where,
-      include: { caregiver: { include: { user: true } } },
-      orderBy: [{ isActive: 'desc' }, { startDate: 'desc' }],
+    // Build where clause for caregiver query
+    let caregiverWhere: any = {};
+    
+    // Filter by employment status if provided
+    if (status && status !== 'ALL') {
+      caregiverWhere.employmentStatus = status;
+    }
+    
+    // Filter by employment type if provided
+    if (type && type !== 'ALL') {
+      caregiverWhere.employmentType = type;
+    }
+
+    // For operators, filter by their employment records
+    if (user.role === UserRole.OPERATOR) {
+      const operator = await prisma.operator.findUnique({ where: { userId: user.id } });
+      if (operator) {
+        caregiverWhere.employments = {
+          some: {
+            operatorId: operator.id,
+            isActive: true
+          }
+        };
+      }
+    }
+
+    // Query caregivers with all related data
+    const caregivers = await prisma.caregiver.findMany({
+      where: caregiverWhere,
+      include: {
+        user: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
+            phoneNumber: true,
+          }
+        },
+        certifications: {
+          select: {
+            id: true,
+            expiryDate: true,
+            status: true,
+          },
+          orderBy: {
+            expiryDate: 'asc'
+          }
+        }
+      },
+      orderBy: [
+        { employmentStatus: 'asc' },
+        { user: { firstName: 'asc' } }
+      ]
     });
 
     return NextResponse.json({
-      caregivers: employments.map((e) => ({
-        employmentId: e.id,
-        caregiverId: e.caregiverId,
-        name: `${e.caregiver.user.firstName} ${e.caregiver.user.lastName}`.trim(),
-        email: e.caregiver.user.email,
-        position: e.position,
-        startDate: e.startDate,
-        endDate: e.endDate,
-        isActive: e.isActive,
+      caregivers: caregivers.map((caregiver) => ({
+        id: caregiver.id,
+        user: {
+          firstName: caregiver.user.firstName,
+          lastName: caregiver.user.lastName,
+          email: caregiver.user.email,
+          phoneNumber: caregiver.user.phoneNumber,
+        },
+        photoUrl: caregiver.photoUrl,
+        specializations: caregiver.languages || [], // Using languages as specializations for now
+        employmentType: caregiver.employmentType || 'FULL_TIME',
+        employmentStatus: caregiver.employmentStatus,
+        certifications: caregiver.certifications.map(cert => ({
+          id: cert.id,
+          expiryDate: cert.expiryDate,
+        }))
       })),
     });
   } catch (e) {
