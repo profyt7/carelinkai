@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '../../../components/layout/DashboardLayout';
 import RealTimeInquiryUpdates from '../../../components/inquiries/RealTimeInquiryUpdates';
 import { 
   FiFilter, 
@@ -357,7 +356,7 @@ export default function InquiriesDashboard() {
   };
 
   return (
-    <DashboardLayout title="Inquiries">
+    <>
       {/* Page header */}
       <div className="bg-white shadow-sm">
         <div className="container mx-auto px-4 py-6">
@@ -657,6 +656,6 @@ export default function InquiriesDashboard() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 }
