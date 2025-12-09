@@ -25,6 +25,7 @@ import { AssessmentsTab } from '@/components/operator/residents/AssessmentsTab';
 import { IncidentsTab } from '@/components/operator/residents/IncidentsTab';
 import { ComplianceTab } from '@/components/operator/residents/ComplianceTab';
 import { FamilyTab } from '@/components/operator/residents/FamilyTab';
+import { ResidentDetailActionsBar } from '@/components/operator/residents/ResidentDetailActions';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
 import Image from 'next/image';
 import { FiEdit, FiFileText, FiUser, FiClipboard, FiAlertTriangle, FiShield, FiUsers } from 'react-icons/fi';
@@ -210,26 +211,11 @@ export default async function ResidentDetail({ params, searchParams }: { params:
             </div>
           </div>
           
-          <div className="flex flex-wrap gap-2">
-            <Link 
-              href={`/operator/residents/${resident.id}/edit`} 
-              className="inline-flex items-center gap-2 px-4 py-2 border border-neutral-300 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-50"
-            >
-              <FiEdit className="w-4 h-4" />
-              <span>Edit</span>
-            </Link>
-            <a 
-              href={`/api/residents/${resident.id}/summary`} 
-              target="_blank" 
-              className="inline-flex items-center gap-2 px-4 py-2 border border-neutral-300 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-50"
-            >
-              <FiFileText className="w-4 h-4" />
-              <span>Summary PDF</span>
-            </a>
-            {!resident.archivedAt && (
-              <ArchiveButton residentId={resident.id} residentName={`${resident.firstName} ${resident.lastName}`} />
-            )}
-          </div>
+          <ResidentDetailActionsBar 
+            residentId={resident.id} 
+            residentName={`${resident.firstName} ${resident.lastName}`}
+            showArchiveButton={!resident.archivedAt}
+          />
         </div>
         
         <div className="mt-6">

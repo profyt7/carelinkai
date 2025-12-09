@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { FiPlus, FiEdit2, FiTrash2, FiEye, FiX, FiCalendar, FiUser, FiMapPin, FiAlertTriangle } from 'react-icons/fi';
+import { PermissionGuard, ActionGuard, useHasPermission, useUserRole } from '@/hooks/usePermissions';
+import { PERMISSIONS } from '@/lib/permissions';
 
 // Incident Types
 const INCIDENT_TYPES = [
@@ -255,13 +257,15 @@ export function IncidentsTab({ residentId }: { residentId: string }) {
           <h2 className="text-2xl font-bold text-neutral-900">Incidents</h2>
           <p className="text-neutral-600 mt-1">Report and manage resident incidents</p>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium"
-        >
-          <FiPlus className="w-5 h-5" />
-          Report Incident
-        </button>
+        <ActionGuard resourceType="incident" action="create">
+          <button
+            onClick={() => setShowModal(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium"
+          >
+            <FiPlus className="w-5 h-5" />
+            Report Incident
+          </button>
+        </ActionGuard>
       </div>
 
       {/* Incidents List */}
@@ -270,13 +274,15 @@ export function IncidentsTab({ residentId }: { residentId: string }) {
           <FiAlertTriangle className="w-12 h-12 text-neutral-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-neutral-900 mb-2">No incidents reported</h3>
           <p className="text-neutral-600 mb-4">This is a good sign! Report any incidents as they occur.</p>
-          <button
-            onClick={() => setShowModal(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium"
-          >
-            <FiPlus className="w-5 h-5" />
-            Report Incident
-          </button>
+          <ActionGuard resourceType="incident" action="create">
+            <button
+              onClick={() => setShowModal(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium"
+            >
+              <FiPlus className="w-5 h-5" />
+              Report Incident
+            </button>
+          </ActionGuard>
         </div>
       ) : (
         <div className="space-y-4">
@@ -307,20 +313,24 @@ export function IncidentsTab({ residentId }: { residentId: string }) {
                   >
                     <FiEye className="w-4 h-4" />
                   </button>
-                  <button
-                    onClick={() => openEditModal(incident)}
-                    className="p-1.5 text-neutral-600 hover:text-blue-600 hover:bg-neutral-50 rounded"
-                    title="Edit"
-                  >
-                    <FiEdit2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(incident.id)}
-                    className="p-1.5 text-neutral-600 hover:text-red-600 hover:bg-neutral-50 rounded"
-                    title="Delete"
-                  >
-                    <FiTrash2 className="w-4 h-4" />
-                  </button>
+                  <ActionGuard resourceType="incident" action="update">
+                    <button
+                      onClick={() => openEditModal(incident)}
+                      className="p-1.5 text-neutral-600 hover:text-blue-600 hover:bg-neutral-50 rounded"
+                      title="Edit"
+                    >
+                      <FiEdit2 className="w-4 h-4" />
+                    </button>
+                  </ActionGuard>
+                  <ActionGuard resourceType="incident" action="delete">
+                    <button
+                      onClick={() => handleDelete(incident.id)}
+                      className="p-1.5 text-neutral-600 hover:text-red-600 hover:bg-neutral-50 rounded"
+                      title="Delete"
+                    >
+                      <FiTrash2 className="w-4 h-4" />
+                    </button>
+                  </ActionGuard>
                 </div>
               </div>
 

@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { FiPlus, FiEdit2, FiTrash2, FiEye, FiX, FiCalendar, FiUser, FiFileText, FiClipboard } from 'react-icons/fi';
+import { PermissionGuard, ActionGuard, useHasPermission, useUserRole } from '@/hooks/usePermissions';
+import { PERMISSIONS } from '@/lib/permissions';
 
 // Assessment Types
 const ASSESSMENT_TYPES = [
@@ -205,13 +207,15 @@ export function AssessmentsTab({ residentId }: { residentId: string }) {
           <h2 className="text-2xl font-bold text-neutral-900">Assessments</h2>
           <p className="text-neutral-600 mt-1">Track and manage resident assessments</p>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium"
-        >
-          <FiPlus className="w-5 h-5" />
-          New Assessment
-        </button>
+        <ActionGuard resourceType="assessment" action="create">
+          <button
+            onClick={() => setShowModal(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium"
+          >
+            <FiPlus className="w-5 h-5" />
+            New Assessment
+          </button>
+        </ActionGuard>
       </div>
 
       {/* Assessments Grid */}
@@ -220,13 +224,15 @@ export function AssessmentsTab({ residentId }: { residentId: string }) {
           <FiClipboard className="w-12 h-12 text-neutral-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-neutral-900 mb-2">No assessments yet</h3>
           <p className="text-neutral-600 mb-4">Get started by creating the first assessment for this resident</p>
-          <button
-            onClick={() => setShowModal(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium"
-          >
-            <FiPlus className="w-5 h-5" />
-            Create Assessment
-          </button>
+          <ActionGuard resourceType="assessment" action="create">
+            <button
+              onClick={() => setShowModal(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium"
+            >
+              <FiPlus className="w-5 h-5" />
+              Create Assessment
+            </button>
+          </ActionGuard>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -251,20 +257,24 @@ export function AssessmentsTab({ residentId }: { residentId: string }) {
                   >
                     <FiEye className="w-4 h-4" />
                   </button>
-                  <button
-                    onClick={() => openEditModal(assessment)}
-                    className="p-1.5 text-neutral-600 hover:text-blue-600 hover:bg-neutral-50 rounded"
-                    title="Edit"
-                  >
-                    <FiEdit2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(assessment.id)}
-                    className="p-1.5 text-neutral-600 hover:text-red-600 hover:bg-neutral-50 rounded"
-                    title="Delete"
-                  >
-                    <FiTrash2 className="w-4 h-4" />
-                  </button>
+                  <ActionGuard resourceType="assessment" action="update">
+                    <button
+                      onClick={() => openEditModal(assessment)}
+                      className="p-1.5 text-neutral-600 hover:text-blue-600 hover:bg-neutral-50 rounded"
+                      title="Edit"
+                    >
+                      <FiEdit2 className="w-4 h-4" />
+                    </button>
+                  </ActionGuard>
+                  <ActionGuard resourceType="assessment" action="delete">
+                    <button
+                      onClick={() => handleDelete(assessment.id)}
+                      className="p-1.5 text-neutral-600 hover:text-red-600 hover:bg-neutral-50 rounded"
+                      title="Delete"
+                    >
+                      <FiTrash2 className="w-4 h-4" />
+                    </button>
+                  </ActionGuard>
                 </div>
               </div>
 

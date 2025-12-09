@@ -8,6 +8,7 @@ import Breadcrumbs from '@/components/ui/breadcrumbs';
 import EmptyState from '@/components/ui/empty-state';
 import { FiUsers, FiSearch, FiDownload, FiPlus } from 'react-icons/fi';
 import Image from 'next/image';
+import { NewResidentButton, ExportResidentsButton, ResidentRowActions } from '@/components/operator/residents/ResidentsListActions';
 
 async function fetchResidents(params: { q?: string; status?: string; homeId?: string; familyId?: string; cursor?: string; showArchived?: string }) {
   const cookieHeader = cookies().toString();
@@ -91,10 +92,7 @@ export default async function ResidentsPage({ searchParams }: { searchParams?: {
           <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900">Residents</h1>
           <p className="text-sm text-neutral-600 mt-1">Manage resident profiles and care information</p>
         </div>
-        <Link href="/operator/residents/new" className="btn bg-primary-600 hover:bg-primary-700 text-white inline-flex items-center gap-2 px-4 py-2 rounded-lg shadow-sm">
-          <FiPlus className="w-4 h-4" />
-          <span>New Resident</span>
-        </Link>
+        <NewResidentButton />
       </div>
 
       {/* Search and Filters */}
@@ -160,14 +158,7 @@ export default async function ResidentsPage({ searchParams }: { searchParams?: {
               <span>Search</span>
             </button>
             
-            <a 
-              className="btn btn-sm border border-neutral-300 hover:bg-neutral-50 text-neutral-700 px-4 py-2 rounded-lg inline-flex items-center gap-2" 
-              download="residents.csv" 
-              href={`/api/residents?limit=1000${q ? `&q=${encodeURIComponent(q)}` : ''}${status ? `&status=${encodeURIComponent(status)}` : ''}${homeId ? `&homeId=${encodeURIComponent(homeId)}` : ''}${familyId ? `&familyId=${encodeURIComponent(familyId)}` : ''}&format=csv`}
-            >
-              <FiDownload className="w-4 h-4" />
-              <span>Export</span>
-            </a>
+            <ExportResidentsButton q={q} status={status} homeId={homeId} familyId={familyId} />
             
             {showMock && (
               <form action="/operator/residents" className="inline">
@@ -266,20 +257,7 @@ export default async function ResidentsPage({ searchParams }: { searchParams?: {
                         {admissionFormatted}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex items-center gap-3 justify-end">
-                          <Link 
-                            href={`/operator/residents/${r.id}`} 
-                            className="text-primary-600 hover:text-primary-900"
-                          >
-                            View
-                          </Link>
-                          <Link 
-                            href={`/operator/residents/${r.id}/edit`} 
-                            className="text-neutral-600 hover:text-neutral-900"
-                          >
-                            Edit
-                          </Link>
-                        </div>
+                        <ResidentRowActions residentId={r.id} />
                       </td>
                     </tr>
                   );
