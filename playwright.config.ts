@@ -1,53 +1,86 @@
 import { defineConfig, devices } from '@playwright/test';
 
-// Loosen project typing to avoid Next.js type-checker conflicts during app build
-const projects: any[] = [
-  {
-    name: 'chromium',
-    use: { ...devices['Desktop Chrome'] },
-  },
-];
-
-// Only include the non-bypass credentials project for local/dev runs, not in CI
-if (!process.env['CI']) {
-  projects.push({
-    name: 'chromium-no-bypass',
-    use: ({
-      ...devices['Desktop Chrome'],
-      // Override default bypass header in this project
-      extraHTTPHeaders: {},
-    } as any),
-    grep: /\[non-bypass\]/,
-  } as any);
-}
-
-// For non-bypass (local only), optionally run against built server to improve stability
-const webCommand = process.env['PW_USE_START'] === '1'
-  ? 'npm run start:e2e'
-  : (process.env['PLAYWRIGHT_WEB_SERVER_CMD'] ||
-     'cross-env NEXTAUTH_URL=http://localhost:3000 NEXTAUTH_SECRET=devsecret ALLOW_DEV_ENDPOINTS=1 ALLOW_INSECURE_AUTH_COOKIE=1 DATABASE_URL=postgresql://postgres:postgres@localhost:5434/carelinkai_marketplace?schema=public npm run dev');
-
+/**
+ * Playwright Configuration for CareLinkAI RBAC Testing
+ * 
+ * This configuration sets up comprehensive E2E testing for the role-based access control system.
+ * Tests cover authentication, authorization, data scoping, and UI permissions across all user roles.
+ */
 export default defineConfig({
-  testDir: './e2e',
-  fullyParallel: false,
-  timeout: 60_000,
-  expect: { timeout: 10_000 },
-  forbidOnly: !!process.env['CI'],
-  retries: process.env['CI'] ? 2 : 0,
-  workers: process.env['CI'] ? 2 : 1,
-  reporter: 'list',
-  use: {
-    baseURL: process.env['PLAYWRIGHT_BASE_URL'] || 'http://localhost:3000',
-    extraHTTPHeaders: { 'x-e2e-bypass': '1' },
-    trace: process.env['CI'] ? 'retain-on-failure' : 'on-first-retry',
-    screenshot: process.env['CI'] ? 'only-on-failure' : 'only-on-failure',
-    video: process.env['CI'] ? 'retain-on-failure' : 'retain-on-failure',
+  testDir: './tests',
+  
+  /* Maximum time one test can run for */
+  timeout: 30 * 1000,
+  
+  expect: {
+    /**
+     * Maximum time expect() should wait for the condition to be met.
+     */
+    timeout: 5000
   },
-  projects,
+  
+  /* Run tests in files in parallel */
+  fullyParallel: false, // Set to false to avoid race conditions with shared test data
+  
+  /* Fail the build on CI if you accidentally left test.only in the source code. */
+  forbidOnly: !!process.env.CI,
+  
+  /* Retry on CI only */
+  retries: process.env.CI ? 2 : 0,
+  
+  /* Opt out of parallel tests on CI. */
+  workers: process.env.CI ? 1 : undefined,
+  
+  /* Reporter to use. See https://playwright.dev/docs/test-reporters */
+  reporter: [
+    ['html', { outputFolder: 'playwright-report', open: 'never' }],
+    ['json', { outputFile: 'test-results/results.json' }],
+    ['list']
+  ],
+  
+  /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
+  use: {
+    /* Base URL to use in actions like `await page.goto('/')`. */
+    baseURL: process.env.BASE_URL || 'http://localhost:3000',
+    
+    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
+    trace: 'on-first-retry',
+    
+    /* Screenshot on failure */
+    screenshot: 'only-on-failure',
+    
+    /* Video on failure */
+    video: 'retain-on-failure',
+    
+    /* Browser launch options */
+    launchOptions: {
+      slowMo: process.env.SLOWMO ? 100 : 0,
+    },
+  },
+
+  /* Configure projects for major browsers */
+  projects: [
+    {
+      name: 'chromium',
+      use: { 
+        ...devices['Desktop Chrome'],
+        // Set custom browser path if needed
+        launchOptions: {
+          executablePath: process.env.PLAYWRIGHT_BROWSERS_PATH 
+            ? `${process.env.PLAYWRIGHT_BROWSERS_PATH}/chromium-1200/chrome-linux/chrome`
+            : undefined,
+        },
+      },
+    },
+  ],
+
+  /* Run your local dev server before starting the tests */
   webServer: {
-    command: webCommand,
-    url: process.env['PLAYWRIGHT_BASE_URL'] || 'http://localhost:3000',
-    reuseExistingServer: !process.env['CI'],
-    timeout: 180_000,
+    command: 'npm run dev',
+    url: 'http://localhost:3000',
+    reuseExistingServer: !process.env.CI,
+    timeout: 120 * 1000,
+    stdout: 'ignore',
+    stderr: 'pipe',
   },
 });
