@@ -20,7 +20,7 @@ import {
 test.describe('Authentication', () => {
   
   test('should display login page', async ({ page }) => {
-    await page.goto('/auth/signin');
+    await page.goto('/auth/login');
     
     // Check for login form elements
     await expect(page.locator('h1, h2').filter({ hasText: /sign in/i })).toBeVisible();
@@ -30,7 +30,7 @@ test.describe('Authentication', () => {
   });
 
   test('should reject invalid credentials', async ({ page }) => {
-    await page.goto('/auth/signin');
+    await page.goto('/auth/login');
     
     // Try to login with invalid credentials
     await page.fill('input[type="email"], input[name="email"]', 'invalid@example.com');
@@ -49,7 +49,7 @@ test.describe('Authentication', () => {
     expect(await isAuthenticated(page)).toBeTruthy();
     
     // Verify redirect to appropriate page (dashboard or operator page)
-    expect(page.url()).not.toContain('/auth/signin');
+    expect(page.url()).not.toContain('/auth/login');
   });
 
   test('should login as Operator', async ({ page }) => {
@@ -58,7 +58,7 @@ test.describe('Authentication', () => {
     
     // Verify successful login
     expect(await isAuthenticated(page)).toBeTruthy();
-    expect(page.url()).not.toContain('/auth/signin');
+    expect(page.url()).not.toContain('/auth/login');
   });
 
   test('should login as Caregiver', async ({ page }) => {
@@ -67,7 +67,7 @@ test.describe('Authentication', () => {
     
     // Verify successful login
     expect(await isAuthenticated(page)).toBeTruthy();
-    expect(page.url()).not.toContain('/auth/signin');
+    expect(page.url()).not.toContain('/auth/login');
   });
 
   test('should login as Family', async ({ page }) => {
@@ -76,7 +76,7 @@ test.describe('Authentication', () => {
     
     // Verify successful login
     expect(await isAuthenticated(page)).toBeTruthy();
-    expect(page.url()).not.toContain('/auth/signin');
+    expect(page.url()).not.toContain('/auth/login');
   });
 
   test('should maintain session on page reload', async ({ page }) => {
@@ -100,7 +100,7 @@ test.describe('Authentication', () => {
     
     // Should be redirected to signin or home page
     await page.waitForURL((url) => 
-      url.pathname.includes('/auth/signin') || url.pathname === '/'
+      url.pathname.includes('/auth/login') || url.pathname === '/'
     );
   });
 
@@ -109,7 +109,7 @@ test.describe('Authentication', () => {
     await page.goto('/operator/residents');
     
     // Should redirect to signin page
-    await page.waitForURL((url) => url.pathname.includes('/auth/signin'));
+    await page.waitForURL((url) => url.pathname.includes('/auth/login'));
   });
 });
 
@@ -147,7 +147,7 @@ test.describe('Role Verification After Login', () => {
     // Should be redirected or show unauthorized
     // This depends on your implementation - adjust accordingly
     const isUnauthorized = 
-      page.url().includes('/auth/signin') || 
+      page.url().includes('/auth/login') || 
       await page.locator('text=/unauthorized|access denied|forbidden/i').isVisible();
     
     expect(isUnauthorized).toBeTruthy();

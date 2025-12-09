@@ -1,0 +1,71 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - link "Skip to content" [ref=e3] [cursor=pointer]:
+      - /url: "#main-content"
+    - main [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e8]:
+          - generic [ref=e9]:
+            - img "CareLinkAI Logo" [ref=e10]
+            - heading "Welcome to CareLinkAI" [level=1] [ref=e11]
+            - paragraph [ref=e12]: Connect families with the perfect assisted living homes through our AI-powered matching platform.
+          - generic [ref=e13]:
+            - heading "Why CareLinkAI?" [level=3] [ref=e14]
+            - list [ref=e15]:
+              - listitem [ref=e16]:
+                - generic [ref=e17]: ✓
+                - text: AI-powered matching for personalized care
+              - listitem [ref=e18]:
+                - generic [ref=e19]: ✓
+                - text: HIPAA-compliant secure platform
+              - listitem [ref=e20]:
+                - generic [ref=e21]: ✓
+                - text: Streamlined placement process
+              - listitem [ref=e22]:
+                - generic [ref=e23]: ✓
+                - text: Comprehensive care management tools
+        - generic [ref=e25]:
+          - generic [ref=e26]:
+            - heading "Sign in to your account" [level=2] [ref=e27]
+            - generic [ref=e28]:
+              - generic [ref=e29]:
+                - generic [ref=e30]: Email address
+                - generic [ref=e31]:
+                  - generic:
+                    - img
+                  - textbox "Email address" [ref=e32]:
+                    - /placeholder: you@example.com
+              - generic [ref=e33]:
+                - generic [ref=e34]:
+                  - generic [ref=e35]: Password
+                  - link "Forgot password?" [ref=e36] [cursor=pointer]:
+                    - /url: /auth/forgot-password
+                - generic [ref=e37]:
+                  - generic:
+                    - img
+                  - textbox "Password" [ref=e38]:
+                    - /placeholder: ••••••••
+              - generic [ref=e39]:
+                - checkbox "Remember me" [ref=e40]
+                - generic [ref=e41]: Remember me
+              - button "Sign in" [ref=e43] [cursor=pointer]
+            - generic [ref=e44]:
+              - generic [ref=e49]: Or continue with
+              - generic [ref=e50]:
+                - button "Sign in with Google" [ref=e51] [cursor=pointer]:
+                  - img [ref=e52]
+                - button "Sign in with Apple" [ref=e57] [cursor=pointer]:
+                  - img [ref=e58]
+          - paragraph [ref=e60]:
+            - text: Don't have an account?
+            - link "Create an account" [ref=e61] [cursor=pointer]:
+              - /url: /auth/register
+    - contentinfo [ref=e62]:
+      - generic [ref=e63]:
+        - generic [ref=e64]: CareLinkAI
+        - generic [ref=e65]: v0.1.0
+  - alert [ref=e66]
+```

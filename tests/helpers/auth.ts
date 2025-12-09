@@ -15,28 +15,28 @@ export interface TestUser {
 
 export const TEST_USERS: Record<string, TestUser> = {
   ADMIN: {
-    email: 'admin.test@carelinkai.com',
-    password: 'TestPassword123!',
+    email: 'demo.admin@carelinkai.test',
+    password: 'DemoUser123!',
     role: 'ADMIN',
-    name: 'Admin Test User',
+    name: 'Demo Admin',
   },
   OPERATOR: {
-    email: 'operator.test@carelinkai.com',
-    password: 'TestPassword123!',
+    email: 'demo.operator@carelinkai.test',
+    password: 'DemoUser123!',
     role: 'OPERATOR',
-    name: 'Operator Test User',
+    name: 'Demo Operator',
   },
   CAREGIVER: {
-    email: 'caregiver.test@carelinkai.com',
-    password: 'TestPassword123!',
+    email: 'demo.aide@carelinkai.test',
+    password: 'DemoUser123!',
     role: 'CAREGIVER',
-    name: 'Caregiver Test User',
+    name: 'Demo Aide',
   },
   FAMILY: {
-    email: 'family.test@carelinkai.com',
-    password: 'TestPassword123!',
+    email: 'demo.family@carelinkai.test',
+    password: 'DemoUser123!',
     role: 'FAMILY',
-    name: 'Family Test User',
+    name: 'Demo Family',
   },
 };
 
@@ -44,22 +44,31 @@ export const TEST_USERS: Record<string, TestUser> = {
  * Log in as a specific test user
  */
 export async function login(page: Page, user: TestUser): Promise<void> {
-  await page.goto('/auth/signin');
+  await page.goto('/auth/login');
+  
+  // Wait for page to be fully loaded
+  await page.waitForLoadState('networkidle');
   
   // Wait for the sign-in page to load
-  await expect(page.locator('h1, h2').filter({ hasText: /sign in/i })).toBeVisible();
+  await expect(page.locator('h1, h2').filter({ hasText: /sign in|login/i })).toBeVisible();
   
-  // Fill in credentials
-  await page.fill('input[name="email"], input[type="email"]', user.email);
-  await page.fill('input[name="password"], input[type="password"]', user.password);
+  // Fill in credentials using specific ID selectors
+  await page.fill('#email', user.email);
+  await page.fill('#password', user.password);
+  
+  // Add small delay before submission to ensure form is ready
+  await page.waitForTimeout(500);
   
   // Click sign in button
   await page.click('button[type="submit"]');
   
-  // Wait for successful login (redirect away from signin page)
-  await page.waitForURL((url) => !url.pathname.includes('/auth/signin'), {
-    timeout: 10000,
+  // Wait for successful login (redirect away from login page)
+  await page.waitForURL((url) => !url.pathname.includes('/auth/login'), {
+    timeout: 15000,
   });
+  
+  // Wait for page to settle after navigation
+  await page.waitForLoadState('networkidle');
   
   // Verify we're logged in by checking for user name or dashboard elements
   await expect(page.locator('body')).not.toContainText('Sign In');
@@ -122,10 +131,11 @@ export async function isAuthenticated(page: Page): Promise<boolean> {
   // Check for common authenticated indicators
   const authIndicators = [
     page.locator('[data-testid="user-menu"]'),
-    page.locator('button:has-text("Admin User")'),
-    page.locator('button:has-text("Operator")'),
-    page.locator('button:has-text("Caregiver")'),
-    page.locator('button:has-text("Family")'),
+    page.locator('button:has-text("Demo Admin")'),
+    page.locator('button:has-text("Demo Operator")'),
+    page.locator('button:has-text("Demo Aide")'),
+    page.locator('button:has-text("Demo Family")'),
+    page.locator('button:has-text("Open user menu")'),
   ];
   
   for (const indicator of authIndicators) {
