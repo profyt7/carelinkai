@@ -74,14 +74,21 @@ export async function GET(request: NextRequest) {
         take: 5,
       }),
       // Expiring licenses (within 30 days)
-      prisma.homeLicense.findMany({
-        where: {
-          home: homeFilter,
-          expirationDate: {
-            lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-            gte: new Date(),
-          },
-        },
+      prisma.license.findMany({
+        where: Object.keys(homeFilter).length
+          ? {
+              home: homeFilter,
+              expirationDate: {
+                lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+                gte: new Date(),
+              },
+            }
+          : {
+              expirationDate: {
+                lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+                gte: new Date(),
+              },
+            },
         include: {
           home: { select: { name: true } },
         },
@@ -126,6 +133,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(summary);
   } catch (error) {
     console.error("[API /api/operator/dashboard] Error:", error);
+    console.error("[API /api/operator/dashboard] Error stack:", error instanceof Error ? error.stack : "No stack trace");
+    
+    // Log more context for debugging
+    const session = await getServerSession(authOptions).catch(() => null);
+    console.error("[API /api/operator/dashboard] Session:", session?.user?.email || "No session");
+    
     return NextResponse.json(
       {
         error: "Internal server error",
