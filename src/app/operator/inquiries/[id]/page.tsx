@@ -5,6 +5,10 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { InquiryStatus } from '@prisma/client';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
+import ConvertInquiryModal from '@/components/operator/inquiries/ConvertInquiryModal';
+import InquiryStatusBadge from '@/components/operator/inquiries/InquiryStatusBadge';
+import { useHasPermission } from '@/hooks/usePermissions';
+import { PERMISSIONS } from '@/lib/permissions';
 
 type InquiryDetail = {
   id: string;
@@ -13,8 +17,31 @@ type InquiryDetail = {
   tourDate: string | null;
   message: string | null;
   internalNotes: string;
-  home: { id: string; name: string };
-  family: { id: string; name: string; email: string; phone: string | null };
+  home: { 
+    id: string; 
+    name: string; 
+    address?: { street: string; city: string; state: string; }
+  };
+  family: { 
+    id: string; 
+    name: string; 
+    email: string; 
+    phone: string | null; 
+    user: { firstName: string; lastName: string; email: string; phone?: string; }
+  };
+  convertedToResidentId?: string | null;
+  conversionDate?: string | null;
+  convertedResident?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    status: string;
+  } | null;
+  convertedBy?: {
+    firstName: string;
+    lastName: string;
+  } | null;
+  conversionNotes?: string | null;
 };
 
 export default function OperatorLeadDetailPage() {
@@ -27,6 +54,9 @@ export default function OperatorLeadDetailPage() {
   const [notes, setNotes] = useState('');
   const [savingNotes, setSavingNotes] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [showConvertModal, setShowConvertModal] = useState(false);
+  
+  const canConvert = useHasPermission(PERMISSIONS.INQUIRIES_CONVERT);
 
   useEffect(() => {
     let cancelled = false;
@@ -57,6 +87,9 @@ export default function OperatorLeadDetailPage() {
     'CONTACTED',
     'TOUR_SCHEDULED',
     'TOUR_COMPLETED',
+    'QUALIFIED',
+    'CONVERTING',
+    'CONVERTED',
     'PLACEMENT_OFFERED',
     'PLACEMENT_ACCEPTED',
     'CLOSED_LOST',
@@ -217,19 +250,91 @@ export default function OperatorLeadDetailPage() {
           <div className="space-y-6">
             <div className="rounded-lg border border-neutral-200 bg-white p-4">
               <div className="mb-3 text-sm font-medium text-neutral-800">Lead Status</div>
+              <InquiryStatusBadge status={data.status} size="md" showDescription />
               <select
-                className="w-full form-select"
+                className="w-full form-select mt-3"
                 value={data.status}
                 onChange={(e) => updateStatus(e.target.value as InquiryStatus)}
-                disabled={updatingStatus}
+                disabled={updatingStatus || !!data.convertedToResidentId}
               >
                 {statuses.map((s) => (
                   <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
                 ))}
               </select>
+              {data.convertedToResidentId && (
+                <p className="mt-2 text-xs text-gray-500">
+                  Status cannot be changed after conversion
+                </p>
+              )}
             </div>
+
+            {/* Conversion Info or Convert Button */}
+            {data.convertedToResidentId && data.convertedResident ? (
+              <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+                <div className="mb-2 text-sm font-medium text-green-900">Converted to Resident</div>
+                <Link
+                  href={`/operator/residents/${data.convertedResident.id}`}
+                  className="block text-primary-600 hover:text-primary-700 font-medium mb-2"
+                >
+                  {data.convertedResident.firstName} {data.convertedResident.lastName}
+                </Link>
+                {data.conversionDate && (
+                  <p className="text-xs text-green-700 mb-1">
+                    Converted: {new Date(data.conversionDate).toLocaleDateString()}
+                  </p>
+                )}
+                {data.convertedBy && (
+                  <p className="text-xs text-green-700 mb-1">
+                    By: {data.convertedBy.firstName} {data.convertedBy.lastName}
+                  </p>
+                )}
+                {data.conversionNotes && (
+                  <p className="text-xs text-green-700 italic mt-2">
+                    "{data.conversionNotes}"
+                  </p>
+                )}
+              </div>
+            ) : canConvert && ['QUALIFIED', 'CONVERTING', 'TOUR_COMPLETED', 'PLACEMENT_OFFERED'].includes(data.status) ? (
+              <div className="rounded-lg border border-neutral-200 bg-white p-4">
+                <button
+                  onClick={() => setShowConvertModal(true)}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition font-medium"
+                >
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                  </svg>
+                  Convert to Resident
+                </button>
+                <p className="text-xs text-gray-600 mt-2 text-center">
+                  Create a resident profile from this inquiry
+                </p>
+              </div>
+            ) : null}
           </div>
         </div>
+
+        {/* Convert Modal */}
+        {showConvertModal && data && (
+          <ConvertInquiryModal
+            inquiry={{
+              id: data.id,
+              family: {
+                user: data.family.user,
+              },
+              home: {
+                name: data.home.name,
+                address: data.home.address,
+              },
+              message: data.message || undefined,
+            }}
+            onClose={() => setShowConvertModal(false)}
+            onSuccess={(residentId) => {
+              setShowConvertModal(false);
+              // Refresh the page to show conversion status
+              router.refresh();
+            }}
+          />
+        )}
       </div>
   );
 }

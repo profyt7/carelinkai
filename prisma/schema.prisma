@@ -133,6 +133,7 @@ model User {
   marketplaceListings MarketplaceListing[] @relation("UserListings")
   approvedTimesheets  Timesheet[]
   assignedLeads       Lead[]               @relation("AssignedLeads")
+  convertedInquiries  Inquiry[]            @relation("InquiryConverter")
 
   // Timestamps
   createdAt   DateTime  @default(now())
@@ -528,6 +529,7 @@ model Resident {
   contacts          ResidentContact[]
   complianceItems   ResidentComplianceItem[]
   familyContacts    FamilyContact[]
+  sourceInquiry     Inquiry?                 @relation("ConvertedFromInquiry")
 
   // Family collaboration relationships
   familyDocuments      FamilyDocument[]
@@ -752,6 +754,9 @@ enum InquiryStatus {
   CONTACTED
   TOUR_SCHEDULED
   TOUR_COMPLETED
+  QUALIFIED
+  CONVERTING
+  CONVERTED
   PLACEMENT_OFFERED
   PLACEMENT_ACCEPTED
   CLOSED_LOST
@@ -781,10 +786,18 @@ model Inquiry {
   tourDate      DateTime?
   aiMatchScore  Float? // AI-generated placement likelihood score
 
+  // Conversion tracking fields
+  convertedToResidentId String?   @unique // Link to created Resident record
+  conversionDate        DateTime? // When conversion happened
+  convertedByUserId     String?   // User who performed conversion
+  conversionNotes       String?   @db.Text // Notes about conversion
+
   // Relationships
-  family  Family             @relation(fields: [familyId], references: [id], onDelete: Cascade)
-  home    AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
-  booking Booking?
+  family            Family             @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  home              AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
+  booking           Booking?
+  convertedResident Resident?          @relation("ConvertedFromInquiry", fields: [convertedToResidentId], references: [id])
+  convertedBy       User?              @relation("InquiryConverter", fields: [convertedByUserId], references: [id])
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -795,6 +808,9 @@ model Inquiry {
   @@index([homeId])
   @@index([status])
   @@index([tourDate])
+  @@index([convertedToResidentId])
+  @@index([convertedByUserId])
+  @@index([conversionDate])
 }
 
 /// Lead/Inquiry model for Family → Aide/Provider marketplace inquiries

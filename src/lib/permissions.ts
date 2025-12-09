@@ -64,6 +64,7 @@ export const PERMISSIONS = {
   INQUIRIES_UPDATE: "inquiries.update",
   INQUIRIES_DELETE: "inquiries.delete",
   INQUIRIES_VIEW_ALL: "inquiries.view_all",
+  INQUIRIES_CONVERT: "inquiries.convert", // Convert inquiry to resident
   
   // Operator Permissions
   OPERATORS_VIEW: "operators.view",
@@ -141,6 +142,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     // Inquiries - scoped to their homes
     PERMISSIONS.INQUIRIES_VIEW,
     PERMISSIONS.INQUIRIES_UPDATE,
+    PERMISSIONS.INQUIRIES_CONVERT,
     
     // Reports
     PERMISSIONS.REPORTS_VIEW,
