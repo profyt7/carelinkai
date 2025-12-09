@@ -4,8 +4,13 @@ export const fetchCache = 'force-no-store';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { requireOperatorOrAdmin } from '@/lib/rbac';
 import { createAuditLogFromRequest } from '@/lib/audit';
+import { 
+  requirePermission, 
+  getUserScope, 
+  handleAuthError 
+} from '@/lib/auth-utils';
+import { PERMISSIONS } from '@/lib/permissions';
 
 // GET /api/residents
 // Lists residents for operators (scoped to their homes) or all for admins.
@@ -14,11 +19,10 @@ import { createAuditLogFromRequest } from '@/lib/audit';
 // CSV export: format=csv
 export async function GET(req: NextRequest) {
   try {
-    const { session, error } = await requireOperatorOrAdmin();
-    if (error) return error;
-    const userId = (session as any)?.user?.id as string | undefined;
-    const role = (session as any)?.user?.role as string | undefined;
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Require permission to view residents
+    const user = await requirePermission(PERMISSIONS.RESIDENTS_VIEW);
+    const userId = user.id;
+    const role = user.role;
 
     const { searchParams } = new URL(req.url);
     const q = (searchParams.get('q') || '').trim();
@@ -32,13 +36,21 @@ export async function GET(req: NextRequest) {
     if (Number.isNaN(limit) || limit <= 0) limit = 50;
     if (limit > 200) limit = 200;
 
-    // Compute operator scope if not admin
+    // Get user scope for data filtering
+    const scope = await getUserScope(userId);
     let allowedHomeIds: string[] | null = null;
-    if (role !== 'ADMIN') {
-      const operator = await prisma.operator.findUnique({ where: { userId }, select: { id: true } });
-      if (!operator) return NextResponse.json({ items: [], nextCursor: null });
-      const homes = await prisma.assistedLivingHome.findMany({ where: { operatorId: operator.id }, select: { id: true } });
-      allowedHomeIds = homes.map(h => h.id);
+    
+    // Apply scope-based filtering
+    if (scope.homeIds === "ALL") {
+      // Admin/Staff: no restrictions
+      allowedHomeIds = null;
+    } else if (scope.role === "FAMILY") {
+      // Family members see only their residents
+      // Skip home-based filtering, use resident IDs directly
+      allowedHomeIds = null;
+    } else {
+      // Operators and Caregivers: filtered by their assigned homes
+      allowedHomeIds = scope.homeIds;
       if (allowedHomeIds.length === 0) {
         return NextResponse.json({ items: [], nextCursor: null });
       }
@@ -60,8 +72,12 @@ export async function GET(req: NextRequest) {
       where.archivedAt = null;
     }
     
-    if (allowedHomeIds) {
-      // Show only residents in operator-managed homes; allow nulls only when explicitly filtered by homeId=null (not supported here)
+    // Apply scope-based filtering to where clause
+    if (scope.role === "FAMILY" && scope.residentIds.length > 0) {
+      // Family members see only their residents
+      where.id = { in: scope.residentIds };
+    } else if (allowedHomeIds) {
+      // Operators/Caregivers see residents in their assigned homes
       where.homeId = where.homeId ? where.homeId : { in: allowedHomeIds };
     }
 
@@ -115,9 +131,9 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json({ items, nextCursor }, { status: 200 });
-  } catch (e) {
-    console.error('Residents GET error', e);
-    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+  } catch (error) {
+    console.error('Residents GET error', error);
+    return handleAuthError(error);
   }
 }
 
@@ -131,11 +147,10 @@ async function assertOperatorHomeOwnership(userId: string, homeId?: string | nul
 
 export async function POST(req: NextRequest) {
   try {
-    const { session, error } = await requireOperatorOrAdmin();
-    if (error) return error;
-    const userId = (session as any)?.user?.id as string | undefined;
-    const role = (session as any)?.user?.role as string | undefined;
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Require permission to create residents
+    const user = await requirePermission(PERMISSIONS.RESIDENTS_CREATE);
+    const userId = user.id;
+    const role = user.role;
 
     const body = await req.json().catch(() => ({}));
     const { familyId, familyEmail, familyName, homeId, firstName, lastName, dateOfBirth, gender, status } = body || {};
@@ -143,9 +158,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'firstName, lastName, dateOfBirth, gender are required' }, { status: 400 });
     }
 
-    if (role !== 'ADMIN') {
-      const ok = await assertOperatorHomeOwnership(userId, homeId);
-      if (!ok) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    // For non-admin users, verify they have access to the specified home
+    if (role !== 'ADMIN' && homeId) {
+      const scope = await getUserScope(userId);
+      const hasHomeAccess = scope.homeIds === "ALL" || scope.homeIds.includes(homeId);
+      if (!hasHomeAccess) {
+        return NextResponse.json({ error: 'Forbidden: You do not have access to this home' }, { status: 403 });
+      }
     }
 
     // Resolve or create a family
@@ -210,8 +229,8 @@ export async function POST(req: NextRequest) {
     );
 
     return NextResponse.json({ id: created.id }, { status: 201 });
-  } catch (e) {
-    console.error('Resident create error', e);
-    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+  } catch (error) {
+    console.error('Resident create error', error);
+    return handleAuthError(error);
   }
 }

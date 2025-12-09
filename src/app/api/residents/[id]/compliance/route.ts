@@ -1,16 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { AuditAction } from "@prisma/client";
-import { requireOperatorOrAdmin } from "@/lib/rbac";
 import { createAuditLogFromRequest } from "@/lib/audit";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import {
+  requirePermission,
+  requireResidentAccess,
+  handleAuthError,
+} from "@/lib/auth-utils";
+import { PERMISSIONS } from "@/lib/permissions";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { error } = await requireOperatorOrAdmin();
-    if (error) return error;
+    // Require permission to view compliance
+    const user = await requirePermission(PERMISSIONS.COMPLIANCE_VIEW);
+    
+    // Verify user has access to this resident
+    await requireResidentAccess(user.id, params.id);
     const url = new URL(req.url);
     const limit = Math.min(Number(url.searchParams.get("limit") || "25"), 100);
     const items = await prisma.residentComplianceItem.findMany({
@@ -33,16 +41,19 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       },
     });
     return NextResponse.json({ items }, { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } });
-  } catch (e) {
-    console.error("Compliance list error", e);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  } catch (error) {
+    console.error("Compliance list error", error);
+    return handleAuthError(error);
   }
 }
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { error } = await requireOperatorOrAdmin();
-    if (error) return error;
+    // Require permission to create compliance items
+    const user = await requirePermission(PERMISSIONS.COMPLIANCE_CREATE);
+    
+    // Verify user has access to this resident
+    await requireResidentAccess(user.id, params.id);
     const body = await req.json().catch(() => ({}));
     const Schema = z.object({ 
       type: z.string().min(1), 
@@ -75,8 +86,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     });
     await createAuditLogFromRequest(req, AuditAction.CREATE, 'ResidentComplianceItem', created.id, 'Created compliance item', { residentId: params.id, type });
     return NextResponse.json({ success: true, id: created.id }, { status: 201, headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } });
-  } catch (e) {
-    console.error("Compliance create error", e);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  } catch (error) {
+    console.error("Compliance create error", error);
+    return handleAuthError(error);
   }
 }
