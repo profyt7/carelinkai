@@ -70,7 +70,7 @@ const navItems: NavItem[] = [
   { name: "Inquiries", icon: <FiFileText size={20} />, href: "/dashboard/inquiries", showInMobileBar: false },
   { name: "Leads", icon: <FiUsers size={20} />, href: "/operator/leads", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
   { name: "Residents", icon: <FiUsers size={20} />, href: "/operator/residents", showInMobileBar: true, roleRestriction: ["OPERATOR", "ADMIN", "CAREGIVER", "STAFF"] },
-  { name: "Caregivers", icon: <FiUsers size={20} />, href: "/marketplace?tab=caregivers", showInMobileBar: false },
+  { name: "Caregivers", icon: <FiUsers size={20} />, href: "/operator/caregivers", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
   { name: "Calendar", icon: <FiCalendar size={20} />, href: "/calendar", showInMobileBar: true },
   // Shifts page
   { name: "Shifts", icon: <FiCalendar size={20} />, href: "/shifts", showInMobileBar: true },
