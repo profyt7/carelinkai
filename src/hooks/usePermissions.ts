@@ -4,6 +4,7 @@
  * React hooks for checking permissions in components
  */
 
+import React from "react";
 import { useSession } from "next-auth/react";
 import { UserRole } from "@prisma/client";
 import {
