@@ -60,7 +60,8 @@ export async function GET(request: NextRequest) {
           OR: [
             { companyName: { contains: q.trim(), mode: "insensitive" as const } },
             { user: { email: { contains: q.trim(), mode: "insensitive" as const } } },
-            { user: { name: { contains: q.trim(), mode: "insensitive" as const } } },
+            { user: { firstName: { contains: q.trim(), mode: "insensitive" as const } } },
+            { user: { lastName: { contains: q.trim(), mode: "insensitive" as const } } },
           ],
         }
       : {};
@@ -73,7 +74,8 @@ export async function GET(request: NextRequest) {
           user: {
             select: {
               id: true,
-              name: true,
+              firstName: true,
+              lastName: true,
               email: true,
             },
           },
@@ -114,7 +116,7 @@ export async function GET(request: NextRequest) {
           id: op.id,
           userId: op.userId,
           companyName: op.companyName,
-          userName: op.user.name,
+          userName: `${op.user.firstName} ${op.user.lastName}`,
           email: op.user.email,
           homesCount: op._count.homes,
           caregiversCount: op._count.caregivers,
