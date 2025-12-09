@@ -45,6 +45,21 @@ export async function GET(request: NextRequest) {
         ? { operatorId: operator.id }
         : {};
 
+    // For queries that need homeIds, we fetch them first
+    let homeIds: string[] | undefined;
+    if (Object.keys(homeFilter).length > 0) {
+      const operatorHomes = await prisma.assistedLivingHome.findMany({
+        where: homeFilter,
+        select: { id: true },
+      });
+      homeIds = operatorHomes.map(h => h.id);
+    }
+
+    // Construct filters for related models
+    const inquiryFilter = homeIds ? { homeId: { in: homeIds } } : {};
+    const residentFilter = homeIds ? { homeId: { in: homeIds } } : {};
+    const licenseFilter = homeIds ? { homeId: { in: homeIds } } : {};
+
     // Fetch all dashboard data in parallel
     const [
       homes,
@@ -55,17 +70,13 @@ export async function GET(request: NextRequest) {
       newInquiriesCount,
     ] = await Promise.all([
       prisma.assistedLivingHome.count({ where: homeFilter }),
-      prisma.inquiry.count({
-        where: Object.keys(homeFilter).length ? { home: homeFilter } : {},
-      }),
+      prisma.inquiry.count({ where: inquiryFilter }),
       prisma.resident.count({
-        where: Object.keys(homeFilter).length
-          ? { home: homeFilter, status: "ACTIVE" }
-          : { status: "ACTIVE" },
+        where: { ...residentFilter, status: "ACTIVE" },
       }),
       // Recent activity: last 5 inquiries
       prisma.inquiry.findMany({
-        where: Object.keys(homeFilter).length ? { home: homeFilter } : {},
+        where: inquiryFilter,
         include: {
           home: { select: { name: true } },
           family: { select: { name: true } },
@@ -75,20 +86,13 @@ export async function GET(request: NextRequest) {
       }),
       // Expiring licenses (within 30 days)
       prisma.license.findMany({
-        where: Object.keys(homeFilter).length
-          ? {
-              home: homeFilter,
-              expirationDate: {
-                lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-                gte: new Date(),
-              },
-            }
-          : {
-              expirationDate: {
-                lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-                gte: new Date(),
-              },
-            },
+        where: {
+          ...licenseFilter,
+          expirationDate: {
+            lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+            gte: new Date(),
+          },
+        },
         include: {
           home: { select: { name: true } },
         },
@@ -97,28 +101,28 @@ export async function GET(request: NextRequest) {
       }),
       // New inquiries count (status = NEW)
       prisma.inquiry.count({
-        where: Object.keys(homeFilter).length
-          ? { home: homeFilter, status: "NEW" }
-          : { status: "NEW" },
+        where: { ...inquiryFilter, status: "NEW" },
       }),
     ]);
 
     // Calculate occupancy rate
-    const capacityAgg = await prisma.assistedLivingHome
-      .groupBy({
-        by: ["operatorId"],
+    let occupancyRate = 0;
+    try {
+      const capacityAgg = await prisma.assistedLivingHome.aggregate({
         where: homeFilter,
         _sum: { capacity: true, currentOccupancy: true },
-      })
-      .catch(() => [] as any[]);
-
-    const totals = capacityAgg[0]?._sum || { capacity: 0, currentOccupancy: 0 };
-    const occupancyRate = totals.capacity
-      ? Math.round(
-          ((Number(totals.currentOccupancy || 0) / Number(totals.capacity)) *
-            100)
-        )
-      : 0;
+      });
+      
+      const totalCapacity = Number(capacityAgg._sum.capacity || 0);
+      const totalOccupancy = Number(capacityAgg._sum.currentOccupancy || 0);
+      
+      if (totalCapacity > 0) {
+        occupancyRate = Math.round((totalOccupancy / totalCapacity) * 100);
+      }
+    } catch (aggError) {
+      console.error("[API /api/operator/dashboard] Occupancy calculation error:", aggError);
+      // Continue with occupancyRate = 0
+    }
 
     const summary = {
       homes,

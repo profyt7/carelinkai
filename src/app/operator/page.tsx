@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { FiHome, FiUsers, FiTrendingUp, FiFileText, FiCreditCard, FiPlus, FiAlertCircle, FiClock } from "react-icons/fi";
-import DashboardLayout from "@/components/layout/DashboardLayout";
 
 interface DashboardSummary {
   homes: number;
@@ -81,8 +80,7 @@ export default function OperatorDashboardPage() {
     : 'All Operators';
 
   return (
-    <DashboardLayout title="Operator Dashboard" showSearch={false}>
-      <div className="p-4 sm:p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-6">
         {loading ? (
           <div className="flex items-center justify-center h-64">
             <div className="flex flex-col items-center space-y-4">
@@ -318,7 +316,6 @@ export default function OperatorDashboardPage() {
         </div>
         </>
         )}
-      </div>
-    </DashboardLayout>
+    </div>
   );
 }
