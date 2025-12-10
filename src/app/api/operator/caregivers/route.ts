@@ -11,11 +11,25 @@ const prisma = new PrismaClient();
 export async function GET(request: Request) {
   try {
     const { session, error } = await requireOperatorOrAdmin();
-    if (error) return error;
+    if (error) {
+      console.error('[Caregivers API] Auth failed:', error);
+      return error;
+    }
+    
+    console.log('[Caregivers API] Session user:', session?.user?.email);
     const user = await prisma.user.findUnique({ where: { email: session!.user!.email! } });
-    if (!user || (user.role !== UserRole.OPERATOR && user.role !== UserRole.ADMIN)) {
+    
+    if (!user) {
+      console.error('[Caregivers API] User not found:', session?.user?.email);
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+    
+    if (user.role !== UserRole.OPERATOR && user.role !== UserRole.ADMIN) {
+      console.error('[Caregivers API] Forbidden role:', user.role);
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
+    
+    console.log('[Caregivers API] User authorized:', user.email, user.role);
 
     // Get query parameters for filtering
     const { searchParams } = new URL(request.url);
@@ -71,10 +85,9 @@ export async function GET(request: Request) {
           }
         }
       },
-      orderBy: [
-        { employmentStatus: 'asc' },
-        { user: { firstName: 'asc' } }
-      ]
+      orderBy: {
+        employmentStatus: 'asc'
+      }
     });
 
     return NextResponse.json({
@@ -97,8 +110,15 @@ export async function GET(request: Request) {
       })),
     });
   } catch (e) {
-    console.error('List operator caregivers failed', e);
-    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+    console.error('[Caregivers API] Failed:', e);
+    if (e instanceof Error) {
+      console.error('[Caregivers API] Error message:', e.message);
+      console.error('[Caregivers API] Error stack:', e.stack);
+    }
+    return NextResponse.json({ 
+      error: 'Server error', 
+      details: e instanceof Error ? e.message : 'Unknown error' 
+    }, { status: 500 });
   } finally {
     await prisma.$disconnect();
   }
