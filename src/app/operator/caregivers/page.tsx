@@ -55,12 +55,24 @@ export default function CaregiversPage() {
       if (employmentType !== 'ALL') params.append('type', employmentType);
       
       const res = await fetch(`/api/operator/caregivers?${params.toString()}`);
-      if (!res.ok) throw new Error('Failed to fetch caregivers');
+      if (!res.ok) {
+        // Try to parse error response
+        try {
+          const errorData = await res.json();
+          const errorMessage = errorData.message || errorData.error || 'Failed to fetch caregivers';
+          const errorDetails = errorData.type ? ` (${errorData.type})` : '';
+          throw new Error(errorMessage + errorDetails);
+        } catch (parseError) {
+          // If JSON parsing fails, throw generic error
+          throw new Error(`Failed to fetch caregivers (${res.status})`);
+        }
+      }
       const data = await res.json();
       setCaregivers(data.caregivers || []);
     } catch (error) {
       console.error('Error fetching caregivers:', error);
-      toast.error('Failed to load caregivers');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load caregivers';
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

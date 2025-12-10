@@ -438,10 +438,34 @@ export function handleAuthError(error: unknown) {
     );
   }
   
-  // Unknown error
-  console.error("Authorization error:", error);
-  return Response.json(
-    { error: "Internal server error" },
-    { status: 500 }
-  );
+  // Unknown error - log detailed information to console (visible in Render logs)
+  console.error("========================================");
+  console.error("UNHANDLED ERROR IN AUTH UTILS");
+  console.error("========================================");
+  console.error("Error type:", error?.constructor?.name);
+  console.error("Error object:", error);
+  if (error instanceof Error) {
+    console.error("Error message:", error.message);
+    console.error("Error stack:", error.stack);
+  }
+  console.error("========================================");
+  
+  // Return detailed error information
+  const errorResponse: any = { 
+    error: "Internal server error",
+  };
+  
+  // Add details in all environments to help with debugging
+  if (error instanceof Error) {
+    errorResponse.message = error.message;
+    errorResponse.type = error.constructor.name;
+    // Include stack trace in development
+    if (process.env.NODE_ENV !== 'production') {
+      errorResponse.stack = error.stack;
+    }
+  } else {
+    errorResponse.details = String(error);
+  }
+  
+  return Response.json(errorResponse, { status: 500 });
 }

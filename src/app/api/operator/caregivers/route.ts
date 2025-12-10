@@ -129,20 +129,7 @@ export async function GET(request: Request) {
     }
     console.error('[Caregivers API] ========================================');
     
-    // Return more detailed error for debugging
-    if (process.env.NODE_ENV === 'production') {
-      // In production, return more details to help debugging
-      return NextResponse.json(
-        { 
-          error: 'Failed to fetch caregivers',
-          details: e instanceof Error ? e.message : 'Unknown error',
-          type: e?.constructor?.name || 'Unknown'
-        },
-        { status: 500 }
-      );
-    }
-    
-    // Use Phase 4 RBAC error handling for dev
+    // Use Phase 4 RBAC error handling for auth errors
     return handleAuthError(e);
   }
 }
