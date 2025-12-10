@@ -1,7 +1,8 @@
-﻿import { NextResponse } from 'next/server';
+﻿import { NextResponse, NextRequest } from 'next/server';
 import { UserRole } from '@prisma/client';
 import { z } from 'zod';
-import { requireOperatorOrAdmin } from '@/lib/rbac';
+import { requirePermission, getUserScope, handleAuthError } from '@/lib/auth-utils';
+import { PERMISSIONS } from '@/lib/permissions';
 import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
@@ -9,24 +10,8 @@ export const revalidate = 0;
 
 export async function GET(request: Request) {
   try {
-    const { session, error } = await requireOperatorOrAdmin();
-    if (error) {
-      console.error('[Caregivers API] Auth failed:', error);
-      return error;
-    }
-    
-    console.log('[Caregivers API] Session user:', session?.user?.email);
-    const user = await prisma.user.findUnique({ where: { email: session!.user!.email! } });
-    
-    if (!user) {
-      console.error('[Caregivers API] User not found:', session?.user?.email);
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-    
-    if (user.role !== UserRole.OPERATOR && user.role !== UserRole.ADMIN) {
-      console.error('[Caregivers API] Forbidden role:', user.role);
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    // Use Phase 4 RBAC system - require CAREGIVERS_VIEW permission
+    const user = await requirePermission(PERMISSIONS.CAREGIVERS_VIEW);
     
     console.log('[Caregivers API] User authorized:', user.email, user.role);
 
@@ -34,6 +19,9 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     const type = searchParams.get('type');
+
+    // Get user scope for data filtering (Phase 4 RBAC)
+    const scope = await getUserScope(user.id);
 
     // Build where clause for caregiver query
     let caregiverWhere: any = {};
@@ -48,18 +36,17 @@ export async function GET(request: Request) {
       caregiverWhere.employmentType = type;
     }
 
-    // For operators, filter by their employment records
-    if (user.role === UserRole.OPERATOR) {
-      const operator = await prisma.operator.findUnique({ where: { userId: user.id } });
-      if (operator) {
-        caregiverWhere.employments = {
-          some: {
-            operatorId: operator.id,
-            isActive: true
-          }
-        };
-      }
+    // Apply scope-based filtering (Phase 4 RBAC)
+    if (scope.role === UserRole.OPERATOR && scope.operatorIds && scope.operatorIds !== "ALL") {
+      // For operators, filter by their employment records
+      caregiverWhere.employments = {
+        some: {
+          operatorId: { in: scope.operatorIds },
+          isActive: true
+        }
+      };
     }
+    // ADMIN sees all caregivers (no additional filtering)
 
     // Query caregivers with all related data
     const caregivers = await prisma.caregiver.findMany({
@@ -114,10 +101,8 @@ export async function GET(request: Request) {
       console.error('[Caregivers API] Error message:', e.message);
       console.error('[Caregivers API] Error stack:', e.stack);
     }
-    return NextResponse.json({ 
-      error: 'Server error', 
-      details: e instanceof Error ? e.message : 'Unknown error' 
-    }, { status: 500 });
+    // Use Phase 4 RBAC error handling
+    return handleAuthError(e);
   }
 }
 
@@ -130,12 +115,8 @@ const createEmploymentSchema = z.object({
 
 export async function POST(req: Request) {
   try {
-    const { session, error } = await requireOperatorOrAdmin();
-    if (error) return error;
-    const user = await prisma.user.findUnique({ where: { email: session!.user!.email! } });
-    if (!user || (user.role !== UserRole.OPERATOR && user.role !== UserRole.ADMIN)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    // Use Phase 4 RBAC system - require CAREGIVERS_CREATE permission
+    const user = await requirePermission(PERMISSIONS.CAREGIVERS_CREATE);
 
     const body = await req.json().catch(() => ({}));
     const parsed = createEmploymentSchema.safeParse(body);
@@ -182,6 +163,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ employmentId: employment.id }, { status: 201 });
   } catch (e) {
     console.error('Create caregiver employment failed', e);
-    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+    // Use Phase 4 RBAC error handling
+    return handleAuthError(e);
   }
 }
