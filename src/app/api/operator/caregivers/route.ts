@@ -68,7 +68,7 @@ export async function GET(request: Request) {
             firstName: true,
             lastName: true,
             email: true,
-            phoneNumber: true,
+            phone: true,
           }
         },
         certifications: {
@@ -96,7 +96,7 @@ export async function GET(request: Request) {
             firstName: caregiver.user?.firstName || '',
             lastName: caregiver.user?.lastName || '',
             email: caregiver.user?.email || '',
-            phoneNumber: caregiver.user?.phoneNumber || null,
+            phoneNumber: caregiver.user?.phone || null,
           },
           photoUrl: caregiver.photoUrl || null,
           specializations: Array.isArray(caregiver.languages) ? caregiver.languages : [],
