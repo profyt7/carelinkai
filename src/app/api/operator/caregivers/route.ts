@@ -1,12 +1,11 @@
 ﻿import { NextResponse } from 'next/server';
-import { PrismaClient, UserRole } from '@prisma/client';
+import { UserRole } from '@prisma/client';
 import { z } from 'zod';
 import { requireOperatorOrAdmin } from '@/lib/rbac';
+import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
-
-const prisma = new PrismaClient();
 
 export async function GET(request: Request) {
   try {
@@ -119,8 +118,6 @@ export async function GET(request: Request) {
       error: 'Server error', 
       details: e instanceof Error ? e.message : 'Unknown error' 
     }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -186,7 +183,5 @@ export async function POST(req: Request) {
   } catch (e) {
     console.error('Create caregiver employment failed', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }
