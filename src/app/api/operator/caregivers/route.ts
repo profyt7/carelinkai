@@ -10,18 +10,24 @@ export const revalidate = 0;
 
 export async function GET(request: Request) {
   try {
-    // Use Phase 4 RBAC system - require CAREGIVERS_VIEW permission
-    const user = await requirePermission(PERMISSIONS.CAREGIVERS_VIEW);
+    console.log('[Caregivers API] Starting request...');
     
+    // Use Phase 4 RBAC system - require CAREGIVERS_VIEW permission
+    console.log('[Caregivers API] Step 1: Checking permissions...');
+    const user = await requirePermission(PERMISSIONS.CAREGIVERS_VIEW);
     console.log('[Caregivers API] User authorized:', user.email, user.role);
 
     // Get query parameters for filtering
+    console.log('[Caregivers API] Step 2: Parsing query params...');
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     const type = searchParams.get('type');
+    console.log('[Caregivers API] Filters - status:', status, 'type:', type);
 
     // Get user scope for data filtering (Phase 4 RBAC)
+    console.log('[Caregivers API] Step 3: Getting user scope...');
     const scope = await getUserScope(user.id);
+    console.log('[Caregivers API] Scope:', JSON.stringify(scope));
 
     // Build where clause for caregiver query
     let caregiverWhere: any = {};
@@ -32,12 +38,13 @@ export async function GET(request: Request) {
     }
     
     // Filter by employment type if provided
-    if (type && type !== 'ALL') {
+    if (type && status !== 'ALL') {
       caregiverWhere.employmentType = type;
     }
 
     // Apply scope-based filtering (Phase 4 RBAC)
     if (scope.role === UserRole.OPERATOR && scope.operatorIds && scope.operatorIds !== "ALL") {
+      console.log('[Caregivers API] Applying OPERATOR scope filtering...');
       // For operators, filter by their employment records
       caregiverWhere.employments = {
         some: {
@@ -45,8 +52,11 @@ export async function GET(request: Request) {
           isActive: true
         }
       };
+    } else {
+      console.log('[Caregivers API] ADMIN user - no scope filtering');
     }
-    // ADMIN sees all caregivers (no additional filtering)
+
+    console.log('[Caregivers API] Step 4: Querying database with where:', JSON.stringify(caregiverWhere));
 
     // Query caregivers with all related data
     const caregivers = await prisma.caregiver.findMany({
@@ -54,6 +64,7 @@ export async function GET(request: Request) {
       include: {
         user: {
           select: {
+            id: true,
             firstName: true,
             lastName: true,
             email: true,
@@ -71,32 +82,45 @@ export async function GET(request: Request) {
           }
         }
       },
-      orderBy: {
-        employmentStatus: 'asc'
+    });
+
+    console.log('[Caregivers API] Step 5: Found', caregivers.length, 'caregivers');
+
+    // Transform and return data
+    console.log('[Caregivers API] Step 6: Transforming data...');
+    const transformedCaregivers = caregivers.map((caregiver) => {
+      try {
+        return {
+          id: caregiver.id,
+          user: {
+            firstName: caregiver.user?.firstName || '',
+            lastName: caregiver.user?.lastName || '',
+            email: caregiver.user?.email || '',
+            phoneNumber: caregiver.user?.phoneNumber || null,
+          },
+          photoUrl: caregiver.photoUrl || null,
+          specializations: Array.isArray(caregiver.languages) ? caregiver.languages : [],
+          employmentType: caregiver.employmentType || 'FULL_TIME',
+          employmentStatus: caregiver.employmentStatus || 'ACTIVE',
+          certifications: Array.isArray(caregiver.certifications) ? caregiver.certifications.map(cert => ({
+            id: cert.id,
+            expiryDate: cert.expiryDate,
+          })) : []
+        };
+      } catch (transformError) {
+        console.error('[Caregivers API] Error transforming caregiver:', caregiver.id, transformError);
+        throw transformError;
       }
     });
 
+    console.log('[Caregivers API] Step 7: Returning', transformedCaregivers.length, 'caregivers');
     return NextResponse.json({
-      caregivers: caregivers.map((caregiver) => ({
-        id: caregiver.id,
-        user: {
-          firstName: caregiver.user.firstName,
-          lastName: caregiver.user.lastName,
-          email: caregiver.user.email,
-          phoneNumber: caregiver.user.phoneNumber,
-        },
-        photoUrl: caregiver.photoUrl,
-        specializations: caregiver.languages || [], // Using languages as specializations for now
-        employmentType: caregiver.employmentType || 'FULL_TIME',
-        employmentStatus: caregiver.employmentStatus,
-        certifications: caregiver.certifications.map(cert => ({
-          id: cert.id,
-          expiryDate: cert.expiryDate,
-        }))
-      })),
+      caregivers: transformedCaregivers,
     });
   } catch (e) {
-    console.error('[Caregivers API] Failed:', e);
+    console.error('[Caregivers API] ERROR - Failed at some step');
+    console.error('[Caregivers API] Error type:', e?.constructor?.name);
+    console.error('[Caregivers API] Error:', e);
     if (e instanceof Error) {
       console.error('[Caregivers API] Error message:', e.message);
       console.error('[Caregivers API] Error stack:', e.stack);
