@@ -52,7 +52,7 @@ export async function GET(
             operator: {
               select: {
                 id: true,
-                businessName: true,
+                companyName: true,
               }
             }
           },
