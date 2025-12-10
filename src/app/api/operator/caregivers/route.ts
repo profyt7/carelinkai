@@ -38,7 +38,7 @@ export async function GET(request: Request) {
     }
     
     // Filter by employment type if provided
-    if (type && status !== 'ALL') {
+    if (type && type !== 'ALL') {
       caregiverWhere.employmentType = type;
     }
 
@@ -118,14 +118,31 @@ export async function GET(request: Request) {
       caregivers: transformedCaregivers,
     });
   } catch (e) {
-    console.error('[Caregivers API] ERROR - Failed at some step');
+    console.error('[Caregivers API] ========================================');
+    console.error('[Caregivers API] CRITICAL ERROR OCCURRED');
+    console.error('[Caregivers API] ========================================');
     console.error('[Caregivers API] Error type:', e?.constructor?.name);
-    console.error('[Caregivers API] Error:', e);
+    console.error('[Caregivers API] Error object:', e);
     if (e instanceof Error) {
       console.error('[Caregivers API] Error message:', e.message);
       console.error('[Caregivers API] Error stack:', e.stack);
     }
-    // Use Phase 4 RBAC error handling
+    console.error('[Caregivers API] ========================================');
+    
+    // Return more detailed error for debugging
+    if (process.env.NODE_ENV === 'production') {
+      // In production, return more details to help debugging
+      return NextResponse.json(
+        { 
+          error: 'Failed to fetch caregivers',
+          details: e instanceof Error ? e.message : 'Unknown error',
+          type: e?.constructor?.name || 'Unknown'
+        },
+        { status: 500 }
+      );
+    }
+    
+    // Use Phase 4 RBAC error handling for dev
     return handleAuthError(e);
   }
 }
