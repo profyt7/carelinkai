@@ -155,3 +155,7 @@ Proprietary – © 2025 CareLinkAI.
 All rights reserved. For evaluation or demo purposes only.
 
 Contact `opensource@carelinkai.com` for commercial licensing.
+
+
+
+<!-- Deployment: 2025-12-11 - Upgraded to Render Performance Plan (64GB RAM) -->
