@@ -42,37 +42,40 @@ export async function GET(
       );
     }
 
-    // Fetch documents
-    const documents = await prisma.document.findMany({
+    // Fetch documents using CaregiverDocument model
+    const documents = await prisma.caregiverDocument.findMany({
       where: {
-        entityType: 'CAREGIVER',
-        entityId: params.id
-      },
-      include: {
-        uploadedByUser: {
-          select: {
-            firstName: true,
-            lastName: true,
-          }
-        }
+        caregiverId: params.id
       },
       orderBy: { createdAt: 'desc' }
     });
+
+    // Fetch uploader details for each document
+    const uploadedByIds = documents
+      .map(doc => doc.uploadedBy)
+      .filter((id): id is string => id !== null);
+    
+    const uploaders = uploadedByIds.length > 0 
+      ? await prisma.user.findMany({
+          where: { id: { in: uploadedByIds } },
+          select: { id: true, firstName: true, lastName: true }
+        })
+      : [];
+
+    const uploaderMap = new Map(
+      uploaders.map(u => [u.id, `${u.firstName} ${u.lastName}`])
+    );
 
     // Transform documents
     const transformedDocuments = documents.map(doc => ({
       id: doc.id,
       title: doc.title,
       description: doc.description,
-      fileUrl: doc.fileUrl,
-      fileType: doc.fileType,
-      fileSize: doc.fileSize,
-      category: doc.category,
+      fileUrl: doc.documentUrl,
+      documentType: doc.documentType,
       expiryDate: doc.expiryDate,
-      status: doc.status,
-      uploadedBy: doc.uploadedByUser ? 
-        `${doc.uploadedByUser.firstName} ${doc.uploadedByUser.lastName}` : 
-        null,
+      uploadDate: doc.uploadDate,
+      uploadedBy: doc.uploadedBy ? uploaderMap.get(doc.uploadedBy) || null : null,
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,
     }));
@@ -88,12 +91,9 @@ export async function GET(
 const createDocumentSchema = z.object({
   title: z.string().min(1),
   description: z.string().optional().nullable(),
-  fileUrl: z.string().url(),
-  fileType: z.string().min(1),
-  fileSize: z.number().int().min(0).optional().nullable(),
-  category: z.string().optional().nullable(),
+  documentUrl: z.string().url(),
+  documentType: z.enum(['CERTIFICATION', 'BACKGROUND_CHECK', 'TRAINING', 'CONTRACT', 'IDENTIFICATION', 'REFERENCE', 'OTHER']),
   expiryDate: z.string().datetime().optional().nullable(),
-  status: z.string().optional().default('ACTIVE'),
 });
 
 export async function POST(
@@ -141,18 +141,14 @@ export async function POST(
     }
 
     // Create document
-    const document = await prisma.document.create({
+    const document = await prisma.caregiverDocument.create({
       data: {
         title: parsed.data.title,
         description: parsed.data.description,
-        fileUrl: parsed.data.fileUrl,
-        fileType: parsed.data.fileType,
-        fileSize: parsed.data.fileSize,
-        category: parsed.data.category,
+        documentUrl: parsed.data.documentUrl,
+        documentType: parsed.data.documentType,
         expiryDate: parsed.data.expiryDate ? new Date(parsed.data.expiryDate) : null,
-        status: parsed.data.status,
-        entityType: 'CAREGIVER',
-        entityId: params.id,
+        caregiverId: params.id,
         uploadedBy: user.id,
       }
     });
