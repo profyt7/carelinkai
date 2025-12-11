@@ -21,6 +21,8 @@ import { CaregiverCard } from '@/components/operator/caregivers/CaregiverCard';
 import { CaregiverCardSkeletonGrid } from '@/components/operator/caregivers/CaregiverCardSkeleton';
 import { CaregiverModal } from '@/components/operator/caregivers/CaregiverModal';
 import { CaregiverFilters, CaregiverFilterState } from '@/components/operator/caregivers/CaregiverFilters';
+import { CaregiverAnalytics } from '@/components/operator/caregivers/CaregiverAnalytics';
+import { ExpiringCertificationsWidget } from '@/components/operator/caregivers/ExpiringCertificationsWidget';
 import { exportCaregiversToCSV, downloadCSV, generateExportFilename } from '@/lib/export-utils';
 
 type Caregiver = {
@@ -318,6 +320,20 @@ export default function CaregiversPage() {
           </PermissionGuard>
         </div>
       </div>
+
+      {/* Analytics Dashboard */}
+      {!loading && caregivers.length > 0 && (
+        <div className="mb-6">
+          <CaregiverAnalytics caregivers={caregivers} />
+        </div>
+      )}
+
+      {/* Expiring Certifications Widget */}
+      {!loading && caregivers.length > 0 && (
+        <div className="mb-6">
+          <ExpiringCertificationsWidget caregivers={caregivers} />
+        </div>
+      )}
 
       {/* Search, Sort, and Filter Bar */}
       <div className="bg-white rounded-lg border border-neutral-200 shadow-sm p-4 mb-6">

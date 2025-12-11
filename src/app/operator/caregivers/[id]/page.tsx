@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { 
   FiArrowLeft, 
@@ -10,12 +10,16 @@ import {
   FiUser, 
   FiAward, 
   FiUsers, 
-  FiFileText 
+  FiFileText,
+  FiCheckCircle,
+  FiBriefcase
 } from 'react-icons/fi';
 import Link from 'next/link';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
 import { PermissionGuard } from '@/hooks/usePermissions';
 import { PERMISSIONS } from '@/lib/permissions';
+import { StatCard } from '@/components/ui/StatCard';
+import { QuickActionsMenu } from '@/components/operator/caregivers/QuickActionsMenu';
 import { OverviewTab } from '@/components/operator/caregivers/OverviewTab';
 import { CertificationsTab } from '@/components/operator/caregivers/CertificationsTab';
 import { AssignmentsTab } from '@/components/operator/caregivers/AssignmentsTab';
@@ -45,6 +49,8 @@ type Caregiver = {
   languages?: string[];
   yearsOfExperience?: number | null;
   bio?: string | null;
+  certifications?: any[];
+  assignments?: any[];
   createdAt: Date | string;
   updatedAt: Date | string;
 };
@@ -52,11 +58,23 @@ type Caregiver = {
 export default function CaregiverDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const caregiverId = params.id as string;
 
   const [caregiver, setCaregiver] = useState<Caregiver | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>('overview');
+  const [certCount, setCertCount] = useState(0);
+  const [assignmentCount, setAssignmentCount] = useState(0);
+  const [documentCount, setDocumentCount] = useState(0);
+
+  // Handle tab from URL query parameter
+  useEffect(() => {
+    const tab = searchParams?.get('tab');
+    if (tab && ['overview', 'certifications', 'assignments', 'documents'].includes(tab)) {
+      setActiveTab(tab as Tab);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     fetchCaregiver();
@@ -76,6 +94,21 @@ export default function CaregiverDetailPage() {
       }
       const data = await res.json();
       setCaregiver(data);
+      
+      // Set counts from the data
+      setCertCount(data.certifications?.length || 0);
+      setAssignmentCount(data.assignments?.length || 0);
+      
+      // Fetch document count separately
+      try {
+        const docRes = await fetch(`/api/operator/caregivers/${caregiverId}/documents`);
+        if (docRes.ok) {
+          const docData = await docRes.json();
+          setDocumentCount(docData.documents?.length || 0);
+        }
+      } catch (err) {
+        console.error('Error fetching document count:', err);
+      }
     } catch (error) {
       console.error('Error fetching caregiver:', error);
       toast.error('Failed to load caregiver');
@@ -129,6 +162,12 @@ export default function CaregiverDetailPage() {
 
   const fullName = `${caregiver.user.firstName} ${caregiver.user.lastName}`;
 
+  // Count active certifications
+  const activeCertCount = caregiver.certifications?.filter((cert: any) => {
+    if (!cert.expiryDate) return true;
+    return new Date(cert.expiryDate) > new Date();
+  }).length || 0;
+
   const tabs: { 
     id: Tab; 
     label: string; 
@@ -144,19 +183,19 @@ export default function CaregiverDetailPage() {
       id: 'certifications', 
       label: 'Certifications',
       icon: <FiAward className="w-4 h-4" />,
-      count: 0 // Will be updated dynamically
+      count: certCount
     },
     { 
       id: 'assignments', 
       label: 'Assignments',
       icon: <FiUsers className="w-4 h-4" />,
-      count: 0 // Will be updated dynamically
+      count: assignmentCount
     },
     { 
       id: 'documents', 
       label: 'Documents',
       icon: <FiFileText className="w-4 h-4" />,
-      count: 0 // Will be updated dynamically
+      count: documentCount
     },
   ];
 
@@ -198,6 +237,10 @@ export default function CaregiverDetailPage() {
           </div>
 
           <div className="flex items-center gap-3">
+            <QuickActionsMenu 
+              caregiver={caregiver}
+              onUpdate={fetchCaregiver}
+            />
             <PermissionGuard permission={PERMISSIONS.CAREGIVERS_DELETE}>
               <button
                 onClick={handleDelete}
@@ -209,6 +252,37 @@ export default function CaregiverDetailPage() {
             </PermissionGuard>
           </div>
         </div>
+      </div>
+
+      {/* Quick Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <StatCard
+          title="Total Certifications"
+          value={certCount}
+          icon={<FiAward className="w-5 h-5" />}
+          color="blue"
+        />
+        
+        <StatCard
+          title="Active Certifications"
+          value={activeCertCount}
+          icon={<FiCheckCircle className="w-5 h-5" />}
+          color="green"
+        />
+        
+        <StatCard
+          title="Current Assignments"
+          value={assignmentCount}
+          icon={<FiBriefcase className="w-5 h-5" />}
+          color="purple"
+        />
+        
+        <StatCard
+          title="Documents"
+          value={documentCount}
+          icon={<FiFileText className="w-5 h-5" />}
+          color="gray"
+        />
       </div>
 
       {/* Tabs */}
