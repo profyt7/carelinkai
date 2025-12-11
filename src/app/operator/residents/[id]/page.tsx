@@ -153,13 +153,18 @@ export default async function ResidentDetail({ params, searchParams }: { params:
   
   const age = resident.dateOfBirth ? calculateAge(resident.dateOfBirth) : null;
   
+  // Get counts for tabs
+  const assessmentCount = assessments.items?.length || 0;
+  const incidentCount = incidents.items?.length || 0;
+  const contactsCount = contacts.items?.length || 0;
+  
   const tabs = [
-    { id: 'overview', label: 'Overview', icon: FiUser },
-    { id: 'assessments', label: 'Assessments', icon: FiClipboard },
-    { id: 'incidents', label: 'Incidents', icon: FiAlertTriangle },
-    { id: 'compliance', label: 'Compliance', icon: FiShield },
-    { id: 'family', label: 'Family', icon: FiUsers },
-    { id: 'details', label: 'Details', icon: FiFileText },
+    { id: 'overview', label: 'Overview', icon: FiUser, count: null },
+    { id: 'assessments', label: 'Assessments', icon: FiClipboard, count: assessmentCount },
+    { id: 'incidents', label: 'Incidents', icon: FiAlertTriangle, count: incidentCount },
+    { id: 'compliance', label: 'Compliance', icon: FiShield, count: null },
+    { id: 'family', label: 'Family', icon: FiUsers, count: contactsCount },
+    { id: 'details', label: 'Details', icon: FiFileText, count: null },
   ];
   
   return (
@@ -225,7 +230,7 @@ export default async function ResidentDetail({ params, searchParams }: { params:
 
       {/* Tabs */}
       <div className="border-b border-neutral-200 mb-6">
-        <nav className="-mb-px flex gap-8">
+        <nav className="-mb-px flex gap-6 overflow-x-auto">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -234,15 +239,26 @@ export default async function ResidentDetail({ params, searchParams }: { params:
                 key={tab.id}
                 href={`/operator/residents/${resident.id}?tab=${tab.id}`}
                 className={`
-                  inline-flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors
+                  inline-flex items-center gap-2 py-4 px-2 border-b-2 font-medium text-sm transition-all whitespace-nowrap
                   ${isActive 
                     ? 'border-primary-600 text-primary-600' 
                     : 'border-transparent text-neutral-500 hover:text-neutral-700 hover:border-neutral-300'
                   }
                 `}
               >
-                <Icon className="w-4 h-4" />
-                {tab.label}
+                <Icon className={`w-4 h-4 ${isActive ? 'text-primary-600' : 'text-neutral-400'}`} />
+                <span>{tab.label}</span>
+                {tab.count !== null && tab.count > 0 && (
+                  <span className={`
+                    inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-medium
+                    ${isActive 
+                      ? 'bg-primary-100 text-primary-700' 
+                      : 'bg-neutral-100 text-neutral-600'
+                    }
+                  `}>
+                    {tab.count}
+                  </span>
+                )}
               </Link>
             );
           })}
