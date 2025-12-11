@@ -81,8 +81,8 @@ export default function CaregiversPage() {
   // Filter caregivers by search query
   const filteredCaregivers = caregivers.filter(caregiver => {
     if (!searchQuery) return true;
-    const fullName = `${caregiver.user.firstName} ${caregiver.user.lastName}`.toLowerCase();
-    const email = caregiver.user.email.toLowerCase();
+    const fullName = `${caregiver.user.firstName || ''} ${caregiver.user.lastName || ''}`.toLowerCase();
+    const email = (caregiver.user.email || '').toLowerCase();
     const query = searchQuery.toLowerCase();
     return fullName.includes(query) || email.includes(query);
   });

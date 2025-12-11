@@ -70,7 +70,7 @@ export function CaregiverCard({ caregiver }: CaregiverCardProps) {
               <div>
                 <h3 className="text-lg font-semibold text-neutral-900 truncate">{fullName}</h3>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="text-sm text-neutral-600">{employmentType.replace('_', ' ')}</span>
+                  <span className="text-sm text-neutral-600">{(employmentType || '').replace('_', ' ')}</span>
                   <span
                     className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
                       isActive

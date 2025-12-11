@@ -105,7 +105,7 @@ export function OverviewTab({ caregiver, onUpdate }: OverviewTabProps) {
           <div className="flex-1 min-w-0">
             <h2 className="text-2xl font-bold text-neutral-900 mb-1">{fullName}</h2>
             <p className="text-primary-700 font-medium mb-3">
-              {caregiver.employmentType.replace('_', ' ')} - {caregiver.employmentStatus}
+              {(caregiver.employmentType || '').replace('_', ' ')} - {caregiver.employmentStatus || 'Unknown'}
             </p>
             {caregiver.bio && (
               <p className="text-neutral-700 text-sm leading-relaxed">{caregiver.bio}</p>
@@ -163,7 +163,7 @@ export function OverviewTab({ caregiver, onUpdate }: OverviewTabProps) {
           <InfoItem
             icon={FiBriefcase}
             label="Employment Type"
-            value={caregiver.employmentType.replace('_', ' ')}
+            value={(caregiver.employmentType || '').replace('_', ' ')}
           />
           <InfoItem
             icon={FiBriefcase}

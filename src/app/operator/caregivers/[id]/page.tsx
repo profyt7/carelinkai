@@ -152,7 +152,7 @@ export default function CaregiverDetailPage() {
           <div>
             <h1 className="text-3xl font-bold text-neutral-900">{fullName}</h1>
             <p className="text-neutral-600 mt-1">
-              {caregiver.employmentType.replace('_', ' ')} - {caregiver.employmentStatus}
+              {(caregiver.employmentType || '').replace('_', ' ')} - {caregiver.employmentStatus || 'Unknown'}
             </p>
           </div>
 
