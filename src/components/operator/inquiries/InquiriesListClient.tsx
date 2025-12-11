@@ -22,10 +22,13 @@ import {
   FiChevronRight,
   FiAlertCircle,
   FiDownload,
+  FiBarChart2,
+  FiList,
 } from 'react-icons/fi';
 import InquiryCard, { InquiryCardData } from './InquiryCard';
 import { InquiryCardSkeletonGrid } from './InquiryCardSkeleton';
 import InquiryFilters, { InquiryFiltersState, defaultFilters } from './InquiryFilters';
+import { InquiryAnalytics } from './InquiryAnalytics';
 import {
   exportInquiriesToCSV,
   downloadCSV,
@@ -97,6 +100,7 @@ export default function InquiriesListClient({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'analytics'>('list');
 
   // Debounced search query
   const debouncedSearch = useDebounce(searchQuery, 300);
@@ -349,6 +353,34 @@ export default function InquiriesListClient({
           </select>
         </div>
 
+        {/* View Toggle */}
+        <div className="flex items-center gap-2 border border-neutral-300 rounded-lg p-1">
+          <button
+            onClick={() => setViewMode('list')}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded transition-colors ${
+              viewMode === 'list'
+                ? 'bg-primary-600 text-white'
+                : 'text-neutral-700 hover:bg-neutral-100'
+            }`}
+            title="List view"
+          >
+            <FiList className="w-4 h-4" />
+            <span className="hidden sm:inline">List</span>
+          </button>
+          <button
+            onClick={() => setViewMode('analytics')}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded transition-colors ${
+              viewMode === 'analytics'
+                ? 'bg-primary-600 text-white'
+                : 'text-neutral-700 hover:bg-neutral-100'
+            }`}
+            title="Analytics view"
+          >
+            <FiBarChart2 className="w-4 h-4" />
+            <span className="hidden sm:inline">Analytics</span>
+          </button>
+        </div>
+
         {/* Export Button */}
         <button
           onClick={handleExport}
@@ -368,59 +400,89 @@ export default function InquiriesListClient({
         staff={staff}
       />
 
-      {/* Results Summary */}
-      {!loading && (
-        <div className="flex items-center justify-between text-sm">
-          <div className="text-neutral-600">
-            {pagination.total > 0 ? (
-              <>
-                Showing {(pagination.page - 1) * pagination.limit + 1} -{' '}
-                {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
-                {pagination.total} inquiries
-              </>
-            ) : (
-              'No inquiries found'
-            )}
+      {/* Analytics View */}
+      {viewMode === 'analytics' ? (
+        loading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+            <p className="text-neutral-600 mt-4">Loading analytics...</p>
           </div>
-          {debouncedSearch && (
-            <div className="text-neutral-500">
-              Search results for &quot;{debouncedSearch}&quot;
+        ) : error ? (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-6">
+            <div className="flex items-start gap-3">
+              <FiAlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-medium text-red-900 mb-1">Error loading analytics</h3>
+                <p className="text-red-700 text-sm">{error}</p>
+                <button
+                  onClick={() => fetchInquiries(pagination.page)}
+                  className="mt-3 text-sm font-medium text-red-600 hover:text-red-700"
+                >
+                  Try again
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <InquiryAnalytics inquiries={inquiries} />
+        )
+      ) : (
+        <>
+          {/* Results Summary */}
+          {!loading && (
+            <div className="flex items-center justify-between text-sm">
+              <div className="text-neutral-600">
+                {pagination.total > 0 ? (
+                  <>
+                    Showing {(pagination.page - 1) * pagination.limit + 1} -{' '}
+                    {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
+                    {pagination.total} inquiries
+                  </>
+                ) : (
+                  'No inquiries found'
+                )}
+              </div>
+              {debouncedSearch && (
+                <div className="text-neutral-500">
+                  Search results for &quot;{debouncedSearch}&quot;
+                </div>
+              )}
             </div>
           )}
-        </div>
-      )}
 
-      {/* Inquiries Grid */}
-      {loading ? (
-        <InquiryCardSkeletonGrid count={12} />
-      ) : error ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-6">
-          <div className="flex items-start gap-3">
-            <FiAlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-            <div>
-              <h3 className="font-medium text-red-900 mb-1">Error loading inquiries</h3>
-              <p className="text-red-700 text-sm">{error}</p>
-              <button
-                onClick={() => fetchInquiries(pagination.page)}
-                className="mt-3 text-sm font-medium text-red-600 hover:text-red-700"
-              >
-                Try again
-              </button>
+          {/* Inquiries Grid */}
+          {loading ? (
+            <InquiryCardSkeletonGrid count={12} />
+          ) : error ? (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-6">
+              <div className="flex items-start gap-3">
+                <FiAlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="font-medium text-red-900 mb-1">Error loading inquiries</h3>
+                  <p className="text-red-700 text-sm">{error}</p>
+                  <button
+                    onClick={() => fetchInquiries(pagination.page)}
+                    className="mt-3 text-sm font-medium text-red-600 hover:text-red-700"
+                  >
+                    Try again
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      ) : inquiries.length === 0 ? (
-        <EmptyState hasFilters={activeFilterCount > 0 || !!debouncedSearch} />
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {inquiries.map((inquiry) => (
-            <InquiryCard key={inquiry.id} inquiry={inquiry} />
-          ))}
-        </div>
+          ) : inquiries.length === 0 ? (
+            <EmptyState hasFilters={activeFilterCount > 0 || !!debouncedSearch} />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {inquiries.map((inquiry) => (
+                <InquiryCard key={inquiry.id} inquiry={inquiry} />
+              ))}
+            </div>
+          )}
+        </>
       )}
 
-      {/* Pagination */}
-      {!loading && pagination.totalPages > 1 && (
+      {/* Pagination - Only show in list view */}
+      {viewMode === 'list' && !loading && pagination.totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">
           <button
             onClick={() => handlePageChange(pagination.page - 1)}

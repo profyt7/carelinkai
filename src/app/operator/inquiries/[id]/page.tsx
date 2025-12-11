@@ -8,8 +8,10 @@ import Breadcrumbs from '@/components/ui/breadcrumbs';
 import ConvertInquiryModal from '@/components/operator/inquiries/ConvertInquiryModal';
 import InquiryStatusBadge from '@/components/operator/inquiries/InquiryStatusBadge';
 import { DocumentsSection } from '@/components/operator/inquiries/DocumentsSection';
+import { InquiryQuickActionsMenu } from '@/components/operator/inquiries/InquiryQuickActionsMenu';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { PERMISSIONS } from '@/lib/permissions';
+import { getDaysSinceInquiry } from '@/lib/inquiry-analytics';
 
 type InquiryDetail = {
   id: string;
@@ -59,23 +61,26 @@ export default function OperatorLeadDetailPage() {
   
   const canConvert = useHasPermission(PERMISSIONS.INQUIRIES_CONVERT);
 
+  const fetchInquiry = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await fetch(`/api/operator/inquiries/${id}`, { cache: 'no-store' });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.statusText);
+      const j = await res.json();
+      setData(j.inquiry);
+      setNotes(j.inquiry.internalNotes || '');
+    } catch (e: any) {
+      setError(e?.message || 'Failed to load');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     let cancelled = false;
     const run = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const res = await fetch(`/api/operator/inquiries/${id}`, { cache: 'no-store' });
-        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.statusText);
-        const j = await res.json();
-        if (cancelled) return;
-        setData(j.inquiry);
-        setNotes(j.inquiry.internalNotes || '');
-      } catch (e: any) {
-        if (!cancelled) setError(e?.message || 'Failed to load');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+      await fetchInquiry();
     };
     run();
     return () => {
@@ -151,11 +156,40 @@ export default function OperatorLeadDetailPage() {
 
   return (
     <div className="p-4 sm:p-6 space-y-6">
-        <Breadcrumbs items={[
-          { label: 'Operator', href: '/operator' },
-          { label: 'Inquiries', href: '/operator/inquiries' },
-          { label: `#${id.slice(0, 8)}` }
-        ]} />
+        <div className="flex items-center justify-between">
+          <Breadcrumbs items={[
+            { label: 'Operator', href: '/operator' },
+            { label: 'Inquiries', href: '/operator/inquiries' },
+            { label: `#${id.slice(0, 8)}` }
+          ]} />
+          <InquiryQuickActionsMenu 
+            inquiryId={id} 
+            inquiryData={data}
+            onUpdate={fetchInquiry}
+          />
+        </div>
+
+        {/* Quick Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="bg-white rounded-lg border border-neutral-200 p-4">
+            <div className="text-xs text-neutral-500 mb-1">Days Since Inquiry</div>
+            <div className="text-2xl font-bold text-neutral-900">
+              {getDaysSinceInquiry(data.createdAt)}
+            </div>
+          </div>
+          <div className="bg-white rounded-lg border border-neutral-200 p-4">
+            <div className="text-xs text-neutral-500 mb-1">Current Stage</div>
+            <div className="text-sm font-medium text-neutral-900">
+              {data.status.replace(/_/g, ' ')}
+            </div>
+          </div>
+          <div className="bg-white rounded-lg border border-neutral-200 p-4">
+            <div className="text-xs text-neutral-500 mb-1">Tour Scheduled</div>
+            <div className="text-sm font-medium text-neutral-900">
+              {data.tourDate ? new Date(data.tourDate).toLocaleDateString() : 'Not yet'}
+            </div>
+          </div>
+        </div>
 
         {/* Summary card */}
         <div className="rounded-lg border border-neutral-200 bg-white p-4">
