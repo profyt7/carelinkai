@@ -41,8 +41,7 @@ async function main() {
     operator = await prisma.operator.create({
       data: {
         userId: operatorUser.id,
-        businessName: 'Demo Care Homes',
-        businessAddress: '123 Main Street, San Francisco, CA 94102',
+        companyName: 'Demo Care Homes',
       },
     });
   }
@@ -58,14 +57,19 @@ async function main() {
       data: {
         operatorId: operator.id,
         name: 'Sunshine Care Home',
-        address: '456 Oak Avenue, San Francisco, CA 94103',
-        city: 'San Francisco',
-        state: 'CA',
-        zipCode: '94103',
+        description: 'A welcoming assisted living home providing compassionate care.',
         capacity: 20,
         currentOccupancy: 15,
-        description: 'A welcoming assisted living home providing compassionate care.',
         amenities: ['24/7 Care', 'Private Rooms', 'Meal Service', 'Activities'],
+        address: {
+          create: {
+            street: '456 Oak Avenue',
+            city: 'San Francisco',
+            state: 'CA',
+            zipCode: '94103',
+            country: 'USA',
+          },
+        },
       },
     });
   }
@@ -125,7 +129,7 @@ async function main() {
       lastName: 'Davis',
       primaryContactName: 'Robert Davis',
       phone: '415-555-0106',
-      inquiryStatus: InquiryStatus.NOT_QUALIFIED,
+      inquiryStatus: InquiryStatus.CLOSED_LOST,
       message: 'Looking for specialized medical care that we cannot provide.',
       internalNotes: 'Needs skilled nursing facility, not assisted living. Referred to other providers.',
     },
