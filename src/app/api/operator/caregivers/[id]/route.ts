@@ -72,13 +72,12 @@ export async function GET(
           },
           include: {
             resident: {
-              include: {
-                user: {
-                  select: {
-                    firstName: true,
-                    lastName: true,
-                  }
-                }
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                status: true,
+                photoUrl: true,
               }
             }
           }
@@ -117,7 +116,7 @@ export async function GET(
         ...assignment,
         resident: {
           ...assignment.resident,
-          fullName: `${assignment.resident.user.firstName} ${assignment.resident.user.lastName}`
+          fullName: `${assignment.resident.firstName} ${assignment.resident.lastName}`
         }
       })),
       rating: caregiver.rating,
