@@ -27,9 +27,14 @@ import { ComplianceTab } from '@/components/operator/residents/ComplianceTab';
 import { FamilyTab } from '@/components/operator/residents/FamilyTab';
 import { DocumentsSection } from '@/components/operator/residents/DocumentsSection';
 import { ResidentDetailActionsBar } from '@/components/operator/residents/ResidentDetailActions';
+import { ResidentQuickActionsMenu } from '@/components/operator/residents/ResidentQuickActionsMenu';
+import { UpcomingAssessmentsWidget } from '@/components/operator/residents/UpcomingAssessmentsWidget';
+import { RecentIncidentsWidget } from '@/components/operator/residents/RecentIncidentsWidget';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
+import { StatCard } from '@/components/ui/StatCard';
 import Image from 'next/image';
-import { FiEdit, FiFileText, FiUser, FiClipboard, FiAlertTriangle, FiShield, FiUsers, FiFolder } from 'react-icons/fi';
+import { FiEdit, FiFileText, FiUser, FiClipboard, FiAlertTriangle, FiShield, FiUsers, FiFolder, FiCalendar } from 'react-icons/fi';
+import { getDaysSinceAdmission } from '@/lib/resident-analytics';
 
 async function fetchResident(id: string) {
   const cookieHeader = cookies().toString();
@@ -218,11 +223,17 @@ export default async function ResidentDetail({ params, searchParams }: { params:
             </div>
           </div>
           
-          <ResidentDetailActionsBar 
-            residentId={resident.id} 
-            residentName={`${resident.firstName} ${resident.lastName}`}
-            showArchiveButton={!resident.archivedAt}
-          />
+          <div className="flex items-center gap-2">
+            <ResidentDetailActionsBar 
+              residentId={resident.id} 
+              residentName={`${resident.firstName} ${resident.lastName}`}
+              showArchiveButton={!resident.archivedAt}
+            />
+            <ResidentQuickActionsMenu 
+              residentId={resident.id}
+              residentName={`${resident.firstName} ${resident.lastName}`}
+            />
+          </div>
         </div>
         
         <div className="mt-6">
@@ -269,14 +280,50 @@ export default async function ResidentDetail({ params, searchParams }: { params:
 
       {/* Tab Content */}
       {activeTab === 'overview' && (
-        <ResidentOverview 
-          resident={{
-            ...resident,
-            contacts: contacts.items || [],
-            timeline: timeline.items || [],
-            notes: notes.items || [],
-          }} 
-        />
+        <>
+          {/* Quick Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <StatCard
+              title="Total Assessments"
+              value={resident._count?.assessments || 0}
+              icon={<FiClipboard className="w-4 h-4" />}
+              color="blue"
+            />
+            <StatCard
+              title="Recent Incidents"
+              value={resident._count?.incidents || 0}
+              icon={<FiAlertTriangle className="w-4 h-4" />}
+              color="orange"
+            />
+            <StatCard
+              title="Assigned Caregivers"
+              value={resident._count?.caregiverAssignments || 0}
+              icon={<FiUsers className="w-4 h-4" />}
+              color="green"
+            />
+            <StatCard
+              title="Days Since Admission"
+              value={resident.admissionDate ? getDaysSinceAdmission(resident.admissionDate) : 0}
+              icon={<FiCalendar className="w-4 h-4" />}
+              color="purple"
+            />
+          </div>
+
+          {/* Widgets */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <UpcomingAssessmentsWidget assessments={assessments.items || []} />
+            <RecentIncidentsWidget incidents={incidents.items || []} />
+          </div>
+
+          <ResidentOverview 
+            resident={{
+              ...resident,
+              contacts: contacts.items || [],
+              timeline: timeline.items || [],
+              notes: notes.items || [],
+            }} 
+          />
+        </>
       )}
 
       {activeTab === 'assessments' && (
