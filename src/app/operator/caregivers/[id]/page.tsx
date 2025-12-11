@@ -3,7 +3,15 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { FiArrowLeft, FiEdit2, FiTrash2 } from 'react-icons/fi';
+import { 
+  FiArrowLeft, 
+  FiEdit2, 
+  FiTrash2, 
+  FiUser, 
+  FiAward, 
+  FiUsers, 
+  FiFileText 
+} from 'react-icons/fi';
 import Link from 'next/link';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
 import { PermissionGuard } from '@/hooks/usePermissions';
@@ -121,15 +129,39 @@ export default function CaregiverDetailPage() {
 
   const fullName = `${caregiver.user.firstName} ${caregiver.user.lastName}`;
 
-  const tabs: { id: Tab; label: string }[] = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'certifications', label: 'Certifications' },
-    { id: 'assignments', label: 'Assignments' },
-    { id: 'documents', label: 'Documents' },
+  const tabs: { 
+    id: Tab; 
+    label: string; 
+    icon: React.ReactNode;
+    count?: number;
+  }[] = [
+    { 
+      id: 'overview', 
+      label: 'Overview',
+      icon: <FiUser className="w-4 h-4" />
+    },
+    { 
+      id: 'certifications', 
+      label: 'Certifications',
+      icon: <FiAward className="w-4 h-4" />,
+      count: 0 // Will be updated dynamically
+    },
+    { 
+      id: 'assignments', 
+      label: 'Assignments',
+      icon: <FiUsers className="w-4 h-4" />,
+      count: 0 // Will be updated dynamically
+    },
+    { 
+      id: 'documents', 
+      label: 'Documents',
+      icon: <FiFileText className="w-4 h-4" />,
+      count: 0 // Will be updated dynamically
+    },
   ];
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto">
       <Breadcrumbs
         items={[
           { label: 'Operator', href: '/operator' },
@@ -142,25 +174,34 @@ export default function CaregiverDetailPage() {
       <div className="mb-6">
         <Link
           href="/operator/caregivers"
-          className="inline-flex items-center gap-2 text-neutral-600 hover:text-neutral-900 mb-4"
+          className="inline-flex items-center gap-2 text-neutral-600 hover:text-neutral-900 mb-4 font-medium transition-colors"
         >
           <FiArrowLeft className="w-4 h-4" />
           Back to Caregivers
         </Link>
 
-        <div className="flex items-start justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-neutral-900">{fullName}</h1>
-            <p className="text-neutral-600 mt-1">
-              {(caregiver.employmentType || '').replace('_', ' ')} - {caregiver.employmentStatus || 'Unknown'}
-            </p>
+            <h1 className="text-3xl font-bold text-neutral-900 mb-2">{fullName}</h1>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-neutral-100 text-neutral-700 border border-neutral-200">
+                {(caregiver.employmentType || '').replace(/_/g, ' ')}
+              </span>
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium border ${
+                caregiver.employmentStatus === 'ACTIVE' 
+                  ? 'bg-green-50 text-green-700 border-green-200' 
+                  : 'bg-gray-50 text-gray-700 border-gray-200'
+              }`}>
+                {caregiver.employmentStatus || 'Unknown'}
+              </span>
+            </div>
           </div>
 
           <div className="flex items-center gap-3">
             <PermissionGuard permission={PERMISSIONS.CAREGIVERS_DELETE}>
               <button
                 onClick={handleDelete}
-                className="btn btn-secondary flex items-center gap-2 text-red-600 hover:bg-red-50"
+                className="btn btn-secondary flex items-center gap-2 text-red-600 hover:bg-red-50 hover:border-red-300"
               >
                 <FiTrash2 className="w-4 h-4" />
                 Delete
@@ -172,19 +213,38 @@ export default function CaregiverDetailPage() {
 
       {/* Tabs */}
       <div className="bg-white rounded-lg border border-neutral-200 shadow-sm">
-        <div className="border-b border-neutral-200">
-          <div className="flex">
+        <div className="border-b border-neutral-200 overflow-x-auto">
+          <div className="flex min-w-max">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-6 py-4 text-sm font-medium transition-colors ${
+                className={`group relative px-6 py-4 text-sm font-medium transition-all duration-200 ${
                   activeTab === tab.id
-                    ? 'border-b-2 border-primary-600 text-primary-600'
-                    : 'text-neutral-600 hover:text-neutral-900'
+                    ? 'text-primary-600'
+                    : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50'
                 }`}
               >
-                {tab.label}
+                <div className="flex items-center gap-2">
+                  <span className={`transition-colors ${
+                    activeTab === tab.id ? 'text-primary-600' : 'text-neutral-400 group-hover:text-neutral-600'
+                  }`}>
+                    {tab.icon}
+                  </span>
+                  <span>{tab.label}</span>
+                  {tab.count !== undefined && tab.count > 0 && (
+                    <span className={`ml-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
+                      activeTab === tab.id
+                        ? 'bg-primary-100 text-primary-700'
+                        : 'bg-neutral-100 text-neutral-600 group-hover:bg-neutral-200'
+                    }`}>
+                      {tab.count}
+                    </span>
+                  )}
+                </div>
+                {activeTab === tab.id && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600 rounded-t"></div>
+                )}
               </button>
             ))}
           </div>
