@@ -1,4 +1,4 @@
-﻿import { NextResponse, NextRequest } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { UserRole } from '@prisma/client';
 import { z } from 'zod';
 import { requirePermission, getUserScope, handleAuthError } from '@/lib/auth-utils';
@@ -99,7 +99,8 @@ export async function GET(request: Request) {
             phoneNumber: caregiver.user?.phone || null,
           },
           photoUrl: caregiver.photoUrl || null,
-          specializations: Array.isArray(caregiver.languages) ? caregiver.languages : [],
+          specializations: Array.isArray(caregiver.specializations) ? caregiver.specializations : [],
+          languages: Array.isArray(caregiver.languages) ? caregiver.languages : [],
           employmentType: caregiver.employmentType || 'FULL_TIME',
           employmentStatus: caregiver.employmentStatus || 'ACTIVE',
           certifications: Array.isArray(caregiver.certifications) ? caregiver.certifications.map(cert => ({
