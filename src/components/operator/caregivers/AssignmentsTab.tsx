@@ -21,10 +21,8 @@ type Assignment = {
   notes?: string | null;
   resident: {
     id: string;
-    user: {
-      firstName: string;
-      lastName: string;
-    };
+    firstName: string;
+    lastName: string;
     status: string;
     photoUrl?: string | null;
   };
@@ -132,7 +130,7 @@ export function AssignmentsTab({ caregiverId }: AssignmentsTabProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {assignments.map((assignment) => {
             const { resident } = assignment;
-            const residentName = `${resident.user.firstName} ${resident.user.lastName}`;
+            const residentName = `${resident.firstName} ${resident.lastName}`;
             const isActive = !assignment.endDate;
 
             return (

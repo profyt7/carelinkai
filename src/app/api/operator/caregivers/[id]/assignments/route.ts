@@ -57,24 +57,13 @@ export async function GET(
       where: assignmentsWhere,
       include: {
         resident: {
-          include: {
-            user: {
-              select: {
-                firstName: true,
-                lastName: true,
-              }
-            },
-            careNeeds: {
-              select: {
-                roomNumber: true,
-              }
-            }
-          }
-        },
-        assignedByUser: {
           select: {
+            id: true,
             firstName: true,
             lastName: true,
+            photoUrl: true,
+            status: true,
+            careNeeds: true, // JSON field, not a relation
           }
         }
       },
@@ -87,16 +76,15 @@ export async function GET(
       residentId: assignment.residentId,
       resident: {
         id: assignment.resident.id,
-        fullName: `${assignment.resident.user.firstName} ${assignment.resident.user.lastName}`,
-        roomNumber: assignment.resident.careNeeds?.roomNumber,
+        fullName: `${assignment.resident.firstName} ${assignment.resident.lastName}`,
+        roomNumber: assignment.resident.careNeeds?.roomNumber || null,
         photoUrl: assignment.resident.photoUrl,
+        status: assignment.resident.status,
       },
       isPrimary: assignment.isPrimary,
       startDate: assignment.startDate,
       endDate: assignment.endDate,
-      assignedBy: assignment.assignedByUser ? 
-        `${assignment.assignedByUser.firstName} ${assignment.assignedByUser.lastName}` : 
-        null,
+      assignedBy: assignment.assignedBy, // User ID only
       notes: assignment.notes,
       createdAt: assignment.createdAt,
     }));
@@ -228,13 +216,12 @@ export async function POST(
       },
       include: {
         resident: {
-          include: {
-            user: {
-              select: {
-                firstName: true,
-                lastName: true,
-              }
-            }
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            photoUrl: true,
+            status: true,
           }
         }
       }

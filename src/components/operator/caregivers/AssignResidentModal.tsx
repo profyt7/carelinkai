@@ -12,10 +12,8 @@ interface AssignResidentModalProps {
 
 type Resident = {
   id: string;
-  user: {
-    firstName: string;
-    lastName: string;
-  };
+  firstName: string;
+  lastName: string;
   status: string;
 };
 
@@ -125,7 +123,7 @@ export function AssignResidentModal({
                 <option value="">Select a resident</option>
                 {residents.map((resident) => (
                   <option key={resident.id} value={resident.id}>
-                    {resident.user.firstName} {resident.user.lastName} ({resident.status})
+                    {resident.firstName} {resident.lastName} ({resident.status})
                   </option>
                 ))}
               </select>
