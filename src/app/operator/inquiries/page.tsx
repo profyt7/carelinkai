@@ -1,7 +1,7 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient, UserRole } from '@prisma/client';
-import InquiriesFilterPanel from '@/components/operator/InquiriesFilterPanel';
+import InquiriesListClient from '@/components/operator/inquiries/InquiriesListClient';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
 
 export const dynamic = 'force-dynamic';
@@ -9,19 +9,7 @@ export const revalidate = 0;
 
 const prisma = new PrismaClient();
 
-export default async function OperatorInquiriesPage({ 
-  searchParams 
-}: { 
-  searchParams?: { 
-    status?: string; 
-    homeId?: string; 
-    startDate?: string; 
-    endDate?: string; 
-    page?: string;
-    sortBy?: string;
-    sortOrder?: string;
-  } 
-}) {
+export default async function OperatorInquiriesPage() {
   const session = await getServerSession(authOptions);
   const email = session?.user?.email ?? null;
   const user = email ? await prisma.user.findUnique({ where: { email } }) : null;
@@ -36,25 +24,29 @@ export default async function OperatorInquiriesPage({
       })
     : [];
 
-  return (
-    <div className="p-4 sm:p-6">
-        <Breadcrumbs items={[
-          { label: 'Operator', href: '/operator' },
-          { label: 'Home Inquiries' }
-        ]} />
-        
-        {/* Help text */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-neutral-900 mb-2">Home Inquiries</h1>
-          <p className="text-sm text-neutral-600">
-            Manage inquiries from families interested in your assisted living homes. Track their status from initial contact to placement.
-          </p>
-        </div>
+  // Get staff members for assignment filter (for future use)
+  const staff: Array<{ id: string; name: string }> = [];
 
-        <InquiriesFilterPanel 
-          homes={homes}
-          initialFilters={searchParams}
-        />
+  return (
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto">
+      <Breadcrumbs items={[
+        { label: 'Operator', href: '/operator' },
+        { label: 'Home Inquiries' }
+      ]} />
+      
+      {/* Header */}
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-neutral-900 mb-2">Home Inquiries</h1>
+        <p className="text-neutral-600">
+          Manage inquiries from families interested in your assisted living homes. Track their status from initial contact to placement.
+        </p>
       </div>
+
+      {/* Main Content */}
+      <InquiriesListClient 
+        homes={homes}
+        staff={staff}
+      />
+    </div>
   );
 }

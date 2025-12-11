@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient, UserRole, InquiryStatus } from '@prisma/client';
+import { PrismaClient, UserRole, InquiryStatus, Prisma } from '@prisma/client';
+import { differenceInDays, subDays, startOfWeek, endOfWeek } from 'date-fns';
 
 const prisma = new PrismaClient();
 
@@ -22,14 +23,26 @@ export async function GET(request: NextRequest) {
 
     // Get query parameters
     const searchParams = request.nextUrl.searchParams;
-    const status = searchParams.get('status') as InquiryStatus | null;
+    
+    // Multi-status filter (comma-separated)
+    const statusesParam = searchParams.get('statuses');
+    const statuses: InquiryStatus[] = statusesParam 
+      ? statusesParam.split(',').map(s => s.trim() as InquiryStatus)
+      : [];
+    
     const homeId = searchParams.get('homeId');
-    const startDate = searchParams.get('startDate');
-    const endDate = searchParams.get('endDate');
+    const dateFrom = searchParams.get('dateFrom');
+    const dateTo = searchParams.get('dateTo');
+    const assignedTo = searchParams.get('assignedTo');
+    const ageFilter = searchParams.get('ageFilter');
+    const tourStatus = searchParams.get('tourStatus');
+    const followupStatus = searchParams.get('followupStatus');
+    const search = searchParams.get('search');
+    
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '20');
+    const limit = parseInt(searchParams.get('limit') || '12');
     const sortBy = searchParams.get('sortBy') || 'createdAt';
-    const sortOrder = searchParams.get('sortOrder') || 'desc';
+    const sortOrder = (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc';
 
     // Build where clause
     let operator = null;
@@ -42,16 +55,16 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const where: any = {};
+    const where: Prisma.InquiryWhereInput = {};
 
     // Filter by operator's homes
     if (operator) {
       where.home = { operatorId: operator.id };
     }
 
-    // Filter by status
-    if (status) {
-      where.status = status;
+    // Filter by statuses (multi-select)
+    if (statuses.length > 0) {
+      where.status = { in: statuses };
     }
 
     // Filter by home
@@ -60,22 +73,130 @@ export async function GET(request: NextRequest) {
     }
 
     // Filter by date range
-    if (startDate || endDate) {
+    if (dateFrom || dateTo) {
       where.createdAt = {};
-      if (startDate) {
-        where.createdAt.gte = new Date(startDate);
+      if (dateFrom) {
+        where.createdAt.gte = new Date(dateFrom);
       }
-      if (endDate) {
-        where.createdAt.lte = new Date(endDate);
+      if (dateTo) {
+        where.createdAt.lte = new Date(dateTo);
       }
+    }
+
+    // Filter by age
+    if (ageFilter && ageFilter !== 'all') {
+      const now = new Date();
+      switch (ageFilter) {
+        case 'new': // 0-3 days
+          where.createdAt = { gte: subDays(now, 3) };
+          break;
+        case 'recent': // 4-7 days
+          where.createdAt = {
+            gte: subDays(now, 7),
+            lt: subDays(now, 3),
+          };
+          break;
+        case 'aging': // 8-14 days
+          where.createdAt = {
+            gte: subDays(now, 14),
+            lt: subDays(now, 7),
+          };
+          break;
+        case 'old': // 15+ days
+          where.createdAt = { lt: subDays(now, 14) };
+          break;
+      }
+    }
+
+    // Filter by tour status
+    if (tourStatus && tourStatus !== 'all') {
+      switch (tourStatus) {
+        case 'scheduled':
+          where.status = 'TOUR_SCHEDULED';
+          where.tourDate = { not: null };
+          break;
+        case 'completed':
+          where.status = 'TOUR_COMPLETED';
+          break;
+        case 'none':
+          where.tourDate = null;
+          where.status = { notIn: ['TOUR_SCHEDULED', 'TOUR_COMPLETED'] };
+          break;
+      }
+    }
+
+    // Filter by follow-up status (this would require a followupDate field in the schema)
+    // For now, we'll skip this as it's not in the current schema
+    // TODO: Add followupDate field to Inquiry model
+
+    // Search filter (name, email, phone, notes)
+    if (search) {
+      where.OR = [
+        {
+          family: {
+            name: {
+              contains: search,
+              mode: 'insensitive',
+            },
+          },
+        },
+        {
+          family: {
+            primaryContactName: {
+              contains: search,
+              mode: 'insensitive',
+            },
+          },
+        },
+        {
+          family: {
+            phone: {
+              contains: search,
+            },
+          },
+        },
+        {
+          message: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+        {
+          internalNotes: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+      ];
     }
 
     // Calculate pagination
     const skip = (page - 1) * limit;
 
     // Build order by
-    const orderBy: any = {};
-    orderBy[sortBy] = sortOrder;
+    let orderBy: Prisma.InquiryOrderByWithRelationInput = {};
+    
+    switch (sortBy) {
+      case 'name':
+        orderBy = { family: { name: sortOrder } };
+        break;
+      case 'status':
+        // Sort by status in pipeline order
+        orderBy = { status: sortOrder };
+        break;
+      case 'tourDate':
+        orderBy = { tourDate: sortOrder };
+        break;
+      case 'updatedAt':
+        orderBy = { updatedAt: sortOrder };
+        break;
+      case 'priority':
+        // Sort by age (newer = higher priority for NEW status)
+        orderBy = { createdAt: 'desc' };
+        break;
+      default:
+        orderBy = { [sortBy]: sortOrder };
+    }
 
     // Fetch inquiries with pagination
     const [inquiries, total] = await Promise.all([
@@ -86,7 +207,13 @@ export async function GET(request: NextRequest) {
             select: { id: true, name: true },
           },
           family: {
-            select: { id: true, name: true },
+            select: { 
+              id: true, 
+              name: true,
+              primaryContactName: true,
+              phone: true,
+              emergencyPhone: true,
+            },
           },
         },
         orderBy,
