@@ -10,7 +10,8 @@ import {
   FiUsers, 
   FiX,
   FiArrowUp,
-  FiArrowDown
+  FiArrowDown,
+  FiDownload
 } from 'react-icons/fi';
 import { PermissionGuard, useHasPermission } from '@/hooks/usePermissions';
 import { PERMISSIONS } from '@/lib/permissions';
@@ -20,6 +21,7 @@ import { CaregiverCard } from '@/components/operator/caregivers/CaregiverCard';
 import { CaregiverCardSkeletonGrid } from '@/components/operator/caregivers/CaregiverCardSkeleton';
 import { CaregiverModal } from '@/components/operator/caregivers/CaregiverModal';
 import { CaregiverFilters, CaregiverFilterState } from '@/components/operator/caregivers/CaregiverFilters';
+import { exportCaregiversToCSV, downloadCSV, generateExportFilename } from '@/lib/export-utils';
 
 type Caregiver = {
   id: string;
@@ -60,6 +62,7 @@ export default function CaregiversPage() {
   const [caregivers, setCaregivers] = useState<Caregiver[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [exporting, setExporting] = useState(false);
   
   // Search with debounce
   const [searchQuery, setSearchQuery] = useState('');
@@ -237,6 +240,34 @@ export default function CaregiversPage() {
     setSearchQuery('');
   };
 
+  const handleExport = useCallback(async () => {
+    try {
+      setExporting(true);
+      
+      // Get the filtered and sorted caregivers (respects current filters)
+      const dataToExport = filteredAndSortedCaregivers;
+      
+      if (dataToExport.length === 0) {
+        toast.error('No caregivers to export');
+        return;
+      }
+      
+      // Convert to CSV
+      const csv = exportCaregiversToCSV(dataToExport);
+      
+      // Generate filename and download
+      const filename = generateExportFilename('caregivers-export');
+      downloadCSV(csv, filename);
+      
+      toast.success(`Exported ${dataToExport.length} caregiver${dataToExport.length !== 1 ? 's' : ''} successfully`);
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export caregivers');
+    } finally {
+      setExporting(false);
+    }
+  }, [filteredAndSortedCaregivers]);
+
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto">
       <Breadcrumbs
@@ -254,15 +285,38 @@ export default function CaregiversPage() {
             Manage caregiver profiles, certifications, and assignments
           </p>
         </div>
-        <PermissionGuard permission={PERMISSIONS.CAREGIVERS_CREATE}>
+        <div className="flex items-center gap-3">
+          {/* Export Button */}
           <button
-            onClick={() => setShowModal(true)}
-            className="btn btn-primary flex items-center gap-2 whitespace-nowrap"
+            onClick={handleExport}
+            disabled={exporting || loading || caregivers.length === 0}
+            className="btn btn-secondary flex items-center gap-2 whitespace-nowrap"
+            title="Export filtered caregivers to CSV"
           >
-            <FiPlus className="w-4 h-4" />
-            Add Caregiver
+            {exporting ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600"></div>
+                Exporting...
+              </>
+            ) : (
+              <>
+                <FiDownload className="w-4 h-4" />
+                Export CSV
+              </>
+            )}
           </button>
-        </PermissionGuard>
+          
+          {/* Add Caregiver Button */}
+          <PermissionGuard permission={PERMISSIONS.CAREGIVERS_CREATE}>
+            <button
+              onClick={() => setShowModal(true)}
+              className="btn btn-primary flex items-center gap-2 whitespace-nowrap"
+            >
+              <FiPlus className="w-4 h-4" />
+              Add Caregiver
+            </button>
+          </PermissionGuard>
+        </div>
       </div>
 
       {/* Search, Sort, and Filter Bar */}

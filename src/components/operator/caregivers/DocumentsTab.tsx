@@ -3,9 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { FiPlus, FiEdit2, FiTrash2, FiExternalLink, FiFile, FiAlertCircle } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiExternalLink, FiFile, FiAlertCircle, FiDownload, FiEye } from 'react-icons/fi';
 import { PermissionGuard } from '@/hooks/usePermissions';
 import { PERMISSIONS } from '@/lib/permissions';
+import { DocumentUploadModal } from './DocumentUploadModal';
 
 interface DocumentsTabProps {
   caregiverId: string;
@@ -13,43 +14,32 @@ interface DocumentsTabProps {
 
 type Document = {
   id: string;
-  type: string;
   title: string;
-  documentUrl?: string | null;
-  uploadDate?: Date | string | null;
+  description?: string | null;
+  fileUrl: string;
+  documentType: string;
   expiryDate?: Date | string | null;
-  notes?: string | null;
+  uploadDate?: Date | string | null;
+  uploadedBy?: string | null;
   createdAt: Date | string;
   updatedAt: Date | string;
 };
 
-const DOCUMENT_TYPES = [
-  'Background Check',
-  'TB Test',
-  'Physical Exam',
-  'Drug Screening',
-  'Reference Letter',
-  'Training Certificate',
-  'License',
-  'Insurance',
-  'Contract',
-  'Other',
-];
+const DOCUMENT_TYPE_LABELS: Record<string, string> = {
+  'CERTIFICATION': 'Certification',
+  'BACKGROUND_CHECK': 'Background Check',
+  'TRAINING': 'Training Certificate',
+  'CONTRACT': 'Employment Contract',
+  'IDENTIFICATION': 'Identification',
+  'REFERENCE': 'Reference Letter',
+  'OTHER': 'Other',
+};
 
 export function DocumentsTab({ caregiverId }: DocumentsTabProps) {
   const router = useRouter();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [editingDoc, setEditingDoc] = useState<Document | undefined>(undefined);
-  const [formData, setFormData] = useState({
-    type: '',
-    title: '',
-    documentUrl: '',
-    uploadDate: new Date().toISOString().split('T')[0],
-    expiryDate: '',
-    notes: '',
-  });
+  const [showUploadModal, setShowUploadModal] = useState(false);
 
   useEffect(() => {
     fetchDocuments();
@@ -70,45 +60,13 @@ export function DocumentsTab({ caregiverId }: DocumentsTabProps) {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const payload = {
-        type: formData.type,
-        title: formData.title,
-        documentUrl: formData.documentUrl || null,
-        uploadDate: formData.uploadDate || null,
-        expiryDate: formData.expiryDate || null,
-        notes: formData.notes || null,
-      };
-
-      const url = editingDoc
-        ? `/api/operator/caregivers/${caregiverId}/documents/${editingDoc.id}`
-        : `/api/operator/caregivers/${caregiverId}/documents`;
-      const method = editingDoc ? 'PATCH' : 'POST';
-
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) throw new Error('Failed to save document');
-
-      toast.success(editingDoc ? 'Document updated successfully' : 'Document added successfully');
-      setShowModal(false);
-      setEditingDoc(undefined);
-      resetForm();
-      fetchDocuments();
-      router.refresh();
-    } catch (error) {
-      console.error('Error saving document:', error);
-      toast.error('Failed to save document');
-    }
+  const handleUploadSuccess = () => {
+    fetchDocuments();
+    router.refresh();
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this document?')) return;
+  const handleDelete = async (id: string, title: string) => {
+    if (!confirm(`Are you sure you want to delete "${title}"?`)) return;
 
     try {
       const res = await fetch(`/api/operator/caregivers/${caregiverId}/documents/${id}`, {
@@ -126,38 +84,31 @@ export function DocumentsTab({ caregiverId }: DocumentsTabProps) {
     }
   };
 
-  const openEditModal = (doc: Document) => {
-    setEditingDoc(doc);
-    setFormData({
-      type: doc.type,
-      title: doc.title,
-      documentUrl: doc.documentUrl || '',
-      uploadDate: doc.uploadDate
-        ? new Date(doc.uploadDate).toISOString().split('T')[0]
-        : '',
-      expiryDate: doc.expiryDate
-        ? new Date(doc.expiryDate).toISOString().split('T')[0]
-        : '',
-      notes: doc.notes || '',
-    });
-    setShowModal(true);
+  const handleViewDocument = (url: string) => {
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
-  const resetForm = () => {
-    setFormData({
-      type: '',
-      title: '',
-      documentUrl: '',
-      uploadDate: new Date().toISOString().split('T')[0],
-      expiryDate: '',
-      notes: '',
-    });
-  };
-
-  const closeModal = () => {
-    setShowModal(false);
-    setEditingDoc(undefined);
-    resetForm();
+  const handleDownloadDocument = async (url: string, filename: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      link.style.visibility = 'hidden';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      URL.revokeObjectURL(blobUrl);
+      toast.success('Download started');
+    } catch (error) {
+      console.error('Download error:', error);
+      toast.error('Failed to download document');
+    }
   };
 
   // Check for expiring documents
@@ -192,15 +143,11 @@ export function DocumentsTab({ caregiverId }: DocumentsTabProps) {
         </div>
         <PermissionGuard permission={PERMISSIONS.DOCUMENTS_CREATE}>
           <button
-            onClick={() => {
-              setEditingDoc(undefined);
-              resetForm();
-              setShowModal(true);
-            }}
+            onClick={() => setShowUploadModal(true)}
             className="btn btn-primary flex items-center gap-2"
           >
             <FiPlus className="w-4 h-4" />
-            Add Document
+            Upload Document
           </button>
         </PermissionGuard>
       </div>
@@ -215,11 +162,11 @@ export function DocumentsTab({ caregiverId }: DocumentsTabProps) {
           </p>
           <PermissionGuard permission={PERMISSIONS.DOCUMENTS_CREATE}>
             <button
-              onClick={() => setShowModal(true)}
+              onClick={() => setShowUploadModal(true)}
               className="btn btn-primary inline-flex items-center gap-2"
             >
               <FiPlus className="w-4 h-4" />
-              Add First Document
+              Upload First Document
             </button>
           </PermissionGuard>
         </div>
@@ -237,7 +184,7 @@ export function DocumentsTab({ caregiverId }: DocumentsTabProps) {
                     <div className="flex items-center gap-2 mb-2">
                       <h4 className="text-base font-semibold text-neutral-900">{doc.title}</h4>
                       <span className="text-xs text-neutral-600 bg-neutral-100 px-2 py-0.5 rounded">
-                        {doc.type}
+                        {DOCUMENT_TYPE_LABELS[doc.documentType] || doc.documentType}
                       </span>
                       {expirationStatus === 'expired' && (
                         <span className="inline-flex items-center gap-1 text-xs text-red-600 bg-red-50 px-2 py-0.5 rounded">
@@ -253,7 +200,11 @@ export function DocumentsTab({ caregiverId }: DocumentsTabProps) {
                       )}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 text-sm mb-2">
+                    {doc.description && (
+                      <p className="text-sm text-neutral-700 mb-2">{doc.description}</p>
+                    )}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm mb-3">
                       {doc.uploadDate && (
                         <div>
                           <span className="text-neutral-500">Uploaded: </span>
@@ -270,39 +221,38 @@ export function DocumentsTab({ caregiverId }: DocumentsTabProps) {
                           </span>
                         </div>
                       )}
+                      {doc.uploadedBy && (
+                        <div className="sm:col-span-2">
+                          <span className="text-neutral-500">Uploaded by: </span>
+                          <span className="text-neutral-900">{doc.uploadedBy}</span>
+                        </div>
+                      )}
                     </div>
 
-                    {doc.notes && (
-                      <p className="text-sm text-neutral-700 mb-2">{doc.notes}</p>
-                    )}
-
-                    {doc.documentUrl && (
-                      <a
-                        href={doc.documentUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 text-sm text-primary-600 hover:text-primary-700 font-medium"
+                    {/* Action Buttons */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleViewDocument(doc.fileUrl)}
+                        className="inline-flex items-center gap-2 text-sm text-primary-600 hover:text-primary-700 font-medium px-3 py-1.5 rounded-lg hover:bg-primary-50 transition-colors"
                       >
-                        <FiExternalLink className="w-4 h-4" />
-                        View Document
-                      </a>
-                    )}
+                        <FiEye className="w-4 h-4" />
+                        View
+                      </button>
+                      <button
+                        onClick={() => handleDownloadDocument(doc.fileUrl, doc.title)}
+                        className="inline-flex items-center gap-2 text-sm text-primary-600 hover:text-primary-700 font-medium px-3 py-1.5 rounded-lg hover:bg-primary-50 transition-colors"
+                      >
+                        <FiDownload className="w-4 h-4" />
+                        Download
+                      </button>
+                    </div>
                   </div>
 
-                  {/* Actions */}
-                  <div className="flex items-center gap-2">
-                    <PermissionGuard permission={PERMISSIONS.DOCUMENTS_UPDATE}>
-                      <button
-                        onClick={() => openEditModal(doc)}
-                        className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
-                        title="Edit document"
-                      >
-                        <FiEdit2 className="w-4 h-4 text-neutral-600" />
-                      </button>
-                    </PermissionGuard>
+                  {/* Delete Action */}
+                  <div className="flex items-center">
                     <PermissionGuard permission={PERMISSIONS.DOCUMENTS_DELETE}>
                       <button
-                        onClick={() => handleDelete(doc.id)}
+                        onClick={() => handleDelete(doc.id, doc.title)}
                         className="p-2 hover:bg-red-50 rounded-lg transition-colors"
                         title="Delete document"
                       >
@@ -317,114 +267,13 @@ export function DocumentsTab({ caregiverId }: DocumentsTabProps) {
         </div>
       )}
 
-      {/* Add/Edit Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full">
-            <div className="flex items-center justify-between p-6 border-b border-neutral-200">
-              <h2 className="text-xl font-semibold text-neutral-900">
-                {editingDoc ? 'Edit Document' : 'Add Document'}
-              </h2>
-              <button
-                onClick={closeModal}
-                className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
-              >
-                ×
-              </button>
-            </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">
-                    Document Type *
-                  </label>
-                  <select
-                    required
-                    value={formData.type}
-                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                  >
-                    <option value="">Select type</option>
-                    {DOCUMENT_TYPES.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">
-                    Title *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">
-                  Document URL
-                </label>
-                <input
-                  type="url"
-                  value={formData.documentUrl}
-                  onChange={(e) => setFormData({ ...formData, documentUrl: e.target.value })}
-                  className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                  placeholder="https://..."
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">
-                    Upload Date
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.uploadDate}
-                    onChange={(e) => setFormData({ ...formData, uploadDate: e.target.value })}
-                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">
-                    Expiry Date
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.expiryDate}
-                    onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
-                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">Notes</label>
-                <textarea
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-neutral-200">
-                <button type="button" onClick={closeModal} className="btn btn-secondary">
-                  Cancel
-                </button>
-                <button type="submit" className="btn btn-primary">
-                  {editingDoc ? 'Update Document' : 'Add Document'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {/* Upload Modal */}
+      {showUploadModal && (
+        <DocumentUploadModal
+          caregiverId={caregiverId}
+          onClose={() => setShowUploadModal(false)}
+          onSuccess={handleUploadSuccess}
+        />
       )}
     </div>
   );
