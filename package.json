@@ -19,6 +19,7 @@
         "seed:demo": "ts-node --transpile-only --compiler-options '{\"module\":\"commonjs\",\"moduleResolution\":\"node\"}' prisma/seed-demo.ts",
         "seed:caregivers": "ts-node --transpile-only --compiler-options '{\"module\":\"commonjs\",\"moduleResolution\":\"node\"}' prisma/seed-caregiver-demo-data.ts",
         "seed:residents": "ts-node --transpile-only --compiler-options '{\"module\":\"commonjs\",\"moduleResolution\":\"node\"}' prisma/seed-resident-demo-data.ts",
+        "seed:inquiries": "ts-node --transpile-only --compiler-options '{\"module\":\"commonjs\",\"moduleResolution\":\"node\"}' prisma/seed-inquiries.ts",
         "generate:vapid": "node scripts/generate-vapid.js --update-env",
         "generate:icons": "node scripts/generate-pwa-icons.js",
         "test:pwa": "node scripts/test-pwa.js",

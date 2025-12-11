@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient, UserRole, InquiryStatus, Prisma } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
+import { UserRole, InquiryStatus, Prisma } from '@prisma/client';
 import { differenceInDays, subDays, startOfWeek, endOfWeek } from 'date-fns';
-
-const prisma = new PrismaClient();
 
 export async function GET(request: NextRequest) {
   try {
@@ -129,17 +128,9 @@ export async function GET(request: NextRequest) {
     // For now, we'll skip this as it's not in the current schema
     // TODO: Add followupDate field to Inquiry model
 
-    // Search filter (name, email, phone, notes)
+    // Search filter (primaryContactName, phone, message, notes)
     if (search) {
       where.OR = [
-        {
-          family: {
-            name: {
-              contains: search,
-              mode: 'insensitive',
-            },
-          },
-        },
         {
           family: {
             primaryContactName: {
@@ -151,6 +142,13 @@ export async function GET(request: NextRequest) {
         {
           family: {
             phone: {
+              contains: search,
+            },
+          },
+        },
+        {
+          family: {
+            emergencyPhone: {
               contains: search,
             },
           },
@@ -178,7 +176,7 @@ export async function GET(request: NextRequest) {
     
     switch (sortBy) {
       case 'name':
-        orderBy = { family: { name: sortOrder } };
+        orderBy = { family: { primaryContactName: sortOrder } };
         break;
       case 'status':
         // Sort by status in pipeline order
@@ -209,7 +207,6 @@ export async function GET(request: NextRequest) {
           family: {
             select: { 
               id: true, 
-              name: true,
               primaryContactName: true,
               phone: true,
               emergencyPhone: true,
@@ -236,9 +233,12 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching inquiries:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to fetch inquiries', details: errorMessage },
       { status: 500 }
     );
+  } finally {
+    await prisma.$disconnect();
   }
 }
