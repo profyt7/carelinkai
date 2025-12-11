@@ -111,6 +111,19 @@ enum CaregiverDocumentType {
   OTHER
 }
 
+enum ResidentDocumentType {
+  MEDICAL_RECORD
+  CARE_PLAN
+  INSURANCE
+  ADVANCE_DIRECTIVE
+  MEDICATION_LIST
+  ASSESSMENT_REPORT
+  INCIDENT_REPORT
+  PHOTO_ID
+  EMERGENCY_CONTACT
+  OTHER
+}
+
 model User {
   id              String     @id @default(cuid())
   email           String     @unique
@@ -164,16 +177,17 @@ model User {
   scheduledNotifications    ScheduledNotification[]
 
   // Family collaboration relationships
-  familyMembers        FamilyMember[]
-  invitedFamilyMembers FamilyMember[]     @relation("InvitedBy")
-  uploadedDocuments    FamilyDocument[]   @relation("DocumentUploader")
-  authoredNotes        FamilyNote[]       @relation("NoteAuthor")
-  documentComments     DocumentComment[]  @relation("DocumentCommentAuthor")
-  noteComments         NoteComment[]      @relation("NoteCommentAuthor")
-  createdGalleries     SharedGallery[]    @relation("GalleryCreator")
-  uploadedPhotos       GalleryPhoto[]     @relation("PhotoUploader")
-  activities           ActivityFeedItem[] @relation("ActivityActor")
-  createdResidentNotes ResidentNote[]
+  familyMembers            FamilyMember[]
+  invitedFamilyMembers     FamilyMember[]       @relation("InvitedBy")
+  uploadedDocuments        FamilyDocument[]     @relation("DocumentUploader")
+  uploadedResidentDocuments ResidentDocument[]  @relation("ResidentDocumentUploader")
+  authoredNotes            FamilyNote[]         @relation("NoteAuthor")
+  documentComments         DocumentComment[]    @relation("DocumentCommentAuthor")
+  noteComments             NoteComment[]        @relation("NoteCommentAuthor")
+  createdGalleries         SharedGallery[]      @relation("GalleryCreator")
+  uploadedPhotos           GalleryPhoto[]       @relation("PhotoUploader")
+  activities               ActivityFeedItem[]   @relation("ActivityActor")
+  createdResidentNotes     ResidentNote[]
 
   // Marketplace relationships
   marketplaceListings MarketplaceListing[] @relation("UserListings")
@@ -666,6 +680,7 @@ model Resident {
   bookings          Booking[]
   careTimeline      CareTimelineEvent[]
   documents         Document[]
+  residentDocuments ResidentDocument[]
   assessmentResults AssessmentResult[]
   residentIncidents ResidentIncident[]
   residentNotes     ResidentNote[]
@@ -697,6 +712,34 @@ model Resident {
   @@index([homeId])
   @@index([status])
   @@index([archivedAt])
+}
+
+/// Documents uploaded for residents (medical records, care plans, etc.)
+model ResidentDocument {
+  id           String                @id @default(cuid())
+  residentId   String
+  documentType ResidentDocumentType
+  fileName     String
+  fileUrl      String
+  fileType     String // MIME type
+  fileSize     Int // Size in bytes
+  description  String?               @db.Text
+  uploadedById String
+  uploadedAt   DateTime              @default(now())
+
+  // Relationships
+  resident   Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
+  uploadedBy User     @relation("ResidentDocumentUploader", fields: [uploadedById], references: [id])
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([residentId])
+  @@index([documentType])
+  @@index([uploadedById])
+  @@index([uploadedAt])
 }
 
 /// Primary and secondary contacts for a resident (e.g., family members, care proxy)

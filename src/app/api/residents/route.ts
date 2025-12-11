@@ -81,11 +81,78 @@ export async function GET(req: NextRequest) {
       where.homeId = where.homeId ? where.homeId : { in: allowedHomeIds };
     }
 
-    const queryOpts: any = {
-      where,
-      take: limit + 1, // over-fetch to determine next cursor
-      orderBy: { id: 'asc' },
-      select: { 
+    // For CSV export, fetch more comprehensive data
+    let selectFields: any;
+    if (format === 'csv') {
+      selectFields = { 
+        id: true, 
+        firstName: true, 
+        lastName: true, 
+        status: true,
+        photoUrl: true,
+        dateOfBirth: true,
+        gender: true,
+        admissionDate: true,
+        careNeeds: true,
+        medicalConditions: true,
+        medications: true,
+        allergies: true,
+        dietaryRestrictions: true,
+        home: {
+          select: {
+            id: true,
+            name: true
+          }
+        },
+        caregiverAssignments: {
+          where: { isPrimary: true, isActive: true },
+          take: 1,
+          select: {
+            caregiver: {
+              select: {
+                user: {
+                  select: {
+                    firstName: true,
+                    lastName: true
+                  }
+                }
+              }
+            }
+          }
+        },
+        contacts: {
+          where: { isPrimary: true },
+          take: 1,
+          select: {
+            name: true,
+            phone: true,
+            relationship: true
+          }
+        },
+        _count: {
+          select: {
+            assessmentResults: true,
+            residentIncidents: true,
+            familyContacts: true
+          }
+        },
+        assessmentResults: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: {
+            createdAt: true
+          }
+        },
+        residentIncidents: {
+          orderBy: { occurredAt: 'desc' },
+          take: 1,
+          select: {
+            occurredAt: true
+          }
+        }
+      };
+    } else {
+      selectFields = { 
         id: true, 
         firstName: true, 
         lastName: true, 
@@ -100,7 +167,14 @@ export async function GET(req: NextRequest) {
             name: true
           }
         }
-      },
+      };
+    }
+
+    const queryOpts: any = {
+      where,
+      take: limit + 1, // over-fetch to determine next cursor
+      orderBy: { id: 'asc' },
+      select: selectFields,
     };
     if (cursor) queryOpts.cursor = { id: cursor };
     if (cursor) queryOpts.skip = 1;
@@ -118,13 +192,113 @@ export async function GET(req: NextRequest) {
     }
 
     if (format === 'csv') {
-      const header = 'id,firstName,lastName,status\n';
-      const body = items.map(r => `${r.id},${JSON.stringify(r.firstName).slice(1, -1)},${JSON.stringify(r.lastName).slice(1, -1)},${r.status}`).join('\n');
+      // Helper function to escape CSV values
+      const escapeCsv = (value: any): string => {
+        if (value == null) return '';
+        const str = String(value);
+        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      };
+
+      // Helper function to calculate age
+      const calculateAge = (dob: Date): number => {
+        const birthDate = new Date(dob);
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+          age--;
+        }
+        return age;
+      };
+
+      // Helper function to calculate days since admission
+      const getDaysSinceAdmission = (admissionDate: Date | null): string => {
+        if (!admissionDate) return '';
+        const days = Math.floor((Date.now() - new Date(admissionDate).getTime()) / (1000 * 60 * 60 * 24));
+        return String(days);
+      };
+
+      // Helper function to format date
+      const formatDate = (date: Date | null): string => {
+        if (!date) return '';
+        return new Date(date).toLocaleDateString('en-US');
+      };
+
+      // CSV header
+      const header = [
+        'Name',
+        'Preferred Name',
+        'Age',
+        'Date of Birth',
+        'Gender',
+        'Room Number',
+        'Care Level',
+        'Status',
+        'Admission Date',
+        'Days Since Admission',
+        'Primary Caregiver',
+        'Medical Conditions',
+        'Medications',
+        'Allergies',
+        'Dietary Restrictions',
+        'Mobility Aids',
+        'Emergency Contact Name',
+        'Emergency Contact Phone',
+        'Emergency Contact Relationship',
+        'Assessment Count',
+        'Recent Assessment Date',
+        'Incident Count',
+        'Recent Incident Date',
+        'Family Members Count'
+      ].join(',') + '\n';
+
+      // CSV body
+      const body = items.map((r: any) => {
+        const careNeeds = r.careNeeds || {};
+        const primaryCaregiver = r.caregiverAssignments?.[0]?.caregiver?.user 
+          ? `${r.caregiverAssignments[0].caregiver.user.firstName} ${r.caregiverAssignments[0].caregiver.user.lastName}`
+          : 'Not Assigned';
+        const emergencyContact = r.contacts?.[0] || {};
+        const recentAssessment = r.assessmentResults?.[0]?.createdAt || null;
+        const recentIncident = r.residentIncidents?.[0]?.occurredAt || null;
+
+        return [
+          escapeCsv(`${r.firstName} ${r.lastName}`),
+          escapeCsv(careNeeds.preferredName || ''),
+          escapeCsv(r.dateOfBirth ? calculateAge(r.dateOfBirth) : ''),
+          escapeCsv(formatDate(r.dateOfBirth)),
+          escapeCsv(r.gender || ''),
+          escapeCsv(careNeeds.roomNumber || ''),
+          escapeCsv(careNeeds.careLevel || ''),
+          escapeCsv(r.status || ''),
+          escapeCsv(formatDate(r.admissionDate)),
+          escapeCsv(getDaysSinceAdmission(r.admissionDate)),
+          escapeCsv(primaryCaregiver),
+          escapeCsv(r.medicalConditions || ''),
+          escapeCsv(r.medications || ''),
+          escapeCsv(r.allergies || ''),
+          escapeCsv(r.dietaryRestrictions || ''),
+          escapeCsv(careNeeds.mobilityAids ? JSON.stringify(careNeeds.mobilityAids) : ''),
+          escapeCsv(emergencyContact.name || ''),
+          escapeCsv(emergencyContact.phone || ''),
+          escapeCsv(emergencyContact.relationship || ''),
+          escapeCsv(r._count?.assessmentResults || 0),
+          escapeCsv(formatDate(recentAssessment)),
+          escapeCsv(r._count?.residentIncidents || 0),
+          escapeCsv(formatDate(recentIncident)),
+          escapeCsv(r._count?.familyContacts || 0)
+        ].join(',');
+      }).join('\n');
+
       const csv = header + body + (body ? '\n' : '');
       return new NextResponse(csv, {
         status: 200,
         headers: {
           'Content-Type': 'text/csv; charset=utf-8',
+          'Content-Disposition': `attachment; filename="residents-export-${new Date().toISOString().split('T')[0]}.csv"`,
           'Cache-Control': 'no-store',
         },
       });
