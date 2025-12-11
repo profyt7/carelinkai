@@ -21,10 +21,16 @@ import {
   FiChevronLeft,
   FiChevronRight,
   FiAlertCircle,
+  FiDownload,
 } from 'react-icons/fi';
 import InquiryCard, { InquiryCardData } from './InquiryCard';
 import { InquiryCardSkeletonGrid } from './InquiryCardSkeleton';
 import InquiryFilters, { InquiryFiltersState, defaultFilters } from './InquiryFilters';
+import {
+  exportInquiriesToCSV,
+  downloadCSV,
+  generateExportFilename,
+} from '@/lib/export-utils';
 
 // Debounce hook for search
 function useDebounce<T>(value: T, delay: number): T {
@@ -90,6 +96,7 @@ export default function InquiriesListClient({
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   // Debounced search query
   const debouncedSearch = useDebounce(searchQuery, 300);
@@ -184,6 +191,81 @@ export default function InquiriesListClient({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Handle CSV export
+  const handleExport = async () => {
+    try {
+      setExporting(true);
+
+      // Build query parameters for export (fetch all inquiries with current filters)
+      const params = new URLSearchParams();
+      params.set('limit', '10000'); // Large limit to get all inquiries
+      params.set('page', '1');
+
+      // Add filters
+      if (filters.statuses.length > 0) {
+        params.set('statuses', filters.statuses.join(','));
+      }
+      if (filters.homeId) {
+        params.set('homeId', filters.homeId);
+      }
+      if (filters.dateFrom) {
+        params.set('dateFrom', filters.dateFrom);
+      }
+      if (filters.dateTo) {
+        params.set('dateTo', filters.dateTo);
+      }
+      if (filters.assignedTo) {
+        params.set('assignedTo', filters.assignedTo);
+      }
+      if (filters.ageFilter !== 'all') {
+        params.set('ageFilter', filters.ageFilter);
+      }
+      if (filters.tourStatus !== 'all') {
+        params.set('tourStatus', filters.tourStatus);
+      }
+      if (filters.followupStatus !== 'all') {
+        params.set('followupStatus', filters.followupStatus);
+      }
+
+      // Add search
+      if (debouncedSearch) {
+        params.set('search', debouncedSearch);
+      }
+
+      // Add sorting
+      const [sortField, sortOrder] = sortBy.split('-');
+      params.set('sortBy', sortField);
+      params.set('sortOrder', sortOrder);
+
+      // Fetch all inquiries
+      const res = await fetch(`/api/operator/inquiries?${params.toString()}`);
+      if (!res.ok) {
+        throw new Error('Failed to fetch inquiries for export');
+      }
+
+      const data = await res.json();
+      const inquiriesToExport = data.inquiries || [];
+
+      if (inquiriesToExport.length === 0) {
+        alert('No inquiries to export');
+        return;
+      }
+
+      // Generate CSV
+      const csv = exportInquiriesToCSV(inquiriesToExport);
+
+      // Download CSV
+      const filename = generateExportFilename('inquiries-export');
+      downloadCSV(csv, filename);
+
+    } catch (err: any) {
+      console.error('Error exporting inquiries:', err);
+      alert(err.message || 'Failed to export inquiries');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   // Count active filters
   const activeFilterCount = useMemo(() => {
     return Object.entries(filters).filter(([key, value]) => {
@@ -266,6 +348,16 @@ export default function InquiriesListClient({
             <option value="updatedAt-desc">Last Activity (Most Recent)</option>
           </select>
         </div>
+
+        {/* Export Button */}
+        <button
+          onClick={handleExport}
+          disabled={exporting || loading}
+          className="flex items-center justify-center gap-2 px-4 py-2.5 border border-neutral-300 bg-white rounded-lg text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+        >
+          <FiDownload className="w-4 h-4" />
+          {exporting ? 'Exporting...' : `Export (${pagination.total})`}
+        </button>
       </div>
 
       {/* Filters */}

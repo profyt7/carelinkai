@@ -181,6 +181,7 @@ model User {
   invitedFamilyMembers     FamilyMember[]       @relation("InvitedBy")
   uploadedDocuments        FamilyDocument[]     @relation("DocumentUploader")
   uploadedResidentDocuments ResidentDocument[]  @relation("ResidentDocumentUploader")
+  uploadedInquiryDocuments InquiryDocument[]   @relation("InquiryDocumentUploader")
   authoredNotes            FamilyNote[]         @relation("NoteAuthor")
   documentComments         DocumentComment[]    @relation("DocumentCommentAuthor")
   noteComments             NoteComment[]        @relation("NoteCommentAuthor")
@@ -987,6 +988,7 @@ model Inquiry {
   booking           Booking?
   convertedResident Resident?          @relation("ConvertedFromInquiry", fields: [convertedToResidentId], references: [id])
   convertedBy       User?              @relation("InquiryConverter", fields: [convertedByUserId], references: [id])
+  documents         InquiryDocument[]
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -1000,6 +1002,30 @@ model Inquiry {
   @@index([convertedToResidentId])
   @@index([convertedByUserId])
   @@index([conversionDate])
+}
+
+/// Documents associated with an inquiry (applications, IDs, medical records, etc.)
+model InquiryDocument {
+  id           String   @id @default(cuid())
+  inquiryId    String
+  fileName     String
+  fileUrl      String
+  fileType     String
+  documentType String   // APPLICATION_FORM, PHOTO_ID, INSURANCE_DOCUMENT, MEDICAL_RECORD, etc.
+  description  String?  @db.Text
+  fileSize     Int
+  uploadedById String
+  uploadedAt   DateTime @default(now())
+
+  // Relationships
+  inquiry    Inquiry @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  uploadedBy User    @relation("InquiryDocumentUploader", fields: [uploadedById], references: [id])
+
+  // Indexes
+  @@index([inquiryId])
+  @@index([uploadedById])
+  @@index([documentType])
+  @@index([uploadedAt])
 }
 
 /// Lead/Inquiry model for Family → Aide/Provider marketplace inquiries

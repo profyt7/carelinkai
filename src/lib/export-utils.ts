@@ -144,3 +144,101 @@ export function formatFileSize(bytes: number): string {
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
 }
+
+/**
+ * Format phone number for display
+ */
+export function formatPhoneNumber(phone: string | null | undefined): string {
+  if (!phone) return '';
+  return phone;
+}
+
+/**
+ * Calculate days between dates
+ */
+export function calculateDaysBetween(date1: Date | string, date2: Date | string = new Date()): number {
+  const d1 = typeof date1 === 'string' ? new Date(date1) : date1;
+  const d2 = typeof date2 === 'string' ? new Date(date2) : date2;
+  const diffTime = Math.abs(d2.getTime() - d1.getTime());
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+}
+
+type InquiryExport = {
+  id: string;
+  status: string;
+  createdAt: Date | string;
+  updatedAt?: Date | string;
+  family: {
+    name: string;
+    email: string;
+    phone?: string | null;
+    user: {
+      firstName: string;
+      lastName: string;
+      email: string;
+      phone?: string | null;
+    };
+  };
+  home: {
+    name: string;
+    address?: {
+      street?: string;
+      city?: string;
+      state?: string;
+    };
+  };
+  message?: string | null;
+  internalNotes?: string | null;
+  tourDate?: Date | string | null;
+  aiMatchScore?: number | null;
+  convertedToResidentId?: string | null;
+  conversionDate?: Date | string | null;
+  convertedBy?: {
+    firstName: string;
+    lastName: string;
+  } | null;
+  _count?: {
+    documents?: number;
+  };
+};
+
+/**
+ * Convert inquiry data to CSV format
+ */
+export function exportInquiriesToCSV(inquiries: InquiryExport[]): string {
+  const data = inquiries.map((inquiry) => {
+    const contactPerson = `${inquiry.family.user.firstName} ${inquiry.family.user.lastName}`;
+    const contactEmail = inquiry.family.user.email || inquiry.family.email;
+    const contactPhone = inquiry.family.user.phone || inquiry.family.phone || '';
+    const homeAddress = inquiry.home.address
+      ? `${inquiry.home.address.street || ''}, ${inquiry.home.address.city || ''}, ${inquiry.home.address.state || ''}`.trim()
+      : '';
+    
+    const daysSinceInquiry = calculateDaysBetween(inquiry.createdAt);
+    const lastActivityDate = inquiry.updatedAt ? formatDateForCSV(inquiry.updatedAt) : formatDateForCSV(inquiry.createdAt);
+    
+    return {
+      'Family Name': inquiry.family.name,
+      'Contact Person Name': contactPerson,
+      'Contact Email': contactEmail,
+      'Contact Phone': formatPhoneNumber(contactPhone),
+      'Inquiry Date': formatDateForCSV(inquiry.createdAt),
+      'Days Since Inquiry': daysSinceInquiry,
+      'Status': inquiry.status.replace(/_/g, ' '),
+      'Home/Facility': inquiry.home.name,
+      'Facility Address': homeAddress,
+      'Tour Date': inquiry.tourDate ? formatDateForCSV(inquiry.tourDate) : 'Not Scheduled',
+      'AI Match Score': inquiry.aiMatchScore ? `${inquiry.aiMatchScore}%` : 'N/A',
+      'Last Activity Date': lastActivityDate,
+      'Documents Count': inquiry._count?.documents || 0,
+      'Converted to Resident': inquiry.convertedToResidentId ? 'Yes' : 'No',
+      'Conversion Date': inquiry.conversionDate ? formatDateForCSV(inquiry.conversionDate) : 'N/A',
+      'Converted By': inquiry.convertedBy ? `${inquiry.convertedBy.firstName} ${inquiry.convertedBy.lastName}` : 'N/A',
+      'Initial Message': inquiry.message?.replace(/\n/g, ' ').substring(0, 200) || '',
+      'Internal Notes': inquiry.internalNotes?.replace(/\n/g, ' ').substring(0, 200) || '',
+    };
+  });
+
+  const csv = Papa.unparse(data);
+  return csv;
+}

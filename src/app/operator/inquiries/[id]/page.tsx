@@ -7,6 +7,7 @@ import { InquiryStatus } from '@prisma/client';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
 import ConvertInquiryModal from '@/components/operator/inquiries/ConvertInquiryModal';
 import InquiryStatusBadge from '@/components/operator/inquiries/InquiryStatusBadge';
+import { DocumentsSection } from '@/components/operator/inquiries/DocumentsSection';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { PERMISSIONS } from '@/lib/permissions';
 
@@ -243,6 +244,11 @@ export default function OperatorLeadDetailPage() {
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Add private notes for your team…"
               />
+            </div>
+
+            {/* Documents Section */}
+            <div className="rounded-lg border border-neutral-200 bg-white p-4">
+              <DocumentsSection inquiryId={id} />
             </div>
           </div>
 
