@@ -1,122 +1,172 @@
-'use client';
-
+import PDFDocument from 'pdfkit';
 import { ReportData } from '../services/reports';
 
 /**
- * Generate PDF from report data
- * Note: This is a placeholder implementation.
- * In production, use a library like jsPDF, pdfmake, or react-pdf
+ * Generate PDF from report data using PDFKit
+ * This runs on the server-side (Node.js)
  */
-export async function generatePDF(reportData: ReportData): Promise<Blob> {
-  // For now, we'll create a simple HTML-based PDF
-  // In production, integrate with a proper PDF library
-  
-  const htmlContent = `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <meta charset="utf-8">
-        <title>${reportData?.title ?? 'Report'}</title>
-        <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: Arial, sans-serif; padding: 40px; color: #333; }
-          .header { border-bottom: 3px solid #3b82f6; padding-bottom: 20px; margin-bottom: 30px; }
-          h1 { color: #1e40af; font-size: 28px; margin-bottom: 10px; }
-          .metadata { color: #666; font-size: 12px; }
-          .summary { background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0; }
-          .summary h2 { color: #1e40af; font-size: 20px; margin-bottom: 15px; }
-          .summary-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
-          .summary-item { padding: 10px; }
-          .summary-item label { font-size: 12px; color: #666; display: block; margin-bottom: 5px; }
-          .summary-item value { font-size: 20px; font-weight: bold; color: #1e40af; }
-          table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-          th { background: #3b82f6; color: white; padding: 12px; text-align: left; font-size: 14px; }
-          td { padding: 10px 12px; border-bottom: 1px solid #e5e7eb; font-size: 13px; }
-          tbody tr:nth-child(even) { background: #f9fafb; }
-          .table-section { margin: 30px 0; }
-          .table-section h3 { color: #1e40af; font-size: 18px; margin-bottom: 15px; }
-          .footer { margin-top: 40px; padding-top: 20px; border-top: 2px solid #e5e7eb; text-align: center; font-size: 11px; color: #666; }
-          @media print { body { padding: 20px; } }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <h1>${reportData?.title ?? 'Report'}</h1>
-          <div class="metadata">
-            <p><strong>Generated:</strong> ${new Date(reportData?.metadata?.generatedAt ?? new Date()).toLocaleString()}</p>
-            <p><strong>Date Range:</strong> ${new Date(reportData?.dateRange?.start ?? new Date()).toLocaleDateString()} - ${new Date(reportData?.dateRange?.end ?? new Date()).toLocaleDateString()}</p>
-          </div>
-        </div>
+export async function generatePDF(reportData: ReportData): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    try {
+      // Create a new PDF document
+      const doc = new PDFDocument({ 
+        size: 'A4', 
+        margin: 50,
+        info: {
+          Title: reportData?.title ?? 'Report',
+          Author: 'CareLinkAI',
+          Subject: 'Care Home Report',
+          CreationDate: new Date(),
+        }
+      });
 
-        ${reportData?.summary ? `
-        <div class="summary">
-          <h2>Executive Summary</h2>
-          <div class="summary-grid">
-            ${Object.entries(reportData?.summary ?? {})
-              ?.map(
-                ([key, value]) => `
-              <div class="summary-item">
-                <label>${key?.replace(/([A-Z])/g, ' $1')?.trim()}</label>
-                <value>${typeof value === 'object' ? JSON.stringify(value) : value}</value>
-              </div>
-            `
-              )
-              ?.join('') ?? ''}
-          </div>
-        </div>
-        ` : ''}
+      // Collect PDF chunks
+      const chunks: Buffer[] = [];
+      doc.on('data', (chunk) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
 
-        ${reportData?.tables
-          ?.map(
-            (table) => `
-          <div class="table-section">
-            <h3>${table?.title ?? ''}</h3>
-            <table>
-              <thead>
-                <tr>
-                  ${table?.headers?.map?.((h) => `<th>${h}</th>`)?.join('') ?? ''}
-                </tr>
-              </thead>
-              <tbody>
-                ${table?.rows
-                  ?.map?.(
-                    (row) => `
-                  <tr>
-                    ${row?.map?.((cell) => `<td>${cell}</td>`)?.join('') ?? ''}
-                  </tr>
-                `
-                  )
-                  ?.join('') ?? ''}
-              </tbody>
-            </table>
-          </div>
-        `
-          )
-          ?.join('') ?? ''}
+      // Header with title
+      doc
+        .fontSize(24)
+        .fillColor('#1e40af')
+        .text(reportData?.title ?? 'Report', { align: 'left' })
+        .moveDown(0.5);
 
-        <div class="footer">
-          <p>&copy; ${new Date().getFullYear()} CareLinkAI. All rights reserved.</p>
-          <p>This report contains confidential information.</p>
-        </div>
-      </body>
-    </html>
-  `;
+      // Add a line separator
+      doc
+        .strokeColor('#3b82f6')
+        .lineWidth(3)
+        .moveTo(50, doc.y)
+        .lineTo(545, doc.y)
+        .stroke()
+        .moveDown(1);
 
-  // Convert HTML to Blob
-  const blob = new Blob([htmlContent], { type: 'text/html' });
-  return blob;
-}
+      // Metadata
+      doc
+        .fontSize(10)
+        .fillColor('#666666')
+        .text(`Generated: ${new Date(reportData?.metadata?.generatedAt ?? new Date()).toLocaleString()}`)
+        .text(`Date Range: ${new Date(reportData?.dateRange?.start ?? new Date()).toLocaleDateString()} - ${new Date(reportData?.dateRange?.end ?? new Date()).toLocaleDateString()}`)
+        .moveDown(2);
 
-/**
- * Download PDF file
- */
-export function downloadPDF(blob: Blob, filename: string): void {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+      // Executive Summary
+      if (reportData?.summary && Object.keys(reportData.summary).length > 0) {
+        doc
+          .fontSize(16)
+          .fillColor('#1e40af')
+          .text('Executive Summary', { underline: true })
+          .moveDown(0.5);
+
+        // Summary items
+        const summaryEntries = Object.entries(reportData.summary);
+        summaryEntries.forEach(([key, value]) => {
+          const label = key.replace(/([A-Z])/g, ' $1').trim();
+          const displayValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
+          
+          doc
+            .fontSize(10)
+            .fillColor('#666666')
+            .text(label, { continued: false })
+            .fontSize(14)
+            .fillColor('#1e40af')
+            .text(displayValue, { indent: 20 })
+            .moveDown(0.3);
+        });
+
+        doc.moveDown(1.5);
+      }
+
+      // Tables
+      if (reportData?.tables && reportData.tables.length > 0) {
+        reportData.tables.forEach((table, tableIndex) => {
+          // Check if we need a new page
+          if (doc.y > 650) {
+            doc.addPage();
+          }
+
+          // Table title
+          doc
+            .fontSize(14)
+            .fillColor('#1e40af')
+            .text(table?.title ?? `Table ${tableIndex + 1}`, { underline: true })
+            .moveDown(0.5);
+
+          // Draw table headers
+          const tableTop = doc.y;
+          const columnWidth = 495 / (table?.headers?.length || 1);
+          let currentX = 50;
+
+          // Header row background
+          doc
+            .rect(50, tableTop, 495, 25)
+            .fillAndStroke('#3b82f6', '#3b82f6');
+
+          // Header text
+          doc.fillColor('#ffffff').fontSize(10);
+          table?.headers?.forEach((header, i) => {
+            doc.text(
+              String(header),
+              currentX + 5,
+              tableTop + 8,
+              { width: columnWidth - 10, align: 'left' }
+            );
+            currentX += columnWidth;
+          });
+
+          // Table rows
+          let rowY = tableTop + 25;
+          table?.rows?.forEach((row, rowIndex) => {
+            // Check if we need a new page
+            if (rowY > 700) {
+              doc.addPage();
+              rowY = 50;
+            }
+
+            // Alternating row colors
+            const fillColor = rowIndex % 2 === 0 ? '#f9fafb' : '#ffffff';
+            doc
+              .rect(50, rowY, 495, 20)
+              .fillAndStroke(fillColor, '#e5e7eb');
+
+            // Row text
+            currentX = 50;
+            doc.fillColor('#333333').fontSize(9);
+            row?.forEach((cell) => {
+              doc.text(
+                String(cell),
+                currentX + 5,
+                rowY + 5,
+                { width: columnWidth - 10, align: 'left' }
+              );
+              currentX += columnWidth;
+            });
+
+            rowY += 20;
+          });
+
+          doc.y = rowY + 20;
+          doc.moveDown(1);
+        });
+      }
+
+      // Footer
+      doc
+        .moveDown(2)
+        .fontSize(9)
+        .fillColor('#666666')
+        .text(
+          `© ${new Date().getFullYear()} CareLinkAI. All rights reserved.`,
+          { align: 'center' }
+        )
+        .text('This report contains confidential information.', {
+          align: 'center',
+        });
+
+      // Finalize the PDF
+      doc.end();
+    } catch (error) {
+      reject(error);
+    }
+  });
 }

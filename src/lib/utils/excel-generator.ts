@@ -1,14 +1,12 @@
-'use client';
-
 import { ReportData } from '../services/reports';
 
 /**
  * Generate Excel file from report data
- * Note: This is a simplified implementation that generates CSV-like content
- * In production, use a library like exceljs or xlsx for proper Excel format
+ * Note: This generates CSV content for Excel compatibility
+ * For more advanced features, consider using 'exceljs' library
  */
-export async function generateExcel(reportData: ReportData): Promise<Blob> {
-  // Create workbook content (simplified CSV format for now)
+export async function generateExcel(reportData: ReportData): Promise<Buffer> {
+  // Create workbook content (CSV format compatible with Excel)
   let content = '';
 
   // Add title and metadata
@@ -48,26 +46,9 @@ export async function generateExcel(reportData: ReportData): Promise<Blob> {
     content += '\n';
   });
 
-  // Create blob with Excel-compatible CSV format
   // Add BOM for UTF-8 to ensure Excel opens it correctly
   const BOM = '\uFEFF';
-  const blob = new Blob([BOM + content], {
-    type: 'text/csv;charset=utf-8;',
-  });
+  const buffer = Buffer.from(BOM + content, 'utf-8');
 
-  return blob;
-}
-
-/**
- * Download Excel file
- */
-export function downloadExcel(blob: Blob, filename: string): void {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  return buffer;
 }

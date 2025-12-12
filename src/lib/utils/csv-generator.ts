@@ -1,11 +1,9 @@
-'use client';
-
 import { ReportData } from '../services/reports';
 
 /**
  * Generate CSV file from report data
  */
-export async function generateCSV(reportData: ReportData): Promise<Blob> {
+export async function generateCSV(reportData: ReportData): Promise<Buffer> {
   let content = '';
 
   // Add title and metadata
@@ -46,27 +44,11 @@ export async function generateCSV(reportData: ReportData): Promise<Blob> {
     content += '\n';
   });
 
-  // Create blob with UTF-8 BOM for proper Excel compatibility
+  // Add BOM for UTF-8 to ensure proper Excel compatibility
   const BOM = '\uFEFF';
-  const blob = new Blob([BOM + content], {
-    type: 'text/csv;charset=utf-8;',
-  });
+  const buffer = Buffer.from(BOM + content, 'utf-8');
 
-  return blob;
-}
-
-/**
- * Download CSV file
- */
-export function downloadCSV(blob: Blob, filename: string): void {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  return buffer;
 }
 
 /**
