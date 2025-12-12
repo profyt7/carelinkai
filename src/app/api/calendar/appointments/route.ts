@@ -342,16 +342,55 @@ export async function GET(request: NextRequest) {
         whereClause.residentId = residentId;
       }
 
+      // Role-based filtering
       if (participantId) {
+        // Specific participant requested
         whereClause.OR = [
           { createdById: participantId },
           { participants: { some: { userId: participantId } } }
         ];
       } else {
-        whereClause.OR = [
-          { createdById: session.user.id },
-          { participants: { some: { userId: session.user.id } } }
-        ];
+        // Apply role-based filtering
+        const userRole = session.user.role;
+        
+        if (userRole === 'ADMIN' || userRole === 'OPERATOR') {
+          // ADMIN and OPERATOR can see all appointments
+          // No additional filtering needed
+        } else if (userRole === 'CAREGIVER') {
+          // CAREGIVER can only see appointments they're involved in
+          whereClause.OR = [
+            { createdById: session.user.id },
+            { participants: { some: { userId: session.user.id } } }
+          ];
+        } else if (userRole === 'FAMILY') {
+          // FAMILY can see appointments related to their family members
+          // Get family's residents
+          const family = await prisma.family.findUnique({
+            where: { userId: session.user.id },
+            include: { residents: true }
+          });
+          
+          if (family?.residents && family.residents.length > 0) {
+            const residentIds = family.residents.map(r => r.id);
+            whereClause.OR = [
+              { createdById: session.user.id },
+              { participants: { some: { userId: session.user.id } } },
+              { residentId: { in: residentIds } }
+            ];
+          } else {
+            // If no residents, only show appointments they created or are participants in
+            whereClause.OR = [
+              { createdById: session.user.id },
+              { participants: { some: { userId: session.user.id } } }
+            ];
+          }
+        } else {
+          // Default: only show appointments the user is involved in
+          whereClause.OR = [
+            { createdById: session.user.id },
+            { participants: { some: { userId: session.user.id } } }
+          ];
+        }
       }
 
       if (search) {
