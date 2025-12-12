@@ -6,6 +6,19 @@
  * validation functions, and other shared helpers.
  */
 
+import { type ClassValue, clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+/**
+ * Combine class names with tailwind-merge
+ * 
+ * @param inputs - Class names to combine
+ * @returns Combined class names
+ */
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
 /**
  * Format a number as currency
  * 

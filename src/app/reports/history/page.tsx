@@ -4,13 +4,6 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { FileText, Download, Trash2, Eye, Search, ArrowLeft } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import Link from 'next/link';
@@ -108,45 +101,37 @@ export default function ReportHistoryPage() {
                 />
               </div>
             </div>
-            <Select
+            <select
               value={typeFilter}
-              onValueChange={(value) => {
-                setTypeFilter(value);
+              onChange={(e) => {
+                setTypeFilter(e.target.value);
                 setPage(1);
               }}
+              className="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
             >
-              <SelectTrigger>
-                <SelectValue placeholder="Report Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="OCCUPANCY">Occupancy</SelectItem>
-                <SelectItem value="FINANCIAL">Financial</SelectItem>
-                <SelectItem value="INCIDENT">Incident</SelectItem>
-                <SelectItem value="CAREGIVER">Caregiver</SelectItem>
-                <SelectItem value="COMPLIANCE">Compliance</SelectItem>
-                <SelectItem value="INQUIRY">Inquiry</SelectItem>
-                <SelectItem value="RESIDENT">Resident</SelectItem>
-                <SelectItem value="FACILITY_COMPARISON">Facility Comparison</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select
+              <option value="all">All Types</option>
+              <option value="OCCUPANCY">Occupancy</option>
+              <option value="FINANCIAL">Financial</option>
+              <option value="INCIDENT">Incident</option>
+              <option value="CAREGIVER">Caregiver</option>
+              <option value="COMPLIANCE">Compliance</option>
+              <option value="INQUIRY">Inquiry</option>
+              <option value="RESIDENT">Resident</option>
+              <option value="FACILITY_COMPARISON">Facility Comparison</option>
+            </select>
+            <select
               value={formatFilter}
-              onValueChange={(value) => {
-                setFormatFilter(value);
+              onChange={(e) => {
+                setFormatFilter(e.target.value);
                 setPage(1);
               }}
+              className="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
             >
-              <SelectTrigger>
-                <SelectValue placeholder="Format" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Formats</SelectItem>
-                <SelectItem value="PDF">PDF</SelectItem>
-                <SelectItem value="EXCEL">Excel</SelectItem>
-                <SelectItem value="CSV">CSV</SelectItem>
-              </SelectContent>
-            </Select>
+              <option value="all">All Formats</option>
+              <option value="PDF">PDF</option>
+              <option value="EXCEL">Excel</option>
+              <option value="CSV">CSV</option>
+            </select>
           </div>
         </Card>
 

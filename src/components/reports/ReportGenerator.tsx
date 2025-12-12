@@ -2,13 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -195,21 +188,18 @@ export function ReportGenerator({
           {/* Report Type */}
           <div className="space-y-2">
             <Label htmlFor="type">Report Template</Label>
-            <Select value={type} onValueChange={setType}>
-              <SelectTrigger id="type">
-                <SelectValue placeholder="Select report type" />
-              </SelectTrigger>
-              <SelectContent>
-                {REPORT_TEMPLATES?.map?.((template) => (
-                  <SelectItem key={template?.value} value={template?.value}>
-                    <span className="flex items-center gap-2">
-                      <span>{template?.icon}</span>
-                      <span>{template?.label}</span>
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <select
+              id="type"
+              value={type}
+              onChange={(e) => setType(e.target.value)}
+              className="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
+            >
+              {REPORT_TEMPLATES?.map?.((template) => (
+                <option key={template?.value} value={template?.value}>
+                  {template?.icon} {template?.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Report Title */}
@@ -226,18 +216,18 @@ export function ReportGenerator({
           {/* Date Range */}
           <div className="space-y-2">
             <Label htmlFor="dateRange">Date Range</Label>
-            <Select value={dateRange} onValueChange={setDateRange}>
-              <SelectTrigger id="dateRange">
-                <SelectValue placeholder="Select date range" />
-              </SelectTrigger>
-              <SelectContent>
-                {DATE_RANGES?.map?.((range) => (
-                  <SelectItem key={range?.value} value={range?.value}>
-                    {range?.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <select
+              id="dateRange"
+              value={dateRange}
+              onChange={(e) => setDateRange(e.target.value)}
+              className="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
+            >
+              {DATE_RANGES?.map?.((range) => (
+                <option key={range?.value} value={range?.value}>
+                  {range?.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Custom Date Range */}
@@ -267,41 +257,38 @@ export function ReportGenerator({
           {/* Facility Filter */}
           {homes?.length > 0 && (
             <div className="space-y-2">
-              <Label>Facilities (Optional)</Label>
-              <Select
+              <Label htmlFor="facility">Facilities (Optional)</Label>
+              <select
+                id="facility"
                 value={selectedHomes?.[0] ?? 'all'}
-                onValueChange={(value) =>
-                  setSelectedHomes(value === 'all' ? [] : [value])
+                onChange={(e) =>
+                  setSelectedHomes(e.target.value === 'all' ? [] : [e.target.value])
                 }
+                className="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="All facilities" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Facilities</SelectItem>
-                  {homes?.map?.((home) => (
-                    <SelectItem key={home?.id} value={home?.id}>
-                      {home?.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <option value="all">All Facilities</option>
+                {homes?.map?.((home) => (
+                  <option key={home?.id} value={home?.id}>
+                    {home?.name}
+                  </option>
+                ))}
+              </select>
             </div>
           )}
 
           {/* Export Format */}
           <div className="space-y-2">
             <Label htmlFor="format">Export Format</Label>
-            <Select value={format} onValueChange={setFormat}>
-              <SelectTrigger id="format">
-                <SelectValue placeholder="Select format" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="PDF">PDF (Portable Document Format)</SelectItem>
-                <SelectItem value="EXCEL">Excel (Spreadsheet)</SelectItem>
-                <SelectItem value="CSV">CSV (Comma Separated Values)</SelectItem>
-              </SelectContent>
-            </Select>
+            <select
+              id="format"
+              value={format}
+              onChange={(e) => setFormat(e.target.value)}
+              className="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
+            >
+              <option value="PDF">PDF (Portable Document Format)</option>
+              <option value="EXCEL">Excel (Spreadsheet)</option>
+              <option value="CSV">CSV (Comma Separated Values)</option>
+            </select>
           </div>
 
           {/* Options */}
