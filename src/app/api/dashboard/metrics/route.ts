@@ -9,6 +9,7 @@ export const revalidate = 0;
 /**
  * GET /api/dashboard/metrics
  * SIMPLIFIED VERSION - Returns only basic counts without complex queries
+ * Deployment trigger: 2024-12-12
  */
 export async function GET(request: NextRequest) {
   try {
