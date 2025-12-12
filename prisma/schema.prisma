@@ -3,6 +3,7 @@
 
 generator client {
   provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
   // No preview features currently required
 }
 
@@ -195,6 +196,10 @@ model User {
   approvedTimesheets  Timesheet[]
   assignedLeads       Lead[]               @relation("AssignedLeads")
   convertedInquiries  Inquiry[]            @relation("InquiryConverter")
+
+  // Reporting relationships
+  generatedReports   Report[]           @relation("ReportGenerator")
+  scheduledReports   ScheduledReport[]  @relation("ScheduledReportCreator")
 
   // Timestamps
   createdAt   DateTime  @default(now())
@@ -1556,6 +1561,9 @@ enum AuditAction {
   EXPORT
   IMPORT
   ACCESS_DENIED
+  REPORT_GENERATED
+  REPORT_SCHEDULED
+  REPORT_DOWNLOADED
   OTHER
 }
 
@@ -2237,4 +2245,77 @@ model FavoriteProvider {
   @@unique([familyId, providerId])
   @@index([familyId])
   @@index([providerId])
+}
+// ==================== REPORTING MODELS ====================
+
+enum ReportType {
+  OCCUPANCY
+  FINANCIAL
+  INCIDENT
+  CAREGIVER
+  COMPLIANCE
+  INQUIRY
+  RESIDENT
+  FACILITY_COMPARISON
+  CUSTOM
+}
+
+enum ReportFormat {
+  PDF
+  EXCEL
+  CSV
+}
+
+enum ReportSchedule {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+model Report {
+  id          String       @id @default(cuid())
+  title       String
+  type        ReportType
+  format      ReportFormat
+  fileUrl     String? // URL to stored file
+  config      Json // Report configuration (filters, options)
+  generatedBy String
+  user        User         @relation("ReportGenerator", fields: [generatedBy], references: [id])
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([generatedBy])
+  @@index([type])
+  @@index([createdAt])
+}
+
+model ScheduledReport {
+  id         String         @id @default(cuid())
+  title      String
+  type       ReportType
+  format     ReportFormat   @default(PDF)
+  schedule   ReportSchedule
+  dayOfWeek  Int? // For weekly (0-6, 0=Sunday)
+  dayOfMonth Int? // For monthly (1-31)
+  time       String // HH:MM format (24-hour)
+  recipients String[] // Email addresses
+  config     Json // Report configuration
+  enabled    Boolean        @default(true)
+  lastRun    DateTime?
+  nextRun    DateTime?
+  createdBy  String
+  user       User           @relation("ScheduledReportCreator", fields: [createdBy], references: [id])
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([createdBy])
+  @@index([enabled])
+  @@index([nextRun])
+  @@index([type])
 }

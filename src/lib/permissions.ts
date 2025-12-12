@@ -85,8 +85,15 @@ export const PERMISSIONS = {
   // System Permissions
   SYSTEM_SETTINGS: "system.settings",
   AUDIT_LOGS_VIEW: "audit_logs.view",
+  
+  // Reports & Analytics Permissions
   REPORTS_VIEW: "reports.view",
+  REPORTS_GENERATE: "reports.generate",
   REPORTS_EXPORT: "reports.export",
+  REPORTS_DELETE: "reports.delete",
+  REPORTS_SCHEDULE: "reports.schedule",
+  REPORTS_MANAGE: "reports.manage",
+  ANALYTICS_VIEW: "analytics.view",
 } as const;
 
 export type Permission = typeof PERMISSIONS[keyof typeof PERMISSIONS];
@@ -150,9 +157,14 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     PERMISSIONS.INQUIRIES_UPDATE,
     PERMISSIONS.INQUIRIES_CONVERT,
     
-    // Reports
+    // Reports & Analytics
     PERMISSIONS.REPORTS_VIEW,
+    PERMISSIONS.REPORTS_GENERATE,
     PERMISSIONS.REPORTS_EXPORT,
+    PERMISSIONS.REPORTS_DELETE,
+    PERMISSIONS.REPORTS_SCHEDULE,
+    PERMISSIONS.REPORTS_MANAGE,
+    PERMISSIONS.ANALYTICS_VIEW,
   ],
   
   // CAREGIVER: Limited access - view residents, create care notes, view assessments/incidents

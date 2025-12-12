@@ -21,6 +21,7 @@ import {
   FiSearch,
   FiUser,
   FiFileText,
+  FiBarChart2,
   FiChevronDown,
   FiLogOut,
   FiArrowUp,
@@ -79,6 +80,7 @@ const navItems: NavItem[] = [
   // Family collaboration (visible to all)
   { name: "Family", icon: <FiUsers size={20} />, href: "/family", showInMobileBar: true },
   { name: "Finances", icon: <FiDollarSign size={20} />, href: "/settings/payouts", showInMobileBar: true },
+  { name: "Reports", icon: <FiBarChart2 size={20} />, href: "/reports", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN"] },
   { name: "Messages", icon: <FiMessageSquare size={20} />, href: "/messages", showInMobileBar: true },
   { name: "Settings", icon: <FiSettings size={20} />, href: "/settings", showInMobileBar: false },
   // Admin-only tools section
