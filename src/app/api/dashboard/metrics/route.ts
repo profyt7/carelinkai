@@ -27,11 +27,7 @@ export async function GET(request: NextRequest) {
       include: {
         operator: true,
         caregiver: true,
-        familyMember: {
-          include: {
-            inquiry: true,
-          },
-        },
+        family: true,
       },
     });
 
@@ -200,11 +196,11 @@ async function getOperatorMetrics(user: any) {
  * Get metrics for FAMILY users
  */
 async function getFamilyMetrics(user: any) {
-  if (!user.familyMember) {
+  if (!user.family) {
     return NextResponse.json({ error: "Family member not found" }, { status: 404 });
   }
 
-  const familyId = user.familyMember.id;
+  const familyId = user.family.id;
 
   // Fetch inquiry data
   const inquiry = await prisma.inquiry.findFirst({

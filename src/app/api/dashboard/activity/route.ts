@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
       where: { email: session.user.email },
       include: {
         operator: true,
-        familyMember: true,
+        family: true,
       },
     });
 
@@ -182,11 +182,11 @@ async function getOperatorActivity(user: any) {
  * Get activity for FAMILY users
  */
 async function getFamilyActivity(user: any) {
-  if (!user.familyMember) {
+  if (!user.family) {
     return NextResponse.json({ activities: [] });
   }
 
-  const familyId = user.familyMember.id;
+  const familyId = user.family.id;
   const activities = [];
 
   // Inquiry updates

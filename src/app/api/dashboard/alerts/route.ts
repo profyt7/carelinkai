@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
       include: {
         operator: true,
         caregiver: true,
-        familyMember: true,
+        family: true,
       },
     });
 
@@ -250,11 +250,11 @@ async function getOperatorAlerts(user: any) {
  * Get alerts for FAMILY users
  */
 async function getFamilyAlerts(user: any) {
-  if (!user.familyMember) {
+  if (!user.family) {
     return NextResponse.json({ alerts: [] });
   }
 
-  const familyId = user.familyMember.id;
+  const familyId = user.family.id;
   const alerts = [];
 
   // Upcoming tour
