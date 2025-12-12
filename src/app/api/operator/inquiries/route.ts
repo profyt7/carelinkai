@@ -16,9 +16,11 @@ export async function GET(request: NextRequest) {
       where: { email: session.user.email },
     });
 
-    if (!user || (user.role !== UserRole.OPERATOR && user.role !== UserRole.ADMIN)) {
+    if (!user || (user.role !== UserRole.OPERATOR && user.role !== UserRole.ADMIN && user.role !== UserRole.FAMILY)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
+
+    const isFamily = user.role === UserRole.FAMILY;
 
     // Get query parameters
     const searchParams = request.nextUrl.searchParams;
@@ -56,7 +58,34 @@ export async function GET(request: NextRequest) {
 
     const where: Prisma.InquiryWhereInput = {};
 
-    // Filter by operator's homes
+    // ROLE-BASED FILTERING: Family users only see their own inquiries
+    if (isFamily) {
+      const family = await prisma.family.findFirst({
+        where: {
+          OR: [
+            { primaryContactEmail: user.email },
+            { secondaryContactEmail: user.email },
+          ],
+        },
+      });
+
+      if (!family) {
+        // No family record found, return empty list
+        return NextResponse.json({
+          inquiries: [],
+          pagination: {
+            page: 1,
+            limit,
+            total: 0,
+            totalPages: 0,
+          },
+        });
+      }
+
+      where.familyId = family.id;
+    }
+
+    // Filter by operator's homes (OPERATOR role only)
     if (operator) {
       where.home = { operatorId: operator.id };
     }

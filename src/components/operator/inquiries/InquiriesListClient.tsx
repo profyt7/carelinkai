@@ -73,12 +73,14 @@ interface InquiriesListClientProps {
   homes?: Array<{ id: string; name: string }>;
   staff?: Array<{ id: string; name: string }>;
   initialFilters?: Partial<InquiryFiltersState>;
+  isFamily?: boolean;
 }
 
 export default function InquiriesListClient({
   homes = [],
   staff = [],
   initialFilters = {},
+  isFamily = false,
 }: InquiriesListClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -353,43 +355,47 @@ export default function InquiriesListClient({
           </select>
         </div>
 
-        {/* View Toggle */}
-        <div className="flex items-center gap-2 border border-neutral-300 rounded-lg p-1">
-          <button
-            onClick={() => setViewMode('list')}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded transition-colors ${
-              viewMode === 'list'
-                ? 'bg-primary-600 text-white'
-                : 'text-neutral-700 hover:bg-neutral-100'
-            }`}
-            title="List view"
-          >
-            <FiList className="w-4 h-4" />
-            <span className="hidden sm:inline">List</span>
-          </button>
-          <button
-            onClick={() => setViewMode('analytics')}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded transition-colors ${
-              viewMode === 'analytics'
-                ? 'bg-primary-600 text-white'
-                : 'text-neutral-700 hover:bg-neutral-100'
-            }`}
-            title="Analytics view"
-          >
-            <FiBarChart2 className="w-4 h-4" />
-            <span className="hidden sm:inline">Analytics</span>
-          </button>
-        </div>
+        {/* View Toggle - Hide for families */}
+        {!isFamily && (
+          <div className="flex items-center gap-2 border border-neutral-300 rounded-lg p-1">
+            <button
+              onClick={() => setViewMode('list')}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded transition-colors ${
+                viewMode === 'list'
+                  ? 'bg-primary-600 text-white'
+                  : 'text-neutral-700 hover:bg-neutral-100'
+              }`}
+              title="List view"
+            >
+              <FiList className="w-4 h-4" />
+              <span className="hidden sm:inline">List</span>
+            </button>
+            <button
+              onClick={() => setViewMode('analytics')}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded transition-colors ${
+                viewMode === 'analytics'
+                  ? 'bg-primary-600 text-white'
+                  : 'text-neutral-700 hover:bg-neutral-100'
+              }`}
+              title="Analytics view"
+            >
+              <FiBarChart2 className="w-4 h-4" />
+              <span className="hidden sm:inline">Analytics</span>
+            </button>
+          </div>
+        )}
 
-        {/* Export Button */}
-        <button
-          onClick={handleExport}
-          disabled={exporting || loading}
-          className="flex items-center justify-center gap-2 px-4 py-2.5 border border-neutral-300 bg-white rounded-lg text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
-        >
-          <FiDownload className="w-4 h-4" />
-          {exporting ? 'Exporting...' : `Export (${pagination.total})`}
-        </button>
+        {/* Export Button - Hide for families */}
+        {!isFamily && (
+          <button
+            onClick={handleExport}
+            disabled={exporting || loading}
+            className="flex items-center justify-center gap-2 px-4 py-2.5 border border-neutral-300 bg-white rounded-lg text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+          >
+            <FiDownload className="w-4 h-4" />
+            {exporting ? 'Exporting...' : `Export (${pagination.total})`}
+          </button>
+        )}
       </div>
 
       {/* Filters */}
@@ -398,6 +404,7 @@ export default function InquiriesListClient({
         onFiltersChange={handleFiltersChange}
         homes={homes}
         staff={staff}
+        isFamily={isFamily}
       />
 
       {/* Analytics View */}
@@ -474,7 +481,7 @@ export default function InquiriesListClient({
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {inquiries.map((inquiry) => (
-                <InquiryCard key={inquiry.id} inquiry={inquiry} />
+                <InquiryCard key={inquiry.id} inquiry={inquiry} isFamily={isFamily} />
               ))}
             </div>
           )}

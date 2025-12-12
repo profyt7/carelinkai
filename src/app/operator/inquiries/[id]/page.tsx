@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { InquiryStatus } from '@prisma/client';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
@@ -50,6 +51,7 @@ type InquiryDetail = {
 export default function OperatorLeadDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { data: session } = useSession();
 
   const [data, setData] = useState<InquiryDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,6 +62,7 @@ export default function OperatorLeadDetailPage() {
   const [showConvertModal, setShowConvertModal] = useState(false);
   
   const canConvert = useHasPermission(PERMISSIONS.INQUIRIES_CONVERT);
+  const isFamily = session?.user?.role === 'FAMILY';
 
   const fetchInquiry = async () => {
     try {
@@ -158,15 +161,18 @@ export default function OperatorLeadDetailPage() {
     <div className="p-4 sm:p-6 space-y-6">
         <div className="flex items-center justify-between">
           <Breadcrumbs items={[
-            { label: 'Operator', href: '/operator' },
-            { label: 'Inquiries', href: '/operator/inquiries' },
+            { label: isFamily ? 'Dashboard' : 'Operator', href: isFamily ? '/dashboard' : '/operator' },
+            { label: isFamily ? 'My Inquiries' : 'Inquiries', href: '/operator/inquiries' },
             { label: `#${id.slice(0, 8)}` }
           ]} />
-          <InquiryQuickActionsMenu 
-            inquiryId={id} 
-            inquiryData={data}
-            onUpdate={fetchInquiry}
-          />
+          {/* Hide quick actions menu for families */}
+          {!isFamily && (
+            <InquiryQuickActionsMenu 
+              inquiryId={id} 
+              inquiryData={data}
+              onUpdate={fetchInquiry}
+            />
+          )}
         </div>
 
         {/* Quick Stats Cards */}
@@ -264,21 +270,23 @@ export default function OperatorLeadDetailPage() {
               <pre className="whitespace-pre-wrap text-sm text-neutral-800">{data.message || '—'}</pre>
             </div>
 
-            {/* Internal notes */}
-            <div className="rounded-lg border border-neutral-200 bg-white p-4">
-              <div className="mb-2 flex items-center justify-between">
-                <div className="text-sm font-medium text-neutral-800">Internal Notes</div>
-                <button onClick={saveNotes} disabled={savingNotes} className="rounded-md bg-primary-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-600 disabled:bg-neutral-300">
-                  {savingNotes ? 'Saving…' : 'Save Notes'}
-                </button>
+            {/* Internal notes - Hide for families */}
+            {!isFamily && (
+              <div className="rounded-lg border border-neutral-200 bg-white p-4">
+                <div className="mb-2 flex items-center justify-between">
+                  <div className="text-sm font-medium text-neutral-800">Internal Notes</div>
+                  <button onClick={saveNotes} disabled={savingNotes} className="rounded-md bg-primary-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-600 disabled:bg-neutral-300">
+                    {savingNotes ? 'Saving…' : 'Save Notes'}
+                  </button>
+                </div>
+                <textarea
+                  className="h-40 w-full rounded-md border border-neutral-300 p-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Add private notes for your team…"
+                />
               </div>
-              <textarea
-                className="h-40 w-full rounded-md border border-neutral-300 p-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Add private notes for your team…"
-              />
-            </div>
+            )}
 
             {/* Documents Section */}
             <div className="rounded-lg border border-neutral-200 bg-white p-4">
@@ -291,20 +299,25 @@ export default function OperatorLeadDetailPage() {
             <div className="rounded-lg border border-neutral-200 bg-white p-4">
               <div className="mb-3 text-sm font-medium text-neutral-800">Lead Status</div>
               <InquiryStatusBadge status={data.status} size="md" showDescription />
-              <select
-                className="w-full form-select mt-3"
-                value={data.status}
-                onChange={(e) => updateStatus(e.target.value as InquiryStatus)}
-                disabled={updatingStatus || !!data.convertedToResidentId}
-              >
-                {statuses.map((s) => (
-                  <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
-                ))}
-              </select>
-              {data.convertedToResidentId && (
-                <p className="mt-2 text-xs text-gray-500">
-                  Status cannot be changed after conversion
-                </p>
+              {/* Hide status dropdown for families */}
+              {!isFamily && (
+                <>
+                  <select
+                    className="w-full form-select mt-3"
+                    value={data.status}
+                    onChange={(e) => updateStatus(e.target.value as InquiryStatus)}
+                    disabled={updatingStatus || !!data.convertedToResidentId}
+                  >
+                    {statuses.map((s) => (
+                      <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
+                    ))}
+                  </select>
+                  {data.convertedToResidentId && (
+                    <p className="mt-2 text-xs text-gray-500">
+                      Status cannot be changed after conversion
+                    </p>
+                  )}
+                </>
               )}
             </div>
 
@@ -323,18 +336,19 @@ export default function OperatorLeadDetailPage() {
                     Converted: {new Date(data.conversionDate).toLocaleDateString()}
                   </p>
                 )}
-                {data.convertedBy && (
+                {/* Hide conversion details for families */}
+                {!isFamily && data.convertedBy && (
                   <p className="text-xs text-green-700 mb-1">
                     By: {data.convertedBy.firstName} {data.convertedBy.lastName}
                   </p>
                 )}
-                {data.conversionNotes && (
+                {!isFamily && data.conversionNotes && (
                   <p className="text-xs text-green-700 italic mt-2">
                     "{data.conversionNotes}"
                   </p>
                 )}
               </div>
-            ) : canConvert && ['QUALIFIED', 'CONVERTING', 'TOUR_COMPLETED', 'PLACEMENT_OFFERED'].includes(data.status) ? (
+            ) : !isFamily && canConvert && ['QUALIFIED', 'CONVERTING', 'TOUR_COMPLETED', 'PLACEMENT_OFFERED'].includes(data.status) ? (
               <div className="rounded-lg border border-neutral-200 bg-white p-4">
                 <button
                   onClick={() => setShowConvertModal(true)}

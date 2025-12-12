@@ -66,6 +66,7 @@ interface InquiryFiltersProps {
   onFiltersChange: (filters: InquiryFiltersState) => void;
   homes?: Array<{ id: string; name: string }>;
   staff?: Array<{ id: string; name: string }>;
+  isFamily?: boolean;
 }
 
 // Quick filter presets
@@ -107,6 +108,7 @@ export default function InquiryFilters({
   onFiltersChange,
   homes = [],
   staff = [],
+  isFamily = false,
 }: InquiryFiltersProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -226,23 +228,25 @@ export default function InquiryFilters({
 
       {isExpanded && (
         <div className="p-4 space-y-4">
-          {/* Quick Presets */}
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-2">
-              Quick Filters
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {filterPresets.map((preset) => (
-                <button
-                  key={preset.id}
-                  onClick={() => applyPreset(preset)}
-                  className="px-3 py-1.5 text-sm border border-neutral-300 rounded-md hover:bg-neutral-50 transition-colors"
-                >
-                  {preset.label}
-                </button>
-              ))}
+          {/* Quick Presets - Hide for families */}
+          {!isFamily && (
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-2">
+                Quick Filters
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {filterPresets.map((preset) => (
+                  <button
+                    key={preset.id}
+                    onClick={() => applyPreset(preset)}
+                    className="px-3 py-1.5 text-sm border border-neutral-300 rounded-md hover:bg-neutral-50 transition-colors"
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Basic Filters */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -389,8 +393,8 @@ export default function InquiryFilters({
                   </select>
                 </div>
 
-                {/* Assigned To */}
-                {staff && staff.length > 0 && (
+                {/* Assigned To - Hide for families */}
+                {!isFamily && staff && staff.length > 0 && (
                   <div>
                     <label className="block text-sm font-medium text-neutral-700 mb-2">
                       Assigned To

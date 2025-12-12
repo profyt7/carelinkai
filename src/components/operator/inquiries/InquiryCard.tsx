@@ -69,9 +69,10 @@ interface InquiryCardProps {
   inquiry: InquiryCardData;
   onEdit?: (inquiryId: string) => void;
   onContact?: (inquiryId: string) => void;
+  isFamily?: boolean;
 }
 
-export default function InquiryCard({ inquiry, onEdit, onContact }: InquiryCardProps) {
+export default function InquiryCard({ inquiry, onEdit, onContact, isFamily = false }: InquiryCardProps) {
   const age = calculateInquiryAge(inquiry.createdAt);
   const daysInStage = calculateDaysInStage({ updatedAt: inquiry.updatedAt });
   const nextAction = getNextActionText(inquiry);
@@ -209,7 +210,8 @@ export default function InquiryCard({ inquiry, onEdit, onContact }: InquiryCardP
             <FiEye className="w-4 h-4" />
             View
           </Link>
-          {onEdit && (
+          {/* Hide Edit button for families */}
+          {!isFamily && onEdit && (
             <button
               onClick={() => onEdit(inquiry.id)}
               className="flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-neutral-700 bg-neutral-100 rounded-md hover:bg-neutral-200 transition-colors"
@@ -218,7 +220,8 @@ export default function InquiryCard({ inquiry, onEdit, onContact }: InquiryCardP
               Edit
             </button>
           )}
-          {phone && onContact && (
+          {/* Hide Contact button for families */}
+          {!isFamily && phone && onContact && (
             <button
               onClick={() => onContact(inquiry.id)}
               className="flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-primary-700 bg-primary-50 rounded-md hover:bg-primary-100 transition-colors"
@@ -229,8 +232,8 @@ export default function InquiryCard({ inquiry, onEdit, onContact }: InquiryCardP
           )}
         </div>
 
-        {/* Assigned Staff (if available) */}
-        {inquiry.assignedStaff && (
+        {/* Assigned Staff (if available) - Hide for families */}
+        {!isFamily && inquiry.assignedStaff && (
           <div className="mt-3 pt-3 border-t border-neutral-200">
             <div className="flex items-center gap-2 text-xs text-neutral-500">
               <div className="w-6 h-6 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-medium">

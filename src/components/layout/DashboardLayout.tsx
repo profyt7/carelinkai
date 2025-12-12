@@ -67,7 +67,8 @@ const navItems: NavItem[] = [
   // Marketplace (feature-flagged)
   { name: "Marketplace", icon: <FiUsers size={20} />, href: "/marketplace", showInMobileBar: true },
   { name: "Operator", icon: <FiHome size={20} />, href: "/operator", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
-  { name: "My Inquiries", icon: <FiFileText size={20} />, href: "/dashboard/inquiries", showInMobileBar: false, roleRestriction: ["FAMILY"] },
+  // Inquiries - Shared page for both FAMILY and OPERATOR/ADMIN roles
+  { name: "My Inquiries", icon: <FiFileText size={20} />, href: "/operator/inquiries", showInMobileBar: false, roleRestriction: ["FAMILY"] },
   { name: "Home Inquiries", icon: <FiFileText size={20} />, href: "/operator/inquiries", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
   { name: "Leads", icon: <FiUsers size={20} />, href: "/operator/leads", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
   { name: "Residents", icon: <FiUsers size={20} />, href: "/operator/residents", showInMobileBar: true, roleRestriction: ["OPERATOR", "ADMIN", "CAREGIVER", "STAFF"] },
