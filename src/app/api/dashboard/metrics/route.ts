@@ -129,7 +129,7 @@ async function getOperatorMetrics(user: any) {
     prisma.assessmentResult.count({
       where: {
         resident: residentFilter,
-        assessmentDate: {
+        conductedAt: {
           lte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000), // Over 90 days old
         },
       },

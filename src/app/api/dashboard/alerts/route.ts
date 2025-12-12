@@ -89,7 +89,7 @@ async function getOperatorAlerts(user: any) {
   const oldAssessments = await prisma.assessmentResult.findMany({
     where: {
       resident: residentFilter,
-      assessmentDate: {
+      conductedAt: {
         lte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000), // Over 90 days old
       },
     },
@@ -97,7 +97,7 @@ async function getOperatorAlerts(user: any) {
       resident: { select: { firstName: true, lastName: true } },
     },
     take: 5,
-    orderBy: { assessmentDate: "asc" },
+    orderBy: { conductedAt: "asc" },
   });
 
   oldAssessments.forEach(assessment => {
@@ -105,10 +105,10 @@ async function getOperatorAlerts(user: any) {
       id: `assessment-${assessment.id}`,
       type: "warning",
       title: "Assessment Due",
-      description: `${assessment.resident?.firstName} ${assessment.resident?.lastName} - Last assessed ${new Date(assessment.assessmentDate).toLocaleDateString()}`,
+      description: `${assessment.resident?.firstName} ${assessment.resident?.lastName} - Last assessed ${new Date(assessment.conductedAt).toLocaleDateString()}`,
       actionLabel: "View Resident",
       actionUrl: `/operator/residents/${assessment.residentId}`,
-      timestamp: assessment.assessmentDate,
+      timestamp: assessment.conductedAt,
     });
   });
 

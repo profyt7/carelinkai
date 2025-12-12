@@ -110,7 +110,7 @@ async function getOperatorActivity(user: any) {
       resident: { select: { firstName: true, lastName: true } },
     },
     take: 5,
-    orderBy: { assessmentDate: "desc" },
+    orderBy: { conductedAt: "desc" },
   });
 
   recentAssessments.forEach(assessment => {
@@ -118,8 +118,8 @@ async function getOperatorActivity(user: any) {
       id: `assessment-${assessment.id}`,
       type: "assessment",
       title: "Assessment completed",
-      description: `${assessment.resident?.firstName} ${assessment.resident?.lastName} - Mobility: ${assessment.mobilityScore || "N/A"}`,
-      timestamp: assessment.assessmentDate,
+      description: `${assessment.resident?.firstName} ${assessment.resident?.lastName} - Score: ${assessment.score || "N/A"}`,
+      timestamp: assessment.conductedAt,
       icon: "CheckCircle",
       url: `/operator/residents/${assessment.residentId}`,
     });
