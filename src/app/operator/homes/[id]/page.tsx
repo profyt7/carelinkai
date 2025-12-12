@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { parseS3Url, createSignedGetUrl } from '@/lib/storage';
 import React from 'react';
 import HomePhotosManager from '@/components/operator/HomePhotosManager';
+import HomeAlerts from '@/components/operator/HomeAlerts';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -49,6 +50,9 @@ export default async function OperatorHomeManagePage({ params, searchParams }: {
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold">{home.name}</h2>
           <div className="flex gap-2">
+            <Link href={`/operator/homes/${home.id}/analytics${operatorOverrideId ? `?operatorId=${operatorOverrideId}` : ''}`} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+              Analytics
+            </Link>
             <Link href={`/operator/homes/${home.id}/edit${operatorOverrideId ? `?operatorId=${operatorOverrideId}` : ''}`} className="btn btn-primary">Edit</Link>
           </div>
         </div>
@@ -95,6 +99,9 @@ export default async function OperatorHomeManagePage({ params, searchParams }: {
             </form>
           </div>
         </div>
+
+        {/* Alerts Component */}
+        <HomeAlerts homeId={home.id} maxAlerts={5} />
       </div>
   );
 }

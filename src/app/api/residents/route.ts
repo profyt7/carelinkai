@@ -11,6 +11,7 @@ import {
   handleAuthError 
 } from '@/lib/auth-utils';
 import { PERMISSIONS } from '@/lib/permissions';
+import { updateHomeCapacity } from '@/lib/utils/capacity-tracker';
 
 // GET /api/residents
 // Lists residents for operators (scoped to their homes) or all for admins.
@@ -401,6 +402,16 @@ export async function POST(req: NextRequest) {
       'Created resident',
       { homeId: homeId || null, familyId }
     );
+
+    // Update home capacity if resident is assigned to a home
+    if (homeId && status === 'ACTIVE') {
+      try {
+        await updateHomeCapacity(homeId);
+      } catch (err) {
+        console.error('Failed to update home capacity:', err);
+        // Don't fail the request if capacity update fails
+      }
+    }
 
     return NextResponse.json({ id: created.id }, { status: 201 });
   } catch (error) {

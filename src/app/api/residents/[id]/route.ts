@@ -1,6 +1,7 @@
 ﻿import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient, UserRole, ResidentStatus } from '@prisma/client';
 import { requireOperatorOrAdmin } from '@/lib/rbac';
+import { updateHomeCapacity } from '@/lib/utils/capacity-tracker';
 
 const prisma = new PrismaClient();
 
@@ -53,6 +54,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const access = await ensureAccess(session!.user!.email!, params.id);
     if (access.status !== 200) return NextResponse.json({ error: 'Forbidden' }, { status: access.status });
 
+    // Get current resident data before update
+    const currentResident = await prisma.resident.findUnique({
+      where: { id: params.id },
+      select: { homeId: true, status: true }
+    });
+
     const body = await req.json().catch(() => ({}));
     const data: any = {};
     for (const k of ['firstName', 'lastName', 'gender', 'homeId'] as const) if (body[k] !== undefined) data[k] = body[k];
@@ -74,6 +81,30 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
 
     const updated = await prisma.resident.update({ where: { id: params.id }, data, select: { id: true } });
+
+    // Update home capacity if homeId or status changed
+    const homesNeedingUpdate = new Set<string>();
+    
+    // If homeId changed, update both old and new homes
+    if (body.homeId !== undefined && currentResident?.homeId !== body.homeId) {
+      if (currentResident?.homeId) homesNeedingUpdate.add(currentResident.homeId);
+      if (body.homeId) homesNeedingUpdate.add(body.homeId);
+    }
+    // If status changed (especially to/from ACTIVE), update current home
+    else if (body.status !== undefined && currentResident?.status !== body.status && currentResident?.homeId) {
+      homesNeedingUpdate.add(currentResident.homeId);
+    }
+
+    // Update capacity for affected homes
+    for (const homeId of homesNeedingUpdate) {
+      try {
+        await updateHomeCapacity(homeId);
+      } catch (err) {
+        console.error(`Failed to update home capacity for ${homeId}:`, err);
+        // Don't fail the request if capacity update fails
+      }
+    }
+
     return NextResponse.json({ success: true, id: updated.id });
   } catch (e) {
     console.error('Resident update error', e);
