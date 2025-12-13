@@ -23,7 +23,7 @@ const querySchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     // Get session and verify authentication
-    const { session, error } = await requireAnyRole(["FAMILY"] as any);
+    const { session, error } = await requireAnyRole([]);
       if (error) return error;
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

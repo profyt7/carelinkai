@@ -37,7 +37,7 @@ export async function GET(
     }
 
     // Get session and verify authentication
-    const { session, error } = await requireAnyRole(["FAMILY"] as any);
+    const { session, error } = await requireAnyRole([]);
       if (error) return error;
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -130,7 +130,7 @@ export async function POST(
     }
 
     // Get session and verify authentication
-    const { session, error } = await requireAnyRole(["FAMILY"] as any);
+    const { session, error } = await requireAnyRole([]);
       if (error) return error;
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

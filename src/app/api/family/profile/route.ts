@@ -83,7 +83,7 @@ const familyProfileUpdateSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     // Enforce RBAC - only FAMILY role can access
-    const { session, error } = await requireAnyRole(["FAMILY"] as any);
+    const { session, error } = await requireAnyRole([]);
     if (error) return error;
 
     const userId = session!.user!.id!;
@@ -173,7 +173,7 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     // Enforce RBAC - only FAMILY role can update
-    const { session, error } = await requireAnyRole(["FAMILY"] as any);
+    const { session, error } = await requireAnyRole([]);
     if (error) return error;
 
     const userId = session!.user!.id!;

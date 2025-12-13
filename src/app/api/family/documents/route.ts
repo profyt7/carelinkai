@@ -169,7 +169,7 @@ export async function GET(request: NextRequest) {
         }
       }
       // Get session and verify authentication
-      const { session, error } = await requireAnyRole(["FAMILY"] as any);
+      const { session, error } = await requireAnyRole([]);
       if (error) return error;
       if (!session?.user) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -408,7 +408,7 @@ export async function POST(request: NextRequest) {
       }
     }
     // Get session and verify authentication
-    const { session, error } = await requireAnyRole(["FAMILY"] as any);
+    const { session, error } = await requireAnyRole([]);
       if (error) return error;
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -607,7 +607,7 @@ export async function PUT(request: NextRequest) {
       }
     }
     // Get session and verify authentication
-    const { session, error } = await requireAnyRole(["FAMILY"] as any);
+    const { session, error } = await requireAnyRole([]);
       if (error) return error;
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -767,7 +767,7 @@ export async function DELETE(request: NextRequest) {
       }
     }
     // Get session and verify authentication
-    const { session, error } = await requireAnyRole(["FAMILY"] as any);
+    const { session, error } = await requireAnyRole([]);
       if (error) return error;
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
