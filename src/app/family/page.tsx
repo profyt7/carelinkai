@@ -12,8 +12,10 @@ import NotesTab from '@/components/family/NotesTab';
 import MessagesTab from '@/components/family/MessagesTab';
 import BillingTab from '@/components/family/BillingTab';
 import EmergencyTab from '@/components/family/EmergencyTab';
+import GalleryTab from '@/components/family/GalleryTab';
+import MembersTab from '@/components/family/MembersTab';
 
-type TabKey = 'documents' | 'timeline' | 'messages' | 'billing' | 'emergency' | 'notes';
+type TabKey = 'documents' | 'timeline' | 'messages' | 'billing' | 'emergency' | 'notes' | 'gallery' | 'members';
 
 export default function FamilyPage() {
   /* ------------------------------------------------------------------
@@ -273,6 +275,14 @@ export default function FamilyPage() {
 
         {activeTab === 'emergency' && (
           <EmergencyTab familyId={familyId} isGuest={isGuest} />
+        )}
+
+        {activeTab === 'gallery' && (
+          <GalleryTab familyId={familyId} showMock={showMock} isGuest={isGuest} />
+        )}
+
+        {activeTab === 'members' && (
+          <MembersTab familyId={familyId} showMock={showMock} isGuest={isGuest} currentUserRole={role} />
         )}
 
         {/* Upload modal */}

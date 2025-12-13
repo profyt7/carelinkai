@@ -1,9 +1,9 @@
 'use client';
 
 import React from 'react';
-import { FiFileText, FiActivity, FiMessageSquare, FiDollarSign, FiAlertCircle, FiEdit3 } from 'react-icons/fi';
+import { FiFileText, FiActivity, FiMessageSquare, FiDollarSign, FiAlertCircle, FiEdit3, FiCamera, FiUsers } from 'react-icons/fi';
 
-type TabKey = 'documents' | 'timeline' | 'messages' | 'billing' | 'emergency' | 'notes';
+type TabKey = 'documents' | 'timeline' | 'messages' | 'billing' | 'emergency' | 'notes' | 'gallery' | 'members';
 
 interface TabNavigationProps {
   activeTab: TabKey;
@@ -15,8 +15,10 @@ export default function TabNavigation({ activeTab, onTabChange, unreadCount = 0 
   const tabs = [
     { id: 'documents' as TabKey, label: 'Documents', icon: FiFileText, count: 0 },
     { id: 'timeline' as TabKey, label: 'Activity', icon: FiActivity, count: 0 },
+    { id: 'gallery' as TabKey, label: 'Gallery', icon: FiCamera, count: 0 },
     { id: 'notes' as TabKey, label: 'Notes', icon: FiEdit3, count: 0 },
     { id: 'messages' as TabKey, label: 'Messages', icon: FiMessageSquare, count: unreadCount },
+    { id: 'members' as TabKey, label: 'Members', icon: FiUsers, count: 0 },
     { id: 'billing' as TabKey, label: 'Billing', icon: FiDollarSign, count: 0 },
     { id: 'emergency' as TabKey, label: 'Emergency', icon: FiAlertCircle, count: 0 },
   ];
