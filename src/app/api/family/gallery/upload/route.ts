@@ -14,12 +14,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Log Cloudinary configuration status for debugging
+    console.log('[Gallery Upload] Checking Cloudinary configuration:', {
+      CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME ? '***SET***' : 'NOT SET',
+      CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY ? '***SET***' : 'NOT SET',
+      CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET ? '***SET***' : 'NOT SET',
+      isConfigured: isCloudinaryConfigured(),
+    });
+
     // Check if Cloudinary is configured
     if (!isCloudinaryConfigured()) {
+      console.error('[Gallery Upload] Cloudinary is not configured. Environment variables missing:', {
+        CLOUDINARY_CLOUD_NAME: !!process.env.CLOUDINARY_CLOUD_NAME,
+        CLOUDINARY_API_KEY: !!process.env.CLOUDINARY_API_KEY,
+        CLOUDINARY_API_SECRET: !!process.env.CLOUDINARY_API_SECRET,
+      });
+      
       return NextResponse.json(
         { 
           error: 'File upload is not configured. Please contact your administrator.',
-          code: 'CLOUDINARY_NOT_CONFIGURED'
+          code: 'CLOUDINARY_NOT_CONFIGURED',
+          details: {
+            cloudName: !!process.env.CLOUDINARY_CLOUD_NAME,
+            apiKey: !!process.env.CLOUDINARY_API_KEY,
+            apiSecret: !!process.env.CLOUDINARY_API_SECRET,
+          }
         },
         { status: 503 }
       );

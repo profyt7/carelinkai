@@ -500,11 +500,39 @@ export async function POST(request: NextRequest) {
     const useS3 = hasS3Credentials();
     const useCloudinary = isCloudinaryConfigured();
     
+    // Log configuration status for debugging
+    console.log('[Documents Upload] Checking upload service configuration:', {
+      useS3,
+      useCloudinary,
+      CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME ? '***SET***' : 'NOT SET',
+      CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY ? '***SET***' : 'NOT SET',
+      CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET ? '***SET***' : 'NOT SET',
+    });
+    
     if (!useS3 && !useCloudinary) {
+      console.error('[Documents Upload] No upload service configured. Details:', {
+        S3: useS3,
+        Cloudinary: {
+          configured: useCloudinary,
+          cloudName: !!process.env.CLOUDINARY_CLOUD_NAME,
+          apiKey: !!process.env.CLOUDINARY_API_KEY,
+          apiSecret: !!process.env.CLOUDINARY_API_SECRET,
+        }
+      });
+      
       return NextResponse.json(
         { 
           error: "File upload service not configured. Please contact your administrator.",
-          code: "UPLOAD_SERVICE_NOT_CONFIGURED"
+          code: "UPLOAD_SERVICE_NOT_CONFIGURED",
+          details: {
+            s3Available: useS3,
+            cloudinaryAvailable: useCloudinary,
+            cloudinaryEnvVars: {
+              cloudName: !!process.env.CLOUDINARY_CLOUD_NAME,
+              apiKey: !!process.env.CLOUDINARY_API_KEY,
+              apiSecret: !!process.env.CLOUDINARY_API_SECRET,
+            }
+          }
         },
         { status: 503 }
       );
