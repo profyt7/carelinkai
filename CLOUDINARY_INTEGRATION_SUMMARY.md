@@ -126,10 +126,10 @@ The connection test showed an API secret mismatch. Please verify:
 # In Cloudinary Dashboard (https://console.cloudinary.com/)
 # Go to: Dashboard → Account → API Keys
 
-# Check exact values:
-- Cloud Name: Is it dygtsnu8z or dygtsnud8?
-- API Key: 328392542172231
-- API Secret: KhpohAEFOsjVKuXRENaBhCoIYFQ
+# Check exact values match your Cloudinary account:
+- Cloud Name: your_cloud_name_here
+- API Key: your_api_key_here
+- API Secret: your_api_secret_here
 ```
 
 If credentials are different:
@@ -144,13 +144,13 @@ Follow the guide in `RENDER_ENV_CLOUDINARY.md`:
 1. Go to https://dashboard.render.com/
 2. Select CareLinkAI service
 3. Navigate to Environment tab
-4. Add these variables:
+4. Add these variables (replace with your actual Cloudinary credentials):
    ```
-   CLOUDINARY_CLOUD_NAME=dygtsnu8z
-   CLOUDINARY_API_KEY=328392542172231
-   CLOUDINARY_API_SECRET=KhpohAEFOsjVKuXRENaBhCoIYFQ
-   NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=dygtsnu8z
-   CLOUDINARY_URL=cloudinary://328392542172231:KhpohAEFOsjVKuXRENaBhCoIYFQ@dygtsnu8z
+   CLOUDINARY_CLOUD_NAME=your_cloud_name_here
+   CLOUDINARY_API_KEY=your_api_key_here
+   CLOUDINARY_API_SECRET=your_api_secret_here
+   NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloud_name_here
+   CLOUDINARY_URL=cloudinary://your_api_key:your_api_secret@your_cloud_name
    ```
 5. Save Changes → Auto-deploy triggered
 

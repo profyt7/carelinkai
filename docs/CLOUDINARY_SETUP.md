@@ -329,14 +329,14 @@ This will verify:
 1. Go to [Render Dashboard](https://dashboard.render.com/)
 2. Select your CareLinkAI service
 3. Navigate to the **Environment** tab
-4. Add the following environment variables:
+4. Add the following environment variables (replace with your actual credentials):
 
 ```
-CLOUDINARY_CLOUD_NAME=dygtsnu8z
-CLOUDINARY_API_KEY=328392542172231
-CLOUDINARY_API_SECRET=KhpohAEFOsjVKuXRENaBhCoIYFQ
-NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=dygtsnu8z
-CLOUDINARY_URL=cloudinary://328392542172231:KhpohAEFOsjVKuXRENaBhCoIYFQ@dygtsnu8z
+CLOUDINARY_CLOUD_NAME=your_cloud_name_here
+CLOUDINARY_API_KEY=your_api_key_here
+CLOUDINARY_API_SECRET=your_api_secret_here
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloud_name_here
+CLOUDINARY_URL=cloudinary://your_api_key:your_api_secret@your_cloud_name
 ```
 
 5. Click **Save Changes**

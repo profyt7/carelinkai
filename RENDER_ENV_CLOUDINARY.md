@@ -30,27 +30,27 @@ Add the following environment variables one by one:
 
 #### Variable 1: CLOUDINARY_CLOUD_NAME
 - **Key**: `CLOUDINARY_CLOUD_NAME`
-- **Value**: `dygtsnu8z`
+- **Value**: `your_cloud_name_here` (get from Cloudinary dashboard)
 - **Type**: Secret (recommended)
 
 #### Variable 2: CLOUDINARY_API_KEY
 - **Key**: `CLOUDINARY_API_KEY`
-- **Value**: `328392542172231`
+- **Value**: `your_api_key_here` (get from Cloudinary dashboard)
 - **Type**: Secret (recommended)
 
 #### Variable 3: CLOUDINARY_API_SECRET
 - **Key**: `CLOUDINARY_API_SECRET`
-- **Value**: `KhpohAEFOsjVKuXRENaBhCoIYFQ`
+- **Value**: `your_api_secret_here` (get from Cloudinary dashboard)
 - **Type**: Secret (**REQUIRED** - this is sensitive)
 
 #### Variable 4: NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
 - **Key**: `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`
-- **Value**: `dygtsnu8z`
+- **Value**: `your_cloud_name_here` (same as Variable 1)
 - **Type**: Plain (this is public and safe to expose)
 
 #### Variable 5: CLOUDINARY_URL (Optional)
 - **Key**: `CLOUDINARY_URL`
-- **Value**: `cloudinary://328392542172231:KhpohAEFOsjVKuXRENaBhCoIYFQ@dygtsnu8z`
+- **Value**: `cloudinary://your_api_key:your_api_secret@your_cloud_name`
 - **Type**: Secret (recommended)
 
 ### Step 4: Save Changes
@@ -215,14 +215,14 @@ If you encounter issues:
 Copy-paste ready format for quick setup:
 
 ```
-CLOUDINARY_CLOUD_NAME=dygtsnu8z
-CLOUDINARY_API_KEY=328392542172231
-CLOUDINARY_API_SECRET=KhpohAEFOsjVKuXRENaBhCoIYFQ
-NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=dygtsnu8z
-CLOUDINARY_URL=cloudinary://328392542172231:KhpohAEFOsjVKuXRENaBhCoIYFQ@dygtsnu8z
+CLOUDINARY_CLOUD_NAME=your_cloud_name_here
+CLOUDINARY_API_KEY=your_api_key_here
+CLOUDINARY_API_SECRET=your_api_secret_here
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloud_name_here
+CLOUDINARY_URL=cloudinary://your_api_key:your_api_secret@your_cloud_name
 ```
 
-**Note**: Replace these values with your actual Cloudinary credentials if different.
+**Note**: Replace these placeholders with your actual Cloudinary credentials from your Cloudinary dashboard.
 
 ## Verification Checklist
 
