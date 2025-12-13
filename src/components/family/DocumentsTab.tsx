@@ -1,0 +1,267 @@
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import { FiFileText, FiDownload, FiSearch, FiFilter } from 'react-icons/fi';
+import LoadingState from './LoadingState';
+import EmptyState from './EmptyState';
+
+type Doc = {
+  id: string;
+  title: string;
+  type: string;
+  fileSize: number;
+  createdAt: string;
+  tags: string[];
+  uploader: {
+    firstName?: string | null;
+    lastName?: string | null;
+  };
+};
+
+interface DocumentsTabProps {
+  familyId: string | null;
+  showMock?: boolean;
+  onUploadClick?: () => void;
+}
+
+export default function DocumentsTab({ familyId, showMock = false, onUploadClick }: DocumentsTabProps) {
+  const [docs, setDocs] = useState<Doc[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [docType, setDocType] = useState<string>('');
+
+  const formatBytes = (bytes: number) => {
+    if (!bytes) return '—';
+    const mb = bytes / (1024 * 1024);
+    if (mb >= 1) return `${mb.toFixed(1)} MB`;
+    return `${(bytes / 1024).toFixed(0)} KB`;
+  };
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const fetchDocs = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        if (showMock) {
+          const now = Date.now();
+          const mockDocs: Doc[] = [
+            { id: 'doc-1', title: 'Care Plan', type: 'CARE_PLAN', fileSize: 250_000, createdAt: new Date(now - 86400000).toISOString(), tags: ['plan','medical'], uploader: { firstName: 'Ava', lastName: 'Johnson' } },
+            { id: 'doc-2', title: 'Medical Records Summary', type: 'MEDICAL_RECORD', fileSize: 512_000, createdAt: new Date(now - 2*86400000).toISOString(), tags: ['records'], uploader: { firstName: 'Noah', lastName: 'Williams' } },
+            { id: 'doc-3', title: 'Insurance Policy', type: 'INSURANCE_DOCUMENT', fileSize: 780_000, createdAt: new Date(now - 3*86400000).toISOString(), tags: ['insurance'], uploader: { firstName: 'Sophia', lastName: 'Martinez' } },
+            { id: 'doc-4', title: 'Facility Photos', type: 'PHOTO', fileSize: 1_200_000, createdAt: new Date(now - 4*86400000).toISOString(), tags: ['photos'], uploader: { firstName: 'Oliver', lastName: 'Brown' } },
+          ];
+          setDocs(mockDocs);
+          setLoading(false);
+          return;
+        }
+        
+        if (!familyId) {
+          setLoading(false);
+          return;
+        }
+
+        const params = new URLSearchParams({
+          familyId,
+          limit: '12',
+          sortBy: 'createdAt',
+          sortOrder: 'desc',
+        });
+        if (search) params.set('search', search);
+        if (docType) params.append('type', docType);
+
+        const res = await fetch(`/api/family/documents?${params.toString()}`, {
+          signal: controller.signal,
+        });
+        if (!res.ok) throw new Error('Failed to load documents');
+        const json = await res.json();
+        setDocs(json.documents ?? []);
+      } catch (err: any) {
+        if (err.name === 'AbortError') return;
+        setError(err.message ?? 'Error loading documents');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDocs();
+    return () => controller.abort();
+  }, [search, docType, familyId, showMock]);
+
+  // SSE for real-time updates
+  useEffect(() => {
+    if (showMock || !familyId) return;
+    
+    const es = new EventSource(
+      `/api/sse?topics=${encodeURIComponent(`family:${familyId}`)}`
+    );
+
+    const parseData = (e: MessageEvent<any>) => {
+      try {
+        return JSON.parse(e.data);
+      } catch {
+        return null;
+      }
+    };
+
+    es.addEventListener('document:created', (e) => {
+      const data = parseData(e as MessageEvent);
+      if (data?.document) {
+        setDocs((prev) => [data.document, ...prev]);
+      }
+    });
+
+    es.addEventListener('document:updated', (e) => {
+      const data = parseData(e as MessageEvent);
+      if (data?.document) {
+        setDocs((prev) =>
+          prev.map((d) => (d.id === data.document.id ? data.document : d))
+        );
+      }
+    });
+
+    es.addEventListener('document:deleted', (e) => {
+      const data = parseData(e as MessageEvent);
+      if (data?.documentId) {
+        setDocs((prev) => prev.filter((d) => d.id !== data.documentId));
+      }
+    });
+
+    return () => {
+      es.close();
+    };
+  }, [familyId, showMock]);
+
+  if (loading) {
+    return <LoadingState type="cards" count={4} />;
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-lg border-2 border-red-200 bg-red-50 p-6 text-red-700">
+        <p className="font-medium">Error loading documents</p>
+        <p className="text-sm mt-1">{error}</p>
+      </div>
+    );
+  }
+
+  if (docs.length === 0 && !search && !docType) {
+    return (
+      <EmptyState
+        icon={FiFileText}
+        title="No documents yet"
+        description="Upload your first document to get started. You can upload care plans, medical records, insurance documents, and more."
+        actionLabel="Upload Document"
+        onAction={onUploadClick}
+      />
+    );
+  }
+
+  return (
+    <div>
+      {/* Search and Filters */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+              <FiSearch className="w-4 h-4" />
+              Search documents
+            </label>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by title or tags..."
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+              <FiFilter className="w-4 h-4" />
+              Filter by type
+            </label>
+            <select
+              value={docType}
+              onChange={(e) => setDocType(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">All Types</option>
+              <option value="CARE_PLAN">Care Plan</option>
+              <option value="MEDICAL_RECORD">Medical Record</option>
+              <option value="INSURANCE_DOCUMENT">Insurance</option>
+              <option value="PHOTO">Photo</option>
+              <option value="OTHER">Other</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Documents Grid */}
+      {docs.length === 0 ? (
+        <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+          <FiFileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+          <p className="text-gray-500">No documents found matching your filters</p>
+        </div>
+      ) : (
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {docs.map((doc) => (
+            <div
+              key={doc.id}
+              className="flex flex-col rounded-lg border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow duration-200"
+            >
+              {/* Title */}
+              <h3 className="mb-2 line-clamp-2 font-semibold text-gray-900 text-lg">
+                {doc.title}
+              </h3>
+              
+              {/* Type Badge */}
+              <span className="mb-3 inline-block w-fit rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-800">
+                {doc.type.replace(/_/g, ' ')}
+              </span>
+              
+              {/* Meta Info */}
+              <div className="mb-3 text-xs text-gray-500 flex items-center gap-2">
+                <span>{new Date(doc.createdAt).toLocaleDateString()}</span>
+                <span>•</span>
+                <span>{formatBytes(doc.fileSize)}</span>
+              </div>
+              
+              {/* Tags */}
+              <div className="mb-4 flex flex-wrap gap-1">
+                {doc.tags.slice(0, 3).map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-full bg-gray-100 px-2 py-1 text-[10px] font-medium text-gray-700"
+                  >
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+              
+              {/* Footer */}
+              <div className="mt-auto flex items-center justify-between pt-3 border-t border-gray-100">
+                <div className="flex items-center">
+                  <div className="mr-2 flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-100 to-cyan-100 text-xs font-bold text-blue-700">
+                    {`${doc.uploader.firstName?.[0] ?? ''}${doc.uploader.lastName?.[0] ?? ''}`}
+                  </div>
+                  <span className="text-xs text-gray-600">
+                    {doc.uploader.firstName} {doc.uploader.lastName}
+                  </span>
+                </div>
+                <a
+                  href={`/api/family/documents/${doc.id}/download`}
+                  className="inline-flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors duration-200"
+                >
+                  <FiDownload className="w-3 h-3" />
+                  Download
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
