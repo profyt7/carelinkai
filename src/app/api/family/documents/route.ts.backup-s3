@@ -18,8 +18,7 @@ import {
   createActivityRecord
 } from "@/lib/services/family";
 import { generateMockDocuments } from "@/lib/services/family";
-import { uploadBuffer, buildFamilyDocumentKey, toS3Url, parseS3Url, deleteObject as s3Delete, hasS3Credentials } from "@/lib/storage";
-import cloudinary, { isCloudinaryConfigured, UPLOAD_PRESETS } from "@/lib/cloudinary";
+import { uploadBuffer, buildFamilyDocumentKey, toS3Url, parseS3Url, deleteObject as s3Delete } from "@/lib/storage";
 import { createAuditLogFromRequest } from "@/lib/audit";
 import { rateLimitAsync, getClientIp, buildRateLimitHeaders } from "@/lib/rateLimit";
 
@@ -496,57 +495,13 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Check if we have S3 or Cloudinary configured
-    const useS3 = hasS3Credentials();
-    const useCloudinary = isCloudinaryConfigured();
-    
-    if (!useS3 && !useCloudinary) {
-      return NextResponse.json(
-        { 
-          error: "File upload service not configured. Please contact your administrator.",
-          code: "UPLOAD_SERVICE_NOT_CONFIGURED"
-        },
-        { status: 503 }
-      );
-    }
-    
-    let fileUrl: string;
-    let cloudinaryPublicId: string | undefined;
-    
-    // Convert file to buffer
+    // Generate secure filename & S3 key
+    const secureFilename = generateSecureFilename(file.name);
+    const key = buildFamilyDocumentKey(metadata.familyId, secureFilename);
     const fileBuffer = Buffer.from(await file.arrayBuffer());
-    
-    if (useCloudinary) {
-      // Upload to Cloudinary
-      const uploadResult = await new Promise<any>((resolve, reject) => {
-        cloudinary.uploader
-          .upload_stream(
-            {
-              ...UPLOAD_PRESETS.FAMILY_DOCUMENTS,
-              folder: `${UPLOAD_PRESETS.FAMILY_DOCUMENTS.folder}/${metadata.familyId}`,
-            },
-            (error, result) => {
-              if (error) reject(error);
-              else resolve(result);
-            }
-          )
-          .end(fileBuffer);
-      });
-      
-      fileUrl = uploadResult.secure_url;
-      cloudinaryPublicId = uploadResult.public_id;
-    } else {
-      // Fallback to S3 (legacy)
-      const secureFilename = generateSecureFilename(file.name);
-      const key = buildFamilyDocumentKey(metadata.familyId, secureFilename);
-      await uploadBuffer({ 
-        key, 
-        body: fileBuffer, 
-        contentType: file.type, 
-        metadata: { uploaderId: session.user.id, familyId: metadata.familyId } 
-      });
-      fileUrl = toS3Url(process.env["S3_BUCKET"] as string, key);
-    }
+    await uploadBuffer({ key, body: fileBuffer, contentType: file.type, metadata: { uploaderId: session.user.id, familyId: metadata.familyId } });
+    // Store S3 URL (not publicly accessible): s3://bucket/key
+    const fileUrl = toS3Url(process.env["S3_BUCKET"] as string, key);
     
     // Create document record in database
     const document = await prisma.familyDocument.create({
@@ -562,13 +517,7 @@ export async function POST(request: NextRequest) {
         type: metadata.type as FamilyDocumentType,
         version: 1,
         isEncrypted: metadata.isEncrypted,
-        tags: metadata.tags || [],
-        metadata: cloudinaryPublicId ? {
-          cloudinaryPublicId,
-          uploadService: 'cloudinary'
-        } : {
-          uploadService: 's3'
-        }
+        tags: metadata.tags || []
       },
       include: {
         uploader: {
@@ -862,40 +811,15 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "No permission to delete this document" }, { status: 403 });
     }
     
-    // Delete underlying file (support Cloudinary, S3, and legacy FS path)
-    // Try to get metadata for Cloudinary public ID
-    const doc = await prisma.familyDocument.findUnique({
-      where: { id: documentId },
-      select: { metadata: true, fileUrl: true }
-    });
-    
-    const metadata = doc?.metadata as any;
-    if (metadata?.cloudinaryPublicId) {
-      // Delete from Cloudinary
-      try {
-        await cloudinary.uploader.destroy(metadata.cloudinaryPublicId, { 
-          resource_type: 'auto',
-          invalidate: true 
-        });
-      } catch (error) {
-        console.error("Error deleting from Cloudinary:", error);
-        // Continue with database deletion even if Cloudinary deletion fails
-      }
+    // Delete underlying file (support legacy FS path and new S3 url)
+    const s3 = parseS3Url(document.fileUrl);
+    if (s3) {
+      await s3Delete({ bucket: s3.bucket, key: s3.key });
     } else {
-      // Try S3 URL parsing
-      const s3 = parseS3Url(document.fileUrl);
-      if (s3) {
-        try {
-          await s3Delete({ bucket: s3.bucket, key: s3.key });
-        } catch (error) {
-          console.error("Error deleting from S3:", error);
-        }
-      } else {
-        // Legacy public/ uploads cleanup
-        const filePath = path.join(process.cwd(), "public", document.fileUrl);
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
-        }
+      // Legacy public/ uploads cleanup
+      const filePath = path.join(process.cwd(), "public", document.fileUrl);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
       }
     }
     

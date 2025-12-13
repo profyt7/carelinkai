@@ -58,6 +58,12 @@ export const UPLOAD_PRESETS = {
     ],
   },
   
+  // Family documents (uploaded by family members)
+  FAMILY_DOCUMENTS: {
+    folder: 'carelinkai/family/documents',
+    resource_type: 'auto' as const,
+  },
+  
   // Resident documents (medical records, etc.)
   RESIDENT_DOCUMENTS: {
     folder: 'carelinkai/residents/documents',
