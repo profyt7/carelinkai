@@ -29,9 +29,17 @@ export default function FamilyPage() {
   const [familyId, setFamilyId] = useState<string | null>(null);
   const isGuest = role === 'GUEST';
 
-  // Runtime mock toggle
+  // Runtime mock toggle - DISABLED IN PRODUCTION
   const [showMock, setShowMock] = useState(false);
   useEffect(() => {
+    // Never enable mock mode in production
+    const isProduction = process.env.NODE_ENV === 'production' || 
+                         window.location.hostname.includes('onrender.com');
+    if (isProduction) {
+      setShowMock(false);
+      return;
+    }
+    
     let cancelled = false;
     (async () => {
       try {
@@ -72,18 +80,23 @@ export default function FamilyPage() {
     const fetchMembership = async () => {
       try {
         if (showMock) {
+          console.log('[Family Portal] Using mock mode');
           setRole('ADMIN');
           setFamilyId('demo-family');
           return;
         }
+        console.log('[Family Portal] Fetching real membership data...');
         const res = await fetch(`/api/family/membership`);
         if (res.ok) {
           const data = await res.json();
+          console.log('[Family Portal] Membership fetched:', { role: data.role, familyId: data.familyId });
           setRole(data.role);
           setFamilyId(data.familyId);
+        } else {
+          console.error('[Family Portal] Membership fetch failed:', res.status, res.statusText);
         }
       } catch (err) {
-        console.error('Failed to fetch membership:', err);
+        console.error('[Family Portal] Failed to fetch membership:', err);
       }
     };
     fetchMembership();
