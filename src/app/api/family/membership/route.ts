@@ -78,21 +78,13 @@ export async function GET(request: NextRequest) {
         console.log(`[MEMBERSHIP] Creating new Family record for user ${userId}...`);
         
         try {
-          // Get user details for family name
-          const user = await prisma.user.findUnique({
-            where: { id: userId },
-            select: { firstName: true, lastName: true, email: true }
-          });
-          
-          const familyName = user 
-            ? `${user.firstName} ${user.lastName}'s Family`.trim() 
-            : `Family ${userId.substring(0, 8)}`;
-
+          // Create Family record with only required field (userId)
+          // Note: Family model does NOT have a 'name' field
           family = await prisma.family.create({
             data: {
               userId,
-              name: familyName,
-              // Add other required fields with defaults
+              // Only userId is required for Family creation
+              // Optional fields like emergencyContact, primaryContactName, etc. can be added later
             },
             select: { id: true, userId: true },
           });
