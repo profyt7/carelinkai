@@ -261,13 +261,12 @@ export default function FamilyPage() {
         {activeTab === 'documents' && (
           <DocumentsTab
             familyId={familyId}
-            showMock={showMock}
             onUploadClick={!isGuest ? () => setIsUploadOpen(true) : undefined}
           />
         )}
 
         {activeTab === 'timeline' && (
-          <TimelineTab familyId={familyId} showMock={showMock} />
+          <TimelineTab familyId={familyId} />
         )}
 
         {activeTab === 'notes' && (
@@ -283,7 +282,7 @@ export default function FamilyPage() {
         {activeTab === 'messages' && <MessagesTab familyId={familyId} />}
 
         {activeTab === 'billing' && (
-          <BillingTab familyId={familyId} showMock={showMock} isGuest={isGuest} />
+          <BillingTab familyId={familyId} isGuest={isGuest} />
         )}
 
         {activeTab === 'emergency' && (
@@ -291,11 +290,11 @@ export default function FamilyPage() {
         )}
 
         {activeTab === 'gallery' && (
-          <GalleryTab familyId={familyId} showMock={showMock} isGuest={isGuest} />
+          <GalleryTab familyId={familyId} isGuest={isGuest} />
         )}
 
         {activeTab === 'members' && (
-          <MembersTab familyId={familyId} showMock={showMock} isGuest={isGuest} currentUserRole={role} />
+          <MembersTab familyId={familyId} isGuest={isGuest} currentUserRole={role} />
         )}
 
         {/* Upload modal */}
