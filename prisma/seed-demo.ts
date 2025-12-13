@@ -48,6 +48,31 @@ async function main() {
   });
   console.log('  ✓ Family account created: demo.family@carelinkai.test');
 
+  // Create FamilyMember record for demo family user
+  const demoFamilyRecord = await prisma.family.findUnique({
+    where: { userId: demoFamily.id },
+  });
+
+  if (demoFamilyRecord) {
+    await prisma.familyMember.upsert({
+      where: {
+        familyId_userId: {
+          familyId: demoFamilyRecord.id,
+          userId: demoFamily.id,
+        },
+      },
+      update: {},
+      create: {
+        familyId: demoFamilyRecord.id,
+        userId: demoFamily.id,
+        role: 'OWNER',
+        status: 'ACTIVE',
+        joinedAt: new Date(),
+      },
+    });
+    console.log('  ✓ FamilyMember record created for demo.family@carelinkai.test');
+  }
+
   // 2. Demo Operator Account
   const demoOperator = await prisma.user.upsert({
     where: { email: 'demo.operator@carelinkai.test' },

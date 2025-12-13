@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     const familyId = searchParams.get("familyId");
 
     // Query for family membership
-    const membership = await prisma.familyMember.findFirst({
+    let membership = await prisma.familyMember.findFirst({
       where: {
         userId: session.user.id,
         ...(familyId && { familyId }),
@@ -38,7 +38,42 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Return 404 if no family found
+    // If no membership found, try to auto-create for FAMILY role users
+    if (!membership) {
+      console.log(`No FamilyMember record found for user ${session.user.id}, attempting auto-creation...`);
+      
+      // Check if user has a Family record (legacy structure)
+      const family = await prisma.family.findUnique({
+        where: { userId: session.user.id },
+        select: { id: true },
+      });
+
+      if (family) {
+        // Auto-create FamilyMember record for this user
+        try {
+          const newMembership = await prisma.familyMember.create({
+            data: {
+              familyId: family.id,
+              userId: session.user.id,
+              role: 'OWNER', // User who owns the Family record is OWNER
+              status: 'ACTIVE',
+              joinedAt: new Date(),
+            },
+            select: {
+              familyId: true,
+              role: true,
+            },
+          });
+          
+          console.log(`✓ Auto-created FamilyMember record for user ${session.user.id}`);
+          membership = newMembership;
+        } catch (createError) {
+          console.error('Failed to auto-create FamilyMember:', createError);
+        }
+      }
+    }
+
+    // Return 404 if still no family found
     if (!membership) {
       return NextResponse.json(
         { error: "No family found for user" },
