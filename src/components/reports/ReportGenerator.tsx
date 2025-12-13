@@ -14,9 +14,6 @@ import {
 } from '@/components/ui/dialog';
 import { FileText, Download, Clock, X } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { generatePDF, downloadPDF } from '@/lib/utils/pdf-generator';
-import { generateExcel, downloadExcel } from '@/lib/utils/excel-generator';
-import { generateCSV, downloadCSV } from '@/lib/utils/csv-generator';
 
 interface ReportGeneratorProps {
   open: boolean;
@@ -139,29 +136,39 @@ export function ReportGenerator({
       });
 
       if (!response?.ok) {
-        throw new Error('Failed to generate report');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData?.error || 'Failed to generate report');
       }
 
-      const result = await response?.json();
-      const reportData = result?.data;
-
-      if (!reportData) {
-        throw new Error('No report data received');
+      // The API returns the file directly as a blob
+      const blob = await response.blob();
+      
+      // Extract filename from Content-Disposition header or create one
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = `${title?.replace(/[^a-z0-9]/gi, '_')}_${Date.now()}`;
+      
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+        }
+      } else {
+        // Fallback: add extension based on format
+        const extension = format === 'PDF' ? 'pdf' : format === 'EXCEL' ? 'xlsx' : 'csv';
+        filename = `${filename}.${extension}`;
       }
 
-      // Generate and download file based on format
-      const filename = `${title?.replace(/[^a-z0-9]/gi, '_')}_${Date.now()}`;
-
-      if (format === 'PDF') {
-        const blob = await generatePDF(reportData);
-        downloadPDF(blob, `${filename}.pdf`);
-      } else if (format === 'EXCEL') {
-        const blob = await generateExcel(reportData);
-        downloadExcel(blob, `${filename}.csv`);
-      } else if (format === 'CSV') {
-        const blob = await generateCSV(reportData);
-        downloadCSV(blob, `${filename}.csv`);
-      }
+      // Create a download link and trigger download
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
 
       toast.success('Report generated successfully!');
       onSuccess?.();
