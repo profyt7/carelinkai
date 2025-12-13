@@ -30,7 +30,7 @@ Add the following environment variables one by one:
 
 #### Variable 1: CLOUDINARY_CLOUD_NAME
 - **Key**: `CLOUDINARY_CLOUD_NAME`
-- **Value**: `dygtsnudz`
+- **Value**: `dygtsnu8z`
 - **Type**: Secret (recommended)
 
 #### Variable 2: CLOUDINARY_API_KEY
@@ -45,12 +45,12 @@ Add the following environment variables one by one:
 
 #### Variable 4: NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
 - **Key**: `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`
-- **Value**: `dygtsnudz`
+- **Value**: `dygtsnu8z`
 - **Type**: Plain (this is public and safe to expose)
 
 #### Variable 5: CLOUDINARY_URL (Optional)
 - **Key**: `CLOUDINARY_URL`
-- **Value**: `cloudinary://328392542172231:KhpohAEFOsjVKuXRENaBhCoIYFQ@dygtsnudz`
+- **Value**: `cloudinary://328392542172231:KhpohAEFOsjVKuXRENaBhCoIYFQ@dygtsnu8z`
 - **Type**: Secret (recommended)
 
 ### Step 4: Save Changes
@@ -135,7 +135,7 @@ Expected log entries:
 **Solution:**
 1. Verify credentials in Cloudinary dashboard
 2. Check for extra spaces in values
-3. Ensure cloud name is exact (e.g., `dygtsnudz` not `dygtsnud8`)
+3. Ensure cloud name is exact (e.g., `dygtsnu8z` not `dygtsnud8`)
 4. Regenerate API credentials if needed
 
 ### Issue: Files not appearing in Cloudinary
@@ -215,11 +215,11 @@ If you encounter issues:
 Copy-paste ready format for quick setup:
 
 ```
-CLOUDINARY_CLOUD_NAME=dygtsnudz
+CLOUDINARY_CLOUD_NAME=dygtsnu8z
 CLOUDINARY_API_KEY=328392542172231
 CLOUDINARY_API_SECRET=KhpohAEFOsjVKuXRENaBhCoIYFQ
-NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=dygtsnudz
-CLOUDINARY_URL=cloudinary://328392542172231:KhpohAEFOsjVKuXRENaBhCoIYFQ@dygtsnudz
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=dygtsnu8z
+CLOUDINARY_URL=cloudinary://328392542172231:KhpohAEFOsjVKuXRENaBhCoIYFQ@dygtsnu8z
 ```
 
 **Note**: Replace these values with your actual Cloudinary credentials if different.

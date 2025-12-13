@@ -277,7 +277,7 @@ Delete a photo from family gallery.
 1. Verify your credentials in the Cloudinary dashboard
 2. Check for typos in cloud name, API key, or API secret
 3. Ensure there are no extra spaces or special characters
-4. Verify the cloud name format (e.g., `dygtsnud8` vs `dygtsnudz`)
+4. Verify the cloud name format (e.g., `dygtsnud8` vs `dygtsnu8z`)
 
 #### 2. "Cloudinary not configured" Error
 
@@ -332,11 +332,11 @@ This will verify:
 4. Add the following environment variables:
 
 ```
-CLOUDINARY_CLOUD_NAME=dygtsnudz
+CLOUDINARY_CLOUD_NAME=dygtsnu8z
 CLOUDINARY_API_KEY=328392542172231
 CLOUDINARY_API_SECRET=KhpohAEFOsjVKuXRENaBhCoIYFQ
-NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=dygtsnudz
-CLOUDINARY_URL=cloudinary://328392542172231:KhpohAEFOsjVKuXRENaBhCoIYFQ@dygtsnudz
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=dygtsnu8z
+CLOUDINARY_URL=cloudinary://328392542172231:KhpohAEFOsjVKuXRENaBhCoIYFQ@dygtsnu8z
 ```
 
 5. Click **Save Changes**
