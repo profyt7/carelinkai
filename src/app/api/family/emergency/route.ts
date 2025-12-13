@@ -36,12 +36,24 @@ export async function GET(request: NextRequest) {
     }
 
     const preferences = await prisma.emergencyPreference.findFirst({
-      where: { familyId },
+      where: { 
+        familyId,
+        residentId: null  // Family-level preferences
+      },
     });
 
     return NextResponse.json({ preferences });
   } catch (error: any) {
     console.error('Error fetching emergency preferences:', error);
+    
+    // Return null as fallback for development
+    if (process.env.NODE_ENV !== 'production') {
+      return NextResponse.json({ 
+        preferences: null,
+        message: 'No emergency preferences found. Database might be empty.' 
+      });
+    }
+    
     return NextResponse.json(
       { error: error.message || 'Failed to fetch emergency preferences' },
       { status: 500 }
@@ -72,28 +84,39 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Upsert emergency preferences
-    const preferences = await prisma.emergencyPreference.upsert({
+    // Check if preferences already exist
+    const existing = await prisma.emergencyPreference.findFirst({
       where: {
-        familyId_residentId: {
-          familyId: data.familyId,
-          residentId: null as any,
-        },
-      },
-      update: {
-        escalationChain: data.escalationChain,
-        notifyMethods: data.notifyMethods,
-        careInstructions: data.careInstructions,
-        lastConfirmedAt: new Date(),
-      },
-      create: {
         familyId: data.familyId,
-        escalationChain: data.escalationChain,
-        notifyMethods: data.notifyMethods,
-        careInstructions: data.careInstructions,
-        lastConfirmedAt: new Date(),
+        residentId: null,
       },
     });
+
+    let preferences;
+    if (existing) {
+      // Update existing preferences
+      preferences = await prisma.emergencyPreference.update({
+        where: { id: existing.id },
+        data: {
+          escalationChain: data.escalationChain,
+          notifyMethods: data.notifyMethods,
+          careInstructions: data.careInstructions,
+          lastConfirmedAt: new Date(),
+        },
+      });
+    } else {
+      // Create new preferences
+      preferences = await prisma.emergencyPreference.create({
+        data: {
+          familyId: data.familyId,
+          residentId: null,
+          escalationChain: data.escalationChain,
+          notifyMethods: data.notifyMethods,
+          careInstructions: data.careInstructions,
+          lastConfirmedAt: new Date(),
+        },
+      });
+    }
 
     // Create audit log
     await createAuditLogFromRequest(

@@ -52,7 +52,21 @@ export async function GET(request: NextRequest, { params }: { params: { document
 
     // Support only S3-backed documents for download; legacy public paths should be phased out
     const s3 = parseS3Url(doc.fileUrl);
+    
+    // Handle mock/development mode - allow direct access to mock URLs
     if (!s3) {
+      // Check if it's a mock/example URL (development mode)
+      if (process.env.NODE_ENV !== 'production' && 
+          (doc.fileUrl.includes('example.com') || doc.fileUrl.includes('mock'))) {
+        // Return mock download response
+        return NextResponse.json({ 
+          message: 'Mock download - file URL available',
+          fileUrl: doc.fileUrl,
+          fileName: doc.title,
+          fileType: doc.fileType
+        }, { status: 200 });
+      }
+      
       // For legacy records, deny direct download to avoid public file exposure
       return NextResponse.json({ error: "Legacy file path not available for direct download" }, { status: 410 });
     }
@@ -60,14 +74,19 @@ export async function GET(request: NextRequest, { params }: { params: { document
     const signedUrl = await createSignedGetUrl({ bucket: s3.bucket, key: s3.key, expiresIn: 60 });
 
     // Audit log (read/download)
-    await createAuditLogFromRequest(
-      request,
-      "READ" as any,
-      "FamilyDocument",
-      doc.id,
-      "Downloaded family document",
-      { fileType: doc.fileType }
-    );
+    try {
+      await createAuditLogFromRequest(
+        request,
+        "DOCUMENT_VIEWED" as any,
+        "FamilyDocument",
+        doc.id,
+        `Downloaded family document: ${doc.title}`,
+        { fileType: doc.fileType, action: 'download' }
+      );
+    } catch (auditError) {
+      // Log audit error but don't fail the download
+      console.error('Failed to create audit log:', auditError);
+    }
 
     // Redirect to signed URL
     return NextResponse.redirect(signedUrl, 302);
