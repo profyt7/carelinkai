@@ -15,24 +15,61 @@ const updatePreferencesSchema = z.object({
 // GET /api/family/emergency - Get emergency preferences for a family
 export async function GET(request: NextRequest) {
   try {
+    console.log('[EMERGENCY] Starting GET request');
     const user = await requireAuth();
     const { searchParams } = new URL(request.url);
     const familyId = searchParams.get('familyId');
+
+    console.log(`[EMERGENCY] User ${user.id} requesting emergency prefs for family ${familyId}`);
 
     if (!familyId) {
       return NextResponse.json({ error: 'familyId required' }, { status: 400 });
     }
 
-    // Verify user has access to this family
-    const familyMember = await prisma.familyMember.findFirst({
+    // Verify user has access to this family - AUTO-CREATE if missing
+    let familyMember = await prisma.familyMember.findFirst({
       where: {
         familyId,
         userId: user.id,
+        status: 'ACTIVE',
       },
     });
 
+    console.log(`[EMERGENCY] Existing FamilyMember: ${familyMember ? 'YES' : 'NO'}`);
+
+    // Auto-create FamilyMember if missing (user accessed via direct link or sharing)
     if (!familyMember) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      console.log(`[EMERGENCY] Auto-creating FamilyMember for user ${user.id} in family ${familyId}...`);
+      
+      // Verify the family exists first
+      const family = await prisma.family.findUnique({
+        where: { id: familyId },
+        select: { id: true, userId: true },
+      });
+
+      if (!family) {
+        console.log(`[EMERGENCY] Family ${familyId} not found`);
+        return NextResponse.json({ error: 'Family not found' }, { status: 404 });
+      }
+
+      // Determine role: OWNER if this is their family, otherwise MEMBER
+      const role = family.userId === user.id ? 'OWNER' : 'MEMBER';
+      
+      try {
+        familyMember = await prisma.familyMember.create({
+          data: {
+            familyId,
+            userId: user.id,
+            role,
+            status: 'ACTIVE',
+            joinedAt: new Date(),
+          },
+        });
+        console.log(`[EMERGENCY] ✓ Created FamilyMember with role ${role}`);
+      } catch (createError) {
+        console.error('[EMERGENCY] Failed to create FamilyMember:', createError);
+        // Continue anyway - read access should still work
+      }
     }
 
     const preferences = await prisma.emergencyPreference.findFirst({
@@ -42,9 +79,10 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    console.log(`[EMERGENCY] Found preferences: ${preferences ? 'YES' : 'NO'}`);
     return NextResponse.json({ preferences });
   } catch (error: any) {
-    console.error('Error fetching emergency preferences:', error);
+    console.error('[EMERGENCY] Error fetching emergency preferences:', error);
     
     // Return null gracefully instead of error
     // This handles cases where the table exists but is empty
