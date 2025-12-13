@@ -192,42 +192,67 @@ export default function TimelineTab({ familyId, showMock = false }: TimelineTabP
           <p className="text-gray-500">No {activityFilter.toLowerCase()} activity found</p>
         </div>
       ) : (
-        <div className="space-y-6">
-          {groupActivitiesByDate(filteredActivities).map(([date, items]) => (
-            <div key={date}>
-              <h3 className="mb-3 text-sm font-semibold text-gray-600 uppercase tracking-wide">
-                {new Date(date).toLocaleDateString(undefined, {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })}
-              </h3>
-              <ul className="space-y-3">
-                {items.map((a) => (
+        <div className="space-y-8">
+          {groupActivitiesByDate(filteredActivities).map(([date, items], groupIndex) => (
+            <div key={date} className="relative">
+              {/* Date Header */}
+              <div className="sticky top-0 z-10 mb-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg px-4 py-3 border border-blue-200 shadow-sm">
+                <h3 className="text-sm font-bold text-blue-800 uppercase tracking-wide">
+                  {new Date(date).toLocaleDateString(undefined, {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </h3>
+              </div>
+              
+              {/* Timeline Items */}
+              <ul className="relative space-y-4 pl-4">
+                {/* Vertical Timeline Line */}
+                <div className="absolute left-9 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-200 via-cyan-200 to-blue-100" />
+                
+                {items.map((a, index) => (
                   <li
                     key={a.id}
-                    className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow duration-200"
+                    className="relative group"
                   >
                     <div className="flex items-start gap-4">
-                      <span className="mt-0.5 inline-flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-100 to-cyan-100 text-blue-600">
-                        {React.cloneElement(iconForType(a.type) as any, {
-                          className: 'h-5 w-5',
-                        })}
-                      </span>
-                      <div className="flex-1">
-                        <div className="text-sm font-medium text-gray-900">
+                      {/* Timeline Icon */}
+                      <div className="relative z-10">
+                        <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 text-white shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110">
+                          {React.cloneElement(iconForType(a.type) as any, {
+                            className: 'h-6 w-6',
+                          })}
+                        </span>
+                        {/* Connecting Dot */}
+                        {index < items.length - 1 && (
+                          <div className="absolute left-1/2 -translate-x-1/2 top-14 w-1 h-4 bg-gradient-to-b from-blue-300 to-transparent" />
+                        )}
+                      </div>
+                      
+                      {/* Activity Card */}
+                      <div className="flex-1 rounded-xl border border-gray-200 bg-white p-5 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-300">
+                        <div className="text-sm font-semibold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors duration-200">
                           {a.description}
                         </div>
-                        <div className="mt-2 flex items-center text-xs text-gray-500">
-                          <span className="mr-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-gray-200 text-[10px] font-bold text-gray-600">
-                            {`${a.actor?.firstName?.[0] ?? ''}${a.actor?.lastName?.[0] ?? ''}`}
-                          </span>
-                          <span>
-                            {a.actor
-                              ? `${a.actor.firstName ?? ''} ${a.actor.lastName ?? ''}`
-                              : '—'}{' '}
-                            • {new Date(a.createdAt).toLocaleTimeString()}
+                        <div className="flex items-center gap-3 text-xs">
+                          <div className="flex items-center gap-2">
+                            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 text-[10px] font-bold text-white shadow-sm">
+                              {`${a.actor?.firstName?.[0] ?? ''}${a.actor?.lastName?.[0] ?? ''}`}
+                            </span>
+                            <span className="font-medium text-gray-700">
+                              {a.actor
+                                ? `${a.actor.firstName ?? ''} ${a.actor.lastName ?? ''}`
+                                : '—'}
+                            </span>
+                          </div>
+                          <span className="w-1 h-1 rounded-full bg-gray-400"></span>
+                          <span className="text-gray-500 font-medium">
+                            {new Date(a.createdAt).toLocaleTimeString(undefined, {
+                              hour: 'numeric',
+                              minute: '2-digit'
+                            })}
                           </span>
                         </div>
                       </div>

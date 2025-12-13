@@ -1,262 +1,118 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireAnyRole } from "@/lib/rbac";
-import { prisma } from "@/lib/prisma";
-import { checkFamilyMembership } from "@/lib/services/family";
-import { z } from "zod";
-import { rateLimitAsync, getClientIp, buildRateLimitHeaders } from "@/lib/rateLimit";
-import { createAuditLogFromRequest } from "@/lib/audit";
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/auth-utils';
+import { z } from 'zod';
+import { AuditAction } from '@prisma/client';
+import { createAuditLogFromRequest } from '@/lib/audit';
 
-// Validate PUT request body
-const emergencyPreferenceSchema = z.object({
-  // Accept any non-empty string so tests (or future UUIDs) won't fail validation
-  residentId: z.string().min(1).optional(),
-  // Ensure escalationChain is an array (even if element structure is flexible)
+const updatePreferencesSchema = z.object({
+  familyId: z.string().cuid(),
   escalationChain: z.array(z.any()),
   notifyMethods: z.array(z.string()),
   careInstructions: z.string().optional(),
 });
 
-/**
- * GET /api/family/emergency
- * 
- * Fetches emergency preferences for a family and optional resident
- * Requires authentication and family membership
- */
+// GET /api/family/emergency - Get emergency preferences for a family
 export async function GET(request: NextRequest) {
   try {
-    // Rate limit: 60 req/min per IP
-    {
-      const key = getClientIp(request as any);
-      const limit = 60;
-      const rr = await rateLimitAsync({ name: 'family:emergency:GET', key, limit, windowMs: 60_000 });
-      if (!rr.allowed) {
-        return NextResponse.json(
-          { error: "Rate limit exceeded" },
-          { status: 429, headers: { ...buildRateLimitHeaders(rr, limit), 'Retry-After': String(Math.ceil(rr.resetMs / 1000)) } }
-        );
-      }
-    }
-    // Get session and verify authentication
-    const { session, error } = await requireAnyRole(["FAMILY"] as any);
-      if (error) return error;
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const user = await requireAuth();
+    const { searchParams } = new URL(request.url);
+    const familyId = searchParams.get('familyId');
+
+    if (!familyId) {
+      return NextResponse.json({ error: 'familyId required' }, { status: 400 });
     }
 
-    // Parse query parameters
-    const searchParams = request.nextUrl.searchParams;
-    const providedFamilyId = searchParams.get("familyId");
-    const residentId = searchParams.get("residentId") || undefined;
-
-    // Determine effective familyId
-    let effectiveFamilyId = providedFamilyId;
-    
-    if (!effectiveFamilyId) {
-      // Find the first family membership for the user
-      const membership = await prisma.familyMember.findFirst({
-        where: { userId: session.user.id },
-        select: { familyId: true }
-      });
-      
-      if (!membership) {
-        return NextResponse.json(
-          { error: "No family found for user" },
-          { status: 404 }
-        );
-      }
-      
-      effectiveFamilyId = membership.familyId;
-    }
-
-    // Check if user is a member of the family
-    const isMember = await checkFamilyMembership(
-      session.user.id,
-      effectiveFamilyId
-    );
-    
-    if (!isMember) {
-      return NextResponse.json(
-        { error: "Not a member of this family" },
-        { status: 403 }
-      );
-    }
-
-    // Find existing emergency preference
-    const preference = await prisma.emergencyPreference.findUnique({
+    // Verify user has access to this family
+    const familyMember = await prisma.familyMember.findFirst({
       where: {
-        familyId_residentId: {
-          familyId: effectiveFamilyId,
-          residentId: residentId || null,
-        } as any
-      }
+        familyId,
+        userId: user.id,
+      },
     });
 
-    // If no preference exists, return default empty config
-    if (!preference) {
-      return NextResponse.json({
-        preference: {
-          escalationChain: [],
-          notifyMethods: ["EMAIL"],
-          careInstructions: "",
-        }
-      });
+    if (!familyMember) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    // Audit log (read)
-    await createAuditLogFromRequest(
-      request,
-      "READ" as any,
-      "EmergencyPreference",
-      `${effectiveFamilyId}:${residentId || 'none'}`,
-      "Fetched emergency preferences"
-    );
+    const preferences = await prisma.emergencyPreference.findFirst({
+      where: { familyId },
+    });
 
-    return NextResponse.json({ preference });
-  } catch (error) {
-    console.error("Error fetching emergency preferences:", error);
+    return NextResponse.json({ preferences });
+  } catch (error: any) {
+    console.error('Error fetching emergency preferences:', error);
     return NextResponse.json(
-      { error: "Failed to fetch emergency preferences" },
+      { error: error.message || 'Failed to fetch emergency preferences' },
       { status: 500 }
     );
   }
 }
 
-/**
- * PUT /api/family/emergency
- * 
- * Updates or creates emergency preferences for a family and optional resident
- * Requires authentication and family membership
- */
+// PUT /api/family/emergency - Update emergency preferences
 export async function PUT(request: NextRequest) {
   try {
-    // Rate limit: 20 req/min per IP for updates
-    {
-      const key = getClientIp(request as any);
-      const limit = 20;
-      const rr = await rateLimitAsync({ name: 'family:emergency:PUT', key, limit, windowMs: 60_000 });
-      if (!rr.allowed) {
-        return NextResponse.json(
-          { error: "Rate limit exceeded" },
-          { status: 429, headers: { ...buildRateLimitHeaders(rr, limit), 'Retry-After': String(Math.ceil(rr.resetMs / 1000)) } }
-        );
-      }
-    }
-    // Get session and verify authentication
-    const { session, error } = await requireAnyRole(["FAMILY"] as any);
-      if (error) return error;
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Parse and validate request body
+    const user = await requireAuth();
     const body = await request.json();
-    const validationResult = emergencyPreferenceSchema.safeParse(body);
-    
-    if (!validationResult.success) {
+    const data = updatePreferencesSchema.parse(body);
+
+    // Verify user has access to this family and is not a guest
+    const familyMember = await prisma.familyMember.findFirst({
+      where: {
+        familyId: data.familyId,
+        userId: user.id,
+        role: { in: ['ADMIN', 'MEMBER'] }, // Guests cannot update
+      },
+    });
+
+    if (!familyMember) {
       return NextResponse.json(
-        { 
-          error: "Invalid request parameters", 
-          details: validationResult.error.format() 
-        },
-        { status: 400 }
-      );
-    }
-
-    const { residentId, escalationChain, notifyMethods, careInstructions } = validationResult.data;
-
-    // Parse query parameters
-    const searchParams = request.nextUrl.searchParams;
-    const providedFamilyId = searchParams.get("familyId");
-
-    // Determine effective familyId
-    let effectiveFamilyId = providedFamilyId;
-    
-    if (!effectiveFamilyId) {
-      // Find the first family membership for the user
-      const membership = await prisma.familyMember.findFirst({
-        where: { userId: session.user.id },
-        select: { familyId: true }
-      });
-      
-      if (!membership) {
-        return NextResponse.json(
-          { error: "No family found for user" },
-          { status: 404 }
-        );
-      }
-      
-      effectiveFamilyId = membership.familyId;
-    }
-
-    // Check if user is a member of the family
-    const isMember = await checkFamilyMembership(
-      session.user.id,
-      effectiveFamilyId
-    );
-    
-    if (!isMember) {
-      return NextResponse.json(
-        { error: "Not a member of this family" },
+        { error: 'Unauthorized - only family members can update emergency preferences' },
         { status: 403 }
       );
     }
 
-    // If residentId is provided, verify it belongs to the family
-    if (residentId) {
-      const resident = await prisma.resident.findFirst({
-        where: {
-          id: residentId,
-          familyId: effectiveFamilyId
-        }
-      });
-
-      if (!resident) {
-        return NextResponse.json(
-          { error: "Resident not found or not part of this family" },
-          { status: 404 }
-        );
-      }
-    }
-
-    // Upsert emergency preference
-    const preference = await prisma.emergencyPreference.upsert({
+    // Upsert emergency preferences
+    const preferences = await prisma.emergencyPreference.upsert({
       where: {
-        familyId_residentId: ({
-          familyId: effectiveFamilyId,
-          residentId: residentId || null,
-        } as any)
+        familyId_residentId: {
+          familyId: data.familyId,
+          residentId: null as any,
+        },
       },
       update: {
-        escalationChain,
-        notifyMethods,
-        careInstructions,
+        escalationChain: data.escalationChain,
+        notifyMethods: data.notifyMethods,
+        careInstructions: data.careInstructions,
         lastConfirmedAt: new Date(),
       },
       create: {
-        familyId: effectiveFamilyId,
-        residentId: residentId || null,
-        escalationChain,
-        notifyMethods,
-        careInstructions,
+        familyId: data.familyId,
+        escalationChain: data.escalationChain,
+        notifyMethods: data.notifyMethods,
+        careInstructions: data.careInstructions,
         lastConfirmedAt: new Date(),
-      }
+      },
     });
 
-    // Audit log (update)
+    // Create audit log
     await createAuditLogFromRequest(
       request,
-      "UPDATE" as any,
-      "EmergencyPreference",
-      `${effectiveFamilyId}:${residentId || 'none'}`,
-      "Updated emergency preferences",
-      { notifyMethods: notifyMethods?.length ?? 0, chainLength: escalationChain?.length ?? 0 }
+      user.id,
+      AuditAction.EMERGENCY_CONTACT_UPDATED,
+      'EmergencyPreference',
+      preferences.id,
+      { familyId: data.familyId }
     );
 
-    return NextResponse.json({ preference });
-  } catch (error) {
-    console.error("Error updating emergency preferences:", error);
+    return NextResponse.json({ preferences });
+  } catch (error: any) {
+    console.error('Error updating emergency preferences:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: error.errors }, { status: 400 });
+    }
     return NextResponse.json(
-      { error: "Failed to update emergency preferences" },
+      { error: error.message || 'Failed to update emergency preferences' },
       { status: 500 }
     );
   }

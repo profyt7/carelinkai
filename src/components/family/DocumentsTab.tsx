@@ -209,31 +209,36 @@ export default function DocumentsTab({ familyId, showMock = false, onUploadClick
           {docs.map((doc) => (
             <div
               key={doc.id}
-              className="flex flex-col rounded-lg border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow duration-200"
+              className="group flex flex-col rounded-xl border border-gray-200 bg-white p-6 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-blue-300"
             >
+              {/* Icon Header */}
+              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-cyan-400 shadow-lg group-hover:shadow-xl transition-all duration-300">
+                <FiFileText className="h-6 w-6 text-white" />
+              </div>
+              
               {/* Title */}
-              <h3 className="mb-2 line-clamp-2 font-semibold text-gray-900 text-lg">
+              <h3 className="mb-2 line-clamp-2 font-semibold text-gray-900 text-lg group-hover:text-blue-600 transition-colors duration-200">
                 {doc.title}
               </h3>
               
               {/* Type Badge */}
-              <span className="mb-3 inline-block w-fit rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-800">
+              <span className="mb-3 inline-block w-fit rounded-full bg-gradient-to-r from-blue-100 to-cyan-50 px-3 py-1 text-xs font-semibold text-blue-800 border border-blue-200">
                 {doc.type.replace(/_/g, ' ')}
               </span>
               
               {/* Meta Info */}
-              <div className="mb-3 text-xs text-gray-500 flex items-center gap-2">
+              <div className="mb-3 text-xs text-gray-500 flex items-center gap-2 font-medium">
                 <span>{new Date(doc.createdAt).toLocaleDateString()}</span>
-                <span>•</span>
-                <span>{formatBytes(doc.fileSize)}</span>
+                <span className="w-1 h-1 rounded-full bg-gray-400"></span>
+                <span className="font-semibold text-gray-700">{formatBytes(doc.fileSize)}</span>
               </div>
               
               {/* Tags */}
-              <div className="mb-4 flex flex-wrap gap-1">
+              <div className="mb-4 flex flex-wrap gap-1.5">
                 {doc.tags.slice(0, 3).map((tag) => (
                   <span
                     key={tag}
-                    className="rounded-full bg-gray-100 px-2 py-1 text-[10px] font-medium text-gray-700"
+                    className="rounded-full bg-gradient-to-r from-gray-100 to-gray-50 px-2.5 py-1 text-[10px] font-semibold text-gray-700 border border-gray-200 hover:border-gray-300 transition-colors duration-200"
                   >
                     #{tag}
                   </span>
@@ -241,20 +246,20 @@ export default function DocumentsTab({ familyId, showMock = false, onUploadClick
               </div>
               
               {/* Footer */}
-              <div className="mt-auto flex items-center justify-between pt-3 border-t border-gray-100">
-                <div className="flex items-center">
-                  <div className="mr-2 flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-100 to-cyan-100 text-xs font-bold text-blue-700">
+              <div className="mt-auto flex items-center justify-between pt-4 border-t border-gray-100">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 text-xs font-bold text-white shadow-md">
                     {`${doc.uploader.firstName?.[0] ?? ''}${doc.uploader.lastName?.[0] ?? ''}`}
                   </div>
-                  <span className="text-xs text-gray-600">
+                  <span className="text-xs text-gray-600 font-medium">
                     {doc.uploader.firstName} {doc.uploader.lastName}
                   </span>
                 </div>
                 <a
                   href={`/api/family/documents/${doc.id}/download`}
-                  className="inline-flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors duration-200"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-blue-600 to-cyan-500 px-3 py-1.5 text-xs font-semibold text-white hover:from-blue-700 hover:to-cyan-600 hover:shadow-lg transition-all duration-200 transform hover:scale-105"
                 >
-                  <FiDownload className="w-3 h-3" />
+                  <FiDownload className="w-3.5 h-3.5" />
                   Download
                 </a>
               </div>
