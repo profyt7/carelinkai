@@ -33,44 +33,39 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Build where clause
-    const where: any = { familyId };
+    // Build where clause - query through SharedGallery relation
+    const where: any = {
+      gallery: {
+        familyId: familyId
+      }
+    };
+    
     if (search) {
       where.caption = { contains: search, mode: 'insensitive' };
     }
+    
     if (albumId) {
-      where.albumId = albumId;
+      where.galleryId = albumId; // Fixed: use galleryId instead of albumId
     }
 
     // Fetch photos
     const photos = await prisma.galleryPhoto.findMany({
       where,
-      orderBy: { uploadedAt: 'desc' },
+      orderBy: { createdAt: 'desc' }, // Fixed: use createdAt instead of uploadedAt
       take: limit,
       skip: offset,
       include: {
-        uploadedBy: {
+        uploader: { // Fixed: use uploader instead of uploadedBy
           select: {
             id: true,
             firstName: true,
             lastName: true,
           },
         },
-        album: {
+        gallery: { // Fixed: use gallery instead of album
           select: {
             id: true,
-            name: true,
-          },
-        },
-        comments: {
-          orderBy: { createdAt: 'desc' },
-          include: {
-            author: {
-              select: {
-                firstName: true,
-                lastName: true,
-              },
-            },
+            title: true, // Fixed: use title instead of name
           },
         },
       },
