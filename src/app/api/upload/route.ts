@@ -1,13 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { v2 as cloudinary } from 'cloudinary';
+import cloudinary, { isCloudinaryConfigured } from '@/lib/cloudinary';
 import { requireAuth } from '@/lib/auth-utils';
-
-// Configure Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -36,9 +29,7 @@ export async function POST(request: NextRequest) {
     await requireAuth();
 
     // Check if Cloudinary is configured
-    if (!process.env.CLOUDINARY_CLOUD_NAME || 
-        !process.env.CLOUDINARY_API_KEY || 
-        !process.env.CLOUDINARY_API_SECRET) {
+    if (!isCloudinaryConfigured()) {
       return NextResponse.json(
         { 
           error: 'File upload is not configured. Please contact your administrator.',

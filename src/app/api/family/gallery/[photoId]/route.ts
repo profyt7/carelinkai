@@ -2,17 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { v2 as cloudinary } from 'cloudinary';
+import { deleteFromCloudinary } from '@/lib/cloudinary';
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { AuditAction } from '@prisma/client';
 import { publish } from '@/lib/sse';
-
-// Configure Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
 
 export async function DELETE(
   request: NextRequest,
@@ -58,7 +51,7 @@ export async function DELETE(
     // Delete from Cloudinary (optional - you may want to keep for backup)
     try {
       if (photo.cloudinaryPublicId) {
-        await cloudinary.uploader.destroy(photo.cloudinaryPublicId);
+        await deleteFromCloudinary(photo.cloudinaryPublicId, 'image');
       }
     } catch (cloudinaryError) {
       console.error('Error deleting from Cloudinary:', cloudinaryError);

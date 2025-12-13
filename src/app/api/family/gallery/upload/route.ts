@@ -2,23 +2,27 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { v2 as cloudinary } from 'cloudinary';
+import cloudinary, { isCloudinaryConfigured, getThumbnailUrl, UPLOAD_PRESETS } from '@/lib/cloudinary';
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { AuditAction } from '@prisma/client';
 import { publish } from '@/lib/sse';
-
-// Configure Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check if Cloudinary is configured
+    if (!isCloudinaryConfigured()) {
+      return NextResponse.json(
+        { 
+          error: 'File upload is not configured. Please contact your administrator.',
+          code: 'CLOUDINARY_NOT_CONFIGURED'
+        },
+        { status: 503 }
+      );
     }
 
     const formData = await request.formData();
@@ -53,16 +57,13 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Upload to Cloudinary
+    // Upload to Cloudinary using preset
     const uploadResult = await new Promise<any>((resolve, reject) => {
       cloudinary.uploader
         .upload_stream(
           {
-            folder: `carelinkai/family/${familyId}/gallery`,
-            resource_type: 'auto',
-            transformation: [
-              { width: 1200, height: 1200, crop: 'limit', quality: 'auto' },
-            ],
+            ...UPLOAD_PRESETS.FAMILY_GALLERY,
+            folder: `${UPLOAD_PRESETS.FAMILY_GALLERY.folder}/${familyId}/gallery`,
           },
           (error, result) => {
             if (error) reject(error);
@@ -72,14 +73,8 @@ export async function POST(request: NextRequest) {
         .end(buffer);
     });
 
-    // Generate thumbnail URL
-    const thumbnailUrl = cloudinary.url(uploadResult.public_id, {
-      width: 300,
-      height: 300,
-      crop: 'fill',
-      quality: 'auto',
-      fetch_format: 'auto',
-    });
+    // Generate thumbnail URL using helper
+    const thumbnailUrl = getThumbnailUrl(uploadResult.public_id);
 
     // Create gallery photo record
     const photo = await prisma.galleryPhoto.create({
