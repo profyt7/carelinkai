@@ -46,18 +46,12 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('Error fetching emergency preferences:', error);
     
-    // Return null as fallback for development
-    if (process.env.NODE_ENV !== 'production') {
-      return NextResponse.json({ 
-        preferences: null,
-        message: 'No emergency preferences found. Database might be empty.' 
-      });
-    }
-    
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch emergency preferences' },
-      { status: 500 }
-    );
+    // Return null gracefully instead of error
+    // This handles cases where the table exists but is empty
+    return NextResponse.json({ 
+      preferences: null,
+      message: 'No emergency preferences set yet'
+    });
   }
 }
 

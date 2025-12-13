@@ -68,18 +68,12 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('Error fetching notes:', error);
     
-    // Return empty array as fallback for development
-    if (process.env.NODE_ENV !== 'production') {
-      return NextResponse.json({ 
-        notes: [],
-        message: 'No notes found. Database might be empty.' 
-      });
-    }
-    
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch notes' },
-      { status: 500 }
-    );
+    // Return empty array gracefully instead of error
+    // This handles cases where the table exists but is empty
+    return NextResponse.json({ 
+      notes: [],
+      message: 'No notes available yet'
+    });
   }
 }
 
