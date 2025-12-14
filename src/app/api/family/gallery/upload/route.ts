@@ -95,31 +95,66 @@ export async function POST(request: NextRequest) {
     // Generate thumbnail URL using helper
     const thumbnailUrl = getThumbnailUrl(uploadResult.public_id);
 
-    // Create gallery photo record
+    // Get or create default SharedGallery for this family
+    let gallery;
+    if (albumId) {
+      // Use specified album/gallery
+      gallery = await prisma.sharedGallery.findUnique({
+        where: { id: albumId },
+      });
+      if (!gallery || gallery.familyId !== familyId) {
+        return NextResponse.json({ error: 'Invalid album ID' }, { status: 400 });
+      }
+    } else {
+      // Get or create default gallery for family
+      gallery = await prisma.sharedGallery.findFirst({
+        where: {
+          familyId,
+          title: 'Family Photos', // Default gallery name
+        },
+      });
+
+      if (!gallery) {
+        // Create default gallery
+        gallery = await prisma.sharedGallery.create({
+          data: {
+            familyId,
+            creatorId: session.user.id,
+            title: 'Family Photos',
+            description: 'Default photo gallery for family',
+          },
+        });
+      }
+    }
+
+    // Create gallery photo record with correct field names
     const photo = await prisma.galleryPhoto.create({
       data: {
-        familyId,
-        caption: caption || file.name,
-        cloudinaryUrl: uploadResult.secure_url,
-        cloudinaryPublicId: uploadResult.public_id,
+        galleryId: gallery.id, // Correct: use galleryId
+        uploaderId: session.user.id, // Correct: use uploaderId
+        fileUrl: uploadResult.secure_url, // Correct: use fileUrl
         thumbnailUrl,
-        fileType: file.type,
-        fileSize: file.size,
-        uploadedById: session.user.id,
-        albumId: albumId || null,
+        caption: caption || file.name,
+        metadata: {
+          cloudinaryPublicId: uploadResult.public_id,
+          fileType: file.type,
+          fileSize: file.size,
+          originalFilename: file.name,
+        },
       },
       include: {
-        uploadedBy: {
+        uploader: { // Correct: use uploader
           select: {
             id: true,
             firstName: true,
             lastName: true,
           },
         },
-        album: {
+        gallery: { // Correct: use gallery
           select: {
             id: true,
-            name: true,
+            title: true, // Correct: use title
+            familyId: true, // Include familyId for SSE event
           },
         },
       },
@@ -128,13 +163,13 @@ export async function POST(request: NextRequest) {
     // Create activity feed item
     await prisma.activityFeed.create({
       data: {
-        familyId,
+        familyId: photo.gallery.familyId,
         userId: session.user.id,
         type: 'PHOTO_UPLOADED',
         description: `uploaded a photo: ${caption || file.name}`,
         metadata: {
           photoId: photo.id,
-          albumId: albumId || null,
+          galleryId: photo.galleryId,
         },
       },
     });
@@ -147,7 +182,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Publish SSE event
-    publish(`family:${familyId}`, {
+    publish(`family:${photo.gallery.familyId}`, {
       type: 'photo:uploaded',
       photo: {
         ...photo,
