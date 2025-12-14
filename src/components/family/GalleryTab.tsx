@@ -639,6 +639,7 @@ export default function GalleryTab({ familyId, showMock = false, isGuest = false
                       fill
                       className="object-contain"
                       sizes="(max-width: 1200px) 100vw, 1200px"
+                      unoptimized
                     />
                   ) : (
                     <video src={selectedPhoto.fileUrl} controls className="w-full h-full object-contain" />
@@ -756,6 +757,7 @@ export default function GalleryTab({ familyId, showMock = false, isGuest = false
                   fill
                   className="object-cover group-hover:scale-110 transition-transform duration-300"
                   sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                  unoptimized
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
