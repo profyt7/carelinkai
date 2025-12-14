@@ -25,12 +25,12 @@ export async function GET(request: NextRequest) {
 
     const alerts: Array<{
       id: string;
-      type: string;
+      type: 'error' | 'warning' | 'info' | 'success';
       title: string;
-      message: string;
-      severity: 'high' | 'medium' | 'low';
+      description: string;
+      actionLabel: string;
+      actionUrl: string;
       timestamp: string;
-      link?: string;
     }> = [];
 
     // ALERT 1: Overdue Assessments
@@ -73,12 +73,12 @@ export async function GET(request: NextRequest) {
         
         alerts.push({
           id: 'overdue-assessments',
-          type: 'assessment',
+          type: 'warning',
           title: `${overdueAssessments.length} Overdue Assessment${overdueAssessments.length > 1 ? 's' : ''}`,
-          message: `Assessments pending review for ${residentNames}${moreCount}`,
-          severity: 'high',
-          timestamp: new Date().toISOString(),
-          link: '/operator/residents'
+          description: `Assessments pending review for ${residentNames}${moreCount}`,
+          actionLabel: 'View Assessments',
+          actionUrl: '/operator/residents',
+          timestamp: new Date().toISOString()
         });
       }
 
@@ -125,12 +125,12 @@ export async function GET(request: NextRequest) {
         
         alerts.push({
           id: 'critical-incidents',
-          type: 'incident',
+          type: 'error',
           title: `${criticalIncidents.length} Critical Incident${criticalIncidents.length > 1 ? 's' : ''}`,
-          message: `Recent critical incidents: ${incidentTypes}`,
-          severity: 'high',
-          timestamp: criticalIncidents[0]?.occurredAt?.toISOString() ?? new Date().toISOString(),
-          link: '/operator/residents'
+          description: `Recent critical incidents: ${incidentTypes}`,
+          actionLabel: 'View Incidents',
+          actionUrl: '/operator/residents',
+          timestamp: criticalIncidents[0]?.occurredAt?.toISOString() ?? new Date().toISOString()
         });
       }
 
@@ -182,12 +182,12 @@ export async function GET(request: NextRequest) {
         
         alerts.push({
           id: 'followups-due',
-          type: 'followup',
+          type: 'info',
           title: `${followUpsDue.length} Tour${followUpsDue.length > 1 ? 's' : ''} Scheduled Today`,
-          message: `Tours for ${familyNames}${moreCount}`,
-          severity: 'medium',
-          timestamp: new Date().toISOString(),
-          link: '/operator/inquiries'
+          description: `Tours for ${familyNames}${moreCount}`,
+          actionLabel: 'View Tours',
+          actionUrl: '/operator/inquiries',
+          timestamp: new Date().toISOString()
         });
       }
 
@@ -238,12 +238,12 @@ export async function GET(request: NextRequest) {
         
         alerts.push({
           id: 'expiring-certifications',
-          type: 'certification',
+          type: 'warning',
           title: `${expiringCerts.length} Certification${expiringCerts.length > 1 ? 's' : ''} Expiring Soon`,
-          message: `Certifications expiring for ${caregiverNames}${moreCount}`,
-          severity: 'medium',
-          timestamp: new Date().toISOString(),
-          link: '/operator/caregivers'
+          description: `Certifications expiring for ${caregiverNames}${moreCount}`,
+          actionLabel: 'View Caregivers',
+          actionUrl: '/operator/caregivers',
+          timestamp: new Date().toISOString()
         });
       }
 
