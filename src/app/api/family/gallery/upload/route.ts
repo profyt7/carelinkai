@@ -203,8 +203,10 @@ export async function POST(request: NextRequest) {
     await prisma.activityFeedItem.create({
       data: {
         familyId: photo.gallery.familyId,
-        userId: session.user.id,
+        actorId: session.user.id, // Fixed: was userId, should be actorId
         type: 'PHOTO_UPLOADED',
+        resourceType: 'gallery', // Fixed: added required resourceType field
+        resourceId: photo.galleryId, // Added: resource reference
         description: `uploaded a photo: ${caption || file.name}`,
         metadata: {
           photoId: photo.id,
