@@ -127,6 +127,20 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Diagnostic: Check if galleryPhoto model exists in Prisma Client
+    if (!prisma.galleryPhoto) {
+      console.error('[Gallery Upload] CRITICAL: prisma.galleryPhoto is undefined!');
+      console.error('[Gallery Upload] Available Prisma models:', Object.keys(prisma).filter(k => k.startsWith(k[0].toLowerCase())).sort());
+      return NextResponse.json(
+        { 
+          error: 'Database model not found. Please contact support.',
+          code: 'PRISMA_MODEL_MISSING',
+          details: 'GalleryPhoto model is not available in Prisma Client'
+        },
+        { status: 500 }
+      );
+    }
+
     // Create gallery photo record with correct field names
     const photo = await prisma.galleryPhoto.create({
       data: {
