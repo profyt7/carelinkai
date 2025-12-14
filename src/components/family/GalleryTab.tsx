@@ -9,19 +9,19 @@ import LoadingState from './LoadingState';
 type Photo = {
   id: string;
   caption: string;
-  cloudinaryUrl: string;
+  fileUrl: string; // Changed from cloudinaryUrl to match API
   thumbnailUrl?: string;
   fileType: string;
-  uploadedAt: string;
-  uploadedBy: {
+  createdAt: string; // Changed from uploadedAt to match API
+  uploader?: { // Changed from uploadedBy to match API, made optional for safety
     id: string;
     firstName?: string | null;
     lastName?: string | null;
-  };
-  albumId?: string | null;
-  album?: {
+  } | null;
+  galleryId?: string | null; // Changed from albumId to match API
+  gallery?: { // Changed from album to match API
     id: string;
-    name: string;
+    title: string; // Changed from name to match API
   } | null;
   comments: {
     id: string;
@@ -78,13 +78,13 @@ export default function GalleryTab({ familyId, showMock = false, isGuest = false
           {
             id: 'photo-1',
             caption: 'Beautiful day at the garden',
-            cloudinaryUrl: 'https://images.unsplash.com/photo-1745096227004-875407b6561b?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+            fileUrl: 'https://images.unsplash.com/photo-1745096227004-875407b6561b?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
             thumbnailUrl: 'https://pbs.twimg.com/media/G0T0qYMXoAALduG.jpg',
             fileType: 'image/jpeg',
-            uploadedAt: new Date(now - 86400000).toISOString(),
-            uploadedBy: { id: 'user-1', firstName: 'Ava', lastName: 'Johnson' },
-            albumId: 'album-1',
-            album: { id: 'album-1', name: 'Summer 2024' },
+            createdAt: new Date(now - 86400000).toISOString(),
+            uploader: { id: 'user-1', firstName: 'Ava', lastName: 'Johnson' },
+            galleryId: 'album-1',
+            gallery: { id: 'album-1', title: 'Summer 2024' },
             comments: [
               {
                 id: 'comment-1',
@@ -97,13 +97,13 @@ export default function GalleryTab({ familyId, showMock = false, isGuest = false
           {
             id: 'photo-2',
             caption: 'Family gathering',
-            cloudinaryUrl: 'https://images.unsplash.com/photo-1511895426328-dc8714191300?w=800',
+            fileUrl: 'https://images.unsplash.com/photo-1511895426328-dc8714191300?w=800',
             thumbnailUrl: 'https://images.unsplash.com/photo-1511895426328-dc8714191300?w=300',
             fileType: 'image/jpeg',
-            uploadedAt: new Date(now - 2 * 86400000).toISOString(),
-            uploadedBy: { id: 'user-2', firstName: 'Sophia', lastName: 'Martinez' },
-            albumId: null,
-            album: null,
+            createdAt: new Date(now - 2 * 86400000).toISOString(),
+            uploader: { id: 'user-2', firstName: 'Sophia', lastName: 'Martinez' },
+            galleryId: null,
+            gallery: null,
             comments: [],
           },
         ];
@@ -581,14 +581,14 @@ export default function GalleryTab({ familyId, showMock = false, isGuest = false
             <div className="flex items-center justify-between mb-4 text-white">
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-full flex items-center justify-center text-white font-bold">
-                  {`${selectedPhoto.uploadedBy.firstName?.[0] ?? ''}${selectedPhoto.uploadedBy.lastName?.[0] ?? ''}`}
+                  {selectedPhoto.uploader?.firstName?.[0] ?? ''}{selectedPhoto.uploader?.lastName?.[0] ?? ''}
                 </div>
                 <div>
                   <p className="font-semibold">
-                    {selectedPhoto.uploadedBy.firstName} {selectedPhoto.uploadedBy.lastName}
+                    {selectedPhoto.uploader?.firstName ?? 'Unknown'} {selectedPhoto.uploader?.lastName ?? 'User'}
                   </p>
                   <p className="text-sm text-gray-300">
-                    {new Date(selectedPhoto.uploadedAt).toLocaleDateString()}
+                    {new Date(selectedPhoto.createdAt).toLocaleDateString()}
                   </p>
                 </div>
               </div>
@@ -602,7 +602,7 @@ export default function GalleryTab({ familyId, showMock = false, isGuest = false
                   </button>
                 )}
                 <a
-                  href={selectedPhoto.cloudinaryUrl}
+                  href={selectedPhoto.fileUrl}
                   download
                   target="_blank"
                   rel="noopener noreferrer"
@@ -634,14 +634,14 @@ export default function GalleryTab({ familyId, showMock = false, isGuest = false
                 <div className="flex-1 relative aspect-video bg-black/50 rounded-xl overflow-hidden">
                   {selectedPhoto.fileType.startsWith('image/') ? (
                     <Image
-                      src={selectedPhoto.cloudinaryUrl}
-                      alt={selectedPhoto.caption}
+                      src={selectedPhoto.fileUrl}
+                      alt={selectedPhoto.caption ?? 'Photo'}
                       fill
                       className="object-contain"
                       sizes="(max-width: 1200px) 100vw, 1200px"
                     />
                   ) : (
-                    <video src={selectedPhoto.cloudinaryUrl} controls className="w-full h-full object-contain" />
+                    <video src={selectedPhoto.fileUrl} controls className="w-full h-full object-contain" />
                   )}
                 </div>
 
@@ -658,12 +658,12 @@ export default function GalleryTab({ familyId, showMock = false, isGuest = false
               <div className="w-80 bg-white rounded-xl p-6 flex flex-col">
                 <div className="mb-4">
                   <h4 className="font-bold text-lg text-gray-900 mb-2">Caption</h4>
-                  <p className="text-gray-700">{selectedPhoto.caption}</p>
-                  {selectedPhoto.album && (
+                  <p className="text-gray-700">{selectedPhoto.caption ?? 'No caption'}</p>
+                  {selectedPhoto.gallery && (
                     <div className="mt-3">
                       <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gradient-to-r from-blue-100 to-cyan-50 text-xs font-semibold text-blue-800 border border-blue-200">
                         <FiFolder className="w-3 h-3" />
-                        {selectedPhoto.album.name}
+                        {selectedPhoto.gallery.title}
                       </span>
                     </div>
                   )}
@@ -751,15 +751,15 @@ export default function GalleryTab({ familyId, showMock = false, isGuest = false
             >
               <div className="relative aspect-square bg-gray-100">
                 <Image
-                  src={photo.thumbnailUrl ?? photo.cloudinaryUrl}
-                  alt={photo.caption}
+                  src={photo.thumbnailUrl ?? photo.fileUrl}
+                  alt={photo.caption ?? 'Photo'}
                   fill
                   className="object-cover group-hover:scale-110 transition-transform duration-300"
                   sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
-                    <p className="text-sm font-semibold line-clamp-2">{photo.caption}</p>
+                    <p className="text-sm font-semibold line-clamp-2">{photo.caption ?? 'Untitled'}</p>
                   </div>
                 </div>
               </div>
@@ -767,19 +767,19 @@ export default function GalleryTab({ familyId, showMock = false, isGuest = false
                 <div className="flex items-center justify-between text-xs text-gray-500">
                   <div className="flex items-center gap-2">
                     <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-full flex items-center justify-center text-white font-bold text-[10px]">
-                      {`${photo.uploadedBy.firstName?.[0] ?? ''}${photo.uploadedBy.lastName?.[0] ?? ''}`}
+                      {photo.uploader?.firstName?.[0] ?? ''}{photo.uploader?.lastName?.[0] ?? ''}
                     </div>
                     <span className="font-medium truncate">
-                      {photo.uploadedBy.firstName} {photo.uploadedBy.lastName}
+                      {photo.uploader?.firstName ?? 'Unknown'} {photo.uploader?.lastName ?? 'User'}
                     </span>
                   </div>
-                  <span>{new Date(photo.uploadedAt).toLocaleDateString()}</span>
+                  <span>{new Date(photo.createdAt).toLocaleDateString()}</span>
                 </div>
-                {photo.album && (
+                {photo.gallery && (
                   <div className="mt-2">
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-blue-100 to-cyan-50 text-[10px] font-semibold text-blue-800 border border-blue-200">
                       <FiFolder className="w-2.5 h-2.5" />
-                      {photo.album.name}
+                      {photo.gallery.title}
                     </span>
                   </div>
                 )}
