@@ -565,6 +565,25 @@ export default function MarketplacePage() {
     didInitFromUrl.current = true;
   }, [searchParams]);
 
+  // Listen for URL parameter changes after initial mount and update activeTab accordingly
+  // This ensures tab switching via navigation updates the displayed content
+  useEffect(() => {
+    if (!didInitFromUrl.current) return; // Skip until initial URL read is complete
+    const sp = searchParams;
+    if (!sp) return;
+    
+    const urlTab = sp.get("tab");
+    // Update activeTab when URL tab parameter changes
+    if (urlTab === "jobs" && activeTab !== "jobs") {
+      setActiveTab("jobs");
+    } else if (urlTab === "providers" && activeTab !== "providers") {
+      setActiveTab("providers");
+    } else if (!urlTab && activeTab !== "caregivers") {
+      // No tab parameter means caregivers (default)
+      setActiveTab("caregivers");
+    }
+  }, [searchParams, activeTab]);
+
   // Keep URL in sync when on caregivers tab (debounced inputs)
   useEffect(() => {
     if (!didInitFromUrl.current) return;

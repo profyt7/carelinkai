@@ -11,7 +11,7 @@ const cspBase = [
   // Connections: self + Stripe APIs
   "connect-src 'self' https://api.stripe.com",
   // Images: self + data/blob and known hosts (including Cloudinary and OpenStreetMap tiles)
-  "img-src 'self' data: blob: http://localhost:3000 http://localhost:5002 https://res.cloudinary.com https://media2.dev.to https://dev-to-uploads.s3.amazonaws.com https://picsum.photos https://images.unsplash.com https://placehold.co https://ui-avatars.com https://i.ytimg.com/vi/YI3SC2hZVGU/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLCo-kwkLFhR01jKZyA6cEdCgLz9jw http://mike.teczno.com/img/osm-terrain/Stanford.jpg https://upload.wikimedia.org",
+  "img-src 'self' data: blob: http://localhost:3000 http://localhost:5002 https://res.cloudinary.com https://media2.dev.to https://dev-to-uploads.s3.amazonaws.com https://picsum.photos https://images.unsplash.com https://placehold.co https://ui-avatars.com https://i.ytimg.com/vi/YI3SC2hZVGU/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLCo-kwkLFhR01jKZyA6cEdCgLz9jw http://mike.teczno.com/img/osm-terrain/Stanford.jpg https://upload.wikimedia.org https://a.tile.openstreetmap.org https://b.tile.openstreetmap.org https://c.tile.openstreetmap.org",
   // Styles: allow inline for Tailwind runtime classes; restrict to fonts domain
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   // Fonts
