@@ -320,7 +320,17 @@ export default function MarketplacePage() {
   const resultsRef = useRef<HTMLDivElement | null>(null);
   const scrollRaf = useRef<number | null>(null);
 
-  // Restore per-tab scroll position when switching tabs or on mount
+  // Scroll to top on initial page load
+  useEffect(() => {
+    // Only scroll to top on very first mount (when coming from another page)
+    const isInitialMount = !sessionStorage.getItem('marketplace:visited');
+    if (isInitialMount) {
+      window.scrollTo({ top: 0, behavior: 'auto' });
+      sessionStorage.setItem('marketplace:visited', '1');
+    }
+  }, []);
+
+  // Restore per-tab scroll position when switching tabs
   useEffect(() => {
     try {
       const key = SCROLL_KEYS[activeTab];
