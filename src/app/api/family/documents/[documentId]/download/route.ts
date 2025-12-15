@@ -34,7 +34,7 @@ export async function GET(request: NextRequest, { params }: { params: { document
 
     const doc = await prisma.familyDocument.findUnique({
       where: { id: documentId },
-      select: { id: true, familyId: true, title: true, fileUrl: true, fileType: true }
+      select: { id: true, familyId: true, title: true, fileUrl: true, fileType: true, fileName: true, metadata: true }
     });
     if (!doc) {
       return NextResponse.json({ error: "Document not found" }, { status: 404 });
@@ -50,7 +50,40 @@ export async function GET(request: NextRequest, { params }: { params: { document
       return NextResponse.json({ error: "No permission to view documents" }, { status: 403 });
     }
 
-    // Support only S3-backed documents for download; legacy public paths should be phased out
+    // Check if document is stored in Cloudinary
+    const metadata = doc.metadata as any;
+    const isCloudinary = metadata?.uploadService === 'cloudinary' || 
+                        doc.fileUrl.includes('cloudinary.com') ||
+                        doc.fileUrl.includes('res.cloudinary.com');
+    
+    // Handle Cloudinary documents
+    if (isCloudinary) {
+      console.log('[Download] Cloudinary document detected:', {
+        documentId: doc.id,
+        fileName: doc.fileName,
+        fileUrl: doc.fileUrl
+      });
+      
+      // Audit log (read/download)
+      try {
+        await createAuditLogFromRequest(
+          request,
+          "DOCUMENT_VIEWED" as any,
+          "FamilyDocument",
+          doc.id,
+          `Downloaded family document: ${doc.title}`,
+          { fileType: doc.fileType, action: 'download', service: 'cloudinary' }
+        );
+      } catch (auditError) {
+        // Log audit error but don't fail the download
+        console.error('Failed to create audit log:', auditError);
+      }
+      
+      // Redirect directly to Cloudinary URL (it's already secure)
+      return NextResponse.redirect(doc.fileUrl, 302);
+    }
+    
+    // Handle S3 documents (legacy)
     const s3 = parseS3Url(doc.fileUrl);
     
     // Handle mock/development mode - allow direct access to mock URLs
@@ -81,7 +114,7 @@ export async function GET(request: NextRequest, { params }: { params: { document
         "FamilyDocument",
         doc.id,
         `Downloaded family document: ${doc.title}`,
-        { fileType: doc.fileType, action: 'download' }
+        { fileType: doc.fileType, action: 'download', service: 's3' }
       );
     } catch (auditError) {
       // Log audit error but don't fail the download
