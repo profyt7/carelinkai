@@ -144,12 +144,12 @@ export const config = {
     /* ---------------------------------------------------------------
      *  Only match routes that should be protected.  We exclude:
      *   - Root landing page "/"
-     *   - Any path starting with /api , /_next , /static , /public
+     *   - Any path starting with /api , /_next , /static , /public , /images
      *   - All auth related routes
      *   - PWA assets: sw.js, manifest.json, offline.html
      * ------------------------------------------------------------- */
     // Require at least ONE character after the leading slash so "/" itself is excluded
-    '/((?!api|_next|static|public|favicon\\.ico|auth|sw\\.js|manifest\\.json|offline\\.html).+)',
+    '/((?!api|_next|static|public|images|favicon\\.ico|auth|sw\\.js|manifest\\.json|offline\\.html).+)',
   ],
 };
 
