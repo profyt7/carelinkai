@@ -75,29 +75,64 @@ export default function DocumentsTab({ familyId, showMock = false, onUploadClick
           return;
         }
         
-        if (!familyId) {
+        // Enhanced guard clause to catch all invalid familyId values
+        if (!familyId || familyId === 'null' || familyId.trim() === '') {
+          console.warn('[DocumentsTab] Invalid familyId, skipping fetch:', familyId);
           setLoading(false);
+          setError('Unable to load documents: family information not available');
           return;
         }
 
-        const params = new URLSearchParams({
-          familyId,
-          limit: '12',
-          sortBy: 'createdAt',
-          sortOrder: 'desc',
-        });
-        if (search) params.set('search', search);
-        if (docType) params.append('type', docType);
+        // Additional validation: ensure familyId looks like a valid ID
+        if (familyId.length < 10) {
+          console.warn('[DocumentsTab] familyId too short, likely invalid:', familyId);
+          setLoading(false);
+          setError('Unable to load documents: invalid family ID');
+          return;
+        }
 
-        const res = await fetch(`/api/family/documents?${params.toString()}`, {
+        console.log('[DocumentsTab] Valid familyId confirmed:', familyId);
+
+        // Build query parameters - ALWAYS include familyId first
+        const params = new URLSearchParams();
+        params.append('familyId', familyId);
+        params.append('limit', '12');
+        params.append('sortBy', 'createdAt');
+        params.append('sortOrder', 'desc');
+
+        // Add optional search parameter
+        if (search && search.trim()) {
+          params.append('search', search.trim());
+          console.log('[DocumentsTab] Including search term:', search.trim());
+        }
+
+        // Add optional docType parameter
+        if (docType) {
+          params.append('type', docType);
+          console.log('[DocumentsTab] Including docType:', docType);
+        }
+
+        const url = `/api/family/documents?${params.toString()}`;
+        console.log('[DocumentsTab] Fetching from:', url);
+
+        const res = await fetch(url, {
           signal: controller.signal,
         });
-        if (!res.ok) throw new Error('Failed to load documents');
+
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.error || `API error: ${res.status}`);
+        }
+
         const json = await res.json();
+        console.log('[DocumentsTab] Received documents:', json.documents?.length || 0);
+        
         setDocs(json.documents ?? []);
       } catch (err: any) {
         if (err.name === 'AbortError') return;
+        console.error('[DocumentsTab] Error fetching documents:', err);
         setError(err.message ?? 'Error loading documents');
+        setDocs([]);
       } finally {
         setLoading(false);
       }
