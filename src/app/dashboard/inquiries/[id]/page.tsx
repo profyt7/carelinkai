@@ -243,7 +243,7 @@ const MOCK_INQUIRY: Inquiry = {
     id: "1",
     name: "Sunshine Care Home",
     address: "123 Maple Street, San Francisco, CA 94102",
-    image: "https://placehold.co/800x400/e9ecef/495057?text=Sunshine+Care+Home",
+    image: "https://res.cloudinary.com/dygtsnu8z/image/upload/v1765830428/carelinkai/homes/home-1.jpg",
     phone: "(415) 555-1234",
     email: "info@sunshinecarehome.com",
     contactPerson: "Sarah Johnson"
@@ -262,7 +262,7 @@ const MOCK_INQUIRY: Inquiry = {
       email: "robert@example.com",
       relationship: "Brother",
       permissionLevel: "ADMIN",
-      avatar: "https://placehold.co/100x100/e9ecef/495057?text=RS",
+      avatar: "https://res.cloudinary.com/dygtsnu8z/image/upload/v1765830513/carelinkai/placeholders/profile/profile-male.png",
       lastActive: "2025-07-23T16:20:00Z",
       isActive: true
     },
@@ -351,7 +351,7 @@ const MOCK_INQUIRY: Inquiry = {
         id: "facility-001",
         name: "Sarah Johnson",
         role: "CARE_HOME",
-        avatar: "https://placehold.co/100x100/e9ecef/495057?text=SJ"
+        avatar: "https://res.cloudinary.com/dygtsnu8z/image/upload/v1765830514/carelinkai/placeholders/profile/profile-female.png"
       },
       content: "Hello! Thank you for your interest in Sunshine Care Home. I'd be happy to answer any questions you have about our facility and services.",
       timestamp: "2025-07-21T10:20:00Z",
@@ -374,7 +374,7 @@ const MOCK_INQUIRY: Inquiry = {
         id: "facility-001",
         name: "Sarah Johnson",
         role: "CARE_HOME",
-        avatar: "https://placehold.co/100x100/e9ecef/495057?text=SJ"
+        avatar: "https://res.cloudinary.com/dygtsnu8z/image/upload/v1765830514/carelinkai/placeholders/profile/profile-female.png"
       },
       content: "Yes, we currently have two private rooms that will be available next month. Both include private bathrooms and our full medication management services. Would you like to schedule a tour to see the rooms and our facility?",
       timestamp: "2025-07-22T09:10:00Z",

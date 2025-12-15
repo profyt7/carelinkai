@@ -48,9 +48,9 @@ const SimpleMap = dynamic(
   { ssr: false }
 );
 
-// Fallback image for any thumbnail load errors
+// Fallback image for any thumbnail load errors (Cloudinary)
 const FALLBACK_IMG =
-  "https://placehold.co/1200x800?text=Care+Home";
+  "https://res.cloudinary.com/dygtsnu8z/image/upload/v1765830428/carelinkai/homes/home-1.jpg";
 
 // Care level options for filtering
 const CARE_LEVELS = [

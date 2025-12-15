@@ -1,0 +1,72 @@
+[
+  {
+    "name": "profile-default",
+    "category": "profile",
+    "publicId": "carelinkai/placeholders/profile/profile-default",
+    "url": "https://res.cloudinary.com/dygtsnu8z/image/upload/v1765830513/carelinkai/placeholders/profile/profile-default.png",
+    "success": true
+  },
+  {
+    "name": "profile-male",
+    "category": "profile",
+    "publicId": "carelinkai/placeholders/profile/profile-male",
+    "url": "https://res.cloudinary.com/dygtsnu8z/image/upload/v1765830513/carelinkai/placeholders/profile/profile-male.png",
+    "success": true
+  },
+  {
+    "name": "profile-female",
+    "category": "profile",
+    "publicId": "carelinkai/placeholders/profile/profile-female",
+    "url": "https://res.cloudinary.com/dygtsnu8z/image/upload/v1765830514/carelinkai/placeholders/profile/profile-female.png",
+    "success": true
+  },
+  {
+    "name": "profile-admin",
+    "category": "profile",
+    "publicId": "carelinkai/placeholders/profile/profile-admin",
+    "url": "https://res.cloudinary.com/dygtsnu8z/image/upload/v1765830515/carelinkai/placeholders/profile/profile-admin.png",
+    "success": true
+  },
+  {
+    "name": "caregiver-default",
+    "category": "caregiver",
+    "publicId": "carelinkai/placeholders/caregiver/caregiver-default",
+    "url": "https://res.cloudinary.com/dygtsnu8z/image/upload/v1765830515/carelinkai/placeholders/caregiver/caregiver-default.png",
+    "success": true
+  },
+  {
+    "name": "caregiver-nurse",
+    "category": "caregiver",
+    "publicId": "carelinkai/placeholders/caregiver/caregiver-nurse",
+    "url": "https://res.cloudinary.com/dygtsnu8z/image/upload/v1765830516/carelinkai/placeholders/caregiver/caregiver-nurse.png",
+    "success": true
+  },
+  {
+    "name": "caregiver-aide",
+    "category": "caregiver",
+    "publicId": "carelinkai/placeholders/caregiver/caregiver-aide",
+    "url": "https://res.cloudinary.com/dygtsnu8z/image/upload/v1765830517/carelinkai/placeholders/caregiver/caregiver-aide.png",
+    "success": true
+  },
+  {
+    "name": "provider-default",
+    "category": "provider",
+    "publicId": "carelinkai/placeholders/provider/provider-default",
+    "url": "https://res.cloudinary.com/dygtsnu8z/image/upload/v1765830518/carelinkai/placeholders/provider/provider-default.png",
+    "success": true
+  },
+  {
+    "name": "provider-medical",
+    "category": "provider",
+    "publicId": "carelinkai/placeholders/provider/provider-medical",
+    "url": "https://res.cloudinary.com/dygtsnu8z/image/upload/v1765830518/carelinkai/placeholders/provider/provider-medical.png",
+    "success": true
+  },
+  {
+    "name": "provider-facility",
+    "category": "provider",
+    "publicId": "carelinkai/placeholders/provider/provider-facility",
+    "url": "https://res.cloudinary.com/dygtsnu8z/image/upload/v1765830519/carelinkai/placeholders/provider/provider-facility.png",
+    "success": true
+  }
+]

@@ -39,15 +39,15 @@ const nextConfig = {
     domains: [
       'localhost',
       'carelinkai-storage.s3.amazonaws.com',
+      'res.cloudinary.com', // Cloudinary - primary image storage (homes, profiles, placeholders, gallery)
       'example.com', // allows https://lh7-rt.googleusercontent.com/docsz/AD_4nXcOPwbgNp1HdEMpWAMHR-gchG6eznUeQfsqb0J_r0HoOkisz5cfFqsUEMxXLm6eYRkrgN1HKn9s-QgPGWUEeYzWlcRMREwjP_uYIsKwcnLU-pCB0mLWP73USNum7AcQ7HD5UP8S3tJsrec5zR-tYvOPkGeM?key=xWW08Jc0hoeWtBTusdnhTA
-      // Additional remote image hosts used throughout the app
+      // Legacy/fallback image hosts
       'picsum.photos',
       'randomuser.me',
       'placehold.co',
       'ui-avatars.com',
       'fastly.picsum.photos',
       'images.unsplash.com',
-      'res.cloudinary.com', // Cloudinary for gallery images
     ],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
     formats: ['image/webp'],

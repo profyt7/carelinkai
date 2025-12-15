@@ -44,18 +44,18 @@ const MAX_PAGE_SIZE = 50;
  * NOTE: keep the list small and static so mocks are deterministic.
  */
 const HOME_IMAGES: string[] = [
-  '/images/homes/1.jpg',
-  '/images/homes/2.jpg',
-  '/images/homes/3.jpg',
-  '/images/homes/4.jpg',
-  '/images/homes/5.jpg',
-  '/images/homes/6.jpg',
-  '/images/homes/7.jpg',
-  '/images/homes/8.jpg',
-  '/images/homes/9.jpg',
-  '/images/homes/10.jpg',
-  '/images/homes/11.jpg',
-  '/images/homes/12.jpg',
+  'https://res.cloudinary.com/dygtsnu8z/image/upload/v1765830428/carelinkai/homes/home-1.jpg',
+  'https://res.cloudinary.com/dygtsnu8z/image/upload/v1765830435/carelinkai/homes/home-2.jpg',
+  'https://res.cloudinary.com/dygtsnu8z/image/upload/v1765830437/carelinkai/homes/home-3.jpg',
+  'https://res.cloudinary.com/dygtsnu8z/image/upload/v1765830439/carelinkai/homes/home-4.jpg',
+  'https://res.cloudinary.com/dygtsnu8z/image/upload/v1765830441/carelinkai/homes/home-5.jpg',
+  'https://res.cloudinary.com/dygtsnu8z/image/upload/v1765830443/carelinkai/homes/home-6.jpg',
+  'https://res.cloudinary.com/dygtsnu8z/image/upload/v1765830445/carelinkai/homes/home-7.jpg',
+  'https://res.cloudinary.com/dygtsnu8z/image/upload/v1765830447/carelinkai/homes/home-8.jpg',
+  'https://res.cloudinary.com/dygtsnu8z/image/upload/v1765830449/carelinkai/homes/home-9.jpg',
+  'https://res.cloudinary.com/dygtsnu8z/image/upload/v1765830430/carelinkai/homes/home-10.jpg',
+  'https://res.cloudinary.com/dygtsnu8z/image/upload/v1765830431/carelinkai/homes/home-11.jpg',
+  'https://res.cloudinary.com/dygtsnu8z/image/upload/v1765830433/carelinkai/homes/home-12.jpg',
 ];
 
 /**

@@ -117,7 +117,7 @@ const MOCK_CONVERSATIONS: Record<string, Conversation> = {
         id: 'facility-001',
         name: 'Sarah Johnson',
         role: 'CARE_HOME',
-        avatar: 'https://placehold.co/100x100/e9ecef/495057?text=SJ',
+        avatar: 'https://res.cloudinary.com/dygtsnu8z/image/upload/v1765830514/carelinkai/placeholders/profile/profile-female.png',
         isActive: true
       }
     ],
@@ -347,14 +347,14 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             onProgress(progress);
           }
           
-          // Generate a mock URL based on file type
+          // Generate a mock URL based on file type (using Cloudinary placeholder)
           const isImage = file.type.startsWith('image/');
           const mockUrl = isImage 
-            ? `https://placehold.co/800x600/e9ecef/495057?text=${encodeURIComponent(file.name)}`
+            ? 'https://res.cloudinary.com/dygtsnu8z/image/upload/v1765830428/carelinkai/homes/home-1.jpg'
             : '#';
           
           const thumbnailUrl = isImage 
-            ? `https://placehold.co/200x150/e9ecef/495057?text=${encodeURIComponent(file.name)}`
+            ? 'https://res.cloudinary.com/dygtsnu8z/image/upload/v1765830428/carelinkai/homes/home-1.jpg'
             : undefined;
           
           resolve({

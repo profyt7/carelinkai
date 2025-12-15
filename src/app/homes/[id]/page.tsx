@@ -160,28 +160,28 @@ const MOCK_HOME = {
       id: "s1", 
       name: "Dr. Robert Chen", 
       title: "Medical Director", 
-      photo: "https://placehold.co/300x300/e9ecef/495057?text=Dr.+Chen",
+      photo: "https://res.cloudinary.com/dygtsnu8z/image/upload/v1765830518/carelinkai/placeholders/provider/provider-medical.png",
       bio: "Dr. Chen has over 20 years of experience in geriatric medicine and oversees all medical care at Sunshine Care Home."
     },
     { 
       id: "s2", 
       name: "Sarah Johnson", 
       title: "Administrator", 
-      photo: "https://placehold.co/300x300/e9ecef/495057?text=Sarah+J",
+      photo: "https://res.cloudinary.com/dygtsnu8z/image/upload/v1765830515/carelinkai/placeholders/caregiver/caregiver-default.png",
       bio: "Sarah has been with Sunshine for 8 years and ensures the highest standards of care and service for all residents."
     },
     { 
       id: "s3", 
       name: "Miguel Rodriguez", 
       title: "Head of Nursing", 
-      photo: "https://placehold.co/300x300/e9ecef/495057?text=Miguel+R",
+      photo: "https://res.cloudinary.com/dygtsnu8z/image/upload/v1765830516/carelinkai/placeholders/caregiver/caregiver-nurse.png",
       bio: "Miguel leads our nursing team with compassion and expertise, focusing on personalized care plans for each resident."
     },
     { 
       id: "s4", 
       name: "Lisa Wong", 
       title: "Activities Director", 
-      photo: "https://placehold.co/300x300/e9ecef/495057?text=Lisa+W",
+      photo: "https://res.cloudinary.com/dygtsnu8z/image/upload/v1765830517/carelinkai/placeholders/caregiver/caregiver-aide.png",
       bio: "Lisa creates engaging programs that promote social interaction, cognitive stimulation, and physical well-being."
     }
   ],
@@ -1658,7 +1658,7 @@ export default function HomeDetailPage() {
                     <div className="flex items-center space-x-3">
                       <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md">
                         <Image
-                          src="https://placehold.co/300x300/e9ecef/495057?text=Golden+Years"
+                          src="https://res.cloudinary.com/dygtsnu8z/image/upload/v1765830518/carelinkai/placeholders/provider/provider-facility.png"
                           alt="Golden Years Living"
                           fill
                           className="object-cover"
@@ -1673,7 +1673,7 @@ export default function HomeDetailPage() {
                     <div className="flex items-center space-x-3">
                       <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md">
                         <Image
-                          src="https://placehold.co/300x300/e9ecef/495057?text=Serenity"
+                          src="https://res.cloudinary.com/dygtsnu8z/image/upload/v1765830518/carelinkai/placeholders/provider/provider-facility.png"
                           alt="Serenity House"
                           fill
                           className="object-cover"
