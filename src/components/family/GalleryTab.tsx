@@ -11,7 +11,7 @@ type Photo = {
   caption: string;
   fileUrl: string; // Changed from cloudinaryUrl to match API
   thumbnailUrl?: string;
-  fileType: string;
+  fileType?: string; // Optional: stored in metadata, not always available
   createdAt: string; // Changed from uploadedAt to match API
   uploader?: { // Changed from uploadedBy to match API, made optional for safety
     id: string;
@@ -23,7 +23,7 @@ type Photo = {
     id: string;
     title: string; // Changed from name to match API
   } | null;
-  comments: {
+  comments?: { // Optional: comments might not be loaded initially
     id: string;
     content: string;
     createdAt: string;
@@ -116,6 +116,7 @@ export default function GalleryTab({ familyId, showMock = false, isGuest = false
       }
 
       if (!familyId) {
+        console.log('🔍 [GalleryTab] No familyId provided');
         setLoading(false);
         return;
       }
@@ -124,11 +125,17 @@ export default function GalleryTab({ familyId, showMock = false, isGuest = false
       if (search) params.set('search', search);
       if (selectedAlbum) params.set('albumId', selectedAlbum);
 
+      console.log('🔍 [GalleryTab] Fetching photos...', { familyId, search, selectedAlbum });
       const res = await fetch(`/api/family/gallery?${params.toString()}`);
       if (!res.ok) throw new Error('Failed to load photos');
       const json = await res.json();
+      console.log('📸 [GalleryTab] Photos received:', {
+        count: json.photos?.length || 0,
+        photos: json.photos,
+      });
       setPhotos(json.photos ?? []);
     } catch (err: any) {
+      console.error('❌ [GalleryTab] Error fetching photos:', err);
       setError(err.message ?? 'Error loading photos');
     } finally {
       setLoading(false);
@@ -187,12 +194,12 @@ export default function GalleryTab({ familyId, showMock = false, isGuest = false
       if (data?.photoId && data?.comment) {
         setPhotos((prev) =>
           prev.map((p) =>
-            p.id === data.photoId ? { ...p, comments: [...(p.comments ?? []), data.comment] } : p
+            p.id === data.photoId ? { ...p, comments: [...(p.comments || []), data.comment] } : p
           )
         );
         if (selectedPhoto?.id === data.photoId) {
           setSelectedPhoto((prev) =>
-            prev ? { ...prev, comments: [...(prev.comments ?? []), data.comment] } : null
+            prev ? { ...prev, comments: [...(prev.comments || []), data.comment] } : null
           );
         }
       }
@@ -315,6 +322,14 @@ export default function GalleryTab({ familyId, showMock = false, isGuest = false
       setSelectedPhoto(photos[newIndex]);
     }
   };
+
+  console.log('🎨 [GalleryTab] Rendering with state:', {
+    loading,
+    error,
+    photosCount: photos.length,
+    search,
+    selectedAlbum,
+  });
 
   if (loading) {
     return <LoadingState type="grid" count={6} />;
@@ -632,14 +647,11 @@ export default function GalleryTab({ familyId, showMock = false, isGuest = false
                 </button>
 
                 <div className="flex-1 relative aspect-video bg-black/50 rounded-xl overflow-hidden">
-                  {selectedPhoto.fileType.startsWith('image/') ? (
-                    <Image
+                  {selectedPhoto.fileType?.startsWith('image/') || !selectedPhoto.fileType ? (
+                    <img
                       src={selectedPhoto.fileUrl}
                       alt={selectedPhoto.caption ?? 'Photo'}
-                      fill
-                      className="object-contain"
-                      sizes="(max-width: 1200px) 100vw, 1200px"
-                      unoptimized
+                      className="w-full h-full object-contain"
                     />
                   ) : (
                     <video src={selectedPhoto.fileUrl} controls className="w-full h-full object-contain" />
@@ -673,19 +685,19 @@ export default function GalleryTab({ familyId, showMock = false, isGuest = false
                 <div className="flex-1 border-t border-gray-200 pt-4 flex flex-col">
                   <h4 className="font-bold text-lg text-gray-900 mb-3 flex items-center gap-2">
                     <FiMessageSquare className="w-5 h-5" />
-                    Comments ({selectedPhoto.comments?.length ?? 0})
+                    Comments ({selectedPhoto.comments?.length || 0})
                   </h4>
 
                   {/* Comments List */}
                   <div className="flex-1 overflow-y-auto space-y-3 mb-4">
-                    {selectedPhoto.comments?.length === 0 ? (
+                    {!selectedPhoto.comments || selectedPhoto.comments.length === 0 ? (
                       <p className="text-sm text-gray-400 text-center py-4">No comments yet</p>
                     ) : (
-                      selectedPhoto.comments?.map((comment) => (
+                      selectedPhoto.comments.map((comment) => (
                         <div key={comment.id} className="p-3 bg-gray-50 rounded-lg">
                           <div className="flex items-center gap-2 mb-2">
                             <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-full flex items-center justify-center text-white font-bold text-xs">
-                              {`${comment.author.firstName?.[0] ?? ''}${comment.author.lastName?.[0] ?? ''}`}
+                              {`${comment.author.firstName?.[0] || ''}${comment.author.lastName?.[0] || ''}`}
                             </div>
                             <span className="text-xs font-semibold text-gray-900">
                               {comment.author.firstName} {comment.author.lastName}
@@ -751,13 +763,11 @@ export default function GalleryTab({ familyId, showMock = false, isGuest = false
               className="group cursor-pointer rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-white"
             >
               <div className="relative aspect-square bg-gray-100">
-                <Image
+                <img
                   src={photo.thumbnailUrl ?? photo.fileUrl}
                   alt={photo.caption ?? 'Photo'}
-                  fill
-                  className="object-cover group-hover:scale-110 transition-transform duration-300"
-                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                  unoptimized
+                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                  loading="lazy"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
