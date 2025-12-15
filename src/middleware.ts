@@ -6,6 +6,30 @@ export default withAuth(
   // `withAuth` augments your Request with the user's token
   function middleware(req) {
     try {
+      const { pathname } = req.nextUrl;
+
+      /* ------------------------------------------------------------------
+       * CRITICAL FIX: Explicitly exclude Next.js internal routes
+       * This is a safety net that runs BEFORE any auth logic.
+       * Without this, the withAuth wrapper may still try to authenticate
+       * requests to /_next/image, /_next/static, etc.
+       * ---------------------------------------------------------------- */
+      if (
+        pathname.startsWith('/_next/') ||
+        pathname.startsWith('/api/') ||
+        pathname.startsWith('/static/') ||
+        pathname.startsWith('/public/') ||
+        pathname.startsWith('/images/') ||
+        pathname === '/favicon.ico' ||
+        pathname === '/sw.js' ||
+        pathname === '/manifest.json' ||
+        pathname === '/offline.html'
+      ) {
+        // Allow these requests to pass through without any auth checks
+        const res = NextResponse.next();
+        return res;
+      }
+
       const urlObj = req.nextUrl
       const qsMock = urlObj?.searchParams?.get?.('mock')?.toString().trim().toLowerCase() || '';
       const qsOn = ['1','true','yes','on'].includes(qsMock);
@@ -65,7 +89,6 @@ export default withAuth(
         try { res.cookies.set('e2e-bypass', '1', { path: '/' }); } catch {}
         return applySecurityHeaders(req, res);
       }
-      const { pathname } = req.nextUrl;
 
       /* ------------------------------------------------------------------
        * EXTRA SAFETY-NET:
@@ -100,8 +123,30 @@ export default withAuth(
     callbacks: {
       // The middleware runs when the authorized callback returns `true`
       authorized({ req, token }) {
-        // Allow public access to selected routes when runtime mock mode is enabled
         try {
+          const pathname = req?.nextUrl?.pathname || '';
+
+          /* ------------------------------------------------------------------
+           * CRITICAL FIX: Always allow Next.js internal routes without auth
+           * This callback runs BEFORE the middleware function, so we MUST
+           * explicitly allow these routes here to prevent 400 errors on
+           * image optimization and static assets.
+           * ---------------------------------------------------------------- */
+          if (
+            pathname.startsWith('/_next/') ||
+            pathname.startsWith('/api/') ||
+            pathname.startsWith('/static/') ||
+            pathname.startsWith('/public/') ||
+            pathname.startsWith('/images/') ||
+            pathname === '/favicon.ico' ||
+            pathname === '/sw.js' ||
+            pathname === '/manifest.json' ||
+            pathname === '/offline.html'
+          ) {
+            return true; // Allow without authentication
+          }
+
+          // Allow public access to selected routes when runtime mock mode is enabled
           const cookieRaw = req?.cookies?.get?.('carelink_mock_mode')?.value?.toString().trim().toLowerCase() || '';
           const cookieOn = ['1', 'true', 'yes', 'on'].includes(cookieRaw);
           const qsMock = req?.nextUrl?.searchParams?.get?.('mock')?.toString().trim().toLowerCase() || '';
@@ -113,19 +158,19 @@ export default withAuth(
           const envOn = ['1', 'true', 'yes', 'on'].includes(rawMock);
           const showMocks = cookieOn || envOn || qsOn;
           if (showMocks) {
-            const pathname = req?.nextUrl?.pathname || '';
             if (pathname === '/' || pathname === '/search' || pathname.startsWith('/marketplace')) {
               return true;
             }
           }
-        } catch {}
-        // E2E bypass via env flag or explicit header
-        try {
+
+          // E2E bypass via env flag or explicit header
           if (process.env['NODE_ENV'] !== 'production' && process.env['NEXT_PUBLIC_E2E_AUTH_BYPASS'] === '1') return true;
           // Some Next versions expose headers on req.headers
           const headerVal = req?.headers?.get?.('x-e2e-bypass');
           if (process.env['NODE_ENV'] !== 'production' && headerVal === '1') return true;
-        } catch {}
+        } catch (err) {
+          console.error('authorized callback error:', err);
+        }
         // If there is a token, the user is authenticated
         return !!token;
       },
