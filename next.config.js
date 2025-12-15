@@ -39,7 +39,7 @@ const nextConfig = {
     domains: [
       'localhost',
       'carelinkai-storage.s3.amazonaws.com',
-      'res.cloudinary.com', // Cloudinary - primary image storage (homes, profiles, placeholders, gallery)
+      // Cloudinary moved to remotePatterns for Next.js 13+ compatibility
       'example.com', // allows https://lh7-rt.googleusercontent.com/docsz/AD_4nXcOPwbgNp1HdEMpWAMHR-gchG6eznUeQfsqb0J_r0HoOkisz5cfFqsUEMxXLm6eYRkrgN1HKn9s-QgPGWUEeYzWlcRMREwjP_uYIsKwcnLU-pCB0mLWP73USNum7AcQ7HD5UP8S3tJsrec5zR-tYvOPkGeM?key=xWW08Jc0hoeWtBTusdnhTA
       // Legacy/fallback image hosts
       'picsum.photos',
@@ -52,6 +52,7 @@ const nextConfig = {
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
     formats: ['image/webp'],
     // Allow optimization of images served from the local uploads folder in development
+    // remotePatterns is the Next.js 13+ recommended approach for external images
     remotePatterns: [
       {
         protocol: 'http',
@@ -65,6 +66,7 @@ const nextConfig = {
         port: '5002',
         pathname: '/uploads/**',
       },
+      // Cloudinary - primary image storage for homes, profiles, placeholders, gallery
       {
         protocol: 'https',
         hostname: 'res.cloudinary.com',
