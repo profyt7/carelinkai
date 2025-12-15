@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { 
@@ -44,6 +43,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import PhotoGallery from "@/components/homes/PhotoGallery";
 import PricingCalculator from "@/components/homes/PricingCalculator";
 import type { PricingEstimate } from "@/components/homes/PricingCalculator";
+import { getCloudinaryAvatar, isCloudinaryUrl } from "@/lib/cloudinaryUrl";
 
 // Dynamically import the SimpleMap component with SSR disabled
 const SimpleMap = dynamic(
@@ -1093,12 +1093,12 @@ export default function HomeDetailPage() {
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
                 {home.staff.map((member) => (
                   <div key={member.id} className="overflow-hidden rounded-lg border border-neutral-200 bg-white transition-shadow hover:shadow-md">
-                    <div className="aspect-w-1 aspect-h-1 relative w-full">
-                      <Image
-                        src={member.photo}
+                    <div className="relative w-full pt-[100%]">
+                      <img
+                        src={isCloudinaryUrl(member.photo) ? getCloudinaryAvatar(member.photo) : member.photo}
                         alt={member.name}
-                        fill
-                        className="object-cover"
+                        loading="lazy"
+                        className="absolute inset-0 h-full w-full object-cover"
                       />
                     </div>
                     <div className="p-4">

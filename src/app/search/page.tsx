@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
 import { 
   FiSearch, 
@@ -41,6 +40,7 @@ import {
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import SearchFilters from "@/components/search/SearchFilters";
 import dynamic from "next/dynamic";
+import { getCloudinaryThumbnail, isCloudinaryUrl } from "@/lib/cloudinaryUrl";
 
 // Dynamically import the map (Leaflet) to avoid SSR issues
 const SimpleMap = dynamic(
@@ -924,16 +924,15 @@ export default function SearchPage() {
                         <div className="relative h-48 w-full">
                           {home.imageUrl ? (
                             <div className="h-full w-full">
-                              <Image
-                                src={home.imageUrl}
+                              <img
+                                src={isCloudinaryUrl(home.imageUrl) ? getCloudinaryThumbnail(home.imageUrl) : home.imageUrl}
                                 alt={home.name}
-                                fill
-                                className="object-cover"
-                                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                                  onError={(e) => {
-                                    const t = e.currentTarget as HTMLImageElement;
-                                    if (t.src !== FALLBACK_IMG) t.src = FALLBACK_IMG;
-                                  }}
+                                loading="lazy"
+                                className="h-full w-full object-cover"
+                                onError={(e) => {
+                                  const t = e.currentTarget as HTMLImageElement;
+                                  if (t.src !== FALLBACK_IMG) t.src = FALLBACK_IMG;
+                                }}
                               />
                             </div>
                           ) : (
@@ -1056,12 +1055,11 @@ export default function SearchPage() {
                         <div className="relative h-48 w-full md:h-auto md:w-1/3">
                           {home.imageUrl ? (
                             <div className="h-full w-full">
-                              <Image
-                                src={home.imageUrl}
+                              <img
+                                src={isCloudinaryUrl(home.imageUrl) ? getCloudinaryThumbnail(home.imageUrl) : home.imageUrl}
                                 alt={home.name}
-                                fill
-                                className="object-cover"
-                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                loading="lazy"
+                                className="h-full w-full object-cover"
                                 onError={(e) => {
                                   const t = e.currentTarget as HTMLImageElement;
                                   if (t.src !== FALLBACK_IMG) t.src = FALLBACK_IMG;

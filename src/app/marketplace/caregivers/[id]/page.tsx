@@ -3,13 +3,13 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { getMockCaregiverDetail } from "@/lib/mock/marketplace";
 import { isMockModeEnabledFromCookies } from "@/lib/mockMode";
-import Image from "next/image";
 import Link from "next/link";
 import { FiMapPin, FiDollarSign, FiClock, FiCheckCircle, FiCalendar } from "react-icons/fi";
 import RequestShiftForm from "@/components/marketplace/RequestShiftForm";
 import CaregiverReviewForm from "@/components/marketplace/CaregiverReviewForm";
 import CaregiverReviewsList from "@/components/marketplace/CaregiverReviewsList";
 import RequestCareButton from "@/components/marketplace/RequestCareButton";
+import { getCloudinaryAvatar, isCloudinaryUrl } from "@/lib/cloudinaryUrl";
 
 export const dynamic = "force-dynamic";
 
@@ -193,11 +193,10 @@ export default async function CaregiverDetailPage({
           <div className="flex items-start">
             <div className="h-24 w-24 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
               {caregiver.photoUrl ? (
-                <Image
-                  src={caregiver.photoUrl}
+                <img
+                  src={isCloudinaryUrl(caregiver.photoUrl) ? getCloudinaryAvatar(caregiver.photoUrl) : caregiver.photoUrl}
                   alt={caregiver.name}
-                  width={96}
-                  height={96}
+                  loading="lazy"
                   className="h-full w-full object-cover"
                 />
               ) : (
