@@ -33,9 +33,12 @@ export default function DocumentsTab({ familyId, showMock = false, onUploadClick
 
   const formatBytes = (bytes: number) => {
     if (!bytes) return '—';
-    const mb = bytes / (1024 * 1024);
+    const kb = bytes / 1024;
+    const mb = kb / 1024;
+    
     if (mb >= 1) return `${mb.toFixed(1)} MB`;
-    return `${(bytes / 1024).toFixed(0)} KB`;
+    if (kb >= 1) return `${kb.toFixed(1)} KB`;
+    return `${bytes} B`;
   };
 
   useEffect(() => {
@@ -47,12 +50,26 @@ export default function DocumentsTab({ familyId, showMock = false, onUploadClick
         
         if (showMock) {
           const now = Date.now();
-          const mockDocs: Doc[] = [
+          let mockDocs: Doc[] = [
             { id: 'doc-1', title: 'Care Plan', type: 'CARE_PLAN', fileSize: 250_000, createdAt: new Date(now - 86400000).toISOString(), tags: ['plan','medical'], uploader: { firstName: 'Ava', lastName: 'Johnson' } },
             { id: 'doc-2', title: 'Medical Records Summary', type: 'MEDICAL_RECORD', fileSize: 512_000, createdAt: new Date(now - 2*86400000).toISOString(), tags: ['records'], uploader: { firstName: 'Noah', lastName: 'Williams' } },
             { id: 'doc-3', title: 'Insurance Policy', type: 'INSURANCE_DOCUMENT', fileSize: 780_000, createdAt: new Date(now - 3*86400000).toISOString(), tags: ['insurance'], uploader: { firstName: 'Sophia', lastName: 'Martinez' } },
             { id: 'doc-4', title: 'Facility Photos', type: 'PHOTO', fileSize: 1_200_000, createdAt: new Date(now - 4*86400000).toISOString(), tags: ['photos'], uploader: { firstName: 'Oliver', lastName: 'Brown' } },
           ];
+          
+          // Apply client-side filtering for mock data
+          if (search) {
+            const searchLower = search.toLowerCase();
+            mockDocs = mockDocs.filter(doc => 
+              doc.title.toLowerCase().includes(searchLower) ||
+              doc.tags.some(tag => tag.toLowerCase().includes(searchLower))
+            );
+          }
+          
+          if (docType) {
+            mockDocs = mockDocs.filter(doc => doc.type === docType);
+          }
+          
           setDocs(mockDocs);
           setLoading(false);
           return;
