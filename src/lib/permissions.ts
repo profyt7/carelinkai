@@ -94,6 +94,15 @@ export const PERMISSIONS = {
   REPORTS_SCHEDULE: "reports.schedule",
   REPORTS_MANAGE: "reports.manage",
   ANALYTICS_VIEW: "analytics.view",
+  
+  // Tour Scheduling Permissions
+  TOURS_REQUEST: "tours.request",          // Family can request tours
+  TOURS_VIEW: "tours.view",                // View tours
+  TOURS_VIEW_ALL: "tours.view_all",        // View all tours (operator/admin)
+  TOURS_CONFIRM: "tours.confirm",          // Confirm tour requests (operator/admin)
+  TOURS_RESCHEDULE: "tours.reschedule",    // Reschedule tours
+  TOURS_CANCEL: "tours.cancel",            // Cancel tours
+  TOURS_MANAGE_SLOTS: "tours.manage_slots", // Manage available tour slots (operator/admin)
 } as const;
 
 export type Permission = typeof PERMISSIONS[keyof typeof PERMISSIONS];
@@ -165,6 +174,13 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     PERMISSIONS.REPORTS_SCHEDULE,
     PERMISSIONS.REPORTS_MANAGE,
     PERMISSIONS.ANALYTICS_VIEW,
+    
+    // Tours - manage tours for their homes
+    PERMISSIONS.TOURS_VIEW_ALL,
+    PERMISSIONS.TOURS_CONFIRM,
+    PERMISSIONS.TOURS_RESCHEDULE,
+    PERMISSIONS.TOURS_CANCEL,
+    PERMISSIONS.TOURS_MANAGE_SLOTS,
   ],
   
   // CAREGIVER: Limited access - view residents, create care notes, view assessments/incidents
@@ -213,6 +229,12 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     // Inquiries - create and view their own
     PERMISSIONS.INQUIRIES_VIEW,
     PERMISSIONS.INQUIRIES_CREATE,
+    
+    // Tours - request and manage their own tours
+    PERMISSIONS.TOURS_REQUEST,
+    PERMISSIONS.TOURS_VIEW,
+    PERMISSIONS.TOURS_CANCEL,
+    PERMISSIONS.TOURS_RESCHEDULE,
   ],
   
   // STAFF: Similar to OPERATOR but may have different scope

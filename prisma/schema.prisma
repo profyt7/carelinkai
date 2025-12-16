@@ -275,6 +275,7 @@ model Family {
   activities           ActivityFeedItem[]
   emergencyPreferences EmergencyPreference[]
   matchRequests        MatchRequest[] // AI-powered matching engine
+  tourRequests         TourRequest[]  // AI-powered tour scheduling
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -295,6 +296,7 @@ model Operator {
   user       User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   homes      AssistedLivingHome[]
   caregivers CaregiverEmployment[]
+  tourRequests TourRequest[]
 
   // Org-level settings / overrides
   preferences Json?
@@ -592,6 +594,8 @@ model AssistedLivingHome {
   favorites       FavoriteHome[]
   matchResults    MatchResult[] // AI-powered matching engine
   matchFeedback   MatchFeedback[] // AI-powered matching engine
+  tourRequests    TourRequest[] // AI-powered tour scheduling
+  tourSlots       TourSlot[]    // Available tour time slots
 
   // AI-Generated Profile (Feature #2)
   aiGeneratedDescription String?   @db.Text
@@ -2446,4 +2450,100 @@ model MatchFeedback {
   @@index([homeId])
   @@index([userId])
   @@index([feedbackType])
+}
+
+
+
+// ==================== AI TOUR SCHEDULING ====================
+
+enum TourStatus {
+  PENDING       // Tour requested, awaiting operator confirmation
+  CONFIRMED     // Tour confirmed by operator
+  COMPLETED     // Tour has taken place
+  CANCELLED     // Tour cancelled by family or operator
+  RESCHEDULED   // Tour rescheduled to different time
+  NO_SHOW       // Family didn't show up for confirmed tour
+}
+
+enum TourOutcome {
+  SHOWED_UP        // Family attended the tour
+  NO_SHOW          // Family didn't attend
+  CONVERTED        // Family moved forward with booking/inquiry
+  NOT_CONVERTED    // Family did not move forward
+}
+
+model TourRequest {
+  id                String       @id @default(cuid())
+  familyId          String
+  homeId            String
+  operatorId        String       // Operator who manages this home
+  
+  // Requested times from family (stored as array of DateTime)
+  requestedTimes    Json         // Array of DateTime objects
+  
+  // AI-suggested optimal times (stored as array of DateTime)
+  aiSuggestedTimes  Json?        // Array of DateTime objects with reasoning
+  
+  // Confirmed time (once operator confirms)
+  confirmedTime     DateTime?
+  
+  // Status and outcome
+  status            TourStatus   @default(PENDING)
+  outcome           TourOutcome?
+  
+  // Notes
+  familyNotes       String?      @db.Text // Notes from family when requesting
+  operatorNotes     String?      @db.Text // Internal notes from operator
+  
+  // Cancellation details
+  cancelledAt       DateTime?
+  cancelledBy       String?      // User ID who cancelled
+  cancellationReason String?     @db.Text
+  
+  // Relationships
+  family    Family             @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  home      AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
+  operator  Operator           @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Indexes
+  @@index([familyId])
+  @@index([homeId])
+  @@index([operatorId])
+  @@index([status])
+  @@index([confirmedTime])
+  @@index([createdAt])
+}
+
+model TourSlot {
+  id          String   @id @default(cuid())
+  homeId      String
+  
+  // Day of week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
+  dayOfWeek   Int      // 0-6
+  
+  // Time slots (stored as strings in HH:MM format)
+  startTime   String   // e.g., "10:00"
+  endTime     String   // e.g., "11:00"
+  
+  // Capacity (how many tours can be scheduled in this slot)
+  capacity    Int      @default(1)
+  
+  // Active status
+  isActive    Boolean  @default(true)
+  
+  // Relationships
+  home AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Indexes
+  @@index([homeId])
+  @@index([dayOfWeek])
+  @@index([isActive])
 }
