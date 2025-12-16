@@ -164,8 +164,10 @@ function calculateCareLevelScore(
 ): number {
   // Map care level strings to CareLevel enum
   const careLevelMap: { [key: string]: CareLevel } = {
-    'INDEPENDENT_LIVING': CareLevel.INDEPENDENT_LIVING,
-    'ASSISTED_LIVING': CareLevel.ASSISTED_LIVING,
+    'INDEPENDENT_LIVING': CareLevel.INDEPENDENT,
+    'INDEPENDENT': CareLevel.INDEPENDENT,
+    'ASSISTED_LIVING': CareLevel.ASSISTED,
+    'ASSISTED': CareLevel.ASSISTED,
     'MEMORY_CARE': CareLevel.MEMORY_CARE,
     'SKILLED_NURSING': CareLevel.SKILLED_NURSING
   };
@@ -181,7 +183,7 @@ function calculateCareLevelScore(
 
   // Check for compatible care levels
   // Memory Care facilities often provide Assisted Living
-  if (required === CareLevel.ASSISTED_LIVING && 
+  if (required === CareLevel.ASSISTED && 
       homeCareLevels.includes(CareLevel.MEMORY_CARE)) {
     return 80;
   }
