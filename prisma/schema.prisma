@@ -200,6 +200,9 @@ model User {
   generatedReports   Report[]           @relation("ReportGenerator")
   scheduledReports   ScheduledReport[]  @relation("ScheduledReportCreator")
 
+  // AI-powered matching engine
+  matchFeedback MatchFeedback[]
+
   // Timestamps
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -271,6 +274,7 @@ model Family {
   galleries            SharedGallery[]
   activities           ActivityFeedItem[]
   emergencyPreferences EmergencyPreference[]
+  matchRequests        MatchRequest[] // AI-powered matching engine
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -586,6 +590,8 @@ model AssistedLivingHome {
   licenses        License[]
   inspections     Inspection[]
   favorites       FavoriteHome[]
+  matchResults    MatchResult[] // AI-powered matching engine
+  matchFeedback   MatchFeedback[] // AI-powered matching engine
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -2317,4 +2323,122 @@ model ScheduledReport {
   @@index([enabled])
   @@index([nextRun])
   @@index([type])
+}
+
+
+
+// ==================== AI-POWERED MATCHING ENGINE ====================
+
+enum MatchStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum FeedbackType {
+  THUMBS_UP
+  THUMBS_DOWN
+  PLACEMENT_CONFIRMED
+}
+
+model MatchRequest {
+  id        String      @id @default(cuid())
+  familyId  String
+  status    MatchStatus @default(PENDING)
+
+  // Budget preferences
+  budgetMin Decimal @db.Decimal(10, 2)
+  budgetMax Decimal @db.Decimal(10, 2)
+
+  // Medical conditions (stored as JSON array)
+  medicalConditions String[] @default([])
+
+  // Care level required
+  careLevel String // "INDEPENDENT_LIVING", "ASSISTED_LIVING", "MEMORY_CARE", "SKILLED_NURSING"
+
+  // Preferences
+  preferredGender    String? // "MALE", "FEMALE", "NO_PREFERENCE"
+  religion           String?
+  dietaryNeeds       String[] @default([])
+  hobbies            String[] @default([])
+  petPreferences     String? // "HAS_PETS", "PET_FRIENDLY", "NO_PETS"
+
+  // Location
+  zipCode     String
+  maxDistance Int // in miles
+
+  // Timeline
+  moveInTimeline String // "IMMEDIATE", "1_3_MONTHS", "3_6_MONTHS", "EXPLORING"
+
+  // Relationships
+  family  Family         @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  results MatchResult[]
+  feedback MatchFeedback[]
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([familyId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model MatchResult {
+  id             String  @id @default(cuid())
+  matchRequestId String
+  homeId         String
+  fitScore       Decimal @db.Decimal(5, 2) // 0-100 score
+
+  // Match factors breakdown (stored as JSON)
+  matchFactors Json // {budgetScore, conditionScore, careLevelScore, locationScore, amenitiesScore}
+
+  // AI-generated explanation
+  explanation String @db.Text
+
+  // Ranking
+  rank Int // 1-5 for top matches
+
+  // Relationships
+  matchRequest MatchRequest @relation(fields: [matchRequestId], references: [id], onDelete: Cascade)
+  home         AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([matchRequestId])
+  @@index([homeId])
+  @@index([fitScore])
+  @@index([rank])
+}
+
+model MatchFeedback {
+  id             String       @id @default(cuid())
+  matchRequestId String
+  homeId         String
+  feedbackType   FeedbackType
+
+  // Additional context
+  notes String? @db.Text
+
+  // User who provided feedback
+  userId String
+
+  // Relationships
+  matchRequest MatchRequest       @relation(fields: [matchRequestId], references: [id], onDelete: Cascade)
+  home         AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([matchRequestId])
+  @@index([homeId])
+  @@index([userId])
+  @@index([feedbackType])
 }
