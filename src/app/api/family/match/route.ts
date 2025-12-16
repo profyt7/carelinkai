@@ -66,6 +66,46 @@ export async function POST(request: NextRequest) {
       }
     });
     
+    // Run matching algorithm
+    const { findMatchingHomes } = await import('@/lib/matching/matching-algorithm');
+    
+    const matchedHomes = await findMatchingHomes({
+      budgetMin: Number(validatedData.budgetMin),
+      budgetMax: Number(validatedData.budgetMax),
+      medicalConditions: validatedData.medicalConditions,
+      careLevel: validatedData.careLevel,
+      preferredGender: validatedData.preferredGender,
+      religion: validatedData.religion,
+      dietaryNeeds: validatedData.dietaryNeeds,
+      hobbies: validatedData.hobbies,
+      petPreferences: validatedData.petPreferences,
+      zipCode: validatedData.zipCode,
+      maxDistance: validatedData.maxDistance,
+      moveInTimeline: validatedData.moveInTimeline
+    }, 5); // Top 5 matches
+    
+    // Store match results in database
+    const matchResults = await Promise.all(
+      matchedHomes.map((match, index) => 
+        prisma.matchResult.create({
+          data: {
+            matchRequestId: matchRequest.id,
+            homeId: match.homeId,
+            fitScore: match.fitScore,
+            matchFactors: match.matchFactors,
+            explanation: '', // Will be filled by OpenAI in Phase 3
+            rank: index + 1
+          }
+        })
+      )
+    );
+    
+    // Update match request status to COMPLETED
+    await prisma.matchRequest.update({
+      where: { id: matchRequest.id },
+      data: { status: 'COMPLETED' }
+    });
+    
     // Create audit log
     await createAuditLogFromRequest(request, {
       userId: user.id,
@@ -75,18 +115,18 @@ export async function POST(request: NextRequest) {
       details: {
         careLevel: validatedData.careLevel,
         budgetRange: `${validatedData.budgetMin}-${validatedData.budgetMax}`,
-        zipCode: validatedData.zipCode
+        zipCode: validatedData.zipCode,
+        matchesFound: matchedHomes.length,
+        topScore: matchedHomes[0]?.fitScore || 0
       }
     });
-    
-    // TODO: Phase 2 - Run matching algorithm
-    // For now, we'll just return the match request ID
-    // The actual matching will be implemented in Phase 2
     
     return NextResponse.json({
       success: true,
       matchRequestId: matchRequest.id,
-      message: 'Match request created successfully. Matching algorithm will be implemented in Phase 2.'
+      matchesFound: matchedHomes.length,
+      topMatches: matchResults.length,
+      message: 'Match request completed successfully!'
     }, { status: 201 });
     
   } catch (error) {
