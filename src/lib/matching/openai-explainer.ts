@@ -7,10 +7,27 @@
 
 import OpenAI from 'openai';
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
+// Lazy initialize OpenAI client to handle missing API key gracefully
+let openai: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI | null {
+  if (openai) return openai;
+  
+  const apiKey = process.env.OPENAI_API_KEY;
+  
+  if (!apiKey) {
+    console.warn('[OpenAI Explainer] OPENAI_API_KEY not found. Using fallback explanations.');
+    return null;
+  }
+  
+  try {
+    openai = new OpenAI({ apiKey });
+    return openai;
+  } catch (error) {
+    console.error('[OpenAI Explainer] Failed to initialize OpenAI client:', error);
+    return null;
+  }
+}
 
 export interface ExplanationData {
   homeName: string;
@@ -46,11 +63,19 @@ export async function generateMatchExplanation(
   data: ExplanationData
 ): Promise<string> {
   try {
+    // Get OpenAI client (will return null if API key is missing)
+    const client = getOpenAIClient();
+    
+    // If no client, use fallback immediately
+    if (!client) {
+      return generateFallbackExplanation(data);
+    }
+    
     // Build the prompt
     const prompt = buildPrompt(data);
     
     // Call OpenAI API
-    const response = await openai.chat.completions.create({
+    const response = await client.chat.completions.create({
       model: 'gpt-4',
       messages: [
         {
@@ -72,7 +97,7 @@ export async function generateMatchExplanation(
     return explanation.trim();
     
   } catch (error) {
-    console.error('[OpenAI Explainer] Error:', error);
+    console.error('[OpenAI Explainer] Error generating explanation:', error);
     
     // Fallback to template-based explanation if OpenAI fails
     return generateFallbackExplanation(data);
