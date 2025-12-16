@@ -593,6 +593,11 @@ model AssistedLivingHome {
   matchResults    MatchResult[] // AI-powered matching engine
   matchFeedback   MatchFeedback[] // AI-powered matching engine
 
+  // AI-Generated Profile (Feature #2)
+  aiGeneratedDescription String?   @db.Text
+  highlights             String[]
+  lastProfileGenerated   DateTime?
+
   // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

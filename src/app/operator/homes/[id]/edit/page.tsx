@@ -39,6 +39,16 @@ export default function EditHomePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [photos, setPhotos] = useState<any[]>([]);
+  
+  // AI Profile Generation State
+  const [generatingProfile, setGeneratingProfile] = useState(false);
+  const [showAIPreview, setShowAIPreview] = useState(false);
+  const [aiGeneratedData, setAiGeneratedData] = useState<{
+    description: string;
+    highlights: string[];
+    lastGenerated?: Date;
+  } | null>(null);
+  
   const [form, setForm] = useState({
     name: '',
     description: '',
@@ -81,12 +91,64 @@ export default function EditHomePage() {
             zipCode: data.address?.zipCode || '',
           });
           setPhotos(data.photos || []);
+          
+          // Load AI-generated profile data if exists
+          if (data.aiGeneratedDescription || data.highlights) {
+            setAiGeneratedData({
+              description: data.aiGeneratedDescription || '',
+              highlights: data.highlights || [],
+              lastGenerated: data.lastProfileGenerated ? new Date(data.lastProfileGenerated) : undefined,
+            });
+          }
         }
       }
     } catch (e) {
       console.error('Failed to load home', e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Generate AI Profile
+  const handleGenerateProfile = async () => {
+    if (generatingProfile) return;
+    
+    setGeneratingProfile(true);
+    try {
+      const res = await fetch(`/api/operator/homes/${id}/generate-profile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to generate profile');
+      }
+
+      const result = await res.json();
+      
+      if (result.success && result.data) {
+        setAiGeneratedData({
+          description: result.data.aiGeneratedDescription || '',
+          highlights: result.data.highlights || [],
+          lastGenerated: result.data.lastProfileGenerated ? new Date(result.data.lastProfileGenerated) : new Date(),
+        });
+        setShowAIPreview(true);
+        toast.success('Profile generated successfully!');
+      }
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to generate profile');
+    } finally {
+      setGeneratingProfile(false);
+    }
+  };
+
+  // Apply AI-generated content to form
+  const handleApplyAIProfile = () => {
+    if (aiGeneratedData) {
+      handleInputChange('description', aiGeneratedData.description);
+      toast.success('AI-generated content applied to description');
+      setShowAIPreview(false);
     }
   };
 
@@ -245,7 +307,115 @@ export default function EditHomePage() {
                   onChange={(e) => handleInputChange('description', e.target.value)}
                 />
                 {errors.description && <p className="mt-1 text-sm text-red-600">{errors.description}</p>}
+                
+                {/* AI Profile Generation */}
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    onClick={handleGenerateProfile}
+                    disabled={generatingProfile}
+                    className="inline-flex items-center px-3 py-2 border border-primary-300 rounded-md text-sm font-medium text-primary-700 bg-primary-50 hover:bg-primary-100 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <svg className={`w-4 h-4 mr-2 ${generatingProfile ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      {generatingProfile ? (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      ) : (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      )}
+                    </svg>
+                    {generatingProfile ? 'Generating...' : 'Generate Profile with AI'}
+                  </button>
+                  
+                  {aiGeneratedData && aiGeneratedData.lastGenerated && (
+                    <span className="ml-3 text-xs text-neutral-500">
+                      Last generated: {aiGeneratedData.lastGenerated.toLocaleString()}
+                    </span>
+                  )}
+                </div>
               </div>
+
+              {/* AI Preview Modal/Section */}
+              {showAIPreview && aiGeneratedData && (
+                <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center">
+                      <svg className="w-5 h-5 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                      </svg>
+                      <h4 className="text-sm font-semibold text-neutral-800">
+                        AI-Generated Profile
+                      </h4>
+                      <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                        New
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowAIPreview(false)}
+                      className="text-neutral-400 hover:text-neutral-600"
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  {/* Generated Description */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-neutral-700 mb-2">
+                      Generated Description:
+                    </label>
+                    <div className="bg-white p-3 rounded-md border border-blue-200 text-sm text-neutral-700 leading-relaxed">
+                      {aiGeneratedData.description}
+                    </div>
+                  </div>
+
+                  {/* Generated Highlights */}
+                  {aiGeneratedData.highlights && aiGeneratedData.highlights.length > 0 && (
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-neutral-700 mb-2">
+                        Key Highlights:
+                      </label>
+                      <ul className="bg-white p-3 rounded-md border border-blue-200 space-y-2">
+                        {aiGeneratedData.highlights.map((highlight, index) => (
+                          <li key={index} className="flex items-start text-sm text-neutral-700">
+                            <svg className="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                            {highlight}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={handleApplyAIProfile}
+                      className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-md text-sm font-medium hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    >
+                      Apply to Description
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleGenerateProfile}
+                      disabled={generatingProfile}
+                      className="px-4 py-2 border border-neutral-300 rounded-md text-sm font-medium text-neutral-700 hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50"
+                    >
+                      Regenerate
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowAIPreview(false)}
+                      className="px-4 py-2 border border-neutral-300 rounded-md text-sm font-medium text-neutral-700 hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
