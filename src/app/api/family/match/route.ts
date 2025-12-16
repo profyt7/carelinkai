@@ -26,27 +26,40 @@ const matchRequestSchema = z.object({
  * Submit preferences and get matching homes
  */
 export async function POST(request: NextRequest) {
+  console.log('[POST /api/family/match] Starting match request...');
+  
   try {
     // Authentication required
+    console.log('[POST /api/family/match] Step 1: Authenticating user...');
     const user = await requireAuth();
+    console.log('[POST /api/family/match] User authenticated:', user.id);
     
     // Parse and validate request body
+    console.log('[POST /api/family/match] Step 2: Parsing request body...');
     const body = await request.json();
+    console.log('[POST /api/family/match] Request body:', JSON.stringify(body, null, 2));
+    
+    console.log('[POST /api/family/match] Step 3: Validating data...');
     const validatedData = matchRequestSchema.parse(body);
+    console.log('[POST /api/family/match] Data validated successfully');
     
     // Get family record
+    console.log('[POST /api/family/match] Step 4: Fetching family record...');
     const family = await prisma.family.findUnique({
       where: { userId: user.id }
     });
     
     if (!family) {
+      console.error('[POST /api/family/match] Family profile not found for user:', user.id);
       return NextResponse.json(
         { error: 'Family profile not found' },
         { status: 404 }
       );
     }
+    console.log('[POST /api/family/match] Family found:', family.id);
     
     // Create match request
+    console.log('[POST /api/family/match] Step 5: Creating match request...');
     const matchRequest = await prisma.matchRequest.create({
       data: {
         familyId: family.id,
@@ -65,8 +78,10 @@ export async function POST(request: NextRequest) {
         moveInTimeline: validatedData.moveInTimeline
       }
     });
+    console.log('[POST /api/family/match] Match request created:', matchRequest.id);
     
     // Run matching algorithm
+    console.log('[POST /api/family/match] Step 6: Running matching algorithm...');
     const { findMatchingHomes } = await import('@/lib/matching/matching-algorithm');
     
     const matchedHomes = await findMatchingHomes({
@@ -83,8 +98,10 @@ export async function POST(request: NextRequest) {
       maxDistance: validatedData.maxDistance,
       moveInTimeline: validatedData.moveInTimeline
     }, 5); // Top 5 matches
+    console.log('[POST /api/family/match] Matching complete. Found', matchedHomes.length, 'homes');
     
     // Generate AI explanations for matches
+    console.log('[POST /api/family/match] Step 7: Generating AI explanations...');
     const { generateBatchExplanations } = await import('@/lib/matching/openai-explainer');
     
     const explanationData = matchedHomes.map(match => ({
@@ -118,9 +135,12 @@ export async function POST(request: NextRequest) {
     }));
     
     // Generate explanations (with fallback if OpenAI fails)
+    console.log('[POST /api/family/match] Calling generateBatchExplanations...');
     const explanations = await generateBatchExplanations(explanationData);
+    console.log('[POST /api/family/match] Explanations generated:', explanations.size);
     
     // Store match results in database with explanations
+    console.log('[POST /api/family/match] Step 8: Storing match results...');
     const matchResults = await Promise.all(
       matchedHomes.map((match, index) => 
         prisma.matchResult.create({
@@ -136,14 +156,18 @@ export async function POST(request: NextRequest) {
         })
       )
     );
+    console.log('[POST /api/family/match] Match results stored:', matchResults.length);
     
     // Update match request status to COMPLETED
+    console.log('[POST /api/family/match] Step 9: Updating match request status...');
     await prisma.matchRequest.update({
       where: { id: matchRequest.id },
       data: { status: 'COMPLETED' }
     });
+    console.log('[POST /api/family/match] Match request updated to COMPLETED');
     
     // Create audit log
+    console.log('[POST /api/family/match] Step 10: Creating audit log...');
     await createAuditLogFromRequest(request, {
       userId: user.id,
       action: AuditAction.CREATE,
@@ -157,7 +181,9 @@ export async function POST(request: NextRequest) {
         topScore: matchedHomes[0]?.fitScore || 0
       }
     });
+    console.log('[POST /api/family/match] Audit log created');
     
+    console.log('[POST /api/family/match] SUCCESS - Returning results');
     return NextResponse.json({
       success: true,
       matchRequestId: matchRequest.id,
@@ -167,17 +193,27 @@ export async function POST(request: NextRequest) {
     }, { status: 201 });
     
   } catch (error) {
-    console.error('[POST /api/family/match] Error:', error);
+    console.error('[POST /api/family/match] ERROR OCCURRED:');
+    console.error('[POST /api/family/match] Error name:', error instanceof Error ? error.name : 'Unknown');
+    console.error('[POST /api/family/match] Error message:', error instanceof Error ? error.message : String(error));
+    console.error('[POST /api/family/match] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    console.error('[POST /api/family/match] Full error:', error);
     
     if (error instanceof z.ZodError) {
+      console.error('[POST /api/family/match] Zod validation error:', JSON.stringify(error.errors, null, 2));
       return NextResponse.json(
         { error: 'Invalid request data', details: error.errors },
         { status: 400 }
       );
     }
     
+    // Return more detailed error in development
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        details: process.env.NODE_ENV === 'development' ? String(error) : undefined
+      },
       { status: 500 }
     );
   }
