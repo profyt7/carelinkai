@@ -72,6 +72,9 @@ const navItems: NavItem[] = [
   // Inquiries - Shared page for both FAMILY and OPERATOR/ADMIN roles
   { name: "My Inquiries", icon: <FiFileText size={20} />, href: "/operator/inquiries", showInMobileBar: false, roleRestriction: ["FAMILY"] },
   { name: "Home Inquiries", icon: <FiFileText size={20} />, href: "/operator/inquiries", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
+  // Tours - Separate pages for FAMILY and OPERATOR/ADMIN roles
+  { name: "My Tours", icon: <FiCalendar size={20} />, href: "/dashboard/tours", showInMobileBar: true, roleRestriction: ["FAMILY"] },
+  { name: "Tour Requests", icon: <FiCalendar size={20} />, href: "/operator/tours", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
   { name: "Leads", icon: <FiUsers size={20} />, href: "/operator/leads", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
   { name: "Residents", icon: <FiUsers size={20} />, href: "/operator/residents", showInMobileBar: true, roleRestriction: ["OPERATOR", "ADMIN", "CAREGIVER", "STAFF"] },
   { name: "Caregivers", icon: <FiUsers size={20} />, href: "/operator/caregivers", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },

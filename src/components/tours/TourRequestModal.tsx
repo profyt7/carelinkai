@@ -1,27 +1,35 @@
-/**
- * Tour Request Modal Component
- * Allows families to request tours with AI-suggested times
- */
-
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, Fragment, useEffect } from "react";
 import { Dialog, Transition } from "@headlessui/react";
-import { Fragment } from "react";
+import {
+  FiX,
+  FiCalendar,
+  FiClock,
+  FiMessageSquare,
+  FiCheckCircle,
+  FiArrowLeft,
+  FiArrowRight,
+  FiAlertCircle,
+  FiLoader,
+} from "react-icons/fi";
+import { addDays, format, startOfDay } from "date-fns";
+import TimeSlotSelector from "./TimeSlotSelector";
 
 interface TourRequestModalProps {
   isOpen: boolean;
   onClose: () => void;
   homeId: string;
   homeName: string;
+  onSuccess?: () => void;
 }
 
+type Step = "date-range" | "time-slots" | "notes" | "confirmation";
+
 interface TimeSlot {
-  dateTime: Date;
-  dayOfWeek: string;
-  timeSlot: string;
-  score: number;
-  reasoning: string;
+  time: string;
+  available: boolean;
+  reason?: string;
 }
 
 export default function TourRequestModal({
@@ -29,100 +37,181 @@ export default function TourRequestModal({
   onClose,
   homeId,
   homeName,
+  onSuccess,
 }: TourRequestModalProps) {
-  const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState(1); // 1: Select times, 2: Add notes, 3: Confirm
-  const [aiSuggestions, setAiSuggestions] = useState<TimeSlot[]>([]);
-  const [selectedTimes, setSelectedTimes] = useState<string[]>([]);
+  // Step management
+  const [currentStep, setCurrentStep] = useState<Step>("date-range");
+  
+  // Form data
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
+  const [selectedSlot, setSelectedSlot] = useState<string>("");
   const [familyNotes, setFamilyNotes] = useState("");
-  const [error, setError] = useState("");
+  
+  // UI state
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-
-  // Fetch AI suggestions when modal opens
+  
+  // Initialize dates to next 30 days
   useEffect(() => {
-    if (isOpen && step === 1) {
-      fetchSuggestions();
+    if (isOpen) {
+      const today = startOfDay(new Date());
+      const thirtyDaysLater = addDays(today, 30);
+      setStartDate(format(today, "yyyy-MM-dd"));
+      setEndDate(format(thirtyDaysLater, "yyyy-MM-dd"));
     }
-  }, [isOpen, homeId]);
+  }, [isOpen]);
 
-  const fetchSuggestions = async () => {
-    try {
-      setLoading(true);
-      const startDate = new Date().toISOString();
-      const endDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
-
-      const response = await fetch(
-        `/api/family/tours/available-slots/${homeId}?startDate=${startDate}&endDate=${endDate}`
-      );
-
-      if (!response.ok) throw new Error("Failed to fetch suggestions");
-
-      const data = await response.json();
-      setAiSuggestions(
-        data.suggestions.map((s: any) => ({
-          ...s,
-          dateTime: new Date(s.dateTime),
-        }))
-      );
-    } catch (err) {
-      setError("Failed to load available times. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSubmit = async () => {
-    try {
-      setLoading(true);
-      setError("");
-
-      const response = await fetch("/api/family/tours/request", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          homeId,
-          requestedTimes: selectedTimes,
-          familyNotes,
-        }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to submit tour request");
-      }
-
-      setSuccess(true);
-      setTimeout(() => {
-        onClose();
-        window.location.reload(); // Refresh to show new tour
-      }, 2000);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const toggleTime = (time: string) => {
-    if (selectedTimes.includes(time)) {
-      setSelectedTimes(selectedTimes.filter((t) => t !== time));
-    } else {
-      setSelectedTimes([...selectedTimes, time]);
-    }
-  };
-
-  const resetAndClose = () => {
-    setStep(1);
-    setSelectedTimes([]);
-    setFamilyNotes("");
-    setError("");
-    setSuccess(false);
+  // Reset state when modal closes
+  const handleClose = () => {
+    setTimeout(() => {
+      setCurrentStep("date-range");
+      setStartDate("");
+      setEndDate("");
+      setAvailableSlots([]);
+      setSelectedSlot("");
+      setFamilyNotes("");
+      setError(null);
+      setSuccess(false);
+    }, 200);
     onClose();
   };
 
+  // Fetch available time slots
+  const fetchTimeSlots = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const startISO = new Date(startDate).toISOString();
+      const endISO = new Date(endDate).toISOString();
+      
+      const response = await fetch(
+        `/api/family/tours/available-slots/${homeId}?startDate=${startISO}&endDate=${endISO}`
+      );
+      
+      if (!response.ok) {
+        throw new Error("Failed to fetch available time slots");
+      }
+      
+      const data = await response.json();
+      
+      if (data.success && data.suggestions) {
+        // Convert suggestions to TimeSlot format
+        const slots: TimeSlot[] = data.suggestions.map((suggestion: any) => ({
+          time: suggestion.time,
+          available: true,
+          reason: suggestion.reason || "Available",
+        }));
+        
+        setAvailableSlots(slots);
+        setCurrentStep("time-slots");
+      } else {
+        throw new Error("Invalid response format");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load time slots");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Submit tour request
+  const submitTourRequest = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const response = await fetch("/api/family/tours/request", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          homeId,
+          requestedTimes: [selectedSlot],
+          familyNotes: familyNotes || undefined,
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to submit tour request");
+      }
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setSuccess(true);
+        setCurrentStep("confirmation");
+        
+        // Call onSuccess callback after a short delay
+        setTimeout(() => {
+          if (onSuccess) {
+            onSuccess();
+          }
+          handleClose();
+        }, 2000);
+      } else {
+        throw new Error("Failed to create tour request");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to submit request");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Navigation handlers
+  const handleNext = () => {
+    if (currentStep === "date-range") {
+      if (!startDate || !endDate) {
+        setError("Please select both start and end dates");
+        return;
+      }
+      if (new Date(startDate) > new Date(endDate)) {
+        setError("End date must be after start date");
+        return;
+      }
+      fetchTimeSlots();
+    } else if (currentStep === "time-slots") {
+      if (!selectedSlot) {
+        setError("Please select a time slot");
+        return;
+      }
+      setCurrentStep("notes");
+    } else if (currentStep === "notes") {
+      submitTourRequest();
+    }
+  };
+
+  const handleBack = () => {
+    if (currentStep === "time-slots") {
+      setCurrentStep("date-range");
+    } else if (currentStep === "notes") {
+      setCurrentStep("time-slots");
+    }
+  };
+
+  // Step indicator
+  const steps = [
+    { id: "date-range", label: "Date Range", number: 1 },
+    { id: "time-slots", label: "Select Time", number: 2 },
+    { id: "notes", label: "Add Notes", number: 3 },
+  ];
+
+  const currentStepIndex = steps.findIndex((s) => s.id === currentStep);
+
   return (
     <Transition appear show={isOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-50" onClose={resetAndClose}>
+      <Dialog
+        as="div"
+        className="relative z-50"
+        onClose={isLoading ? () => {} : handleClose}
+      >
+        {/* Backdrop */}
         <Transition.Child
           as={Fragment}
           enter="ease-out duration-300"
@@ -132,7 +221,7 @@ export default function TourRequestModal({
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-black bg-opacity-25" />
+          <div className="fixed inset-0 bg-black bg-opacity-50" />
         </Transition.Child>
 
         <div className="fixed inset-0 overflow-y-auto">
@@ -146,216 +235,291 @@ export default function TourRequestModal({
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                {success ? (
-                  <div className="text-center py-8">
-                    <div className="text-green-600 text-6xl mb-4">✓</div>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                      Tour Request Submitted!
+              <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-lg bg-white p-6 text-left align-middle shadow-xl transition-all">
+                {/* Header */}
+                <Dialog.Title
+                  as="div"
+                  className="flex items-center justify-between border-b border-gray-200 pb-4"
+                >
+                  <div>
+                    <h3 className="text-lg font-medium leading-6 text-gray-900">
+                      Schedule a Tour
                     </h3>
-                    <p className="text-gray-600">
-                      We'll notify you once the operator confirms your tour.
-                    </p>
+                    <p className="mt-1 text-sm text-gray-600">{homeName}</p>
                   </div>
-                ) : (
-                  <>
-                    <Dialog.Title
-                      as="h3"
-                      className="text-xl font-bold leading-6 text-gray-900 mb-4"
-                    >
-                      Schedule a Tour at {homeName}
-                    </Dialog.Title>
+                  <button
+                    type="button"
+                    className="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                    onClick={isLoading ? undefined : handleClose}
+                    disabled={isLoading}
+                    aria-label="Close"
+                  >
+                    <FiX className="h-5 w-5" />
+                  </button>
+                </Dialog.Title>
 
-                    {/* Progress Steps */}
-                    <div className="flex items-center justify-between mb-6">
-                      {[1, 2, 3].map((s) => (
-                        <div key={s} className="flex items-center">
-                          <div
-                            className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
-                              step >= s
-                                ? "bg-indigo-600 text-white"
-                                : "bg-gray-200 text-gray-600"
+                {/* Step Indicator */}
+                {currentStep !== "confirmation" && (
+                  <div className="mt-6">
+                    <nav aria-label="Progress">
+                      <ol className="flex items-center">
+                        {steps.map((step, index) => (
+                          <li
+                            key={step.id}
+                            className={`relative ${
+                              index !== steps.length - 1 ? "flex-1" : ""
                             }`}
                           >
-                            {s}
-                          </div>
-                          {s < 3 && (
-                            <div
-                              className={`h-1 w-20 mx-2 ${
-                                step > s ? "bg-indigo-600" : "bg-gray-200"
-                              }`}
-                            />
-                          )}
-                        </div>
-                      ))}
-                    </div>
-
-                    {error && (
-                      <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-                        {error}
-                      </div>
-                    )}
-
-                    {/* Step 1: Select Times */}
-                    {step === 1 && (
-                      <div>
-                        <p className="text-gray-600 mb-4">
-                          Select one or more preferred times for your tour. Our AI has suggested optimal times based on availability and historical data.
-                        </p>
-
-                        {loading ? (
-                          <div className="text-center py-8">
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-                            <p className="mt-4 text-gray-600">Loading available times...</p>
-                          </div>
-                        ) : (
-                          <div className="space-y-3 max-h-96 overflow-y-auto">
-                            {aiSuggestions.map((suggestion, idx) => (
-                              <button
-                                key={idx}
-                                onClick={() =>
-                                  toggleTime(suggestion.dateTime.toISOString())
-                                }
-                                className={`w-full text-left p-4 rounded-lg border-2 transition ${
-                                  selectedTimes.includes(
-                                    suggestion.dateTime.toISOString()
-                                  )
-                                    ? "border-indigo-600 bg-indigo-50"
-                                    : "border-gray-200 hover:border-indigo-300"
+                            <div className="flex items-center">
+                              <div
+                                className={`flex h-8 w-8 items-center justify-center rounded-full border-2 ${
+                                  index <= currentStepIndex
+                                    ? "border-primary-600 bg-primary-600"
+                                    : "border-gray-300 bg-white"
                                 }`}
                               >
-                                <div className="flex justify-between items-start">
-                                  <div>
-                                    <div className="font-semibold text-gray-900">
-                                      {suggestion.dayOfWeek},{" "}
-                                      {suggestion.dateTime.toLocaleDateString()}
-                                    </div>
-                                    <div className="text-lg text-indigo-600 font-medium">
-                                      {suggestion.timeSlot}
-                                    </div>
-                                    <div className="text-sm text-gray-600 mt-1">
-                                      {suggestion.reasoning}
-                                    </div>
-                                  </div>
-                                  <div className="flex flex-col items-end">
-                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                      {suggestion.score}% Match
-                                    </span>
-                                    {selectedTimes.includes(
-                                      suggestion.dateTime.toISOString()
-                                    ) && (
-                                      <span className="mt-2 text-indigo-600 text-xl">
-                                        ✓
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        )}
+                                {index < currentStepIndex ? (
+                                  <FiCheckCircle className="h-5 w-5 text-white" />
+                                ) : (
+                                  <span
+                                    className={`text-sm font-medium ${
+                                      index === currentStepIndex
+                                        ? "text-white"
+                                        : "text-gray-500"
+                                    }`}
+                                  >
+                                    {step.number}
+                                  </span>
+                                )}
+                              </div>
+                              <span
+                                className={`ml-2 text-sm font-medium ${
+                                  index <= currentStepIndex
+                                    ? "text-primary-600"
+                                    : "text-gray-500"
+                                }`}
+                              >
+                                {step.label}
+                              </span>
+                              {index !== steps.length - 1 && (
+                                <div
+                                  className={`ml-4 h-0.5 flex-1 ${
+                                    index < currentStepIndex
+                                      ? "bg-primary-600"
+                                      : "bg-gray-300"
+                                  }`}
+                                />
+                              )}
+                            </div>
+                          </li>
+                        ))}
+                      </ol>
+                    </nav>
+                  </div>
+                )}
 
-                        <div className="mt-6 flex justify-between">
-                          <button
-                            onClick={resetAndClose}
-                            className="px-4 py-2 text-gray-700 hover:text-gray-900"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            onClick={() => setStep(2)}
-                            disabled={selectedTimes.length === 0}
-                            className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
-                          >
-                            Next
-                          </button>
+                {/* Content */}
+                <div className="mt-6">
+                  {/* Step 1: Date Range */}
+                  {currentStep === "date-range" && (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          <FiCalendar className="mr-1 inline h-4 w-4" />
+                          Select Date Range
+                        </label>
+                        <p className="mt-1 text-xs text-gray-500">
+                          Choose the date range you'd like to visit (next 30 days)
+                        </p>
+                        <div className="mt-3 grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs text-gray-600">
+                              Start Date
+                            </label>
+                            <input
+                              type="date"
+                              value={startDate}
+                              onChange={(e) => setStartDate(e.target.value)}
+                              min={format(new Date(), "yyyy-MM-dd")}
+                              max={format(addDays(new Date(), 30), "yyyy-MM-dd")}
+                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                              disabled={isLoading}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-600">
+                              End Date
+                            </label>
+                            <input
+                              type="date"
+                              value={endDate}
+                              onChange={(e) => setEndDate(e.target.value)}
+                              min={startDate || format(new Date(), "yyyy-MM-dd")}
+                              max={format(addDays(new Date(), 30), "yyyy-MM-dd")}
+                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                              disabled={isLoading}
+                            />
+                          </div>
                         </div>
                       </div>
-                    )}
+                    </div>
+                  )}
 
-                    {/* Step 2: Add Notes */}
-                    {step === 2 && (
+                  {/* Step 2: Time Slots */}
+                  {currentStep === "time-slots" && (
+                    <div className="space-y-4">
                       <div>
-                        <p className="text-gray-600 mb-4">
-                          Add any questions or special requests for your tour.
+                        <label className="block text-sm font-medium text-gray-700">
+                          <FiClock className="mr-1 inline h-4 w-4" />
+                          Select a Time Slot
+                        </label>
+                        <p className="mt-1 text-xs text-gray-500">
+                          Our AI has suggested the best times based on availability
                         </p>
+                      </div>
+                      {availableSlots.length > 0 ? (
+                        <TimeSlotSelector
+                          slots={availableSlots}
+                          selectedSlot={selectedSlot}
+                          onSelect={setSelectedSlot}
+                        />
+                      ) : (
+                        <div className="rounded-md bg-yellow-50 p-4">
+                          <div className="flex">
+                            <FiAlertCircle className="h-5 w-5 text-yellow-400" />
+                            <div className="ml-3">
+                              <p className="text-sm text-yellow-700">
+                                No available time slots found for the selected date
+                                range. Please try a different date range.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
+                  {/* Step 3: Notes */}
+                  {currentStep === "notes" && (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          <FiMessageSquare className="mr-1 inline h-4 w-4" />
+                          Add Notes or Questions (Optional)
+                        </label>
+                        <p className="mt-1 text-xs text-gray-500">
+                          Let us know if you have any specific questions or requirements
+                        </p>
                         <textarea
                           value={familyNotes}
                           onChange={(e) => setFamilyNotes(e.target.value)}
-                          placeholder="E.g., I'd like to see the memory care unit, meet with staff, learn about activities..."
                           rows={5}
-                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                          placeholder="e.g., I'd like to see the dining area and meet some residents..."
+                          className="mt-3 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                          disabled={isLoading}
                         />
+                      </div>
+                      
+                      {/* Summary */}
+                      <div className="rounded-md bg-gray-50 p-4">
+                        <h4 className="text-sm font-medium text-gray-900">
+                          Tour Summary
+                        </h4>
+                        <dl className="mt-2 space-y-1 text-sm">
+                          <div className="flex justify-between">
+                            <dt className="text-gray-600">Home:</dt>
+                            <dd className="font-medium text-gray-900">{homeName}</dd>
+                          </div>
+                          <div className="flex justify-between">
+                            <dt className="text-gray-600">Requested Time:</dt>
+                            <dd className="font-medium text-gray-900">
+                              {selectedSlot
+                                ? format(
+                                    new Date(selectedSlot),
+                                    "EEEE, MMMM d, yyyy 'at' h:mm a"
+                                  )
+                                : "Not selected"}
+                            </dd>
+                          </div>
+                        </dl>
+                      </div>
+                    </div>
+                  )}
 
-                        <div className="mt-6 flex justify-between">
-                          <button
-                            onClick={() => setStep(1)}
-                            className="px-4 py-2 text-gray-700 hover:text-gray-900"
-                          >
-                            Back
-                          </button>
-                          <button
-                            onClick={() => setStep(3)}
-                            className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-                          >
-                            Next
-                          </button>
+                  {/* Confirmation */}
+                  {currentStep === "confirmation" && success && (
+                    <div className="py-8 text-center">
+                      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+                        <FiCheckCircle className="h-10 w-10 text-green-600" />
+                      </div>
+                      <h3 className="mt-4 text-lg font-medium text-gray-900">
+                        Tour Request Submitted!
+                      </h3>
+                      <p className="mt-2 text-sm text-gray-600">
+                        Your tour request has been sent to {homeName}. They will
+                        confirm your appointment shortly.
+                      </p>
+                      <p className="mt-4 text-xs text-gray-500">
+                        You'll receive an email confirmation once the tour is confirmed.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Error Message */}
+                  {error && (
+                    <div className="mt-4 rounded-md bg-red-50 p-4">
+                      <div className="flex">
+                        <FiAlertCircle className="h-5 w-5 text-red-400" />
+                        <div className="ml-3">
+                          <p className="text-sm text-red-700">{error}</p>
                         </div>
                       </div>
-                    )}
+                    </div>
+                  )}
+                </div>
 
-                    {/* Step 3: Confirm */}
-                    {step === 3 && (
-                      <div>
-                        <p className="text-gray-600 mb-4">
-                          Review your tour request before submitting.
-                        </p>
+                {/* Actions */}
+                {currentStep !== "confirmation" && (
+                  <div className="mt-6 flex justify-between">
+                    <button
+                      type="button"
+                      onClick={handleBack}
+                      disabled={currentStep === "date-range" || isLoading}
+                      className="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <FiArrowLeft className="mr-2 h-4 w-4" />
+                      Back
+                    </button>
 
-                        <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                          <h4 className="font-semibold text-gray-900 mb-2">
-                            Selected Times:
-                          </h4>
-                          <ul className="space-y-2">
-                            {selectedTimes.map((time, idx) => {
-                              const date = new Date(time);
-                              return (
-                                <li key={idx} className="text-gray-700">
-                                  • {date.toLocaleString()}
-                                </li>
-                              );
-                            })}
-                          </ul>
-
-                          {familyNotes && (
-                            <>
-                              <h4 className="font-semibold text-gray-900 mt-4 mb-2">
-                                Your Notes:
-                              </h4>
-                              <p className="text-gray-700">{familyNotes}</p>
-                            </>
-                          )}
-                        </div>
-
-                        <div className="mt-6 flex justify-between">
-                          <button
-                            onClick={() => setStep(2)}
-                            className="px-4 py-2 text-gray-700 hover:text-gray-900"
-                            disabled={loading}
-                          >
-                            Back
-                          </button>
-                          <button
-                            onClick={handleSubmit}
-                            disabled={loading}
-                            className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed"
-                          >
-                            {loading ? "Submitting..." : "Submit Request"}
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </>
+                    <button
+                      type="button"
+                      onClick={handleNext}
+                      disabled={
+                        isLoading ||
+                        (currentStep === "time-slots" && availableSlots.length === 0)
+                      }
+                      className="inline-flex items-center rounded-md border border-transparent bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {isLoading ? (
+                        <>
+                          <FiLoader className="mr-2 h-4 w-4 animate-spin" />
+                          {currentStep === "date-range"
+                            ? "Loading..."
+                            : "Submitting..."}
+                        </>
+                      ) : currentStep === "notes" ? (
+                        <>
+                          Submit Request
+                          <FiCheckCircle className="ml-2 h-4 w-4" />
+                        </>
+                      ) : (
+                        <>
+                          Next
+                          <FiArrowRight className="ml-2 h-4 w-4" />
+                        </>
+                      )}
+                    </button>
+                  </div>
                 )}
               </Dialog.Panel>
             </Transition.Child>

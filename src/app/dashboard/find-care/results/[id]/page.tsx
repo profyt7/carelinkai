@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import Image from 'next/image';
+import TourRequestModal from '@/components/tours/TourRequestModal';
 
 interface MatchResult {
   id: string;
@@ -65,6 +66,8 @@ export default function ResultsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<Record<string, string>>({});
+  const [tourModalOpen, setTourModalOpen] = useState(false);
+  const [selectedHomeForTour, setSelectedHomeForTour] = useState<{ id: string; name: string } | null>(null);
   
   useEffect(() => {
     if (params.id) {
@@ -339,8 +342,8 @@ export default function ResultsPage() {
                       
                       <button
                         onClick={() => {
-                          // TODO: Implement contact/tour scheduling
-                          alert('Contact feature coming soon!');
+                          setSelectedHomeForTour({ id: result.home.id, name: result.home.name });
+                          setTourModalOpen(true);
                         }}
                         className="flex-1 px-4 py-2 border-2 border-blue-600 text-blue-600 text-center rounded-md hover:bg-blue-50 font-medium"
                       >
@@ -403,6 +406,22 @@ export default function ResultsPage() {
           </button>
         </div>
       </div>
+
+      {/* Tour Request Modal */}
+      {selectedHomeForTour && (
+        <TourRequestModal
+          isOpen={tourModalOpen}
+          onClose={() => {
+            setTourModalOpen(false);
+            setSelectedHomeForTour(null);
+          }}
+          homeId={selectedHomeForTour.id}
+          homeName={selectedHomeForTour.name}
+          onSuccess={() => {
+            alert('Tour request submitted successfully! Check the Tours page to view your request.');
+          }}
+        />
+      )}
     </div>
   );
 }
