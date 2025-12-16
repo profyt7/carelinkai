@@ -100,6 +100,23 @@ export async function POST(request: NextRequest) {
     }, 5); // Top 5 matches
     console.log('[POST /api/family/match] Matching complete. Found', matchedHomes.length, 'homes');
     
+    // If no homes found, update status and return early
+    if (matchedHomes.length === 0) {
+      console.log('[POST /api/family/match] No matching homes found');
+      await prisma.matchRequest.update({
+        where: { id: matchRequest.id },
+        data: { status: 'COMPLETED' }
+      });
+      
+      return NextResponse.json({
+        success: true,
+        matchRequestId: matchRequest.id,
+        matchesFound: 0,
+        topMatches: 0,
+        message: 'No matching homes found. Please adjust your preferences and try again.'
+      }, { status: 200 });
+    }
+    
     // Generate AI explanations for matches
     console.log('[POST /api/family/match] Step 7: Generating AI explanations...');
     const { generateBatchExplanations } = await import('@/lib/matching/openai-explainer');
@@ -142,19 +159,47 @@ export async function POST(request: NextRequest) {
     // Store match results in database with explanations
     console.log('[POST /api/family/match] Step 8: Storing match results...');
     const matchResults = await Promise.all(
-      matchedHomes.map((match, index) => 
-        prisma.matchResult.create({
-          data: {
-            matchRequestId: matchRequest.id,
-            homeId: match.homeId,
-            fitScore: match.fitScore,
-            matchFactors: match.matchFactors,
-            explanation: explanations.get(match.home.name) || 
-              'This home matches your preferences based on care level, budget, and location.',
-            rank: index + 1
-          }
-        })
-      )
+      matchedHomes.map(async (match, index) => {
+        // Validate fitScore is a valid number
+        const fitScore = isFinite(match.fitScore) ? match.fitScore : 0;
+        
+        // Ensure matchFactors is a plain object with valid numbers
+        const matchFactors = {
+          budgetScore: isFinite(match.matchFactors.budgetScore) ? match.matchFactors.budgetScore : 0,
+          conditionScore: isFinite(match.matchFactors.conditionScore) ? match.matchFactors.conditionScore : 0,
+          careLevelScore: isFinite(match.matchFactors.careLevelScore) ? match.matchFactors.careLevelScore : 0,
+          locationScore: isFinite(match.matchFactors.locationScore) ? match.matchFactors.locationScore : 0,
+          amenitiesScore: isFinite(match.matchFactors.amenitiesScore) ? match.matchFactors.amenitiesScore : 0
+        };
+        
+        // Get explanation with multiple fallbacks
+        const homeName = match.home?.name || 'Unknown Home';
+        const explanation = explanations.get(homeName) || 
+          `This home is a ${Math.round(fitScore)}% match for your needs based on care level, budget, and location.`;
+        
+        console.log(`[POST /api/family/match] Creating match result ${index + 1}:`, {
+          homeId: match.homeId,
+          homeName,
+          fitScore,
+          rank: index + 1
+        });
+        
+        try {
+          return await prisma.matchResult.create({
+            data: {
+              matchRequestId: matchRequest.id,
+              homeId: match.homeId,
+              fitScore,
+              matchFactors,
+              explanation,
+              rank: index + 1
+            }
+          });
+        } catch (error) {
+          console.error(`[POST /api/family/match] Error creating match result for home ${match.homeId}:`, error);
+          throw error;
+        }
+      })
     );
     console.log('[POST /api/family/match] Match results stored:', matchResults.length);
     
