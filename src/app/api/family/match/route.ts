@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
-import { requireAuth } from '@/lib/auth-utils';
+import { requireAuth, UnauthenticatedError } from '@/lib/auth-utils';
 import { AuditAction } from '@prisma/client';
 import { createAuditLogFromRequest } from '@/lib/audit';
 
@@ -270,7 +270,7 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    // Authentication required
+    // Authentication required - handle gracefully
     const user = await requireAuth();
     
     // Get family record
@@ -313,6 +313,16 @@ export async function GET(request: NextRequest) {
     });
     
   } catch (error) {
+    // Handle authentication errors gracefully (health checks, monitoring)
+    if (error instanceof UnauthenticatedError) {
+      // Don't log authentication failures as errors (these are expected from health checks)
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+    
+    // Log only unexpected errors
     console.error('[GET /api/family/match] Error:', error);
     
     return NextResponse.json(
