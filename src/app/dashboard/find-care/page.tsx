@@ -286,8 +286,8 @@ export default function FindCarePage() {
                 </label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {[
-                    { value: 'INDEPENDENT_LIVING', label: 'Independent Living', desc: 'Minimal assistance needed' },
-                    { value: 'ASSISTED_LIVING', label: 'Assisted Living', desc: 'Help with daily activities' },
+                    { value: 'INDEPENDENT', label: 'Independent Living', desc: 'Minimal assistance needed' },
+                    { value: 'ASSISTED', label: 'Assisted Living', desc: 'Help with daily activities' },
                     { value: 'MEMORY_CARE', label: 'Memory Care', desc: 'Dementia/Alzheimer\'s care' },
                     { value: 'SKILLED_NURSING', label: 'Skilled Nursing', desc: '24/7 medical care' }
                   ].map((option) => (

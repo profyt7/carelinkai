@@ -77,7 +77,7 @@ export function UpdateCareLevelModal({ isOpen, onClose, residentId }: UpdateCare
               >
                 <option value="">Select care level...</option>
                 <option value="INDEPENDENT">Independent</option>
-                <option value="ASSISTED_LIVING">Assisted Living</option>
+                <option value="ASSISTED">Assisted Living</option>
                 <option value="MEMORY_CARE">Memory Care</option>
                 <option value="SKILLED_NURSING">Skilled Nursing</option>
               </select>

@@ -156,7 +156,7 @@ export function ResidentsListClient({
         case 'care-level':
           const careLevelOrder: Record<string, number> = { 
             INDEPENDENT: 1, 
-            ASSISTED_LIVING: 2, 
+            ASSISTED: 2, 
             MEMORY_CARE: 3, 
             SKILLED_NURSING: 4 
           };
@@ -398,7 +398,7 @@ export function ResidentsListClient({
                         {careLevel && (
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                             careLevel === 'INDEPENDENT' ? 'bg-green-100 text-green-800' :
-                            careLevel === 'ASSISTED_LIVING' ? 'bg-blue-100 text-blue-800' :
+                            careLevel === 'ASSISTED' ? 'bg-blue-100 text-blue-800' :
                             careLevel === 'MEMORY_CARE' ? 'bg-purple-100 text-purple-800' :
                             'bg-orange-100 text-orange-800'
                           }`}>

@@ -51,7 +51,7 @@ export type ResidentForAnalytics = {
 
 const CARE_LEVEL_COLORS: Record<string, string> = {
   INDEPENDENT: '#10b981',
-  ASSISTED_LIVING: '#3b82f6',
+  ASSISTED: '#3b82f6',
   MEMORY_CARE: '#8b5cf6',
   SKILLED_NURSING: '#f59e0b',
 };
@@ -93,7 +93,7 @@ export function calculateResidentAnalytics(
   // By care level
   const careLevelCounts: Record<string, number> = {
     INDEPENDENT: 0,
-    ASSISTED_LIVING: 0,
+    ASSISTED: 0,
     MEMORY_CARE: 0,
     SKILLED_NURSING: 0,
   };

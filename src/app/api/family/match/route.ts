@@ -10,7 +10,7 @@ const matchRequestSchema = z.object({
   budgetMin: z.number().positive(),
   budgetMax: z.number().positive(),
   medicalConditions: z.array(z.string()).default([]),
-  careLevel: z.enum(['INDEPENDENT_LIVING', 'ASSISTED_LIVING', 'MEMORY_CARE', 'SKILLED_NURSING']),
+  careLevel: z.enum(['INDEPENDENT', 'ASSISTED', 'MEMORY_CARE', 'SKILLED_NURSING']),
   preferredGender: z.enum(['MALE', 'FEMALE', 'NO_PREFERENCE']).optional(),
   religion: z.string().optional(),
   dietaryNeeds: z.array(z.string()).default([]),

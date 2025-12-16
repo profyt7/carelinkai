@@ -8,7 +8,7 @@ import {
   FiHeart 
 } from 'react-icons/fi';
 
-type CareLevel = 'INDEPENDENT' | 'ASSISTED_LIVING' | 'MEMORY_CARE' | 'SKILLED_NURSING';
+type CareLevel = 'INDEPENDENT' | 'ASSISTED' | 'MEMORY_CARE' | 'SKILLED_NURSING';
 type BadgeSize = 'sm' | 'md' | 'lg';
 
 interface CareLevelBadgeProps {
@@ -30,7 +30,7 @@ const careLevelConfig: Record<CareLevel, {
     label: 'Independent',
     description: 'Low care needs',
   },
-  ASSISTED_LIVING: {
+  ASSISTED: {
     color: 'bg-blue-50 text-blue-700 border-blue-200',
     icon: <FiUsers />,
     label: 'Assisted Living',
