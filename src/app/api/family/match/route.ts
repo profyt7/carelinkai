@@ -84,7 +84,43 @@ export async function POST(request: NextRequest) {
       moveInTimeline: validatedData.moveInTimeline
     }, 5); // Top 5 matches
     
-    // Store match results in database
+    // Generate AI explanations for matches
+    const { generateBatchExplanations } = await import('@/lib/matching/openai-explainer');
+    
+    const explanationData = matchedHomes.map(match => ({
+      homeName: match.home.name,
+      fitScore: match.fitScore,
+      matchFactors: match.matchFactors,
+      homeDetails: {
+        careLevel: match.home.careLevel,
+        priceRange: match.home.priceMin && match.home.priceMax 
+          ? `$${match.home.priceMin}-$${match.home.priceMax}`
+          : 'Contact for pricing',
+        location: match.home.address?.city && match.home.address?.state
+          ? `${match.home.address.city}, ${match.home.address.state}`
+          : 'Location available',
+        amenities: match.home.amenities,
+        capacity: match.home.capacity,
+        currentOccupancy: match.home.currentOccupancy
+      },
+      familyPreferences: {
+        budgetRange: `$${validatedData.budgetMin}-$${validatedData.budgetMax}`,
+        careLevel: validatedData.careLevel,
+        medicalConditions: validatedData.medicalConditions,
+        location: validatedData.zipCode,
+        preferences: [
+          ...validatedData.dietaryNeeds,
+          ...validatedData.hobbies,
+          validatedData.religion || '',
+          validatedData.petPreferences || ''
+        ].filter(Boolean)
+      }
+    }));
+    
+    // Generate explanations (with fallback if OpenAI fails)
+    const explanations = await generateBatchExplanations(explanationData);
+    
+    // Store match results in database with explanations
     const matchResults = await Promise.all(
       matchedHomes.map((match, index) => 
         prisma.matchResult.create({
@@ -93,7 +129,8 @@ export async function POST(request: NextRequest) {
             homeId: match.homeId,
             fitScore: match.fitScore,
             matchFactors: match.matchFactors,
-            explanation: '', // Will be filled by OpenAI in Phase 3
+            explanation: explanations.get(match.home.name) || 
+              'This home matches your preferences based on care level, budget, and location.',
             rank: index + 1
           }
         })
