@@ -10,7 +10,7 @@ WORKDIR /app
 FROM base AS deps
 ENV NODE_ENV=development
 COPY package.json package-lock.json ./
-RUN npm ci --ignore-scripts
+RUN npm ci --legacy-peer-deps --ignore-scripts
 
 # --- Build ---
 FROM base AS build
