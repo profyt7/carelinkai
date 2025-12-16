@@ -64,6 +64,7 @@ export default function ResultsPage() {
   const [matchRequest, setMatchRequest] = useState<MatchRequest | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<Record<string, string>>({});
   
   useEffect(() => {
     if (params.id) {
@@ -119,6 +120,33 @@ export default function ResultsPage() {
       return <span className="px-2 py-1 text-xs font-semibold bg-red-100 text-red-800 rounded">
         Waitlist only
       </span>;
+    }
+  };
+  
+  const submitFeedback = async (homeId: string, feedbackType: string) => {
+    try {
+      const response = await fetch(`/api/family/match/${params.id}/feedback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ homeId, feedbackType })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        setFeedback(prev => ({ ...prev, [homeId]: feedbackType }));
+        
+        if (feedbackType === 'PLACEMENT_CONFIRMED') {
+          alert('🎉 Congratulations! We\'ve recorded your placement confirmation.');
+        }
+      } else if (response.status === 409) {
+        alert('You\'ve already submitted feedback for this home.');
+      } else {
+        alert(data.error || 'Failed to submit feedback');
+      }
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+      alert('An error occurred while submitting feedback');
     }
   };
   
@@ -300,33 +328,61 @@ export default function ResultsPage() {
                   </div>
                   
                   {/* Action Buttons */}
-                  <div className="flex gap-3">
-                    <Link
-                      href={`/homes/${result.home.id}`}
-                      className="flex-1 px-4 py-2 bg-blue-600 text-white text-center rounded-md hover:bg-blue-700 font-medium"
-                    >
-                      View Full Profile
-                    </Link>
+                  <div className="space-y-3">
+                    <div className="flex gap-3">
+                      <Link
+                        href={`/homes/${result.home.id}`}
+                        className="flex-1 px-4 py-2 bg-blue-600 text-white text-center rounded-md hover:bg-blue-700 font-medium"
+                      >
+                        View Full Profile
+                      </Link>
+                      
+                      <button
+                        onClick={() => {
+                          // TODO: Implement contact/tour scheduling
+                          alert('Contact feature coming soon!');
+                        }}
+                        className="flex-1 px-4 py-2 border-2 border-blue-600 text-blue-600 text-center rounded-md hover:bg-blue-50 font-medium"
+                      >
+                        Schedule Tour
+                      </button>
+                    </div>
                     
-                    <button
-                      onClick={() => {
-                        // TODO: Implement contact/tour scheduling
-                        alert('Contact feature coming soon!');
-                      }}
-                      className="flex-1 px-4 py-2 border-2 border-blue-600 text-blue-600 text-center rounded-md hover:bg-blue-50 font-medium"
-                    >
-                      Schedule Tour
-                    </button>
-                    
-                    <button
-                      onClick={() => {
-                        // TODO: Phase 6 - Implement feedback
-                        alert('Feedback feature coming in Phase 6!');
-                      }}
-                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
-                    >
-                      ❤️
-                    </button>
+                    {/* Feedback Buttons */}
+                    {feedback[result.home.id] ? (
+                      <div className="text-center py-2 bg-green-50 text-green-700 rounded-md font-medium">
+                        ✓ {feedback[result.home.id] === 'THUMBS_UP' ? 'Liked' : 
+                           feedback[result.home.id] === 'THUMBS_DOWN' ? 'Not interested' : 
+                           'Placement confirmed!'}
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => submitFeedback(result.home.id, 'THUMBS_UP')}
+                          className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-green-50 hover:border-green-500 hover:text-green-700"
+                        >
+                          👍 Like
+                        </button>
+                        
+                        <button
+                          onClick={() => submitFeedback(result.home.id, 'THUMBS_DOWN')}
+                          className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-red-50 hover:border-red-500 hover:text-red-700"
+                        >
+                          👎 Not Interested
+                        </button>
+                        
+                        <button
+                          onClick={() => {
+                            if (confirm('Confirm that you have chosen this home?')) {
+                              submitFeedback(result.home.id, 'PLACEMENT_CONFIRMED');
+                            }
+                          }}
+                          className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium"
+                        >
+                          ✓ Chose This Home
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
