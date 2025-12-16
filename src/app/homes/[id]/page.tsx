@@ -1657,11 +1657,10 @@ export default function HomeDetailPage() {
                   <div className="space-y-4">
                     <div className="flex items-center space-x-3">
                       <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md">
-                        <Image
-                          src="https://res.cloudinary.com/dygtsnu8z/image/upload/v1765830518/carelinkai/placeholders/provider/provider-facility.png"
+                        <img
+                          src={getCloudinaryAvatar("https://res.cloudinary.com/dygtsnu8z/image/upload/v1765830518/carelinkai/placeholders/provider/provider-facility.png")}
                           alt="Golden Years Living"
-                          fill
-                          className="object-cover"
+                          className="h-full w-full object-cover"
                         />
                       </div>
                       <div>
@@ -1672,11 +1671,10 @@ export default function HomeDetailPage() {
                     </div>
                     <div className="flex items-center space-x-3">
                       <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md">
-                        <Image
-                          src="https://res.cloudinary.com/dygtsnu8z/image/upload/v1765830518/carelinkai/placeholders/provider/provider-facility.png"
+                        <img
+                          src={getCloudinaryAvatar("https://res.cloudinary.com/dygtsnu8z/image/upload/v1765830518/carelinkai/placeholders/provider/provider-facility.png")}
                           alt="Serenity House"
-                          fill
-                          className="object-cover"
+                          className="h-full w-full object-cover"
                         />
                       </div>
                       <div>
