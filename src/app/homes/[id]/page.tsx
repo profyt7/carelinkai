@@ -473,51 +473,142 @@ export default function HomeDetailPage() {
   
   // Handle tour scheduling
   const handleTourSchedule = async (e: React.FormEvent) => {
+    console.log('🔴🔴🔴 [TOUR DIAGNOSTIC] ========================================');
+    console.log('🔴 [TOUR DIAGNOSTIC] Tour schedule handler called');
+    console.log('🔴 [TOUR DIAGNOSTIC] Timestamp:', new Date().toISOString());
+    console.log('🔴 [TOUR DIAGNOSTIC] Event type:', e.type);
+    
     e.preventDefault();
+    console.log('🔴 [TOUR DIAGNOSTIC] preventDefault() called successfully');
+    
     setSubmitError(null);
+    console.log('🔴 [TOUR DIAGNOSTIC] Submit error state cleared');
+
+    // Log current form state
+    console.log('🔴 [TOUR DIAGNOSTIC] Current inquiry form state:', {
+      name: inquiryForm.name,
+      email: inquiryForm.email,
+      phone: inquiryForm.phone,
+      residentName: inquiryForm.residentName,
+      moveInTimeframe: inquiryForm.moveInTimeframe,
+      careNeeded: inquiryForm.careNeeded,
+      message: inquiryForm.message,
+      tourDate: inquiryForm.tourDate,
+      tourTime: inquiryForm.tourTime,
+    });
+    console.log('🔴 [TOUR DIAGNOSTIC] Home ID:', id);
 
     // Compose ISO tour date-time if both provided
+    console.log('🔴 [TOUR DIAGNOSTIC] Step 1: Composing tour date-time...');
     let tourDateIso: string | undefined = undefined;
     if (inquiryForm.tourDate && inquiryForm.tourTime) {
+      console.log('🔴 [TOUR DIAGNOSTIC] Tour date and time provided, converting to ISO...');
       try {
         const [hmm = '0:00', ampm = 'AM'] = inquiryForm.tourTime.split(" ");
+        console.log('🔴 [TOUR DIAGNOSTIC] Parsed time components:', { hmm, ampm });
+        
         const [hh = '0', mm = '0'] = hmm.split(":");
+        console.log('🔴 [TOUR DIAGNOSTIC] Parsed hour/minute:', { hh, mm });
+        
         let hours = parseInt(hh, 10) % 12 + (ampm?.toUpperCase() === "PM" ? 12 : 0);
+        console.log('🔴 [TOUR DIAGNOSTIC] Calculated hours (24h format):', hours);
+        
         const dt = new Date(inquiryForm.tourDate);
+        console.log('🔴 [TOUR DIAGNOSTIC] Base date object:', dt.toISOString());
+        
         dt.setHours(hours, parseInt(mm || "0", 10), 0, 0);
         tourDateIso = dt.toISOString();
-      } catch {}
+        console.log('🔴 [TOUR DIAGNOSTIC] ✅ Final tour date ISO:', tourDateIso);
+      } catch (dateError) {
+        console.error('🔴 [TOUR DIAGNOSTIC] ❌ Error converting tour date:', dateError);
+      }
+    } else {
+      console.log('🔴 [TOUR DIAGNOSTIC] ⚠️ No tour date/time provided');
     }
 
+    console.log('🔴 [TOUR DIAGNOSTIC] Step 2: Building request payload...');
+    const payload = {
+      homeId: String(id),
+      name: inquiryForm.name.trim(),
+      email: inquiryForm.email.trim(),
+      phone: inquiryForm.phone.trim() || undefined,
+      residentName: inquiryForm.residentName.trim() || undefined,
+      moveInTimeframe: inquiryForm.moveInTimeframe || undefined,
+      careNeeded: inquiryForm.careNeeded,
+      message: inquiryForm.message.trim() || undefined,
+      tourDate: tourDateIso,
+      source: 'home_detail',
+    };
+    console.log('🔴 [TOUR DIAGNOSTIC] Request payload:', JSON.stringify(payload, null, 2));
+
     try {
+      console.log('🔴 [TOUR DIAGNOSTIC] Step 3: Setting submitting state to true...');
       setSubmitting(true);
+      
+      console.log('🔴 [TOUR DIAGNOSTIC] Step 4: Making API call...');
+      console.log('🔴 [TOUR DIAGNOSTIC] URL: /api/inquiries');
+      console.log('🔴 [TOUR DIAGNOSTIC] Method: POST');
+      console.log('🔴 [TOUR DIAGNOSTIC] Headers:', { 'Content-Type': 'application/json' });
+      
       const res = await fetch('/api/inquiries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          homeId: String(id),
-          name: inquiryForm.name.trim(),
-          email: inquiryForm.email.trim(),
-          phone: inquiryForm.phone.trim() || undefined,
-          residentName: inquiryForm.residentName.trim() || undefined,
-          moveInTimeframe: inquiryForm.moveInTimeframe || undefined,
-          careNeeded: inquiryForm.careNeeded,
-          message: inquiryForm.message.trim() || undefined,
-          tourDate: tourDateIso,
-          source: 'home_detail',
-        }),
+        body: JSON.stringify(payload),
       });
+      
+      console.log('🔴 [TOUR DIAGNOSTIC] Step 5: API call completed');
+      console.log('🔴 [TOUR DIAGNOSTIC] Response status:', res.status);
+      console.log('🔴 [TOUR DIAGNOSTIC] Response ok:', res.ok);
+      console.log('🔴 [TOUR DIAGNOSTIC] Response statusText:', res.statusText);
+      
       if (!res.ok) {
+        console.log('🔴 [TOUR DIAGNOSTIC] ❌ API returned error status');
+        
+        // Try to parse error response
+        let errorData;
+        try {
+          errorData = await res.json();
+          console.log('🔴 [TOUR DIAGNOSTIC] Error response body:', JSON.stringify(errorData, null, 2));
+        } catch (parseError) {
+          console.error('🔴 [TOUR DIAGNOSTIC] Failed to parse error response:', parseError);
+        }
+        
         const msg = res.status === 400 ? 'Please check your details and try again.' : 'Something went wrong. Please try again later.';
+        console.log('🔴 [TOUR DIAGNOSTIC] Setting error message:', msg);
         setSubmitError(msg);
         return;
       }
+      
+      // Try to parse success response
+      console.log('🔴 [TOUR DIAGNOSTIC] Step 6: Parsing success response...');
+      let responseData;
+      try {
+        responseData = await res.json();
+        console.log('🔴 [TOUR DIAGNOSTIC] Response data:', JSON.stringify(responseData, null, 2));
+      } catch (parseError) {
+        console.log('🔴 [TOUR DIAGNOSTIC] ⚠️ Failed to parse response (may be empty):', parseError);
+      }
+      
       // Success → show confirmation
+      console.log('🔴 [TOUR DIAGNOSTIC] ✅ Tour scheduled successfully!');
+      console.log('🔴 [TOUR DIAGNOSTIC] Setting booking step to 3 (confirmation)...');
       setBookingStep(3);
+      console.log('🔴 [TOUR DIAGNOSTIC] ======================================== ✅');
     } catch (err: any) {
+      console.error('🔴 [TOUR DIAGNOSTIC] ========================================');
+      console.error('🔴 [TOUR DIAGNOSTIC] ❌ EXCEPTION CAUGHT');
+      console.error('🔴 [TOUR DIAGNOSTIC] Error type:', err?.constructor?.name || 'Unknown');
+      console.error('🔴 [TOUR DIAGNOSTIC] Error name:', err?.name || 'N/A');
+      console.error('🔴 [TOUR DIAGNOSTIC] Error message:', err?.message || String(err));
+      console.error('🔴 [TOUR DIAGNOSTIC] Error stack:', err?.stack || 'N/A');
+      console.error('🔴 [TOUR DIAGNOSTIC] Full error object:', err);
+      console.error('🔴 [TOUR DIAGNOSTIC] ======================================== ❌');
+      
       setSubmitError('Network error. Please try again.');
     } finally {
+      console.log('🔴 [TOUR DIAGNOSTIC] Finally block: Setting submitting to false');
       setSubmitting(false);
+      console.log('🔴 [TOUR DIAGNOSTIC] Handler execution complete');
     }
   };
   

@@ -70,7 +70,8 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
   const [domReady, setDomReady] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const initAttemptRef = useRef(0);
-  const maxInitAttempts = 5;
+  const maxInitAttempts = 3; // Reduced from 5 to 3 for faster failure
+  const hasReachedMaxAttemptsRef = useRef(false); // Track if we've hit the limit
 
   // Debug log the homes data
   console.log("[SimpleMap] Received homes data:", homes);
@@ -238,21 +239,32 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
   useEffect(() => {
     if (!mounted || !domReady) return;
     
+    // CRITICAL: Prevent infinite loops by checking if we've already hit max attempts
+    if (hasReachedMaxAttemptsRef.current) {
+      console.log("[SimpleMap] Max initialization attempts already reached. Skipping re-initialization.");
+      return;
+    }
+    
     const initializeMap = () => {
-      console.log("[SimpleMap] Initializing map attempt:", initAttemptRef.current + 1);
+      console.log(`[SimpleMap] Initializing map attempt: ${initAttemptRef.current + 1}/${maxInitAttempts}`);
+      
+      // Check max attempts BEFORE doing anything
+      if (initAttemptRef.current >= maxInitAttempts) {
+        console.error(`[SimpleMap] ❌ Max retries (${maxInitAttempts}) reached. Stopping initialization attempts.`);
+        hasReachedMaxAttemptsRef.current = true;
+        setMapError("Unable to load map after multiple attempts. Please refresh the page.");
+        return;
+      }
       
       if (!mapContainerRef.current) {
         console.error("[SimpleMap] Map container ref is null!");
         
-        // Retry logic
-        if (initAttemptRef.current < maxInitAttempts) {
-          initAttemptRef.current += 1;
-          setTimeout(initializeMap, 300);
-          return;
-        } else {
-          setMapError("Failed to initialize map: Container not found after multiple attempts");
-          return;
-        }
+        // Retry logic with exponential backoff
+        initAttemptRef.current += 1;
+        const backoffDelay = 300 * Math.pow(2, initAttemptRef.current - 1); // 300ms, 600ms, 1200ms
+        console.log(`[SimpleMap] Retrying in ${backoffDelay}ms...`);
+        setTimeout(initializeMap, backoffDelay);
+        return;
       }
       
       try {
@@ -272,15 +284,12 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
         if (containerWidth === 0 || containerHeight === 0) {
           console.warn("[SimpleMap] Container has zero width or height!");
           
-          // Retry logic for zero dimensions
-          if (initAttemptRef.current < maxInitAttempts) {
-            initAttemptRef.current += 1;
-            setTimeout(initializeMap, 300);
-            return;
-          } else {
-            setMapError("Map container has zero dimensions. Please try refreshing the page.");
-            return;
-          }
+          // Retry logic for zero dimensions with exponential backoff
+          initAttemptRef.current += 1;
+          const backoffDelay = 300 * Math.pow(2, initAttemptRef.current - 1);
+          console.log(`[SimpleMap] Retrying in ${backoffDelay}ms...`);
+          setTimeout(initializeMap, backoffDelay);
+          return;
         }
         
         // Create map instance
@@ -306,7 +315,7 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
           .on("load", () => console.log("[SimpleMap] Tiles loaded successfully"))
           .on("tileerror", (e) => {
             console.error("[SimpleMap] Tile load error:", e);
-            setMapError("Failed to load map tiles. Please check your internet connection.");
+            // Note: Not setting mapError here to avoid re-renders
           })
           .addTo(map);
 
@@ -368,7 +377,6 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
         
         // Store map instance for cleanup
         mapInstanceRef.current = map;
-        console.log("[SimpleMap] Map initialization complete");
         
         // Add a window resize handler
         const handleResize = () => {
@@ -380,9 +388,28 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
         
         resizeHandlerRef.current = handleResize;
         window.addEventListener('resize', handleResize);
+        
+        // Successfully initialized - reset attempt counter
+        initAttemptRef.current = 0;
+        console.log("[SimpleMap] ✅ Map initialization complete");
       } catch (error) {
-        console.error("[SimpleMap] Error initializing map:", error);
-        setMapError(`Failed to initialize map: ${error instanceof Error ? error.message : String(error)}`);
+        console.error(`[SimpleMap] ❌ Error initializing map (attempt ${initAttemptRef.current + 1}/${maxInitAttempts}):`, error);
+        
+        // Increment attempt counter
+        initAttemptRef.current += 1;
+        
+        // Check if we've reached max attempts
+        if (initAttemptRef.current >= maxInitAttempts) {
+          console.error(`[SimpleMap] ❌ Max retries (${maxInitAttempts}) reached. Stopping initialization attempts.`);
+          hasReachedMaxAttemptsRef.current = true;
+          setMapError(`Unable to load map: ${error instanceof Error ? error.message : String(error)}`);
+          return;
+        }
+        
+        // Retry with exponential backoff
+        const backoffDelay = 300 * Math.pow(2, initAttemptRef.current - 1);
+        console.log(`[SimpleMap] Retrying in ${backoffDelay}ms...`);
+        setTimeout(initializeMap, backoffDelay);
       }
     };
     
