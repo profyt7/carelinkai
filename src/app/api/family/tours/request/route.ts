@@ -19,102 +19,103 @@ const tourRequestSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-  console.log("\n╔══════════════════════════════════════════════════════════╗");
-  console.log("║  🎯 TOUR REQUEST API - POST REQUEST RECEIVED            ║");
-  console.log("╚══════════════════════════════════════════════════════════╝\n");
+  console.log('🟢🟢🟢 [TOUR API] ========================================');
+  console.log('🟢 [TOUR API] Tour request received!');
+  console.log('🟢 [TOUR API] Timestamp:', new Date().toISOString());
+  console.log('🟢 [TOUR API] Method:', request.method);
+  console.log('🟢 [TOUR API] URL:', request.url);
 
   try {
     // === STEP 0: Environment & Database Check ===
-    console.log("📋 [STEP 0] Environment & Database Check");
-    console.log("  ├─ NODE_ENV:", process.env.NODE_ENV);
-    console.log("  ├─ DATABASE_URL configured:", !!process.env.DATABASE_URL);
-    console.log("  └─ Checking database connection...");
+    console.log('🟢 [TOUR API] Step 0: Environment & Database Check');
+    console.log('🟢 [TOUR API] NODE_ENV:', process.env.NODE_ENV);
+    console.log('🟢 [TOUR API] DATABASE_URL configured:', !!process.env.DATABASE_URL);
+    console.log('🟢 [TOUR API] Checking database connection...');
     
     try {
       await prisma.$queryRaw`SELECT 1`;
-      console.log("  ✅ Database connection SUCCESSFUL");
+      console.log('🟢 [TOUR API] ✅ Database connection SUCCESSFUL');
     } catch (dbError) {
-      console.error("  ❌ Database connection FAILED:", dbError);
+      console.error('🟢 [TOUR API] ❌ Database connection FAILED:', dbError);
       throw new Error("Database connection failed");
     }
 
     // === STEP 1: Authentication ===
-    console.log("\n🔐 [STEP 1] Authentication Check");
-    console.log("  ├─ Fetching session...");
+    console.log('🟢 [TOUR API] Step 1: Authentication Check');
+    console.log('🟢 [TOUR API] Fetching session...');
     
     const session = await getServerSession(authOptions);
     
-    console.log("  ├─ Session exists:", !!session);
-    console.log("  ├─ Session user exists:", !!session?.user);
+    console.log('🟢 [TOUR API] Session exists:', !!session);
+    console.log('🟢 [TOUR API] Session user exists:', !!session?.user);
     
     if (session?.user) {
-      console.log("  ├─ User ID:", session.user.id);
-      console.log("  ├─ User role:", session.user.role);
-      console.log("  ├─ User email:", session.user.email);
-      console.log("  └─ User name:", session.user.name);
+      console.log('🟢 [TOUR API] User authenticated:', {
+        id: session.user.id,
+        email: session.user.email,
+        role: session.user.role,
+        name: session.user.name
+      });
     }
     
     if (!session?.user) {
-      console.error("  ❌ AUTHENTICATION FAILED - No session or user");
+      console.error('🟢 [TOUR API] ❌ AUTHENTICATION FAILED - No session or user');
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     
-    console.log("  ✅ Authentication SUCCESSFUL");
+    console.log('🟢 [TOUR API] ✅ Authentication SUCCESSFUL');
 
     // === STEP 2: Authorization ===
-    console.log("\n🔑 [STEP 2] Authorization Check");
-    console.log("  ├─ User role:", session.user.role);
-    console.log("  ├─ Required permission:", PERMISSIONS.TOURS_REQUEST);
-    console.log("  ├─ Checking permission...");
+    console.log('🟢 [TOUR API] Step 2: Authorization Check');
+    console.log('🟢 [TOUR API] User role:', session.user.role);
+    console.log('🟢 [TOUR API] Required permission:', PERMISSIONS.TOURS_REQUEST);
     
     const hasRequiredPermission = hasPermission(session.user.role, PERMISSIONS.TOURS_REQUEST);
-    console.log("  ├─ Has permission:", hasRequiredPermission);
+    console.log('🟢 [TOUR API] Has permission:', hasRequiredPermission);
     
     if (!hasRequiredPermission) {
-      console.error("  ❌ AUTHORIZATION FAILED - Insufficient permissions");
-      console.error("  ├─ User role:", session.user.role);
-      console.error("  └─ Required permission:", PERMISSIONS.TOURS_REQUEST);
+      console.error('🟢 [TOUR API] ❌ AUTHORIZATION FAILED');
+      console.error('🟢 [TOUR API] User role:', session.user.role);
+      console.error('🟢 [TOUR API] Required permission:', PERMISSIONS.TOURS_REQUEST);
       return NextResponse.json({ error: "Forbidden - insufficient permissions" }, { status: 403 });
     }
     
-    console.log("  ✅ Authorization SUCCESSFUL");
+    console.log('🟢 [TOUR API] ✅ Authorization SUCCESSFUL');
 
     // === STEP 3: Request Body Parsing & Validation ===
-    console.log("\n📦 [STEP 3] Request Body Parsing & Validation");
-    console.log("  ├─ Parsing JSON body...");
+    console.log('🟢 [TOUR API] Step 3: Request Body Parsing & Validation');
     
     let body;
     try {
       body = await request.json();
-      console.log("  ├─ Body parsed successfully");
-      console.log("  ├─ Raw body:", JSON.stringify(body, null, 2));
+      console.log('🟢 [TOUR API] Body parsed successfully');
+      console.log('🟢 [TOUR API] Raw body:', JSON.stringify(body, null, 2));
     } catch (parseError) {
-      console.error("  ❌ JSON PARSING FAILED:", parseError);
+      console.error('🟢 [TOUR API] ❌ JSON PARSING FAILED:', parseError);
       throw new Error("Invalid JSON in request body");
     }
     
-    console.log("  ├─ Validating against schema...");
-    console.log("  ├─ Expected schema: { homeId: string, requestedTimes: string[], familyNotes?: string }");
+    console.log('🟢 [TOUR API] Validating against schema...');
+    console.log('🟢 [TOUR API] Expected: { homeId: string, requestedTimes: string[], familyNotes?: string }');
     
     let validatedData;
     try {
       validatedData = tourRequestSchema.parse(body);
-      console.log("  ├─ Schema validation SUCCESSFUL");
-      console.log("  ├─ Validated homeId:", validatedData.homeId);
-      console.log("  ├─ Validated requestedTimes:", validatedData.requestedTimes);
-      console.log("  ├─ Validated familyNotes:", validatedData.familyNotes || "(none)");
-      console.log("  └─ Number of requested times:", validatedData.requestedTimes.length);
+      console.log('🟢 [TOUR API] ✅ Schema validation SUCCESSFUL');
+      console.log('🟢 [TOUR API] Body fields:', {
+        homeId: validatedData.homeId,
+        requestedTimesCount: validatedData.requestedTimes?.length,
+        hasFamilyNotes: !!validatedData.familyNotes
+      });
     } catch (validationError) {
-      console.error("  ❌ SCHEMA VALIDATION FAILED:", validationError);
+      console.error('🟢 [TOUR API] ❌ SCHEMA VALIDATION FAILED:', validationError);
       throw validationError;
     }
-    
-    console.log("  ✅ Request Body Validation SUCCESSFUL");
 
     // === STEP 4: Fetch Family Record ===
-    console.log("\n👨‍👩‍👧‍👦 [STEP 4] Fetching Family Record");
-    console.log("  ├─ User ID:", session.user.id);
-    console.log("  ├─ Querying database for family record...");
+    console.log('🟢 [TOUR API] Step 4: Fetch Family Record');
+    console.log('🟢 [TOUR API] User ID:', session.user.id);
+    console.log('🟢 [TOUR API] Querying database for family record...');
     
     let family;
     try {
@@ -125,32 +126,33 @@ export async function POST(request: NextRequest) {
         },
       });
       
-      console.log("  ├─ Query executed successfully");
-      console.log("  ├─ Family found:", !!family);
+      console.log('🟢 [TOUR API] Query executed');
+      console.log('🟢 [TOUR API] Family found:', !!family);
       
       if (family) {
-        console.log("  ├─ Family ID:", family.id);
-        console.log("  ├─ Family user ID:", family.userId);
-        console.log("  ├─ Family name:", `${family.user.firstName} ${family.user.lastName}`);
-        console.log("  └─ Family email:", family.user.email);
+        console.log('🟢 [TOUR API] Family details:', {
+          id: family.id,
+          userId: family.userId,
+          name: `${family.user.firstName} ${family.user.lastName}`,
+          email: family.user.email
+        });
       }
     } catch (dbError) {
-      console.error("  ❌ DATABASE QUERY FAILED:", dbError);
+      console.error('🟢 [TOUR API] ❌ DATABASE QUERY FAILED (Family):', dbError);
       throw new Error("Failed to fetch family record");
     }
 
     if (!family) {
-      console.error("  ❌ FAMILY RECORD NOT FOUND");
-      console.error("  └─ User ID:", session.user.id);
+      console.error('🟢 [TOUR API] ❌ FAMILY RECORD NOT FOUND');
+      console.error('🟢 [TOUR API] User ID:', session.user.id);
       return NextResponse.json({ error: "Family record not found" }, { status: 404 });
     }
     
-    console.log("  ✅ Family Record Found");
+    console.log('🟢 [TOUR API] ✅ Family Record Found');
 
     // === STEP 5: Fetch Home & Operator Details ===
-    console.log("\n🏠 [STEP 5] Fetching Home & Operator Details");
-    console.log("  ├─ Home ID:", validatedData.homeId);
-    console.log("  ├─ Querying database for home...");
+    console.log('🟢 [TOUR API] Step 5: Fetch Home & Operator Details');
+    console.log('🟢 [TOUR API] Home ID:', validatedData.homeId);
     
     let home;
     try {
@@ -166,32 +168,32 @@ export async function POST(request: NextRequest) {
         },
       });
       
-      console.log("  ├─ Query executed successfully");
-      console.log("  ├─ Home found:", !!home);
+      console.log('🟢 [TOUR API] Home query executed');
+      console.log('🟢 [TOUR API] Home found:', !!home);
       
       if (home) {
-        console.log("  ├─ Home ID:", home.id);
-        console.log("  ├─ Home name:", home.name);
-        console.log("  ├─ Operator ID:", home.operatorId);
-        console.log("  ├─ Operator name:", `${home.operator.user.firstName} ${home.operator.user.lastName}`);
-        console.log("  └─ Home address:", home.address ? `${home.address.street}, ${home.address.city}` : "(none)");
+        console.log('🟢 [TOUR API] Home details:', {
+          id: home.id,
+          name: home.name,
+          operatorId: home.operatorId,
+          operatorName: `${home.operator.user.firstName} ${home.operator.user.lastName}`
+        });
       }
     } catch (dbError) {
-      console.error("  ❌ DATABASE QUERY FAILED:", dbError);
+      console.error('🟢 [TOUR API] ❌ DATABASE QUERY FAILED (Home):', dbError);
       throw new Error("Failed to fetch home details");
     }
 
     if (!home) {
-      console.error("  ❌ HOME NOT FOUND");
-      console.error("  └─ Home ID:", validatedData.homeId);
+      console.error('🟢 [TOUR API] ❌ HOME NOT FOUND');
+      console.error('🟢 [TOUR API] Home ID:', validatedData.homeId);
       return NextResponse.json({ error: "Home not found" }, { status: 404 });
     }
     
-    console.log("  ✅ Home & Operator Details Found");
+    console.log('🟢 [TOUR API] ✅ Home & Operator Details Found');
 
     // === STEP 6: Create Tour Request ===
-    console.log("\n🎫 [STEP 6] Creating Tour Request");
-    console.log("  ├─ Preparing data for database insert...");
+    console.log('🟢 [TOUR API] Step 6: Creating Tour Request');
     
     const createData = {
       familyId: family.id,
@@ -202,14 +204,14 @@ export async function POST(request: NextRequest) {
       status: "PENDING",
     };
     
-    console.log("  ├─ Insert data:");
-    console.log("  │  ├─ familyId:", createData.familyId);
-    console.log("  │  ├─ homeId:", createData.homeId);
-    console.log("  │  ├─ operatorId:", createData.operatorId);
-    console.log("  │  ├─ requestedTimes:", createData.requestedTimes);
-    console.log("  │  ├─ familyNotes:", createData.familyNotes || "(none)");
-    console.log("  │  └─ status:", createData.status);
-    console.log("  ├─ Executing database insert...");
+    console.log('🟢 [TOUR API] Data to insert:', {
+      familyId: createData.familyId,
+      homeId: createData.homeId,
+      operatorId: createData.operatorId,
+      requestedTimesCount: createData.requestedTimes.length,
+      hasFamilyNotes: !!createData.familyNotes,
+      status: createData.status
+    });
 
     let tourRequest;
     try {
@@ -234,38 +236,34 @@ export async function POST(request: NextRequest) {
         },
       });
       
-      console.log("  ├─ Database insert SUCCESSFUL!");
-      console.log("  ├─ Tour Request ID:", tourRequest.id);
-      console.log("  ├─ Status:", tourRequest.status);
-      console.log("  ├─ Created at:", tourRequest.createdAt);
-      console.log("  └─ Requested times:", tourRequest.requestedTimes);
+      console.log('🟢 [TOUR API] ✅ Tour request created successfully!');
+      console.log('🟢 [TOUR API] Tour details:', {
+        id: tourRequest.id,
+        homeId: tourRequest.homeId,
+        familyId: tourRequest.familyId,
+        status: tourRequest.status,
+        createdAt: tourRequest.createdAt
+      });
     } catch (dbError) {
-      console.error("  ❌ DATABASE INSERT FAILED!");
-      console.error("  ├─ Error:", dbError);
+      console.error('🟢 [TOUR API] ❌ DATABASE INSERT FAILED!');
+      console.error('🟢 [TOUR API] Error:', dbError);
       
       if (dbError instanceof Error) {
-        console.error("  ├─ Error name:", dbError.name);
-        console.error("  ├─ Error message:", dbError.message);
-        console.error("  └─ Error stack:", dbError.stack);
+        console.error('🟢 [TOUR API] Error name:', dbError.name);
+        console.error('🟢 [TOUR API] Error message:', dbError.message);
+        console.error('🟢 [TOUR API] Error stack:', dbError.stack);
       }
       
       throw new Error("Failed to create tour request in database");
     }
-    
-    console.log("  ✅ Tour Request Created Successfully");
 
     // === STEP 7: Send Notification ===
-    console.log("\n📧 [STEP 7] Sending Notification");
-    console.log("  ├─ Notification type: Tour Request Created");
-    console.log("  ├─ Tour Request ID:", tourRequest.id);
-    console.log("  ├─ Family:", `${family.user.firstName} ${family.user.lastName}`);
-    console.log("  ├─ Home:", home.name);
-    console.log("  ├─ Requested Times:", validatedData.requestedTimes.join(", "));
-    console.log("  └─ Status: PENDING CONFIRMATION");
-    console.log("  ✅ Notification logged (email integration pending)");
+    console.log('🟢 [TOUR API] Step 7: Notification');
+    console.log('🟢 [TOUR API] Tour Request ID:', tourRequest.id);
+    console.log('🟢 [TOUR API] Notification logged (email integration pending)');
 
     // === STEP 8: Prepare Response ===
-    console.log("\n📤 [STEP 8] Preparing API Response");
+    console.log('🟢 [TOUR API] Step 8: Sending Response');
     
     const responseData = {
       success: true,
@@ -280,42 +278,34 @@ export async function POST(request: NextRequest) {
       },
     };
     
-    console.log("  ├─ Response data prepared:");
-    console.log("  │  ├─ success:", responseData.success);
-    console.log("  │  ├─ tourRequest.id:", responseData.tourRequest.id);
-    console.log("  │  ├─ tourRequest.homeId:", responseData.tourRequest.homeId);
-    console.log("  │  ├─ tourRequest.homeName:", responseData.tourRequest.homeName);
-    console.log("  │  ├─ tourRequest.status:", responseData.tourRequest.status);
-    console.log("  │  └─ tourRequest.requestedTimes:", responseData.tourRequest.requestedTimes);
+    console.log('🟢 [TOUR API] Response:', {
+      success: responseData.success,
+      tourId: responseData.tourRequest.id,
+      status: responseData.tourRequest.status
+    });
     
-    console.log("\n╔══════════════════════════════════════════════════════════╗");
-    console.log("║  ✅ TOUR REQUEST API - COMPLETED SUCCESSFULLY           ║");
-    console.log("╚══════════════════════════════════════════════════════════╝\n");
+    console.log('🟢 [TOUR API] ======================================== ✅');
     
     return NextResponse.json(responseData);
     
   } catch (error) {
-    console.log("\n╔══════════════════════════════════════════════════════════╗");
-    console.log("║  ❌ TOUR REQUEST API - ERROR CAUGHT                      ║");
-    console.log("╚══════════════════════════════════════════════════════════╝\n");
-    
-    console.error("🚨 [ERROR HANDLER] Caught exception in tour request API");
-    console.error("  ├─ Error type:", error?.constructor?.name || "Unknown");
-    console.error("  ├─ Error:", error);
+    console.error('🔴 [TOUR API] ========================================');
+    console.error('🔴 [TOUR API] ERROR OCCURRED!');
+    console.error('🔴 [TOUR API] Error type:', error?.constructor?.name || "Unknown");
+    console.error('🔴 [TOUR API] Error:', error);
     
     // Log detailed error information
     if (error instanceof Error) {
-      console.error("  ├─ Error name:", error.name);
-      console.error("  ├─ Error message:", error.message);
-      console.error("  ├─ Error stack:");
-      console.error(error.stack);
+      console.error('🔴 [TOUR API] Error name:', error.name);
+      console.error('🔴 [TOUR API] Error message:', error.message);
+      console.error('🔴 [TOUR API] Error stack:', error.stack);
     }
 
     // Handle Zod validation errors
     if (error instanceof z.ZodError) {
-      console.error("  ├─ Zod validation error detected");
-      console.error("  ├─ Validation errors:", JSON.stringify(error.errors, null, 2));
-      console.error("  └─ Returning 400 Bad Request");
+      console.error('🔴 [TOUR API] Zod validation error');
+      console.error('🔴 [TOUR API] Validation errors:', JSON.stringify(error.errors, null, 2));
+      console.error('🔴 [TOUR API] ======================================== ❌');
       
       return NextResponse.json(
         { 
@@ -332,8 +322,9 @@ export async function POST(request: NextRequest) {
       ? error.message
       : "Failed to create tour request";
     
-    console.error("  ├─ Error message for client:", errorMessage);
-    console.error("  └─ Returning 500 Internal Server Error");
+    console.error('🔴 [TOUR API] Error message for client:', errorMessage);
+    console.error('🔴 [TOUR API] Returning 500 Internal Server Error');
+    console.error('🔴 [TOUR API] ======================================== ❌');
 
     return NextResponse.json(
       { 
