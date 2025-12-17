@@ -112,14 +112,35 @@ export default function TourRequestModal({
       console.log("[TourRequestModal] Available slots data:", data);
       
       if (data.success && data.suggestions) {
-        // Convert suggestions to TimeSlot format
-        const slots: TimeSlot[] = data.suggestions.map((suggestion: any) => ({
-          time: suggestion.time,
-          available: true,
-          reason: suggestion.reason || "Available",
-        }));
+        // DEFENSIVE: Validate suggestions is an array
+        if (!Array.isArray(data.suggestions)) {
+          console.error("[TourRequestModal] Suggestions is not an array:", data.suggestions);
+          throw new Error("Invalid response format: suggestions must be an array");
+        }
+        
+        // Convert suggestions to TimeSlot format with validation
+        const slots: TimeSlot[] = data.suggestions
+          .filter((suggestion: any) => {
+            // Filter out invalid slots
+            if (!suggestion || typeof suggestion.time !== 'string') {
+              console.warn("[TourRequestModal] Skipping invalid slot:", suggestion);
+              return false;
+            }
+            return true;
+          })
+          .map((suggestion: any) => ({
+            time: suggestion.time,
+            available: true,
+            reason: suggestion.reason || "Available",
+          }));
         
         console.log("[TourRequestModal] Converted slots:", slots);
+        
+        // DEFENSIVE: Check if we have any valid slots
+        if (slots.length === 0) {
+          console.warn("[TourRequestModal] No valid slots found");
+        }
+        
         setAvailableSlots(slots);
         setCurrentStep("time-slots");
       } else {

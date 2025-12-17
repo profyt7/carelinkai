@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FiClock, FiCheck } from "react-icons/fi";
 import { format, parseISO } from "date-fns";
 
@@ -28,6 +28,16 @@ export default function TimeSlotSelector({
   const [selectedSlots, setSelectedSlots] = useState<string[]>(
     selectedSlot ? [selectedSlot] : []
   );
+
+  // CRITICAL FIX: Sync internal state with prop changes to prevent state mismatch
+  // This prevents browser crashes caused by competing sources of truth
+  useEffect(() => {
+    if (selectedSlot) {
+      setSelectedSlots([selectedSlot]);
+    } else {
+      setSelectedSlots([]);
+    }
+  }, [selectedSlot]);
 
   const handleSelect = (slot: string) => {
     if (maxSelections === 1) {
