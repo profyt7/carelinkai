@@ -40,6 +40,7 @@ import {
 } from "react-icons/fi";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import TourRequestModal from "@/components/tours/TourRequestModal";
 // Import our new components
 import PhotoGallery from "@/components/homes/PhotoGallery";
 import PricingCalculator from "@/components/homes/PricingCalculator";
@@ -287,6 +288,9 @@ export default function HomeDetailPage() {
   
   // State for booking step
   const [bookingStep, setBookingStep] = useState(0); // 0: not started, 1: inquiry form, 2: tour scheduling, 3: submitted
+  
+  // State for tour modal
+  const [showTourModal, setShowTourModal] = useState(false);
   
   // State for collapsible amenities
   const [amenitiesExpanded, setAmenitiesExpanded] = useState<Record<string, boolean>>({});
@@ -1505,7 +1509,7 @@ export default function HomeDetailPage() {
                     
                     <div className="space-y-3">
                       <button
-                        onClick={() => setBookingStep(1)}
+                        onClick={() => setShowTourModal(true)}
                         className="flex w-full items-center justify-center rounded-md bg-primary-500 px-4 py-2 font-medium text-white hover:bg-primary-600"
                       >
                         <FiCalendar className="mr-2 h-5 w-5" />
@@ -1862,10 +1866,7 @@ export default function HomeDetailPage() {
       <div className="fixed bottom-0 inset-x-0 z-40 border-t border-neutral-200 bg-white p-3 shadow-[0_-2px_8px_rgba(0,0,0,0.06)] md:hidden">
         <div className="flex gap-2 sm:flex-row flex-col">
           <button
-            onClick={() => {
-              setBookingStep(1);
-              bookingRef.current?.scrollIntoView({behavior: 'smooth'});
-            }}
+            onClick={() => setShowTourModal(true)}
             className="flex-1 rounded-md bg-primary-500 px-4 py-2 font-medium text-white hover:bg-primary-600"
           >
             Schedule Tour
@@ -1881,6 +1882,17 @@ export default function HomeDetailPage() {
           </button>
         </div>
       </div>
+      
+      {/* Tour Request Modal */}
+      <TourRequestModal
+        isOpen={showTourModal}
+        onClose={() => setShowTourModal(false)}
+        homeId={realHome?.id || home.id}
+        homeName={realHome?.name || home.name}
+        onSuccess={() => {
+          console.log("Tour request submitted successfully!");
+        }}
+      />
     </div>
     </DashboardLayout>
   );
