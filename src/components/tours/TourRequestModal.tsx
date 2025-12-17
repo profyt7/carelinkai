@@ -64,8 +64,41 @@ export default function TourRequestModal({
     }
   }, [isOpen]);
 
+  // Component mount logging
+  useEffect(() => {
+    console.log("\n╔══════════════════════════════════════════════════════════╗");
+    console.log("║  🟢 TourRequestModal - COMPONENT MOUNTED               ║");
+    console.log("╚══════════════════════════════════════════════════════════╝\n");
+    console.log("📍 [MOUNT] Component initialized with props:");
+    console.log("  ├─ isOpen:", isOpen);
+    console.log("  ├─ homeId:", homeId);
+    console.log("  ├─ homeName:", homeName);
+    console.log("  └─ onSuccess callback:", !!onSuccess);
+    
+    return () => {
+      console.log("\n🔴 [UNMOUNT] TourRequestModal component unmounting\n");
+    };
+  }, []);
+
+  // Log when modal opens/closes
+  useEffect(() => {
+    if (isOpen) {
+      console.log("\n╔══════════════════════════════════════════════════════════╗");
+      console.log("║  🚪 MODAL OPENED                                        ║");
+      console.log("╚══════════════════════════════════════════════════════════╝\n");
+      console.log("📍 [MODAL OPEN] State at open:");
+      console.log("  ├─ homeId:", homeId);
+      console.log("  ├─ homeName:", homeName);
+      console.log("  ├─ currentStep:", currentStep);
+      console.log("  └─ isLoading:", isLoading);
+    } else {
+      console.log("\n🚪 [MODAL CLOSE] Modal closed\n");
+    }
+  }, [isOpen]);
+
   // Reset state when modal closes
   const handleClose = () => {
+    console.log("\n🚪 [HANDLE CLOSE] handleClose() called");
     setTimeout(() => {
       setCurrentStep("date-range");
       setStartDate("");
