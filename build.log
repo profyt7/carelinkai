@@ -1,0 +1,479 @@
+
+> carelinkai@0.1.0 prebuild
+> rm -rf .next && prisma generate
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+Warning: You did not specify an output path for your `generator` in schema.prisma. This behavior is deprecated and will no longer be supported in Prisma 7.0.0. To learn more visit https://pris.ly/cli/output-path
+
+✔ Generated Prisma Client (v6.7.0) to ./node_modules/@prisma/client in 334ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Want to turn off tips and other hints? https://pris.ly/tip-4-nohints
+
+
+> carelinkai@0.1.0 build
+> cross-env NODE_OPTIONS=--max-old-space-size=4096 next build
+
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+   ▲ Next.js 14.0.4
+   - Environments: .env
+   - Experiments (use at your own risk):
+     · instrumentationHook
+
+   Creating an optimized production build ...
+Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (190kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (139kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+ ⚠ Compiled with warnings
+
+./src/app/api/webhooks/stripe/route.ts
+Attempted import error: 'bindRequestLogger' is not exported from '@/lib/logger' (imported as 'bindRequestLogger').
+
+Import trace for requested module:
+./src/app/api/webhooks/stripe/route.ts
+
+./src/app/operator/residents/[id]/page.tsx
+Attempted import error: 'authOptions' is not exported from '@/app/api/auth/[...nextauth]/route' (imported as 'authOptions').
+
+Import trace for requested module:
+./src/app/operator/residents/[id]/page.tsx
+
+./src/lib/services/family.ts
+Attempted import error: '@/lib/logger' does not contain a default export (imported as 'logger').
+
+Import trace for requested module:
+./src/lib/services/family.ts
+./src/app/api/billing/deposit/route.ts
+
+./src/lib/services/family.ts
+Attempted import error: '@/lib/logger' does not contain a default export (imported as 'logger').
+
+Import trace for requested module:
+./src/lib/services/family.ts
+./src/app/api/billing/deposit/route.ts
+
+./src/lib/services/family.ts
+Attempted import error: '@/lib/logger' does not contain a default export (imported as 'logger').
+
+Import trace for requested module:
+./src/lib/services/family.ts
+./src/app/api/billing/deposit/route.ts
+
+./src/lib/services/family.ts
+Attempted import error: '@/lib/logger' does not contain a default export (imported as 'logger').
+
+Import trace for requested module:
+./src/lib/services/family.ts
+./src/app/api/billing/deposit/route.ts
+
+./src/lib/services/family.ts
+Attempted import error: '@/lib/logger' does not contain a default export (imported as 'logger').
+
+Import trace for requested module:
+./src/lib/services/family.ts
+./src/app/api/billing/deposit/route.ts
+
+./src/lib/services/family.ts
+Attempted import error: '@/lib/logger' does not contain a default export (imported as 'logger').
+
+Import trace for requested module:
+./src/lib/services/family.ts
+./src/app/api/billing/deposit/route.ts
+
+./src/lib/services/family.ts
+Attempted import error: '@/lib/logger' does not contain a default export (imported as 'logger').
+
+Import trace for requested module:
+./src/lib/services/family.ts
+./src/app/api/billing/deposit/route.ts
+
+./src/lib/services/family.ts
+Attempted import error: '@/lib/logger' does not contain a default export (imported as 'logger').
+
+Import trace for requested module:
+./src/lib/services/family.ts
+./src/app/api/billing/deposit/route.ts
+
+./src/lib/services/family.ts
+Attempted import error: '@/lib/logger' does not contain a default export (imported as 'logger').
+
+Import trace for requested module:
+./src/lib/services/family.ts
+./src/app/api/billing/deposit/route.ts
+
+./src/lib/services/family.ts
+Attempted import error: '@/lib/logger' does not contain a default export (imported as 'logger').
+
+Import trace for requested module:
+./src/lib/services/family.ts
+./src/app/api/billing/deposit/route.ts
+
+./src/lib/services/family.ts
+Attempted import error: '@/lib/logger' does not contain a default export (imported as 'logger').
+
+Import trace for requested module:
+./src/lib/services/family.ts
+./src/app/api/billing/deposit/route.ts
+
+./src/lib/services/family.ts
+Attempted import error: '@/lib/logger' does not contain a default export (imported as 'logger').
+
+Import trace for requested module:
+./src/lib/services/family.ts
+./src/app/api/billing/deposit/route.ts
+
+./src/lib/services/family.ts
+Attempted import error: '@/lib/logger' does not contain a default export (imported as 'logger').
+
+Import trace for requested module:
+./src/lib/services/family.ts
+./src/app/api/billing/deposit/route.ts
+
+./src/lib/services/family.ts
+Attempted import error: '@/lib/logger' does not contain a default export (imported as 'logger').
+
+Import trace for requested module:
+./src/lib/services/family.ts
+./src/app/api/billing/deposit/route.ts
+
+./src/lib/services/family.ts
+Attempted import error: '@/lib/logger' does not contain a default export (imported as 'logger').
+
+Import trace for requested module:
+./src/lib/services/family.ts
+./src/app/api/billing/deposit/route.ts
+
+./src/lib/services/family.ts
+Attempted import error: '@/lib/logger' does not contain a default export (imported as 'logger').
+
+Import trace for requested module:
+./src/lib/services/family.ts
+./src/app/api/billing/deposit/route.ts
+
+./src/lib/services/family.ts
+Attempted import error: '@/lib/logger' does not contain a default export (imported as 'logger').
+
+Import trace for requested module:
+./src/lib/services/family.ts
+./src/app/api/billing/deposit/route.ts
+
+./src/lib/services/family.ts
+Attempted import error: '@/lib/logger' does not contain a default export (imported as 'logger').
+
+Import trace for requested module:
+./src/lib/services/family.ts
+./src/app/api/billing/deposit/route.ts
+
+   Skipping validation of types
+   Linting ...
+
+./src/app/homes/[id]/page.tsx
+1097:23  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+1660:25  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+1674:25  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/marketplace/caregivers/[id]/page.tsx
+196:17  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/marketplace/providers/[id]/page.tsx
+86:6  Warning: React Hook useEffect has missing dependencies: 'fetchProviderDetails' and 'loadFavoriteStatus'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/marketplace/providers/page.tsx
+114:6  Warning: React Hook useEffect has a missing dependency: 'fetchProviders'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/operator/caregivers/[id]/page.tsx
+81:6  Warning: React Hook useEffect has a missing dependency: 'fetchCaregiver'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/operator/caregivers/page.tsx
+101:6  Warning: React Hook useEffect has a missing dependency: 'fetchCaregivers'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/operator/homes/[id]/edit/page.tsx
+157:6  Warning: React Hook useEffect has a missing dependency: 'loadHomeData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/operator/inquiries/[id]/page.tsx
+92:6  Warning: React Hook useEffect has a missing dependency: 'fetchInquiry'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/operator/tours/[id]/page.tsx
+108:6  Warning: React Hook useEffect has a missing dependency: 'fetchTourDetails'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/operator/tours/page.tsx
+98:6  Warning: React Hook useEffect has a missing dependency: 'fetchTours'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/reports/history/page.tsx
+23:6  Warning: React Hook useEffect has a missing dependency: 'fetchReports'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/search/page.tsx
+927:31  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+1058:31  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/settings/credentials/page.tsx
+75:6  Warning: React Hook useCallback has a missing dependency: 'getCredentialsEndpoint'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/settings/profile/page.tsx
+260:6  Warning: React Hook useEffect has a missing dependency: 'fetchCredentials'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/family/BillingTab.tsx
+76:6  Warning: React Hook useEffect has a missing dependency: 'loadBilling'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/family/EmergencyTab.tsx
+83:6  Warning: React Hook useEffect has a missing dependency: 'fetchPreferences'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/family/GalleryTab.tsx
+162:6  Warning: React Hook useEffect has missing dependencies: 'fetchAlbums' and 'fetchPhotos'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+651:21  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+766:17  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/family/MembersTab.tsx
+141:6  Warning: React Hook useEffect has a missing dependency: 'fetchMembers'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+163:6  Warning: React Hook useEffect has a missing dependency: 'fetchMembers'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/family/MessagesTab.tsx
+144:6  Warning: React Hook useEffect has a missing dependency: 'fetchConversations'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+150:6  Warning: React Hook useEffect has a missing dependency: 'fetchMessages'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+177:6  Warning: React Hook useEffect has a missing dependency: 'fetchConversations'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/family/NotesTab.tsx
+89:6  Warning: React Hook useEffect has a missing dependency: 'fetchNotes'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/operator/caregivers/AssignmentsTab.tsx
+40:6  Warning: React Hook useEffect has a missing dependency: 'fetchAssignments'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+147:23  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/operator/caregivers/CaregiverCard.tsx
+75:15  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/operator/caregivers/CertificationsTab.tsx
+49:6  Warning: React Hook useEffect has a missing dependency: 'fetchCertifications'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/operator/caregivers/DocumentsTab.tsx
+46:6  Warning: React Hook useEffect has a missing dependency: 'fetchDocuments'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/operator/caregivers/OverviewTab.tsx
+94:15  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/operator/homes/PhotoGalleryManager.tsx
+157:15  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/operator/inquiries/DocumentsSection.tsx
+75:6  Warning: React Hook useEffect has a missing dependency: 'fetchDocuments'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/operator/residents/AssessmentsTab.tsx
+57:6  Warning: React Hook useEffect has a missing dependency: 'fetchAssessments'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/operator/residents/ComplianceTab.tsx
+68:6  Warning: React Hook useEffect has a missing dependency: 'fetchItems'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/operator/residents/DocumentsSection.tsx
+47:6  Warning: React Hook useEffect has a missing dependency: 'fetchDocuments'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/operator/residents/FamilyTab.tsx
+80:6  Warning: React Hook useEffect has a missing dependency: 'fetchContacts'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/operator/residents/IncidentsTab.tsx
+87:6  Warning: React Hook useEffect has a missing dependency: 'fetchIncidents'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/operator/residents/ResidentNotes.tsx
+39:6  Warning: React Hook useEffect has a missing dependency: 'fetchNotes'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/operator/residents/ResidentTimeline.tsx
+38:6  Warning: React Hook useEffect has a missing dependency: 'fetchEvents'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/lib/sse.ts
+50:1  Warning: Assign object to a variable before exporting as module default  import/no-anonymous-default-export
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/basic-features/eslint#disabling-rules
+   Collecting page data ...
+[33mWARNING: STRIPE_SECRET_KEY is missing in production build. Initializing Stripe with a dummy key so the build can proceed. Runtime API calls will fail unless the key is provided at runtime.[0m
+[33mWARNING: STRIPE_SECRET_KEY is missing in production build. Initializing Stripe with a dummy key so the build can proceed. Runtime API calls will fail unless the key is provided at runtime.[0m
+[33mWARNING: STRIPE_SECRET_KEY is missing in production build. Initializing Stripe with a dummy key so the build can proceed. Runtime API calls will fail unless the key is provided at runtime.[0m
+[33mWARNING: STRIPE_SECRET_KEY is missing in production build. Initializing Stripe with a dummy key so the build can proceed. Runtime API calls will fail unless the key is provided at runtime.[0m
+{"timestamp":"2025-12-17T04:19:29.143Z","level":"warn","message":"SENDGRID_API_KEY is not defined. Email functionality will not work."}
+[33mWARNING: STRIPE_SECRET_KEY is missing in production build. Initializing Stripe with a dummy key so the build can proceed. Runtime API calls will fail unless the key is provided at runtime.[0m
+[33mWARNING: STRIPE_SECRET_KEY is missing in production build. Initializing Stripe with a dummy key so the build can proceed. Runtime API calls will fail unless the key is provided at runtime.[0m
+[33mWARNING: STRIPE_SECRET_KEY is missing in production build. Initializing Stripe with a dummy key so the build can proceed. Runtime API calls will fail unless the key is provided at runtime.[0m
+[33mWARNING: STRIPE_SECRET_KEY is missing in production build. Initializing Stripe with a dummy key so the build can proceed. Runtime API calls will fail unless the key is provided at runtime.[0m
+   Generating static pages (0/154) ...
+Error fetching members: n [Error]: Dynamic server usage: Page couldn't be rendered statically because it used `headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at i (/home/ubuntu/carelinkai-project/.next/server/chunks/9724.js:1:4113)
+    at u (/home/ubuntu/carelinkai-project/.next/server/chunks/9724.js:1:1489)
+    at a (/home/ubuntu/carelinkai-project/.next/server/chunks/4346.js:30:17345)
+    at p (/home/ubuntu/carelinkai-project/.next/server/app/api/family/members/route.js:1:1787)
+    at /home/ubuntu/carelinkai-project/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:41966
+    at /home/ubuntu/carelinkai-project/node_modules/next/dist/server/lib/trace/tracer.js:133:36
+    at NoopContextManager.with (/home/ubuntu/carelinkai-project/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/home/ubuntu/carelinkai-project/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/home/ubuntu/carelinkai-project/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/home/ubuntu/carelinkai-project/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24) {
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+[Family Tours API] Error: a [Error]: Dynamic server usage: Page couldn't be rendered statically because it used `headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at n (/home/ubuntu/carelinkai-project/.next/server/chunks/5327.js:1:1934)
+    at u (/home/ubuntu/carelinkai-project/.next/server/chunks/9724.js:1:1489)
+    at a (/home/ubuntu/carelinkai-project/.next/server/chunks/4346.js:30:17345)
+    at I (/home/ubuntu/carelinkai-project/.next/server/app/api/family/tours/route.js:1:1797)
+    at /home/ubuntu/carelinkai-project/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:41966
+    at /home/ubuntu/carelinkai-project/node_modules/next/dist/server/lib/trace/tracer.js:133:36
+    at NoopContextManager.with (/home/ubuntu/carelinkai-project/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/home/ubuntu/carelinkai-project/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/home/ubuntu/carelinkai-project/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/home/ubuntu/carelinkai-project/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24) {
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+Error fetching all favorites: n [Error]: Dynamic server usage: Page couldn't be rendered statically because it used `headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at i (/home/ubuntu/carelinkai-project/.next/server/chunks/9724.js:1:4113)
+    at u (/home/ubuntu/carelinkai-project/.next/server/chunks/9724.js:1:1489)
+    at a (/home/ubuntu/carelinkai-project/.next/server/chunks/4346.js:30:17345)
+    at g (/home/ubuntu/carelinkai-project/.next/server/app/api/favorites/all/route.js:1:1812)
+    at /home/ubuntu/carelinkai-project/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:41966
+    at /home/ubuntu/carelinkai-project/node_modules/next/dist/server/lib/trace/tracer.js:133:36
+    at NoopContextManager.with (/home/ubuntu/carelinkai-project/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/home/ubuntu/carelinkai-project/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/home/ubuntu/carelinkai-project/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/home/ubuntu/carelinkai-project/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24) {
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+Error fetching photos: n [Error]: Dynamic server usage: Page couldn't be rendered statically because it used `headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at i (/home/ubuntu/carelinkai-project/.next/server/chunks/9724.js:1:4113)
+    at u (/home/ubuntu/carelinkai-project/.next/server/chunks/9724.js:1:1489)
+    at a (/home/ubuntu/carelinkai-project/.next/server/chunks/4346.js:30:17345)
+    at f (/home/ubuntu/carelinkai-project/.next/server/app/api/family/gallery/route.js:1:1787)
+    at /home/ubuntu/carelinkai-project/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:41966
+    at /home/ubuntu/carelinkai-project/node_modules/next/dist/server/lib/trace/tracer.js:133:36
+    at NoopContextManager.with (/home/ubuntu/carelinkai-project/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/home/ubuntu/carelinkai-project/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/home/ubuntu/carelinkai-project/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/home/ubuntu/carelinkai-project/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24) {
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+[33mWARNING: STRIPE_SECRET_KEY is missing in production build. Initializing Stripe with a dummy key so the build can proceed. Runtime API calls will fail unless the key is provided at runtime.[0m
+{"timestamp":"2025-12-17T04:19:32.912Z","level":"info","message":"Admin metrics requested"}
+   Generating static pages (38/154) 
+Error fetching inquiries: n [Error]: Dynamic server usage: Page couldn't be rendered statically because it used `headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at i (/home/ubuntu/carelinkai-project/.next/server/chunks/9724.js:1:4113)
+    at u (/home/ubuntu/carelinkai-project/.next/server/chunks/9724.js:1:1489)
+    at a (/home/ubuntu/carelinkai-project/.next/server/chunks/4346.js:30:17345)
+    at w (/home/ubuntu/carelinkai-project/.next/server/app/api/operator/inquiries/route.js:1:1808)
+    at /home/ubuntu/carelinkai-project/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:41966
+    at /home/ubuntu/carelinkai-project/node_modules/next/dist/server/lib/trace/tracer.js:133:36
+    at NoopContextManager.with (/home/ubuntu/carelinkai-project/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/home/ubuntu/carelinkai-project/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/home/ubuntu/carelinkai-project/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/home/ubuntu/carelinkai-project/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24) {
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+Error fetching providers: ew [Error]: Dynamic server usage: Page couldn't be rendered statically because it used `request.url`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at Object.eP [as staticGenerationBailout] (/home/ubuntu/carelinkai-project/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:29225)
+    at i (/home/ubuntu/carelinkai-project/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:34633)
+    at Object.get (/home/ubuntu/carelinkai-project/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:34729)
+    at m (/home/ubuntu/carelinkai-project/.next/server/app/api/marketplace/providers/route.js:1:1202)
+    at /home/ubuntu/carelinkai-project/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:41966
+    at /home/ubuntu/carelinkai-project/node_modules/next/dist/server/lib/trace/tracer.js:133:36
+    at NoopContextManager.with (/home/ubuntu/carelinkai-project/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/home/ubuntu/carelinkai-project/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/home/ubuntu/carelinkai-project/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/home/ubuntu/carelinkai-project/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24) {
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+Error checking mock mode: ew [Error]: Dynamic server usage: Page couldn't be rendered statically because it used `headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at eP (/home/ubuntu/carelinkai-project/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:29225)
+    at Module.eE (/home/ubuntu/carelinkai-project/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:29561)
+    at i (/home/ubuntu/carelinkai-project/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:34513)
+    at Object.get (/home/ubuntu/carelinkai-project/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:34729)
+    at a (/home/ubuntu/carelinkai-project/.next/server/app/api/marketplace/providers/route.js:1:13051)
+    at m (/home/ubuntu/carelinkai-project/.next/server/app/api/marketplace/providers/route.js:1:5242)
+    at /home/ubuntu/carelinkai-project/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:41966
+    at /home/ubuntu/carelinkai-project/node_modules/next/dist/server/lib/trace/tracer.js:133:36
+    at NoopContextManager.with (/home/ubuntu/carelinkai-project/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/home/ubuntu/carelinkai-project/node_modules/@opentelemetry/api/build/src/api/context.js:60:46) {
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+Pipeline API error: n [Error]: Dynamic server usage: Page couldn't be rendered statically because it used `headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at i (/home/ubuntu/carelinkai-project/.next/server/chunks/9724.js:1:4113)
+    at u (/home/ubuntu/carelinkai-project/.next/server/chunks/9724.js:1:1489)
+    at a (/home/ubuntu/carelinkai-project/.next/server/chunks/4346.js:30:17345)
+    at _ (/home/ubuntu/carelinkai-project/.next/server/chunks/3400.js:1:830)
+    at T (/home/ubuntu/carelinkai-project/.next/server/chunks/3400.js:1:990)
+    at y (/home/ubuntu/carelinkai-project/.next/server/app/api/operator/inquiries/pipeline/route.js:1:1795)
+    at /home/ubuntu/carelinkai-project/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:41966
+    at /home/ubuntu/carelinkai-project/node_modules/next/dist/server/lib/trace/tracer.js:133:36
+    at NoopContextManager.with (/home/ubuntu/carelinkai-project/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/home/ubuntu/carelinkai-project/node_modules/@opentelemetry/api/build/src/api/context.js:60:46) {
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+========================================
+UNHANDLED ERROR IN AUTH UTILS
+========================================
+Error type: n
+Error object: n [Error]: Dynamic server usage: Page couldn't be rendered statically because it used `headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at i (/home/ubuntu/carelinkai-project/.next/server/chunks/9724.js:1:4113)
+    at u (/home/ubuntu/carelinkai-project/.next/server/chunks/9724.js:1:1489)
+    at a (/home/ubuntu/carelinkai-project/.next/server/chunks/4346.js:30:17345)
+    at _ (/home/ubuntu/carelinkai-project/.next/server/chunks/3400.js:1:830)
+    at T (/home/ubuntu/carelinkai-project/.next/server/chunks/3400.js:1:990)
+    at y (/home/ubuntu/carelinkai-project/.next/server/app/api/operator/inquiries/pipeline/route.js:1:1795)
+    at /home/ubuntu/carelinkai-project/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:41966
+    at /home/ubuntu/carelinkai-project/node_modules/next/dist/server/lib/trace/tracer.js:133:36
+    at NoopContextManager.with (/home/ubuntu/carelinkai-project/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/home/ubuntu/carelinkai-project/node_modules/@opentelemetry/api/build/src/api/context.js:60:46) {
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+Error message: Dynamic server usage: Page couldn't be rendered statically because it used `headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+Error stack: Error: Dynamic server usage: Page couldn't be rendered statically because it used `headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at i (/home/ubuntu/carelinkai-project/.next/server/chunks/9724.js:1:4113)
+    at u (/home/ubuntu/carelinkai-project/.next/server/chunks/9724.js:1:1489)
+    at a (/home/ubuntu/carelinkai-project/.next/server/chunks/4346.js:30:17345)
+    at _ (/home/ubuntu/carelinkai-project/.next/server/chunks/3400.js:1:830)
+    at T (/home/ubuntu/carelinkai-project/.next/server/chunks/3400.js:1:990)
+    at y (/home/ubuntu/carelinkai-project/.next/server/app/api/operator/inquiries/pipeline/route.js:1:1795)
+    at /home/ubuntu/carelinkai-project/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:41966
+    at /home/ubuntu/carelinkai-project/node_modules/next/dist/server/lib/trace/tracer.js:133:36
+    at NoopContextManager.with (/home/ubuntu/carelinkai-project/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/home/ubuntu/carelinkai-project/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+========================================
+{"timestamp":"2025-12-17T04:19:32.997Z","level":"warn","message":"SENDGRID_API_KEY is not defined. Email functionality will not work."}
+Error in Cloudinary diagnostics: n [Error]: Dynamic server usage: Page couldn't be rendered statically because it used `headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at i (/home/ubuntu/carelinkai-project/.next/server/chunks/9724.js:1:4113)
+    at u (/home/ubuntu/carelinkai-project/.next/server/chunks/9724.js:1:1489)
+    at a (/home/ubuntu/carelinkai-project/.next/server/chunks/4346.js:30:17345)
+    at f (/home/ubuntu/carelinkai-project/.next/server/app/api/diagnostic/cloudinary/route.js:1:2778)
+    at /home/ubuntu/carelinkai-project/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:41966
+    at /home/ubuntu/carelinkai-project/node_modules/next/dist/server/lib/trace/tracer.js:133:36
+    at NoopContextManager.with (/home/ubuntu/carelinkai-project/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/home/ubuntu/carelinkai-project/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/home/ubuntu/carelinkai-project/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/home/ubuntu/carelinkai-project/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24) {
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+prisma:error 
+Invalid `prisma.user.groupBy()` invocation:
+
+
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+{"timestamp":"2025-12-17T04:19:33.080Z","level":"error","message":"Error generating admin metrics","error":"\nInvalid `prisma.user.groupBy()` invocation:\n\n\nCan't reach database server at `localhost:5432`\n\nPlease make sure your database server is running at `localhost:5432`."}
+[Operator Tours API] Error: n [Error]: Dynamic server usage: Page couldn't be rendered statically because it used `headers`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at i (/home/ubuntu/carelinkai-project/.next/server/chunks/9724.js:1:4113)
+    at u (/home/ubuntu/carelinkai-project/.next/server/chunks/9724.js:1:1489)
+    at a (/home/ubuntu/carelinkai-project/.next/server/chunks/4346.js:30:17345)
+    at I (/home/ubuntu/carelinkai-project/.next/server/app/api/operator/tours/route.js:1:1798)
+    at /home/ubuntu/carelinkai-project/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:41966
+    at /home/ubuntu/carelinkai-project/node_modules/next/dist/server/lib/trace/tracer.js:133:36
+    at NoopContextManager.with (/home/ubuntu/carelinkai-project/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)
+    at ContextAPI.with (/home/ubuntu/carelinkai-project/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)
+    at NoopTracer.startActiveSpan (/home/ubuntu/carelinkai-project/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)
+    at ProxyTracer.startActiveSpan (/home/ubuntu/carelinkai-project/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24) {
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+   Generating static pages (76/154) 
+[33mWARNING: STRIPE_SECRET_KEY is missing in production build. Initializing Stripe with a dummy key so the build can proceed. Runtime API calls will fail unless the key is provided at runtime.[0m
+[33mWARNING: STRIPE_SECRET_KEY is missing in production build. Initializing Stripe with a dummy key so the build can proceed. Runtime API calls will fail unless the key is provided at runtime.[0m
+   Generating static pages (115/154) 
