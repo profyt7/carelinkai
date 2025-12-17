@@ -150,9 +150,25 @@ export async function POST(request: NextRequest) {
     
     console.log('🟢 [TOUR API] ✅ Family Record Found');
 
-    // === STEP 5: Fetch Home & Operator Details ===
-    console.log('🟢 [TOUR API] Step 5: Fetch Home & Operator Details');
+    // === STEP 5: Validate Home ID Format ===
+    console.log('🟢 [TOUR API] Step 5: Validate Home ID Format');
     console.log('🟢 [TOUR API] Home ID:', validatedData.homeId);
+    console.log('🟢 [TOUR API] Home ID type:', typeof validatedData.homeId);
+    console.log('🟢 [TOUR API] Home ID length:', validatedData.homeId?.length);
+    
+    if (typeof validatedData.homeId !== 'string' || validatedData.homeId.trim() === '') {
+      console.error('🟢 [TOUR API] ❌ INVALID HOME ID FORMAT');
+      return NextResponse.json({ 
+        error: "Invalid home ID format",
+        homeId: validatedData.homeId 
+      }, { status: 400 });
+    }
+    
+    console.log('🟢 [TOUR API] ✅ Home ID format valid');
+
+    // === STEP 6: Fetch Home & Operator Details (Enhanced) ===
+    console.log('🟢 [TOUR API] Step 6: Fetch Home & Operator Details (Enhanced)');
+    console.log('🟢 [TOUR API] Querying database for home ID:', validatedData.homeId);
     
     let home;
     try {
@@ -175,6 +191,7 @@ export async function POST(request: NextRequest) {
         console.log('🟢 [TOUR API] Home details:', {
           id: home.id,
           name: home.name,
+          status: home.status,
           operatorId: home.operatorId,
           operatorName: `${home.operator.user.firstName} ${home.operator.user.lastName}`
         });
@@ -184,16 +201,124 @@ export async function POST(request: NextRequest) {
       throw new Error("Failed to fetch home details");
     }
 
+    // === Enhanced Home Not Found Diagnostics ===
     if (!home) {
       console.error('🟢 [TOUR API] ❌ HOME NOT FOUND');
-      console.error('🟢 [TOUR API] Home ID:', validatedData.homeId);
-      return NextResponse.json({ error: "Home not found" }, { status: 404 });
+      console.error('🟢 [TOUR API] Home ID requested:', validatedData.homeId);
+      console.error('🟢 [TOUR API] Running database diagnostics...');
+      
+      try {
+        // Check total homes in database
+        const totalHomes = await prisma.assistedLivingHome.count();
+        console.error('🟢 [TOUR API] Total homes in database:', totalHomes);
+        
+        if (totalHomes === 0) {
+          console.error('🟢 [TOUR API] ❌ DATABASE IS EMPTY - No homes available');
+          return NextResponse.json({
+            error: "Home not found",
+            homeId: validatedData.homeId,
+            totalHomes: 0,
+            suggestion: "No homes in database. Please run seed script or contact administrator.",
+            diagnostics: {
+              databaseEmpty: true,
+              requestedId: validatedData.homeId
+            }
+          }, { status: 404 });
+        }
+        
+        // Get sample home IDs for debugging
+        const sampleHomes = await prisma.assistedLivingHome.findMany({
+          take: 10,
+          select: { 
+            id: true, 
+            name: true,
+            status: true,
+            operatorId: true
+          },
+          orderBy: { createdAt: 'desc' }
+        });
+        
+        console.error('🟢 [TOUR API] Sample homes from database:');
+        sampleHomes.forEach((h, idx) => {
+          console.error(`🟢 [TOUR API]   ${idx + 1}. ID: ${h.id}, Name: ${h.name}, Status: ${h.status}`);
+        });
+        
+        // Check if requested ID exists with different casing
+        const homesWithSimilarId = await prisma.assistedLivingHome.findMany({
+          where: {
+            id: {
+              contains: validatedData.homeId,
+              mode: 'insensitive'
+            }
+          },
+          take: 5,
+          select: { id: true, name: true }
+        });
+        
+        if (homesWithSimilarId.length > 0) {
+          console.error('🟢 [TOUR API] ⚠️ Found homes with similar IDs:');
+          homesWithSimilarId.forEach(h => {
+            console.error(`🟢 [TOUR API]   - ${h.id} (${h.name})`);
+          });
+        }
+        
+        return NextResponse.json({
+          error: "Home not found",
+          homeId: validatedData.homeId,
+          totalHomes: totalHomes,
+          suggestion: `Invalid home ID. Database has ${totalHomes} homes. Check the home ID or select from available homes.`,
+          diagnostics: {
+            requestedId: validatedData.homeId,
+            totalHomesInDatabase: totalHomes,
+            sampleHomeIds: sampleHomes.map(h => ({
+              id: h.id,
+              name: h.name,
+              status: h.status
+            })),
+            similarIds: homesWithSimilarId.map(h => h.id)
+          }
+        }, { status: 404 });
+        
+      } catch (diagnosticError) {
+        console.error('🟢 [TOUR API] ❌ Error running diagnostics:', diagnosticError);
+        return NextResponse.json({ 
+          error: "Home not found",
+          homeId: validatedData.homeId 
+        }, { status: 404 });
+      }
     }
     
     console.log('🟢 [TOUR API] ✅ Home & Operator Details Found');
+    
+    // === Check Home Status ===
+    console.log('🟢 [TOUR API] Checking home status...');
+    console.log('🟢 [TOUR API] Home status:', home.status);
+    
+    if (home.status !== 'ACTIVE') {
+      console.error('🟢 [TOUR API] ⚠️ HOME IS NOT ACTIVE');
+      console.error('🟢 [TOUR API] Home status:', home.status);
+      console.error('🟢 [TOUR API] Proceeding anyway (business logic TBD)');
+      // Note: Currently allowing tours for non-active homes
+      // Update this based on business requirements
+    }
 
-    // === STEP 6: Create Tour Request ===
-    console.log('🟢 [TOUR API] Step 6: Creating Tour Request');
+    // === STEP 7: Validate Requested Times ===
+    console.log('🟢 [TOUR API] Step 7: Validate Requested Times');
+    console.log('🟢 [TOUR API] Requested times:', validatedData.requestedTimes);
+    console.log('🟢 [TOUR API] Number of time slots:', validatedData.requestedTimes?.length);
+    
+    if (!validatedData.requestedTimes || !Array.isArray(validatedData.requestedTimes) || validatedData.requestedTimes.length === 0) {
+      console.error('🟢 [TOUR API] ❌ REQUESTED TIMES MISSING OR INVALID');
+      return NextResponse.json({ 
+        error: "Requested times are required",
+        requestedTimes: validatedData.requestedTimes 
+      }, { status: 400 });
+    }
+    
+    console.log('🟢 [TOUR API] ✅ Requested times valid');
+
+    // === STEP 8: Create Tour Request ===
+    console.log('🟢 [TOUR API] Step 8: Creating Tour Request');
     
     const createData = {
       familyId: family.id,
@@ -257,13 +382,13 @@ export async function POST(request: NextRequest) {
       throw new Error("Failed to create tour request in database");
     }
 
-    // === STEP 7: Send Notification ===
-    console.log('🟢 [TOUR API] Step 7: Notification');
+    // === STEP 9: Send Notification ===
+    console.log('🟢 [TOUR API] Step 9: Notification');
     console.log('🟢 [TOUR API] Tour Request ID:', tourRequest.id);
     console.log('🟢 [TOUR API] Notification logged (email integration pending)');
 
-    // === STEP 8: Prepare Response ===
-    console.log('🟢 [TOUR API] Step 8: Sending Response');
+    // === STEP 10: Prepare Response ===
+    console.log('🟢 [TOUR API] Step 10: Sending Response');
     
     const responseData = {
       success: true,
