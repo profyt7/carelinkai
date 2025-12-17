@@ -2,11 +2,14 @@
 
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import L from 'leaflet';
-import { FiHeart, FiHome, FiMapPin, FiDollarSign } from 'react-icons/fi';
-import Link from 'next/link';
+import { FiMapPin } from 'react-icons/fi';
 
 // Import Leaflet CSS
 import 'leaflet/dist/leaflet.css';
+
+// GLOBAL singleton to prevent ANY re-initialization across component remounts
+let GLOBAL_MAP_INIT_COUNT = 0;
+const GLOBAL_MAX_INIT = 5;
 
 // Define types
 interface HomeAddress {
@@ -14,37 +17,23 @@ interface HomeAddress {
   city: string;
   state: string;
   zipCode: string;
-  // Latest API returns coordinates like { lat, lng }
-  latitude?: number;      // legacy support
-  longitude?: number;     // legacy support
-  coordinates?: {
-    lat: number;
-    lng: number;
-  };
+  latitude?: number;
+  longitude?: number;
+  coordinates?: { lat: number; lng: number };
 }
 
 interface HomeData {
   id: string;
   name: string;
   description: string;
-  // Accept either structured object returned from API or simple string fallback
   address: HomeAddress | string;
   careLevel: string[];
-  priceRange: {
-    min: number | null;
-    max: number | null;
-    formattedMin?: string;
-    formattedMax?: string;
-  };
+  priceRange: { min: number | null; max: number | null; formattedMin?: string; formattedMax?: string };
   capacity: number;
   availability: number;
   amenities: string[] | { category: string; items: string[] }[];
   imageUrl?: string | null;
-  // Some callers (e.g. home details page) include coordinates at root level
-  coordinates?: {
-    lat: number;
-    lng: number;
-  };
+  coordinates?: { lat: number; lng: number };
 }
 
 interface SimpleMapProps {
@@ -65,96 +54,45 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersRef = useRef<{ [key: string]: L.Marker }>({});
-  const resizeHandlerRef = useRef<((this: Window, ev: UIEvent) => any) | null>(null);
-  const [mounted, setMounted] = useState(false);
-  const [domReady, setDomReady] = useState(false);
+  const isInitializedRef = useRef(false);
+  const isInitializingRef = useRef(false);
   const [mapError, setMapError] = useState<string | null>(null);
-  const initAttemptRef = useRef(0);
-  const maxInitAttempts = 3; // Reduced from 5 to 3 for faster failure
-  const hasReachedMaxAttemptsRef = useRef(false); // Track if we've hit the limit
+  const [isReady, setIsReady] = useState(false);
 
-  // Debug log the homes data
-  console.log("[SimpleMap] Received homes data:", homes);
-
-  // Helper functions to extract coordinates
-  const isValidCoord = (n: unknown) =>
-    typeof n === 'number' && !Number.isNaN(n) && Number.isFinite(n);
-
+  // Coordinate helpers
+  const isValidCoord = (n: unknown) => typeof n === 'number' && !Number.isNaN(n) && Number.isFinite(n);
+  
   const getLat = useCallback((home: HomeData) => {
-    let lat: number | undefined;
-    // address may be object or string
     if (typeof home.address !== 'string') {
-      lat = home.address.coordinates?.lat ?? home.address.latitude;
+      return home.address.coordinates?.lat ?? home.address.latitude;
     }
-    if (lat === undefined) {
-      lat = home.coordinates?.lat;
-    }
-    console.log(`[SimpleMap] Home ${home.id} latitude:`, lat);
-    return lat;
+    return home.coordinates?.lat;
   }, []);
 
   const getLng = useCallback((home: HomeData) => {
-    let lng: number | undefined;
     if (typeof home.address !== 'string') {
-      lng = home.address.coordinates?.lng ?? home.address.longitude;
+      return home.address.coordinates?.lng ?? home.address.longitude;
     }
-    if (lng === undefined) {
-      lng = home.coordinates?.lng;
-    }
-    console.log(`[SimpleMap] Home ${home.id} longitude:`, lng);
-    return lng;
+    return home.coordinates?.lng;
   }, []);
 
-  // Filter homes with valid coordinates
   const validHomes = useMemo(
-    () =>
-      homes.filter(
-        (h) => h.address && isValidCoord(getLat(h)) && isValidCoord(getLng(h))
-      ),
+    () => homes.filter((h) => h.address && isValidCoord(getLat(h)) && isValidCoord(getLng(h))),
     [homes, getLat, getLng]
   );
 
-  // Debug log the valid homes
-  console.log("[SimpleMap] Valid homes with coordinates:", validHomes.length, validHomes);
-
-  // Determine map center
-  const getMapCenter = useCallback(() => {
-    if (validHomes.length === 0) {
-      const fallback: [number, number] = [36.7783, -119.4179]; // California
-      console.log("[SimpleMap] No valid homes, using fallback center:", fallback);
-      return fallback;
-    }
-    
+  const getMapCenter = useCallback((): [number, number] => {
+    if (validHomes.length === 0) return [36.7783, -119.4179];
     const centerLat = validHomes.reduce((sum, h) => sum + (getLat(h) as number), 0) / validHomes.length;
     const centerLng = validHomes.reduce((sum, h) => sum + (getLng(h) as number), 0) / validHomes.length;
-    
-    console.log("[SimpleMap] Calculated map center:", [centerLat, centerLng]);
-    return [centerLat, centerLng] as [number, number];
+    return [centerLat, centerLng];
   }, [validHomes, getLat, getLng]);
 
-  // Create a custom icon for markers
   const createCustomIcon = (price: number | null, isSelected: boolean = false) => {
     const priceDisplay = price ? `$${Math.floor(price / 1000)}k+` : '$?';
     const color = isSelected ? '#dc2626' : '#3b82f6';
-    
     return L.divIcon({
-      html: `
-        <div style="
-          background-color: ${color};
-          color: white;
-          border-radius: 50%;
-          width: 40px;
-          height: 40px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: bold;
-          font-size: 12px;
-          box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        ">
-          ${priceDisplay}
-        </div>
-      `,
+      html: `<div style="background-color:${color};color:white;border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;box-shadow:0 2px 5px rgba(0,0,0,0.2)">${priceDisplay}</div>`,
       className: '',
       iconSize: [40, 40],
       iconAnchor: [20, 40],
@@ -162,357 +100,164 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
     });
   };
 
-  // Create popup content for a home
   const createPopupContent = useCallback((home: HomeData) => {
     const isFavorite = favorites.includes(home.id);
-    // Support either string or structured address object
-    const addressText =
-      typeof home.address === 'string'
-        ? home.address
-        : `${home.address.street}, ${home.address.city}, ${home.address.state}`;
-    
+    const addressText = typeof home.address === 'string' ? home.address : `${home.address.street}, ${home.address.city}, ${home.address.state}`;
     return `
       <div class="w-64 p-2">
         <div class="flex items-start justify-between mb-2">
           <h3 class="font-semibold text-sm">${home.name}</h3>
-          <button
-            id="fav-btn-${home.id}"
-            class="${isFavorite ? 'text-red-500' : 'text-neutral-400'}"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="${isFavorite ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-            </svg>
+          <button id="fav-btn-${home.id}" class="${isFavorite ? 'text-red-500' : 'text-neutral-400'}">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="${isFavorite ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
           </button>
         </div>
-        
-        <p class="text-xs text-neutral-600 mb-2">
-          ${addressText}
-        </p>
-        
-        <div class="flex items-center text-xs text-neutral-500 mb-2">
-          <span class="mr-1">$</span>
-          ${home.priceRange.formattedMin || '$?'}+/month
-        </div>
-        
-        <div class="flex flex-wrap gap-1 mb-2">
-          ${home.careLevel.slice(0, 2).map((level) => `
-            <span class="px-1.5 py-0.5 bg-blue-100 text-blue-800 text-xs rounded">
-              ${level.replace('_', ' ')}
-            </span>
-          `).join('')}
-          ${home.careLevel.length > 2 ? `
-            <span class="px-1.5 py-0.5 bg-neutral-100 text-neutral-600 text-xs rounded">
-              +${home.careLevel.length - 2} more
-            </span>
-          ` : ''}
-        </div>
-        
-        <p class="text-xs text-neutral-600 mb-3 line-clamp-2">
-          ${home.description}
-        </p>
-        
-        <a 
-          href="/homes/${home.id}"
-          class="block w-full text-center bg-blue-500 hover:bg-blue-600 text-white text-xs py-1.5 rounded transition-colors"
-        >
-          View Details
-        </a>
+        <p class="text-xs text-neutral-600 mb-2">${addressText}</p>
+        <div class="flex items-center text-xs text-neutral-500 mb-2"><span class="mr-1">$</span>${home.priceRange.formattedMin || '$?'}+/month</div>
+        <a href="/homes/${home.id}" class="block w-full text-center bg-blue-500 hover:bg-blue-600 text-white text-xs py-1.5 rounded transition-colors">View Details</a>
       </div>
     `;
   }, [favorites]);
 
-  // Mark component as mounted
+  // ONE-TIME map initialization with empty deps
   useEffect(() => {
-    console.log("[SimpleMap] Component mounting...");
-    setMounted(true);
+    console.log('[SimpleMap] Mount effect running');
     
-    // Set DOM ready after a short delay to ensure React has rendered the container
-    const timer = setTimeout(() => {
-      setDomReady(true);
-      console.log("[SimpleMap] DOM ready");
-    }, 300);
-    
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Initialize map when DOM is ready
-  useEffect(() => {
-    if (!mounted || !domReady) return;
-    
-    // CRITICAL: Prevent infinite loops by checking if we've already hit max attempts
-    if (hasReachedMaxAttemptsRef.current) {
-      console.log("[SimpleMap] Max initialization attempts already reached. Skipping re-initialization.");
+    // Guard 1: Already initialized this instance
+    if (isInitializedRef.current) {
+      console.log('[SimpleMap] Already initialized (instance ref), skipping');
       return;
     }
     
-    const initializeMap = () => {
-      console.log(`[SimpleMap] Initializing map attempt: ${initAttemptRef.current + 1}/${maxInitAttempts}`);
-      
-      // Check max attempts BEFORE doing anything
-      if (initAttemptRef.current >= maxInitAttempts) {
-        console.error(`[SimpleMap] ❌ Max retries (${maxInitAttempts}) reached. Stopping initialization attempts.`);
-        hasReachedMaxAttemptsRef.current = true;
-        setMapError("Unable to load map after multiple attempts. Please refresh the page.");
-        return;
-      }
-      
-      if (!mapContainerRef.current) {
-        console.error("[SimpleMap] Map container ref is null!");
-        
-        // Retry logic with exponential backoff
-        initAttemptRef.current += 1;
-        const backoffDelay = 300 * Math.pow(2, initAttemptRef.current - 1); // 300ms, 600ms, 1200ms
-        console.log(`[SimpleMap] Retrying in ${backoffDelay}ms...`);
-        setTimeout(initializeMap, backoffDelay);
-        return;
-      }
-      
-      try {
-        // Force container to be visible and have dimensions
-        const container = mapContainerRef.current;
-        container.style.border = "2px solid #cbd5e1";
-        container.style.background = "#f8fafc";
-        container.style.minHeight = "400px";
-        container.style.width = "100%";
-        container.style.height = "100%";
-        
-        // Check container dimensions
-        const containerWidth = container.clientWidth;
-        const containerHeight = container.clientHeight;
-        console.log(`[SimpleMap] Container dimensions: ${containerWidth}x${containerHeight}`);
-        
-        if (containerWidth === 0 || containerHeight === 0) {
-          console.warn("[SimpleMap] Container has zero width or height!");
-          
-          // Retry logic for zero dimensions with exponential backoff
-          initAttemptRef.current += 1;
-          const backoffDelay = 300 * Math.pow(2, initAttemptRef.current - 1);
-          console.log(`[SimpleMap] Retrying in ${backoffDelay}ms...`);
-          setTimeout(initializeMap, backoffDelay);
-          return;
-        }
-        
-        // Create map instance
-        const mapCenter = getMapCenter();
-        console.log("[SimpleMap] Creating map with center:", mapCenter);
-        
-        const map = L.map(container, {
-          center: mapCenter,
-          zoom: 7,
-          zoomControl: true,
-          attributionControl: true
-        });
-        
-        console.log("[SimpleMap] Map instance created:", map);
-        
-        // Add tile layer
-        console.log("[SimpleMap] Adding tile layer...");
-        const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-          maxZoom: 19
-        })
-          .on("loading", () => console.log("[SimpleMap] Tiles loading..."))
-          .on("load", () => console.log("[SimpleMap] Tiles loaded successfully"))
-          .on("tileerror", (e) => {
-            console.error("[SimpleMap] Tile load error:", e);
-            // Note: Not setting mapError here to avoid re-renders
-          })
-          .addTo(map);
+    // Guard 2: Currently initializing
+    if (isInitializingRef.current) {
+      console.log('[SimpleMap] Already initializing, skipping');
+      return;
+    }
+    
+    // Guard 3: Global limit reached
+    if (GLOBAL_MAP_INIT_COUNT >= GLOBAL_MAX_INIT) {
+      console.log(`[SimpleMap] GLOBAL limit reached (${GLOBAL_MAP_INIT_COUNT}/${GLOBAL_MAX_INIT}), showing fallback`);
+      setMapError('Map failed to load. Please refresh the page.');
+      return;
+    }
 
-        // Force a resize after a delay to ensure container is properly rendered
-        setTimeout(() => {
-          console.log("[SimpleMap] Forcing map resize...");
-          map.invalidateSize(true);
-        }, 500);
-        
-        // Add markers for each home
-        console.log("[SimpleMap] Adding markers for homes...");
-        validHomes.forEach(home => {
-          const lat = getLat(home) as number;
-          const lng = getLng(home) as number;
-          
-          console.log(`[SimpleMap] Adding marker for home ${home.id} at [${lat}, ${lng}]`);
-          
-          if (isValidCoord(lat) && isValidCoord(lng)) {
-            const marker = L.marker([lat, lng], {
-              icon: createCustomIcon(home.priceRange.min, selectedHome === home.id)
-            }).addTo(map);
-            
-            // Add popup
-            const popup = L.popup().setContent(createPopupContent(home));
-            marker.bindPopup(popup);
-            
-            // Add click handler
-            marker.on('click', () => {
-              if (onHomeSelect) {
-                onHomeSelect(home.id);
-              }
-            });
-            
-            // Store marker reference
-            markersRef.current[home.id] = marker;
-          } else {
-            console.warn(`[SimpleMap] Invalid coordinates for home ${home.id}: [${lat}, ${lng}]`);
-          }
+    isInitializingRef.current = true;
+    GLOBAL_MAP_INIT_COUNT++;
+    console.log(`[SimpleMap] Starting initialization (global count: ${GLOBAL_MAP_INIT_COUNT})`);
+
+    const initMap = () => {
+      const container = mapContainerRef.current;
+      if (!container) {
+        console.log('[SimpleMap] Container not ready, waiting...');
+        setTimeout(initMap, 200);
+        return;
+      }
+
+      if (container.clientWidth === 0 || container.clientHeight === 0) {
+        console.log('[SimpleMap] Container has zero dimensions, waiting...');
+        setTimeout(initMap, 200);
+        return;
+      }
+
+      try {
+        console.log('[SimpleMap] Creating map instance...');
+        const map = L.map(container, {
+          center: [36.7783, -119.4179], // Default center
+          zoom: 7,
+          zoomControl: true
         });
-        
-        // Add event listeners to favorite buttons after popups are opened
-        map.on('popupopen', (e) => {
-          const popup = e.popup;
-          const homeId = Object.keys(markersRef.current).find(id => 
-            markersRef.current[id]?.getPopup() === popup
-          );
-          
-          if (homeId) {
-            const favBtn = document.getElementById(`fav-btn-${homeId}`);
-            if (favBtn) {
-              favBtn.addEventListener('click', () => {
-                if (onToggleFavorite) {
-                  onToggleFavorite(homeId);
-                }
-              });
-            }
-          }
-        });
-        
-        // Store map instance for cleanup
+
+        L.tileLayer('https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Tissot_mercator.png/400px-Tissot_mercator.png', {
+          attribution: '&copy; OpenStreetMap contributors',
+          maxZoom: 19
+        }).addTo(map);
+
         mapInstanceRef.current = map;
+        isInitializedRef.current = true;
+        isInitializingRef.current = false;
+        setIsReady(true);
         
-        // Add a window resize handler
-        const handleResize = () => {
-          if (map) {
-            console.log("[SimpleMap] Window resized, invalidating map size");
-            map.invalidateSize(true);
-          }
-        };
-        
-        resizeHandlerRef.current = handleResize;
-        window.addEventListener('resize', handleResize);
-        
-        // Successfully initialized - reset attempt counter
-        initAttemptRef.current = 0;
-        console.log("[SimpleMap] ✅ Map initialization complete");
+        setTimeout(() => map.invalidateSize(true), 100);
+        console.log('[SimpleMap] ✅ Map initialized successfully');
       } catch (error) {
-        console.error(`[SimpleMap] ❌ Error initializing map (attempt ${initAttemptRef.current + 1}/${maxInitAttempts}):`, error);
-        
-        // Increment attempt counter
-        initAttemptRef.current += 1;
-        
-        // Check if we've reached max attempts
-        if (initAttemptRef.current >= maxInitAttempts) {
-          console.error(`[SimpleMap] ❌ Max retries (${maxInitAttempts}) reached. Stopping initialization attempts.`);
-          hasReachedMaxAttemptsRef.current = true;
-          setMapError(`Unable to load map: ${error instanceof Error ? error.message : String(error)}`);
-          return;
-        }
-        
-        // Retry with exponential backoff
-        const backoffDelay = 300 * Math.pow(2, initAttemptRef.current - 1);
-        console.log(`[SimpleMap] Retrying in ${backoffDelay}ms...`);
-        setTimeout(initializeMap, backoffDelay);
+        console.error('[SimpleMap] ❌ Init error:', error);
+        isInitializingRef.current = false;
+        setMapError('Failed to initialize map');
       }
     };
-    
-    // Start initialization
-    initializeMap();
-    
-    // Cleanup function
+
+    // Small delay to ensure DOM is ready
+    setTimeout(initMap, 100);
+
     return () => {
-      console.log("[SimpleMap] Cleaning up map...");
-      if (resizeHandlerRef.current) {
-        window.removeEventListener('resize', resizeHandlerRef.current);
-        resizeHandlerRef.current = null;
-      }
+      console.log('[SimpleMap] Cleanup running');
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
-        markersRef.current = {};
       }
+      markersRef.current = {};
+      isInitializedRef.current = false;
+      isInitializingRef.current = false;
     };
-  }, [
-    mounted,
-    domReady,
-    validHomes,
-    getLat,
-    getLng,
-    getMapCenter,
-    createPopupContent,
-    onHomeSelect,
-    onToggleFavorite,
-    selectedHome,
-  ]);
-  
-  // Update markers when homes or selectedHome changes
+  }, []); // EMPTY DEPS - runs once only
+
+  // Update markers when data changes (separate effect)
   useEffect(() => {
     const map = mapInstanceRef.current;
-    if (!map || !mounted || !domReady) {
-      console.log("[SimpleMap] Map not ready for marker updates");
-      return;
-    }
-    
-    console.log("[SimpleMap] Updating markers...");
-    
-    // Remove all existing markers
-    Object.values(markersRef.current).forEach(marker => {
-      marker.remove();
-    });
+    if (!map || !isReady) return;
+
+    console.log('[SimpleMap] Updating markers...');
+
+    // Clear old markers
+    Object.values(markersRef.current).forEach(m => m.remove());
     markersRef.current = {};
-    
+
     // Add new markers
     validHomes.forEach(home => {
       const lat = getLat(home) as number;
       const lng = getLng(home) as number;
-      
       if (isValidCoord(lat) && isValidCoord(lng)) {
         const marker = L.marker([lat, lng], {
           icon: createCustomIcon(home.priceRange.min, selectedHome === home.id)
         }).addTo(map);
         
-        // Add popup
-        const popup = L.popup().setContent(createPopupContent(home));
-        marker.bindPopup(popup);
-        
-        // Add click handler
-        marker.on('click', () => {
-          if (onHomeSelect) {
-            onHomeSelect(home.id);
-          }
-        });
-        
-        // Store marker reference
+        marker.bindPopup(L.popup().setContent(createPopupContent(home)));
+        marker.on('click', () => onHomeSelect?.(home.id));
         markersRef.current[home.id] = marker;
       }
     });
-    
-    // Update map view if homes change significantly
+
+    // Fit bounds if we have homes
     if (validHomes.length > 0) {
-      const mapCenter = getMapCenter();
-      map.setView(mapCenter, map.getZoom());
+      const center = getMapCenter();
+      map.setView(center, 8);
     }
+  }, [isReady, validHomes, selectedHome, getLat, getLng, getMapCenter, createPopupContent, onHomeSelect]);
 
-    // Ensure proper sizing after (re)rendering markers
-    console.log("[SimpleMap] Invalidating map size after marker updates");
-    map.invalidateSize(true);
-  }, [
-    validHomes,
-    selectedHome,
-    favorites,
-    mounted,
-    domReady,
-    getLat,
-    getLng,
-    getMapCenter,
-    createPopupContent,
-    onHomeSelect,
-  ]);
+  // Handle popup favorite button
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !isReady) return;
 
-  // Display loading state until component mounts
-  if (!mounted || !domReady) {
+    const handlePopupOpen = (e: L.PopupEvent) => {
+      const homeId = Object.keys(markersRef.current).find(id => markersRef.current[id]?.getPopup() === e.popup);
+      if (homeId) {
+        const btn = document.getElementById(`fav-btn-${homeId}`);
+        btn?.addEventListener('click', () => onToggleFavorite?.(homeId));
+      }
+    };
+
+    map.on('popupopen', handlePopupOpen);
+    return () => { map.off('popupopen', handlePopupOpen); };
+  }, [isReady, onToggleFavorite]);
+
+  if (mapError) {
     return (
-      <div className="flex h-full items-center justify-center bg-neutral-100 rounded-lg border-2 border-neutral-300" style={{ minHeight: "400px" }}>
-        <div className="text-center">
-          <FiMapPin className="mx-auto h-12 w-12 text-neutral-400" />
-          <p className="mt-2 text-neutral-600">Loading map...</p>
+      <div className="flex h-full items-center justify-center bg-red-50 rounded-lg border-2 border-red-200" style={{ minHeight: "400px" }}>
+        <div className="text-center p-4">
+          <FiMapPin className="mx-auto h-12 w-12 text-red-400" />
+          <p className="mt-2 text-red-600 font-medium">{mapError}</p>
+          <p className="text-sm text-red-500">Please refresh the page to try again.</p>
         </div>
       </div>
     );
@@ -520,28 +265,10 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
 
   return (
     <div className="relative h-full w-full" style={{ minHeight: "400px" }}>
-      {/* Map container with visible border */}
-      <div 
-        ref={mapContainerRef} 
-        className="h-full w-full rounded-lg border-2 border-neutral-300"
-        style={{ minHeight: "400px" }} 
-        id="map-container"
-      />
-      
-      {/* Map controls overlay */}
+      <div ref={mapContainerRef} className="h-full w-full rounded-lg border-2 border-neutral-300" style={{ minHeight: "400px" }} id="map-container" />
       <div className="absolute top-4 right-4 bg-white rounded-lg shadow-md p-2 z-[1000]">
-        <div className="text-xs text-neutral-600">
-          {validHomes.length} of {homes.length} homes with coordinates
-        </div>
+        <div className="text-xs text-neutral-600">{validHomes.length} of {homes.length} homes</div>
       </div>
-      
-      {/* Error message */}
-      {mapError && (
-        <div className="absolute bottom-4 left-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded z-[1000]">
-          <p className="text-sm">{mapError}</p>
-          <p className="text-xs mt-1">Try refreshing the page or check your internet connection.</p>
-        </div>
-      )}
     </div>
   );
 };
