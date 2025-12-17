@@ -387,9 +387,30 @@ export default function TourRequestModal({
 
   // Navigation handlers
   const handleNext = () => {
-    console.log("[TourRequestModal] handleNext called, currentStep:", currentStep);
+    try {
+      // 🔴🔴🔴 CRITICAL: LOG AT THE VERY FIRST LINE TO CATCH BUTTON CLICK
+      console.log("\n╔══════════════════════════════════════════════════════════╗");
+      console.log("║  🔴 BUTTON CLICKED - handleNext() CALLED               ║");
+      console.log("╚══════════════════════════════════════════════════════════╝\n");
+      
+      console.log("🔴 [BUTTON CLICK] Function entry - handler is executing!");
+      console.log("🔴 [STATE SNAPSHOT] Current state at button click:");
+      console.log("  ├─ currentStep:", currentStep);
+      console.log("  ├─ homeId:", homeId);
+      console.log("  ├─ homeName:", homeName);
+      console.log("  ├─ selectedSlot:", selectedSlot);
+      console.log("  ├─ familyNotes:", familyNotes || "(empty)");
+      console.log("  ├─ startDate:", startDate);
+      console.log("  ├─ endDate:", endDate);
+      console.log("  ├─ isLoading:", isLoading);
+      console.log("  ├─ error:", error);
+      console.log("  └─ success:", success);
+      
+      console.log("\n🔴 [FLOW CHECK] Checking which step we're in...");
+      console.log("[TourRequestModal] handleNext called, currentStep:", currentStep);
     
     if (currentStep === "date-range") {
+      console.log("🔴 [FLOW] Inside date-range branch");
       if (!startDate || !endDate) {
         const errorMsg = "Please select both start and end dates";
         console.log("[TourRequestModal] Validation error:", errorMsg);
@@ -405,18 +426,41 @@ export default function TourRequestModal({
       console.log("[TourRequestModal] Date range valid, fetching time slots");
       fetchTimeSlots();
     } else if (currentStep === "time-slots") {
+      console.log("🔴 [FLOW] Inside time-slots branch");
       if (!selectedSlot) {
         const errorMsg = "Please select a time slot";
-        console.log("[TourRequestModal] Validation error:", errorMsg);
+        console.log("🔴 [VALIDATION ERROR] No time slot selected:", errorMsg);
         setError(errorMsg);
         return;
       }
-      console.log("[TourRequestModal] Time slot selected:", selectedSlot);
-      console.log("[TourRequestModal] Moving to notes step");
+      console.log("🔴 [FLOW] Time slot selected:", selectedSlot);
+      console.log("🔴 [FLOW] Moving to notes step");
       setCurrentStep("notes");
     } else if (currentStep === "notes") {
-      console.log("[TourRequestModal] Submitting tour request from notes step");
+      console.log("🔴 [FLOW] Inside notes branch - ABOUT TO SUBMIT!");
+      console.log("🔴 [PRE-SUBMIT CHECK]");
+      console.log("  ├─ homeId exists:", !!homeId);
+      console.log("  ├─ selectedSlot exists:", !!selectedSlot);
+      console.log("  ├─ isLoading:", isLoading);
+      console.log("  └─ About to call submitTourRequest()...");
+      
+      console.log("\n🔴 [CALLING] submitTourRequest() NOW...\n");
       submitTourRequest();
+      console.log("🔴 [AFTER CALL] submitTourRequest() was invoked (may be async)");
+    } else {
+      console.error("🔴 [ERROR] Unknown step:", currentStep);
+    }
+    } catch (err) {
+      console.error("\n╔══════════════════════════════════════════════════════════╗");
+      console.error("║  🚨 CRITICAL ERROR IN handleNext()                      ║");
+      console.error("╚══════════════════════════════════════════════════════════╝\n");
+      console.error("🚨 [EXCEPTION CAUGHT] Error in handleNext:", err);
+      if (err instanceof Error) {
+        console.error("  ├─ Error name:", err.name);
+        console.error("  ├─ Error message:", err.message);
+        console.error("  └─ Error stack:", err.stack);
+      }
+      setError(err instanceof Error ? err.message : "An unexpected error occurred");
     }
   };
 
