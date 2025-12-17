@@ -26,46 +26,84 @@ const matchRequestSchema = z.object({
  * Submit preferences and get matching homes
  */
 export async function POST(request: NextRequest) {
-  console.log('[POST /api/family/match] Starting match request...');
+  console.log('[POST /api/family/match] 🚀 Starting match request...');
   
   try {
     // Authentication required
     console.log('[POST /api/family/match] Step 1: Authenticating user...');
     const user = await requireAuth();
-    console.log('[POST /api/family/match] User authenticated:', user.id);
+    console.log('[POST /api/family/match] ✅ User authenticated:', user.id, user.email);
     
     // Parse and validate request body
     console.log('[POST /api/family/match] Step 2: Parsing request body...');
     const body = await request.json();
-    console.log('[POST /api/family/match] Request body:', JSON.stringify(body, null, 2));
+    console.log('[POST /api/family/match] 📦 Request body:', JSON.stringify(body, null, 2));
     
     console.log('[POST /api/family/match] Step 3: Validating data...');
     const validatedData = matchRequestSchema.parse(body);
-    console.log('[POST /api/family/match] Data validated successfully');
+    console.log('[POST /api/family/match] ✅ Data validated successfully');
     
-    // Get family record
-    console.log('[POST /api/family/match] Step 4: Fetching family record...');
-    const family = await prisma.family.findUnique({
+    // Get or create family record
+    console.log('[POST /api/family/match] Step 4: Fetching/creating family record...');
+    let family = await prisma.family.findUnique({
       where: { userId: user.id }
     });
     
     if (!family) {
-      console.error('[POST /api/family/match] Family profile not found for user:', user.id);
-      return NextResponse.json(
-        { error: 'Family profile not found' },
-        { status: 404 }
-      );
+      console.log('[POST /api/family/match] ⚠️ Family profile not found, creating one...');
+      
+      // Auto-create family profile
+      try {
+        family = await prisma.family.create({
+          data: {
+            userId: user.id,
+            residentsCount: 1,
+            stage: 'NEW'
+          }
+        });
+        console.log('[POST /api/family/match] ✅ Family profile created:', family.id);
+      } catch (createError) {
+        console.error('[POST /api/family/match] ❌ Failed to create family profile:', createError);
+        return NextResponse.json(
+          { error: 'Failed to create family profile. Please try again.' },
+          { status: 500 }
+        );
+      }
+    } else {
+      console.log('[POST /api/family/match] ✅ Family found:', family.id);
     }
-    console.log('[POST /api/family/match] Family found:', family.id);
     
     // Create match request
     console.log('[POST /api/family/match] Step 5: Creating match request...');
-    const matchRequest = await prisma.matchRequest.create({
-      data: {
-        familyId: family.id,
-        status: 'PENDING',
-        budgetMin: validatedData.budgetMin,
-        budgetMax: validatedData.budgetMax,
+    
+    try {
+      const matchRequest = await prisma.matchRequest.create({
+        data: {
+          familyId: family.id,
+          status: 'PENDING',
+          budgetMin: validatedData.budgetMin,
+          budgetMax: validatedData.budgetMax,
+          medicalConditions: validatedData.medicalConditions,
+          careLevel: validatedData.careLevel,
+          preferredGender: validatedData.preferredGender,
+          religion: validatedData.religion,
+          dietaryNeeds: validatedData.dietaryNeeds,
+          hobbies: validatedData.hobbies,
+          petPreferences: validatedData.petPreferences,
+          zipCode: validatedData.zipCode,
+          maxDistance: validatedData.maxDistance,
+          moveInTimeline: validatedData.moveInTimeline
+        }
+      });
+      console.log('[POST /api/family/match] ✅ Match request created:', matchRequest.id);
+      
+      // Run matching algorithm
+      console.log('[POST /api/family/match] Step 6: Running matching algorithm...');
+      const { findMatchingHomes } = await import('@/lib/matching/matching-algorithm');
+      
+      const matchedHomes = await findMatchingHomes({
+        budgetMin: Number(validatedData.budgetMin),
+        budgetMax: Number(validatedData.budgetMax),
         medicalConditions: validatedData.medicalConditions,
         careLevel: validatedData.careLevel,
         preferredGender: validatedData.preferredGender,
@@ -76,166 +114,159 @@ export async function POST(request: NextRequest) {
         zipCode: validatedData.zipCode,
         maxDistance: validatedData.maxDistance,
         moveInTimeline: validatedData.moveInTimeline
+      }, 5); // Top 5 matches
+      console.log('[POST /api/family/match] ✅ Matching complete. Found', matchedHomes.length, 'homes');
+      
+      // If no homes found, update status and return early
+      if (matchedHomes.length === 0) {
+        console.log('[POST /api/family/match] ⚠️ No matching homes found');
+        await prisma.matchRequest.update({
+          where: { id: matchRequest.id },
+          data: { status: 'COMPLETED' }
+        });
+        
+        return NextResponse.json({
+          success: true,
+          matchRequestId: matchRequest.id,
+          matchesFound: 0,
+          topMatches: 0,
+          message: 'No matching homes found. Please adjust your preferences and try again.'
+        }, { status: 200 });
       }
-    });
-    console.log('[POST /api/family/match] Match request created:', matchRequest.id);
-    
-    // Run matching algorithm
-    console.log('[POST /api/family/match] Step 6: Running matching algorithm...');
-    const { findMatchingHomes } = await import('@/lib/matching/matching-algorithm');
-    
-    const matchedHomes = await findMatchingHomes({
-      budgetMin: Number(validatedData.budgetMin),
-      budgetMax: Number(validatedData.budgetMax),
-      medicalConditions: validatedData.medicalConditions,
-      careLevel: validatedData.careLevel,
-      preferredGender: validatedData.preferredGender,
-      religion: validatedData.religion,
-      dietaryNeeds: validatedData.dietaryNeeds,
-      hobbies: validatedData.hobbies,
-      petPreferences: validatedData.petPreferences,
-      zipCode: validatedData.zipCode,
-      maxDistance: validatedData.maxDistance,
-      moveInTimeline: validatedData.moveInTimeline
-    }, 5); // Top 5 matches
-    console.log('[POST /api/family/match] Matching complete. Found', matchedHomes.length, 'homes');
-    
-    // If no homes found, update status and return early
-    if (matchedHomes.length === 0) {
-      console.log('[POST /api/family/match] No matching homes found');
+      
+      // Generate AI explanations for matches
+      console.log('[POST /api/family/match] Step 7: Generating AI explanations...');
+      const { generateBatchExplanations } = await import('@/lib/matching/openai-explainer');
+      
+      const explanationData = matchedHomes.map(match => ({
+        homeName: match.home.name,
+        fitScore: match.fitScore,
+        matchFactors: match.matchFactors,
+        homeDetails: {
+          careLevel: match.home.careLevel,
+          priceRange: match.home.priceMin && match.home.priceMax 
+            ? `$${match.home.priceMin}-$${match.home.priceMax}`
+            : 'Contact for pricing',
+          location: match.home.address?.city && match.home.address?.state
+            ? `${match.home.address.city}, ${match.home.address.state}`
+            : 'Location available',
+          amenities: match.home.amenities,
+          capacity: match.home.capacity,
+          currentOccupancy: match.home.currentOccupancy
+        },
+        familyPreferences: {
+          budgetRange: `$${validatedData.budgetMin}-$${validatedData.budgetMax}`,
+          careLevel: validatedData.careLevel,
+          medicalConditions: validatedData.medicalConditions,
+          location: validatedData.zipCode,
+          preferences: [
+            ...validatedData.dietaryNeeds,
+            ...validatedData.hobbies,
+            validatedData.religion || '',
+            validatedData.petPreferences || ''
+          ].filter(Boolean)
+        }
+      }));
+      
+      // Generate explanations (with fallback if OpenAI fails)
+      console.log('[POST /api/family/match] Calling generateBatchExplanations...');
+      const explanations = await generateBatchExplanations(explanationData);
+      console.log('[POST /api/family/match] ✅ Explanations generated:', explanations.size);
+      
+      // Store match results in database with explanations
+      console.log('[POST /api/family/match] Step 8: Storing match results...');
+      const matchResults = await Promise.all(
+        matchedHomes.map(async (match, index) => {
+          // Validate fitScore is a valid number
+          const fitScore = isFinite(match.fitScore) ? match.fitScore : 0;
+          
+          // Ensure matchFactors is a plain object with valid numbers
+          const matchFactors = {
+            budgetScore: isFinite(match.matchFactors.budgetScore) ? match.matchFactors.budgetScore : 0,
+            conditionScore: isFinite(match.matchFactors.conditionScore) ? match.matchFactors.conditionScore : 0,
+            careLevelScore: isFinite(match.matchFactors.careLevelScore) ? match.matchFactors.careLevelScore : 0,
+            locationScore: isFinite(match.matchFactors.locationScore) ? match.matchFactors.locationScore : 0,
+            amenitiesScore: isFinite(match.matchFactors.amenitiesScore) ? match.matchFactors.amenitiesScore : 0
+          };
+          
+          // Get explanation with multiple fallbacks
+          const homeName = match.home?.name || 'Unknown Home';
+          const explanation = explanations.get(homeName) || 
+            `This home is a ${Math.round(fitScore)}% match for your needs based on care level, budget, and location.`;
+          
+          console.log(`[POST /api/family/match] Creating match result ${index + 1}:`, {
+            homeId: match.homeId,
+            homeName,
+            fitScore,
+            rank: index + 1
+          });
+          
+          try {
+            return await prisma.matchResult.create({
+              data: {
+                matchRequestId: matchRequest.id,
+                homeId: match.homeId,
+                fitScore,
+                matchFactors,
+                explanation,
+                rank: index + 1
+              }
+            });
+          } catch (error) {
+            console.error(`[POST /api/family/match] ❌ Error creating match result for home ${match.homeId}:`, error);
+            throw error;
+          }
+        })
+      );
+      console.log('[POST /api/family/match] ✅ Match results stored:', matchResults.length);
+      
+      // Update match request status to COMPLETED
+      console.log('[POST /api/family/match] Step 9: Updating match request status...');
       await prisma.matchRequest.update({
         where: { id: matchRequest.id },
         data: { status: 'COMPLETED' }
       });
+      console.log('[POST /api/family/match] ✅ Match request updated to COMPLETED');
       
+      // Create audit log
+      console.log('[POST /api/family/match] Step 10: Creating audit log...');
+      await createAuditLogFromRequest(request, {
+        userId: user.id,
+        action: AuditAction.CREATE,
+        resourceType: 'match_request',
+        resourceId: matchRequest.id,
+        details: {
+          careLevel: validatedData.careLevel,
+          budgetRange: `${validatedData.budgetMin}-${validatedData.budgetMax}`,
+          zipCode: validatedData.zipCode,
+          matchesFound: matchedHomes.length,
+          topScore: matchedHomes[0]?.fitScore || 0
+        }
+      });
+      console.log('[POST /api/family/match] ✅ Audit log created');
+      
+      console.log('[POST /api/family/match] ✅ SUCCESS - Returning results');
       return NextResponse.json({
         success: true,
         matchRequestId: matchRequest.id,
-        matchesFound: 0,
-        topMatches: 0,
-        message: 'No matching homes found. Please adjust your preferences and try again.'
-      }, { status: 200 });
-    }
-    
-    // Generate AI explanations for matches
-    console.log('[POST /api/family/match] Step 7: Generating AI explanations...');
-    const { generateBatchExplanations } = await import('@/lib/matching/openai-explainer');
-    
-    const explanationData = matchedHomes.map(match => ({
-      homeName: match.home.name,
-      fitScore: match.fitScore,
-      matchFactors: match.matchFactors,
-      homeDetails: {
-        careLevel: match.home.careLevel,
-        priceRange: match.home.priceMin && match.home.priceMax 
-          ? `$${match.home.priceMin}-$${match.home.priceMax}`
-          : 'Contact for pricing',
-        location: match.home.address?.city && match.home.address?.state
-          ? `${match.home.address.city}, ${match.home.address.state}`
-          : 'Location available',
-        amenities: match.home.amenities,
-        capacity: match.home.capacity,
-        currentOccupancy: match.home.currentOccupancy
-      },
-      familyPreferences: {
-        budgetRange: `$${validatedData.budgetMin}-$${validatedData.budgetMax}`,
-        careLevel: validatedData.careLevel,
-        medicalConditions: validatedData.medicalConditions,
-        location: validatedData.zipCode,
-        preferences: [
-          ...validatedData.dietaryNeeds,
-          ...validatedData.hobbies,
-          validatedData.religion || '',
-          validatedData.petPreferences || ''
-        ].filter(Boolean)
-      }
-    }));
-    
-    // Generate explanations (with fallback if OpenAI fails)
-    console.log('[POST /api/family/match] Calling generateBatchExplanations...');
-    const explanations = await generateBatchExplanations(explanationData);
-    console.log('[POST /api/family/match] Explanations generated:', explanations.size);
-    
-    // Store match results in database with explanations
-    console.log('[POST /api/family/match] Step 8: Storing match results...');
-    const matchResults = await Promise.all(
-      matchedHomes.map(async (match, index) => {
-        // Validate fitScore is a valid number
-        const fitScore = isFinite(match.fitScore) ? match.fitScore : 0;
-        
-        // Ensure matchFactors is a plain object with valid numbers
-        const matchFactors = {
-          budgetScore: isFinite(match.matchFactors.budgetScore) ? match.matchFactors.budgetScore : 0,
-          conditionScore: isFinite(match.matchFactors.conditionScore) ? match.matchFactors.conditionScore : 0,
-          careLevelScore: isFinite(match.matchFactors.careLevelScore) ? match.matchFactors.careLevelScore : 0,
-          locationScore: isFinite(match.matchFactors.locationScore) ? match.matchFactors.locationScore : 0,
-          amenitiesScore: isFinite(match.matchFactors.amenitiesScore) ? match.matchFactors.amenitiesScore : 0
-        };
-        
-        // Get explanation with multiple fallbacks
-        const homeName = match.home?.name || 'Unknown Home';
-        const explanation = explanations.get(homeName) || 
-          `This home is a ${Math.round(fitScore)}% match for your needs based on care level, budget, and location.`;
-        
-        console.log(`[POST /api/family/match] Creating match result ${index + 1}:`, {
-          homeId: match.homeId,
-          homeName,
-          fitScore,
-          rank: index + 1
-        });
-        
-        try {
-          return await prisma.matchResult.create({
-            data: {
-              matchRequestId: matchRequest.id,
-              homeId: match.homeId,
-              fitScore,
-              matchFactors,
-              explanation,
-              rank: index + 1
-            }
-          });
-        } catch (error) {
-          console.error(`[POST /api/family/match] Error creating match result for home ${match.homeId}:`, error);
-          throw error;
-        }
-      })
-    );
-    console.log('[POST /api/family/match] Match results stored:', matchResults.length);
-    
-    // Update match request status to COMPLETED
-    console.log('[POST /api/family/match] Step 9: Updating match request status...');
-    await prisma.matchRequest.update({
-      where: { id: matchRequest.id },
-      data: { status: 'COMPLETED' }
-    });
-    console.log('[POST /api/family/match] Match request updated to COMPLETED');
-    
-    // Create audit log
-    console.log('[POST /api/family/match] Step 10: Creating audit log...');
-    await createAuditLogFromRequest(request, {
-      userId: user.id,
-      action: AuditAction.CREATE,
-      resourceType: 'match_request',
-      resourceId: matchRequest.id,
-      details: {
-        careLevel: validatedData.careLevel,
-        budgetRange: `${validatedData.budgetMin}-${validatedData.budgetMax}`,
-        zipCode: validatedData.zipCode,
         matchesFound: matchedHomes.length,
-        topScore: matchedHomes[0]?.fitScore || 0
-      }
-    });
-    console.log('[POST /api/family/match] Audit log created');
-    
-    console.log('[POST /api/family/match] SUCCESS - Returning results');
-    return NextResponse.json({
-      success: true,
-      matchRequestId: matchRequest.id,
-      matchesFound: matchedHomes.length,
-      topMatches: matchResults.length,
-      message: 'Match request completed successfully!'
-    }, { status: 201 });
+        topMatches: matchResults.length,
+        message: 'Match request completed successfully!'
+      }, { status: 201 });
+      
+    } catch (matchError) {
+      console.error('[POST /api/family/match] ❌ Error during match request processing:');
+      console.error('[POST /api/family/match] Error details:', matchError);
+      
+      return NextResponse.json(
+        { 
+          error: 'Failed to process match request',
+          message: matchError instanceof Error ? matchError.message : 'Unknown error occurred',
+          details: process.env.NODE_ENV === 'development' ? String(matchError) : undefined
+        },
+        { status: 500 }
+      );
+    }
     
   } catch (error) {
     console.error('[POST /api/family/match] ERROR OCCURRED:');
