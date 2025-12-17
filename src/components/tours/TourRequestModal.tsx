@@ -85,18 +85,31 @@ export default function TourRequestModal({
     setError(null);
     
     try {
+      console.log("[TourRequestModal] Fetching time slots...");
+      console.log("[TourRequestModal] startDate:", startDate);
+      console.log("[TourRequestModal] endDate:", endDate);
+      console.log("[TourRequestModal] homeId:", homeId);
+      
       const startISO = new Date(startDate).toISOString();
       const endISO = new Date(endDate).toISOString();
       
-      const response = await fetch(
-        `/api/family/tours/available-slots/${homeId}?startDate=${startISO}&endDate=${endISO}`
-      );
+      console.log("[TourRequestModal] startISO:", startISO);
+      console.log("[TourRequestModal] endISO:", endISO);
+      
+      const url = `/api/family/tours/available-slots/${homeId}?startDate=${startISO}&endDate=${endISO}`;
+      console.log("[TourRequestModal] Fetching from:", url);
+      
+      const response = await fetch(url);
+      
+      console.log("[TourRequestModal] Available slots response status:", response.status);
       
       if (!response.ok) {
+        console.error("[TourRequestModal] Failed to fetch slots, status:", response.status);
         throw new Error("Failed to fetch available time slots");
       }
       
       const data = await response.json();
+      console.log("[TourRequestModal] Available slots data:", data);
       
       if (data.success && data.suggestions) {
         // Convert suggestions to TimeSlot format
@@ -106,12 +119,18 @@ export default function TourRequestModal({
           reason: suggestion.reason || "Available",
         }));
         
+        console.log("[TourRequestModal] Converted slots:", slots);
         setAvailableSlots(slots);
         setCurrentStep("time-slots");
       } else {
+        console.error("[TourRequestModal] Invalid response format:", data);
         throw new Error("Invalid response format");
       }
     } catch (err) {
+      console.error("[TourRequestModal] Error fetching time slots:", err);
+      if (err instanceof Error) {
+        console.error("[TourRequestModal] Error stack:", err.stack);
+      }
       setError(err instanceof Error ? err.message : "Failed to load time slots");
     } finally {
       setIsLoading(false);
@@ -124,26 +143,72 @@ export default function TourRequestModal({
     setError(null);
     
     try {
+      // Validate required data before making API call
+      console.log("[TourRequestModal] Starting tour submission...");
+      console.log("[TourRequestModal] homeId:", homeId);
+      console.log("[TourRequestModal] selectedSlot:", selectedSlot);
+      console.log("[TourRequestModal] familyNotes:", familyNotes);
+      
+      if (!homeId) {
+        const errorMsg = "Home ID is missing";
+        console.error("[TourRequestModal] ERROR:", errorMsg);
+        throw new Error(errorMsg);
+      }
+      
+      if (!selectedSlot) {
+        const errorMsg = "No time slot selected";
+        console.error("[TourRequestModal] ERROR:", errorMsg);
+        throw new Error(errorMsg);
+      }
+      
+      // Ensure selectedSlot is a valid ISO datetime string
+      let isoDateTime: string;
+      try {
+        isoDateTime = new Date(selectedSlot).toISOString();
+        console.log("[TourRequestModal] Converted slot to ISO:", isoDateTime);
+      } catch (dateErr) {
+        const errorMsg = "Invalid time slot format";
+        console.error("[TourRequestModal] ERROR:", errorMsg, dateErr);
+        throw new Error(errorMsg);
+      }
+      
+      const requestBody = {
+        homeId,
+        requestedTimes: [isoDateTime],
+        familyNotes: familyNotes || undefined,
+      };
+      
+      console.log("[TourRequestModal] Request body:", JSON.stringify(requestBody, null, 2));
+      console.log("[TourRequestModal] Making API call to /api/family/tours/request");
+      
       const response = await fetch("/api/family/tours/request", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          homeId,
-          requestedTimes: [selectedSlot],
-          familyNotes: familyNotes || undefined,
-        }),
+        body: JSON.stringify(requestBody),
       });
       
+      console.log("[TourRequestModal] Response status:", response.status);
+      console.log("[TourRequestModal] Response ok:", response.ok);
+      
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to submit tour request");
+        let errorData;
+        try {
+          errorData = await response.json();
+          console.error("[TourRequestModal] API error response:", errorData);
+        } catch (parseErr) {
+          console.error("[TourRequestModal] Failed to parse error response:", parseErr);
+          throw new Error(`Server error (${response.status})`);
+        }
+        throw new Error(errorData.error || `Failed to submit tour request (${response.status})`);
       }
       
       const data = await response.json();
+      console.log("[TourRequestModal] API response data:", data);
       
       if (data.success) {
+        console.log("[TourRequestModal] Tour request created successfully!");
         setSuccess(true);
         setCurrentStep("confirmation");
         
@@ -155,34 +220,59 @@ export default function TourRequestModal({
           handleClose();
         }, 2000);
       } else {
-        throw new Error("Failed to create tour request");
+        const errorMsg = "API returned success=false";
+        console.error("[TourRequestModal] ERROR:", errorMsg, data);
+        throw new Error(errorMsg);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to submit request");
+      // Log the complete error details
+      console.error("[TourRequestModal] CAUGHT ERROR:", err);
+      if (err instanceof Error) {
+        console.error("[TourRequestModal] Error name:", err.name);
+        console.error("[TourRequestModal] Error message:", err.message);
+        console.error("[TourRequestModal] Error stack:", err.stack);
+      }
+      
+      const errorMessage = err instanceof Error ? err.message : "Failed to submit request";
+      console.error("[TourRequestModal] Setting error message:", errorMessage);
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
+      console.log("[TourRequestModal] Request completed, loading state cleared");
     }
   };
 
   // Navigation handlers
   const handleNext = () => {
+    console.log("[TourRequestModal] handleNext called, currentStep:", currentStep);
+    
     if (currentStep === "date-range") {
       if (!startDate || !endDate) {
-        setError("Please select both start and end dates");
+        const errorMsg = "Please select both start and end dates";
+        console.log("[TourRequestModal] Validation error:", errorMsg);
+        setError(errorMsg);
         return;
       }
       if (new Date(startDate) > new Date(endDate)) {
-        setError("End date must be after start date");
+        const errorMsg = "End date must be after start date";
+        console.log("[TourRequestModal] Validation error:", errorMsg);
+        setError(errorMsg);
         return;
       }
+      console.log("[TourRequestModal] Date range valid, fetching time slots");
       fetchTimeSlots();
     } else if (currentStep === "time-slots") {
       if (!selectedSlot) {
-        setError("Please select a time slot");
+        const errorMsg = "Please select a time slot";
+        console.log("[TourRequestModal] Validation error:", errorMsg);
+        setError(errorMsg);
         return;
       }
+      console.log("[TourRequestModal] Time slot selected:", selectedSlot);
+      console.log("[TourRequestModal] Moving to notes step");
       setCurrentStep("notes");
     } else if (currentStep === "notes") {
+      console.log("[TourRequestModal] Submitting tour request from notes step");
       submitTourRequest();
     }
   };
