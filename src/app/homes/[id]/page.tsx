@@ -35,7 +35,8 @@ import {
   FiCoffee,
   FiActivity,
   FiChevronDown,
-  FiChevronUp
+  FiChevronUp,
+  FiAlertCircle
 } from "react-icons/fi";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -391,14 +392,83 @@ export default function HomeDetailPage() {
   // Handle inquiry submission (step 1 validation → go to step 2)
   const handleInquirySubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    console.log("\n╔══════════════════════════════════════════════════════════╗");
+    console.log("║  🔴 CONTINUE TO SCHEDULE TOUR - BUTTON CLICKED          ║");
+    console.log("╚══════════════════════════════════════════════════════════╝\n");
+    
+    console.log("🔴 [STEP 1] Form submission started");
+    console.log("🔴 [CURRENT STATE]:");
+    console.log("  ├─ bookingStep:", bookingStep);
+    console.log("  ├─ inquiryForm.name:", inquiryForm.name);
+    console.log("  ├─ inquiryForm.email:", inquiryForm.email);
+    console.log("  ├─ inquiryForm.phone:", inquiryForm.phone);
+    console.log("  ├─ inquiryForm.residentName:", inquiryForm.residentName);
+    console.log("  ├─ inquiryForm.moveInTimeframe:", inquiryForm.moveInTimeframe);
+    console.log("  ├─ inquiryForm.careNeeded:", inquiryForm.careNeeded);
+    console.log("  ├─ inquiryForm.careNeeded length:", inquiryForm.careNeeded?.length || 0);
+    console.log("  ├─ inquiryForm.careNeeded is array?:", Array.isArray(inquiryForm.careNeeded));
+    console.log("  └─ inquiryForm.message:", inquiryForm.message);
+    
+    console.log("\n🔴 [STEP 2] Running validation checks...");
+    
     const errs: Record<string, string> = {};
-    if (!inquiryForm.name.trim()) errs["name"] = "Name is required";
-    if (!inquiryForm.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inquiryForm.email)) errs["email"] = "Valid email is required";
-    if (!Array.isArray(inquiryForm.careNeeded) || inquiryForm.careNeeded.length === 0) errs["careNeeded"] = "Please select at least one care service";
+    
+    // Name validation
+    console.log("🔴 [CHECK 1] Validating name...");
+    if (!inquiryForm.name.trim()) {
+      console.log("  ❌ Name is empty");
+      errs["name"] = "Name is required";
+    } else {
+      console.log("  ✅ Name is valid:", inquiryForm.name);
+    }
+    
+    // Email validation
+    console.log("🔴 [CHECK 2] Validating email...");
+    if (!inquiryForm.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inquiryForm.email)) {
+      console.log("  ❌ Email is invalid:", inquiryForm.email);
+      errs["email"] = "Valid email is required";
+    } else {
+      console.log("  ✅ Email is valid:", inquiryForm.email);
+    }
+    
+    // Care needed validation
+    console.log("🔴 [CHECK 3] Validating care services...");
+    console.log("  ├─ careNeeded value:", inquiryForm.careNeeded);
+    console.log("  ├─ Is array?:", Array.isArray(inquiryForm.careNeeded));
+    console.log("  └─ Length:", inquiryForm.careNeeded?.length || 0);
+    
+    if (!Array.isArray(inquiryForm.careNeeded) || inquiryForm.careNeeded.length === 0) {
+      console.log("  ❌ No care services selected");
+      errs["careNeeded"] = "Please select at least one care service";
+    } else {
+      console.log("  ✅ Care services selected:", inquiryForm.careNeeded);
+    }
+    
+    console.log("\n🔴 [STEP 3] Validation summary:");
+    console.log("  ├─ Total errors:", Object.keys(errs).length);
+    console.log("  └─ Errors:", errs);
+    
     setFormErrors(errs);
-    if (Object.keys(errs).length > 0) return;
+    
+    if (Object.keys(errs).length > 0) {
+      console.log("\n🔴 [RESULT] ❌ VALIDATION FAILED - Form NOT advancing");
+      console.log("  └─ Staying on bookingStep:", bookingStep);
+      console.log("\n╔══════════════════════════════════════════════════════════╗");
+      console.log("║  ❌ FORM BLOCKED - FIX VALIDATION ERRORS ABOVE          ║");
+      console.log("╚══════════════════════════════════════════════════════════╝\n");
+      return;
+    }
 
+    console.log("\n🔴 [RESULT] ✅ VALIDATION PASSED - Advancing to step 2!");
+    console.log("  ├─ Previous bookingStep:", bookingStep);
+    console.log("  └─ New bookingStep: 2");
+    
     setBookingStep(2);
+    
+    console.log("\n╔══════════════════════════════════════════════════════════╗");
+    console.log("║  ✅ FORM ADVANCED - Should show tour scheduling now     ║");
+    console.log("╚══════════════════════════════════════════════════════════╝\n");
   };
   
   // Handle tour scheduling
@@ -1455,10 +1525,10 @@ export default function HomeDetailPage() {
                       </div>
                       
                       <div className="mb-3">
-                        <label className="mb-1 block text-sm font-medium text-neutral-700">
-                          Care Services Needed
+                        <label className={`mb-1 block text-sm font-medium ${formErrors['careNeeded'] ? 'text-red-700' : 'text-neutral-700'}`}>
+                          Care Services Needed*
                         </label>
-                        <div className="space-y-2">
+                        <div className={`space-y-2 rounded-md p-3 ${formErrors['careNeeded'] ? 'border-2 border-red-400 bg-red-50' : 'border border-neutral-200'}`}>
                           <div className="flex items-center">
                             <input
                               type="checkbox"
@@ -1497,7 +1567,10 @@ export default function HomeDetailPage() {
                           </div>
                         </div>
                         {formErrors['careNeeded'] && (
-                          <p className="mt-1 text-xs text-red-600">{formErrors['careNeeded']}</p>
+                          <div className="mt-2 flex items-center rounded-md bg-red-100 border border-red-300 p-2">
+                            <FiAlertCircle className="mr-2 h-5 w-5 text-red-600" />
+                            <p className="text-sm font-medium text-red-700">{formErrors['careNeeded']}</p>
+                          </div>
                         )}
                       </div>
                       
