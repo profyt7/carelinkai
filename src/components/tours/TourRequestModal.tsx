@@ -64,41 +64,51 @@ export default function TourRequestModal({
     }
   }, [isOpen]);
 
-  // Component mount logging
+  // Component mount logging (using console.error for production visibility)
   useEffect(() => {
-    console.log("\n╔══════════════════════════════════════════════════════════╗");
-    console.log("║  🟢 TourRequestModal - COMPONENT MOUNTED               ║");
-    console.log("╚══════════════════════════════════════════════════════════╝\n");
-    console.log("📍 [MOUNT] Component initialized with props:");
-    console.log("  ├─ isOpen:", isOpen);
-    console.log("  ├─ homeId:", homeId);
-    console.log("  ├─ homeName:", homeName);
-    console.log("  └─ onSuccess callback:", !!onSuccess);
+    console.error("\n╔══════════════════════════════════════════════════════════╗");
+    console.error("║  🟢 TourRequestModal - COMPONENT MOUNTED               ║");
+    console.error("╚══════════════════════════════════════════════════════════╝\n");
+    console.error("📍 [MOUNT] Component initialized with props:");
+    console.error("  ├─ isOpen:", isOpen);
+    console.error("  ├─ homeId:", homeId);
+    console.error("  ├─ homeName:", homeName);
+    console.error("  └─ onSuccess callback:", !!onSuccess);
     
     return () => {
-      console.log("\n🔴 [UNMOUNT] TourRequestModal component unmounting\n");
+      console.error("\n🔴 [UNMOUNT] TourRequestModal component unmounting\n");
     };
   }, []);
 
   // Log when modal opens/closes
   useEffect(() => {
     if (isOpen) {
-      console.log("\n╔══════════════════════════════════════════════════════════╗");
-      console.log("║  🚪 MODAL OPENED                                        ║");
-      console.log("╚══════════════════════════════════════════════════════════╝\n");
-      console.log("📍 [MODAL OPEN] State at open:");
-      console.log("  ├─ homeId:", homeId);
-      console.log("  ├─ homeName:", homeName);
-      console.log("  ├─ currentStep:", currentStep);
-      console.log("  └─ isLoading:", isLoading);
+      console.error("\n╔══════════════════════════════════════════════════════════╗");
+      console.error("║  🚪 MODAL OPENED                                        ║");
+      console.error("╚══════════════════════════════════════════════════════════╝\n");
+      console.error("📍 [MODAL OPEN] State at open:");
+      console.error("  ├─ homeId:", homeId);
+      console.error("  ├─ homeName:", homeName);
+      console.error("  ├─ currentStep:", currentStep);
+      console.error("  └─ isLoading:", isLoading);
     } else {
-      console.log("\n🚪 [MODAL CLOSE] Modal closed\n");
+      console.error("\n🚪 [MODAL CLOSE] Modal closed\n");
     }
   }, [isOpen]);
 
   // Reset state when modal closes
   const handleClose = () => {
-    console.log("\n🚪 [HANDLE CLOSE] handleClose() called");
+    console.error("\n🚪 [HANDLE CLOSE] handleClose() called");
+    console.error("  ├─ isLoading:", isLoading);
+    console.error("  └─ success:", success);
+    
+    // Prevent closing during submission
+    if (isLoading) {
+      console.error("⚠️ [HANDLE CLOSE] BLOCKED - Cannot close during submission");
+      return;
+    }
+    
+    console.error("✅ [HANDLE CLOSE] Closing modal and resetting state");
     setTimeout(() => {
       setCurrentStep("date-range");
       setStartDate("");
@@ -118,23 +128,23 @@ export default function TourRequestModal({
     setError(null);
     
     try {
-      console.log("[TourRequestModal] Fetching time slots...");
-      console.log("[TourRequestModal] startDate:", startDate);
-      console.log("[TourRequestModal] endDate:", endDate);
-      console.log("[TourRequestModal] homeId:", homeId);
+      console.error("[TourRequestModal] Fetching time slots...");
+      console.error("[TourRequestModal] startDate:", startDate);
+      console.error("[TourRequestModal] endDate:", endDate);
+      console.error("[TourRequestModal] homeId:", homeId);
       
       const startISO = new Date(startDate).toISOString();
       const endISO = new Date(endDate).toISOString();
       
-      console.log("[TourRequestModal] startISO:", startISO);
-      console.log("[TourRequestModal] endISO:", endISO);
+      console.error("[TourRequestModal] startISO:", startISO);
+      console.error("[TourRequestModal] endISO:", endISO);
       
       const url = `/api/family/tours/available-slots/${homeId}?startDate=${startISO}&endDate=${endISO}`;
-      console.log("[TourRequestModal] Fetching from:", url);
+      console.error("[TourRequestModal] Fetching from:", url);
       
       const response = await fetch(url);
       
-      console.log("[TourRequestModal] Available slots response status:", response.status);
+      console.error("[TourRequestModal] Available slots response status:", response.status);
       
       if (!response.ok) {
         console.error("[TourRequestModal] Failed to fetch slots, status:", response.status);
@@ -142,7 +152,7 @@ export default function TourRequestModal({
       }
       
       const data = await response.json();
-      console.log("[TourRequestModal] Available slots data:", data);
+      console.error("[TourRequestModal] Available slots data:", data);
       
       if (data.success && data.suggestions) {
         // DEFENSIVE: Validate suggestions is an array
@@ -167,7 +177,7 @@ export default function TourRequestModal({
             reason: suggestion.reason || "Available",
           }));
         
-        console.log("[TourRequestModal] Converted slots:", slots);
+        console.error("[TourRequestModal] Converted slots:", slots);
         
         // DEFENSIVE: Check if we have any valid slots
         if (slots.length === 0) {
@@ -193,60 +203,60 @@ export default function TourRequestModal({
 
   // Submit tour request
   const submitTourRequest = async () => {
-    console.log("\n╔══════════════════════════════════════════════════════════╗");
-    console.log("║  🚀 TOUR SUBMISSION - FRONTEND START                    ║");
-    console.log("╚══════════════════════════════════════════════════════════╝\n");
+    console.error("\n╔══════════════════════════════════════════════════════════╗");
+    console.error("║  🚀 TOUR SUBMISSION - FRONTEND START                    ║");
+    console.error("╚══════════════════════════════════════════════════════════╝\n");
     
     setIsLoading(true);
     setError(null);
     
     try {
       // === STEP 1: Validate Input Data ===
-      console.log("📋 [STEP 1] Validating Input Data");
-      console.log("  ├─ homeId:", homeId);
-      console.log("  ├─ homeName:", homeName);
-      console.log("  ├─ selectedSlot:", selectedSlot);
-      console.log("  ├─ familyNotes:", familyNotes || "(empty)");
-      console.log("  └─ familyNotes length:", familyNotes?.length || 0);
+      console.error("📋 [STEP 1] Validating Input Data");
+      console.error("  ├─ homeId:", homeId);
+      console.error("  ├─ homeName:", homeName);
+      console.error("  ├─ selectedSlot:", selectedSlot);
+      console.error("  ├─ familyNotes:", familyNotes || "(empty)");
+      console.error("  └─ familyNotes length:", familyNotes?.length || 0);
       
       if (!homeId) {
         const errorMsg = "Home ID is missing";
         console.error("  ❌ VALIDATION FAILED:", errorMsg);
         throw new Error(errorMsg);
       }
-      console.log("  ✅ homeId is valid");
+      console.error("  ✅ homeId is valid");
       
       if (!selectedSlot) {
         const errorMsg = "No time slot selected";
         console.error("  ❌ VALIDATION FAILED:", errorMsg);
         throw new Error(errorMsg);
       }
-      console.log("  ✅ selectedSlot is present");
+      console.error("  ✅ selectedSlot is present");
       
       // === STEP 2: Convert Date/Time ===
-      console.log("\n🕐 [STEP 2] Converting Date/Time");
-      console.log("  ├─ Input selectedSlot:", selectedSlot);
-      console.log("  ├─ Type of selectedSlot:", typeof selectedSlot);
+      console.error("\n🕐 [STEP 2] Converting Date/Time");
+      console.error("  ├─ Input selectedSlot:", selectedSlot);
+      console.error("  ├─ Type of selectedSlot:", typeof selectedSlot);
       
       let isoDateTime: string;
       try {
         const dateObj = new Date(selectedSlot);
-        console.log("  ├─ Created Date object:", dateObj);
-        console.log("  ├─ Date is valid:", !isNaN(dateObj.getTime()));
+        console.error("  ├─ Created Date object:", dateObj);
+        console.error("  ├─ Date is valid:", !isNaN(dateObj.getTime()));
         
         isoDateTime = dateObj.toISOString();
-        console.log("  ├─ Converted to ISO:", isoDateTime);
-        console.log("  └─ ISO string length:", isoDateTime.length);
+        console.error("  ├─ Converted to ISO:", isoDateTime);
+        console.error("  └─ ISO string length:", isoDateTime.length);
       } catch (dateErr) {
         const errorMsg = "Invalid time slot format";
         console.error("  ❌ DATE CONVERSION FAILED:", errorMsg);
         console.error("  ├─ Error:", dateErr);
         throw new Error(errorMsg);
       }
-      console.log("  ✅ Date conversion successful");
+      console.error("  ✅ Date conversion successful");
       
       // === STEP 3: Prepare Request Body ===
-      console.log("\n📦 [STEP 3] Preparing Request Body");
+      console.error("\n📦 [STEP 3] Preparing Request Body");
       
       const requestBody = {
         homeId,
@@ -254,21 +264,21 @@ export default function TourRequestModal({
         familyNotes: familyNotes || undefined,
       };
       
-      console.log("  ├─ Request body structure:");
-      console.log("  │  ├─ homeId:", requestBody.homeId);
-      console.log("  │  ├─ requestedTimes:", requestBody.requestedTimes);
-      console.log("  │  └─ familyNotes:", requestBody.familyNotes || "(undefined)");
-      console.log("  ├─ Full JSON:");
-      console.log(JSON.stringify(requestBody, null, 2));
-      console.log("  └─ JSON string length:", JSON.stringify(requestBody).length);
-      console.log("  ✅ Request body prepared");
+      console.error("  ├─ Request body structure:");
+      console.error("  │  ├─ homeId:", requestBody.homeId);
+      console.error("  │  ├─ requestedTimes:", requestBody.requestedTimes);
+      console.error("  │  └─ familyNotes:", requestBody.familyNotes || "(undefined)");
+      console.error("  ├─ Full JSON:");
+      console.error(JSON.stringify(requestBody, null, 2));
+      console.error("  └─ JSON string length:", JSON.stringify(requestBody).length);
+      console.error("  ✅ Request body prepared");
       
       // === STEP 4: Make API Call ===
-      console.log("\n🌐 [STEP 4] Making API Call");
-      console.log("  ├─ URL: /api/family/tours/request");
-      console.log("  ├─ Method: POST");
-      console.log("  ├─ Content-Type: application/json");
-      console.log("  └─ Sending request...");
+      console.error("\n🌐 [STEP 4] Making API Call");
+      console.error("  ├─ URL: /api/family/tours/request");
+      console.error("  ├─ Method: POST");
+      console.error("  ├─ Content-Type: application/json");
+      console.error("  └─ Sending request...");
       
       const requestStartTime = Date.now();
       
@@ -283,7 +293,7 @@ export default function TourRequestModal({
         });
         
         const requestDuration = Date.now() - requestStartTime;
-        console.log("  ├─ Request completed in:", requestDuration, "ms");
+        console.error("  ├─ Request completed in:", requestDuration, "ms");
       } catch (fetchErr) {
         console.error("  ❌ FETCH FAILED:", fetchErr);
         if (fetchErr instanceof Error) {
@@ -295,15 +305,15 @@ export default function TourRequestModal({
       }
       
       // === STEP 5: Process Response ===
-      console.log("\n📨 [STEP 5] Processing Response");
-      console.log("  ├─ Response status:", response.status);
-      console.log("  ├─ Response statusText:", response.statusText);
-      console.log("  ├─ Response ok:", response.ok);
-      console.log("  ├─ Response type:", response.type);
-      console.log("  ├─ Response headers:");
+      console.error("\n📨 [STEP 5] Processing Response");
+      console.error("  ├─ Response status:", response.status);
+      console.error("  ├─ Response statusText:", response.statusText);
+      console.error("  ├─ Response ok:", response.ok);
+      console.error("  ├─ Response type:", response.type);
+      console.error("  ├─ Response headers:");
       
       response.headers.forEach((value, key) => {
-        console.log(`  │  ├─ ${key}: ${value}`);
+        console.error(`  │  ├─ ${key}: ${value}`);
       });
       
       if (!response.ok) {
@@ -331,46 +341,46 @@ export default function TourRequestModal({
         throw new Error(errorMsg);
       }
       
-      console.log("  ✅ Response status is OK");
+      console.error("  ✅ Response status is OK");
       
       // === STEP 6: Parse Response Data ===
-      console.log("\n📄 [STEP 6] Parsing Response Data");
+      console.error("\n📄 [STEP 6] Parsing Response Data");
       
       let data;
       try {
         const responseText = await response.text();
-        console.log("  ├─ Raw response text:", responseText);
-        console.log("  ├─ Response text length:", responseText.length);
+        console.error("  ├─ Raw response text:", responseText);
+        console.error("  ├─ Response text length:", responseText.length);
         
         data = JSON.parse(responseText);
-        console.log("  ├─ Parsed JSON successfully");
-        console.log("  ├─ Response data:");
-        console.log(JSON.stringify(data, null, 2));
+        console.error("  ├─ Parsed JSON successfully");
+        console.error("  ├─ Response data:");
+        console.error(JSON.stringify(data, null, 2));
       } catch (parseErr) {
         console.error("  ❌ JSON PARSE FAILED:", parseErr);
         throw new Error("Failed to parse server response");
       }
       
-      console.log("  ✅ Response data parsed");
+      console.error("  ✅ Response data parsed");
       
       // === STEP 7: Verify Success ===
-      console.log("\n✅ [STEP 7] Verifying Success");
-      console.log("  ├─ data.success:", data.success);
-      console.log("  ├─ data.tourRequest:", !!data.tourRequest);
+      console.error("\n✅ [STEP 7] Verifying Success");
+      console.error("  ├─ data.success:", data.success);
+      console.error("  ├─ data.tourRequest:", !!data.tourRequest);
       
       if (data.success) {
-        console.log("  ├─ Tour request details:");
+        console.error("  ├─ Tour request details:");
         if (data.tourRequest) {
-          console.log("  │  ├─ id:", data.tourRequest.id);
-          console.log("  │  ├─ homeId:", data.tourRequest.homeId);
-          console.log("  │  ├─ homeName:", data.tourRequest.homeName);
-          console.log("  │  ├─ status:", data.tourRequest.status);
-          console.log("  │  └─ requestedTimes:", data.tourRequest.requestedTimes);
+          console.error("  │  ├─ id:", data.tourRequest.id);
+          console.error("  │  ├─ homeId:", data.tourRequest.homeId);
+          console.error("  │  ├─ homeName:", data.tourRequest.homeName);
+          console.error("  │  ├─ status:", data.tourRequest.status);
+          console.error("  │  └─ requestedTimes:", data.tourRequest.requestedTimes);
         }
         
-        console.log("\n╔══════════════════════════════════════════════════════════╗");
-        console.log("║  ✅ TOUR SUBMISSION - SUCCESS!                          ║");
-        console.log("╚══════════════════════════════════════════════════════════╝\n");
+        console.error("\n╔══════════════════════════════════════════════════════════╗");
+        console.error("║  ✅ TOUR SUBMISSION - SUCCESS!                          ║");
+        console.error("╚══════════════════════════════════════════════════════════╝\n");
         
         setSuccess(true);
         setCurrentStep("confirmation");
@@ -378,10 +388,10 @@ export default function TourRequestModal({
         // Call onSuccess callback after a short delay
         setTimeout(() => {
           if (onSuccess) {
-            console.log("  └─ Calling onSuccess callback");
+            console.error("  └─ Calling onSuccess callback");
             onSuccess();
           }
-          console.log("  └─ Closing modal");
+          console.error("  └─ Closing modal");
           handleClose();
         }, 2000);
       } else {
@@ -391,9 +401,9 @@ export default function TourRequestModal({
         throw new Error(errorMsg);
       }
     } catch (err) {
-      console.log("\n╔══════════════════════════════════════════════════════════╗");
-      console.log("║  ❌ TOUR SUBMISSION - ERROR CAUGHT                       ║");
-      console.log("╚══════════════════════════════════════════════════════════╝\n");
+      console.error("\n╔══════════════════════════════════════════════════════════╗");
+      console.error("║  ❌ TOUR SUBMISSION - ERROR CAUGHT                       ║");
+      console.error("╚══════════════════════════════════════════════════════════╝\n");
       
       console.error("🚨 [ERROR HANDLER] Caught exception in tour submission");
       console.error("  ├─ Error type:", err?.constructor?.name || "Unknown");
@@ -413,8 +423,8 @@ export default function TourRequestModal({
       setError(errorMessage);
     } finally {
       setIsLoading(false);
-      console.log("\n🏁 [FINALLY] Tour submission process completed");
-      console.log("  └─ Loading state cleared\n");
+      console.error("\n🏁 [FINALLY] Tour submission process completed");
+      console.error("  └─ Loading state cleared\n");
     }
   };
 
@@ -422,64 +432,64 @@ export default function TourRequestModal({
   const handleNext = () => {
     try {
       // 🔴🔴🔴 CRITICAL: LOG AT THE VERY FIRST LINE TO CATCH BUTTON CLICK
-      console.log("\n╔══════════════════════════════════════════════════════════╗");
-      console.log("║  🔴 BUTTON CLICKED - handleNext() CALLED               ║");
-      console.log("╚══════════════════════════════════════════════════════════╝\n");
+      console.error("\n╔══════════════════════════════════════════════════════════╗");
+      console.error("║  🔴 BUTTON CLICKED - handleNext() CALLED               ║");
+      console.error("╚══════════════════════════════════════════════════════════╝\n");
       
-      console.log("🔴 [BUTTON CLICK] Function entry - handler is executing!");
-      console.log("🔴 [STATE SNAPSHOT] Current state at button click:");
-      console.log("  ├─ currentStep:", currentStep);
-      console.log("  ├─ homeId:", homeId);
-      console.log("  ├─ homeName:", homeName);
-      console.log("  ├─ selectedSlot:", selectedSlot);
-      console.log("  ├─ familyNotes:", familyNotes || "(empty)");
-      console.log("  ├─ startDate:", startDate);
-      console.log("  ├─ endDate:", endDate);
-      console.log("  ├─ isLoading:", isLoading);
-      console.log("  ├─ error:", error);
-      console.log("  └─ success:", success);
+      console.error("🔴 [BUTTON CLICK] Function entry - handler is executing!");
+      console.error("🔴 [STATE SNAPSHOT] Current state at button click:");
+      console.error("  ├─ currentStep:", currentStep);
+      console.error("  ├─ homeId:", homeId);
+      console.error("  ├─ homeName:", homeName);
+      console.error("  ├─ selectedSlot:", selectedSlot);
+      console.error("  ├─ familyNotes:", familyNotes || "(empty)");
+      console.error("  ├─ startDate:", startDate);
+      console.error("  ├─ endDate:", endDate);
+      console.error("  ├─ isLoading:", isLoading);
+      console.error("  ├─ error:", error);
+      console.error("  └─ success:", success);
       
-      console.log("\n🔴 [FLOW CHECK] Checking which step we're in...");
-      console.log("[TourRequestModal] handleNext called, currentStep:", currentStep);
+      console.error("\n🔴 [FLOW CHECK] Checking which step we're in...");
+      console.error("[TourRequestModal] handleNext called, currentStep:", currentStep);
     
     if (currentStep === "date-range") {
-      console.log("🔴 [FLOW] Inside date-range branch");
+      console.error("🔴 [FLOW] Inside date-range branch");
       if (!startDate || !endDate) {
         const errorMsg = "Please select both start and end dates";
-        console.log("[TourRequestModal] Validation error:", errorMsg);
+        console.error("[TourRequestModal] Validation error:", errorMsg);
         setError(errorMsg);
         return;
       }
       if (new Date(startDate) > new Date(endDate)) {
         const errorMsg = "End date must be after start date";
-        console.log("[TourRequestModal] Validation error:", errorMsg);
+        console.error("[TourRequestModal] Validation error:", errorMsg);
         setError(errorMsg);
         return;
       }
-      console.log("[TourRequestModal] Date range valid, fetching time slots");
+      console.error("[TourRequestModal] Date range valid, fetching time slots");
       fetchTimeSlots();
     } else if (currentStep === "time-slots") {
-      console.log("🔴 [FLOW] Inside time-slots branch");
+      console.error("🔴 [FLOW] Inside time-slots branch");
       if (!selectedSlot) {
         const errorMsg = "Please select a time slot";
-        console.log("🔴 [VALIDATION ERROR] No time slot selected:", errorMsg);
+        console.error("🔴 [VALIDATION ERROR] No time slot selected:", errorMsg);
         setError(errorMsg);
         return;
       }
-      console.log("🔴 [FLOW] Time slot selected:", selectedSlot);
-      console.log("🔴 [FLOW] Moving to notes step");
+      console.error("🔴 [FLOW] Time slot selected:", selectedSlot);
+      console.error("🔴 [FLOW] Moving to notes step");
       setCurrentStep("notes");
     } else if (currentStep === "notes") {
-      console.log("🔴 [FLOW] Inside notes branch - ABOUT TO SUBMIT!");
-      console.log("🔴 [PRE-SUBMIT CHECK]");
-      console.log("  ├─ homeId exists:", !!homeId);
-      console.log("  ├─ selectedSlot exists:", !!selectedSlot);
-      console.log("  ├─ isLoading:", isLoading);
-      console.log("  └─ About to call submitTourRequest()...");
+      console.error("🔴 [FLOW] Inside notes branch - ABOUT TO SUBMIT!");
+      console.error("🔴 [PRE-SUBMIT CHECK]");
+      console.error("  ├─ homeId exists:", !!homeId);
+      console.error("  ├─ selectedSlot exists:", !!selectedSlot);
+      console.error("  ├─ isLoading:", isLoading);
+      console.error("  └─ About to call submitTourRequest()...");
       
-      console.log("\n🔴 [CALLING] submitTourRequest() NOW...\n");
+      console.error("\n🔴 [CALLING] submitTourRequest() NOW...\n");
       submitTourRequest();
-      console.log("🔴 [AFTER CALL] submitTourRequest() was invoked (may be async)");
+      console.error("🔴 [AFTER CALL] submitTourRequest() was invoked (may be async)");
     } else {
       console.error("🔴 [ERROR] Unknown step:", currentStep);
     }
