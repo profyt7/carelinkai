@@ -62,10 +62,7 @@ export async function GET(request: NextRequest) {
     if (isFamily) {
       const family = await prisma.family.findFirst({
         where: {
-          OR: [
-            { primaryContactEmail: user.email },
-            { secondaryContactEmail: user.email },
-          ],
+          userId: user.id,
         },
       });
 

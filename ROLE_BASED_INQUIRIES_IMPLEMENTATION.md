@@ -15,7 +15,7 @@ Successfully implemented Option A: Unified inquiries page with role-based filter
 **Changes:**
 - ✅ Added FAMILY role to allowed roles (alongside OPERATOR and ADMIN)
 - ✅ Implemented family-specific filtering logic
-  - Queries database for family record by email (primaryContactEmail or secondaryContactEmail)
+  - Queries database for family record by userId
   - Filters inquiries to show only those belonging to the authenticated family
   - Returns empty list if no family record found
 - ✅ Maintains existing OPERATOR/ADMIN filtering (all inquiries or operator-specific)
@@ -26,10 +26,7 @@ Successfully implemented Option A: Unified inquiries page with role-based filter
 if (isFamily) {
   const family = await prisma.family.findFirst({
     where: {
-      OR: [
-        { primaryContactEmail: user.email },
-        { secondaryContactEmail: user.email },
-      ],
+      userId: user.id,
     },
   });
 
