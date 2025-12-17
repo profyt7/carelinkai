@@ -119,11 +119,30 @@ export async function suggestOptimalTimes(
       home.tourSlots
     );
 
-    return validSuggestions.slice(0, 5); // Return top 5 suggestions
+    // 7. If we have no valid suggestions, generate fallback
+    if (validSuggestions.length === 0) {
+      console.warn("[AI Tour Scheduler] No valid AI suggestions, using fallback");
+      const fallbackSuggestions = generateFallbackSuggestions(dateRange);
+      const validFallback = validateAndFilterSuggestions(
+        fallbackSuggestions,
+        scheduledTours.map((t) => t.confirmedTime),
+        [] // Don't validate against slots for fallback
+      );
+      return validFallback.slice(0, 8); // Return up to 8 suggestions
+    }
+
+    return validSuggestions.slice(0, 8); // Return up to 8 suggestions
   } catch (error) {
     console.error("[AI Tour Scheduler] Error:", error);
     // Fallback to simple suggestions if AI fails
-    return generateFallbackSuggestions(dateRange);
+    const fallbackSuggestions = generateFallbackSuggestions(dateRange);
+    // Don't validate against slots for fallback error case
+    const validFallback = validateAndFilterSuggestions(
+      fallbackSuggestions,
+      [],
+      []
+    );
+    return validFallback.slice(0, 8);
   }
 }
 
@@ -236,27 +255,43 @@ Format response as JSON array:
  */
 function generateFallbackSuggestions(dateRange: DateRange): SuggestedTimeSlot[] {
   const suggestions: SuggestedTimeSlot[] = [];
-  const currentDate = new Date(dateRange.startDate);
-  const preferredTimes = ["10:00", "11:00", "14:00", "15:00"];
-  const preferredDays = [2, 3, 4]; // Tuesday, Wednesday, Thursday
+  const now = new Date();
+  let currentDate = new Date(dateRange.startDate);
+  
+  // Ensure we start from today if startDate is in the past
+  if (currentDate < now) {
+    currentDate = new Date(now);
+    currentDate.setDate(now.getDate() + 1); // Start from tomorrow
+  }
+  
+  const preferredTimes = ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00"];
+  const preferredDays = [1, 2, 3, 4, 5]; // Monday-Friday
 
-  while (suggestions.length < 5 && currentDate <= dateRange.endDate) {
+  // Generate suggestions until we have at least 8 or reach end date
+  let attempts = 0;
+  const maxAttempts = 60; // Don't loop forever
+
+  while (suggestions.length < 8 && currentDate <= dateRange.endDate && attempts < maxAttempts) {
+    attempts++;
     const dayOfWeek = currentDate.getDay();
 
+    // Only include weekdays
     if (preferredDays.includes(dayOfWeek)) {
       preferredTimes.forEach((time) => {
+        if (suggestions.length >= 8) return; // Stop if we have enough
+
         const [hours, minutes] = time.split(":").map(Number);
         const dateTime = new Date(currentDate);
         dateTime.setHours(hours, minutes, 0, 0);
 
-        if (dateTime > new Date() && suggestions.length < 5) {
+        // Only include future times
+        if (dateTime > now) {
           suggestions.push({
             dateTime,
             dayOfWeek: getDayName(dayOfWeek),
             timeSlot: `${formatTime(time)} - ${formatTime(addHour(time))}`,
-            score: 80,
-            reasoning:
-              "Mid-week mornings and early afternoons are traditionally optimal for facility tours.",
+            score: 75 + Math.floor(Math.random() * 15), // 75-90
+            reasoning: `${getDayName(dayOfWeek)} at ${formatTime(time)} is a great time for tours.`,
           });
         }
       });
@@ -265,6 +300,7 @@ function generateFallbackSuggestions(dateRange: DateRange): SuggestedTimeSlot[] 
     currentDate.setDate(currentDate.getDate() + 1);
   }
 
+  console.log(`[Fallback] Generated ${suggestions.length} fallback suggestions`);
   return suggestions;
 }
 
@@ -276,33 +312,64 @@ function validateAndFilterSuggestions(
   conflicts: (Date | null)[],
   availableSlots: any[]
 ): SuggestedTimeSlot[] {
-  return suggestions.filter((suggestion) => {
-    // Check for conflicts
+  const filtered = suggestions.filter((suggestion) => {
+    // Check if time is in the future (must be at least 1 hour from now)
+    const now = new Date();
+    const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
+    if (suggestion.dateTime <= oneHourFromNow) {
+      return false;
+    }
+
+    // Check for conflicts with existing tours
     const hasConflict = conflicts.some((conflict) => {
       if (!conflict) return false;
       const diff = Math.abs(conflict.getTime() - suggestion.dateTime.getTime());
       return diff < 60 * 60 * 1000; // Within 1 hour
     });
 
-    if (hasConflict) return false;
+    if (hasConflict) {
+      return false;
+    }
 
-    // Check if time is in the future
-    if (suggestion.dateTime <= new Date()) return false;
-
-    // Check if matches available slots (if defined)
-    if (availableSlots.length > 0) {
+    // RELAXED: Only check slots if they are explicitly defined and active
+    // If no slots are defined, allow all suggestions (for homes without configured slots)
+    if (availableSlots && availableSlots.length > 0) {
       const dayOfWeek = suggestion.dateTime.getDay();
-      const timeStr = `${suggestion.dateTime.getHours()}:${suggestion.dateTime.getMinutes().toString().padStart(2, "0")}`;
+      const suggestionHour = suggestion.dateTime.getHours();
+      const suggestionMinutes = suggestion.dateTime.getMinutes();
 
-      const matchesSlot = availableSlots.some(
+      // Check if this day of week has any active slots
+      const matchingDaySlots = availableSlots.filter(
         (slot) => slot.dayOfWeek === dayOfWeek && slot.isActive
       );
 
-      if (!matchesSlot) return false;
+      if (matchingDaySlots.length > 0) {
+        // If slots exist for this day, check if time falls within any slot
+        const matchesTimeSlot = matchingDaySlots.some((slot) => {
+          const [startHour, startMin] = slot.startTime.split(':').map(Number);
+          const [endHour, endMin] = slot.endTime.split(':').map(Number);
+          
+          const suggestionMinutesTotal = suggestionHour * 60 + suggestionMinutes;
+          const startMinutesTotal = startHour * 60 + startMin;
+          const endMinutesTotal = endHour * 60 + endMin;
+
+          return suggestionMinutesTotal >= startMinutesTotal && 
+                 suggestionMinutesTotal <= endMinutesTotal;
+        });
+
+        if (!matchesTimeSlot) {
+          return false;
+        }
+      }
+      // If no slots exist for this specific day, allow it
     }
+    // If no slots are configured at all, allow all valid times
 
     return true;
   });
+
+  console.log(`[Validation] Filtered ${suggestions.length} → ${filtered.length} suggestions`);
+  return filtered;
 }
 
 /**

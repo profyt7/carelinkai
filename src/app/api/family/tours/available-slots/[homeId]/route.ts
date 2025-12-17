@@ -40,7 +40,20 @@ export async function GET(
       }
     );
 
-    return NextResponse.json({ success: true, suggestions });
+    // 5. Transform suggestions to match frontend format
+    const formattedSuggestions = suggestions.map((slot) => ({
+      time: slot.dateTime.toISOString(), // ISO string for date/time
+      date: slot.dateTime.toISOString().split('T')[0], // YYYY-MM-DD
+      displayTime: slot.timeSlot, // "10:00 AM - 11:00 AM"
+      dayOfWeek: slot.dayOfWeek,
+      available: true,
+      reason: slot.reasoning,
+      score: slot.score,
+    }));
+
+    console.log("[Available Slots API] Returning", formattedSuggestions.length, "formatted slots");
+
+    return NextResponse.json({ success: true, suggestions: formattedSuggestions });
   } catch (error) {
     console.error("[Available Slots API] Error:", error);
     return NextResponse.json(
