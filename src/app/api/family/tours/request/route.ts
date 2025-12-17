@@ -20,20 +20,29 @@ const tourRequestSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    console.log("[Tour Request API] POST request received");
+
     // 1. Authentication
     const session = await getServerSession(authOptions);
     if (!session?.user) {
+      console.error("[Tour Request API] Unauthorized - no session");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    console.log("[Tour Request API] User authenticated:", session.user.id, session.user.role);
+
     // 2. Authorization - Check if user has permission
     if (!hasPermission(session.user.role, PERMISSIONS.TOURS_REQUEST)) {
+      console.error("[Tour Request API] Forbidden - insufficient permissions for role:", session.user.role);
       return NextResponse.json({ error: "Forbidden - insufficient permissions" }, { status: 403 });
     }
 
     // 3. Validate request body
     const body = await request.json();
+    console.log("[Tour Request API] Request body:", JSON.stringify(body, null, 2));
+    
     const validatedData = tourRequestSchema.parse(body);
+    console.log("[Tour Request API] Data validated successfully");
 
     // 4. Get family record
     const family = await prisma.family.findUnique({
@@ -65,12 +74,22 @@ export async function POST(request: NextRequest) {
     }
 
     // 6. Create tour request
+    // NOTE: requestedTimes is stored as JSON in Prisma, so we keep them as ISO strings
+    // Converting to Date objects would cause serialization errors
+    console.log("[Tour Request API] Creating tour request with data:", {
+      familyId: family.id,
+      homeId: home.id,
+      operatorId: home.operatorId,
+      requestedTimes: validatedData.requestedTimes,
+      familyNotes: validatedData.familyNotes,
+    });
+
     const tourRequest = await prisma.tourRequest.create({
       data: {
         familyId: family.id,
         homeId: home.id,
         operatorId: home.operatorId,
-        requestedTimes: validatedData.requestedTimes.map((t) => new Date(t)),
+        requestedTimes: validatedData.requestedTimes, // Keep as ISO strings for JSON field
         familyNotes: validatedData.familyNotes,
         status: "PENDING",
       },
@@ -92,6 +111,8 @@ export async function POST(request: NextRequest) {
         },
       },
     });
+
+    console.log("[Tour Request API] Tour request created successfully:", tourRequest.id);
 
     // 7. Send notification (console log for MVP)
     console.log("\n=== NEW TOUR REQUEST NOTIFICATION ===");
@@ -116,16 +137,29 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("[Tour Request API] Error:", error);
+    
+    // Log detailed error information
+    if (error instanceof Error) {
+      console.error("[Tour Request API] Error name:", error.name);
+      console.error("[Tour Request API] Error message:", error.message);
+      console.error("[Tour Request API] Error stack:", error.stack);
+    }
 
     if (error instanceof z.ZodError) {
+      console.error("[Tour Request API] Validation error details:", JSON.stringify(error.errors, null, 2));
       return NextResponse.json(
         { error: "Validation error", details: error.errors },
         { status: 400 }
       );
     }
 
+    // Return detailed error message in development, generic in production
+    const errorMessage = process.env.NODE_ENV === "development" && error instanceof Error
+      ? error.message
+      : "Failed to create tour request";
+
     return NextResponse.json(
-      { error: "Failed to create tour request" },
+      { error: errorMessage },
       { status: 500 }
     );
   }
