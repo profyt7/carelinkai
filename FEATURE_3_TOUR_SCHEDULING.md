@@ -639,3 +639,183 @@ console.log('Available slots:', slots);
 Feature #3: AI Tour Scheduling Assistant is **100% complete** and **production-ready**. All backend APIs, frontend components, and integrations are implemented and tested. The feature provides a seamless experience for families to request tours and operators to manage them efficiently.
 
 **Status:** ✅ READY FOR DEPLOYMENT
+
+
+
+---
+
+## 🐛 Troubleshooting
+
+### Critical Bug Fix (Dec 16, 2025)
+
+**Issue**: Tour submission failed with "Something went wrong" error
+
+**Root Cause**: JSON serialization error when converting ISO strings to Date objects
+
+**Solution**: Keep `requestedTimes` as ISO strings for Prisma's JSON field
+
+**Details**: See `FEATURE_3_TOUR_BUG_FIX.md` for complete analysis
+
+### Common Issues
+
+#### 1. Tour Submission Fails
+**Symptoms**: Error message after clicking "Submit Request"
+
+**Possible Causes**:
+- Authentication issue (session expired)
+- Missing family record in database
+- Invalid home ID
+- Database connection failure
+- JSON serialization error (FIXED)
+
+**Solution**:
+1. Check Render logs for detailed error messages
+2. Verify user is logged in as FAMILY role
+3. Confirm home exists in database
+4. Check `requestedTimes` format (must be ISO strings)
+
+#### 2. No AI Suggestions Appear
+**Symptoms**: Empty time slot list
+
+**Possible Causes**:
+- OpenAI API key not configured
+- Home has no tour slots defined
+- Date range too restrictive
+
+**Solution**:
+1. Verify `OPENAI_API_KEY` environment variable
+2. Check `TourSlot` records for the home
+3. Expand date range (try 30 days)
+
+#### 3. Tours Don't Appear in "My Tours"
+**Symptoms**: Page shows "No tours yet" after submission
+
+**Possible Causes**:
+- Tour creation failed (check logs)
+- Wrong family ID in query
+- Database query error
+
+**Solution**:
+1. Verify tour was created in database
+2. Check family ID matches user's family record
+3. Review GET /api/family/tours endpoint logs
+
+#### 4. Operator Can't Confirm Tours
+**Symptoms**: Confirm button doesn't work
+
+**Possible Causes**:
+- Permission issue (wrong role)
+- Invalid tour ID
+- API error
+
+**Solution**:
+1. Verify user has OPERATOR or ADMIN role
+2. Check tour belongs to operator's home
+3. Review PATCH /api/operator/tours/[id] logs
+
+### Debugging Tips
+
+1. **Enable Detailed Logging**
+   - All API endpoints now have comprehensive console.log statements
+   - Check Render logs for request tracking
+
+2. **Inspect Network Tab**
+   - Check request payload format
+   - Verify response status codes
+   - Review error messages
+
+3. **Database Verification**
+   ```sql
+   -- Check tour requests
+   SELECT * FROM "TourRequest" ORDER BY "createdAt" DESC LIMIT 10;
+   
+   -- Check tour slots
+   SELECT * FROM "TourSlot" WHERE "isActive" = true;
+   
+   -- Check family records
+   SELECT * FROM "Family" WHERE "userId" = '<user-id>';
+   ```
+
+4. **API Testing**
+   - Use Postman or curl to test endpoints directly
+   - Verify request/response format
+   - Test authentication and permissions
+
+### Error Messages Reference
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| "Unauthorized" | No session | Login again |
+| "Forbidden - insufficient permissions" | Wrong role | Verify FAMILY/OPERATOR role |
+| "Family record not found" | No family profile | Create family profile |
+| "Home not found" | Invalid homeId | Check home exists |
+| "Validation error" | Invalid request data | Check request format |
+| "Failed to create tour request" | Database/API error | Check logs for details |
+
+---
+
+## 📈 Monitoring
+
+### Key Metrics to Track
+
+1. **Tour Submission Success Rate**
+   - Target: >95% success
+   - Monitor: Render logs for errors
+
+2. **AI Suggestion Quality**
+   - Target: 3-5 relevant suggestions per request
+   - Monitor: User feedback and conversion rates
+
+3. **Response Times**
+   - Tour request creation: <2 seconds
+   - AI suggestions: <5 seconds
+   - Tour list loading: <1 second
+
+4. **Database Performance**
+   - Query optimization for tour lists
+   - Index effectiveness
+   - Connection pool health
+
+### Render Logs to Monitor
+
+```bash
+# Tour creation
+grep "Tour Request API" /var/log/render.log
+
+# AI suggestions
+grep "AI Tour Scheduler" /var/log/render.log
+
+# Errors
+grep "Error\|error\|500" /var/log/render.log
+```
+
+---
+
+## 🔄 Recent Updates
+
+### December 16, 2025 - Critical Bug Fix
+- **Fixed**: JSON serialization error in tour request creation
+- **Changed**: Keep `requestedTimes` as ISO strings instead of Date objects
+- **Added**: Comprehensive logging throughout API endpoints
+- **Improved**: Error handling and messages
+- **Status**: ✅ Deployed to production
+
+### Next Steps
+1. Monitor tour submission success rates
+2. Gather user feedback on AI suggestions
+3. Implement operator notifications
+4. Add email confirmations
+5. Build tour analytics dashboard
+
+---
+
+## 📞 Support
+
+For issues or questions about Feature #3:
+1. Check this documentation
+2. Review `FEATURE_3_TOUR_BUG_FIX.md` for recent fixes
+3. Check Render logs for detailed errors
+4. Test API endpoints directly
+5. Verify database schema and data
+
+**Last Updated**: December 16, 2025
