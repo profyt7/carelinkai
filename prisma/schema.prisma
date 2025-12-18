@@ -566,6 +566,7 @@ enum CareLevel {
 
 model AssistedLivingHome {
   id                String      @id @default(cuid())
+  slug              String?     @unique // Optional slug for friendly URLs (e.g., "home_1")
   operatorId        String
   name              String
   description       String      @db.Text

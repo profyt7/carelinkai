@@ -166,14 +166,25 @@ export async function POST(request: NextRequest) {
     
     console.log('🟢 [TOUR API] ✅ Home ID format valid');
 
-    // === STEP 6: Fetch Home & Operator Details (Enhanced) ===
+    // === STEP 6: Fetch Home & Operator Details (Enhanced - Supports Slug & UUID) ===
     console.log('🟢 [TOUR API] Step 6: Fetch Home & Operator Details (Enhanced)');
-    console.log('🟢 [TOUR API] Querying database for home ID:', validatedData.homeId);
+    console.log('🟢 [TOUR API] Querying database for homeId:', validatedData.homeId);
+    console.log('🟢 [TOUR API] Attempting lookup by BOTH slug and UUID...');
     
     let home;
     try {
-      home = await prisma.assistedLivingHome.findUnique({
-        where: { id: validatedData.homeId },
+      // 🎯 CRITICAL FIX: Query by slug OR id to support both formats
+      // This handles:
+      // - UUID format: "cmj23f02j0001ru4npd..." (from real database)
+      // - Slug format: "home_1" (from mock data or friendly URLs)
+      home = await prisma.assistedLivingHome.findFirst({
+        where: {
+          OR: [
+            { slug: validatedData.homeId },      // Try slug first (e.g., "home_1")
+            { id: validatedData.homeId }         // Fallback to UUID
+          ],
+          status: 'ACTIVE'                       // Only active homes
+        },
         include: {
           operator: {
             include: {
@@ -188,8 +199,11 @@ export async function POST(request: NextRequest) {
       console.log('🟢 [TOUR API] Home found:', !!home);
       
       if (home) {
+        console.log('🟢 [TOUR API] ✅ Home found successfully!');
         console.log('🟢 [TOUR API] Home details:', {
           id: home.id,
+          slug: home.slug || '(no slug)',
+          matchedBy: home.slug === validatedData.homeId ? 'slug' : 'id',
           name: home.name,
           status: home.status,
           operatorId: home.operatorId,
@@ -205,12 +219,15 @@ export async function POST(request: NextRequest) {
     if (!home) {
       console.error('🟢 [TOUR API] ❌ HOME NOT FOUND');
       console.error('🟢 [TOUR API] Home ID requested:', validatedData.homeId);
+      console.error('🟢 [TOUR API] Searched by: slug AND id');
       console.error('🟢 [TOUR API] Running database diagnostics...');
       
       try {
         // Check total homes in database
         const totalHomes = await prisma.assistedLivingHome.count();
+        const activeHomes = await prisma.assistedLivingHome.count({ where: { status: 'ACTIVE' } });
         console.error('🟢 [TOUR API] Total homes in database:', totalHomes);
+        console.error('🟢 [TOUR API] Active homes in database:', activeHomes);
         
         if (totalHomes === 0) {
           console.error('🟢 [TOUR API] ❌ DATABASE IS EMPTY - No homes available');
@@ -221,16 +238,18 @@ export async function POST(request: NextRequest) {
             suggestion: "No homes in database. Please run seed script or contact administrator.",
             diagnostics: {
               databaseEmpty: true,
-              requestedId: validatedData.homeId
+              requestedId: validatedData.homeId,
+              lookupMethods: ['slug', 'id']
             }
           }, { status: 404 });
         }
         
-        // Get sample home IDs for debugging
+        // Get sample home IDs and slugs for debugging
         const sampleHomes = await prisma.assistedLivingHome.findMany({
           take: 10,
           select: { 
-            id: true, 
+            id: true,
+            slug: true,
             name: true,
             status: true,
             operatorId: true
@@ -238,44 +257,56 @@ export async function POST(request: NextRequest) {
           orderBy: { createdAt: 'desc' }
         });
         
-        console.error('🟢 [TOUR API] Sample homes from database:');
+        console.error('🟢 [TOUR API] Sample homes from database (with slugs):');
         sampleHomes.forEach((h, idx) => {
-          console.error(`🟢 [TOUR API]   ${idx + 1}. ID: ${h.id}, Name: ${h.name}, Status: ${h.status}`);
+          console.error(`🟢 [TOUR API]   ${idx + 1}. ID: ${h.id}, Slug: ${h.slug || '(none)'}, Name: ${h.name}, Status: ${h.status}`);
         });
         
-        // Check if requested ID exists with different casing
-        const homesWithSimilarId = await prisma.assistedLivingHome.findMany({
+        // Check if requested ID matches any inactive home
+        const inactiveMatch = await prisma.assistedLivingHome.findFirst({
           where: {
-            id: {
-              contains: validatedData.homeId,
-              mode: 'insensitive'
-            }
+            OR: [
+              { slug: validatedData.homeId },
+              { id: validatedData.homeId }
+            ],
+            status: { not: 'ACTIVE' }
           },
-          take: 5,
-          select: { id: true, name: true }
+          select: { id: true, slug: true, name: true, status: true }
         });
         
-        if (homesWithSimilarId.length > 0) {
-          console.error('🟢 [TOUR API] ⚠️ Found homes with similar IDs:');
-          homesWithSimilarId.forEach(h => {
-            console.error(`🟢 [TOUR API]   - ${h.id} (${h.name})`);
-          });
+        if (inactiveMatch) {
+          console.error('🟢 [TOUR API] ⚠️ Found INACTIVE home matching ID:');
+          console.error(`🟢 [TOUR API]   - ${inactiveMatch.name} (Status: ${inactiveMatch.status})`);
+          return NextResponse.json({
+            error: "Home not available",
+            homeId: validatedData.homeId,
+            reason: `This home is not currently accepting tours (Status: ${inactiveMatch.status})`,
+            suggestion: "Please choose a different home or contact the administrator.",
+            diagnostics: {
+              homeFound: true,
+              homeActive: false,
+              status: inactiveMatch.status
+            }
+          }, { status: 403 });
         }
         
         return NextResponse.json({
           error: "Home not found",
           homeId: validatedData.homeId,
           totalHomes: totalHomes,
-          suggestion: `Invalid home ID. Database has ${totalHomes} homes. Check the home ID or select from available homes.`,
+          activeHomes: activeHomes,
+          suggestion: `Home not found. Searched by both slug and UUID. Database has ${activeHomes} active homes.`,
           diagnostics: {
             requestedId: validatedData.homeId,
             totalHomesInDatabase: totalHomes,
-            sampleHomeIds: sampleHomes.map(h => ({
+            activeHomesInDatabase: activeHomes,
+            lookupMethods: ['slug', 'id'],
+            sampleHomes: sampleHomes.map(h => ({
               id: h.id,
+              slug: h.slug || null,
               name: h.name,
               status: h.status
-            })),
-            similarIds: homesWithSimilarId.map(h => h.id)
+            }))
           }
         }, { status: 404 });
         
@@ -283,7 +314,8 @@ export async function POST(request: NextRequest) {
         console.error('🟢 [TOUR API] ❌ Error running diagnostics:', diagnosticError);
         return NextResponse.json({ 
           error: "Home not found",
-          homeId: validatedData.homeId 
+          homeId: validatedData.homeId,
+          message: "The requested home does not exist or is not active"
         }, { status: 404 });
       }
     }
