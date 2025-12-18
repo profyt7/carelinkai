@@ -55,7 +55,7 @@ const SimpleMap = dynamic(
 
 // Mock data for a single home
 const MOCK_HOME = {
-  id: "1",
+  id: "home_1",
   name: "Sunshine Care Home",
   address: "123 Maple Street, San Francisco, CA 94102",
   description: "A warm and welcoming assisted living facility with 24/7 care staff and beautiful gardens. Our dedicated team provides personalized care in a comfortable, home-like environment designed to promote independence while offering the support residents need.",
