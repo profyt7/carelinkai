@@ -1887,7 +1887,7 @@ export default function HomeDetailPage() {
       <TourRequestModal
         isOpen={showTourModal}
         onClose={() => setShowTourModal(false)}
-        homeId={realHome?.id || home.id}
+        homeId={realHome?.id || String(id)}
         homeName={realHome?.name || home.name}
         onSuccess={() => {
           console.log("Tour request submitted successfully!");
