@@ -162,13 +162,38 @@ export default function TourRequestModal({
         }
         
         // Convert suggestions to TimeSlot format with validation
+        console.error("[TourRequestModal] Raw suggestions from API:", data.suggestions);
+        console.error("[TourRequestModal] Number of suggestions:", data.suggestions.length);
+        
         const slots: TimeSlot[] = data.suggestions
           .filter((suggestion: any) => {
-            // Filter out invalid slots
-            if (!suggestion || typeof suggestion.time !== 'string') {
-              console.warn("[TourRequestModal] Skipping invalid slot:", suggestion);
+            // Validate slot has required time field
+            if (!suggestion) {
+              console.error("[TourRequestModal] Slot is null/undefined");
               return false;
             }
+            
+            if (!suggestion.time) {
+              console.error("[TourRequestModal] Slot missing time field:", suggestion);
+              return false;
+            }
+            
+            // Validate time is a string
+            if (typeof suggestion.time !== 'string') {
+              console.error("[TourRequestModal] Time field is not a string:", typeof suggestion.time, suggestion);
+              return false;
+            }
+            
+            // Validate time is a valid date
+            const date = new Date(suggestion.time);
+            if (isNaN(date.getTime())) {
+              console.error("[TourRequestModal] Invalid date string:", suggestion.time);
+              return false;
+            }
+            
+            // NOTE: reasoning/reason field is INFORMATIONAL only - not used for validation
+            // NOTE: available field is set by frontend - not used for validation
+            console.error("[TourRequestModal] ✅ Valid slot:", suggestion.time);
             return true;
           })
           .map((suggestion: any) => ({
@@ -177,11 +202,13 @@ export default function TourRequestModal({
             reason: suggestion.reason || "Available",
           }));
         
+        console.error("[TourRequestModal] Filtered valid slots:", slots.length);
         console.error("[TourRequestModal] Converted slots:", slots);
         
         // DEFENSIVE: Check if we have any valid slots
         if (slots.length === 0) {
-          console.warn("[TourRequestModal] No valid slots found");
+          console.error("[TourRequestModal] ❌ WARNING: No valid slots after filtering!");
+          console.error("[TourRequestModal] Original suggestions:", data.suggestions);
         }
         
         setAvailableSlots(slots);
