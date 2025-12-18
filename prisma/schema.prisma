@@ -195,6 +195,7 @@ model User {
   approvedTimesheets  Timesheet[]
   assignedLeads       Lead[]               @relation("AssignedLeads")
   convertedInquiries  Inquiry[]            @relation("InquiryConverter")
+  assignedInquiries   Inquiry[]            @relation("AssignedInquiries") // Feature #4: AI-Powered Inquiry Response System
 
   // Reporting relationships
   generatedReports   Report[]           @relation("ReportGenerator")
@@ -972,6 +973,69 @@ enum InquiryStatus {
   CLOSED_LOST
 }
 
+// Feature #4: AI-Powered Inquiry Response System - Additional Enums
+enum InquiryUrgency {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum InquirySource {
+  WEBSITE
+  PHONE
+  EMAIL
+  REFERRAL
+  SOCIAL_MEDIA
+  WALK_IN
+  OTHER
+}
+
+enum ContactMethod {
+  EMAIL
+  PHONE
+  SMS
+  ANY
+}
+
+enum ResponseType {
+  AI_GENERATED
+  MANUAL
+  AUTOMATED
+  TEMPLATE
+}
+
+enum ResponseChannel {
+  EMAIL
+  SMS
+  PHONE
+  IN_APP
+}
+
+enum ResponseStatus {
+  DRAFT
+  SENT
+  DELIVERED
+  FAILED
+  BOUNCED
+}
+
+enum FollowUpType {
+  EMAIL
+  SMS
+  PHONE_CALL
+  TASK
+  REMINDER
+}
+
+enum FollowUpStatus {
+  PENDING
+  SENT
+  COMPLETED
+  CANCELLED
+  OVERDUE
+}
+
 enum LeadTargetType {
   AIDE
   PROVIDER
@@ -996,6 +1060,22 @@ model Inquiry {
   tourDate      DateTime?
   aiMatchScore  Float? // AI-generated placement likelihood score
 
+  // Feature #4: Enhanced contact and inquiry details
+  contactName           String?
+  contactEmail          String?
+  contactPhone          String?
+  careRecipientName     String?
+  careRecipientAge      Int?
+  careNeeds             String[]        @default([]) // Array of care needs
+  additionalInfo        String?         @db.Text
+  urgency               InquiryUrgency  @default(MEDIUM)
+  source                InquirySource   @default(WEBSITE)
+  preferredContactMethod ContactMethod  @default(EMAIL)
+  
+  // Assignment for inquiry management
+  assignedToId          String?
+  assignedTo            User?           @relation("AssignedInquiries", fields: [assignedToId], references: [id])
+
   // Conversion tracking fields
   convertedToResidentId String?   @unique // Link to created Resident record
   conversionDate        DateTime? // When conversion happened
@@ -1009,6 +1089,10 @@ model Inquiry {
   convertedResident Resident?          @relation("ConvertedFromInquiry", fields: [convertedToResidentId], references: [id])
   convertedBy       User?              @relation("InquiryConverter", fields: [convertedByUserId], references: [id])
   documents         InquiryDocument[]
+  
+  // Feature #4: AI-Powered Response & Follow-up System
+  responses         InquiryResponse[]
+  followUps         FollowUp[]
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -1022,6 +1106,10 @@ model Inquiry {
   @@index([convertedToResidentId])
   @@index([convertedByUserId])
   @@index([conversionDate])
+  @@index([assignedToId])
+  @@index([urgency])
+  @@index([source])
+  @@index([createdAt])
 }
 
 /// Documents associated with an inquiry (applications, IDs, medical records, etc.)
@@ -1046,6 +1134,84 @@ model InquiryDocument {
   @@index([uploadedById])
   @@index([documentType])
   @@index([uploadedAt])
+}
+
+// ==================== FEATURE #4: AI-POWERED INQUIRY RESPONSE SYSTEM ====================
+
+/// Tracks all responses sent for an inquiry (AI-generated, manual, or automated)
+model InquiryResponse {
+  id          String          @id @default(cuid())
+  inquiryId   String
+  
+  // Response Details
+  content     String          @db.Text
+  type        ResponseType    @default(AI_GENERATED)
+  channel     ResponseChannel @default(EMAIL)
+  
+  // Sender Information
+  sentBy      String?         // userId or "SYSTEM"
+  sentAt      DateTime?
+  
+  // Status Tracking
+  status      ResponseStatus  @default(DRAFT)
+  
+  // Metadata for AI responses
+  metadata    Json?           // Store AI prompt, model used, tokens, etc.
+  
+  // Email/SMS specific fields
+  subject     String?         // For email responses
+  toAddress   String?         // Email or phone number where sent
+  
+  // Relationships
+  inquiry     Inquiry         @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  
+  // Timestamps
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  
+  // Indexes
+  @@index([inquiryId])
+  @@index([type])
+  @@index([channel])
+  @@index([status])
+  @@index([sentAt])
+  @@index([createdAt])
+}
+
+/// Scheduled follow-up communications for inquiries
+model FollowUp {
+  id            String          @id @default(cuid())
+  inquiryId     String
+  
+  // Schedule Details
+  scheduledFor  DateTime
+  type          FollowUpType    @default(EMAIL)
+  
+  // Content
+  subject       String?
+  content       String?         @db.Text
+  
+  // Status Tracking
+  status        FollowUpStatus  @default(PENDING)
+  completedAt   DateTime?
+  completedBy   String?         // userId who completed/sent the follow-up
+  
+  // Metadata
+  metadata      Json?           // Additional data (template used, AI-generated flag, etc.)
+  
+  // Relationships
+  inquiry       Inquiry         @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  
+  // Timestamps
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  
+  // Indexes
+  @@index([inquiryId])
+  @@index([scheduledFor])
+  @@index([status])
+  @@index([type])
+  @@index([createdAt])
 }
 
 /// Lead/Inquiry model for Family → Aide/Provider marketplace inquiries
