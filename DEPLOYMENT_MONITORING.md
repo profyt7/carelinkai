@@ -1,412 +1,239 @@
-# Caregivers Page Fix - Deployment Monitoring Guide
+# Deployment Monitoring Guide - December 19, 2025
 
-## Quick Status Check
+## Current Status: 🚀 Deployed to GitHub, Waiting for Render Build
 
-### Current Status: 🟡 DEPLOYMENT IN PROGRESS
-
-- ✅ **Code Fixed**: API endpoint returns correct data structure
-- ✅ **Build Verified**: Local build successful
-- ✅ **Committed**: Commit `2031d4c` pushed to GitHub
-- 🟡 **Deploying**: Render automatic deployment triggered
-- ⏳ **Pending**: Production verification
-
-## Real-Time Monitoring
-
-### 1. Render Dashboard
-**URL**: https://dashboard.render.com/web/srv-ctfkvt23esus73cfm7cg/deploys
-
-**What to Watch**:
-```
-┌─────────────────────────────────────────┐
-│ Render Deployment Phases                │
-├─────────────────────────────────────────┤
-│ 1. ⏳ Queued          (0-2 min)        │
-│ 2. 🔨 Building        (3-5 min)        │
-│ 3. 🚀 Deploying       (1-2 min)        │
-│ 4. ✅ Live            (Complete)        │
-└─────────────────────────────────────────┘
-```
-
-**Expected Timeline**:
-- **Start**: ~1-2 minutes after push (completed)
-- **Build**: ~3-5 minutes
-- **Deploy**: ~1-2 minutes
-- **Total**: ~5-7 minutes from push
-
-### 2. GitHub Actions (if configured)
-**URL**: https://github.com/profyt7/carelinkai/actions
-
-Check for:
-- Green checkmark on commit `2031d4c`
-- No failed CI/CD workflows
-
-### 3. Live Site Health Check
-**URL**: https://carelinkai.onrender.com/operator/caregivers
-
-**Before Fix** (Error State):
-```
-❌ "Something went wrong"
-❌ "An unexpected error occurred. Please try again."
-```
-
-**After Fix** (Success State):
-```
-✅ Page loads completely
-✅ Shows caregiver list OR empty state
-✅ No error messages
-```
-
-## Step-by-Step Verification
-
-### Phase 1: Deployment Check (First 5-7 minutes)
-
-#### Minute 1-2: Push Confirmed ✅
-```bash
-✅ Git push successful
-✅ Commit: 2031d4c
-✅ Branch: main
-```
-
-#### Minute 2-5: Build Phase
-Watch Render dashboard for:
-```
-🔨 Installing dependencies...
-✅ Dependencies installed
-
-🔨 Building Next.js app...
-✅ Build complete
-
-🔨 Generating static pages...
-✅ Pages generated
-```
-
-**Key Build Logs to Watch For**:
-```log
-✓ Compiled successfully
-✓ Collecting page data
-✓ Generating static pages (141/141)
-✓ Finalizing page optimization
-```
-
-#### Minute 5-7: Deploy Phase
-```
-🚀 Starting deployment...
-✅ Container started
-
-🚀 Running health checks...
-✅ Health checks passed
-
-🚀 Switching traffic...
-✅ New version live!
-```
-
-### Phase 2: API Endpoint Verification
-
-#### Test 1: Direct API Call
-```bash
-# Wait 7 minutes after push, then test:
-curl -X GET "https://carelinkai.onrender.com/api/operator/caregivers" \
-  -H "Cookie: your-session-cookie-here" \
-  -v
-```
-
-**Expected Response Headers**:
-```
-HTTP/2 200 OK
-content-type: application/json
-```
-
-**Expected Response Body Structure**:
-```json
-{
-  "caregivers": [
-    {
-      "id": "string",
-      "user": {
-        "firstName": "string",
-        "lastName": "string",
-        "email": "string",
-        "phoneNumber": "string|null"
-      },
-      "photoUrl": "string|null",
-      "specializations": ["array"],
-      "employmentType": "string",
-      "employmentStatus": "string",
-      "certifications": [
-        {
-          "id": "string",
-          "expiryDate": "string|null"
-        }
-      ]
-    }
-  ]
-}
-```
-
-**Wrong Response** (Old Bug):
-```json
-{
-  "caregivers": [
-    {
-      "employmentId": "...",
-      "caregiverId": "...",
-      "name": "...",
-      "email": "...",
-      // Missing user object, certifications, etc.
-    }
-  ]
-}
-```
-
-#### Test 2: With Query Parameters
-```bash
-# Test filtering
-curl "https://carelinkai.onrender.com/api/operator/caregivers?status=ACTIVE" \
-  -H "Cookie: your-session-cookie"
-
-# Should return only ACTIVE caregivers
-```
-
-### Phase 3: UI Verification
-
-#### Browser Test 1: Page Load
-1. Open: https://carelinkai.onrender.com/operator/caregivers
-2. Login as Operator or Admin
-3. **Expected**: Page loads without error
-4. **Not Expected**: "Something went wrong" error
-
-#### Browser Test 2: Console Check
-1. Open DevTools (F12)
-2. Go to Console tab
-3. **Expected**: No errors
-4. **Not Expected**: `TypeError: Cannot read property 'firstName' of undefined`
-
-#### Browser Test 3: Network Tab
-1. Open DevTools → Network tab
-2. Refresh page
-3. Find request: `/api/operator/caregivers`
-4. Click on it → Preview tab
-5. **Verify Structure**:
-   ```
-   caregivers: Array
-     [0]:
-       ├─ id: "..."
-       ├─ user: Object
-       │  ├─ firstName: "..."
-       │  ├─ lastName: "..."
-       │  ├─ email: "..."
-       │  └─ phoneNumber: "..."
-       ├─ employmentType: "..."
-       ├─ employmentStatus: "..."
-       └─ certifications: Array
-   ```
-
-#### Browser Test 4: Functionality
-- ✅ Search works (type in search box)
-- ✅ Filters work (click "Filters" button)
-- ✅ Status filter works
-- ✅ Type filter works
-- ✅ Caregiver cards render
-- ✅ Click on card → goes to detail page
-
-### Phase 4: Error Scenarios
-
-#### Test Empty State
-**When**: No caregivers exist
-**Expected**:
-```
-┌───────────────────────────────────┐
-│         👥                        │
-│   No caregivers yet               │
-│   Add caregivers to manage...    │
-│   [Add Caregiver] button          │
-└───────────────────────────────────┘
-```
-
-#### Test Filtered Empty State
-**When**: No matches for search/filter
-**Expected**:
-```
-"No caregivers match your search criteria."
-[Clear filters] button
-```
-
-#### Test Permission Denied
-**When**: Logged in as Family or Caregiver role
-**Expected**: Redirected or permission error
-
-## Monitoring Commands
-
-### Check Deployment Status
-```bash
-# Check if site is responding
-curl -I https://carelinkai.onrender.com/operator/caregivers
-
-# Expected: HTTP/2 200 OK (after login redirect)
-```
-
-### Check Build Logs
-```bash
-# In Render dashboard:
-1. Click on service "carelinkai"
-2. Click "Logs" tab
-3. Filter by "Deploy"
-4. Look for latest deployment
-```
-
-### Watch for Errors
-```bash
-# In Render dashboard Logs:
-# Search for:
-- "List operator caregivers failed"
-- "error"
-- "TypeError"
-- "undefined"
-```
-
-## Success Checklist
-
-### Deployment Phase ✅
-- [ ] GitHub push successful (commit 2031d4c)
-- [ ] Render deployment triggered
-- [ ] Build phase completed without errors
-- [ ] Deploy phase completed
-- [ ] Health checks passing
-- [ ] New version live
-
-### API Phase ✅
-- [ ] API endpoint responds with 200 OK
-- [ ] Response has correct structure
-- [ ] `caregivers` array present
-- [ ] Each caregiver has `user` object
-- [ ] Each caregiver has `certifications` array
-- [ ] Filtering by status works
-- [ ] Filtering by type works
-
-### UI Phase ✅
-- [ ] Page loads without "Something went wrong"
-- [ ] No console errors
-- [ ] Caregiver cards render correctly
-- [ ] Search functionality works
-- [ ] Filter functionality works
-- [ ] Empty state displays correctly
-- [ ] Detail page navigation works
-
-## Troubleshooting Guide
-
-### Issue: Deployment Stuck
-**Symptoms**: Deployment in "Queued" or "Building" for >10 minutes
-
-**Actions**:
-1. Check Render status page: https://status.render.com
-2. Check build logs for specific errors
-3. If stuck >15 minutes, cancel and retry:
-   ```bash
-   # In Render dashboard:
-   Click "Cancel Deploy" → "Deploy Latest Commit"
-   ```
-
-### Issue: Build Fails
-**Symptoms**: Red X on deployment, "Build Failed" status
-
-**Actions**:
-1. Check build logs for error
-2. Verify `package.json` dependencies
-3. Try local build:
-   ```bash
-   cd /home/ubuntu/carelinkai-project
-   npm run build
-   ```
-4. If local build fails, fix and push again
-
-### Issue: Deploy Succeeds but Page Still Errors
-**Symptoms**: Deployment shows success, but page still crashes
-
-**Actions**:
-1. **Hard refresh**: Ctrl+Shift+R (clears cache)
-2. **Clear browser cache**: DevTools → Application → Clear Storage
-3. **Check API response**:
-   ```bash
-   curl https://carelinkai.onrender.com/api/operator/caregivers \
-     -H "Cookie: ..."
-   ```
-4. **Verify code deployed**:
-   - Check file modification date in Render logs
-   - Verify commit hash in deployment
-
-### Issue: API Returns Wrong Structure
-**Symptoms**: API responds but data structure is old format
-
-**Actions**:
-1. Verify deployment actually completed
-2. Check commit on production:
-   - Render logs should show commit hash `2031d4c`
-3. Restart service:
-   ```bash
-   # In Render dashboard:
-   Click "Manual Deploy" → "Clear build cache & deploy"
-   ```
-
-### Issue: 403 Forbidden
-**Symptoms**: API returns "Forbidden" error
-
-**Actions**:
-1. Verify logged in as Operator or Admin
-2. Check session cookie is valid
-3. Try logging out and back in
-
-## Current Progress Tracker
-
-```
-┌────────────────────────────────────────────────────┐
-│ Caregivers Page Fix - Progress                     │
-├────────────────────────────────────────────────────┤
-│ [✅] 1. Identify root cause                        │
-│ [✅] 2. Develop fix                                │
-│ [✅] 3. Test locally                               │
-│ [✅] 4. Build verification                         │
-│ [✅] 5. Commit changes                             │
-│ [✅] 6. Push to GitHub                             │
-│ [🟡] 7. Render deployment          ← IN PROGRESS │
-│ [⏳] 8. API verification           ← PENDING      │
-│ [⏳] 9. UI verification            ← PENDING      │
-│ [⏳] 10. Production testing        ← PENDING      │
-└────────────────────────────────────────────────────┘
-```
-
-## Expected Timeline
-
-```
-T+0min:  ✅ Push to GitHub (COMPLETED)
-T+2min:  🟡 Render detects push (IN PROGRESS)
-T+3min:  🔨 Build starts
-T+7min:  ✅ Build completes
-T+8min:  🚀 Deploy starts
-T+10min: ✅ Deploy completes (EXPECTED)
-T+11min: ✅ Verification complete (EXPECTED)
-```
-
-## Next Actions
-
-### Immediate (Next 10 minutes)
-1. Monitor Render dashboard for deployment progress
-2. Watch for build completion
-3. Check for any build errors
-
-### After Deployment (T+10 minutes)
-1. Test caregivers page loads
-2. Verify API endpoint returns correct data
-3. Test search and filters
-4. Create test caregiver if needed
-
-### Post-Verification
-1. Update status documents
-2. Mark issue as resolved
-3. Monitor for any user-reported issues
+**Commit:** `45ee63f` - "fix: Handle missing OPENAI_API_KEY gracefully during build"
 
 ---
 
-**Last Updated**: December 9, 2025, T+0 minutes
-**Status**: 🟡 Deployment in progress
-**ETA**: 10 minutes
-**Next Check**: T+10 minutes (verify deployment)
+## What Was Fixed
+
+### ✅ 1. OpenAI Build Failure
+- **Issue:** Build failing with "Missing credentials" error for OpenAI API
+- **Fix:** Added dummy key pattern (like Stripe) to allow build without API key
+- **File:** `src/lib/ai/inquiry-response-generator.ts`
+
+### ⏳ 2. Failed Migration (Pending Resolution)
+- **Issue:** Migration `20251218162945_update_homes_to_active` marked as failed on Render database
+- **Fix:** Will resolve via Render shell after build succeeds
+- **Script:** `scripts/resolve-homes-migration.sh`
+
+---
+
+## Monitoring Render Build
+
+### Step 1: Watch Build Progress
+
+1. Go to: https://dashboard.render.com
+2. Navigate to your service (carelinkai)
+3. Click "Events" or "Logs" tab
+
+### Step 2: Expected Build Output
+
+**✅ What You SHOULD See:**
+
+```
+✓ Collecting page data
+✓ Build completed
+==> Your service is live 🎉
+```
+
+**✅ Expected Warnings (These are OK):**
+
+```
+WARNING: STRIPE_SECRET_KEY is missing in production build...
+WARNING: SENDGRID_API_KEY is not defined...
+WARNING: OPENAI_API_KEY is missing in production build...
+```
+
+**❌ What You Should NOT See:**
+
+```
+Error: Failed to collect page data for /api/inquiries/[id]/generate-response
+error: exit status 1
+```
+
+---
+
+## Step-by-Step Post-Build Actions
+
+### When Build Completes Successfully:
+
+#### Action 1: Resolve the Failed Migration
+
+1. **Open Render Shell:**
+   - Dashboard → Your Service → "Shell" tab
+   
+2. **Run Resolution Command:**
+   ```bash
+   npx prisma migrate resolve --rolled-back 20251218162945_update_homes_to_active
+   ```
+   
+3. **Apply Migration:**
+   ```bash
+   npx prisma migrate deploy
+   ```
+   
+4. **Verify:**
+   ```bash
+   npx prisma migrate status
+   ```
+   
+   **Expected output:**
+   ```
+   No pending migrations to apply.
+   ```
+
+#### Action 2: Restart Service (if needed)
+
+If the service doesn't automatically restart after migration:
+- Dashboard → Your Service → "Manual Deploy" → "Clear build cache & deploy"
+
+---
+
+## Verification Steps
+
+### 1. Check Application Health
+
+**Test Homepage:**
+```bash
+curl https://carelinkai.onrender.com
+```
+Should return 200 OK
+
+**Test API Health:**
+```bash
+curl https://carelinkai.onrender.com/api/health
+```
+Should return JSON with health status
+
+**Test Pipeline Dashboard:**
+- Open in browser: https://carelinkai.onrender.com/operator/inquiries/pipeline
+- Should load without errors (may redirect to login)
+
+### 2. Check Build Logs
+
+Look for:
+- ✅ "Build completed"
+- ✅ "Your service is live"
+- ✅ No error messages
+- ✅ Expected warnings only
+
+### 3. Check Service Logs
+
+- Dashboard → Logs tab
+- Look for:
+  - ✅ "Ready in XXXms" (Next.js started)
+  - ✅ No runtime errors
+  - ✅ No connection errors
+
+---
+
+## Troubleshooting
+
+### If Build Still Fails:
+
+**Check the error message:**
+
+1. **"Failed to collect page data"** → OpenAI fix didn't work
+   - Verify commit `45ee63f` is deployed
+   - Check if file changes were applied correctly
+
+2. **"migrate found failed migrations"** → Expected at this stage
+   - This will be resolved after build via Render shell
+   - Build should still complete despite this warning
+
+3. **"exit code: 1"** → Unknown build error
+   - Check full build logs
+   - Look for TypeScript errors
+   - Check for syntax errors
+
+### If Migration Resolution Fails:
+
+**Alternative method via Database Console:**
+
+```sql
+-- Connect to your Render PostgreSQL database
+-- (Connection string from Render dashboard)
+
+-- Check migration status
+SELECT * FROM _prisma_migrations 
+WHERE migration_name = '20251218162945_update_homes_to_active';
+
+-- If it shows as failed, update it:
+UPDATE _prisma_migrations
+SET rolled_back_at = NOW(),
+    finished_at = NULL
+WHERE migration_name = '20251218162945_update_homes_to_active';
+
+-- Then re-run via Prisma
+-- (In Render shell)
+npx prisma migrate deploy
+```
+
+---
+
+## Timeline Estimates
+
+- **Build Time:** 5-10 minutes
+- **Migration Resolution:** 1-2 minutes
+- **Service Restart:** 1-2 minutes
+- **Total:** ~10-15 minutes
+
+---
+
+## Next Steps After Successful Deployment
+
+### Phase 5: Comprehensive Testing
+
+Once deployment is confirmed working:
+
+1. ✅ Verify all pages load
+2. ✅ Test Pipeline Dashboard UI
+3. ✅ Test Kanban drag-and-drop
+4. ✅ Test inquiry modals
+5. ✅ Test filters and search
+6. ✅ Check mobile responsiveness
+7. ✅ Verify role-based access
+8. ✅ Test API endpoints
+9. ✅ Check analytics accuracy
+10. ✅ Document any issues found
+
+**Testing Framework Ready:**
+- Location: `tests/phase-5/`
+- Documents:
+  - `TEST_PLAN.md`
+  - `MANUAL_TESTING_CHECKLIST.md`
+  - `FINAL_TEST_REPORT.md`
+
+---
+
+## Status Checkpoints
+
+### ✅ Completed
+- [x] OpenAI fix implemented
+- [x] Code committed (45ee63f)
+- [x] Pushed to GitHub
+- [x] Render auto-deploy triggered
+
+### ⏳ In Progress
+- [ ] Render build completing
+- [ ] Monitoring build logs
+
+### ⏱️ Pending
+- [ ] Migration resolution via Render shell
+- [ ] Service verification
+- [ ] Phase 5 testing
+
+---
+
+## Contacts
+
+**GitHub Repository:** https://github.com/profyt7/carelinkai  
+**Render Dashboard:** https://dashboard.render.com  
+**Live Application:** https://carelinkai.onrender.com
+
+---
+
+**Last Updated:** December 19, 2025 at $(date)  
+**Status:** Monitoring deployment...

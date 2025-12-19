@@ -1,530 +1,330 @@
-# Migration Fix Guide: Phase 2 Assessments & Incidents Fields
+# Migration Fix Guide
+**Issue:** Failed migration `20251218162945_update_homes_to_active` blocking deployments  
+**Error:** `invalid input value for enum "HomeStatus": ""`  
+**Date:** December 19, 2025
 
-## Issue Summary
+---
 
-**Failed Migrations**: 
-1. `20251208170953_add_assessments_incidents_fields` (original)
-2. `20251208170953_add_assessments_incidents_fields.failed_backup` (backup attempt)
+## 🔍 Problem Analysis
 
-**Database**: PostgreSQL (`carelinkai_db`) on Render  
-**Error Code**: P3009 - Migration failed in the target database  
-**Root Cause**: BOTH migrations are recorded as "failed" in the `_prisma_migrations` table from previous deployment attempts
+### Root Cause
+The migration attempts to update `AssistedLivingHome.status` to 'ACTIVE', but:
+1. Some records have **empty string `""`** (not NULL) as status
+2. PostgreSQL enum types do NOT accept empty strings
+3. Migration SQL only handles `DRAFT` and `NULL`, missing empty strings
+4. Migration failed and is now marked as FAILED in `_prisma_migrations` table
+5. Prisma refuses to apply new migrations until this is resolved
 
-## The `_prisma_migrations` Table Issue
-
-**Critical Understanding**: Even though we removed the `.failed_backup` folder from the codebase, the **database still has a record** of both migrations in the `_prisma_migrations` table:
-
+### Current Migration SQL
 ```sql
--- Example of what's in the database:
-SELECT migration_name, finished_at, rolled_back_at, applied_steps_count 
-FROM _prisma_migrations 
-WHERE migration_name LIKE '20251208170953%';
-
--- Results show:
--- 1. 20251208170953_add_assessments_incidents_fields (status: failed)
--- 2. 20251208170953_add_assessments_incidents_fields.failed_backup (status: failed)
+UPDATE "AssistedLivingHome"
+SET status = 'ACTIVE'
+WHERE status = 'DRAFT' OR status IS NULL;
 ```
 
-**Why This Happens**: When Prisma attempts to apply a migration, it immediately creates a record in `_prisma_migrations` with a timestamp. If the migration fails mid-execution, that record remains marked as "failed". Removing the migration folder from the codebase does NOT remove this database record.
-
-**Why Both Must Be Resolved**: Prisma checks the `_prisma_migrations` table before applying new migrations. If ANY migration is in a "failed" state, it blocks all subsequent migrations. Therefore, we must mark BOTH failed records as "rolled back" before deploying the new safe migration.
-
-## Impact
-
-- New migrations cannot be applied until BOTH failed migrations are resolved
-- Phase 2 features (Assessments and Incidents tabs) may have incomplete database schema
-- Production deployments are blocked
-- The error message references the `.failed_backup` migration even though the folder no longer exists in the codebase
-
-## Solution Overview
-
-This fix includes:
-1. **Migration Resolution Script**: Marks **BOTH** failed migrations as "rolled back"
-2. **New Idempotent Migration**: Safely adds all required fields (can run multiple times)
-3. **Comprehensive Testing**: Verification steps to ensure success
-
-**Key Changes in This Update**:
-- ✅ `scripts/resolve-failed-migration.sh` now resolves both migrations
-- ✅ `package.json` `migrate:resolve-manual` script chains both resolution commands
-- ✅ Documentation explains the database table issue clearly
+### Why It Fails
+- Database has records with `status = ''` (empty string)
+- Empty string is NOT a valid enum value
+- Migration needs to handle empty strings too
 
 ---
 
-## Step-by-Step Fix Process
+## 🛠️ SOLUTION OPTIONS
 
-### Prerequisites
+### OPTION A: Fix via Render Shell (Recommended)
+**Best for:** Quick fix without code changes
 
-- Access to Render dashboard or production database
-- Environment variable `DATABASE_URL` configured
-- Node.js and npm installed
-- Prisma CLI available (`npx prisma`)
+**Steps:**
 
----
+1. **Open Render Shell:**
+   - Go to Render Dashboard
+   - Select your service (carelinkai)
+   - Click "Shell" tab at the top
+   - Wait for shell to connect
 
-### Option 1: Automated Fix (Recommended)
-
-This uses the provided script to automate the resolution process.
-
-#### 1. Set Database URL
-
-If running locally, ensure your `DATABASE_URL` points to the production database:
-
-```bash
-export DATABASE_URL="postgresql://carelinkai_db_user:password@dpg-xxxx.oregon-postgres.render.com/carelinkai_db"
-```
-
-**⚠️ WARNING**: Be extremely careful when setting this. You are working with the production database!
-
-#### 2. Run the Resolution Script
-
-```bash
-npm run migrate:resolve
-```
-
-This script will:
-- Check if `DATABASE_URL` is set
-- Show current migration status
-- Ask for confirmation
-- Mark **BOTH** failed migrations as "rolled back"
-- Show updated migration status
-
-**Expected Output:**
-```
-✅ DATABASE_URL is set
-
-📋 Current migration status:
-----------------------------
-[Shows migration status including both failed migrations]
-
-⚠️  This script will mark BOTH failed migrations as rolled back:
-   Migration 1: 20251208170953_add_assessments_incidents_fields
-   Migration 2: 20251208170953_add_assessments_incidents_fields.failed_backup
-
-ℹ️  Note: The .failed_backup migration was recorded in the database
-   during a previous deployment attempt, even though the folder
-   was removed from the codebase.
-
-Do you want to proceed? (yes/no): yes
-
-🔄 Resolving failed migrations...
-
-1️⃣  Resolving: 20251208170953_add_assessments_incidents_fields
-2️⃣  Resolving: 20251208170953_add_assessments_incidents_fields.failed_backup
-
-✅ Both migrations marked as rolled back successfully
-```
-
-#### 3. Deploy the New Migration
-
-```bash
-npm run migrate:deploy
-```
-
-This will apply the new idempotent migration: `20251208181611_add_assessments_incidents_fields_safe`
-
-**Expected Output:**
-```
-Applying migration `20251208181611_add_assessments_incidents_fields_safe`
-The following migration(s) have been applied:
-
-migrations/
-  └─ 20251208181611_add_assessments_incidents_fields_safe/
-    └─ migration.sql
-
-✅ All migrations have been applied successfully
-```
-
-#### 4. Verify the Fix
-
-Check migration status:
-```bash
-npx prisma migrate status
-```
-
-**Expected Output:**
-```
-Database schema is up to date!
-```
-
----
-
-### Option 2: Manual Fix
-
-If you prefer manual control or the automated script fails:
-
-#### 1. Connect to Production Database
-
-Using Render Shell or your preferred SQL client.
-
-#### 2. Check Migration Status
-
-```bash
-npx prisma migrate status
-```
-
-You should see the failed migration listed.
-
-#### 3. Mark Both Migrations as Rolled Back
-
-```bash
-npm run migrate:resolve-manual
-```
-
-Or directly (both commands required):
-```bash
-npx prisma migrate resolve --rolled-back "20251208170953_add_assessments_incidents_fields"
-npx prisma migrate resolve --rolled-back "20251208170953_add_assessments_incidents_fields.failed_backup"
-```
-
-#### 4. Deploy New Migration
-
-```bash
-npm run migrate:deploy
-```
-
-#### 5. Verify Success
-
-```bash
-npx prisma migrate status
-```
-
----
-
-### Option 3: Render Dashboard (No SSH Access)
-
-If you're deploying via Render and don't have direct database access:
-
-#### 1. Add Resolution Command to Render Deploy
-
-In your Render service settings, update the **Build Command**:
-
-```bash
-npm install && npm run migrate:resolve-manual && npm run migrate:deploy && npm run build
-```
-
-**⚠️ Note**: This approach runs the resolution on every deploy. After the first successful deployment, you should remove `npm run migrate:resolve-manual` from the build command.
-
-#### 2. Trigger a Manual Deploy
-
-Go to your Render dashboard and trigger a manual deploy.
-
-#### 3. Monitor Logs
-
-Watch the deployment logs to ensure:
-- Migration resolution succeeds
-- New migration applies successfully
-- Build completes without errors
-
-#### 4. Verify Application
-
-- Check that the application starts successfully
-- Test the Assessments and Incidents tabs in the Operator Residents module
-- Verify data persistence
-
----
-
-## Verification Steps
-
-After applying the fix, verify everything is working:
-
-### 1. Check Database Schema
-
-```bash
-npx prisma db pull
-```
-
-This should match your `schema.prisma` file.
-
-### 2. Check Migration History
-
-```bash
-npx prisma migrate status
-```
-
-Expected output:
-```
-Database schema is up to date!
-```
-
-### 3. Test Phase 2 Features
-
-1. Log in as an Operator
-2. Navigate to a Resident detail page
-3. Go to the "Assessments" tab
-4. Create a new assessment
-5. Go to the "Incidents" tab
-6. Create a new incident
-7. Verify data saves correctly
-
-### 4. Check Application Logs
-
-Monitor for any database errors or migration-related issues:
-```bash
-# On Render
-# Go to your service → Logs
-```
-
----
-
-## Technical Details
-
-### What the New Migration Does
-
-The new idempotent migration (`20251208181611_add_assessments_incidents_fields_safe`) safely adds the following fields:
-
-#### AssessmentResult Table
-- `status` (TEXT) - Assessment status (COMPLETED, IN_PROGRESS, etc.)
-- `conductedBy` (TEXT) - Staff member who conducted the assessment
-- `conductedAt` (TIMESTAMP) - When assessment was conducted
-- `notes` (TEXT) - Observations and notes
-- `recommendations` (TEXT) - Recommendations based on results
-
-#### ResidentIncident Table
-- `status` (TEXT) - Incident status (REPORTED, UNDER_REVIEW, RESOLVED, etc.)
-- `location` (TEXT) - Where incident occurred
-- `reportedBy` (TEXT) - Staff member who reported
-- `reportedAt` (TIMESTAMP) - When incident was reported
-- `witnessedBy` (TEXT) - Witnesses
-- `actionsTaken` (TEXT) - Immediate actions taken
-- `followUpRequired` (BOOLEAN) - Whether follow-up is needed
-- `resolutionNotes` (TEXT) - How incident was resolved
-- `resolvedAt` (TIMESTAMP) - When incident was resolved
-- `resolvedBy` (TEXT) - Staff member who resolved
-
-#### Indexes Created
-- `AssessmentResult`: conductedAt, type, status
-- `ResidentIncident`: type, severity, status, reportedAt
-
-### Why It's Idempotent
-
-The migration uses PostgreSQL's `DO` blocks with `IF NOT EXISTS` checks:
-
-```sql
-DO $$ 
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                   WHERE table_name='AssessmentResult' AND column_name='status') THEN
-        ALTER TABLE "AssessmentResult" ADD COLUMN "status" TEXT;
-    END IF;
-END $$;
-```
-
-This means:
-- ✅ Safe to run multiple times
-- ✅ Won't fail if columns already exist
-- ✅ Won't duplicate existing data
-- ✅ Handles partial application gracefully
-
----
-
-## Troubleshooting
-
-### Issue: "Migration already applied"
-
-**Cause**: The migration was already applied successfully  
-**Solution**: Check `npx prisma migrate status`. If schema is up to date, no action needed.
-
-### Issue: "Cannot connect to database"
-
-**Cause**: `DATABASE_URL` is incorrect or database is unreachable  
-**Solution**: 
-1. Verify `DATABASE_URL` environment variable
-2. Check database connection from Render dashboard
-3. Ensure database is not paused or suspended
-
-### Issue: "Migration fails with column already exists"
-
-**Cause**: Partial migration was applied  
-**Solution**: The new idempotent migration should handle this. If it still fails:
-1. Check which columns exist: 
-   ```sql
-   SELECT column_name FROM information_schema.columns 
-   WHERE table_name IN ('AssessmentResult', 'ResidentIncident');
+2. **Check migration status:**
+   ```bash
+   npx prisma migrate status
    ```
-2. Manually add missing columns or contact support
+   
+   **Expected output:**
+   ```
+   ❌ Following migration have failed:
+   20251218162945_update_homes_to_active
+   ```
 
-### Issue: "Permission denied"
+3. **Mark failed migration as rolled back:**
+   ```bash
+   npx prisma migrate resolve --rolled-back 20251218162945_update_homes_to_active
+   ```
+   
+   **Expected output:**
+   ```
+   ✅ Migration marked as rolled back
+   ```
 
-**Cause**: Database user lacks ALTER TABLE permissions  
-**Solution**: Ensure the database user has full permissions on the schema
+4. **Fix the data manually (THE KEY STEP):**
+   ```bash
+   # Connect to database
+   psql $DATABASE_URL -c "UPDATE \"AssistedLivingHome\" SET status = 'ACTIVE' WHERE status = '' OR status IS NULL OR status = 'DRAFT';"
+   ```
+   
+   **Expected output:**
+   ```
+   UPDATE 3
+   ```
+   (or however many records were updated)
 
-### Issue: Script permission denied
+5. **Deploy all pending migrations:**
+   ```bash
+   npx prisma migrate deploy
+   ```
+   
+   **Expected output:**
+   ```
+   ✅ Migrations applied successfully
+   ```
 
-**Cause**: Script file is not executable  
-**Solution**: 
-```bash
-chmod +x scripts/resolve-failed-migration.sh
-```
+6. **Verify migration status:**
+   ```bash
+   npx prisma migrate status
+   ```
+   
+   **Expected output:**
+   ```
+   ✅ Database schema is up to date!
+   ```
+
+7. **Restart the service:**
+   - Go back to Render Dashboard
+   - Click "Manual Deploy" → "Deploy latest commit"
+   - OR just push new code to trigger auto-deploy
 
 ---
 
-## Rollback Plan
+### OPTION B: Create New Idempotent Migration
+**Best for:** Clean solution with proper migration history
 
-If the fix causes issues, you can rollback:
+**Steps:**
 
-### 1. Identify Last Good Migration
+1. **Mark failed migration as rolled back** (same as Option A, step 3)
 
+2. **Create new migration locally:**
+   ```bash
+   cd /home/ubuntu/carelinkai-project
+   
+   # Create migration directory
+   mkdir -p prisma/migrations/20251219000000_fix_home_status
+   
+   # Create migration SQL
+   cat > prisma/migrations/20251219000000_fix_home_status/migration.sql << 'EOF'
+   -- Fix AssistedLivingHome status to handle empty strings
+   -- This migration is idempotent and safe to run multiple times
+   
+   UPDATE "AssistedLivingHome"
+   SET status = 'ACTIVE'
+   WHERE status = 'DRAFT' 
+      OR status IS NULL 
+      OR status = ''
+      OR status NOT IN ('ACTIVE', 'INACTIVE', 'PENDING', 'ARCHIVED');
+   EOF
+   ```
+
+3. **Commit and push:**
+   ```bash
+   git add prisma/migrations/20251219000000_fix_home_status/
+   git commit -m "fix: Add idempotent migration to fix home status enum issue"
+   git push origin main
+   ```
+
+4. **Deploy via Render:**
+   - Render will auto-deploy
+   - Pre-deploy hook will run:
+     1. Mark old migration as rolled back
+     2. Apply new migration
+     3. Success!
+
+---
+
+### OPTION C: Delete Failed Migration
+**Best for:** Nuclear option if nothing else works
+
+**⚠️ WARNING:** Only use if Options A and B fail!
+
+**Steps:**
+
+1. **Connect to production database** (via Render Shell or local psql):
+   ```bash
+   psql $DATABASE_URL
+   ```
+
+2. **Delete the failed migration record:**
+   ```sql
+   DELETE FROM "_prisma_migrations" 
+   WHERE migration_name = '20251218162945_update_homes_to_active';
+   ```
+
+3. **Fix the data:**
+   ```sql
+   UPDATE "AssistedLivingHome" 
+   SET status = 'ACTIVE' 
+   WHERE status = '' OR status IS NULL OR status = 'DRAFT';
+   ```
+
+4. **Exit psql:**
+   ```sql
+   \q
+   ```
+
+5. **Deploy migrations:**
+   ```bash
+   npx prisma migrate deploy
+   ```
+
+---
+
+## ✅ VERIFICATION CHECKLIST
+
+After applying the fix, verify:
+
+### 1. Migration Status
 ```bash
 npx prisma migrate status
 ```
+**Expected:** ✅ Database schema is up to date!
 
-### 2. Manually Rollback (if needed)
-
-Since Prisma doesn't have automatic rollback, you would need to:
-
-1. Drop the new columns manually:
-```sql
--- AssessmentResult
-ALTER TABLE "AssessmentResult" DROP COLUMN IF EXISTS "status";
-ALTER TABLE "AssessmentResult" DROP COLUMN IF EXISTS "conductedBy";
-ALTER TABLE "AssessmentResult" DROP COLUMN IF EXISTS "notes";
-ALTER TABLE "AssessmentResult" DROP COLUMN IF EXISTS "recommendations";
-
--- ResidentIncident
-ALTER TABLE "ResidentIncident" DROP COLUMN IF EXISTS "status";
-ALTER TABLE "ResidentIncident" DROP COLUMN IF EXISTS "location";
-ALTER TABLE "ResidentIncident" DROP COLUMN IF EXISTS "reportedBy";
-ALTER TABLE "ResidentIncident" DROP COLUMN IF EXISTS "reportedAt";
-ALTER TABLE "ResidentIncident" DROP COLUMN IF EXISTS "witnessedBy";
-ALTER TABLE "ResidentIncident" DROP COLUMN IF EXISTS "actionsTaken";
-ALTER TABLE "ResidentIncident" DROP COLUMN IF EXISTS "followUpRequired";
-ALTER TABLE "ResidentIncident" DROP COLUMN IF EXISTS "resolutionNotes";
-ALTER TABLE "ResidentIncident" DROP COLUMN IF EXISTS "resolvedAt";
-ALTER TABLE "ResidentIncident" DROP COLUMN IF EXISTS "resolvedBy";
-```
-
-2. Mark the new migration as rolled back:
+### 2. Data Status
 ```bash
-npx prisma migrate resolve --rolled-back "20251208181611_add_assessments_incidents_fields_safe"
+psql $DATABASE_URL -c "SELECT status, COUNT(*) FROM \"AssistedLivingHome\" GROUP BY status;"
 ```
+**Expected:**
+```
+ status | count 
+--------+-------
+ ACTIVE |     5
+```
+(No empty strings, no NULLs, no DRAFT)
 
-**⚠️ Note**: Only perform rollback if absolutely necessary and Phase 2 data is not critical.
+### 3. Deployment Works
+```bash
+# Trigger a new deployment
+git commit --allow-empty -m "test: Verify deployment works"
+git push origin main
+```
+**Expected:** ✅ Build succeeds, pre-deploy succeeds, deployment completes
+
+### 4. Service Health
+```bash
+curl https://carelinkai.onrender.com/api/health
+```
+**Expected:**
+```json
+{"ok":true,"db":"ok","uptimeSec":10,"durationMs":2,"env":"production"}
+```
 
 ---
 
-## Post-Fix Actions
+## 🐛 TROUBLESHOOTING
 
-After successfully applying the fix:
+### Issue: "Migration not found"
+**Cause:** Migration directory was deleted or renamed  
+**Solution:** 
+- Check `prisma/migrations/` directory
+- If migration is missing, use Option C (delete from database)
 
-1. ✅ **Remove resolution script from Render build command** (if added)
-2. ✅ **Update team** about the fix
-3. ✅ **Monitor application logs** for 24 hours
-4. ✅ **Test Phase 2 features** thoroughly
-5. ✅ **Document any additional issues** found
-
----
-
-## Prevention for Future Migrations
-
-To avoid similar issues in the future:
-
-### 1. Always Test Migrations Locally First
-
+### Issue: "Cannot mark as rolled back"
+**Cause:** Migration is not in FAILED state  
+**Solution:**
 ```bash
-# Test on local database
-npm run prisma:migrate
-```
-
-### 2. Use Staging Environment
-
-Apply migrations to staging before production:
-```bash
-# Set staging DATABASE_URL
-export DATABASE_URL="<staging-database-url>"
-npm run migrate:deploy
-```
-
-### 3. Make Migrations Idempotent
-
-Always use `IF NOT EXISTS` or `DO` blocks for schema changes that might be partially applied.
-
-### 4. Backup Before Major Migrations
-
-```bash
-# On Render, use their backup feature
-# Or manually backup:
-pg_dump $DATABASE_URL > backup_$(date +%Y%m%d_%H%M%S).sql
-```
-
-### 5. Monitor Deployment Logs
-
-Always watch logs during deployment to catch migration failures early.
-
----
-
-## Support
-
-If you encounter issues not covered in this guide:
-
-1. Check application logs on Render
-2. Review Prisma documentation: https://www.prisma.io/docs/guides/migrate
-3. Check the `_prisma_migrations` table directly for migration status
-4. Contact the development team with:
-   - Error messages
-   - Migration status output
-   - Database logs
-
----
-
-## Quick Reference
-
-### Common Commands
-
-```bash
-# Check migration status
+# Check current state
 npx prisma migrate status
 
-# Resolve failed migration (automated)
-npm run migrate:resolve
-
-# Resolve failed migration (manual)
-npm run migrate:resolve-manual
-
-# Deploy migrations
-npm run migrate:deploy
-
-# Generate Prisma Client
-npm run prisma:generate
-
-# View database in Prisma Studio
-npm run prisma:studio
+# If needed, manually update
+psql $DATABASE_URL -c "UPDATE \"_prisma_migrations\" SET rolled_back_at = NOW() WHERE migration_name = '20251218162945_update_homes_to_active';"
 ```
 
-### Files Modified
+### Issue: "Still seeing enum errors"
+**Cause:** Not all empty strings were fixed  
+**Solution:**
+```bash
+# Find remaining empty strings
+psql $DATABASE_URL -c "SELECT id, name, status FROM \"AssistedLivingHome\" WHERE status = '';"
 
-- `prisma/migrations/20251208181611_add_assessments_incidents_fields_safe/migration.sql` - New idempotent migration
-- `scripts/resolve-failed-migration.sh` - Automated resolution script
-- `package.json` - Added `migrate:resolve` and `migrate:resolve-manual` scripts
-- `MIGRATION_FIX_GUIDE.md` - This documentation
+# Fix them
+psql $DATABASE_URL -c "UPDATE \"AssistedLivingHome\" SET status = 'ACTIVE' WHERE status = '';"
+```
 
-### Files Renamed/Moved
+### Issue: "New migrations still blocked"
+**Cause:** `_prisma_migrations` table still shows failed  
+**Solution:**
+```bash
+# Check migration table
+psql $DATABASE_URL -c "SELECT migration_name, finished_at, rolled_back_at, logs FROM \"_prisma_migrations\" WHERE migration_name LIKE '%20251218162945%';"
 
-- ~~`prisma/migrations/20251208170953_add_assessments_incidents_fields/` → `20251208170953_add_assessments_incidents_fields.failed_backup/`~~ (Initial rename - still in migrations directory)
-- **UPDATE (Dec 8, 2025)**: `prisma/migrations/20251208170953_add_assessments_incidents_fields.failed_backup/` → `backup/failed_migrations/20251208170953_add_assessments_incidents_fields.failed_backup/`
-
-### Why the Backup Was Moved
-
-**Issue Discovered**: Even with the `.failed_backup` suffix, Prisma was still attempting to apply the migration because it remained in the `prisma/migrations/` directory. Prisma treats ANY folder in the migrations directory as a valid migration, regardless of naming.
-
-**Solution**: The failed migration backup was moved out of the migrations directory entirely to `/backup/failed_migrations/` to ensure Prisma does not attempt to apply it during deployments.
-
-**Commit**: `f231e94` - "fix: Remove failed migration backup from migrations directory"
-
----
-
-## Summary
-
-✅ **Problem**: TWO failed migrations blocking deployments (original + .failed_backup)  
-✅ **Root Cause**: Database `_prisma_migrations` table has records for both migrations  
-✅ **Solution**: Resolve BOTH failed migrations + apply new idempotent migration  
-✅ **Safety**: New migration can run multiple times safely  
-✅ **Verification**: Multiple verification steps provided  
-✅ **Support**: Comprehensive troubleshooting included  
-
-**Estimated Time**: 5-10 minutes for resolution and deployment
+# If still failed, delete it
+psql $DATABASE_URL -c "DELETE FROM \"_prisma_migrations\" WHERE migration_name = '20251218162945_update_homes_to_active';"
+```
 
 ---
 
-**Last Updated**: December 8, 2025  
-**Version**: 1.1 (Updated to resolve both failed migrations)  
-**Status**: Ready for Production Deployment
+## 📋 STEP-BY-STEP EXECUTION (Recommended Path)
+
+### Phase 1: Immediate Fix (5 minutes)
+1. Open Render Shell
+2. Run: `npx prisma migrate resolve --rolled-back 20251218162945_update_homes_to_active`
+3. Run: `psql $DATABASE_URL -c "UPDATE \"AssistedLivingHome\" SET status = 'ACTIVE' WHERE status = '' OR status IS NULL OR status = 'DRAFT';"`
+4. Run: `npx prisma migrate deploy`
+5. Verify: `npx prisma migrate status`
+
+### Phase 2: Fix OpenAI Issue (5 minutes)
+1. Add `OPENAI_API_KEY` to Render environment variables
+2. OR modify code to make OpenAI lazy-loaded (see OPENAI_FIX_GUIDE.md)
+3. Commit and push changes
+4. Wait for auto-deploy
+
+### Phase 3: Test Deployment (10 minutes)
+1. Wait for deployment to complete
+2. Run: `curl https://carelinkai.onrender.com/api/health`
+3. Access: https://carelinkai.onrender.com/operator/inquiries/pipeline
+4. Verify everything works
+
+### Phase 4: Comprehensive Testing (30 minutes)
+1. Follow TESTING_GUIDE.md
+2. Document findings
+3. Mark Feature #4 as complete (or identify remaining issues)
+
+**Total time:** ~50 minutes from start to finish
+
+---
+
+## 📊 SUCCESS CRITERIA
+
+The migration fix is successful when:
+
+- [ ] `npx prisma migrate status` shows ✅ Database schema is up to date
+- [ ] No records in `AssistedLivingHome` have empty string or NULL status
+- [ ] New deployments complete successfully
+- [ ] Pre-deploy hook passes without errors
+- [ ] Service is running and accessible
+- [ ] Pipeline Dashboard loads without errors
+
+---
+
+## 🚀 AFTER THE FIX
+
+Once migration is fixed:
+
+1. **Update deployment documentation** with lessons learned
+2. **Add validation** to prevent empty strings in future:
+   ```prisma
+   model AssistedLivingHome {
+     status HomeStatus @default(ACTIVE)  // Add default!
+   }
+   ```
+3. **Add database constraints** to enforce valid statuses
+4. **Test locally** before deploying to production
+5. **Create rollback plan** for future migrations
+
+---
+
+**Ready to fix? Let's do this! 💪**
