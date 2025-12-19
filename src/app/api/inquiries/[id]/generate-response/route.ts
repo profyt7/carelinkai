@@ -5,6 +5,10 @@ import { inquiryResponseGenerator } from '@/lib/ai/inquiry-response-generator';
 import { inquiryEmailService } from '@/lib/email/inquiry-email-service';
 import { prisma } from '@/lib/prisma';
 
+// Tell Next.js this route is fully dynamic - prevents build-time execution
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
