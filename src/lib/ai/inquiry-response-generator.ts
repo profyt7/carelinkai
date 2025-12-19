@@ -288,5 +288,20 @@ Prioritize immediate next steps and quick solutions.`,
   }
 }
 
-// Export singleton instance
-export const inquiryResponseGenerator = new InquiryResponseGenerator();
+// Export singleton instance using lazy initialization
+let _inquiryResponseGeneratorInstance: InquiryResponseGenerator | null = null;
+
+export function getInquiryResponseGenerator(): InquiryResponseGenerator {
+  if (!_inquiryResponseGeneratorInstance) {
+    _inquiryResponseGeneratorInstance = new InquiryResponseGenerator();
+  }
+  return _inquiryResponseGeneratorInstance;
+}
+
+// For backward compatibility
+export const inquiryResponseGenerator = {
+  generateResponse: (context: InquiryContext, options?: ResponseOptions) => 
+    getInquiryResponseGenerator().generateResponse(context, options),
+  generateResponseForInquiry: (inquiryId: string, options?: ResponseOptions) => 
+    getInquiryResponseGenerator().generateResponseForInquiry(inquiryId, options),
+};
