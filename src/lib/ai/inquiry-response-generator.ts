@@ -2,17 +2,34 @@ import OpenAI from 'openai';
 import { prisma } from '@/lib/prisma';
 import { InquiryUrgency } from '@prisma/client';
 
+// Dummy key for build-time initialization when no real key is provided
+const DUMMY_OPENAI_KEY = 'sk-dummy-key-for-build-only';
+
+// Check if we're in production
+const isProduction = process.env.NODE_ENV === 'production';
+
 // Lazy-load OpenAI client to avoid build-time initialization
 let openaiClient: OpenAI | null = null;
 
 function getOpenAIClient(): OpenAI {
   if (!openaiClient) {
-    if (!process.env.OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY environment variable is not set');
+    const apiKey = process.env.OPENAI_API_KEY;
+    
+    if (!apiKey) {
+      console.warn(
+        '\x1b[33m%s\x1b[0m', // Yellow text
+        (isProduction
+          ? 'WARNING: OPENAI_API_KEY is missing in production build. Initializing OpenAI with a dummy key so the build can proceed. Runtime API calls will fail unless the key is provided at runtime.'
+          : 'WARNING: OPENAI_API_KEY is missing. Using dummy key for development. Real OpenAI API calls will fail until a valid key is provided.')
+      );
+      openaiClient = new OpenAI({
+        apiKey: DUMMY_OPENAI_KEY,
+      });
+    } else {
+      openaiClient = new OpenAI({
+        apiKey: apiKey,
+      });
     }
-    openaiClient = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
   }
   return openaiClient;
 }
@@ -39,6 +56,14 @@ export class InquiryResponseGenerator {
     options: ResponseOptions = { type: 'INITIAL' }
   ): Promise<string> {
     const { inquiry, home, matchedHomes } = context;
+    
+    // Runtime check for OpenAI API key
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error(
+        'OPENAI_API_KEY environment variable is not set. AI response generation requires a valid OpenAI API key. ' +
+        'Please configure this in your environment variables.'
+      );
+    }
     
     // Determine tone based on urgency if not specified
     const tone = options.tone || this.getToneFromUrgency(inquiry.urgency);
