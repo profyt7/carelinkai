@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { z } from 'zod';
+import { afterInquiryUpdated } from '@/lib/hooks/inquiry-hooks';
 
 // Validation schema for updating inquiries
 const updateInquirySchema = z.object({
@@ -263,6 +264,18 @@ export async function PATCH(
     
     const data = validationResult.data;
     
+    // Get existing inquiry for comparison
+    const oldInquiry = await prisma.inquiry.findUnique({
+      where: { id: params.id },
+    });
+    
+    if (!oldInquiry) {
+      return NextResponse.json(
+        { success: false, error: 'Inquiry not found' },
+        { status: 404 }
+      );
+    }
+    
     // Prepare update data
     const updateData: any = {};
     
@@ -318,6 +331,11 @@ export async function PATCH(
           },
         },
       },
+    });
+    
+    // Trigger follow-up scheduling hook (non-blocking)
+    afterInquiryUpdated(params.id, oldInquiry, inquiry).catch(err => {
+      console.error('Failed to update follow-ups:', err);
     });
     
     return NextResponse.json({ success: true, inquiry });

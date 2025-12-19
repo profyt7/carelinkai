@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { z } from 'zod';
+import { afterInquiryCreated } from '@/lib/hooks/inquiry-hooks';
 
 // Validation schema for creating inquiries
 const createInquirySchema = z.object({
@@ -104,6 +105,11 @@ export async function POST(request: NextRequest) {
           },
         },
       },
+    });
+    
+    // Trigger follow-up scheduling hook (non-blocking)
+    afterInquiryCreated(inquiry.id).catch(err => {
+      console.error('Failed to schedule follow-ups:', err);
     });
     
     return NextResponse.json(
