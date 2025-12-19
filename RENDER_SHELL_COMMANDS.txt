@@ -1,0 +1,71 @@
+# ============================================
+# RENDER SHELL COMMANDS - Database Fix
+# ============================================
+# Copy and paste these commands into Render Shell
+# Access: Dashboard → Your Service → Shell
+# ============================================
+
+# Step 1: Navigate to project directory
+cd /opt/render/project/src
+
+# Step 2: Execute the database fix
+npx prisma db execute --stdin <<'EOF'
+UPDATE "AssistedLivingHome"
+SET status = 'ACTIVE'
+WHERE 
+  (slug = 'home_1' OR name LIKE '%Sunshine Care%')
+  AND status != 'ACTIVE';
+EOF
+
+# Step 3: Verify the update
+npx prisma db execute --stdin <<'EOF'
+SELECT id, slug, name, status, "updatedAt"
+FROM "AssistedLivingHome"
+WHERE slug = 'home_1' OR name LIKE '%Sunshine Care%'
+ORDER BY "updatedAt" DESC;
+EOF
+
+# Step 4 (Optional): Check all homes
+npx prisma db execute --stdin <<'EOF'
+SELECT slug, name, status, COUNT(*) as count
+FROM "AssistedLivingHome"
+GROUP BY slug, name, status
+ORDER BY status;
+EOF
+
+# ============================================
+# Expected Output:
+# ============================================
+# Step 2: "UPDATE 1" (or "UPDATE 0" if already ACTIVE)
+# Step 3: Should show status = 'ACTIVE'
+# ============================================
+
+# ============================================
+# Alternative: Run TypeScript Script
+# ============================================
+# If the above doesn't work, try:
+
+cd /opt/render/project/src
+node scripts/fix-home-status.js
+
+# Or if you need to compile first:
+npx tsc scripts/fix-home-status.ts
+node scripts/fix-home-status.js
+
+# ============================================
+# Troubleshooting
+# ============================================
+
+# Check if DATABASE_URL is set:
+echo $DATABASE_URL | head -c 50
+
+# Test database connection:
+npx prisma db pull --force
+
+# Check Prisma schema:
+cat prisma/schema.prisma | grep -A 20 "model AssistedLivingHome"
+
+# List all homes:
+npx prisma db execute --stdin <<'EOF'
+SELECT * FROM "AssistedLivingHome" LIMIT 5;
+EOF

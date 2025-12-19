@@ -1,0 +1,102 @@
+🧪 Starting Comprehensive Test Suite for Feature #4
+
+================================================================================
+
+📦 PHASE 1: Backend Foundation Tests
+
+❌ Database Connection (51ms)
+   Failed to connect: PrismaClientInitializationError: Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+
+❌ Inquiry Creation (40ms)
+   Failed to create inquiry: PrismaClientInitializationError: 
+Invalid `prisma.family.findFirst()` invocation in
+/home/ubuntu/carelinkai-project/tests/feature-4/test-inquiry-system.ts:76:46
+
+  73 const start = Date.now();
+  74 try {
+  75   // Get a test family and home for the inquiry
+→ 76   const testFamily = await prisma.family.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+
+⏭️ Inquiry Retrieval
+   No test inquiry available
+
+⏭️ Inquiry Update
+   No test inquiry available
+
+⏭️ Response Creation
+   No test inquiry available
+
+⏭️ Follow-up Creation
+   No test inquiry available
+
+
+🤖 PHASE 2: AI Response Generation Tests
+
+✅ AI Service Import (269ms)
+   AI response generator imported successfully
+
+✅ Email Service Import (56ms)
+   Email service imported successfully
+
+✅ Response Templates (8ms)
+   Found 5 response templates
+
+
+⏰ PHASE 3: Automated Follow-up Tests
+
+✅ Follow-up Rules Engine (8ms)
+   Rules engine loaded with 7 default rules
+
+✅ Follow-up Scheduler (8ms)
+   Follow-up scheduler imported successfully
+
+✅ SMS Service Import (7ms)
+   SMS service imported successfully
+
+✅ Follow-up Processor (7ms)
+   Follow-up processor imported successfully
+
+
+🧹 Cleaning up test data...
+
+
+================================================================================
+📊 TEST SUMMARY REPORT
+================================================================================
+
+Total Tests: 13
+✅ Passed: 7
+❌ Failed: 2
+⏭️  Skipped: 4
+
+Success Rate: 77.8%
+
+❌ FAILED TESTS:
+
+  • Database Connection
+    Failed to connect: PrismaClientInitializationError: Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+
+  • Inquiry Creation
+    Failed to create inquiry: PrismaClientInitializationError: 
+Invalid `prisma.family.findFirst()` invocation in
+/home/ubuntu/carelinkai-project/tests/feature-4/test-inquiry-system.ts:76:46
+
+  73 const start = Date.now();
+  74 try {
+  75   // Get a test family and home for the inquiry
+→ 76   const testFamily = await prisma.family.findFirst(
+Can't reach database server at `localhost:5432`
+
+Please make sure your database server is running at `localhost:5432`.
+
+================================================================================
+
+⚠️  Some tests failed. Please review and fix issues before proceeding.
+
