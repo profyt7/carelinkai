@@ -8,20 +8,24 @@ interface EmailOptions {
 }
 
 export class InquiryEmailService {
-  private transporter: nodemailer.Transporter;
+  private transporter: nodemailer.Transporter | null = null;
   
-  constructor() {
-    // Configure email transporter
-    // Using environment variables for email configuration
-    this.transporter = nodemailer.createTransporter({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
+  /**
+   * Lazy-load email transporter to avoid build-time initialization
+   */
+  private getTransporter(): nodemailer.Transporter {
+    if (!this.transporter) {
+      this.transporter = nodemailer.createTransporter({
+        host: process.env.SMTP_HOST || 'smtp.gmail.com',
+        port: parseInt(process.env.SMTP_PORT || '587'),
+        secure: false,
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS,
+        },
+      });
+    }
+    return this.transporter;
   }
   
   /**
@@ -37,7 +41,8 @@ export class InquiryEmailService {
       const html = this.formatResponseEmail(contactName, content, inquiryId);
       const text = this.stripHtml(content);
       
-      await this.transporter.sendMail({
+      const transporter = this.getTransporter();
+      await transporter.sendMail({
         from: `"CareLinkAI" <${process.env.SMTP_FROM || 'noreply@carelinkai.com'}>`,
         to,
         subject: 'Thank you for your inquiry - CareLinkAI',

@@ -2,9 +2,20 @@ import OpenAI from 'openai';
 import { prisma } from '@/lib/prisma';
 import { InquiryUrgency } from '@prisma/client';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Lazy-load OpenAI client to avoid build-time initialization
+let openaiClient: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI {
+  if (!openaiClient) {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY environment variable is not set');
+    }
+    openaiClient = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+  return openaiClient;
+}
 
 interface InquiryContext {
   inquiry: any;
@@ -36,6 +47,7 @@ export class InquiryResponseGenerator {
     const prompt = this.buildPrompt(inquiry, home, matchedHomes, options, tone);
     
     // Generate response using OpenAI
+    const openai = getOpenAIClient();
     const response = await openai.chat.completions.create({
       model: 'gpt-4',
       messages: [

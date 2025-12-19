@@ -2,34 +2,50 @@
 // Note: Twilio is optional - service will gracefully handle missing configuration
 
 let twilioClient: any = null;
+let twilioInitialized = false;
 
-// Try to import Twilio (optional dependency)
-try {
-  const twilio = require('twilio');
-  const accountSid = process.env.TWILIO_ACCOUNT_SID;
-  const authToken = process.env.TWILIO_AUTH_TOKEN;
-  
-  if (accountSid && authToken) {
-    twilioClient = twilio(accountSid, authToken);
+/**
+ * Lazy-load Twilio client to avoid build-time initialization
+ */
+function getTwilioClient(): any {
+  if (twilioInitialized) {
+    return twilioClient;
   }
-} catch (error) {
-  console.warn('Twilio not configured or not installed');
+  
+  twilioInitialized = true;
+  
+  try {
+    const twilio = require('twilio');
+    const accountSid = process.env.TWILIO_ACCOUNT_SID;
+    const authToken = process.env.TWILIO_AUTH_TOKEN;
+    
+    if (accountSid && authToken) {
+      twilioClient = twilio(accountSid, authToken);
+    } else {
+      console.warn('Twilio credentials not configured');
+    }
+  } catch (error) {
+    console.warn('Twilio not configured or not installed:', error);
+  }
+  
+  return twilioClient;
 }
 
-const fromNumber = process.env.TWILIO_PHONE_NUMBER;
-
 export class SMSService {
-  private client: any;
-  
-  constructor() {
-    this.client = twilioClient;
-  }
-  
   /**
    * Check if SMS service is configured
    */
   isConfigured(): boolean {
-    return this.client !== null && fromNumber !== undefined;
+    const client = getTwilioClient();
+    const fromNumber = process.env.TWILIO_PHONE_NUMBER;
+    return client !== null && fromNumber !== undefined;
+  }
+  
+  /**
+   * Get Twilio client (lazy-loaded)
+   */
+  private getClient(): any {
+    return getTwilioClient();
   }
   
   /**
@@ -42,10 +58,13 @@ export class SMSService {
     }
     
     try {
+      const client = this.getClient();
+      const fromNumber = process.env.TWILIO_PHONE_NUMBER;
+      
       // Format phone number
       const formattedTo = this.formatPhoneNumber(to);
       
-      const result = await this.client.messages.create({
+      const result = await client.messages.create({
         body: message,
         from: fromNumber,
         to: formattedTo,
