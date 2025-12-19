@@ -51,7 +51,16 @@ function buildQueryString(filters?: InquiryFilters): string {
  */
 export function useInquiries(filters?: InquiryFilters) {
   const queryString = buildQueryString(filters);
-  const { data, error, isLoading, mutate: revalidate } = useSWR<Inquiry[]>(
+  const { data, error, isLoading, mutate: revalidate } = useSWR<{
+    success: boolean;
+    inquiries: Inquiry[];
+    pagination: {
+      page: number;
+      limit: number;
+      totalCount: number;
+      totalPages: number;
+    };
+  }>(
     `/api/inquiries${queryString}`,
     fetcher,
     {
@@ -61,7 +70,8 @@ export function useInquiries(filters?: InquiryFilters) {
   );
 
   return {
-    inquiries: data,
+    inquiries: data?.inquiries,
+    pagination: data?.pagination,
     isLoading,
     isError: error,
     error,
@@ -73,13 +83,16 @@ export function useInquiries(filters?: InquiryFilters) {
  * Hook to fetch a single inquiry by ID
  */
 export function useInquiry(id: string | null) {
-  const { data, error, isLoading, mutate: revalidate } = useSWR<Inquiry>(
+  const { data, error, isLoading, mutate: revalidate } = useSWR<{
+    success: boolean;
+    inquiry: Inquiry;
+  }>(
     id ? `/api/inquiries/${id}` : null,
     fetcher
   );
 
   return {
-    inquiry: data,
+    inquiry: data?.inquiry,
     isLoading,
     isError: error,
     error,
@@ -91,13 +104,16 @@ export function useInquiry(id: string | null) {
  * Hook to fetch responses for an inquiry
  */
 export function useInquiryResponses(inquiryId: string | null) {
-  const { data, error, isLoading, mutate: revalidate } = useSWR<InquiryResponse[]>(
+  const { data, error, isLoading, mutate: revalidate } = useSWR<{
+    success: boolean;
+    responses: InquiryResponse[];
+  }>(
     inquiryId ? `/api/inquiries/${inquiryId}/responses` : null,
     fetcher
   );
 
   return {
-    responses: data,
+    responses: data?.responses,
     isLoading,
     isError: error,
     error,
@@ -109,13 +125,16 @@ export function useInquiryResponses(inquiryId: string | null) {
  * Hook to fetch follow-ups for an inquiry
  */
 export function useInquiryFollowUps(inquiryId: string | null) {
-  const { data, error, isLoading, mutate: revalidate } = useSWR<FollowUp[]>(
+  const { data, error, isLoading, mutate: revalidate } = useSWR<{
+    success: boolean;
+    followUps: FollowUp[];
+  }>(
     inquiryId ? `/api/inquiries/${inquiryId}/follow-ups` : null,
     fetcher
   );
 
   return {
-    followUps: data,
+    followUps: data?.followUps,
     isLoading,
     isError: error,
     error,
