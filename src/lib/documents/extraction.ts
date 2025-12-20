@@ -1,6 +1,7 @@
+// Document extraction utilities with dynamic imports
+// Uses dynamic imports to avoid canvas/DOMMatrix issues during build
+
 import { prisma } from '@/lib/prisma';
-import { extractTextFromImage, isImage } from './ocr';
-import { extractTextFromPDF, isPDF, downloadFile } from './pdf-extractor';
 
 export interface ExtractionResult {
   success: boolean;
@@ -11,13 +12,14 @@ export interface ExtractionResult {
 
 /**
  * Extract text from a document (PDF or image)
+ * Uses dynamic imports to avoid build-time canvas issues
  */
 export async function extractDocumentText(
   documentId: string
 ): Promise<ExtractionResult> {
   try {
     // Get document from database
-    const document = await prisma.document.findUnique({
+    const document = await prisma.document.findUnique(
       where: { id: documentId },
     });
 
@@ -38,6 +40,10 @@ export async function extractDocumentText(
 
     let extractedText = '';
     let confidence = 100;
+
+    // Dynamic import of extraction utilities
+    const { extractTextFromImage, isImage } = await import('./ocr');
+    const { extractTextFromPDF, isPDF, downloadFile } = await import('./pdf-extractor');
 
     // Extract based on file type
     if (isPDF(document.mimeType)) {

@@ -1,4 +1,5 @@
-import Tesseract from 'tesseract.js';
+// OCR utilities with dynamic imports
+// Uses dynamic imports to avoid build issues
 
 export interface OCRResult {
   text: string;
@@ -8,6 +9,7 @@ export interface OCRResult {
 
 /**
  * Extract text from an image using Tesseract OCR
+ * Uses dynamic import to avoid potential build issues
  */
 export async function extractTextFromImage(
   imageUrl: string,
@@ -16,8 +18,12 @@ export async function extractTextFromImage(
   try {
     console.log('Starting OCR for image:', imageUrl);
 
-    const result = await Tesseract.recognize(imageUrl, language, {
-      logger: (m) => {
+    // Dynamic import to avoid issues during build
+    const Tesseract = await import('tesseract.js');
+    const tesseract = Tesseract.default || Tesseract;
+
+    const result = await tesseract.recognize(imageUrl, language, {
+      logger: (m: any) => {
         if (m.status === 'recognizing text') {
           console.log(`OCR Progress: ${Math.round(m.progress * 100)}%`);
         }

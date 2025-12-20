@@ -1,4 +1,5 @@
-import pdf from 'pdf-parse';
+// PDF extraction utilities with proper error handling
+// Uses dynamic imports to avoid canvas issues during build
 
 export interface PDFExtractionResult {
   text: string;
@@ -8,6 +9,7 @@ export interface PDFExtractionResult {
 
 /**
  * Extract text from a PDF file
+ * Uses dynamic import to avoid canvas/DOMMatrix issues during build
  */
 export async function extractTextFromPDF(
   pdfBuffer: Buffer
@@ -15,7 +17,11 @@ export async function extractTextFromPDF(
   try {
     console.log('Starting PDF text extraction...');
 
-    const data = await pdf(pdfBuffer);
+    // Dynamic import to avoid issues during build
+    const pdf = await import('pdf-parse');
+    const pdfParse = pdf.default || pdf;
+    
+    const data = await pdfParse(pdfBuffer);
 
     const text = data.text.trim();
     const numPages = data.numpages;
@@ -33,6 +39,12 @@ export async function extractTextFromPDF(
     };
   } catch (error) {
     console.error('PDF extraction error:', error);
+    
+    // Graceful fallback if pdf-parse fails
+    if (error instanceof Error && error.message.includes('canvas')) {
+      throw new Error('PDF extraction unavailable: Canvas dependency error');
+    }
+    
     throw new Error('Failed to extract text from PDF');
   }
 }

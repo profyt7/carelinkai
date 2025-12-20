@@ -1,11 +1,11 @@
 
 // Force dynamic rendering for this API route
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { extractDocumentText } from '@/lib/documents/extraction';
 
 export async function POST(
   request: NextRequest,
@@ -23,6 +23,9 @@ export async function POST(
     }
 
     const documentId = params.id;
+
+    // Dynamic import of extraction module to avoid canvas issues during build
+    const { extractDocumentText } = await import('@/lib/documents/extraction');
 
     // Extract text from document
     const result = await extractDocumentText(documentId);

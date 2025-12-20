@@ -36,6 +36,31 @@ const nextConfig = {
       ...config.resolve.alias,
       '@': require('path').resolve(__dirname, 'src'),
     };
+
+    // Externalize canvas and related packages to avoid build issues
+    // Canvas requires browser APIs (DOMMatrix, ImageData, Path2D) that don't exist in Node.js
+    if (isServer) {
+      config.externals = config.externals || [];
+      
+      // Add canvas and pdf-parse to externals for server-side builds
+      if (Array.isArray(config.externals)) {
+        config.externals.push({
+          canvas: 'commonjs canvas',
+          'pdf-parse': 'commonjs pdf-parse',
+        });
+      } else {
+        // If externals is a function, wrap it
+        const originalExternals = config.externals;
+        config.externals = [
+          originalExternals,
+          {
+            canvas: 'commonjs canvas',
+            'pdf-parse': 'commonjs pdf-parse',
+          },
+        ];
+      }
+    }
+
     return config;
   },
   images: {
