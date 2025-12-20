@@ -37,10 +37,31 @@ echo "✅ npm install completed successfully"
 echo ""
 
 echo "========================================="
+echo "STEP 1.5: VERIFY PRISMA INSTALLATION"
+echo "========================================="
+echo "Checking if Prisma is installed..."
+
+# Check if prisma binary exists in node_modules
+if [ -f "node_modules/.bin/prisma" ]; then
+  echo "✅ Prisma binary found at node_modules/.bin/prisma"
+  ls -lh node_modules/.bin/prisma
+else
+  echo "❌ Prisma binary not found in node_modules/.bin/"
+  echo "Installing Prisma explicitly..."
+  npm install prisma @prisma/client --legacy-peer-deps
+fi
+
+echo ""
+echo "Prisma packages installed:"
+npm list prisma @prisma/client --depth=0 || echo "⚠️  npm list command failed (non-fatal)"
+echo ""
+
+echo "========================================="
 echo "STEP 2: GENERATE PRISMA CLIENT"
 echo "========================================="
 echo "Prisma version:"
-npx prisma --version
+# Use direct path first, fallback to npx
+node_modules/.bin/prisma --version || npx prisma --version
 
 echo ""
 echo "Prisma environment:"
@@ -49,11 +70,11 @@ echo "DATABASE_URL=${DATABASE_URL:0:30}... (truncated for security)"
 
 echo ""
 echo "Validating Prisma schema..."
-npx prisma validate
+node_modules/.bin/prisma validate || npx prisma validate
 
 echo ""
 echo "Generating Prisma client with binary targets..."
-npx prisma generate --schema=./prisma/schema.prisma
+node_modules/.bin/prisma generate --schema=./prisma/schema.prisma || npx prisma generate --schema=./prisma/schema.prisma
 
 EXIT_CODE=$?
 if [ $EXIT_CODE -ne 0 ]; then
