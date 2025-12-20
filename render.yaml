@@ -1,13 +1,14 @@
 services:
   - type: web
     name: carelinkai
-    env: node
+    runtime: node
     region: oregon
     plan: starter
-    buildCommand: npm install && npx prisma generate && npm run build
+    buildCommand: bash render-build-verbose.sh
     startCommand: npm start
     envVars:
       - key: NODE_VERSION
-        value: 20.11.0
+        value: "20.11.0"
       - key: NODE_ENV
         value: production
+    healthCheckPath: /
