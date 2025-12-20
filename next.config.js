@@ -30,6 +30,14 @@ const nextConfig = {
     // Ensure native assets from pdfkit (AFM data files) are resolved at runtime instead of bundled
     serverComponentsExternalPackages: ['pdfkit'],
   },
+  webpack: (config, { isServer }) => {
+    // Add path alias resolution for @ imports
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': require('path').resolve(__dirname, 'src'),
+    };
+    return config;
+  },
   images: {
     // Disable optimization in development to avoid 400 errors from the _next/image
     // endpoint when serving local files from /public/uploads.
