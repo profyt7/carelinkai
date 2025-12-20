@@ -2,44 +2,21 @@
 
 import { useState } from 'react';
 import { useInquiryResponses } from '@/hooks/useInquiries';
-import { Mail, MessageSquare, Phone, Send, Plus, Loader2 } from 'lucide-react';
-import { format } from 'date-fns';
+import { MessageSquare, Plus, Loader2 } from 'lucide-react';
 import { AIResponseGenerator } from './AIResponseGenerator';
+import { ResponseItem } from './ResponseItem';
 
 interface CommunicationHistoryProps {
   inquiryId: string;
 }
 
 export function CommunicationHistory({ inquiryId }: CommunicationHistoryProps) {
-  const { responses, isLoading, error } = useInquiryResponses(inquiryId);
+  const { responses, isLoading, error, mutate } = useInquiryResponses(inquiryId);
   const [showAIGenerator, setShowAIGenerator] = useState(false);
 
-  const getChannelIcon = (channel: string) => {
-    switch (channel) {
-      case 'EMAIL':
-        return <Mail className="w-5 h-5" />;
-      case 'SMS':
-        return <MessageSquare className="w-5 h-5" />;
-      case 'PHONE':
-        return <Phone className="w-5 h-5" />;
-      default:
-        return <Send className="w-5 h-5" />;
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'SENT':
-      case 'DELIVERED':
-        return 'bg-green-100 text-green-800';
-      case 'DRAFT':
-        return 'bg-gray-100 text-gray-800';
-      case 'FAILED':
-      case 'BOUNCED':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
+  const handleResponseUpdate = () => {
+    // Refresh the responses list after any update
+    mutate();
   };
 
   if (isLoading) {
@@ -85,44 +62,11 @@ export function CommunicationHistory({ inquiryId }: CommunicationHistoryProps) {
           </div>
         ) : (
           responses.map((response) => (
-            <div key={response.id} className="bg-white border border-gray-200 rounded-lg p-4">
-              {/* Header */}
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div className="text-blue-600">
-                    {getChannelIcon(response.channel)}
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-gray-900">
-                      {response.subject || `${response.channel} ${response.type}`}
-                    </h4>
-                    <p className="text-sm text-gray-600">
-                      {response.sentAt
-                        ? format(new Date(response.sentAt), 'MMM d, yyyy h:mm a')
-                        : 'Not sent yet'}
-                    </p>
-                  </div>
-                </div>
-
-                <span className={`text-xs px-2 py-1 rounded-full font-medium ${getStatusColor(response.status)}`}>
-                  {response.status}
-                </span>
-              </div>
-
-              {/* Content */}
-              <div className="bg-gray-50 rounded-lg p-3">
-                <p className="text-sm text-gray-900 whitespace-pre-wrap">
-                  {response.content}
-                </p>
-              </div>
-
-              {/* Metadata */}
-              <div className="mt-3 flex items-center gap-4 text-xs text-gray-500">
-                <span>Type: {response.type}</span>
-                <span>Channel: {response.channel}</span>
-                {response.toAddress && <span>To: {response.toAddress}</span>}
-              </div>
-            </div>
+            <ResponseItem
+              key={response.id}
+              response={response}
+              onUpdate={handleResponseUpdate}
+            />
           ))
         )}
       </div>
@@ -131,7 +75,10 @@ export function CommunicationHistory({ inquiryId }: CommunicationHistoryProps) {
       {showAIGenerator && (
         <AIResponseGenerator
           inquiryId={inquiryId}
-          onClose={() => setShowAIGenerator(false)}
+          onClose={() => {
+            setShowAIGenerator(false);
+            handleResponseUpdate();
+          }}
         />
       )}
     </div>
