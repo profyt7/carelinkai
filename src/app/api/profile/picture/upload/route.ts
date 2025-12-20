@@ -5,6 +5,9 @@
  * Generates multiple sizes: thumbnail (200x200), medium (400x400), large (800x800).
  */
 
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';

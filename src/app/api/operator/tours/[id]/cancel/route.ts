@@ -3,6 +3,9 @@
  * Cancel a tour
  */
 
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";

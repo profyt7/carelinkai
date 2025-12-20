@@ -1,3 +1,7 @@
+
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth-db-simple";

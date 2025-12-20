@@ -3,6 +3,9 @@
  * POST /api/operator/inquiries/[id]/convert
  */
 
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { requirePermission, requireAuth, handleAuthError } from '@/lib/auth-utils';
 import { PERMISSIONS } from '@/lib/permissions';

@@ -16,6 +16,9 @@
  * - Audit logging for preference changes
  */
 
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient, UserRole, AuditAction } from "@prisma/client";
 import { getServerSession } from "next-auth/next";

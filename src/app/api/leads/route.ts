@@ -3,6 +3,9 @@
  * POST /api/leads - Create a new lead/inquiry from Family to Aide or Provider
  */
 
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";

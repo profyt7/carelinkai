@@ -1,3 +1,7 @@
+
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from 'next/server';
 
 // Accept any method and body, return 200 OK. Dev/e2e only.

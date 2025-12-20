@@ -1,3 +1,7 @@
+
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+
 ﻿import { NextRequest, NextResponse } from 'next/server';
 import { requireOperatorOrAdmin } from '@/lib/rbac';
 import { PrismaClient, UserRole } from '@prisma/client';

@@ -10,6 +10,9 @@
  * - Initial status management
  */
 
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient, UserRole, UserStatus, AuditAction } from "@prisma/client";
 import { hash } from "bcryptjs";

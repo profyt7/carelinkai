@@ -1,3 +1,7 @@
+
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+
 ﻿import { NextRequest, NextResponse } from "next/server";
 import { requireAnyRole } from "@/lib/rbac";
 import type { UserRole } from "@prisma/client";

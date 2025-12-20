@@ -5,6 +5,9 @@
  * GET /api/admin/metrics - Retrieve all platform metrics
  */
 
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAnyRole } from '@/lib/rbac';
 import { prisma } from '@/lib/prisma';

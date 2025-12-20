@@ -8,6 +8,9 @@
  * The route uses the authOptions configuration from @/lib/auth
  */
 
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+
 import NextAuth from "next-auth";
 import type { NextRequest } from "next/server";
 import { rateLimit } from "@/lib/rate-limit";

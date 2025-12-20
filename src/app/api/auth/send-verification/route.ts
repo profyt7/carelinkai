@@ -1,3 +1,7 @@
+
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+
 export const runtime = 'nodejs';
 /**
  * Email Verification API Endpoint for CareLinkAI

@@ -3,6 +3,9 @@
  * GET /api/operator/inquiries/pipeline
  */
 
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { requirePermission, requireAuth, handleAuthError, getUserScope } from '@/lib/auth-utils';
 import { PERMISSIONS } from '@/lib/permissions';

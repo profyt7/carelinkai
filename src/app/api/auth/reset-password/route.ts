@@ -1,3 +1,7 @@
+
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+
 import { rateLimit } from '@/lib/rate-limit';
 /**
  * Reset Password API Endpoint for CareLinkAI

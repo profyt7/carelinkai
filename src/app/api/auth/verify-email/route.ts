@@ -11,6 +11,9 @@
  * Handles edge cases like expired tokens and already verified accounts.
  */
 
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient, AuditAction, UserStatus } from "@prisma/client";
 import { z } from "zod";

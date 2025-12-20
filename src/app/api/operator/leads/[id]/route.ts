@@ -19,6 +19,9 @@
  * - User (assigned operator)
  */
 
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient, LeadStatus, AuditAction } from "@prisma/client";
 import { requireAnyRole } from "@/lib/rbac";
