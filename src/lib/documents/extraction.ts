@@ -19,7 +19,7 @@ export async function extractDocumentText(
 ): Promise<ExtractionResult> {
   try {
     // Get document from database
-    const document = await prisma.document.findUnique(
+    const document = await prisma.document.findUnique({
       where: { id: documentId },
     });
 
