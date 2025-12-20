@@ -1,0 +1,6 @@
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "carelinkai_db", schema "public" at "dpg-d3isoajuibrs73d5fh7g-a.oregon-postgres.render.com"
+
+Migration 20251218162945_update_homes_to_active marked as rolled back.
+

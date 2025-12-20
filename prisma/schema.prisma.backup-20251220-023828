@@ -1,0 +1,2817 @@
+// This is the Prisma schema file for CareLinkAI
+// It defines the data model for the application with HIPAA compliance in mind
+
+generator client {
+  provider = "prisma-client-js"
+  // No preview features currently required
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== USER MODELS ====================
+
+enum UserRole {
+  FAMILY
+  OPERATOR
+  CAREGIVER
+  ADMIN
+  AFFILIATE
+  STAFF
+  PROVIDER
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  DEACTIVATED
+}
+
+// ==================== MARKETPLACE ENUMS ====================
+
+enum CategoryType {
+  SETTING
+  CARE_TYPE
+  SERVICE
+  SPECIALTY
+}
+
+enum MarketplaceListingStatus {
+  DRAFT
+  OPEN
+  HIRED
+  CLOSED
+}
+
+enum ApplicationStatus {
+  APPLIED
+  INVITED
+  INTERVIEWING
+  OFFERED
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+}
+
+enum BackgroundCheckStatus {
+  NOT_STARTED
+  PENDING
+  CLEAR
+  CONSIDER
+  EXPIRED
+  FAILED
+}
+
+// ==================== CAREGIVER MANAGEMENT ENUMS ====================
+
+enum CertificationType {
+  CNA
+  HHA
+  CPR
+  FIRST_AID
+  MEDICATION_ADMINISTRATION
+  DEMENTIA_CARE
+  ALZHEIMERS_CARE
+  HOSPICE_CARE
+  WOUND_CARE
+  IV_THERAPY
+  OTHER
+}
+
+enum CertificationStatus {
+  CURRENT
+  EXPIRING_SOON
+  EXPIRED
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  PER_DIEM
+  CONTRACT
+}
+
+enum EmploymentStatus {
+  ACTIVE
+  INACTIVE
+  ON_LEAVE
+  TERMINATED
+}
+
+enum CaregiverDocumentType {
+  CERTIFICATION
+  BACKGROUND_CHECK
+  TRAINING
+  CONTRACT
+  IDENTIFICATION
+  REFERENCE
+  OTHER
+}
+
+enum ResidentDocumentType {
+  MEDICAL_RECORD
+  CARE_PLAN
+  INSURANCE
+  ADVANCE_DIRECTIVE
+  MEDICATION_LIST
+  ASSESSMENT_REPORT
+  INCIDENT_REPORT
+  PHOTO_ID
+  EMERGENCY_CONTACT
+  OTHER
+}
+
+model User {
+  id              String     @id @default(cuid())
+  email           String     @unique
+  emailVerified   DateTime?
+  passwordHash    String? // Stored securely, never in plain text
+  firstName       String
+  lastName        String
+  phone           String?
+  role            UserRole
+  status          UserStatus @default(PENDING)
+  profileImageUrl Json? // Stores { thumbnail, medium, large }
+
+  // Two-factor authentication
+  twoFactorEnabled Boolean @default(false)
+  twoFactorSecret  String? @db.Text // Encrypted
+  backupCodes      Json? // Stores array of one-time backup codes
+
+  // Email verification
+  verificationToken       String? // Token sent in verification email
+  verificationTokenExpiry DateTime? // Token expiration timestamp
+
+  // Password reset
+  resetPasswordToken       String? // Token sent in password-reset email
+  resetPasswordTokenExpiry DateTime? // Token expiration timestamp
+
+  // User preferences
+  notificationPrefs Json? // Store notification preferences
+  preferences       Json? // General preferences (matches frontend expectations)
+  timezone          String @default("UTC")
+
+  // Relationships
+  family    Family?
+  operator  Operator?
+  caregiver Caregiver?
+  affiliate Affiliate?
+  provider  Provider?
+
+  // Common relationships
+  addresses                 Address[]
+  sessions                  Session[]
+  messages                  Message[]                @relation("MessageSender")
+  receivedMessages          Message[]                @relation("MessageReceiver")
+  notifications             Notification[]
+  payments                  Payment[]
+  auditLogs                 AuditLog[]               @relation("UserAuditLogs")
+  actionedAuditLogs         AuditLog[]               @relation("ActionedByUser")
+  // Calendar relationships
+  createdAppointments       Appointment[]            @relation
+  appointmentParticipations AppointmentParticipant[]
+  availabilitySlots         AvailabilitySlot[]
+  scheduledNotifications    ScheduledNotification[]
+
+  // Family collaboration relationships
+  familyMembers            FamilyMember[]
+  invitedFamilyMembers     FamilyMember[]       @relation("InvitedBy")
+  uploadedDocuments        FamilyDocument[]     @relation("DocumentUploader")
+  uploadedResidentDocuments ResidentDocument[]  @relation("ResidentDocumentUploader")
+  uploadedInquiryDocuments InquiryDocument[]   @relation("InquiryDocumentUploader")
+  documentsUploaded        Document[]           @relation("UploadedDocuments") // Feature #6: Smart Document Processing
+  authoredNotes            FamilyNote[]         @relation("NoteAuthor")
+  documentComments         DocumentComment[]    @relation("DocumentCommentAuthor")
+  noteComments             NoteComment[]        @relation("NoteCommentAuthor")
+  createdGalleries         SharedGallery[]      @relation("GalleryCreator")
+  uploadedPhotos           GalleryPhoto[]       @relation("PhotoUploader")
+  activities               ActivityFeedItem[]   @relation("ActivityActor")
+  createdResidentNotes     ResidentNote[]
+
+  // Marketplace relationships
+  marketplaceListings MarketplaceListing[] @relation("UserListings")
+  approvedTimesheets  Timesheet[]
+  assignedLeads       Lead[]               @relation("AssignedLeads")
+  convertedInquiries  Inquiry[]            @relation("InquiryConverter")
+  assignedInquiries   Inquiry[]            @relation("AssignedInquiries") // Feature #4: AI-Powered Inquiry Response System
+
+  // Reporting relationships
+  generatedReports   Report[]           @relation("ReportGenerator")
+  scheduledReports   ScheduledReport[]  @relation("ScheduledReportCreator")
+
+  // AI-powered matching engine
+  matchFeedback MatchFeedback[]
+
+  // Timestamps
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  lastLoginAt DateTime?
+
+  // Indexes
+  @@index([email])
+  @@index([role])
+  @@index([status])
+  @@index([verificationToken])
+  @@index([resetPasswordToken])
+  // Performance: accelerate marketplace search by first/last name
+  @@index([firstName])
+  @@index([lastName])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  expires      DateTime
+  sessionToken String   @unique
+  accessToken  String?  @unique
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  ipAddress    String?
+  userAgent    String?  @db.Text
+
+  // Relationships
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Indexes
+  @@index([userId])
+}
+
+// ==================== ROLE-SPECIFIC MODELS ====================
+
+model Family {
+  id               String  @id @default(cuid())
+  userId           String  @unique
+  emergencyContact String?
+  emergencyPhone   String?
+
+  // Primary contact and relationship info
+  primaryContactName      String?
+  phone                   String?
+  relationshipToRecipient String? // e.g., "Spouse", "Child", "Sibling", "Friend"
+
+  // Care context fields (snapshot for quick reference)
+  recipientAge     Int?
+  primaryDiagnosis String? @db.Text
+  mobilityLevel    String? // e.g., "Independent", "Needs Assistance", "Wheelchair"
+  careNotes        String? @db.Text
+
+  // Relationships
+  user                User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  residents           Resident[]
+  inquiries           Inquiry[]
+  bookings            Booking[]
+  wallet              FamilyWallet?
+  favorites           FavoriteHome[]
+  caregiverShortlists FavoriteCaregiver[]
+  providerShortlists  FavoriteProvider[]
+  leads               Lead[] // New: Family → Aide/Provider inquiries
+
+  // Family collaboration relationships
+  members              FamilyMember[]
+  documents            FamilyDocument[]
+  notes                FamilyNote[]
+  galleries            SharedGallery[]
+  activities           ActivityFeedItem[]
+  emergencyPreferences EmergencyPreference[]
+  matchRequests        MatchRequest[] // AI-powered matching engine
+  tourRequests         TourRequest[]  // AI-powered tour scheduling
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([userId])
+}
+
+model Operator {
+  id              String  @id @default(cuid())
+  userId          String  @unique
+  companyName     String
+  taxId           String? // Encrypted
+  businessLicense String?
+
+  // Relationships
+  user       User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  homes      AssistedLivingHome[]
+  caregivers CaregiverEmployment[]
+  tourRequests TourRequest[]
+
+  // Org-level settings / overrides
+  preferences Json?
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([userId])
+  @@index([companyName])
+}
+
+model Caregiver {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  bio             String?  @db.Text
+  yearsExperience Int?
+  hourlyRate      Decimal? @db.Decimal(10, 2)
+  availability    Json? // Store availability as JSON
+
+  // Enhanced profile fields
+  languages        String[]          @default([])
+  employmentType   EmploymentType?
+  employmentStatus EmploymentStatus  @default(ACTIVE)
+  hireDate         DateTime?
+  photoUrl         String?
+
+  // Relationships
+  user        User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credentials Credential[]
+  employments CaregiverEmployment[]
+  shifts      CaregiverShift[]
+  reviews     CaregiverReview[]
+  timesheets  Timesheet[]
+
+  // Phase 6: Caregiver Management relationships
+  certifications CaregiverCertification[]
+  assignments    CaregiverAssignment[]
+  documents      CaregiverDocument[]
+
+  // Compliance & marketplace fields
+  backgroundCheckStatus    BackgroundCheckStatus @default(NOT_STARTED)
+  backgroundCheckProvider  String?
+  backgroundCheckReportUrl String?
+  specialties              String[]
+  // New marketplace facets
+  settings                 String[]              @default([])
+  careTypes                String[]              @default([])
+  /// Whether the caregiver profile is visible in the public marketplace search
+  isVisibleInMarketplace   Boolean               @default(true)
+
+  // Marketplace relations
+  marketplaceApplications MarketplaceApplication[]
+  marketplaceHires        MarketplaceHire[]
+  favoriteListings        FavoriteListing[]
+  shortlistedByFamilies   FavoriteCaregiver[]
+  leads                   Lead[]                   @relation("LeadToAide")
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([userId])
+  // Performance: common filters/sorts
+  @@index([hourlyRate])
+  @@index([yearsExperience])
+  @@index([createdAt])
+  @@index([isVisibleInMarketplace])
+  @@index([employmentStatus])
+  @@index([employmentType])
+}
+
+model Affiliate {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  affiliateCode  String   @unique
+  organization   String?
+  commissionRate Decimal? @db.Decimal(5, 2)
+  paymentDetails Json? // Encrypted payment details
+
+  // Relationships
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  referrals AffiliateReferral[]
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([userId])
+  @@index([affiliateCode])
+}
+// ==================== CAREGIVER MANAGEMENT MODELS ====================
+
+model CaregiverCertification {
+  id                    String              @id @default(cuid())
+  caregiverId           String
+  certificationType     CertificationType
+  certificationName     String? // Custom name for OTHER type
+  issueDate             DateTime
+  expiryDate            DateTime?
+  certificationNumber   String?
+  issuingOrganization   String?
+  documentUrl           String?
+  status                CertificationStatus @default(CURRENT)
+  notes                 String?             @db.Text
+  verifiedBy            String? // User ID who verified
+  verifiedAt            DateTime?
+
+  // Relationships
+  caregiver Caregiver @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([caregiverId])
+  @@index([status])
+  @@index([expiryDate])
+  @@index([certificationType])
+}
+
+model CaregiverAssignment {
+  id         String    @id @default(cuid())
+  caregiverId String
+  residentId String
+  isPrimary  Boolean   @default(false)
+  startDate  DateTime
+  endDate    DateTime?
+  notes      String?   @db.Text
+  assignedBy String? // User ID who created the assignment
+  assignedAt DateTime  @default(now())
+
+  // Relationships
+  caregiver Caregiver @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+  resident  Resident  @relation(fields: [residentId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([caregiverId])
+  @@index([residentId])
+  @@index([isPrimary])
+  @@index([startDate])
+  @@index([endDate])
+}
+
+model CaregiverDocument {
+  id           String                 @id @default(cuid())
+  caregiverId  String
+  documentType CaregiverDocumentType
+  title        String
+  description  String?                @db.Text
+  documentUrl  String
+  uploadDate   DateTime               @default(now())
+  expiryDate   DateTime?
+  uploadedBy   String? // User ID who uploaded
+
+  // Relationships
+  caregiver Caregiver @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([caregiverId])
+  @@index([documentType])
+  @@index([expiryDate])
+  @@index([uploadDate])
+}
+
+
+model Provider {
+  id              String  @id @default(cuid())
+  userId          String  @unique
+  businessName    String
+  contactName     String
+  contactEmail    String
+  contactPhone    String?
+  bio             String? @db.Text
+  website         String?
+  insuranceInfo   String? @db.Text // Insurance accepted, coverage details
+  licenseNumber   String?
+  yearsInBusiness Int?
+  isVerified      Boolean @default(false)
+  isActive        Boolean @default(true)
+
+  // Service offerings - array of service types
+  serviceTypes String[]
+
+  // Coverage area - JSON structure for cities, states, zip codes
+  coverageArea Json? // { cities: [], states: [], zipCodes: [] }
+
+  // Relationships
+  user                  User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credentials           ProviderCredential[]
+  shortlistedByFamilies FavoriteProvider[]
+  leads                 Lead[]               @relation("LeadToProvider")
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([userId])
+  @@index([businessName])
+  @@index([isVerified])
+  @@index([isActive])
+  @@index([serviceTypes])
+  @@index([createdAt])
+}
+
+enum CredentialStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  EXPIRED
+}
+
+model ProviderCredential {
+  id          String           @id @default(cuid())
+  providerId  String
+  type        String // License, Insurance, Certification, etc.
+  documentUrl String?
+  status      CredentialStatus @default(PENDING)
+  verifiedAt  DateTime?
+  verifiedBy  String? // Admin user ID who verified
+  expiresAt   DateTime?
+  notes       String?          @db.Text
+
+  // Relationships
+  provider Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([providerId])
+  @@index([type])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+// ==================== ASSISTED LIVING HOME MODELS ====================
+
+enum HomeStatus {
+  DRAFT
+  PENDING_REVIEW
+  ACTIVE
+  SUSPENDED
+  INACTIVE
+}
+
+enum CareLevel {
+  INDEPENDENT
+  ASSISTED
+  MEMORY_CARE
+  SKILLED_NURSING
+}
+
+model AssistedLivingHome {
+  id                String      @id @default(cuid())
+  slug              String?     @unique // Optional slug for friendly URLs (e.g., "home_1")
+  operatorId        String
+  name              String
+  description       String      @db.Text
+  status            HomeStatus  @default(DRAFT)
+  careLevel         CareLevel[]
+  capacity          Int
+  currentOccupancy  Int         @default(0)
+  genderRestriction String? // "MALE", "FEMALE", or null for no restriction
+  priceMin          Decimal?    @db.Decimal(10, 2)
+  priceMax          Decimal?    @db.Decimal(10, 2)
+  amenities         String[]
+
+  // Location
+  address Address?
+
+  // Relationships
+  operator        Operator         @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  photos          HomePhoto[]
+  reviews         HomeReview[]
+  inquiries       Inquiry[]
+  bookings        Booking[]
+  residents       Resident[]
+  caregiverShifts CaregiverShift[]
+  licenses        License[]
+  inspections     Inspection[]
+  favorites       FavoriteHome[]
+  matchResults    MatchResult[] // AI-powered matching engine
+  matchFeedback   MatchFeedback[] // AI-powered matching engine
+  tourRequests    TourRequest[] // AI-powered tour scheduling
+  tourSlots       TourSlot[]    // Available tour time slots
+
+  // AI-Generated Profile (Feature #2)
+  aiGeneratedDescription String?   @db.Text
+  highlights             String[]
+  lastProfileGenerated   DateTime?
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([operatorId])
+  @@index([status])
+  @@index([priceMin, priceMax])
+  @@index([careLevel])
+}
+
+model HomePhoto {
+  id        String  @id @default(cuid())
+  homeId    String
+  url       String
+  caption   String?
+  isPrimary Boolean @default(false)
+  sortOrder Int     @default(0)
+
+  // Relationships
+  home AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([homeId])
+}
+
+model Address {
+  id        String  @id @default(cuid())
+  street    String
+  street2   String?
+  city      String
+  state     String
+  zipCode   String
+  country   String  @default("USA")
+  latitude  Float?
+  longitude Float?
+
+  // Relationships
+  user   User?               @relation(fields: [userId], references: [id])
+  userId String?
+  home   AssistedLivingHome? @relation(fields: [homeId], references: [id])
+  homeId String?             @unique
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([userId])
+  @@index([homeId])
+  @@index([city, state])
+  @@index([zipCode])
+  @@index([latitude, longitude])
+}
+
+// ==================== RESIDENT MODELS ====================
+
+enum ResidentStatus {
+  INQUIRY
+  PENDING
+  ACTIVE
+  DISCHARGED
+  DECEASED
+}
+
+/// Visibility options for resident notes
+enum NoteVisibility {
+  INTERNAL
+  CARE_TEAM
+  FAMILY
+}
+
+model Resident {
+  id                String         @id @default(cuid())
+  familyId          String
+  homeId            String?
+  firstName         String
+  lastName          String
+  dateOfBirth       DateTime
+  gender            String
+  status            ResidentStatus @default(INQUIRY)
+  careNeeds            Json? // Store care needs as JSON
+  medicalConditions    String?        @db.Text // Encrypted
+  medications          String?        @db.Text // Encrypted
+  allergies            String?        @db.Text // Encrypted
+  dietaryRestrictions  String?        @db.Text // Encrypted
+  notes                String?        @db.Text // Encrypted
+
+  // Relationships
+  family            Family                   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  home              AssistedLivingHome?      @relation(fields: [homeId], references: [id])
+  bookings          Booking[]
+  careTimeline      CareTimelineEvent[]
+  documents         Document[]
+  residentDocuments ResidentDocument[]
+  assessmentResults AssessmentResult[]
+  residentIncidents ResidentIncident[]
+  residentNotes     ResidentNote[]
+  contacts          ResidentContact[]
+  complianceItems   ResidentComplianceItem[]
+  familyContacts    FamilyContact[]
+  sourceInquiry     Inquiry?                 @relation("ConvertedFromInquiry")
+
+  // Phase 6: Caregiver Management relationships
+  caregiverAssignments CaregiverAssignment[]
+
+  // Family collaboration relationships
+  familyDocuments      FamilyDocument[]
+  familyNotes          FamilyNote[]
+  emergencyPreferences EmergencyPreference[]
+
+  // Additional fields
+  photoUrl      String? // Profile photo URL
+  
+  // Timestamps
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  admissionDate DateTime?
+  dischargeDate DateTime?
+  archivedAt    DateTime? // Soft delete timestamp
+
+  // Indexes
+  @@index([familyId])
+  @@index([homeId])
+  @@index([status])
+  @@index([archivedAt])
+}
+
+/// Documents uploaded for residents (medical records, care plans, etc.)
+model ResidentDocument {
+  id           String                @id @default(cuid())
+  residentId   String
+  documentType ResidentDocumentType
+  fileName     String
+  fileUrl      String
+  fileType     String // MIME type
+  fileSize     Int // Size in bytes
+  description  String?               @db.Text
+  uploadedById String
+  uploadedAt   DateTime              @default(now())
+
+  // Relationships
+  resident   Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
+  uploadedBy User     @relation("ResidentDocumentUploader", fields: [uploadedById], references: [id])
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([residentId])
+  @@index([documentType])
+  @@index([uploadedById])
+  @@index([uploadedAt])
+}
+
+/// Primary and secondary contacts for a resident (e.g., family members, care proxy)
+model ResidentContact {
+  id           String  @id @default(cuid())
+  residentId   String
+  name         String
+  relationship String?
+  email        String?
+  phone        String?
+  isPrimary    Boolean @default(false)
+  preferences  Json?
+
+  // Relations
+  resident Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([residentId, email])
+  // Indexes
+  @@index([residentId])
+  @@index([isPrimary])
+}
+
+/// Compliance tasks/items tracked per resident (e.g., TB test, flu shot, care plan review)
+enum ComplianceStatus {
+  CURRENT
+  EXPIRING_SOON
+  EXPIRED
+  NOT_REQUIRED
+}
+
+model ResidentComplianceItem {
+  id          String           @id @default(cuid())
+  residentId  String
+  type        String // e.g., MEDICAL_RECORDS, INSURANCE, LEGAL_DOCUMENTS, CARE_PLANS
+  title       String
+  notes       String?          @db.Text
+  status      ComplianceStatus @default(CURRENT)
+  issuedDate  DateTime?
+  expiryDate  DateTime?
+  documentUrl String?
+  verifiedBy  String?
+  verifiedAt  DateTime?
+
+  // Relations
+  resident Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([residentId])
+  @@index([status])
+  @@index([expiryDate])
+  @@index([type])
+}
+
+/// Family contacts for resident - beyond emergency contacts (communication, permissions, visits)
+model FamilyContact {
+  id                String    @id @default(cuid())
+  residentId        String
+  name              String
+  relationship      String // Daughter, Son, Spouse, Sibling, etc.
+  phone             String?
+  email             String?
+  address           String?   @db.Text
+  isPrimaryContact  Boolean   @default(false)
+  permissionLevel   String    @default("VIEW_ONLY") // FULL_ACCESS, LIMITED_ACCESS, VIEW_ONLY, NO_ACCESS
+  contactPreference String?   @default("PHONE") // PHONE, EMAIL, TEXT, IN_PERSON, ANY
+  notes             String?   @db.Text
+  lastContactDate   DateTime?
+
+  // Relations
+  resident Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([residentId])
+  @@index([isPrimaryContact])
+  @@index([permissionLevel])
+}
+
+model CareTimelineEvent {
+  id          String    @id @default(cuid())
+  residentId  String
+  eventType   String // appointment, note, medication change, etc.
+  title       String
+  description String?   @db.Text
+  scheduledAt DateTime?
+  completedAt DateTime?
+
+  // Relationships
+  resident Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([residentId])
+  @@index([eventType])
+  @@index([scheduledAt])
+}
+
+/// Clinical assessment results recorded for a resident
+model AssessmentResult {
+  id            String   @id @default(cuid())
+  residentId    String
+  type          String
+  score         Int?
+  data          Json? // Assessment-specific data (structured assessment form)
+  status        String? // Status of the assessment (e.g., "COMPLETED", "IN_PROGRESS", "PENDING_REVIEW")
+  conductedBy   String? // Staff member who conducted the assessment
+  conductedAt   DateTime @default(now()) // When the assessment was conducted
+  notes         String?  @db.Text // Observations and notes
+  recommendations String? @db.Text // Recommendations based on assessment results
+
+  // Relations
+  resident Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([residentId])
+  @@index([createdAt])
+  @@index([conductedAt])
+  @@index([type])
+  @@index([status])
+}
+
+/// Incident reports associated with a resident
+model ResidentIncident {
+  id                String    @id @default(cuid())
+  residentId        String
+  type              String // Fall, Medication Error, Behavioral, Medical Emergency, etc.
+  severity          String // Minor, Moderate, Severe, Critical
+  status            String    @default("REPORTED") // REPORTED, UNDER_REVIEW, RESOLVED, FOLLOW_UP_REQUIRED
+  occurredAt        DateTime
+  description       String?   @db.Text
+  location          String? // Location where incident occurred
+  reportedBy        String? // Staff member who reported the incident
+  reportedAt        DateTime  @default(now())
+  witnessedBy       String?   @db.Text // Witnesses (comma-separated or JSON)
+  actionsTaken      String?   @db.Text // Actions taken immediately following the incident
+  followUpRequired  Boolean   @default(false)
+  resolutionNotes   String?   @db.Text // Notes on how the incident was resolved
+  resolvedAt        DateTime?
+  resolvedBy        String? // Staff member who resolved the incident
+
+  // Relations
+  resident Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([residentId])
+  @@index([occurredAt])
+  @@index([type])
+  @@index([severity])
+  @@index([status])
+  @@index([reportedAt])
+}
+
+/// Free-form notes on a resident with role-based visibility
+model ResidentNote {
+  id              String         @id @default(cuid())
+  residentId      String
+  visibility      NoteVisibility @default(INTERNAL)
+  content         String         @db.Text
+  createdByUserId String?
+
+  // Relations
+  resident  Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
+  createdBy User?    @relation(fields: [createdByUserId], references: [id])
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([residentId])
+  @@index([createdByUserId])
+  @@index([visibility])
+}
+
+// ==================== BOOKING & INQUIRY MODELS ====================
+
+enum InquiryStatus {
+  NEW
+  CONTACTED
+  TOUR_SCHEDULED
+  TOUR_COMPLETED
+  QUALIFIED
+  CONVERTING
+  CONVERTED
+  PLACEMENT_OFFERED
+  PLACEMENT_ACCEPTED
+  CLOSED_LOST
+}
+
+// Feature #4: AI-Powered Inquiry Response System - Additional Enums
+enum InquiryUrgency {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum InquirySource {
+  WEBSITE
+  PHONE
+  EMAIL
+  REFERRAL
+  SOCIAL_MEDIA
+  WALK_IN
+  OTHER
+}
+
+enum ContactMethod {
+  EMAIL
+  PHONE
+  SMS
+  ANY
+}
+
+enum ResponseType {
+  AI_GENERATED
+  MANUAL
+  AUTOMATED
+  TEMPLATE
+}
+
+enum ResponseChannel {
+  EMAIL
+  SMS
+  PHONE
+  IN_APP
+}
+
+enum ResponseStatus {
+  DRAFT
+  SENT
+  DELIVERED
+  FAILED
+  BOUNCED
+}
+
+enum FollowUpType {
+  EMAIL
+  SMS
+  PHONE_CALL
+  TASK
+  REMINDER
+}
+
+enum FollowUpStatus {
+  PENDING
+  SENT
+  COMPLETED
+  CANCELLED
+  OVERDUE
+}
+
+enum LeadTargetType {
+  AIDE
+  PROVIDER
+}
+
+enum LeadStatus {
+  NEW
+  IN_REVIEW
+  CONTACTED
+  CLOSED
+  CANCELLED
+}
+
+model Inquiry {
+  id            String        @id @default(cuid())
+  familyId      String
+  homeId        String
+  status        InquiryStatus @default(NEW)
+  message       String?       @db.Text
+  /// Operator-internal notes for this lead (not visible to families)
+  internalNotes String?       @db.Text
+  tourDate      DateTime?
+  aiMatchScore  Float? // AI-generated placement likelihood score
+
+  // Feature #4: Enhanced contact and inquiry details
+  contactName           String?
+  contactEmail          String?
+  contactPhone          String?
+  careRecipientName     String?
+  careRecipientAge      Int?
+  careNeeds             String[]        @default([]) // Array of care needs
+  additionalInfo        String?         @db.Text
+  urgency               InquiryUrgency  @default(MEDIUM)
+  source                InquirySource   @default(WEBSITE)
+  preferredContactMethod ContactMethod  @default(EMAIL)
+  
+  // Assignment for inquiry management
+  assignedToId          String?
+  assignedTo            User?           @relation("AssignedInquiries", fields: [assignedToId], references: [id])
+
+  // Conversion tracking fields
+  convertedToResidentId String?   @unique // Link to created Resident record
+  conversionDate        DateTime? // When conversion happened
+  convertedByUserId     String?   // User who performed conversion
+  conversionNotes       String?   @db.Text // Notes about conversion
+
+  // Relationships
+  family            Family             @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  home              AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
+  booking           Booking?
+  convertedResident Resident?          @relation("ConvertedFromInquiry", fields: [convertedToResidentId], references: [id])
+  convertedBy       User?              @relation("InquiryConverter", fields: [convertedByUserId], references: [id])
+  documents         InquiryDocument[]
+  
+  // Feature #4: AI-Powered Response & Follow-up System
+  responses         InquiryResponse[]
+  followUps         FollowUp[]
+  
+  // Feature #6: Smart Document Processing
+  uploadedDocuments Document[]
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([familyId])
+  @@index([homeId])
+  @@index([status])
+  @@index([tourDate])
+  @@index([convertedToResidentId])
+  @@index([convertedByUserId])
+  @@index([conversionDate])
+  @@index([assignedToId])
+  @@index([urgency])
+  @@index([source])
+  @@index([createdAt])
+}
+
+/// Documents associated with an inquiry (applications, IDs, medical records, etc.)
+model InquiryDocument {
+  id           String   @id @default(cuid())
+  inquiryId    String
+  fileName     String
+  fileUrl      String
+  fileType     String
+  documentType String   // APPLICATION_FORM, PHOTO_ID, INSURANCE_DOCUMENT, MEDICAL_RECORD, etc.
+  description  String?  @db.Text
+  fileSize     Int
+  uploadedById String
+  uploadedAt   DateTime @default(now())
+
+  // Relationships
+  inquiry    Inquiry @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  uploadedBy User    @relation("InquiryDocumentUploader", fields: [uploadedById], references: [id])
+
+  // Indexes
+  @@index([inquiryId])
+  @@index([uploadedById])
+  @@index([documentType])
+  @@index([uploadedAt])
+}
+
+// ==================== FEATURE #4: AI-POWERED INQUIRY RESPONSE SYSTEM ====================
+
+/// Tracks all responses sent for an inquiry (AI-generated, manual, or automated)
+model InquiryResponse {
+  id          String          @id @default(cuid())
+  inquiryId   String
+  
+  // Response Details
+  content     String          @db.Text
+  type        ResponseType    @default(AI_GENERATED)
+  channel     ResponseChannel @default(EMAIL)
+  
+  // Sender Information
+  sentBy      String?         // userId or "SYSTEM"
+  sentAt      DateTime?
+  
+  // Status Tracking
+  status      ResponseStatus  @default(DRAFT)
+  
+  // Metadata for AI responses
+  metadata    Json?           // Store AI prompt, model used, tokens, etc.
+  
+  // Email/SMS specific fields
+  subject     String?         // For email responses
+  toAddress   String?         // Email or phone number where sent
+  
+  // Relationships
+  inquiry     Inquiry         @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  
+  // Timestamps
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  
+  // Indexes
+  @@index([inquiryId])
+  @@index([type])
+  @@index([channel])
+  @@index([status])
+  @@index([sentAt])
+  @@index([createdAt])
+}
+
+/// Scheduled follow-up communications for inquiries
+model FollowUp {
+  id            String          @id @default(cuid())
+  inquiryId     String
+  
+  // Schedule Details
+  scheduledFor  DateTime
+  type          FollowUpType    @default(EMAIL)
+  
+  // Content
+  subject       String?
+  content       String?         @db.Text
+  
+  // Status Tracking
+  status        FollowUpStatus  @default(PENDING)
+  completedAt   DateTime?
+  completedBy   String?         // userId who completed/sent the follow-up
+  
+  // Metadata
+  metadata      Json?           // Additional data (template used, AI-generated flag, etc.)
+  
+  // Relationships
+  inquiry       Inquiry         @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  
+  // Timestamps
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  
+  // Indexes
+  @@index([inquiryId])
+  @@index([scheduledFor])
+  @@index([status])
+  @@index([type])
+  @@index([createdAt])
+}
+
+/// Lead/Inquiry model for Family → Aide/Provider marketplace inquiries
+/// Uses polymorphic pattern to support both AIDE and PROVIDER targets
+model Lead {
+  id         String         @id @default(cuid())
+  familyId   String
+  targetType LeadTargetType // AIDE or PROVIDER
+
+  // Polymorphic target references - only one should be set based on targetType
+  aideId     String? // Foreign key to Caregiver when targetType=AIDE
+  providerId String? // Foreign key to Provider when targetType=PROVIDER
+
+  status  LeadStatus @default(NEW)
+  message String?    @db.Text // Initial inquiry message from Family
+
+  // Care details snapshot (at time of inquiry)
+  preferredStartDate   DateTime?
+  expectedHoursPerWeek Int?
+  location             String? // City, State or general location
+
+  // Operator management
+  operatorNotes      String? @db.Text // Internal notes for operators
+  assignedOperatorId String? // Optional: assign lead to specific operator
+
+  // Soft delete support
+  deletedAt DateTime?
+
+  // Relationships
+  family           Family     @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  aide             Caregiver? @relation("LeadToAide", fields: [aideId], references: [id], onDelete: Cascade)
+  provider         Provider?  @relation("LeadToProvider", fields: [providerId], references: [id], onDelete: Cascade)
+  assignedOperator User?      @relation("AssignedLeads", fields: [assignedOperatorId], references: [id])
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([familyId])
+  @@index([targetType])
+  @@index([aideId])
+  @@index([providerId])
+  @@index([status])
+  @@index([assignedOperatorId])
+  @@index([createdAt])
+  @@index([deletedAt]) // For soft delete queries
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELED
+  COMPLETED
+}
+
+model Booking {
+  id          String        @id @default(cuid())
+  familyId    String
+  homeId      String
+  residentId  String
+  inquiryId   String?       @unique
+  status      BookingStatus @default(PENDING)
+  moveInDate  DateTime
+  moveOutDate DateTime?
+  deposit     Decimal?      @db.Decimal(10, 2)
+  monthlyRate Decimal       @db.Decimal(10, 2)
+  notes       String?       @db.Text
+
+  // Relationships
+  family   Family             @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  home     AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
+  resident Resident           @relation(fields: [residentId], references: [id], onDelete: Cascade)
+  inquiry  Inquiry?           @relation(fields: [inquiryId], references: [id])
+  payments Payment[]
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([familyId])
+  @@index([homeId])
+  @@index([residentId])
+  @@index([status])
+  @@index([moveInDate])
+}
+
+// ==================== CAREGIVER MODELS ====================
+
+model Credential {
+  id             String    @id @default(cuid())
+  caregiverId    String
+  type           String // CPR, TB test, license, etc.
+  documentUrl    String?
+  issueDate      DateTime
+  expirationDate DateTime
+  isVerified     Boolean   @default(false)
+  verifiedBy     String?
+  verifiedAt     DateTime?
+
+  // Relationships
+  caregiver Caregiver @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([caregiverId])
+  @@index([type])
+  @@index([expirationDate])
+}
+
+model CaregiverEmployment {
+  id          String    @id @default(cuid())
+  caregiverId String
+  operatorId  String
+  startDate   DateTime
+  endDate     DateTime?
+  position    String
+  isActive    Boolean   @default(true)
+
+  // Relationships
+  caregiver Caregiver @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+  operator  Operator  @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([caregiverId])
+  @@index([operatorId])
+  @@index([isActive])
+}
+
+enum ShiftStatus {
+  OPEN
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELED
+  NO_SHOW
+}
+
+// -------------------- TIMESHEET ENUM --------------------
+
+enum TimesheetStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+model CaregiverShift {
+  id          String      @id @default(cuid())
+  homeId      String
+  caregiverId String?
+  startTime   DateTime
+  endTime     DateTime
+  status      ShiftStatus @default(OPEN)
+  hourlyRate  Decimal     @db.Decimal(10, 2)
+  notes       String?     @db.Text
+
+  // Relationships
+  home            AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
+  caregiver       Caregiver?         @relation(fields: [caregiverId], references: [id])
+  marketplaceHire MarketplaceHire?   @relation("ShiftHire")
+  timesheet       Timesheet?         @relation("ShiftTimesheet")
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([homeId])
+  @@index([caregiverId])
+  @@index([startTime])
+  @@index([status])
+}
+
+// -------------------- TIMESHEET MODEL --------------------
+
+model Timesheet {
+  id           String          @id @default(cuid())
+  shiftId      String          @unique
+  caregiverId  String
+  startTime    DateTime
+  endTime      DateTime?
+  breakMinutes Int             @default(0)
+  status       TimesheetStatus @default(DRAFT)
+  notes        String?         @db.Text
+  approvedById String?
+  approvedAt   DateTime?
+
+  // Relationships
+  shift      CaregiverShift @relation("ShiftTimesheet", fields: [shiftId], references: [id], onDelete: Cascade)
+  caregiver  Caregiver      @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+  approvedBy User?          @relation(fields: [approvedById], references: [id])
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([caregiverId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ==================== REVIEW MODELS ====================
+
+model HomeReview {
+  id         String  @id @default(cuid())
+  homeId     String
+  reviewerId String
+  rating     Int // 1-5 stars
+  title      String?
+  content    String? @db.Text
+  isPublic   Boolean @default(true)
+  isVerified Boolean @default(false)
+
+  // Relationships
+  home AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([homeId])
+  @@index([rating])
+}
+
+model CaregiverReview {
+  id          String  @id @default(cuid())
+  caregiverId String
+  reviewerId  String
+  rating      Int // 1-5 stars
+  title       String?
+  content     String? @db.Text
+  isPublic    Boolean @default(true)
+
+  // Relationships
+  caregiver Caregiver @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([caregiverId])
+  @@index([rating])
+}
+
+// ==================== PAYMENT MODELS ====================
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum PaymentType {
+  DEPOSIT
+  MONTHLY_FEE
+  INCIDENTAL
+  CAREGIVER_PAYMENT
+  AFFILIATE_COMMISSION
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  userId          String
+  bookingId       String?
+  amount          Decimal       @db.Decimal(10, 2)
+  status          PaymentStatus @default(PENDING)
+  type            PaymentType
+  description     String?
+  stripePaymentId String?       @unique
+  receiptUrl      String?
+
+  // Relationships
+  user                 User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  booking              Booking?            @relation(fields: [bookingId], references: [id])
+  marketplaceListingId String?
+  marketplaceHireId    String?             @unique
+  marketplaceListing   MarketplaceListing? @relation(fields: [marketplaceListingId], references: [id])
+  marketplaceHire      MarketplaceHire?    @relation(fields: [marketplaceHireId], references: [id])
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([userId])
+  @@index([bookingId])
+  @@index([status])
+  @@index([type])
+  @@index([marketplaceListingId])
+}
+
+model FamilyWallet {
+  id               String  @id @default(cuid())
+  familyId         String  @unique
+  balance          Decimal @default(0) @db.Decimal(10, 2)
+  stripeCustomerId String? @unique
+
+  // Relationships
+  family       Family              @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  transactions WalletTransaction[]
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([familyId])
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  PAYMENT
+  REFUND
+}
+
+model WalletTransaction {
+  id          String          @id @default(cuid())
+  walletId    String
+  amount      Decimal         @db.Decimal(10, 2)
+  type        TransactionType
+  description String?
+
+  // Relationships
+  wallet FamilyWallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+
+  // Indexes
+  @@index([walletId])
+  @@index([type])
+}
+
+// ==================== MESSAGING MODELS ====================
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+}
+
+model Message {
+  id         String        @id @default(cuid())
+  senderId   String
+  receiverId String
+  content    String        @db.Text
+  status     MessageStatus @default(SENT)
+
+  // Relationships
+  sender   User @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("MessageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime  @default(now())
+  readAt    DateTime?
+
+  // Indexes
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([status])
+}
+
+// ==================== NOTIFICATION MODELS ====================
+
+enum NotificationType {
+  MESSAGE
+  BOOKING
+  PAYMENT
+  COMPLIANCE
+  SYSTEM
+}
+
+model Notification {
+  id      String           @id @default(cuid())
+  userId  String
+  type    NotificationType
+  title   String
+  message String
+  isRead  Boolean          @default(false)
+  data    Json? // Additional data related to notification
+
+  // Relationships
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime  @default(now())
+  readAt    DateTime?
+
+  // Indexes
+  @@index([userId])
+  @@index([type])
+  @@index([isRead])
+}
+
+// ==================== DOCUMENT MODELS ====================
+
+enum DocumentType {
+  RESIDENT_RECORD
+  MEDICAL_RECORD
+  COMPLIANCE_DOCUMENT
+  CONTRACT
+  INVOICE
+  CREDENTIAL
+  OTHER
+}
+
+model Document {
+  id          String       @id @default(cuid())
+  residentId  String?
+  type        DocumentType
+  title       String
+  description String?
+  fileUrl     String
+  fileType    String
+  fileSize    Int
+  isEncrypted Boolean      @default(true)
+
+  // Relationships
+  resident Resident? @relation(fields: [residentId], references: [id])
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([residentId])
+  @@index([type])
+}
+
+// ==================== COMPLIANCE MODELS ====================
+
+model License {
+  id             String   @id @default(cuid())
+  homeId         String
+  type           String
+  licenseNumber  String
+  issueDate      DateTime
+  expirationDate DateTime
+  status         String
+  documentUrl    String?
+
+  // Relationships
+  home AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([homeId])
+  @@index([expirationDate])
+  @@index([status])
+}
+
+model Inspection {
+  id             String   @id @default(cuid())
+  homeId         String
+  inspectionDate DateTime
+  inspectionType String
+  inspector      String
+  result         String
+  findings       String?  @db.Text
+  documentUrl    String?
+
+  // Relationships
+  home AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([homeId])
+  @@index([inspectionDate])
+  @@index([result])
+}
+
+// ==================== AFFILIATE MODELS ====================
+
+model AffiliateReferral {
+  id               String    @id @default(cuid())
+  affiliateId      String
+  referredEmail    String
+  referredUserId   String?
+  status           String
+  conversionDate   DateTime?
+  commissionAmount Decimal?  @db.Decimal(10, 2)
+  commissionPaid   Boolean   @default(false)
+
+  // Relationships
+  affiliate Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([affiliateId])
+  @@index([referredEmail])
+  @@index([referredUserId])
+  @@index([status])
+}
+
+// ==================== AUDIT LOGGING (HIPAA COMPLIANCE) ====================
+
+enum AuditAction {
+  CREATE
+  READ
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  EXPORT
+  IMPORT
+  ACCESS_DENIED
+  REPORT_GENERATED
+  REPORT_SCHEDULED
+  REPORT_DOWNLOADED
+  OTHER
+}
+
+model AuditLog {
+  id           String      @id @default(cuid())
+  userId       String
+  actionedBy   String?
+  action       AuditAction
+  resourceType String // Which table/model was affected
+  resourceId   String? // ID of the affected resource
+  description  String
+  ipAddress    String?
+  userAgent    String?     @db.Text
+  metadata     Json? // Additional metadata about the action
+
+  // Relationships
+  user           User  @relation("UserAuditLogs", fields: [userId], references: [id])
+  actionedByUser User? @relation("ActionedByUser", fields: [actionedBy], references: [id])
+
+  // Timestamps
+  createdAt DateTime @default(now())
+
+  // Indexes
+  @@index([userId])
+  @@index([actionedBy])
+  @@index([action])
+  @@index([resourceType, resourceId])
+  @@index([createdAt])
+}
+
+// ==================== FAVORITES MODELS ====================
+
+model FavoriteHome {
+  id       String  @id @default(cuid())
+  familyId String
+  homeId   String
+  notes    String? @db.Text
+
+  // Relationships
+  family Family             @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  home   AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Constraints and Indexes
+  @@unique([familyId, homeId])
+  @@index([familyId])
+  @@index([homeId])
+  @@index([createdAt])
+}
+
+// ==================== AI MODELS ====================
+
+model AIMatchingData {
+  id          String  @id @default(cuid())
+  homeId      String?
+  caregiverId String?
+  residentId  String?
+  matchScore  Float
+  matchReason String? @db.Text
+  metadata    Json? // Additional matching criteria
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([homeId])
+  @@index([caregiverId])
+  @@index([residentId])
+  @@index([matchScore])
+}
+
+model AIRiskFlag {
+  id              String    @id @default(cuid())
+  entityType      String // "caregiver", "resident", "home"
+  entityId        String
+  riskType        String // "no_show", "health_decline", etc.
+  riskScore       Float // 0-1 probability
+  riskReason      String?   @db.Text
+  isActive        Boolean   @default(true)
+  resolvedAt      DateTime?
+  resolvedBy      String?
+  resolutionNotes String?   @db.Text
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([entityType, entityId])
+  @@index([riskType])
+  @@index([riskScore])
+  @@index([isActive])
+}
+
+// =====================================================
+// ================ CALENDAR SYSTEM MODELS ==============
+// =====================================================
+
+/// Appointment-related enums
+enum AppointmentType {
+  CARE_EVALUATION
+  FACILITY_TOUR
+  CAREGIVER_SHIFT
+  FAMILY_VISIT
+  CONSULTATION
+  MEDICAL_APPOINTMENT
+  ADMIN_MEETING
+  SOCIAL_EVENT
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+  RESCHEDULED
+}
+
+model Appointment {
+  id          String            @id @default(cuid())
+  type        AppointmentType
+  status      AppointmentStatus @default(PENDING)
+  title       String
+  description String?           @db.Text
+  notes       String?           @db.Text
+
+  startTime DateTime
+  endTime   DateTime
+  location  Json?
+
+  // Optional FK references
+  homeId     String?
+  residentId String?
+
+  // Creator
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  // Recurrence & metadata
+  recurrence          Json?
+  reminders           Json?
+  customFields        Json?
+  metadata            Json?
+  parentAppointmentId String?
+  parentAppointment   Appointment?  @relation("ParentSeries", fields: [parentAppointmentId], references: [id])
+  recurringInstances  Appointment[] @relation("ParentSeries")
+
+  // Participants
+  participants AppointmentParticipant[]
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdById])
+  @@index([homeId])
+  @@index([residentId])
+  @@index([type])
+  @@index([status])
+  @@index([startTime, endTime])
+}
+
+model AppointmentParticipant {
+  id            String @id @default(cuid())
+  appointmentId String
+  userId        String
+
+  name   String?
+  role   UserRole?
+  status String    @default("PENDING") // ACCEPTED, DECLINED, etc.
+  notes  String?   @db.Text
+
+  // Relations
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([appointmentId])
+  @@index([userId])
+}
+
+model AvailabilitySlot {
+  id     String @id @default(cuid())
+  userId String
+
+  startTime    DateTime
+  endTime      DateTime
+  isAvailable  Boolean  @default(true)
+  availableFor String[] // Stores enum values of AppointmentType
+
+  homeId String?
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([homeId])
+  @@index([startTime, endTime])
+}
+
+enum ScheduledNotificationStatus {
+  PENDING
+  SENT
+  CANCELLED
+  FAILED
+}
+
+model ScheduledNotification {
+  id     String @id @default(cuid())
+  userId String
+
+  type   String // e.g., APPOINTMENT_REMINDER
+  method String // EMAIL, SMS, PUSH, IN_APP
+  status ScheduledNotificationStatus @default(PENDING)
+
+  scheduledFor DateTime
+  payload      Json
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([scheduledFor])
+}
+
+// =====================================================
+// =========== FAMILY COLLABORATION MODELS ===========
+// =====================================================
+
+enum FamilyMemberRole {
+  OWNER
+  CARE_PROXY
+  MEMBER
+  GUEST
+}
+
+enum FamilyMemberStatus {
+  ACTIVE
+  PENDING
+  SUSPENDED
+}
+
+model FamilyMember {
+  id          String             @id @default(cuid())
+  familyId    String
+  userId      String
+  role        FamilyMemberRole
+  status      FamilyMemberStatus @default(PENDING)
+  invitedById String?
+  invitedAt   DateTime?
+  joinedAt    DateTime?
+
+  // Relationships
+  family    Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invitedBy User?  @relation("InvitedBy", fields: [invitedById], references: [id])
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([familyId, userId])
+  @@index([familyId])
+  @@index([userId])
+  @@index([status])
+}
+
+enum FamilyDocumentType {
+  MEDICAL_RECORD
+  INSURANCE_DOCUMENT
+  PHOTO
+  VIDEO
+  LEGAL_DOCUMENT
+  PERSONAL_DOCUMENT
+  OTHER
+}
+
+model FamilyDocument {
+  id          String             @id @default(cuid())
+  familyId    String
+  uploaderId  String
+  residentId  String?
+  type        FamilyDocumentType
+  title       String
+  description String?            @db.Text
+  fileUrl     String
+  fileName    String
+  fileType    String
+  fileSize    Int
+  version     Int                @default(1)
+  isEncrypted Boolean            @default(true)
+  acl         Json? // Access control list
+  tags        String[] // Tags for organization
+  metadata    Json? // Additional metadata
+
+  // Relationships
+  family   Family            @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  uploader User              @relation("DocumentUploader", fields: [uploaderId], references: [id])
+  resident Resident?         @relation(fields: [residentId], references: [id])
+  comments DocumentComment[]
+  // Activity tracking handled by ActivityFeedItem.resourceId
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([familyId])
+  @@index([uploaderId])
+  @@index([residentId])
+  @@index([type])
+  @@index([tags])
+  @@index([createdAt])
+}
+
+model FamilyNote {
+  id         String   @id @default(cuid())
+  familyId   String
+  authorId   String
+  residentId String?
+  title      String
+  content    Json // Rich text content
+  tags       String[] // Tags for organization
+  acl        Json? // Access control list
+  metadata   Json? // Additional metadata
+
+  // Relationships
+  family   Family        @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  author   User          @relation("NoteAuthor", fields: [authorId], references: [id])
+  resident Resident?     @relation(fields: [residentId], references: [id])
+  comments NoteComment[]
+  // Activity tracking handled by ActivityFeedItem.resourceId
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([familyId])
+  @@index([authorId])
+  @@index([residentId])
+  @@index([tags])
+  @@index([createdAt])
+}
+
+model DocumentComment {
+  id              String  @id @default(cuid())
+  documentId      String
+  authorId        String
+  content         String  @db.Text
+  parentCommentId String?
+
+  // Relationships
+  document      FamilyDocument    @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  author        User              @relation("DocumentCommentAuthor", fields: [authorId], references: [id])
+  parentComment DocumentComment?  @relation("CommentReplies", fields: [parentCommentId], references: [id])
+  replies       DocumentComment[] @relation("CommentReplies")
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([documentId])
+  @@index([authorId])
+  @@index([parentCommentId])
+}
+
+model NoteComment {
+  id              String  @id @default(cuid())
+  noteId          String
+  authorId        String
+  content         String  @db.Text
+  parentCommentId String?
+
+  // Relationships
+  note          FamilyNote    @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  author        User          @relation("NoteCommentAuthor", fields: [authorId], references: [id])
+  parentComment NoteComment?  @relation("NoteCommentReplies", fields: [parentCommentId], references: [id])
+  replies       NoteComment[] @relation("NoteCommentReplies")
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([noteId])
+  @@index([authorId])
+  @@index([parentCommentId])
+}
+
+model SharedGallery {
+  id            String   @id @default(cuid())
+  familyId      String
+  creatorId     String
+  title         String
+  description   String?  @db.Text
+  coverPhotoUrl String?
+  acl           Json? // Access control list
+  tags          String[] // Tags for organization
+
+  // Relationships
+  family  Family         @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  creator User           @relation("GalleryCreator", fields: [creatorId], references: [id])
+  photos  GalleryPhoto[]
+  // Activity tracking handled by ActivityFeedItem.resourceId
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([familyId])
+  @@index([creatorId])
+  @@index([tags])
+  @@index([createdAt])
+}
+
+model GalleryPhoto {
+  id           String  @id @default(cuid())
+  galleryId    String
+  uploaderId   String
+  fileUrl      String
+  thumbnailUrl String
+  caption      String? @db.Text
+  metadata     Json? // EXIF data, etc.
+  sortOrder    Int     @default(0)
+
+  // Relationships
+  gallery  SharedGallery @relation(fields: [galleryId], references: [id], onDelete: Cascade)
+  uploader User          @relation("PhotoUploader", fields: [uploaderId], references: [id])
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([galleryId])
+  @@index([uploaderId])
+  @@index([createdAt])
+}
+
+enum ActivityType {
+  DOCUMENT_UPLOADED
+  DOCUMENT_UPDATED
+  DOCUMENT_DELETED
+  DOCUMENT_COMMENTED
+  NOTE_CREATED
+  NOTE_UPDATED
+  NOTE_DELETED
+  NOTE_COMMENTED
+  GALLERY_CREATED
+  GALLERY_UPDATED
+  PHOTO_UPLOADED
+  MEMBER_INVITED
+  MEMBER_JOINED
+  MEMBER_ROLE_CHANGED
+  OTHER
+}
+
+model ActivityFeedItem {
+  id           String       @id @default(cuid())
+  familyId     String
+  actorId      String
+  type         ActivityType
+  resourceType String // "document", "note", "gallery", etc.
+  resourceId   String?
+  description  String       @db.Text
+  metadata     Json? // Additional data about the activity
+
+  // Relationships
+  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  actor  User   @relation("ActivityActor", fields: [actorId], references: [id])
+
+  // Timestamps
+  createdAt DateTime @default(now())
+
+  @@index([familyId])
+  @@index([actorId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+/// -----------------------------------------------------
+/// Emergency escalation preferences
+/// -----------------------------------------------------
+model EmergencyPreference {
+  id               String    @id @default(cuid())
+  familyId         String
+  residentId       String?
+  escalationChain  Json // Ordered list of contacts and methods
+  notifyMethods    String[] // e.g. ["SMS", "EMAIL", "CALL"]
+  careInstructions String?   @db.Text
+  lastConfirmedAt  DateTime?
+
+  // Relations
+  family   Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  resident Resident? @relation(fields: [residentId], references: [id])
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([familyId, residentId])
+  @@index([familyId])
+  @@index([residentId])
+}
+
+// =====================================================
+// ================ MARKETPLACE MODELS =================
+// =====================================================
+
+model MarketplaceCategory {
+  id        String       @id @default(cuid())
+  name      String
+  slug      String       @unique
+  type      CategoryType
+  sortOrder Int          @default(0)
+  isActive  Boolean      @default(true)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([type])
+  @@index([isActive])
+}
+
+model MarketplaceListing {
+  id             String                   @id @default(cuid())
+  postedByUserId String
+  title          String
+  description    String                   @db.Text
+  hourlyRateMin  Decimal?                 @db.Decimal(10, 2)
+  hourlyRateMax  Decimal?                 @db.Decimal(10, 2)
+  setting        String?
+  careTypes      String[]
+  services       String[]
+  specialties    String[]
+  city           String?
+  state          String?
+  zipCode        String?
+  latitude       Float?
+  longitude      Float?
+  startTime      DateTime?
+  endTime        DateTime?
+  status         MarketplaceListingStatus @default(OPEN)
+
+  // Relationships
+  postedBy     User                     @relation("UserListings", fields: [postedByUserId], references: [id], onDelete: Cascade)
+  applications MarketplaceApplication[]
+  hires        MarketplaceHire[]
+  payments     Payment[]
+  favoritedBy  FavoriteListing[]
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([postedByUserId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([city, state])
+  @@index([zipCode])
+}
+
+model MarketplaceApplication {
+  id          String            @id @default(cuid())
+  listingId   String
+  caregiverId String
+  status      ApplicationStatus @default(APPLIED)
+  note        String?           @db.Text
+
+  // Relationships
+  listing   MarketplaceListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  caregiver Caregiver          @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+  hire      MarketplaceHire?   @relation("ApplicationHire")
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([listingId, caregiverId])
+  @@index([listingId])
+  @@index([caregiverId])
+  @@index([status])
+}
+
+model MarketplaceHire {
+  id            String   @id @default(cuid())
+  listingId     String?
+  caregiverId   String
+  applicationId String?  @unique
+  shiftId       String?  @unique
+  acceptedAt    DateTime @default(now())
+
+  // Relationships
+  listing     MarketplaceListing?     @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  caregiver   Caregiver               @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+  application MarketplaceApplication? @relation("ApplicationHire", fields: [applicationId], references: [id])
+  shift       CaregiverShift?         @relation("ShiftHire", fields: [shiftId], references: [id])
+  payment     Payment?
+
+  // Timestamps
+  createdAt DateTime @default(now())
+
+  @@index([listingId])
+  @@index([caregiverId])
+  @@index([applicationId])
+  @@index([shiftId])
+}
+
+/// Favorites for marketplace listings (per caregiver)
+model FavoriteListing {
+  id          String @id @default(cuid())
+  caregiverId String
+  listingId   String
+
+  // Relations
+  caregiver Caregiver          @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+  listing   MarketplaceListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Constraints and Indexes
+  @@unique([caregiverId, listingId])
+  @@index([caregiverId])
+  @@index([listingId])
+}
+
+/// Families can favorite Caregivers to build shortlists
+model FavoriteCaregiver {
+  id          String @id @default(cuid())
+  familyId    String
+  caregiverId String
+
+  // Relations
+  family    Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  caregiver Caregiver @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Constraints and Indexes
+  @@unique([familyId, caregiverId])
+  @@index([familyId])
+  @@index([caregiverId])
+}
+
+/// Families can favorite Providers to build shortlists
+model FavoriteProvider {
+  id         String @id @default(cuid())
+  familyId   String
+  providerId String
+
+  // Relations
+  family   Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  provider Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Constraints and Indexes
+  @@unique([familyId, providerId])
+  @@index([familyId])
+  @@index([providerId])
+}
+// ==================== REPORTING MODELS ====================
+
+enum ReportType {
+  OCCUPANCY
+  FINANCIAL
+  INCIDENT
+  CAREGIVER
+  COMPLIANCE
+  INQUIRY
+  RESIDENT
+  FACILITY_COMPARISON
+  CUSTOM
+}
+
+enum ReportFormat {
+  PDF
+  EXCEL
+  CSV
+}
+
+enum ReportSchedule {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+model Report {
+  id          String       @id @default(cuid())
+  title       String
+  type        ReportType
+  format      ReportFormat
+  fileUrl     String? // URL to stored file
+  config      Json // Report configuration (filters, options)
+  generatedBy String
+  user        User         @relation("ReportGenerator", fields: [generatedBy], references: [id])
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([generatedBy])
+  @@index([type])
+  @@index([createdAt])
+}
+
+model ScheduledReport {
+  id         String         @id @default(cuid())
+  title      String
+  type       ReportType
+  format     ReportFormat   @default(PDF)
+  schedule   ReportSchedule
+  dayOfWeek  Int? // For weekly (0-6, 0=Sunday)
+  dayOfMonth Int? // For monthly (1-31)
+  time       String // HH:MM format (24-hour)
+  recipients String[] // Email addresses
+  config     Json // Report configuration
+  enabled    Boolean        @default(true)
+  lastRun    DateTime?
+  nextRun    DateTime?
+  createdBy  String
+  user       User           @relation("ScheduledReportCreator", fields: [createdBy], references: [id])
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([createdBy])
+  @@index([enabled])
+  @@index([nextRun])
+  @@index([type])
+}
+
+
+
+// ==================== AI-POWERED MATCHING ENGINE ====================
+
+enum MatchStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum FeedbackType {
+  THUMBS_UP
+  THUMBS_DOWN
+  PLACEMENT_CONFIRMED
+}
+
+model MatchRequest {
+  id        String      @id @default(cuid())
+  familyId  String
+  status    MatchStatus @default(PENDING)
+
+  // Budget preferences
+  budgetMin Decimal @db.Decimal(10, 2)
+  budgetMax Decimal @db.Decimal(10, 2)
+
+  // Medical conditions (stored as JSON array)
+  medicalConditions String[] @default([])
+
+  // Care level required
+  careLevel String // "INDEPENDENT_LIVING", "ASSISTED_LIVING", "MEMORY_CARE", "SKILLED_NURSING"
+
+  // Preferences
+  preferredGender    String? // "MALE", "FEMALE", "NO_PREFERENCE"
+  religion           String?
+  dietaryNeeds       String[] @default([])
+  hobbies            String[] @default([])
+  petPreferences     String? // "HAS_PETS", "PET_FRIENDLY", "NO_PETS"
+
+  // Location
+  zipCode     String
+  maxDistance Int // in miles
+
+  // Timeline
+  moveInTimeline String // "IMMEDIATE", "1_3_MONTHS", "3_6_MONTHS", "EXPLORING"
+
+  // Relationships
+  family  Family         @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  results MatchResult[]
+  feedback MatchFeedback[]
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([familyId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model MatchResult {
+  id             String  @id @default(cuid())
+  matchRequestId String
+  homeId         String
+  fitScore       Decimal @db.Decimal(5, 2) // 0-100 score
+
+  // Match factors breakdown (stored as JSON)
+  matchFactors Json // {budgetScore, conditionScore, careLevelScore, locationScore, amenitiesScore}
+
+  // AI-generated explanation
+  explanation String @db.Text
+
+  // Ranking
+  rank Int // 1-5 for top matches
+
+  // Relationships
+  matchRequest MatchRequest @relation(fields: [matchRequestId], references: [id], onDelete: Cascade)
+  home         AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([matchRequestId])
+  @@index([homeId])
+  @@index([fitScore])
+  @@index([rank])
+}
+
+model MatchFeedback {
+  id             String       @id @default(cuid())
+  matchRequestId String
+  homeId         String
+  feedbackType   FeedbackType
+
+  // Additional context
+  notes String? @db.Text
+
+  // User who provided feedback
+  userId String
+
+  // Relationships
+  matchRequest MatchRequest       @relation(fields: [matchRequestId], references: [id], onDelete: Cascade)
+  home         AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([matchRequestId])
+  @@index([homeId])
+  @@index([userId])
+  @@index([feedbackType])
+}
+
+
+
+// ==================== AI TOUR SCHEDULING ====================
+
+enum TourStatus {
+  PENDING       // Tour requested, awaiting operator confirmation
+  CONFIRMED     // Tour confirmed by operator
+  COMPLETED     // Tour has taken place
+  CANCELLED     // Tour cancelled by family or operator
+  RESCHEDULED   // Tour rescheduled to different time
+  NO_SHOW       // Family didn't show up for confirmed tour
+}
+
+enum TourOutcome {
+  SHOWED_UP        // Family attended the tour
+  NO_SHOW          // Family didn't attend
+  CONVERTED        // Family moved forward with booking/inquiry
+  NOT_CONVERTED    // Family did not move forward
+}
+
+model TourRequest {
+  id                String       @id @default(cuid())
+  familyId          String
+  homeId            String
+  operatorId        String       // Operator who manages this home
+  
+  // Requested times from family (stored as array of DateTime)
+  requestedTimes    Json         // Array of DateTime objects
+  
+  // AI-suggested optimal times (stored as array of DateTime)
+  aiSuggestedTimes  Json?        // Array of DateTime objects with reasoning
+  
+  // Confirmed time (once operator confirms)
+  confirmedTime     DateTime?
+  
+  // Status and outcome
+  status            TourStatus   @default(PENDING)
+  outcome           TourOutcome?
+  
+  // Notes
+  familyNotes       String?      @db.Text // Notes from family when requesting
+  operatorNotes     String?      @db.Text // Internal notes from operator
+  
+  // Cancellation details
+  cancelledAt       DateTime?
+  cancelledBy       String?      // User ID who cancelled
+  cancellationReason String?     @db.Text
+  
+  // Relationships
+  family    Family             @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  home      AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
+  operator  Operator           @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Indexes
+  @@index([familyId])
+  @@index([homeId])
+  @@index([operatorId])
+  @@index([status])
+  @@index([confirmedTime])
+  @@index([createdAt])
+}
+
+model TourSlot {
+  id          String   @id @default(cuid())
+  homeId      String
+  
+  // Day of week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
+  dayOfWeek   Int      // 0-6
+  
+  // Time slots (stored as strings in HH:MM format)
+  startTime   String   // e.g., "10:00"
+  endTime     String   // e.g., "11:00"
+  
+  // Capacity (how many tours can be scheduled in this slot)
+  capacity    Int      @default(1)
+  
+  // Active status
+  isActive    Boolean  @default(true)
+  
+  // Relationships
+  home AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Indexes
+  @@index([homeId])
+  @@index([dayOfWeek])
+  @@index([isActive])
+}
+// ============================================
+// FEATURE #6: SMART DOCUMENT PROCESSING
+// ============================================
+
+// Enums for Document Processing
+enum DocumentType {
+  MEDICAL_RECORD
+  INSURANCE_CARD
+  ID_DOCUMENT
+  CONTRACT
+  FINANCIAL
+  CARE_PLAN
+  EMERGENCY_CONTACT
+  OTHER
+}
+
+enum ExtractionStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum ComplianceStatus {
+  PENDING
+  COMPLIANT
+  MISSING
+  EXPIRED
+  EXPIRING_SOON
+}
+
+// Main Document model for Feature #6
+model Document {
+  id                String            @id @default(cuid())
+  type              DocumentType
+  category          String?           // Auto-classified category
+  fileName          String
+  fileUrl           String            // Cloudinary URL
+  fileSize          Int
+  mimeType          String
+  
+  // OCR & AI Extraction
+  extractedText     String?           @db.Text
+  extractedData     Json?             // Structured data from AI extraction
+  extractionStatus  ExtractionStatus  @default(PENDING)
+  extractionError   String?           @db.Text
+  
+  // Compliance Tracking
+  isRequired        Boolean           @default(false)
+  expirationDate    DateTime?
+  complianceStatus  ComplianceStatus  @default(PENDING)
+  
+  // Relationships
+  residentId        String?
+  resident          Resident?         @relation(fields: [residentId], references: [id], onDelete: Cascade)
+  inquiryId         String?
+  inquiry           Inquiry?          @relation("uploadedDocuments", fields: [inquiryId], references: [id], onDelete: Cascade)
+  uploadedById      String
+  uploadedBy        User              @relation("UploadedDocuments", fields: [uploadedById], references: [id])
+  
+  // Metadata & Organization
+  tags              String[]          @default([])
+  notes             String?           @db.Text
+  version           Int               @default(1)
+  
+  // Timestamps
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  
+  // Indexes for performance
+  @@index([residentId])
+  @@index([inquiryId])
+  @@index([type])
+  @@index([complianceStatus])
+  @@index([uploadedById])
+  @@index([createdAt])
+  @@index([expirationDate])
+}
+
+// Document templates for generation
+model DocumentTemplate {
+  id          String       @id @default(cuid())
+  name        String
+  description String?      @db.Text
+  type        DocumentType
+  template    Json         // Template structure
+  fields      Json         // Field mappings for auto-fill
+  isActive    Boolean      @default(true)
+  
+  // Timestamps
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  
+  // Indexes
+  @@index([type])
+  @@index([isActive])
+}

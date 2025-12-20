@@ -1,20 +1,13 @@
 services:
   - type: web
     name: carelinkai
-    env: docker
-    autoDeploy: true
+    env: node
+    region: oregon
     plan: starter
-    dockerfilePath: ./Dockerfile
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: npm start
     envVars:
-      - key: NEXTAUTH_URL
-        value: https://carelinkai.onrender.com
-      - key: NEXTAUTH_SECRET
-        generateValue: true
-      - key: DATABASE_URL
-        fromDatabase:
-          name: carelinkai-db
-          property: connectionString
-
-databases:
-  - name: carelinkai-db
-    plan: basic-1gb
+      - key: NODE_VERSION
+        value: 20.11.0
+      - key: NODE_ENV
+        value: production
