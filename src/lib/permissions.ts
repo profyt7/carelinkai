@@ -95,6 +95,17 @@ export const PERMISSIONS = {
   REPORTS_MANAGE: "reports.manage",
   ANALYTICS_VIEW: "analytics.view",
   
+  // Document Processing Permissions (Feature #6)
+  DOCUMENTS_VIEW: "documents.view",
+  DOCUMENTS_CREATE: "documents.create",
+  DOCUMENTS_UPDATE: "documents.update",
+  DOCUMENTS_DELETE: "documents.delete",
+  DOCUMENTS_VIEW_ALL: "documents.view_all",         // View all documents across all homes
+  DOCUMENTS_EXTRACT: "documents.extract",           // Trigger OCR and AI extraction
+  DOCUMENTS_CLASSIFY: "documents.classify",         // Classify documents
+  DOCUMENTS_MANAGE_TEMPLATES: "documents.manage_templates", // Manage document templates (admin only)
+  DOCUMENTS_GENERATE: "documents.generate",         // Generate documents from templates
+  
   // Tour Scheduling Permissions
   TOURS_REQUEST: "tours.request",          // Family can request tours
   TOURS_VIEW: "tours.view",                // View tours
@@ -175,6 +186,15 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     PERMISSIONS.REPORTS_MANAGE,
     PERMISSIONS.ANALYTICS_VIEW,
     
+    // Documents - manage documents for their homes
+    PERMISSIONS.DOCUMENTS_VIEW,
+    PERMISSIONS.DOCUMENTS_CREATE,
+    PERMISSIONS.DOCUMENTS_UPDATE,
+    PERMISSIONS.DOCUMENTS_DELETE,
+    PERMISSIONS.DOCUMENTS_EXTRACT,
+    PERMISSIONS.DOCUMENTS_CLASSIFY,
+    PERMISSIONS.DOCUMENTS_GENERATE,
+    
     // Tours - manage tours for their homes
     PERMISSIONS.TOURS_VIEW_ALL,
     PERMISSIONS.TOURS_CONFIRM,
@@ -202,6 +222,10 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     
     // Family Contacts - view only
     PERMISSIONS.FAMILY_CONTACTS_VIEW,
+    
+    // Documents - view and create only
+    PERMISSIONS.DOCUMENTS_VIEW,
+    PERMISSIONS.DOCUMENTS_CREATE,
   ],
   
   // FAMILY: View-only access to their family member's information
@@ -229,6 +253,10 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     // Inquiries - create and view their own
     PERMISSIONS.INQUIRIES_VIEW,
     PERMISSIONS.INQUIRIES_CREATE,
+    
+    // Documents - view and upload documents for their resident
+    PERMISSIONS.DOCUMENTS_VIEW,
+    PERMISSIONS.DOCUMENTS_CREATE,
     
     // Tours - request and manage their own tours
     PERMISSIONS.TOURS_REQUEST,

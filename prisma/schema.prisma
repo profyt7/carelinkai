@@ -182,6 +182,7 @@ model User {
   uploadedDocuments        FamilyDocument[]     @relation("DocumentUploader")
   uploadedResidentDocuments ResidentDocument[]  @relation("ResidentDocumentUploader")
   uploadedInquiryDocuments InquiryDocument[]   @relation("InquiryDocumentUploader")
+  documentsUploaded        Document[]           @relation("UploadedDocuments") // Feature #6: Smart Document Processing
   authoredNotes            FamilyNote[]         @relation("NoteAuthor")
   documentComments         DocumentComment[]    @relation("DocumentCommentAuthor")
   noteComments             NoteComment[]        @relation("NoteCommentAuthor")
@@ -2712,5 +2713,102 @@ model TourSlot {
   // Indexes
   @@index([homeId])
   @@index([dayOfWeek])
+  @@index([isActive])
+}
+// ============================================
+// FEATURE #6: SMART DOCUMENT PROCESSING
+// ============================================
+
+// Enums for Document Processing
+enum DocumentType {
+  MEDICAL_RECORD
+  INSURANCE_CARD
+  ID_DOCUMENT
+  CONTRACT
+  FINANCIAL
+  CARE_PLAN
+  EMERGENCY_CONTACT
+  OTHER
+}
+
+enum ExtractionStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum ComplianceStatus {
+  PENDING
+  COMPLIANT
+  MISSING
+  EXPIRED
+  EXPIRING_SOON
+}
+
+// Main Document model for Feature #6
+model Document {
+  id                String            @id @default(cuid())
+  type              DocumentType
+  category          String?           // Auto-classified category
+  fileName          String
+  fileUrl           String            // Cloudinary URL
+  fileSize          Int
+  mimeType          String
+  
+  // OCR & AI Extraction
+  extractedText     String?           @db.Text
+  extractedData     Json?             // Structured data from AI extraction
+  extractionStatus  ExtractionStatus  @default(PENDING)
+  extractionError   String?           @db.Text
+  
+  // Compliance Tracking
+  isRequired        Boolean           @default(false)
+  expirationDate    DateTime?
+  complianceStatus  ComplianceStatus  @default(PENDING)
+  
+  // Relationships
+  residentId        String?
+  resident          Resident?         @relation(fields: [residentId], references: [id], onDelete: Cascade)
+  inquiryId         String?
+  inquiry           Inquiry?          @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  uploadedById      String
+  uploadedBy        User              @relation("UploadedDocuments", fields: [uploadedById], references: [id])
+  
+  // Metadata & Organization
+  tags              String[]          @default([])
+  notes             String?           @db.Text
+  version           Int               @default(1)
+  
+  // Timestamps
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  
+  // Indexes for performance
+  @@index([residentId])
+  @@index([inquiryId])
+  @@index([type])
+  @@index([complianceStatus])
+  @@index([uploadedById])
+  @@index([createdAt])
+  @@index([expirationDate])
+}
+
+// Document templates for generation
+model DocumentTemplate {
+  id          String       @id @default(cuid())
+  name        String
+  description String?      @db.Text
+  type        DocumentType
+  template    Json         // Template structure
+  fields      Json         // Field mappings for auto-fill
+  isActive    Boolean      @default(true)
+  
+  // Timestamps
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  
+  // Indexes
+  @@index([type])
   @@index([isActive])
 }
