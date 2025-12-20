@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { uploadToCloudinary } from '@/lib/documents/cloudinary';
+import { extractDocumentText } from '@/lib/documents/extraction';
 import { DocumentType } from '@prisma/client';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -92,6 +93,8 @@ export async function POST(request: NextRequest) {
         uploadedById: session.user.id,
         tags: tags ? JSON.parse(tags) : [],
         notes: notes || undefined,
+        extractionStatus: 'PENDING',
+        complianceStatus: 'PENDING',
       },
       include: {
         uploadedBy: {
@@ -118,10 +121,15 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Trigger text extraction in background (don't wait for it)
+    extractDocumentText(document.id).catch((error) => {
+      console.error('Background extraction error:', error);
+    });
+
     return NextResponse.json({
       success: true,
       document,
-      message: 'Document uploaded successfully',
+      message: 'Document uploaded successfully. Text extraction in progress.',
     }, { status: 201 });
   } catch (error) {
     console.error('Document upload error:', error);

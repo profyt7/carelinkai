@@ -1,57 +1,58 @@
-/**
- * OCR utilities for text extraction
- * Feature #6: Smart Document Processing
- */
+import Tesseract from 'tesseract.js';
 
-import { OCRExtractionResult } from '@/types/documents';
-
-/**
- * Extract text from document using Tesseract.js (client-side)
- * This is a placeholder - actual implementation will use Tesseract.js on the client
- */
-export async function extractTextClientSide(imageUrl: string): Promise<OCRExtractionResult> {
-  // TODO: Implement Tesseract.js integration
-  // This will be called from the client-side component
-  return {
-    success: false,
-    error: 'Not implemented yet - use server-side extraction',
-  };
+export interface OCRResult {
+  text: string;
+  confidence: number;
+  language: string;
 }
 
 /**
- * Extract text from document using Google Cloud Vision API (server-side)
+ * Extract text from an image using Tesseract OCR
  */
-export async function extractTextServerSide(imageUrl: string): Promise<OCRExtractionResult> {
+export async function extractTextFromImage(
+  imageUrl: string,
+  language: string = 'eng'
+): Promise<OCRResult> {
   try {
-    // TODO: Implement Google Cloud Vision API integration
-    // For now, return placeholder
+    console.log('Starting OCR for image:', imageUrl);
+
+    const result = await Tesseract.recognize(imageUrl, language, {
+      logger: (m) => {
+        if (m.status === 'recognizing text') {
+          console.log(`OCR Progress: ${Math.round(m.progress * 100)}%`);
+        }
+      },
+    });
+
+    const text = result.data.text.trim();
+    const confidence = result.data.confidence;
+
+    console.log('OCR completed:', {
+      textLength: text.length,
+      confidence: confidence.toFixed(2),
+    });
+
     return {
-      success: false,
-      error: 'Google Cloud Vision API not configured',
+      text,
+      confidence,
+      language,
     };
   } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'OCR extraction failed',
-    };
+    console.error('OCR error:', error);
+    throw new Error('Failed to extract text from image');
   }
 }
 
 /**
- * Extract text from PDF
+ * Check if a file is an image
  */
-export async function extractTextFromPDF(pdfUrl: string): Promise<OCRExtractionResult> {
-  try {
-    // TODO: Implement PDF text extraction
-    // Use pdf-parse or similar library
-    return {
-      success: false,
-      error: 'PDF text extraction not implemented yet',
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'PDF extraction failed',
-    };
-  }
+export function isImage(mimeType: string): boolean {
+  return mimeType.startsWith('image/');
+}
+
+/**
+ * Get supported OCR languages
+ */
+export function getSupportedLanguages(): string[] {
+  return ['eng', 'spa', 'fra', 'deu', 'ita', 'por', 'rus', 'chi_sim', 'jpn', 'kor'];
 }

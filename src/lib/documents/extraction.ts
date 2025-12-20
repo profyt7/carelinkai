@@ -1,98 +1,118 @@
+import { prisma } from '@/lib/prisma';
+import { extractTextFromImage, isImage } from './ocr';
+import { extractTextFromPDF, isPDF, downloadFile } from './pdf-extractor';
+
+export interface ExtractionResult {
+  success: boolean;
+  text?: string;
+  confidence?: number;
+  error?: string;
+}
+
 /**
- * AI-powered field extraction utilities
- * Feature #6: Smart Document Processing
+ * Extract text from a document (PDF or image)
  */
-
-import OpenAI from 'openai';
-import { AIExtractionResult, ExtractedData, DocumentType } from '@/types/documents';
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-/**
- * Extract structured fields from document text using OpenAI
- */
-export async function extractFieldsWithAI(
-  extractedText: string,
-  documentType: DocumentType
-): Promise<AIExtractionResult> {
+export async function extractDocumentText(
+  documentId: string
+): Promise<ExtractionResult> {
   try {
-    const prompt = buildExtractionPrompt(extractedText, documentType);
-
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4',
-      messages: [
-        {
-          role: 'system',
-          content:
-            'You are an expert at extracting structured data from documents. Extract the requested fields and provide confidence scores.',
-        },
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      response_format: { type: 'json_object' },
-      temperature: 0.1,
+    // Get document from database
+    const document = await prisma.document.findUnique({
+      where: { id: documentId },
     });
 
-    const extractedData = JSON.parse(response.choices[0].message.content || '{}');
+    if (!document) {
+      return {
+        success: false,
+        error: 'Document not found',
+      };
+    }
+
+    // Update status to processing
+    await prisma.document.update({
+      where: { id: documentId },
+      data: {
+        extractionStatus: 'PROCESSING',
+      },
+    });
+
+    let extractedText = '';
+    let confidence = 100;
+
+    // Extract based on file type
+    if (isPDF(document.mimeType)) {
+      console.log(`Extracting text from PDF: ${document.fileName}`);
+      
+      // Download PDF file
+      const pdfBuffer = await downloadFile(document.fileUrl);
+      
+      // Extract text
+      const result = await extractTextFromPDF(pdfBuffer);
+      extractedText = result.text;
+      
+    } else if (isImage(document.mimeType)) {
+      console.log(`Extracting text from image: ${document.fileName}`);
+      
+      // Run OCR
+      const result = await extractTextFromImage(document.fileUrl);
+      extractedText = result.text;
+      confidence = result.confidence;
+      
+    } else {
+      return {
+        success: false,
+        error: 'Unsupported file type for text extraction',
+      };
+    }
+
+    // Update document with extracted text
+    await prisma.document.update({
+      where: { id: documentId },
+      data: {
+        extractedText,
+        extractionStatus: 'COMPLETED',
+        extractionError: null,
+      },
+    });
+
+    console.log(`Text extraction completed for ${document.fileName}`);
 
     return {
       success: true,
-      extractedData,
+      text: extractedText,
+      confidence,
     };
   } catch (error) {
+    console.error('Extraction error:', error);
+
+    // Update document with error
+    await prisma.document.update({
+      where: { id: documentId },
+      data: {
+        extractionStatus: 'FAILED',
+        extractionError: error instanceof Error ? error.message : 'Unknown error',
+      },
+    });
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Field extraction failed',
+      error: error instanceof Error ? error.message : 'Unknown error',
     };
   }
 }
 
 /**
- * Build extraction prompt based on document type
+ * Extract text from multiple documents
  */
-function buildExtractionPrompt(text: string, documentType: DocumentType): string {
-  const basePrompt = `Extract structured data from the following document text. Return a JSON object where each field has a "value" and "confidence" (0-1 score).\n\nDocument text:\n${text}\n\n`;
+export async function extractMultipleDocuments(
+  documentIds: string[]
+): Promise<Map<string, ExtractionResult>> {
+  const results = new Map<string, ExtractionResult>();
 
-  const fieldsByType: Record<DocumentType, string[]> = {
-    MEDICAL_RECORD: [
-      'patientName',
-      'dateOfBirth',
-      'medicalRecordNumber',
-      'diagnosis',
-      'medications',
-      'allergies',
-      'physicianName',
-    ],
-    INSURANCE_CARD: [
-      'memberName',
-      'memberId',
-      'groupNumber',
-      'planName',
-      'effectiveDate',
-      'expirationDate',
-      'copay',
-    ],
-    ID_DOCUMENT: ['fullName', 'dateOfBirth', 'idNumber', 'expirationDate', 'address'],
-    CONTRACT: ['partyNames', 'effectiveDate', 'expirationDate', 'terms', 'signatureDate'],
-    FINANCIAL: ['amount', 'date', 'payee', 'payer', 'description', 'accountNumber'],
-    CARE_PLAN: [
-      'residentName',
-      'careLevel',
-      'services',
-      'medications',
-      'dietaryRestrictions',
-      'effectiveDate',
-    ],
-    EMERGENCY_CONTACT: ['name', 'relationship', 'phone', 'email', 'address'],
-    OTHER: ['generalInfo'],
-  };
+  for (const documentId of documentIds) {
+    const result = await extractDocumentText(documentId);
+    results.set(documentId, result);
+  }
 
-  const fields = fieldsByType[documentType] || fieldsByType.OTHER;
-  const fieldsPrompt = `Extract the following fields: ${fields.join(', ')}`;
-
-  return basePrompt + fieldsPrompt;
+  return results;
 }

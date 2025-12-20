@@ -1,8 +1,10 @@
 'use client';
 
-import { X, Download, ExternalLink } from 'lucide-react';
+import { X, Download, ExternalLink, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Document, DOCUMENT_TYPE_LABELS, formatFileSize } from '@/types/documents';
+import { ExtractedTextViewer } from './ExtractedTextViewer';
 
 interface DocumentViewerProps {
   document: Document;
@@ -12,6 +14,7 @@ interface DocumentViewerProps {
 export function DocumentViewer({ document, onClose }: DocumentViewerProps) {
   const isPDF = document.mimeType === 'application/pdf';
   const isImage = document.mimeType.startsWith('image/');
+  const hasExtractedText = document.extractedText && document.extractedText.length > 0;
 
   const handleDownload = () => {
     window.open(document.fileUrl, '_blank');
@@ -51,30 +54,77 @@ export function DocumentViewer({ document, onClose }: DocumentViewerProps) {
 
         {/* Content */}
         <div className="flex-1 overflow-auto p-4">
-          {isPDF && (
-            <iframe
-              src={document.fileUrl}
-              className="w-full h-full min-h-[600px] border rounded"
-              title={document.fileName}
-            />
-          )}
-          {isImage && (
-            <img
-              src={document.fileUrl}
-              alt={document.fileName}
-              className="max-w-full h-auto mx-auto"
-            />
-          )}
-          {!isPDF && !isImage && (
-            <div className="text-center py-12">
-              <p className="text-gray-500 mb-4">
-                Preview not available for this file type
-              </p>
-              <Button onClick={handleDownload}>
-                <Download className="h-4 w-4 mr-2" />
-                Download to view
-              </Button>
-            </div>
+          {hasExtractedText ? (
+            <Tabs defaultValue="preview" className="w-full">
+              <TabsList>
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="text">
+                  <FileText className="h-4 w-4 mr-2" />
+                  Extracted Text
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="preview" className="mt-4">
+                {isPDF && (
+                  <iframe
+                    src={document.fileUrl}
+                    className="w-full h-full min-h-[600px] border rounded"
+                    title={document.fileName}
+                  />
+                )}
+                {isImage && (
+                  <img
+                    src={document.fileUrl}
+                    alt={document.fileName}
+                    className="max-w-full h-auto mx-auto"
+                  />
+                )}
+                {!isPDF && !isImage && (
+                  <div className="text-center py-12">
+                    <p className="text-gray-500 mb-4">
+                      Preview not available for this file type
+                    </p>
+                    <Button onClick={handleDownload}>
+                      <Download className="h-4 w-4 mr-2" />
+                      Download to view
+                    </Button>
+                  </div>
+                )}
+              </TabsContent>
+              <TabsContent value="text" className="mt-4">
+                <ExtractedTextViewer
+                  text={document.extractedText || ''}
+                  fileName={document.fileName}
+                />
+              </TabsContent>
+            </Tabs>
+          ) : (
+            <>
+              {isPDF && (
+                <iframe
+                  src={document.fileUrl}
+                  className="w-full h-full min-h-[600px] border rounded"
+                  title={document.fileName}
+                />
+              )}
+              {isImage && (
+                <img
+                  src={document.fileUrl}
+                  alt={document.fileName}
+                  className="max-w-full h-auto mx-auto"
+                />
+              )}
+              {!isPDF && !isImage && (
+                <div className="text-center py-12">
+                  <p className="text-gray-500 mb-4">
+                    Preview not available for this file type
+                  </p>
+                  <Button onClick={handleDownload}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Download to view
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
