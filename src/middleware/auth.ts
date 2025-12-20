@@ -19,7 +19,7 @@ import {
   UnauthenticatedError,
   UnauthorizedError,
 } from "@/lib/auth-utils";
-import {
+import type {
   Permission,
   ResourceType,
   ResourceAction,

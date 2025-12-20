@@ -4,7 +4,8 @@
  * Provides utilities for logging in as different user roles and managing auth state.
  */
 
-import { Page, expect } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 export interface TestUser {
   email: string;
@@ -78,28 +79,28 @@ export async function login(page: Page, user: TestUser): Promise<void> {
  * Log in as admin
  */
 export async function loginAsAdmin(page: Page): Promise<void> {
-  await login(page, TEST_USERS.ADMIN);
+  await login(page, TEST_USERS['ADMIN']!);
 }
 
 /**
  * Log in as operator
  */
 export async function loginAsOperator(page: Page): Promise<void> {
-  await login(page, TEST_USERS.OPERATOR);
+  await login(page, TEST_USERS['OPERATOR']!);
 }
 
 /**
  * Log in as caregiver
  */
 export async function loginAsCaregiver(page: Page): Promise<void> {
-  await login(page, TEST_USERS.CAREGIVER);
+  await login(page, TEST_USERS['CAREGIVER']!);
 }
 
 /**
  * Log in as family member
  */
 export async function loginAsFamily(page: Page): Promise<void> {
-  await login(page, TEST_USERS.FAMILY);
+  await login(page, TEST_USERS['FAMILY']!);
 }
 
 /**

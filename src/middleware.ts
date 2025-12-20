@@ -153,7 +153,7 @@ export default function middleware(req: NextRequest) {
     },
     {
       callbacks: {
-        authorized({ req, token }) {
+        authorized({ req, token }: { req: any; token: any }) {
           try {
             const pathname = req?.nextUrl?.pathname || '';
 

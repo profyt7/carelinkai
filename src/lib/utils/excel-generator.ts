@@ -1,4 +1,4 @@
-import { ReportData } from '../services/reports';
+import type { ReportData } from '../services/reports';
 
 /**
  * Generate Excel file from report data
@@ -34,8 +34,8 @@ export async function generateExcel(reportData: ReportData): Promise<Buffer> {
     content += '\n';
     
     // Add rows
-    table?.rows?.forEach?.((row) => {
-      content += row?.map?.(cell => {
+    table?.rows?.forEach?.((row: any) => {
+      content += row?.map?.((cell: any) => {
         // Escape commas and quotes in cells
         const escaped = String(cell ?? '').replace(/"/g, '""');
         return escaped.includes(',') ? `"${escaped}"` : escaped;

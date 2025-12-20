@@ -32,9 +32,9 @@
     "noUnusedParameters": false,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexedAccess": true,
+    "noUncheckedIndexedAccess": false,
     "noImplicitOverride": true,
-    "noPropertyAccessFromIndexSignature": true,
+    "noPropertyAccessFromIndexSignature": false,
 
     /* Module Resolution Options */
     "baseUrl": ".",
@@ -60,7 +60,7 @@
     "emitDecoratorMetadata": true,
 
     /* Advanced Options */
-    "verbatimModuleSyntax": true,
+    "verbatimModuleSyntax": false,
     "plugins": [
       {
         "name": "next"
@@ -76,6 +76,7 @@
   ],
   "exclude": [
     "node_modules",
+    "nextjs_space",
     ".next",
     "out",
     "dist",

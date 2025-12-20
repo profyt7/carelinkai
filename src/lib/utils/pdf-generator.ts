@@ -1,5 +1,5 @@
 import PDFDocument from 'pdfkit';
-import { ReportData } from '../services/reports';
+import type { ReportData } from '../services/reports';
 
 /**
  * Generate PDF from report data using PDFKit
@@ -104,7 +104,7 @@ export async function generatePDF(reportData: ReportData): Promise<Buffer> {
 
           // Header text
           doc.fillColor('#ffffff').fontSize(10);
-          table?.headers?.forEach((header, i) => {
+          table?.headers?.forEach((header: any, i: number) => {
             doc.text(
               String(header),
               currentX + 5,
@@ -116,7 +116,7 @@ export async function generatePDF(reportData: ReportData): Promise<Buffer> {
 
           // Table rows
           let rowY = tableTop + 25;
-          table?.rows?.forEach((row, rowIndex) => {
+          table?.rows?.forEach((row: any, rowIndex: number) => {
             // Check if we need a new page
             if (rowY > 700) {
               doc.addPage();
@@ -132,7 +132,7 @@ export async function generatePDF(reportData: ReportData): Promise<Buffer> {
             // Row text
             currentX = 50;
             doc.fillColor('#333333').fontSize(9);
-            row?.forEach((cell) => {
+            row?.forEach((cell: any) => {
               doc.text(
                 String(cell),
                 currentX + 5,

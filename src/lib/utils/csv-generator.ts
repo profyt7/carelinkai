@@ -1,4 +1,4 @@
-import { ReportData } from '../services/reports';
+import type { ReportData } from '../services/reports';
 
 /**
  * Generate CSV file from report data
@@ -29,12 +29,12 @@ export async function generateCSV(reportData: ReportData): Promise<Buffer> {
     content += `"${table?.title ?? ''}"\n`;
     
     // Add headers
-    content += table?.headers?.map?.(h => `"${String(h ?? '')?.replace?.(/"/g, '""') ?? ''}"`).join(',') ?? '';
+    content += table?.headers?.map?.((h: any) => `"${String(h ?? '')?.replace?.(/"/g, '""') ?? ''}"`).join(',') ?? '';
     content += '\n';
     
     // Add rows
-    table?.rows?.forEach?.((row) => {
-      content += row?.map?.(cell => {
+    table?.rows?.forEach?.((row: any) => {
+      content += row?.map?.((cell: any) => {
         const str = String(cell ?? '');
         return `"${str?.replace?.(/"/g, '""') ?? ''}"`;
       })?.join?.(',') ?? '';
