@@ -4,7 +4,6 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "postinstall": "prisma generate",
     "clean": "rm -rf .next node_modules/.prisma/client && prisma generate",
     "prebuild": "rm -rf .next && prisma generate",
     "build": "cross-env NODE_OPTIONS=--max-old-space-size=4096 next build",
