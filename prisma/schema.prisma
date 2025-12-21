@@ -184,6 +184,7 @@ model User {
   uploadedResidentDocuments ResidentDocument[]  @relation("ResidentDocumentUploader")
   uploadedInquiryDocuments InquiryDocument[]   @relation("InquiryDocumentUploader")
   documentsUploaded        Document[]           @relation("UploadedDocuments") // Feature #6: Smart Document Processing
+  reviewedDocuments        Document[]           @relation("DocumentReviewer") // Phase 3: Document review
   authoredNotes            FamilyNote[]         @relation("NoteAuthor")
   documentComments         DocumentComment[]    @relation("DocumentCommentAuthor")
   noteComments             NoteComment[]        @relation("NoteCommentAuthor")
@@ -2694,13 +2695,13 @@ model TourSlot {
 // Enums for Document Processing
 enum DocumentType {
   MEDICAL_RECORD
-  INSURANCE_CARD
-  ID_DOCUMENT
-  CONTRACT
+  INSURANCE
+  IDENTIFICATION
   FINANCIAL
-  CARE_PLAN
+  LEGAL
+  ASSESSMENT_FORM
   EMERGENCY_CONTACT
-  OTHER
+  GENERAL
 }
 
 enum ExtractionStatus {
@@ -2708,6 +2709,19 @@ enum ExtractionStatus {
   PROCESSING
   COMPLETED
   FAILED
+}
+
+enum ValidationStatus {
+  PENDING
+  VALID
+  INVALID
+  NEEDS_REVIEW
+}
+
+enum ReviewStatus {
+  NOT_REQUIRED
+  PENDING_REVIEW
+  REVIEWED
 }
 
 // Main Document model for Feature #6
@@ -2725,6 +2739,19 @@ model Document {
   extractedData     Json?             // Structured data from AI extraction
   extractionStatus  ExtractionStatus  @default(PENDING)
   extractionError   String?           @db.Text
+  
+  // Phase 3: AI Classification & Validation
+  classificationConfidence Float?            // 0-100 confidence score
+  classificationReasoning  String?           @db.Text // AI reasoning for classification
+  autoClassified           Boolean           @default(false) // Whether auto-classified by AI
+  
+  validationStatus         ValidationStatus  @default(PENDING)
+  validationErrors         Json?             // Array of validation error objects
+  
+  reviewStatus             ReviewStatus      @default(NOT_REQUIRED)
+  reviewedById             String?
+  reviewedBy               User?             @relation("DocumentReviewer", fields: [reviewedById], references: [id])
+  reviewedAt               DateTime?
   
   // Compliance Tracking
   isRequired        Boolean           @default(false)
@@ -2756,6 +2783,10 @@ model Document {
   @@index([uploadedById])
   @@index([createdAt])
   @@index([expirationDate])
+  @@index([validationStatus])
+  @@index([reviewStatus])
+  @@index([reviewedById])
+  @@index([autoClassified])
 }
 
 // Document templates for generation

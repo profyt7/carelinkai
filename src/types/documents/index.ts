@@ -1,14 +1,18 @@
 export type DocumentType =
   | 'MEDICAL_RECORD'
-  | 'INSURANCE_CARD'
-  | 'ID_DOCUMENT'
-  | 'CONTRACT'
+  | 'INSURANCE'
+  | 'IDENTIFICATION'
   | 'FINANCIAL'
-  | 'CARE_PLAN'
+  | 'LEGAL'
+  | 'ASSESSMENT_FORM'
   | 'EMERGENCY_CONTACT'
-  | 'OTHER';
+  | 'GENERAL';
 
 export type ExtractionStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+
+export type ValidationStatus = 'PENDING' | 'VALID' | 'INVALID' | 'NEEDS_REVIEW';
+
+export type ReviewStatus = 'NOT_REQUIRED' | 'PENDING_REVIEW' | 'REVIEWED';
 
 export type ComplianceStatus =
   | 'PENDING'
@@ -29,6 +33,16 @@ export interface Document {
   extractedData?: any;
   extractionStatus: ExtractionStatus;
   extractionError?: string;
+  // Phase 3: Classification & Validation
+  classificationConfidence?: number;
+  classificationReasoning?: string;
+  autoClassified: boolean;
+  validationStatus: ValidationStatus;
+  validationErrors?: any;
+  reviewStatus: ReviewStatus;
+  reviewedById?: string;
+  reviewedAt?: Date;
+  // Compliance
   isRequired: boolean;
   expirationDate?: Date;
   complianceStatus: ComplianceStatus;
@@ -41,6 +55,12 @@ export interface Document {
   createdAt: Date;
   updatedAt: Date;
   uploadedBy?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  reviewedBy?: {
     id: string;
     firstName: string;
     lastName: string;
@@ -59,24 +79,24 @@ export interface Document {
 
 export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
   MEDICAL_RECORD: 'Medical Record',
-  INSURANCE_CARD: 'Insurance Card',
-  ID_DOCUMENT: 'ID Document',
-  CONTRACT: 'Contract',
+  INSURANCE: 'Insurance',
+  IDENTIFICATION: 'Identification',
   FINANCIAL: 'Financial Document',
-  CARE_PLAN: 'Care Plan',
+  LEGAL: 'Legal Document',
+  ASSESSMENT_FORM: 'Assessment Form',
   EMERGENCY_CONTACT: 'Emergency Contact',
-  OTHER: 'Other',
+  GENERAL: 'General',
 };
 
 export const DOCUMENT_TYPE_COLORS: Record<DocumentType, string> = {
   MEDICAL_RECORD: 'bg-blue-100 text-blue-800',
-  INSURANCE_CARD: 'bg-green-100 text-green-800',
-  ID_DOCUMENT: 'bg-purple-100 text-purple-800',
-  CONTRACT: 'bg-orange-100 text-orange-800',
+  INSURANCE: 'bg-green-100 text-green-800',
+  IDENTIFICATION: 'bg-purple-100 text-purple-800',
   FINANCIAL: 'bg-yellow-100 text-yellow-800',
-  CARE_PLAN: 'bg-pink-100 text-pink-800',
+  LEGAL: 'bg-orange-100 text-orange-800',
+  ASSESSMENT_FORM: 'bg-pink-100 text-pink-800',
   EMERGENCY_CONTACT: 'bg-red-100 text-red-800',
-  OTHER: 'bg-gray-100 text-gray-800',
+  GENERAL: 'bg-gray-100 text-gray-800',
 };
 
 export const ALLOWED_FILE_TYPES = [
@@ -102,4 +122,41 @@ export function getFileIcon(mimeType: string): string {
   if (mimeType === 'application/pdf') return '📄';
   if (mimeType.startsWith('image/')) return '🖼️';
   return '📎';
+}
+
+// Phase 3: Classification & Validation Types
+
+export interface ClassificationResult {
+  success: boolean;
+  type?: DocumentType;
+  confidence?: number;
+  reasoning?: string;
+  category?: string;
+  error?: string;
+}
+
+export interface ValidationError {
+  field: string;
+  message: string;
+  severity: 'error' | 'warning';
+}
+
+export interface ValidationResult {
+  success: boolean;
+  isValid: boolean;
+  errors: ValidationError[];
+  warnings: ValidationError[];
+}
+
+export interface DocumentClassificationData {
+  documentType: DocumentType;
+  confidence: number;
+  reasoning: string;
+  autoClassified: boolean;
+  reviewStatus: ReviewStatus;
+}
+
+export interface DocumentValidationData {
+  validationStatus: ValidationStatus;
+  validationErrors: ValidationError[];
 }
