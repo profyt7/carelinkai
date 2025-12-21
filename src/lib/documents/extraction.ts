@@ -83,6 +83,19 @@ export async function extractDocumentText(
 
     console.log(`Text extraction completed for ${document.fileName}`);
 
+    // Automatically trigger classification and validation
+    // Run in background - don't wait for it
+    setTimeout(async () => {
+      try {
+        const { processDocument } = await import('./processing');
+        console.log(`Auto-processing document ${documentId}...`);
+        await processDocument(documentId);
+        console.log(`Auto-processing completed for ${documentId}`);
+      } catch (error) {
+        console.error(`Auto-processing failed for ${documentId}:`, error);
+      }
+    }, 100); // Small delay to allow extraction to fully complete
+
     return {
       success: true,
       text: extractedText,
