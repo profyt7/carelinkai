@@ -51,6 +51,12 @@
       "@/public/*": ["./public/*"]
     },
 
+    /* Type Roots */
+    "typeRoots": [
+      "./node_modules/@types",
+      "./src/types"
+    ],
+
     /* Source Map Options */
     "sourceMap": true,
     "inlineSources": true,
