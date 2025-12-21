@@ -1,12 +1,12 @@
 {
   "name": "carelinkai",
-  "version": "0.1.0",
+  "version": "1.0.0-build.20251221212054",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "clean": "rm -rf .next node_modules/.prisma/client && prisma generate",
     "prebuild": "rm -rf .next && prisma generate",
-    "build": "cross-env NODE_OPTIONS=--max-old-space-size=4096 next build",
+    "build": "NEXT_TELEMETRY_DISABLED=1 next build",
     "start": "npm run migrate:deploy && next start",
     "start:e2e": "cross-env NODE_ENV=production NEXTAUTH_URL=http://localhost:3000 NEXTAUTH_SECRET=devsecret ALLOW_DEV_ENDPOINTS=1 ALLOW_INSECURE_AUTH_COOKIE=1 DATABASE_URL=postgresql://postgres:postgres@localhost:5434/carelinkai_marketplace?schema=public npm run start",
     "lint": "next lint",
@@ -39,7 +39,9 @@
     "migrate:resolve": "bash scripts/resolve-failed-migration.sh",
     "migrate:resolve-20251218": "bash scripts/resolve-failed-migration-20251218.sh",
     "migrate:resolve-manual": "prisma migrate resolve --rolled-back 20251208170953_add_assessments_incidents_fields && prisma migrate resolve --rolled-back 20251208170953_add_assessments_incidents_fields.failed_backup",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "build:production": "NEXT_TELEMETRY_DISABLED=1 next build",
+    "build:original": "cross-env NODE_OPTIONS=--max-old-space-size=4096 next build"
   },
   "prisma": {
     "seed": "ts-node --transpile-only prisma/seed.ts"
