@@ -62,8 +62,8 @@ export function CaregiverCard({ caregiver }: CaregiverCardProps) {
   const assignmentCount = caregiver._count?.assignments ?? 0;
   const documentCount = caregiver._count?.documents ?? 0;
 
-  // Get initials for avatar fallback
-  const initials = `${user.firstName[0] || ''}${user.lastName[0] || ''}`.toUpperCase();
+  // Get initials for avatar fallback (null-safe)
+  const initials = `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`.toUpperCase();
 
   return (
     <Link href={`/operator/caregivers/${caregiver.id}`}>

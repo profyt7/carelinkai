@@ -130,21 +130,26 @@ export function isAdmissionInRange(admissionDate: Date | string, range: string):
 }
 
 /**
- * Get resident initials from first and last name
- * @param firstName - First name
- * @param lastName - Last name
- * @returns Initials (e.g., "JD")
+ * Get resident initials from first and last name (null-safe)
+ * @param firstName - First name (optional)
+ * @param lastName - Last name (optional)
+ * @returns Initials (e.g., "JD") or "??" if names are missing
  */
-export function getInitials(firstName: string, lastName: string): string {
-  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+export function getInitials(firstName?: string | null, lastName?: string | null): string {
+  const first = firstName?.trim()?.[0]?.toUpperCase() || '';
+  const last = lastName?.trim()?.[0]?.toUpperCase() || '';
+  return (first + last) || '??';
 }
 
 /**
- * Get full name from first and last name
- * @param firstName - First name
- * @param lastName - Last name
- * @returns Full name
+ * Get full name from first and last name (null-safe)
+ * @param firstName - First name (optional)
+ * @param lastName - Last name (optional)
+ * @returns Full name (e.g., "John Doe") or "Unknown Resident" if both are missing
  */
-export function getFullName(firstName: string, lastName: string): string {
-  return `${firstName} ${lastName}`;
+export function getFullName(firstName?: string | null, lastName?: string | null): string {
+  const first = firstName?.trim() || '';
+  const last = lastName?.trim() || '';
+  if (!first && !last) return 'Unknown Resident';
+  return `${first} ${last}`.trim();
 }

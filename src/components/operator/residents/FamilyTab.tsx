@@ -270,7 +270,7 @@ export function FamilyTab({ residentId }: { residentId: string }) {
                   <div className="flex items-start gap-3 flex-1">
                     <div className="h-12 w-12 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
                       <span className="text-primary-600 font-semibold text-lg">
-                        {contact.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                        {(contact.name || '').split(' ').map(n => n[0] || '').join('').slice(0, 2).toUpperCase() || '??'}
                       </span>
                     </div>
                     <div className="flex-1 min-w-0">
@@ -553,7 +553,7 @@ export function FamilyTab({ residentId }: { residentId: string }) {
               <div className="flex items-center gap-4">
                 <div className="h-16 w-16 rounded-full bg-primary-100 flex items-center justify-center">
                   <span className="text-primary-600 font-semibold text-xl">
-                    {viewModal.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                    {(viewModal.name || '').split(' ').map(n => n[0] || '').join('').slice(0, 2).toUpperCase() || '??'}
                   </span>
                 </div>
                 <div>

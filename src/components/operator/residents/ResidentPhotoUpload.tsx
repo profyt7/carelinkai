@@ -104,12 +104,13 @@ export function ResidentPhotoUpload({
   }
 
   const displayUrl = preview || photoUrl;
-  const initials = residentName
+  const initials = (residentName || '')
     .split(' ')
-    .map(n => n[0])
+    .map(n => n[0] || '')
+    .filter(Boolean)
     .join('')
     .toUpperCase()
-    .slice(0, 2);
+    .slice(0, 2) || '??';
 
   return (
     <div className="flex flex-col items-center gap-4">
