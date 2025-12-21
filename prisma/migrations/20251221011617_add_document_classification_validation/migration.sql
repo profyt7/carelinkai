@@ -15,9 +15,22 @@ EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
 
--- Step 2: Alter table to use new enum type (with mapping for renamed values)
+-- Step 2: Alter Document table to use new enum type (with mapping for renamed values)
 ALTER TABLE "Document" ALTER COLUMN "type" DROP DEFAULT;
 ALTER TABLE "Document" ALTER COLUMN "type" TYPE "DocumentType_new" 
+    USING (
+        CASE "type"::text
+            WHEN 'INSURANCE_CARD' THEN 'INSURANCE'::text
+            WHEN 'ID_DOCUMENT' THEN 'IDENTIFICATION'::text
+            WHEN 'CONTRACT' THEN 'LEGAL'::text
+            WHEN 'CARE_PLAN' THEN 'ASSESSMENT_FORM'::text
+            WHEN 'OTHER' THEN 'GENERAL'::text
+            ELSE "type"::text
+        END
+    )::"DocumentType_new";
+
+-- Step 2b: Alter DocumentTemplate table to use new enum type (with mapping for renamed values)
+ALTER TABLE "DocumentTemplate" ALTER COLUMN "type" TYPE "DocumentType_new" 
     USING (
         CASE "type"::text
             WHEN 'INSURANCE_CARD' THEN 'INSURANCE'::text
@@ -36,10 +49,18 @@ ALTER TYPE "DocumentType_new" RENAME TO "DocumentType";
 -- Step 4: Restore default if needed (currently no default)
 
 -- CreateEnum: ValidationStatus
-CREATE TYPE "ValidationStatus" AS ENUM ('PENDING', 'VALID', 'INVALID', 'NEEDS_REVIEW');
+DO $$ BEGIN
+    CREATE TYPE "ValidationStatus" AS ENUM ('PENDING', 'VALID', 'INVALID', 'NEEDS_REVIEW');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 -- CreateEnum: ReviewStatus
-CREATE TYPE "ReviewStatus" AS ENUM ('NOT_REQUIRED', 'PENDING_REVIEW', 'REVIEWED');
+DO $$ BEGIN
+    CREATE TYPE "ReviewStatus" AS ENUM ('NOT_REQUIRED', 'PENDING_REVIEW', 'REVIEWED');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 -- AlterTable: Add new classification and validation columns to Document
 ALTER TABLE "Document" ADD COLUMN IF NOT EXISTS "classificationConfidence" DOUBLE PRECISION;
