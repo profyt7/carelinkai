@@ -103,7 +103,7 @@ export default async function ResidentDetail({ params, searchParams }: { params:
   
   const mockCookie = cookies().get('carelink_mock_mode')?.value?.toString().trim().toLowerCase() || '';
   const showMock = ['1','true','yes','on'].includes(mockCookie);
-  let resident: any;
+  let resident: any = null;
   let contacts: any = { items: [] };
   let timeline: any = { items: [] };
   let assessments: any = { items: [] };
@@ -143,6 +143,25 @@ export default async function ResidentDetail({ params, searchParams }: { params:
       fetchSection(resident.id, 'incidents'),
       fetchSection(resident.id, 'notes'),
     ]);
+  }
+  
+  // Check if resident data was loaded successfully
+  if (!resident) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="mb-4 text-6xl">😔</div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Resident Not Found</h2>
+          <p className="text-gray-600 mb-6">The resident you're looking for doesn't exist or you don't have access to view it.</p>
+          <Link
+            href="/operator/residents"
+            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            ← Back to Residents
+          </Link>
+        </div>
+      </div>
+    );
   }
   
   // Calculate age
@@ -197,7 +216,7 @@ export default async function ResidentDetail({ params, searchParams }: { params:
             ) : (
               <div className="h-24 w-24 rounded-lg bg-neutral-200 flex items-center justify-center">
                 <span className="text-neutral-600 font-semibold text-2xl">
-                  {resident.firstName[0]}{resident.lastName[0]}
+                  {resident.firstName?.[0] || '?'}{resident.lastName?.[0] || '?'}
                 </span>
               </div>
             )}

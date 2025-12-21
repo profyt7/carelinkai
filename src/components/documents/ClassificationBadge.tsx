@@ -5,10 +5,11 @@ import { DocumentType } from '@prisma/client';
 
 interface ClassificationBadgeProps {
   documentType: DocumentType;
-  confidence: number;
+  confidence: number | null | undefined;
   reasoning?: string;
   autoClassified?: boolean;
   size?: 'sm' | 'md' | 'lg';
+  showConfidence?: boolean;
 }
 
 const documentTypeConfig: Record<DocumentType, { label: string; icon: string; color: string }> = {
@@ -40,11 +41,16 @@ export default function ClassificationBadge({
   reasoning,
   autoClassified = false,
   size = 'md',
+  showConfidence = true,
 }: ClassificationBadgeProps) {
   const config = documentTypeConfig[documentType];
-  const confColor = confidenceColor(confidence);
   
-  const colorClasses = {
+  // Handle null/undefined confidence
+  const score = confidence !== null && confidence !== undefined ? Math.max(0, Math.min(100, confidence)) : null;
+  const confColor = score !== null ? confidenceColor(score) : 'gray';
+  
+  // Base document type colors
+  const typeColorClasses: Record<string, string> = {
     blue: 'bg-blue-100 text-blue-800 border-blue-300',
     green: 'bg-green-100 text-green-800 border-green-300',
     purple: 'bg-purple-100 text-purple-800 border-purple-300',
@@ -55,25 +61,47 @@ export default function ClassificationBadge({
     gray: 'bg-gray-100 text-gray-800 border-gray-300',
   };
 
-  const confidenceBorderClasses = {
-    green: 'border-l-4 border-l-green-500',
-    yellow: 'border-l-4 border-l-yellow-500',
-    red: 'border-l-4 border-l-red-500',
+  // Confidence-based ring colors
+  const confidenceRingClasses: Record<string, string> = {
+    green: 'ring-2 ring-green-500 ring-offset-1',
+    yellow: 'ring-2 ring-yellow-500 ring-offset-1',
+    red: 'ring-2 ring-red-500 ring-offset-1',
+    gray: '',
   };
+
+  // Get confidence icon
+  const getConfidenceIcon = () => {
+    if (score === null) return null;
+    if (score >= 85) return '✓';
+    if (score >= 70) return '⚠';
+    return '!';
+  };
+
+  const confidenceIcon = getConfidenceIcon();
 
   return (
     <div className="group relative inline-block">
       <div
         className={`
           inline-flex items-center gap-1.5 rounded-md border font-medium
-          ${colorClasses[config.color]}
-          ${confidenceBorderClasses[confColor]}
+          ${typeColorClasses[config.color]}
+          ${confidenceRingClasses[confColor]}
           ${sizeClasses[size]}
           transition-all duration-200 hover:shadow-md cursor-help
         `}
+        title={`${config.label}${score !== null ? ` - Confidence: ${score.toFixed(0)}%` : ''}${autoClassified ? ' (AI Classified)' : ''}`}
       >
         <span className="text-base">{config.icon}</span>
         <span>{config.label}</span>
+        {showConfidence && confidenceIcon && (
+          <span className={`ml-0.5 font-bold ${
+            confColor === 'green' ? 'text-green-600' :
+            confColor === 'yellow' ? 'text-yellow-600' :
+            'text-red-600'
+          }`}>
+            {confidenceIcon}
+          </span>
+        )}
         {autoClassified && (
           <span className="text-xs opacity-70" title="Auto-classified by AI">
             🤖
@@ -84,15 +112,21 @@ export default function ClassificationBadge({
       {/* Tooltip */}
       <div className="invisible group-hover:visible absolute z-50 w-64 p-3 mt-2 text-sm bg-gray-900 text-white rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200">
         <div className="space-y-2">
-          <div>
-            <span className="font-semibold">Confidence:</span>{' '}
-            <span className={`font-bold ${
-              confColor === 'green' ? 'text-green-400' :
-              confColor === 'yellow' ? 'text-yellow-400' : 'text-red-400'
-            }`}>
-              {confidence.toFixed(1)}%
-            </span>
-          </div>
+          {score !== null ? (
+            <div>
+              <span className="font-semibold">Confidence:</span>{' '}
+              <span className={`font-bold ${
+                confColor === 'green' ? 'text-green-400' :
+                confColor === 'yellow' ? 'text-yellow-400' : 'text-red-400'
+              }`}>
+                {score.toFixed(1)}%
+              </span>
+            </div>
+          ) : (
+            <div>
+              <span className="font-semibold text-gray-400">No confidence score available</span>
+            </div>
+          )}
           
           {reasoning && (
             <div>

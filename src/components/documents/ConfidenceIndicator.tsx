@@ -3,7 +3,7 @@
 import React from 'react';
 
 interface ConfidenceIndicatorProps {
-  confidence: number;
+  confidence: number | null | undefined;
   showLabel?: boolean;
   size?: 'sm' | 'md' | 'lg';
   variant?: 'bar' | 'gauge' | 'badge';
@@ -15,15 +15,26 @@ export default function ConfidenceIndicator({
   size = 'md',
   variant = 'bar',
 }: ConfidenceIndicatorProps) {
+  // Handle null/undefined confidence
+  if (confidence === null || confidence === undefined) {
+    return (
+      <span className="text-xs text-gray-400 italic">
+        No confidence score
+      </span>
+    );
+  }
+
+  // Ensure confidence is a number between 0-100
+  const score = Math.max(0, Math.min(100, confidence));
   const getColor = () => {
-    if (confidence >= 85) return { bg: 'bg-green-500', text: 'text-green-700', border: 'border-green-500' };
-    if (confidence >= 70) return { bg: 'bg-yellow-500', text: 'text-yellow-700', border: 'border-yellow-500' };
+    if (score >= 85) return { bg: 'bg-green-500', text: 'text-green-700', border: 'border-green-500' };
+    if (score >= 70) return { bg: 'bg-yellow-500', text: 'text-yellow-700', border: 'border-yellow-500' };
     return { bg: 'bg-red-500', text: 'text-red-700', border: 'border-red-500' };
   };
 
   const getLabel = () => {
-    if (confidence >= 85) return 'High Confidence';
-    if (confidence >= 70) return 'Medium Confidence';
+    if (score >= 85) return 'High Confidence';
+    if (score >= 70) return 'Medium Confidence';
     return 'Low Confidence';
   };
 
@@ -38,9 +49,10 @@ export default function ConfidenceIndicator({
     return (
       <span
         className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full ${sizeClasses[size].text} font-medium border ${colors.border} ${colors.text} bg-opacity-10`}
+        title={`AI Confidence: ${score.toFixed(1)}%`}
       >
         <span className={`w-2 h-2 rounded-full ${colors.bg}`}></span>
-        {confidence.toFixed(1)}%
+        <span className="font-semibold">{score.toFixed(0)}%</span>
       </span>
     );
   }
@@ -49,7 +61,7 @@ export default function ConfidenceIndicator({
     // Circular gauge
     const radius = size === 'sm' ? 20 : size === 'md' ? 30 : 40;
     const circumference = 2 * Math.PI * radius;
-    const offset = circumference - (confidence / 100) * circumference;
+    const offset = circumference - (score / 100) * circumference;
     const svgSize = radius * 2 + 10;
 
     return (
@@ -84,7 +96,7 @@ export default function ConfidenceIndicator({
             className={`${sizeClasses[size].text} font-bold transform rotate-90`}
             fill="currentColor"
           >
-            {confidence.toFixed(0)}%
+            {score.toFixed(0)}%
           </text>
         </svg>
         {showLabel && (
@@ -105,14 +117,14 @@ export default function ConfidenceIndicator({
             {getLabel()}
           </span>
           <span className={`${sizeClasses[size].text} font-bold ${colors.text}`}>
-            {confidence.toFixed(1)}%
+            {score.toFixed(1)}%
           </span>
         </div>
       )}
       <div className={`${sizeClasses[size].width} ${sizeClasses[size].height} bg-gray-200 rounded-full overflow-hidden`}>
         <div
           className={`${sizeClasses[size].height} ${colors.bg} rounded-full transition-all duration-500 ease-out`}
-          style={{ width: `${confidence}%` }}
+          style={{ width: `${score}%` }}
         ></div>
       </div>
     </div>
