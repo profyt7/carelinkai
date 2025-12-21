@@ -35,7 +35,7 @@
     "cron:schedule": "node scripts/run-cron.js --mode schedule",
     "cron:run": "node scripts/run-cron.js",
     "type-check": "tsc -p tsconfig.json --noEmit",
-    "migrate:deploy": "npx prisma migrate resolve --rolled-back draft_add_document_processing || true && npx prisma migrate resolve --rolled-back 20251218162945_update_homes_to_active || true && npx prisma migrate resolve --rolled-back 20251221011617_add_document_classification_validation || true && npx prisma migrate deploy",
+    "migrate:deploy": "npx prisma migrate resolve --rolled-back draft_add_document_processing || true && npx prisma migrate resolve --rolled-back 20251220024025_phase1a_document_processing || true && npx prisma migrate resolve --rolled-back 20251218162945_update_homes_to_active || true && npx prisma migrate resolve --rolled-back 20251221011617_add_document_classification_validation || true && npx prisma migrate deploy",
     "migrate:resolve": "bash scripts/resolve-failed-migration.sh",
     "migrate:resolve-20251218": "bash scripts/resolve-failed-migration-20251218.sh",
     "migrate:resolve-manual": "prisma migrate resolve --rolled-back 20251208170953_add_assessments_incidents_fields && prisma migrate resolve --rolled-back 20251208170953_add_assessments_incidents_fields.failed_backup",
