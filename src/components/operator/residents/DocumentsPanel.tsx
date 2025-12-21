@@ -1,6 +1,9 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
+import { DocumentType, ValidationStatus, ReviewStatus } from '@prisma/client';
+import ClassificationBadge from '@/components/documents/ClassificationBadge';
+import { useRouter } from 'next/navigation';
 
 type Doc = {
   id: string;
@@ -9,9 +12,14 @@ type Doc = {
   fileType: string;
   fileSize: number;
   createdAt?: string;
+  documentType?: DocumentType;
+  classificationConfidence?: number;
+  validationStatus?: ValidationStatus;
+  reviewStatus?: ReviewStatus;
 };
 
 export function DocumentsPanel({ residentId }: { residentId: string }) {
+  const router = useRouter();
   const [items, setItems] = useState<Doc[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -97,10 +105,29 @@ export function DocumentsPanel({ residentId }: { residentId: string }) {
     }
   }
 
+  const needsReviewCount = items.filter(d => 
+    d.reviewStatus === 'PENDING_REVIEW' || 
+    d.validationStatus === 'NEEDS_REVIEW' ||
+    (d.classificationConfidence && d.classificationConfidence < 85)
+  ).length;
+
   return (
     <div className="bg-white border rounded-md p-4">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="font-semibold text-neutral-800">Documents</h2>
+        <div className="flex items-center gap-3">
+          <h2 className="font-semibold text-neutral-800">Documents</h2>
+          {needsReviewCount > 0 && (
+            <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-medium">
+              {needsReviewCount} need review
+            </span>
+          )}
+        </div>
+        <button
+          onClick={() => router.push('/operator/documents')}
+          className="text-sm text-blue-600 hover:text-blue-700 hover:underline"
+        >
+          View All Documents →
+        </button>
       </div>
       <div className="flex items-center gap-3 mb-2 text-sm">
         <label className="flex items-center gap-1"><input type="radio" checked={mode==='link'} onChange={() => setMode('link')} /> Link URL</label>
@@ -137,8 +164,10 @@ export function DocumentsPanel({ residentId }: { residentId: string }) {
             <thead>
               <tr>
                 <th className="text-left p-2">Title</th>
+                <th className="text-left p-2">Classification</th>
                 <th className="text-left p-2">Type</th>
                 <th className="text-left p-2">Size</th>
+                <th className="text-left p-2">Status</th>
                 <th className="text-left p-2">Actions</th>
               </tr>
             </thead>
@@ -146,8 +175,32 @@ export function DocumentsPanel({ residentId }: { residentId: string }) {
               {items.map((d) => (
                 <tr key={d.id} className="border-t">
                   <td className="p-2">{d.title}</td>
+                  <td className="p-2">
+                    {d.documentType && d.classificationConfidence !== undefined ? (
+                      <ClassificationBadge
+                        documentType={d.documentType}
+                        confidence={d.classificationConfidence}
+                        size="sm"
+                      />
+                    ) : (
+                      <span className="text-gray-500 text-xs">Not classified</span>
+                    )}
+                  </td>
                   <td className="p-2">{d.fileType}</td>
                   <td className="p-2">{d.fileSize?.toLocaleString?.() ?? d.fileSize}</td>
+                  <td className="p-2">
+                    {d.reviewStatus === 'PENDING_REVIEW' || d.validationStatus === 'NEEDS_REVIEW' ? (
+                      <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">
+                        Review
+                      </span>
+                    ) : d.reviewStatus === 'REVIEWED' ? (
+                      <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+                        ✓ Reviewed
+                      </span>
+                    ) : (
+                      <span className="text-gray-500 text-xs">-</span>
+                    )}
+                  </td>
                   <td className="p-2 flex items-center gap-2">
                     <a className="text-primary-600 hover:underline" href={d.fileUrl} target="_blank" rel="noreferrer">Open</a>
                     <button type="button" className="text-red-600 hover:underline" onClick={() => onDelete(d.id)}>Delete</button>

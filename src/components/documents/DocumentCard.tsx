@@ -1,214 +1,181 @@
 'use client';
 
-import { useState } from 'react';
-import { FileText, Download, Eye, Trash2, MoreVertical, Loader2, CheckCircle, XCircle, Clock } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { toast } from 'sonner';
-import {
-  Document,
-  DOCUMENT_TYPE_LABELS,
-  DOCUMENT_TYPE_COLORS,
-  formatFileSize,
-  getFileIcon,
-} from '@/types/documents';
+import React from 'react';
+import { Document, DocumentType, ValidationStatus, ReviewStatus } from '@prisma/client';
+import ClassificationBadge from './ClassificationBadge';
+import ConfidenceIndicator from './ConfidenceIndicator';
+import ValidationStatusComponent from './ValidationStatus';
+import { formatDistanceToNow } from 'date-fns';
 
 interface DocumentCardProps {
-  document: Document;
-  onView?: (document: Document) => void;
+  document: Document & { classificationConfidence?: number | null; classificationReasoning?: string | null; autoClassified?: boolean | null; validationStatus?: ValidationStatus | null; validationErrors?: any; reviewStatus?: ReviewStatus | null };
+  onReview?: (documentId: string) => void;
+  onDownload?: (documentId: string) => void;
   onDelete?: (documentId: string) => void;
-  onRefresh?: () => void;
+  compact?: boolean;
 }
 
-export function DocumentCard({ document, onView, onDelete, onRefresh }: DocumentCardProps) {
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isExtracting, setIsExtracting] = useState(false);
+export default function DocumentCard({
+  document,
+  onReview,
+  onDownload,
+  onDelete,
+  compact = false,
+}: DocumentCardProps) {
+  const needsReview = document.reviewStatus === 'PENDING_REVIEW' || 
+                      document.validationStatus === 'NEEDS_REVIEW' || 
+                      (document.classificationConfidence && document.classificationConfidence < 85);
 
-  const handleDownload = () => {
-    window.open(document.fileUrl, '_blank');
-    toast.success('Download started');
-  };
+  const fileSize = document.fileSize ? `${(document.fileSize / 1024).toFixed(1)} KB` : 'Unknown size';
+  const uploadedAgo = formatDistanceToNow(new Date(document.uploadedAt), { addSuffix: true });
 
-  const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this document?')) return;
-
-    setIsDeleting(true);
-    try {
-      const response = await fetch(`/api/documents/${document.id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete document');
-      }
-
-      toast.success('Document deleted successfully');
-      if (onDelete) {
-        onDelete(document.id);
-      }
-    } catch (error) {
-      console.error('Delete error:', error);
-      toast.error('Failed to delete document');
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  const handleExtract = async () => {
-    setIsExtracting(true);
-    try {
-      const response = await fetch(`/api/documents/${document.id}/extract`, {
-        method: 'POST',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to extract text');
-      }
-
-      toast.success('Text extraction completed');
-      if (onRefresh) {
-        onRefresh();
-      }
-    } catch (error) {
-      console.error('Extract error:', error);
-      toast.error('Failed to extract text');
-    } finally {
-      setIsExtracting(false);
-    }
-  };
-
-  const getExtractionStatusBadge = () => {
-    switch (document.extractionStatus) {
-      case 'PENDING':
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
-            <Clock className="h-3 w-3" />
-            Pending
-          </span>
-        );
-      case 'PROCESSING':
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-            <Loader2 className="h-3 w-3 animate-spin" />
-            Processing
-          </span>
-        );
-      case 'COMPLETED':
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
-            <CheckCircle className="h-3 w-3" />
-            Extracted
-          </span>
-        );
-      case 'FAILED':
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full">
-            <XCircle className="h-3 w-3" />
-            Failed
-          </span>
-        );
-      default:
-        return null;
-    }
-  };
-
-  return (
-    <div className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-      <div className="flex items-start gap-3">
-        {/* Icon */}
-        <div className="text-4xl">{getFileIcon(document.mimeType)}</div>
+  if (compact) {
+    return (
+      <div className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
+        {/* File icon */}
+        <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+          <span className="text-2xl">📄</span>
+        </div>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          {/* Type Badge and Extraction Status */}
-          <div className="flex items-center gap-2 mb-2">
-            <span
-              className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
-                DOCUMENT_TYPE_COLORS[document.type]
-              }`}
-            >
-              {DOCUMENT_TYPE_LABELS[document.type]}
-            </span>
-            {getExtractionStatusBadge()}
-          </div>
-
-          {/* File Name */}
-          <h3 className="text-sm font-medium text-gray-900 truncate mb-1">
-            {document.fileName}
-          </h3>
-
-          {/* Metadata */}
-          <div className="flex items-center gap-3 text-xs text-gray-500">
-            <span>{formatFileSize(document.fileSize)}</span>
-            <span>•</span>
-            <span>{new Date(document.createdAt).toLocaleDateString()}</span>
-            {document.uploadedBy && (
-              <>
-                <span>•</span>
-                <span>{document.uploadedBy.firstName} {document.uploadedBy.lastName}</span>
-              </>
+          <div className="flex items-center gap-2">
+            <h4 className="text-sm font-medium text-gray-900 truncate">
+              {document.fileName}
+            </h4>
+            {needsReview && (
+              <span className="flex-shrink-0 px-2 py-0.5 text-xs font-medium text-red-700 bg-red-100 rounded-full">
+                Review
+              </span>
             )}
           </div>
-
-          {/* Extracted Text Preview */}
-          {document.extractedText && (
-            <p className="text-xs text-gray-600 mt-2 line-clamp-2">
-              {document.extractedText}
-            </p>
-          )}
-
-          {/* Tags */}
-          {document.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-2">
-              {document.tags.map((tag, index) => (
-                <span
-                  key={index}
-                  className="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          )}
+          <div className="flex items-center gap-2 mt-1">
+            <ClassificationBadge
+              documentType={document.documentType}
+              confidence={document.classificationConfidence || 0}
+              size="sm"
+            />
+            <span className="text-xs text-gray-500">{fileSize}</span>
+          </div>
         </div>
 
         {/* Actions */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm">
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onView && onView(document)}>
-              <Eye className="mr-2 h-4 w-4" />
-              View
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleDownload}>
-              <Download className="mr-2 h-4 w-4" />
-              Download
-            </DropdownMenuItem>
-            {(document.extractionStatus === 'PENDING' || document.extractionStatus === 'FAILED') && (
-              <DropdownMenuItem onClick={handleExtract} disabled={isExtracting}>
-                <FileText className="mr-2 h-4 w-4" />
-                {isExtracting ? 'Extracting...' : 'Extract Text'}
-              </DropdownMenuItem>
-            )}
-            <DropdownMenuItem
-              onClick={handleDelete}
-              disabled={isDeleting}
-              className="text-red-600"
+        <div className="flex-shrink-0 flex items-center gap-2">
+          {needsReview && onReview && (
+            <button
+              onClick={() => onReview(document.id)}
+              className="px-3 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded hover:bg-blue-200"
             >
-              <Trash2 className="mr-2 h-4 w-4" />
-              {isDeleting ? 'Deleting...' : 'Delete'}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+              Review
+            </button>
+          )}
+          {onDownload && (
+            <button
+              onClick={() => onDownload(document.id)}
+              className="p-1.5 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded"
+              title="Download"
+            >
+              ⬇️
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-lg transition-shadow overflow-hidden">
+      {/* Header with review badge */}
+      {needsReview && (
+        <div className="bg-red-50 border-b border-red-200 px-4 py-2 flex items-center gap-2">
+          <span className="text-red-600 font-semibold text-sm">⚠️ Needs Review</span>
+        </div>
+      )}
+
+      {/* Main content */}
+      <div className="p-4 space-y-3">
+        {/* File preview placeholder */}
+        <div className="aspect-[4/3] bg-gray-100 rounded-lg flex items-center justify-center">
+          <span className="text-6xl">📄</span>
+        </div>
+
+        {/* File info */}
+        <div>
+          <h3 className="text-base font-semibold text-gray-900 truncate" title={document.fileName}>
+            {document.fileName}
+          </h3>
+          <p className="text-sm text-gray-500 mt-1">
+            {fileSize} • Uploaded {uploadedAgo}
+          </p>
+        </div>
+
+        {/* Classification */}
+        <div className="space-y-2">
+          <ClassificationBadge
+            documentType={document.documentType}
+            confidence={document.classificationConfidence || 0}
+            reasoning={document.classificationReasoning || undefined}
+            autoClassified={document.autoClassified || false}
+          />
+          
+          <ConfidenceIndicator
+            confidence={document.classificationConfidence || 0}
+            size="sm"
+            variant="bar"
+          />
+        </div>
+
+        {/* Validation status */}
+        {document.validationStatus && (
+          <ValidationStatusComponent
+            status={document.validationStatus}
+            errors={document.validationErrors}
+            showDetails={true}
+          />
+        )}
+
+        {/* Review status */}
+        {document.reviewStatus === 'REVIEWED' && document.reviewedAt && (
+          <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 px-3 py-1.5 rounded">
+            <span>✓</span>
+            <span>Reviewed {formatDistanceToNow(new Date(document.reviewedAt), { addSuffix: true })}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Actions footer */}
+      <div className="border-t border-gray-200 px-4 py-3 bg-gray-50 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {needsReview && onReview && (
+            <button
+              onClick={() => onReview(document.id)}
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Review Document
+            </button>
+          )}
+        </div>
+        
+        <div className="flex items-center gap-2">
+          {onDownload && (
+            <button
+              onClick={() => onDownload(document.id)}
+              className="p-2 text-gray-600 hover:text-blue-600 hover:bg-white rounded-lg transition-colors"
+              title="Download"
+            >
+              <span className="text-lg">⬇️</span>
+            </button>
+          )}
+          {onDelete && (
+            <button
+              onClick={() => onDelete(document.id)}
+              className="p-2 text-gray-600 hover:text-red-600 hover:bg-white rounded-lg transition-colors"
+              title="Delete"
+            >
+              <span className="text-lg">🗑️</span>
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

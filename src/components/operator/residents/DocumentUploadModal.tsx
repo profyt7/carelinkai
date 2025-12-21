@@ -3,6 +3,10 @@
 import { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { FiUpload, FiX, FiFileText, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
+import { DocumentType, ValidationStatus } from '@prisma/client';
+import ClassificationBadge from '@/components/documents/ClassificationBadge';
+import ConfidenceIndicator from '@/components/documents/ConfidenceIndicator';
+import ValidationStatusComponent from '@/components/documents/ValidationStatus';
 
 interface DocumentUploadModalProps {
   residentId: string;
@@ -36,6 +40,13 @@ export function DocumentUploadModal({
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState('');
+  const [classificationResult, setClassificationResult] = useState<{
+    documentType: DocumentType;
+    confidence: number;
+    reasoning?: string;
+    validationStatus?: ValidationStatus;
+    validationErrors?: any;
+  } | null>(null);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: {
@@ -103,9 +114,28 @@ export function DocumentUploadModal({
         throw new Error('Failed to save document');
       }
 
+      const documentData = await documentResponse.json();
       setUploadProgress(100);
-      onSuccess();
-      handleClose();
+      
+      // Show classification result if available
+      if (documentData.document) {
+        setClassificationResult({
+          documentType: documentData.document.documentType,
+          confidence: documentData.document.classificationConfidence || 0,
+          reasoning: documentData.document.classificationReasoning,
+          validationStatus: documentData.document.validationStatus,
+          validationErrors: documentData.document.validationErrors,
+        });
+        
+        // Wait 3 seconds to show result, then close
+        setTimeout(() => {
+          onSuccess();
+          handleClose();
+        }, 3000);
+      } else {
+        onSuccess();
+        handleClose();
+      }
     } catch (err) {
       setError('Failed to upload document. Please try again.');
       console.error('Upload error:', err);
@@ -120,6 +150,7 @@ export function DocumentUploadModal({
     setDescription('');
     setUploadProgress(0);
     setError('');
+    setClassificationResult(null);
     onClose();
   };
 
@@ -206,7 +237,7 @@ export function DocumentUploadModal({
         </div>
 
         {/* Upload Progress */}
-        {uploading && (
+        {uploading && !classificationResult && (
           <div className="mt-4">
             <div className="flex justify-between text-sm text-neutral-600 mb-1">
               <span>Uploading...</span>
@@ -218,6 +249,52 @@ export function DocumentUploadModal({
                 style={{ width: `${uploadProgress}%` }}
               />
             </div>
+          </div>
+        )}
+
+        {/* Classification Result */}
+        {classificationResult && (
+          <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg space-y-3">
+            <div className="flex items-center gap-2 text-green-700 font-semibold">
+              <FiCheckCircle className="w-5 h-5" />
+              <span>Upload Complete! AI Classification:</span>
+            </div>
+            
+            <div className="space-y-2">
+              <div>
+                <label className="text-sm text-neutral-600 mb-1 block">Classified As:</label>
+                <ClassificationBadge
+                  documentType={classificationResult.documentType}
+                  confidence={classificationResult.confidence}
+                  reasoning={classificationResult.reasoning}
+                  autoClassified={true}
+                />
+              </div>
+
+              <div>
+                <label className="text-sm text-neutral-600 mb-1 block">Confidence:</label>
+                <ConfidenceIndicator
+                  confidence={classificationResult.confidence}
+                  variant="bar"
+                  size="sm"
+                />
+              </div>
+
+              {classificationResult.validationStatus && (
+                <div>
+                  <label className="text-sm text-neutral-600 mb-1 block">Validation:</label>
+                  <ValidationStatusComponent
+                    status={classificationResult.validationStatus}
+                    errors={classificationResult.validationErrors}
+                    showDetails={true}
+                  />
+                </div>
+              )}
+            </div>
+
+            <p className="text-xs text-neutral-600 mt-2">
+              Closing automatically in 3 seconds...
+            </p>
           </div>
         )}
 
