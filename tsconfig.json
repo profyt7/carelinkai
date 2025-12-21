@@ -99,6 +99,11 @@
     "playwright.config*.ts",
     "playwright-report",
     "test-results",
-    ".playwright"
+    ".playwright",
+    "prisma/seed.ts",
+    "prisma/seed*.ts",
+    "prisma/**/*.seed.ts",
+    "scripts",
+    "scripts/**/*"
   ]
 }
