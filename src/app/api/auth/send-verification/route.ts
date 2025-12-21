@@ -17,7 +17,7 @@ export const runtime = 'nodejs';
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { getLogger } from "@/lib/logger";
+import { logger } from "@/lib/logger";
 import { PrismaClient, AuditAction, UserStatus } from "@prisma/client";
 import { rateLimit } from "@/lib/rate-limit";
 import { getServerSession } from "next-auth/next";
