@@ -106,3 +106,23 @@ export const logger = new Logger();
 
 // Also export as default for convenience
 export default logger;
+
+/**
+ * Binds a logger instance to a specific request context
+ * Useful for webhook handlers and API routes
+ */
+export function bindRequestLogger(req: any) {
+  const context: LogContext = {
+    path: req.url,
+    method: req.method,
+    userAgent: req.headers?.get?.('user-agent') || undefined,
+  };
+
+  return {
+    info: (msg: string, meta?: any) => logger.info(msg, { ...context, ...meta }),
+    error: (msg: string, meta?: any) => logger.error(msg, { ...context, ...meta }),
+    warn: (msg: string, meta?: any) => logger.warn(msg, { ...context, ...meta }),
+    debug: (msg: string, meta?: any) => logger.debug(msg, { ...context, ...meta }),
+    audit: (event: string, meta?: any) => logger.audit(event, { ...context, ...meta }),
+  };
+}

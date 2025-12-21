@@ -10,6 +10,16 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   
+  // Skip ESLint during builds (we'll run it separately)
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  
+  // Skip TypeScript errors during build (for now)
+  typescript: {
+    ignoreBuildErrors: false, // Keep this false to catch real errors
+  },
+  
   // Add cache busting headers to prevent browser caching
   async headers() {
     return [

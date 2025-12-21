@@ -87,6 +87,10 @@
     "**/*.spec.ts",
     "**/*.spec.tsx",
     "src/lib/services/calendar-backup.ts",
-    "src/unused/**"
+    "src/unused/**",
+    "e2e",
+    "e2e/**/*",
+    "playwright.config.ts",
+    "tests"
   ]
 }

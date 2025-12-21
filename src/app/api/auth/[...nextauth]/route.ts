@@ -16,6 +16,9 @@ import type { NextRequest } from "next/server";
 import { rateLimit } from "@/lib/rate-limit";
 import authOptions from "@/lib/auth";
 
+// Re-export authOptions for use in other files
+export { authOptions };
+
 // Create handler with our custom authOptions
 const nextAuthHandler = NextAuth(authOptions);
 
