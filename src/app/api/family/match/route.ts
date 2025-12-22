@@ -60,9 +60,7 @@ export async function POST(request: NextRequest) {
       try {
         family = await prisma.family.create({
           data: {
-            userId: user.id,
-            residentsCount: 1,
-            stage: 'NEW'
+            userId: user.id
           }
         });
         console.log('[POST /api/family/match] ✅ Family profile created:', family.id);
