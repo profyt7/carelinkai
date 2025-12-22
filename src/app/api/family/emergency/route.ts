@@ -157,11 +157,11 @@ export async function PUT(request: NextRequest) {
     // Create audit log
     await createAuditLogFromRequest(
       request,
-      user.id,
-      AuditAction.EMERGENCY_CONTACT_UPDATED,
+      AuditAction.UPDATE,
       'EmergencyPreference',
       preferences.id,
-      { familyId: data.familyId }
+      `Updated emergency preferences for family ${data.familyId} by user ${user.id}`,
+      { familyId: data.familyId, userId: user.id }
     );
 
     return NextResponse.json({ preferences });

@@ -28,9 +28,12 @@ export async function POST(
       return NextResponse.json({ error: 'Content is required' }, { status: 400 });
     }
 
-    // Fetch photo
+    // Fetch photo with gallery relation
     const photo = await prisma.galleryPhoto.findUnique({
       where: { id: photoId },
+      include: {
+        gallery: true,
+      },
     });
 
     if (!photo) {
@@ -40,7 +43,7 @@ export async function POST(
     // Check membership
     const membership = await prisma.familyMember.findFirst({
       where: {
-        familyId: photo.familyId,
+        familyId: photo.gallery.familyId,
         userId: session.user.id,
         role: { in: ['OWNER', 'CARE_PROXY', 'MEMBER'] },
       },

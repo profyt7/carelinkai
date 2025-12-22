@@ -838,11 +838,11 @@ export async function generateFacilityComparisonReport(
     summary: {
       totalFacilities: homes?.length ?? 0,
       avgOccupancyRate:
-        comparisonData?.reduce?.((sum, d) => sum + (d?.occupancyRate ?? 0), 0) /
-          (comparisonData?.length || 1) ?? 0,
+        (comparisonData?.reduce?.((sum, d) => sum + (d?.occupancyRate ?? 0), 0) /
+          (comparisonData?.length || 1)) ?? 0,
       avgRating:
-        comparisonData?.reduce?.((sum, d) => sum + (d?.avgRating ?? 0), 0) /
-          (comparisonData?.length || 1) ?? 0,
+        (comparisonData?.reduce?.((sum, d) => sum + (d?.avgRating ?? 0), 0) /
+          (comparisonData?.length || 1)) ?? 0,
     },
     tables: [
       {
