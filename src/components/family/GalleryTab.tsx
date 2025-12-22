@@ -58,7 +58,8 @@ export default function GalleryTab({ familyId, showMock = false, isGuest = false
   const [isCreateAlbumOpen, setIsCreateAlbumOpen] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [newComment, setNewComment] = useState('');
+  // DISABLED: Gallery comments feature incomplete
+  // const [newComment, setNewComment] = useState('');
   const [newAlbumName, setNewAlbumName] = useState('');
   const [uploadForm, setUploadForm] = useState({
     files: [] as File[],
@@ -189,21 +190,22 @@ export default function GalleryTab({ familyId, showMock = false, isGuest = false
       }
     });
 
-    es.addEventListener('photo:commented', (e) => {
-      const data = parseData(e as MessageEvent);
-      if (data?.photoId && data?.comment) {
-        setPhotos((prev) =>
-          prev.map((p) =>
-            p.id === data.photoId ? { ...p, comments: [...(p.comments || []), data.comment] } : p
-          )
-        );
-        if (selectedPhoto?.id === data.photoId) {
-          setSelectedPhoto((prev) =>
-            prev ? { ...prev, comments: [...(prev.comments || []), data.comment] } : null
-          );
-        }
-      }
-    });
+    // DISABLED: Gallery comments feature incomplete - missing GalleryComment model in Prisma schema
+    // es.addEventListener('photo:commented', (e) => {
+    //   const data = parseData(e as MessageEvent);
+    //   if (data?.photoId && data?.comment) {
+    //     setPhotos((prev) =>
+    //       prev.map((p) =>
+    //         p.id === data.photoId ? { ...p, comments: [...(p.comments || []), data.comment] } : p
+    //       )
+    //     );
+    //     if (selectedPhoto?.id === data.photoId) {
+    //       setSelectedPhoto((prev) =>
+    //         prev ? { ...prev, comments: [...(prev.comments || []), data.comment] } : null
+    //       );
+    //     }
+    //   }
+    // });
 
     return () => es.close();
   }, [familyId, showMock, selectedPhoto]);
@@ -295,24 +297,25 @@ export default function GalleryTab({ familyId, showMock = false, isGuest = false
     }
   };
 
-  const handleAddComment = async (photoId: string) => {
-    if (!newComment.trim()) return;
+  // DISABLED: Gallery comments feature incomplete - missing GalleryComment model in Prisma schema
+  // const handleAddComment = async (photoId: string) => {
+  //   if (!newComment.trim()) return;
 
-    try {
-      const res = await fetch(`/api/family/gallery/${photoId}/comments`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: newComment.trim() }),
-      });
+  //   try {
+  //     const res = await fetch(`/api/family/gallery/${photoId}/comments`, {
+  //       method: 'POST',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify({ content: newComment.trim() }),
+  //     });
 
-      if (!res.ok) throw new Error('Failed to add comment');
+  //     if (!res.ok) throw new Error('Failed to add comment');
 
-      setNewComment('');
-      fetchPhotos();
-    } catch (err: any) {
-      alert(err.message ?? 'Error adding comment');
-    }
-  };
+  //     setNewComment('');
+  //     fetchPhotos();
+  //   } catch (err: any) {
+  //     alert(err.message ?? 'Error adding comment');
+  //   }
+  // };
 
   const navigatePhoto = (direction: 'prev' | 'next') => {
     if (!selectedPhoto) return;
@@ -682,13 +685,13 @@ export default function GalleryTab({ familyId, showMock = false, isGuest = false
                   )}
                 </div>
 
-                <div className="flex-1 border-t border-gray-200 pt-4 flex flex-col">
+                {/* DISABLED: Gallery comments feature incomplete - missing GalleryComment model in Prisma schema */}
+                {/* <div className="flex-1 border-t border-gray-200 pt-4 flex flex-col">
                   <h4 className="font-bold text-lg text-gray-900 mb-3 flex items-center gap-2">
                     <FiMessageSquare className="w-5 h-5" />
                     Comments ({selectedPhoto.comments?.length || 0})
                   </h4>
 
-                  {/* Comments List */}
                   <div className="flex-1 overflow-y-auto space-y-3 mb-4">
                     {!selectedPhoto.comments || selectedPhoto.comments.length === 0 ? (
                       <p className="text-sm text-gray-400 text-center py-4">No comments yet</p>
@@ -712,7 +715,6 @@ export default function GalleryTab({ familyId, showMock = false, isGuest = false
                     )}
                   </div>
 
-                  {/* Add Comment */}
                   {!isGuest && (
                     <div className="flex gap-2">
                       <input
@@ -733,7 +735,7 @@ export default function GalleryTab({ familyId, showMock = false, isGuest = false
                       </button>
                     </div>
                   )}
-                </div>
+                </div> */}
               </div>
             </div>
           </div>
