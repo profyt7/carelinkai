@@ -97,7 +97,7 @@ export async function DELETE(
     // Create audit log
     await createAuditLogFromRequest(
       request,
-      AuditAction.USER_DELETED,
+      AuditAction.DELETE,
       'FAMILY_MEMBER',
       memberId,
       `Removed member: ${memberToRemove.user?.email}`,

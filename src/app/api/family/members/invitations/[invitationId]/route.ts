@@ -69,7 +69,7 @@ export async function DELETE(
     // Create audit log
     await createAuditLogFromRequest(
       request,
-      AuditAction.USER_DELETED,
+      AuditAction.DELETE,
       'FAMILY_MEMBER',
       invitationId,
       `Cancelled invitation for ${invitation.email}`,
