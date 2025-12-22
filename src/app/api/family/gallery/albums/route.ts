@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
 
     const albumsWithCounts = albums.map((album) => ({
       id: album.id,
-      name: album.name,
+      name: album.title, // Using 'title' field from SharedGallery schema
       photoCount: album.photos?.length ?? 0,
       createdAt: album.createdAt,
     }));
@@ -94,17 +94,21 @@ export async function POST(request: NextRequest) {
     const album = await prisma.sharedGallery.create({
       data: {
         familyId,
-        name,
-        createdById: session.user.id,
+        title: name, // Using 'title' field as per SharedGallery schema
+        creatorId: session.user.id,
+        acl: { members: 'all' }, // Default ACL
+        tags: [],
       },
     });
 
     // Create activity feed item
-    await prisma.activityFeed.create({
+    await prisma.activityFeedItem.create({
       data: {
         familyId,
-        userId: session.user.id,
-        type: 'ALBUM_CREATED',
+        actorId: session.user.id,
+        type: 'GALLERY_CREATED', // Using GALLERY_CREATED from ActivityType enum
+        resourceType: 'gallery',
+        resourceId: album.id,
         description: `created album: ${name}`,
         metadata: {
           albumId: album.id,
@@ -115,7 +119,7 @@ export async function POST(request: NextRequest) {
     // Create audit log
     await createAuditLogFromRequest(
       request,
-      AuditAction.DOCUMENT_CREATED,
+      AuditAction.CREATE,
       'GALLERY_ALBUM',
       album.id,
       `Created album: ${name}`,

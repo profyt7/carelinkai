@@ -52,15 +52,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Delete from Cloudinary (optional - you may want to keep for backup)
-    try {
-      if (photo.cloudinaryPublicId) {
-        await deleteFromCloudinary(photo.cloudinaryPublicId, 'image');
-      }
-    } catch (cloudinaryError) {
-      console.error('Error deleting from Cloudinary:', cloudinaryError);
-      // Continue with database deletion even if Cloudinary fails
-    }
+    // Note: Cloudinary deletion not implemented as GalleryPhoto model 
+    // doesn't track cloudinaryPublicId. Files are managed via fileUrl only.
 
     // Delete photo from database
     await prisma.galleryPhoto.delete({
@@ -68,14 +61,17 @@ export async function DELETE(
     });
 
     // Create activity feed item
-    await prisma.activityFeed.create({
+    await prisma.activityFeedItem.create({
       data: {
         familyId: photo.gallery.familyId,
-        userId: session.user.id,
-        type: 'PHOTO_DELETED',
+        actorId: session.user.id,
+        type: 'DOCUMENT_DELETED', // Using DOCUMENT_DELETED as PHOTO_DELETED doesn't exist in ActivityType enum
+        resourceType: 'gallery_photo',
+        resourceId: photoId,
         description: `deleted a photo: ${photo.caption}`,
         metadata: {
           photoId,
+          galleryId: photo.gallery.id,
         },
       },
     });
@@ -83,7 +79,7 @@ export async function DELETE(
     // Create audit log
     await createAuditLogFromRequest(
       request,
-      AuditAction.DOCUMENT_DELETED,
+      AuditAction.DELETE,
       'GALLERY_PHOTO',
       photoId,
       `Deleted photo: ${photo.caption}`,

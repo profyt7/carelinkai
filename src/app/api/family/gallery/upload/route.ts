@@ -96,9 +96,11 @@ export async function POST(request: NextRequest) {
             if (error) {
               console.error('[5/8] ✗ Cloudinary upload failed:', error);
               reject(error);
-            } else {
+            } else if (result) {
               console.log('[5/8] ✓ Cloudinary upload OK:', result.secure_url);
               resolve(result);
+            } else {
+              reject(new Error('Cloudinary upload failed: no result'));
             }
           }
         )
@@ -224,7 +226,7 @@ export async function POST(request: NextRequest) {
     console.log('[8/8] Creating audit log...');
     await createAuditLogFromRequest(
       request,
-      AuditAction.DOCUMENT_UPLOADED,
+      AuditAction.CREATE,
       'GALLERY_PHOTO',
       photo.id,
       `Uploaded photo: ${caption || file.name}`,
