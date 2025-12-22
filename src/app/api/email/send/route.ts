@@ -226,9 +226,9 @@ export async function POST(req: NextRequest) {
     const message = extractErrorMessage(error);
     // Log stack if available for deeper debugging
     if (error instanceof Error && error.stack) {
-      logger.error('Email API error stack:', error.stack);
+      logger.error('Email API error stack', { stack: error.stack });
     }
-    logger.error('Email API error:', message);
+    logger.error('Email API error', { message });
     
     return NextResponse.json(
       { error: message || 'Failed to process email request' },
