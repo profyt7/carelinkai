@@ -27,7 +27,7 @@ export async function DELETE(
     const photo = await prisma.galleryPhoto.findUnique({
       where: { id: photoId },
       include: {
-        family: true,
+        gallery: true,
       },
     });
 
@@ -38,7 +38,7 @@ export async function DELETE(
     // Check permissions
     const membership = await prisma.familyMember.findFirst({
       where: {
-        familyId: photo.familyId,
+        familyId: photo.gallery.familyId,
         userId: session.user.id,
       },
     });
@@ -48,7 +48,7 @@ export async function DELETE(
     }
 
     // Only owner or uploader can delete
-    if (membership.role !== 'OWNER' && photo.uploadedById !== session.user.id) {
+    if (membership.role !== 'OWNER' && photo.uploaderId !== session.user.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -70,7 +70,7 @@ export async function DELETE(
     // Create activity feed item
     await prisma.activityFeed.create({
       data: {
-        familyId: photo.familyId,
+        familyId: photo.gallery.familyId,
         userId: session.user.id,
         type: 'PHOTO_DELETED',
         description: `deleted a photo: ${photo.caption}`,
@@ -91,7 +91,7 @@ export async function DELETE(
     );
 
     // Publish SSE event
-    publish(`family:${photo.familyId}`, {
+    publish(`family:${photo.gallery.familyId}`, {
       type: 'photo:deleted',
       photoId,
     });
