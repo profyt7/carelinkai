@@ -94,7 +94,7 @@ export async function PUT(
     });
 
     // Create activity feed item
-    await prisma.activityFeed.create({
+    await prisma.activityFeedItem.create({
       data: {
         familyId: memberToUpdate.familyId,
         userId: session.user.id,

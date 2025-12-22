@@ -50,7 +50,7 @@ export async function DELETE(
     });
 
     // Create activity feed item
-    await prisma.activityFeed.create({
+    await prisma.activityFeedItem.create({
       data: {
         familyId: invitation.familyId,
         userId: session.user.id,

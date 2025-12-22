@@ -53,7 +53,7 @@ export async function POST(
     console.log('Invitation email would be resent to:', invitation.email);
 
     // Create activity feed item
-    await prisma.activityFeed.create({
+    await prisma.activityFeedItem.create({
       data: {
         familyId: invitation.familyId,
         userId: session.user.id,

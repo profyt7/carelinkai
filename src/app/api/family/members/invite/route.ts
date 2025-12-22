@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
     console.log('Message:', message);
 
     // Create activity feed item
-    await prisma.activityFeed.create({
+    await prisma.activityFeedItem.create({
       data: {
         familyId,
         userId: session.user.id,
