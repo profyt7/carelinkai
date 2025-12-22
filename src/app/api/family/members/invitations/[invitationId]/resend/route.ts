@@ -72,7 +72,7 @@ export async function POST(
     // Create audit log
     await createAuditLogFromRequest(
       request,
-      AuditAction.USER_UPDATED,
+      AuditAction.UPDATE,
       'FAMILY_MEMBER',
       invitationId,
       `Resent invitation to ${invitation.email}`,

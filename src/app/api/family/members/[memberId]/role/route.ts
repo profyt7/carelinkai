@@ -113,7 +113,7 @@ export async function PUT(
     // Create audit log
     await createAuditLogFromRequest(
       request,
-      AuditAction.USER_UPDATED,
+      AuditAction.UPDATE,
       'FAMILY_MEMBER',
       memberId,
       `Changed role for ${memberToUpdate.user?.email} from ${memberToUpdate.role} to ${role}`,
