@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
       where: {
         familyId: data.familyId,
         userId: user.id,
-        role: { in: ['ADMIN', 'MEMBER'] }, // Guests cannot create notes
+        role: { in: ['OWNER', 'CARE_PROXY', 'MEMBER'] }, // Guests cannot create notes
       },
     });
 

@@ -42,11 +42,11 @@ export async function DELETE(
     }
 
     const canDelete =
-      note.authorId === user.id || familyMember.role === 'ADMIN';
+      note.authorId === user.id || familyMember.role === 'OWNER';
 
     if (!canDelete) {
       return NextResponse.json(
-        { error: 'Only the author or family admin can delete this note' },
+        { error: 'Only the author or family owner can delete this note' },
         { status: 403 }
       );
     }

@@ -109,7 +109,7 @@ export async function PUT(request: NextRequest) {
       where: {
         familyId: data.familyId,
         userId: user.id,
-        role: { in: ['ADMIN', 'MEMBER'] }, // Guests cannot update
+        role: { in: ['OWNER', 'CARE_PROXY', 'MEMBER'] }, // Guests cannot update
       },
     });
 
