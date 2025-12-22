@@ -113,11 +113,14 @@ export async function POST(request: NextRequest) {
     });
 
     // Create audit log
-    await createAuditLogFromRequest(request, {
-      action: AuditAction.DOCUMENT_CREATED,
-      userId: session.user.id,
-      details: `Created album: ${name}`,
-    });
+    await createAuditLogFromRequest(
+      request,
+      AuditAction.DOCUMENT_CREATED,
+      'GALLERY_ALBUM',
+      album.id,
+      `Created album: ${name}`,
+      undefined
+    );
 
     return NextResponse.json({ album: { ...album, photoCount: 0 } });
   } catch (error: any) {

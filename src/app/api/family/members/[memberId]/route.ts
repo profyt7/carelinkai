@@ -92,11 +92,14 @@ export async function DELETE(
     });
 
     // Create audit log
-    await createAuditLogFromRequest(request, {
-      action: AuditAction.USER_DELETED,
-      userId: session.user.id,
-      details: `Removed member: ${memberToRemove.user?.email}`,
-    });
+    await createAuditLogFromRequest(
+      request,
+      AuditAction.USER_DELETED,
+      'FAMILY_MEMBER',
+      memberId,
+      `Removed member: ${memberToRemove.user?.email}`,
+      undefined
+    );
 
     // Publish SSE event
     publish(`family:${memberToRemove.familyId}`, {

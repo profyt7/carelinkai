@@ -146,12 +146,21 @@ export async function PATCH(
     });
 
     // Create audit log
-    await createAuditLogFromRequest(request, {
-      action: AuditAction.UPDATE,
-      resourceType: 'CAREGIVER',
-      resourceId: params.id,
-      details: { changes: validatedData },
-    });
+    await createAuditLogFromRequest(
+
+      request,
+
+      AuditAction.UPDATE,
+
+      'CAREGIVER',
+
+      params.id,
+
+      'Updated caregiver',
+
+      { changes: validatedData }
+
+    );
 
     return NextResponse.json(updated);
   } catch (error) {
@@ -192,12 +201,21 @@ export async function DELETE(
     });
 
     // Create audit log
-    await createAuditLogFromRequest(request, {
-      action: AuditAction.DELETE,
-      resourceType: 'CAREGIVER',
-      resourceId: params.id,
-      details: { caregiverId: params.id },
-    });
+    await createAuditLogFromRequest(
+
+      request,
+
+      AuditAction.DELETE,
+
+      'CAREGIVER',
+
+      params.id,
+
+      'Deleted caregiver',
+
+      { caregiverId: params.id }
+
+    );
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -80,12 +80,21 @@ export async function PATCH(
     });
 
     // Create audit log
-    await createAuditLogFromRequest(request, {
-      action: AuditAction.UPDATE,
-      resourceType: 'CERTIFICATION',
-      resourceId: params.certId,
-      details: { caregiverId: params.id, changes: validatedData },
-    });
+    await createAuditLogFromRequest(
+
+      request,
+
+      AuditAction.UPDATE,
+
+      'CERTIFICATION',
+
+      params.certId,
+
+      'Updated certification',
+
+      { caregiverId: params.id, changes: validatedData }
+
+    );
 
     return NextResponse.json(updated);
   } catch (error) {
@@ -126,12 +135,21 @@ export async function DELETE(
     });
 
     // Create audit log
-    await createAuditLogFromRequest(request, {
-      action: AuditAction.DELETE,
-      resourceType: 'CERTIFICATION',
-      resourceId: params.certId,
-      details: { caregiverId: params.id },
-    });
+    await createAuditLogFromRequest(
+
+      request,
+
+      AuditAction.DELETE,
+
+      'CERTIFICATION',
+
+      params.certId,
+
+      'Deleted certification',
+
+      { caregiverId: params.id }
+
+    );
 
     return NextResponse.json({ success: true });
   } catch (error) {

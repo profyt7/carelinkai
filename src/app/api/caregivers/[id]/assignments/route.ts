@@ -115,12 +115,28 @@ export async function POST(
       },
     });
 
-    await createAuditLogFromRequest(request, {
-      action: AuditAction.CREATE,
-      resourceType: 'ASSIGNMENT',
-      resourceId: assignment.id,
-      details: { caregiverId: params.id, residentId: validatedData.residentId },
-    });
+    await createAuditLogFromRequest(
+
+
+      request,
+
+
+      AuditAction.CREATE,
+
+
+      'ASSIGNMENT',
+
+
+      assignment.id,
+
+
+      'Created assignment',
+
+
+      { caregiverId: params.id, residentId: validatedData.residentId }
+
+
+    );
 
     return NextResponse.json(assignment, { status: 201 });
   } catch (error) {

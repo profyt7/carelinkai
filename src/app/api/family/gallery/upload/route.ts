@@ -222,11 +222,14 @@ export async function POST(request: NextRequest) {
 
     // Create audit log
     console.log('[8/8] Creating audit log...');
-    await createAuditLogFromRequest(request, {
-      action: AuditAction.DOCUMENT_UPLOADED,
-      userId: session.user.id,
-      details: `Uploaded photo: ${caption || file.name}`,
-    });
+    await createAuditLogFromRequest(
+      request,
+      AuditAction.DOCUMENT_UPLOADED,
+      'GALLERY_PHOTO',
+      photo.id,
+      `Uploaded photo: ${caption || file.name}`,
+      undefined
+    );
     console.log('[8/8] ✓ Audit log created');
 
     // Publish SSE event

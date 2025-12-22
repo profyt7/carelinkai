@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient, UserRole } from '@prisma/client';
+import { PrismaClient, UserRole, AuditAction } from '@prisma/client';
 import { z } from 'zod';
 import { createAuditLogFromRequest } from '@/lib/audit';
 
@@ -150,13 +150,14 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     });
 
     // Create audit log
-    await createAuditLogFromRequest(req, {
-      action: 'CREATE',
-      entityType: 'inquiry_document',
-      entityId: document.id,
-      details: `Uploaded document: ${fileName} for inquiry ${params.id}`,
-      userId: user.id,
-    });
+    await createAuditLogFromRequest(
+      req,
+      AuditAction.CREATE,
+      'inquiry_document',
+      document.id,
+      `Uploaded document: ${fileName} for inquiry ${params.id}`,
+      undefined
+    );
 
     return NextResponse.json({ document }, { status: 201 });
   } catch (e) {

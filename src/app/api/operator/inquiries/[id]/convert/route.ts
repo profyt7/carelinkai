@@ -63,17 +63,18 @@ export async function POST(
     }
 
     // Create audit log
-    await createAuditLogFromRequest(request, user.id, {
-      action: AuditAction.CREATE,
-      resourceType: 'Resident',
-      resourceId: result.residentId!,
-      description: `Converted inquiry ${params.id} to resident ${result.residentId}`,
-      metadata: {
+    await createAuditLogFromRequest(
+      request,
+      AuditAction.CREATE,
+      'Resident',
+      result.residentId!,
+      `Converted inquiry ${params.id} to resident ${result.residentId}`,
+      {
         inquiryId: params.id,
         residentId: result.residentId,
         conversionNotes: conversionData.conversionNotes,
-      },
-    });
+      }
+    );
 
     // Return success response
     return NextResponse.json({

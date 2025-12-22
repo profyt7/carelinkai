@@ -142,13 +142,14 @@ export async function POST(request: NextRequest) {
     });
 
     // Create audit log
-    await createAuditLogFromRequest(request, {
-      userId: user.id,
-      action: AuditAction.REPORT_SCHEDULED,
-      resourceType: 'ScheduledReport',
-      resourceId: scheduledReport.id,
-      details: `Scheduled ${type} report: ${title}`,
-    });
+    await createAuditLogFromRequest(
+      request,
+      AuditAction.REPORT_SCHEDULED,
+      'ScheduledReport',
+      scheduledReport.id,
+      `Scheduled ${type} report: ${title}`,
+      undefined
+    );
 
     return NextResponse.json({
       success: true,

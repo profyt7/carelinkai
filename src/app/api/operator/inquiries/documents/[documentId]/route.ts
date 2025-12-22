@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient, UserRole } from '@prisma/client';
+import { PrismaClient, UserRole, AuditAction } from '@prisma/client';
 import { createAuditLogFromRequest } from '@/lib/audit';
 
 export const dynamic = 'force-dynamic';
@@ -57,13 +57,14 @@ export async function DELETE(req: NextRequest, { params }: { params: { documentI
     });
 
     // Create audit log
-    await createAuditLogFromRequest(req, {
-      action: 'DELETE',
-      entityType: 'inquiry_document',
-      entityId: params.documentId,
-      details: `Deleted document: ${document.fileName} from inquiry ${document.inquiryId}`,
-      userId: user.id,
-    });
+    await createAuditLogFromRequest(
+      req,
+      AuditAction.DELETE,
+      'inquiry_document',
+      params.documentId,
+      `Deleted document: ${document.fileName} from inquiry ${document.inquiryId}`,
+      undefined
+    );
 
     return NextResponse.json({ success: true });
   } catch (e) {

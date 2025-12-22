@@ -110,17 +110,25 @@ export async function POST(
     });
     
     // Create audit log
-    await createAuditLogFromRequest(request, {
-      userId: user.id,
-      action: AuditAction.CREATE,
-      resourceType: 'match_feedback',
-      resourceId: feedback.id,
-      details: {
+    await createAuditLogFromRequest(
+
+      request,
+
+      AuditAction.CREATE,
+
+      'match_feedback',
+
+      feedback.id,
+
+      'Created match_feedback',
+
+      {
         matchRequestId: params.id,
         homeId: validatedData.homeId,
         feedbackType: validatedData.feedbackType
       }
-    });
+
+    );
     
     return NextResponse.json({
       success: true,

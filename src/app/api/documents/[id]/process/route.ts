@@ -45,15 +45,17 @@ export async function POST(
 
     if (!result.success) {
       // Create audit log for failed processing
-      await createAuditLogFromRequest(request, {
-        action: AuditAction.UPDATE,
-        userId: session.user.id,
-        details: {
-          documentId,
+      await createAuditLogFromRequest(
+        request,
+        AuditAction.UPDATE,
+        'DOCUMENT',
+        documentId,
+        'Document processing failed',
+        {
           action: 'processing_failed',
           error: result.error,
-        },
-      });
+        }
+      );
 
       return NextResponse.json(
         { error: result.error || 'Processing failed' },
@@ -90,18 +92,20 @@ export async function POST(
     });
 
     // Create audit log
-    await createAuditLogFromRequest(request, {
-      action: AuditAction.UPDATE,
-      userId: session.user.id,
-      details: {
-        documentId,
+    await createAuditLogFromRequest(
+      request,
+      AuditAction.UPDATE,
+      'DOCUMENT',
+      documentId,
+      'Document processed',
+      {
         action: 'processed',
         classified: result.classified,
         validated: result.validated,
         autoClassified: result.autoClassified,
         needsReview: result.needsReview,
-      },
-    });
+      }
+    );
 
     return NextResponse.json({
       success: true,

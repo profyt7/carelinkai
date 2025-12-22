@@ -116,12 +116,21 @@ export async function POST(
     });
 
     // Create audit log
-    await createAuditLogFromRequest(request, {
-      action: AuditAction.CREATE,
-      resourceType: 'CERTIFICATION',
-      resourceId: certification.id,
-      details: { caregiverId: params.id, certificationType: validatedData.certificationType },
-    });
+    await createAuditLogFromRequest(
+
+      request,
+
+      AuditAction.CREATE,
+
+      'CERTIFICATION',
+
+      certification.id,
+
+      'Created certification',
+
+      { caregiverId: params.id, certificationType: validatedData.certificationType }
+
+    );
 
     return NextResponse.json(certification, { status: 201 });
   } catch (error) {

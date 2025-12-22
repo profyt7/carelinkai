@@ -82,11 +82,14 @@ export async function POST(
     });
 
     // Create audit log
-    await createAuditLogFromRequest(request, {
-      action: AuditAction.DOCUMENT_UPDATED,
-      userId: session.user.id,
-      details: `Added comment to photo: ${photo.caption}`,
-    });
+    await createAuditLogFromRequest(
+      request,
+      AuditAction.DOCUMENT_UPDATED,
+      'GALLERY_PHOTO',
+      photoId,
+      `Added comment to photo: ${photo.caption}`,
+      undefined
+    );
 
     // Publish SSE event
     publish(`family:${photo.familyId}`, {

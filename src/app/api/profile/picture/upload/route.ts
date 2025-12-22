@@ -169,11 +169,21 @@ export async function POST(request: NextRequest) {
 
     // Create audit log
     console.log('[6/6] Creating audit log...');
-    await createAuditLogFromRequest(request, {
-      action: AuditAction.PROFILE_UPDATED,
-      userId: session.user.id,
-      details: `Updated profile picture`,
-    });
+    await createAuditLogFromRequest(
+
+      request,
+
+      AuditAction.PROFILE,
+
+      'USER_PROFILE',
+
+      null,
+
+      `Updated profile picture`,
+
+      undefined
+
+    );
     console.log('[6/6] ✓ Audit log created');
 
     console.log('=== PROFILE PICTURE UPLOAD SUCCESS ===');
@@ -246,11 +256,21 @@ export async function DELETE(request: NextRequest) {
     });
 
     // Create audit log
-    await createAuditLogFromRequest(request, {
-      action: AuditAction.PROFILE_UPDATED,
-      userId: session.user.id,
-      details: `Removed profile picture`,
-    });
+    await createAuditLogFromRequest(
+
+      request,
+
+      AuditAction.PROFILE,
+
+      'USER_PROFILE',
+
+      null,
+
+      `Removed profile picture`,
+
+      undefined
+
+    );
 
     console.log('=== PROFILE PICTURE DELETE SUCCESS ===');
     return NextResponse.json({ user: updatedUser });

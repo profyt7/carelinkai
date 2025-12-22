@@ -67,11 +67,14 @@ export async function POST(
     });
 
     // Create audit log
-    await createAuditLogFromRequest(request, {
-      action: AuditAction.USER_UPDATED,
-      userId: session.user.id,
-      details: `Resent invitation to ${invitation.email}`,
-    });
+    await createAuditLogFromRequest(
+      request,
+      AuditAction.USER_UPDATED,
+      'FAMILY_MEMBER',
+      invitationId,
+      `Resent invitation to ${invitation.email}`,
+      undefined
+    );
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

@@ -64,11 +64,14 @@ export async function DELETE(
     });
 
     // Create audit log
-    await createAuditLogFromRequest(request, {
-      action: AuditAction.USER_DELETED,
-      userId: session.user.id,
-      details: `Cancelled invitation for ${invitation.email}`,
-    });
+    await createAuditLogFromRequest(
+      request,
+      AuditAction.USER_DELETED,
+      'FAMILY_MEMBER',
+      invitationId,
+      `Cancelled invitation for ${invitation.email}`,
+      undefined
+    );
 
     // Publish SSE event
     publish(`family:${invitation.familyId}`, {

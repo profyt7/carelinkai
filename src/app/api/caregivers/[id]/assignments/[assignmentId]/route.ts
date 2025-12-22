@@ -69,12 +69,28 @@ export async function PATCH(
       },
     });
 
-    await createAuditLogFromRequest(request, {
-      action: AuditAction.UPDATE,
-      resourceType: 'ASSIGNMENT',
-      resourceId: params.assignmentId,
-      details: { caregiverId: params.id, changes: validatedData },
-    });
+    await createAuditLogFromRequest(
+
+
+      request,
+
+
+      AuditAction.UPDATE,
+
+
+      'ASSIGNMENT',
+
+
+      params.assignmentId,
+
+
+      'Updated assignment',
+
+
+      { caregiverId: params.id, changes: validatedData }
+
+
+    );
 
     return NextResponse.json(updated);
   } catch (error) {
@@ -110,12 +126,28 @@ export async function DELETE(
       where: { id: params.assignmentId },
     });
 
-    await createAuditLogFromRequest(request, {
-      action: AuditAction.DELETE,
-      resourceType: 'ASSIGNMENT',
-      resourceId: params.assignmentId,
-      details: { caregiverId: params.id },
-    });
+    await createAuditLogFromRequest(
+
+
+      request,
+
+
+      AuditAction.DELETE,
+
+
+      'ASSIGNMENT',
+
+
+      params.assignmentId,
+
+
+      'Deleted assignment',
+
+
+      { caregiverId: params.id }
+
+
+    );
 
     return NextResponse.json({ success: true });
   } catch (error) {

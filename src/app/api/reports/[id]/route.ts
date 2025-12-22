@@ -55,13 +55,14 @@ export async function GET(
     }
 
     // Create audit log
-    await createAuditLogFromRequest(request, {
-      userId: user.id,
-      action: AuditAction.READ,
-      resourceType: 'Report',
-      resourceId: report.id,
-      details: `Viewed report: ${report.title}`,
-    });
+    await createAuditLogFromRequest(
+      request,
+      AuditAction.READ,
+      'Report',
+      report.id,
+      `Viewed report: ${report.title}`,
+      undefined
+    );
 
     return NextResponse.json({ report });
   } catch (error: any) {
@@ -111,13 +112,14 @@ export async function DELETE(
     });
 
     // Create audit log
-    await createAuditLogFromRequest(request, {
-      userId: user.id,
-      action: AuditAction.DELETE,
-      resourceType: 'Report',
-      resourceId: params.id,
-      details: `Deleted report: ${report.title}`,
-    });
+    await createAuditLogFromRequest(
+      request,
+      AuditAction.DELETE,
+      'Report',
+      params.id,
+      `Deleted report: ${report.title}`,
+      undefined
+    );
 
     return NextResponse.json({
       success: true,

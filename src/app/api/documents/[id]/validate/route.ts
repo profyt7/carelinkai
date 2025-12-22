@@ -64,14 +64,16 @@ export async function POST(
 
     if (!result.success) {
       // Create audit log for failed validation
-      await createAuditLogFromRequest(request, {
-        action: AuditAction.UPDATE,
-        userId: session.user.id,
-        details: {
-          documentId,
+      await createAuditLogFromRequest(
+        request,
+        AuditAction.UPDATE,
+        'DOCUMENT',
+        documentId,
+        'Document validation failed',
+        {
           action: 'validation_failed',
-        },
-      });
+        }
+      );
 
       return NextResponse.json(
         { error: 'Validation failed' },
@@ -94,7 +96,7 @@ export async function POST(
       where: { id: documentId },
       data: {
         validationStatus,
-        validationErrors: allValidationErrors.length > 0 ? allValidationErrors : null,
+        validationErrors: allValidationErrors.length > 0 ? JSON.parse(JSON.stringify(allValidationErrors)) : undefined,
       },
       include: {
         uploadedBy: {
@@ -122,17 +124,19 @@ export async function POST(
     });
 
     // Create audit log
-    await createAuditLogFromRequest(request, {
-      action: AuditAction.UPDATE,
-      userId: session.user.id,
-      details: {
-        documentId,
+    await createAuditLogFromRequest(
+      request,
+      AuditAction.UPDATE,
+      'DOCUMENT',
+      documentId,
+      'Document validated',
+      {
         action: 'validated',
         validationStatus,
         errorCount: result.errors.length,
         warningCount: result.warnings.length,
-      },
-    });
+      }
+    );
 
     return NextResponse.json({
       success: true,

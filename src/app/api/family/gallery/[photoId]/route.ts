@@ -81,11 +81,14 @@ export async function DELETE(
     });
 
     // Create audit log
-    await createAuditLogFromRequest(request, {
-      action: AuditAction.DOCUMENT_DELETED,
-      userId: session.user.id,
-      details: `Deleted photo: ${photo.caption}`,
-    });
+    await createAuditLogFromRequest(
+      request,
+      AuditAction.DOCUMENT_DELETED,
+      'GALLERY_PHOTO',
+      photoId,
+      `Deleted photo: ${photo.caption}`,
+      undefined
+    );
 
     // Publish SSE event
     publish(`family:${photo.familyId}`, {

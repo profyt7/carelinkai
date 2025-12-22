@@ -56,15 +56,17 @@ export async function POST(
 
     if (!result.success) {
       // Create audit log for failed classification
-      await createAuditLogFromRequest(request, {
-        action: AuditAction.UPDATE,
-        userId: session.user.id,
-        details: {
-          documentId,
+      await createAuditLogFromRequest(
+        request,
+        AuditAction.UPDATE,
+        'DOCUMENT',
+        documentId,
+        'Document classification failed',
+        {
           action: 'classification_failed',
           error: result.error,
-        },
-      });
+        }
+      );
 
       return NextResponse.json(
         { error: result.error || 'Classification failed' },
@@ -115,17 +117,19 @@ export async function POST(
     });
 
     // Create audit log
-    await createAuditLogFromRequest(request, {
-      action: AuditAction.UPDATE,
-      userId: session.user.id,
-      details: {
-        documentId,
+    await createAuditLogFromRequest(
+      request,
+      AuditAction.UPDATE,
+      'DOCUMENT',
+      documentId,
+      'Document classified',
+      {
         action: 'classified',
         type: documentType,
         confidence,
         autoClassified: autoClassify,
-      },
-    });
+      }
+    );
 
     return NextResponse.json({
       success: true,

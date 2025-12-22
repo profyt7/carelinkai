@@ -113,17 +113,19 @@ export async function POST(
     });
 
     // Create audit log
-    await createAuditLogFromRequest(request, {
-      action: AuditAction.UPDATE,
-      userId: session.user.id,
-      details: {
-        documentId,
+    await createAuditLogFromRequest(
+      request,
+      AuditAction.UPDATE,
+      'DOCUMENT',
+      documentId,
+      'Document reclassified',
+      {
         action: 'reclassified',
         oldType: document.type,
         newType: type,
         notes,
-      },
-    });
+      }
+    );
 
     return NextResponse.json({
       success: true,

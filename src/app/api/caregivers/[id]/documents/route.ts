@@ -68,12 +68,28 @@ export async function POST(
       },
     });
 
-    await createAuditLogFromRequest(request, {
-      action: AuditAction.CREATE,
-      resourceType: 'DOCUMENT',
-      resourceId: document.id,
-      details: { caregiverId: params.id, documentType: validatedData.documentType },
-    });
+    await createAuditLogFromRequest(
+
+
+      request,
+
+
+      AuditAction.CREATE,
+
+
+      'DOCUMENT',
+
+
+      document.id,
+
+
+      'Created document',
+
+
+      { caregiverId: params.id, documentType: validatedData.documentType }
+
+
+    );
 
     return NextResponse.json(document, { status: 201 });
   } catch (error) {

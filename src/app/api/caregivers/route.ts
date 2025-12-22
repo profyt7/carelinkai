@@ -205,12 +205,21 @@ export async function POST(request: NextRequest) {
     });
 
     // Create audit log
-    await createAuditLogFromRequest(request, {
-      action: AuditAction.CREATE,
-      resourceType: 'CAREGIVER',
-      resourceId: caregiver.id,
-      details: { caregiverId: caregiver.id },
-    });
+    await createAuditLogFromRequest(
+
+      request,
+
+      AuditAction.CREATE,
+
+      'CAREGIVER',
+
+      caregiver.id,
+
+      'Created caregiver',
+
+      { caregiverId: caregiver.id }
+
+    );
 
     return NextResponse.json(caregiver, { status: 201 });
   } catch (error) {

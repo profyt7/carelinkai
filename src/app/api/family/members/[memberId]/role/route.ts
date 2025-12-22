@@ -109,11 +109,14 @@ export async function PUT(
     });
 
     // Create audit log
-    await createAuditLogFromRequest(request, {
-      action: AuditAction.USER_UPDATED,
-      userId: session.user.id,
-      details: `Changed role for ${memberToUpdate.user?.email} from ${memberToUpdate.role} to ${role}`,
-    });
+    await createAuditLogFromRequest(
+      request,
+      AuditAction.USER_UPDATED,
+      'FAMILY_MEMBER',
+      memberId,
+      `Changed role for ${memberToUpdate.user?.email} from ${memberToUpdate.role} to ${role}`,
+      undefined
+    );
 
     // Publish SSE event
     publish(`family:${memberToUpdate.familyId}`, {

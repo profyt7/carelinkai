@@ -234,19 +234,20 @@ export async function POST(request: NextRequest) {
       
       // Create audit log
       console.log('[POST /api/family/match] Step 10: Creating audit log...');
-      await createAuditLogFromRequest(request, {
-        userId: user.id,
-        action: AuditAction.CREATE,
-        resourceType: 'match_request',
-        resourceId: matchRequest.id,
-        details: {
+      await createAuditLogFromRequest(
+        request,
+        AuditAction.CREATE,
+        'match_request',
+        matchRequest.id,
+        'Created match request',
+        {
           careLevel: validatedData.careLevel,
           budgetRange: `${validatedData.budgetMin}-${validatedData.budgetMax}`,
           zipCode: validatedData.zipCode,
           matchesFound: matchedHomes.length,
           topScore: matchedHomes[0]?.fitScore || 0
         }
-      });
+      );
       console.log('[POST /api/family/match] ✅ Audit log created');
       
       console.log('[POST /api/family/match] ✅ SUCCESS - Returning results');

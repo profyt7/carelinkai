@@ -92,11 +92,14 @@ export async function POST(request: NextRequest) {
     });
 
     // Create audit log
-    await createAuditLogFromRequest(request, {
-      action: AuditAction.USER_CREATED,
-      userId: session.user.id,
-      details: `Invited ${email} as ${role}`,
-    });
+    await createAuditLogFromRequest(
+      request,
+      AuditAction.USER_CREATED,
+      'FAMILY_MEMBER',
+      invitation.id,
+      `Invited ${email} as ${role}`,
+      undefined
+    );
 
     // Publish SSE event
     publish(`family:${familyId}`, {

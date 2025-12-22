@@ -128,12 +128,22 @@ export async function POST(request: NextRequest) {
     });
 
     // Create audit log
-    await createAuditLogFromRequest(request, {
-      userId: user.id,
-      action: AuditAction.REPORT_GENERATED,
-      resourceType: 'Report',
-      resourceId: report.id,
-      details: `Generated ${type} report: ${title} (${format})`,
+    await createAuditLogFromRequest(
+
+      request,
+
+      AuditAction.REPORT,
+
+      'Report',
+
+      report.id,
+
+      'Modified report',
+
+      {userId: user.id,
+                        details: `Generated ${type}
+
+    )`,
     });
 
     // Return file as download

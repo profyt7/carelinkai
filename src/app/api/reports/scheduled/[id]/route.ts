@@ -117,13 +117,14 @@ export async function PUT(
     });
 
     // Create audit log
-    await createAuditLogFromRequest(request, {
-      userId: user.id,
-      action: AuditAction.UPDATE,
-      resourceType: 'ScheduledReport',
-      resourceId: params.id,
-      details: `Updated scheduled report: ${updated.title}`,
-    });
+    await createAuditLogFromRequest(
+      request,
+      AuditAction.UPDATE,
+      'ScheduledReport',
+      params.id,
+      `Updated scheduled report: ${updated.title}`,
+      undefined
+    );
 
     return NextResponse.json({
       success: true,
@@ -176,13 +177,14 @@ export async function DELETE(
     });
 
     // Create audit log
-    await createAuditLogFromRequest(request, {
-      userId: user.id,
-      action: AuditAction.DELETE,
-      resourceType: 'ScheduledReport',
-      resourceId: params.id,
-      details: `Deleted scheduled report: ${scheduledReport.title}`,
-    });
+    await createAuditLogFromRequest(
+      request,
+      AuditAction.DELETE,
+      'ScheduledReport',
+      params.id,
+      `Deleted scheduled report: ${scheduledReport.title}`,
+      undefined
+    );
 
     return NextResponse.json({
       success: true,

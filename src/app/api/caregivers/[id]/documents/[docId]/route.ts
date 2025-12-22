@@ -29,12 +29,28 @@ export async function DELETE(
       where: { id: params.docId },
     });
 
-    await createAuditLogFromRequest(request, {
-      action: AuditAction.DELETE,
-      resourceType: 'DOCUMENT',
-      resourceId: params.docId,
-      details: { caregiverId: params.id },
-    });
+    await createAuditLogFromRequest(
+
+
+      request,
+
+
+      AuditAction.DELETE,
+
+
+      'DOCUMENT',
+
+
+      params.docId,
+
+
+      'Deleted document',
+
+
+      { caregiverId: params.id }
+
+
+    );
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -112,18 +112,19 @@ export async function POST(
     });
 
     // 9. Create audit log
-    await createAuditLogFromRequest(req, {
-      userId: user.id,
-      action: AuditAction.UPDATE,
-      resourceType: 'AssistedLivingHome',
-      resourceId: home.id,
-      metadata: {
+    await createAuditLogFromRequest(
+      req,
+      AuditAction.UPDATE,
+      'AssistedLivingHome',
+      home.id,
+      'Generated AI profile for assisted living home',
+      {
         action: 'generate_profile',
         homeName: home.name,
         highlightsCount: generatedProfile.highlights.length,
         descriptionLength: generatedProfile.description.length,
-      },
-    });
+      }
+    );
 
     console.log(`[Generate Profile] Successfully generated profile for home: ${home.name}`);
 

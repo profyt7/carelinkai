@@ -84,17 +84,18 @@ export async function PATCH(
     });
 
     // Create audit log
-    await createAuditLogFromRequest(request, user.id, {
-      action: AuditAction.UPDATE,
-      resourceType: 'Inquiry',
-      resourceId: params.id,
-      description: `Updated inquiry status from ${existingInquiry.status} to ${status}`,
-      metadata: {
+    await createAuditLogFromRequest(
+      request,
+      AuditAction.UPDATE,
+      'Inquiry',
+      params.id,
+      `Updated inquiry status from ${existingInquiry.status} to ${status}`,
+      {
         oldStatus: existingInquiry.status,
         newStatus: status,
         notes,
-      },
-    });
+      }
+    );
 
     return NextResponse.json({
       success: true,
