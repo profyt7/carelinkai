@@ -81,12 +81,15 @@ export async function DELETE(
     await prisma.activityFeedItem.create({
       data: {
         familyId: memberToRemove.familyId,
-        userId: session.user.id,
-        type: 'MEMBER_REMOVED',
+        actorId: session.user.id,
+        type: 'OTHER',
+        resourceType: 'family_member',
+        resourceId: memberId,
         description: `removed ${memberToRemove.user?.firstName ?? ''} ${memberToRemove.user?.lastName ?? ''} from the family`,
         metadata: {
           memberId,
           removedEmail: memberToRemove.user?.email,
+          action: 'MEMBER_REMOVED',
         },
       },
     });

@@ -53,12 +53,15 @@ export async function DELETE(
     await prisma.activityFeedItem.create({
       data: {
         familyId: invitation.familyId,
-        userId: session.user.id,
-        type: 'INVITATION_CANCELLED',
+        actorId: session.user.id,
+        type: 'OTHER',
+        resourceType: 'family_member',
+        resourceId: invitationId,
         description: `cancelled invitation for ${invitation.email ?? 'unknown'}`,
         metadata: {
           invitationId,
           email: invitation.email,
+          action: 'INVITATION_CANCELLED',
         },
       },
     });

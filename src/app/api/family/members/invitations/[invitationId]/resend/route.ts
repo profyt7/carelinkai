@@ -56,12 +56,15 @@ export async function POST(
     await prisma.activityFeedItem.create({
       data: {
         familyId: invitation.familyId,
-        userId: session.user.id,
-        type: 'INVITATION_RESENT',
+        actorId: session.user.id,
+        type: 'OTHER',
+        resourceType: 'family_member',
+        resourceId: invitationId,
         description: `resent invitation to ${invitation.email ?? 'unknown'}`,
         metadata: {
           invitationId,
           email: invitation.email,
+          action: 'INVITATION_RESENT',
         },
       },
     });

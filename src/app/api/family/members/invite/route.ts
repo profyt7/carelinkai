@@ -80,8 +80,10 @@ export async function POST(request: NextRequest) {
     await prisma.activityFeedItem.create({
       data: {
         familyId,
-        userId: session.user.id,
+        actorId: session.user.id,
         type: 'MEMBER_INVITED',
+        resourceType: 'family_member',
+        resourceId: invitation.id,
         description: `invited ${email} as ${role}`,
         metadata: {
           invitationId: invitation.id,

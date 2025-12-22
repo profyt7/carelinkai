@@ -97,8 +97,10 @@ export async function PUT(
     await prisma.activityFeedItem.create({
       data: {
         familyId: memberToUpdate.familyId,
-        userId: session.user.id,
+        actorId: session.user.id,
         type: 'MEMBER_ROLE_CHANGED',
+        resourceType: 'family_member',
+        resourceId: memberId,
         description: `changed ${memberToUpdate.user?.firstName ?? ''} ${memberToUpdate.user?.lastName ?? ''}'s role to ${role}`,
         metadata: {
           memberId,
