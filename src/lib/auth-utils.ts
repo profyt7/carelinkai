@@ -29,6 +29,19 @@ export class UnauthorizedError extends Error {
 }
 
 /**
+ * Type definition for user authorization scope
+ */
+export type UserScope = {
+  role: UserRole;
+  homeIds: "ALL" | string[];
+  residentIds: "ALL" | string[];
+  operatorIds: "ALL" | string[];
+  operatorId?: string;
+  familyId?: string;
+  caregiverId?: string;
+};
+
+/**
  * Error thrown when user is not authenticated
  */
 export class UnauthenticatedError extends Error {
@@ -154,7 +167,7 @@ export async function requireAction(
  * Get user's data scope based on their role
  * This determines which data the user can access
  */
-export async function getUserScope(userId: string) {
+export async function getUserScope(userId: string): Promise<UserScope> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     include: {
@@ -388,6 +401,11 @@ export async function canAccessHome(
   
   // Family members: check if any of their residents are in this home
   if (scope.role === "FAMILY") {
+    if (scope.residentIds === "ALL") {
+      // Admin/staff always have access
+      return true;
+    }
+    
     const residents = await prisma.resident.findMany({
       where: {
         id: { in: scope.residentIds },

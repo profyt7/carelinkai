@@ -24,8 +24,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const inquiry = await prisma.inquiry.findUnique({
       where: { id: params.id },
       include: { 
-        home: { select: { operatorId: true } },
-        family: { select: { priority: true } }
+        home: { select: { operatorId: true } }
       },
     });
     if (!inquiry) {
@@ -39,26 +38,21 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       }
     }
 
-    // Toggle priority on the family record
-    const currentPriority = inquiry.family.priority || 'NONE';
-    const newPriority = currentPriority === 'HIGH' ? 'MEDIUM' : 'HIGH';
+    // Toggle urgency on the inquiry record
+    const currentUrgency = inquiry.urgency || 'MEDIUM';
+    const newUrgency = currentUrgency === 'HIGH' ? 'MEDIUM' : 'HIGH';
 
-    const updatedFamily = await prisma.family.update({
-      where: { id: inquiry.familyId },
-      data: { priority: newPriority },
-    });
-
-    // Add note about priority change
-    const priorityNote = `Priority changed from ${currentPriority} to ${newPriority}`;
+    // Add note about urgency change
+    const urgencyNote = `Urgency changed from ${currentUrgency} to ${newUrgency}`;
     const updatedNotes = inquiry.internalNotes
-      ? `${inquiry.internalNotes}\n\n${priorityNote}`
-      : priorityNote;
+      ? `${inquiry.internalNotes}\n\n${urgencyNote}`
+      : urgencyNote;
 
     const updated = await prisma.inquiry.update({
       where: { id: inquiry.id },
-      data: { internalNotes: updatedNotes },
-      include: {
-        family: { select: { priority: true } }
+      data: { 
+        urgency: newUrgency,
+        internalNotes: updatedNotes 
       }
     });
 
@@ -68,11 +62,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       AuditAction.UPDATE,
       'Inquiry',
       inquiry.id,
-      'Priority toggled',
-      { priority: newPriority }
+      'Urgency toggled',
+      { urgency: newUrgency }
     );
 
-    return NextResponse.json({ inquiry: updated, priority: newPriority });
+    return NextResponse.json({ inquiry: updated, urgency: newUrgency });
   } catch (e) {
     console.error('Toggle priority failed', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });

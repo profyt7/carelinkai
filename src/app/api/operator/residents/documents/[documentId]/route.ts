@@ -41,13 +41,14 @@ export async function DELETE(
     // Create audit log
     await createAuditLogFromRequest(
       request,
-      user.id,
       AuditAction.DELETE,
+      'ResidentDocument',
+      document.id,
+      `Document deleted for resident ${document.residentId}`,
       {
-        resourceType: 'ResidentDocument',
         residentId: document.residentId,
         documentId: document.id,
-        documentType: document.type,
+        documentType: document.documentType,
         fileName: document.fileName,
       }
     );

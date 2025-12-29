@@ -151,9 +151,17 @@ export default function InquiryFilters({
 
   // Apply preset
   const applyPreset = (preset: typeof filterPresets[0]) => {
+    const presetFilters = { ...preset.filters };
+    // Convert readonly arrays to mutable arrays
+    if ('priorities' in presetFilters && presetFilters.priorities) {
+      presetFilters.priorities = [...presetFilters.priorities] as ('high' | 'normal')[];
+    }
+    if ('statuses' in presetFilters && presetFilters.statuses) {
+      presetFilters.statuses = [...presetFilters.statuses];
+    }
     onFiltersChange({
       ...defaultFilters,
-      ...preset.filters,
+      ...presetFilters,
     });
   };
 

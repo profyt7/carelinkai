@@ -85,7 +85,7 @@ export function InquiryAnalytics({ inquiries }: InquiryAnalyticsProps) {
                   cx="50%"
                   cy="50%"
                   outerRadius={80}
-                  label={({ source, percentage }) => `${source}: ${percentage}%`}
+                  label={(entry: any) => `${entry.name}: ${(entry.percent * 100).toFixed(0)}%`}
                 >
                   {analytics.bySourceData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.fill} />

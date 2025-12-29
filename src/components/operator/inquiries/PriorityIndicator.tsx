@@ -59,9 +59,9 @@ export default function PriorityIndicator({
       className={`inline-flex items-center gap-1.5 ${config.color}`}
       title={config.label}
     >
-      {React.cloneElement(config.icon as React.ReactElement, {
-        className: sizeClasses[size],
-      })}
+      <span className={sizeClasses[size]}>
+        {config.icon}
+      </span>
       {showLabel && <span className="text-sm font-medium">{config.label}</span>}
     </div>
   );

@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { 
   FiArrowLeft,
-  MessageSquare, 
+  FiMessageSquare, 
   FiCalendar, 
   FiClock, 
   FiCheck, 

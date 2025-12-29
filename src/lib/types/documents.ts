@@ -1,17 +1,10 @@
 /**
  * Document-related type definitions
+ * This file re-exports everything from the documents/ directory for backwards compatibility
  */
 
-import { 
-  DocumentType as PrismaDocumentType, 
-  ValidationStatus as PrismaValidationStatus,
-  ReviewStatus as PrismaReviewStatus 
-} from '@prisma/client';
-
-// Re-export Prisma types
-export type DocumentType = PrismaDocumentType;
-export type ValidationStatus = PrismaValidationStatus;
-export type ReviewStatus = PrismaReviewStatus;
+// Re-export everything from the documents directory
+export * from './documents/index';
 
 export interface ComplianceCheckResult {
   compliant?: boolean;

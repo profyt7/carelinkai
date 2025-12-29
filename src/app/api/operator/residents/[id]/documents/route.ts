@@ -108,10 +108,11 @@ export async function POST(
     // Create audit log
     await createAuditLogFromRequest(
       request,
-      user.id,
       AuditAction.CREATE,
+      'ResidentDocument',
+      document.id,
+      `Document uploaded for resident ${params.id}`,
       {
-        resourceType: 'ResidentDocument',
         residentId: params.id,
         documentId: document.id,
         documentType: validatedData.documentType,
