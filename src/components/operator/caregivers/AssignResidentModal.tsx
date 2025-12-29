@@ -6,7 +6,7 @@ import { FiX, FiUserPlus, FiSearch } from 'react-icons/fi';
 
 interface AssignResidentModalProps {
   caregiverId: string;
-  caregiverName: string;
+  caregiverName?: string;
   onClose: () => void;
   onSuccess: () => void;
 }

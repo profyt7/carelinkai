@@ -34,8 +34,8 @@ export function InquiryCard({ inquiry, onClick }: InquiryCardProps) {
     green: 'bg-green-100 text-green-800',
   };
 
-  const baseClasses = urgencyClasses[urgencyColor] || 'border-l-4 border-l-gray-300';
-  const badgeClasses = urgencyBadgeClasses[urgencyColor] || 'bg-gray-100 text-gray-800';
+  const baseClasses = urgencyClasses[urgencyColor as keyof typeof urgencyClasses] || 'border-l-4 border-l-gray-300';
+  const badgeClasses = urgencyBadgeClasses[urgencyColor as keyof typeof urgencyBadgeClasses] || 'bg-gray-100 text-gray-800';
 
   return (
     <div

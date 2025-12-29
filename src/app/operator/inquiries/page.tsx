@@ -15,8 +15,8 @@ export default async function OperatorInquiriesPage() {
   const user = email ? await prisma.user.findUnique({ where: { email } }) : null;
 
   // Allow OPERATOR, ADMIN, and FAMILY roles
-  const allowedRoles = [UserRole.OPERATOR, UserRole.ADMIN, UserRole.FAMILY];
-  if (!user || !allowedRoles.includes(user.role)) {
+  const allowedRoles: string[] = [UserRole.OPERATOR, UserRole.ADMIN, UserRole.FAMILY];
+  if (!user || !allowedRoles.includes(user.role as string)) {
     return (
       <div className="p-4 sm:p-6 max-w-7xl mx-auto">
         <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">

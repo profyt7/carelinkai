@@ -167,7 +167,7 @@ export function FamilyDashboardContent() {
             className="bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg p-4 transition-colors duration-200"
           >
             <div className="flex items-center space-x-3">
-              <FiMapPin size={24} className="text-blue-600" />
+              <MapPin size={24} className="text-blue-600" />
               <div>
                 <h3 className="font-medium text-neutral-900">Search Homes</h3>
                 <p className="text-sm text-neutral-600">Find assisted living</p>

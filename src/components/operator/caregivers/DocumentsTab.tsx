@@ -112,7 +112,7 @@ export function DocumentsTab({ caregiverId }: DocumentsTabProps) {
   };
 
   // Check for expiring documents
-  const checkExpiration = (expiryDate: Date | string | null) => {
+  const checkExpiration = (expiryDate: Date | string | null | undefined) => {
     if (!expiryDate) return null;
     const expiry = new Date(expiryDate);
     const today = new Date();

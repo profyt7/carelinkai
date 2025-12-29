@@ -631,7 +631,7 @@ export default function OperatorLeadDetailPage() {
             <button
               onClick={() => {
                 // Navigate to messages with Family user context
-                const familyUserId = lead.family.userId;
+                const familyUserId = lead.family.user.id;
                 router.push(`/messages?userId=${familyUserId}&context=lead&leadId=${lead.id}`);
               }}
               className="w-full flex items-center justify-center gap-2 py-3 px-4 border border-neutral-300 text-neutral-700 rounded-lg hover:bg-neutral-50 transition-colors"

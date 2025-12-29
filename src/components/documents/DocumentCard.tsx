@@ -27,7 +27,7 @@ export default function DocumentCard({
                       (document.classificationConfidence && document.classificationConfidence < 85);
 
   const fileSize = document.fileSize ? `${(document.fileSize / 1024).toFixed(1)} KB` : 'Unknown size';
-  const uploadedAgo = formatDistanceToNow(new Date(document.uploadedAt), { addSuffix: true });
+  const uploadedAgo = formatDistanceToNow(new Date(document.createdAt), { addSuffix: true });
 
   if (compact) {
     return (
@@ -51,7 +51,7 @@ export default function DocumentCard({
           </div>
           <div className="flex items-center gap-2 mt-1">
             <ClassificationBadge
-              documentType={document.documentType}
+              documentType={document.type}
               confidence={document.classificationConfidence || 0}
               size="sm"
             />
@@ -112,7 +112,7 @@ export default function DocumentCard({
         {/* Classification */}
         <div className="space-y-2">
           <ClassificationBadge
-            documentType={document.documentType}
+            documentType={document.type}
             confidence={document.classificationConfidence || 0}
             reasoning={document.classificationReasoning || undefined}
             autoClassified={document.autoClassified || false}

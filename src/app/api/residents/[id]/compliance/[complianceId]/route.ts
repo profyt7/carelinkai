@@ -26,7 +26,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const parsed = Schema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: "Invalid body", details: parsed.error.format() }, { status: 400 });
     const updates: any = {};
-    if (parsed.data.documentType !== undefined) updates.type = parsed.data.documentType;
+    if (parsed.data.type !== undefined) updates.type = parsed.data.type;
     if (parsed.data.title !== undefined) updates.title = parsed.data.title;
     if (parsed.data.status !== undefined) updates.status = parsed.data.status;
     if (parsed.data.issuedDate !== undefined) updates.issuedDate = parsed.data.issuedDate ? new Date(parsed.data.issuedDate) : null;

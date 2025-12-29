@@ -431,7 +431,7 @@ export default function InquiriesListClient({
             </div>
           </div>
         ) : (
-          <InquiryAnalytics inquiries={inquiries} />
+          <InquiryAnalytics inquiries={inquiries as any} />
         )
       ) : (
         <>

@@ -136,8 +136,8 @@ export default function HomeAnalyticsPage() {
   }));
 
   const genderData = Object.entries(data.demographics.genderDistribution)
-    .filter(([_, value]) => value > 0)
-    .map(([name, value]) => ({ name, value }));
+    .filter(([_, value]) => (value as number) > 0)
+    .map(([name, value]) => ({ name, value: value as number }));
 
   const incidentSeverityData = Object.entries(data.incidents.bySeverity).map(([name, value]) => ({
     name,
@@ -254,7 +254,7 @@ export default function HomeAnalyticsPage() {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  label={({ name, percent }) => `${name}: ${(percent && percent * 100).toFixed(0) || 0}%`}
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
@@ -415,7 +415,7 @@ export default function HomeAnalyticsPage() {
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    label={({ name, percent }) => `${name}: ${(percent && percent * 100).toFixed(0) || 0}%`}
                     outerRadius={60}
                     fill="#8884d8"
                     dataKey="value"

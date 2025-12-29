@@ -153,15 +153,16 @@ export default function InquiryFilters({
   const applyPreset = (preset: typeof filterPresets[0]) => {
     const presetFilters = { ...preset.filters };
     // Convert readonly arrays to mutable arrays
-    if ('priorities' in presetFilters && presetFilters.priorities) {
-      presetFilters.priorities = [...presetFilters.priorities] as ('high' | 'normal')[];
+    const mutableFilters: any = { ...presetFilters };
+    if ('priorities' in mutableFilters && mutableFilters.priorities) {
+      mutableFilters.priorities = [...mutableFilters.priorities];
     }
-    if ('statuses' in presetFilters && presetFilters.statuses) {
-      presetFilters.statuses = [...presetFilters.statuses];
+    if ('statuses' in mutableFilters && mutableFilters.statuses) {
+      mutableFilters.statuses = [...mutableFilters.statuses];
     }
     onFiltersChange({
       ...defaultFilters,
-      ...presetFilters,
+      ...mutableFilters,
     });
   };
 

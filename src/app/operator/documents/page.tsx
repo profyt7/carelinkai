@@ -82,13 +82,13 @@ export default function DocumentLibraryPage() {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(doc =>
         doc.fileName.toLowerCase().includes(query) ||
-        doc.documentType.toLowerCase().includes(query)
+        doc.type.toLowerCase().includes(query)
       );
     }
 
     // Document type filter
     if (filters.documentTypes.length > 0) {
-      filtered = filtered.filter(doc => filters.documentTypes.includes(doc.documentType));
+      filtered = filtered.filter(doc => filters.documentTypes.includes(doc.type));
     }
 
     // Validation status filter
@@ -120,10 +120,10 @@ export default function DocumentLibraryPage() {
 
     // Date range filter
     if (filters.dateFrom) {
-      filtered = filtered.filter(doc => new Date(doc.uploadedAt) >= filters.dateFrom!);
+      filtered = filtered.filter(doc => new Date(doc.createdAt) >= filters.dateFrom!);
     }
     if (filters.dateTo) {
-      filtered = filtered.filter(doc => new Date(doc.uploadedAt) <= filters.dateTo!);
+      filtered = filtered.filter(doc => new Date(doc.createdAt) <= filters.dateTo!);
     }
 
     // Sorting
@@ -131,7 +131,7 @@ export default function DocumentLibraryPage() {
       let compareValue = 0;
       
       if (sortBy === 'date') {
-        compareValue = new Date(a.uploadedAt).getTime() - new Date(b.uploadedAt).getTime();
+        compareValue = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
       } else if (sortBy === 'name') {
         compareValue = a.fileName.localeCompare(b.fileName);
       } else if (sortBy === 'confidence') {
@@ -203,9 +203,9 @@ export default function DocumentLibraryPage() {
     setFilters(prev => {
       const currentValue = prev[filterKey];
       if (Array.isArray(currentValue)) {
-        const newArray = currentValue.includes(value)
+        const newArray = (currentValue as any[]).includes(value)
           ? currentValue.filter(v => v !== value)
-          : [...currentValue, value];
+          : [...currentValue, value as any];
         return { ...prev, [filterKey]: newArray };
       }
       return prev;

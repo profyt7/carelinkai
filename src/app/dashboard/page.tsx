@@ -18,7 +18,6 @@ export default async function DashboardPage() {
     case 'OPERATOR':
       return <OperatorDashboardContent />;
     case 'CAREGIVER':
-    case 'AIDE':
       return <CaregiverDashboardContent />;
     case 'FAMILY':
       return <FamilyDashboardContent />;

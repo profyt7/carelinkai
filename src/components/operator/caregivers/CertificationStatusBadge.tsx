@@ -65,7 +65,7 @@ export function CertificationStatusBadge({ status, expiryDate, className = '' }:
 }
 
 export function getCertificationStatus(
-  expiryDate: Date | string | null
+  expiryDate: Date | string | null | undefined
 ): CertificationStatus {
   if (!expiryDate) return 'CURRENT';
 

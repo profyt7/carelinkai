@@ -53,6 +53,7 @@ export function QuickActionsMenu({ caregiver, onUpdate }: QuickActionsMenuProps)
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
+    return undefined;
   }, [isOpen]);
 
   const handleToggleStatus = async () => {

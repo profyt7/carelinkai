@@ -14,7 +14,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import cloudinary, { isCloudinaryConfigured, UPLOAD_PRESETS } from '@/lib/cloudinary';
 import { createAuditLogFromRequest } from '@/lib/audit';
-import { AuditAction } from '@prisma/client';
+import { AuditAction, Prisma } from '@prisma/client';
 
 export async function POST(request: NextRequest) {
   try {
@@ -105,9 +105,11 @@ export async function POST(request: NextRequest) {
             if (error) {
               console.error('[5/6] ✗ Cloudinary upload failed:', error);
               reject(error);
-            } else {
+            } else if (result) {
               console.log('[5/6] ✓ Cloudinary upload OK:', result.secure_url);
               resolve(result);
+            } else {
+              reject(new Error('Upload failed: No result returned'));
             }
           }
         )
@@ -244,7 +246,7 @@ export async function DELETE(request: NextRequest) {
     const updatedUser = await prisma.user.update({
       where: { id: session.user.id },
       data: {
-        profileImageUrl: null,
+        profileImageUrl: Prisma.DbNull,
       },
       select: {
         id: true,

@@ -205,7 +205,7 @@ function MetricCard({ title, value, icon, color }: MetricCardProps) {
           <p className="text-2xl font-bold text-gray-900">{value}</p>
         </div>
         <div className={`p-3 rounded-full ${colorClasses[color]}`}>
-          {React.cloneElement(icon as React.ReactElement, { className: 'w-6 h-6' })}
+          {React.cloneElement(icon as React.ReactElement<any>, { className: 'w-6 h-6' })}
         </div>
       </div>
     </div>

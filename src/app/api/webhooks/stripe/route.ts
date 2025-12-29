@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
           ? stripe.webhooks.constructEvent(rawBody, signature, secret)
           : (JSON.parse(rawBody) as Stripe.Event);
         if (!secret || !signature) {
-          logger.info({ msg: "Webhook signature bypassed (non-production)" });
+          logger.info("Webhook signature bypassed (non-production)");
         }
       } catch (err) {
         logger.error("Invalid webhook payload", { err: err instanceof Error ? err.message : err });

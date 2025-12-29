@@ -272,10 +272,6 @@ export default function FamilyPage() {
         {activeTab === 'notes' && (
           <NotesTab
             familyId={familyId}
-            onAddNoteClick={() => {
-              // TODO: Open note editor modal in Phase 3
-              alert('Note editor coming soon!');
-            }}
           />
         )}
 

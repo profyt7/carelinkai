@@ -8,11 +8,11 @@ import * as Sentry from '@sentry/nextjs';
 import { createAuditLogFromRequest } from '@/lib/audit';
 
 const CreateDocSchema = z.object({
-  title: z.string().min(1),
+  fileName: z.string().min(1),
   fileUrl: z.string().url(),
-  fileType: z.string().min(1),
+  mimeType: z.string().min(1),
   fileSize: z.number().int().positive(),
-  isEncrypted: z.boolean().optional().default(true),
+  type: z.string().optional(),
 });
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
@@ -88,13 +88,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     const doc = await prisma.document.create({
       data: {
         residentId: resident.id,
-        title: data.title,
+        fileName: data.fileName,
         fileUrl: data.fileUrl,
-        fileType: data.fileType,
+        mimeType: data.mimeType,
         fileSize: data.fileSize,
-        isEncrypted: data.isEncrypted ?? true,
-        // Default to RESIDENT_RECORD for operator-managed documents
-        type: 'RESIDENT_RECORD' as any,
+        uploadedById: session!.user.id,
+        // Default to GENERAL for operator-managed documents
+        type: (data.type as any) || 'GENERAL',
       },
     });
 

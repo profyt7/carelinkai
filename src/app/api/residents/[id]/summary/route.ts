@@ -81,7 +81,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     const buffer = await done;
 
     const filename = `resident-${resident.id}-summary.pdf`;
-    return new NextResponse(buffer, {
+    return new NextResponse(new Uint8Array(buffer), {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',

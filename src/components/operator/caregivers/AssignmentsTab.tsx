@@ -205,7 +205,7 @@ export function AssignmentsTab({ caregiverId }: AssignmentsTabProps) {
 
                     {/* Actions */}
                     {isActive && (
-                      <PermissionGuard permission={PERMISSIONS.ASSIGNMENTS_DELETE}>
+                      <PermissionGuard permission={PERMISSIONS.CAREGIVERS_ASSIGN}>
                         <button
                           onClick={() => handleRemove(assignment.id)}
                           className="text-xs text-red-600 hover:text-red-700 font-medium flex items-center gap-1"

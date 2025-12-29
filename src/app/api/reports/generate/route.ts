@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
 
       request,
 
-      AuditAction.REPORT,
+      AuditAction.REPORT_GENERATED,
 
       'Report',
 
@@ -147,7 +147,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Return file as download
-    return new NextResponse(fileBuffer, {
+    return new NextResponse(new Uint8Array(fileBuffer), {
       status: 200,
       headers: {
         'Content-Type': contentType,

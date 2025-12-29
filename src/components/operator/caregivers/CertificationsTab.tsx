@@ -290,7 +290,7 @@ export function CertificationsTab({ caregiverId }: CertificationsTabProps) {
 
                   {/* Actions */}
                   <div className="flex items-center gap-2">
-                    <PermissionGuard permission={PERMISSIONS.CERTIFICATIONS_UPDATE}>
+                    <PermissionGuard permission={PERMISSIONS.CAREGIVERS_MANAGE_CERTIFICATIONS}>
                       <button
                         onClick={() => openEditModal(cert)}
                         className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
@@ -299,7 +299,7 @@ export function CertificationsTab({ caregiverId }: CertificationsTabProps) {
                         <FiEdit2 className="w-4 h-4 text-neutral-600" />
                       </button>
                     </PermissionGuard>
-                    <PermissionGuard permission={PERMISSIONS.CERTIFICATIONS_DELETE}>
+                    <PermissionGuard permission={PERMISSIONS.CAREGIVERS_MANAGE_CERTIFICATIONS}>
                       <button
                         onClick={() => handleDelete(cert.id)}
                         className="p-2 hover:bg-red-50 rounded-lg transition-colors"
