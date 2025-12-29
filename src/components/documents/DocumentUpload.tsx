@@ -12,7 +12,7 @@ import {
   ALLOWED_FILE_TYPES,
   MAX_FILE_SIZE,
   formatFileSize,
-} from '@/types/documents';
+} from '@/lib/types/documents';
 
 interface DocumentUploadProps {
   residentId?: string;

@@ -8,7 +8,7 @@
 import { prisma } from '@/lib/prisma';
 import { classifyDocument, determineReviewStatus, shouldAutoClassify } from './classification';
 import { validateDocument, getValidationStatus } from './validation';
-import { DocumentType } from '@/types/documents';
+import { DocumentType } from '@/lib/types/documents';
 
 export interface ProcessingResult {
   success: boolean;

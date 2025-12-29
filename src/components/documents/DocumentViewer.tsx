@@ -3,7 +3,7 @@
 import { X, Download, ExternalLink, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Document, DOCUMENT_TYPE_LABELS, formatFileSize } from '@/types/documents';
+import { Document, DOCUMENT_TYPE_LABELS, formatFileSize } from '@/lib/types/documents';
 import { ExtractedTextViewer } from './ExtractedTextViewer';
 
 interface DocumentViewerProps {

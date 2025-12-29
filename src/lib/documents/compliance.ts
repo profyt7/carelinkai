@@ -4,7 +4,7 @@
  */
 
 import { prisma } from '@/lib/prisma';
-import { ComplianceCheckResult, DocumentType } from '@/types/documents';
+import { ComplianceCheckResult, DocumentType } from '@/lib/types/documents';
 import { ComplianceStatus } from '@prisma/client';
 
 /**

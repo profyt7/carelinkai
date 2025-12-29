@@ -8,7 +8,7 @@ import {
   getValidationStatus,
   formatValidationErrors,
 } from '../validation';
-import { ValidationError } from '@/types/documents';
+import { ValidationError } from '@/lib/types/documents';
 
 describe('Document Validation Service', () => {
   describe('validateDocument', () => {

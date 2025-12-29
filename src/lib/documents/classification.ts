@@ -8,7 +8,7 @@ import {
   DocumentType,
   ClassificationResult,
   ReviewStatus,
-} from '@/types/documents';
+} from '@/lib/types/documents';
 
 // Lazy initialize OpenAI client
 let openaiClient: OpenAI | null = null;

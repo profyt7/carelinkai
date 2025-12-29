@@ -4,7 +4,7 @@
  */
 
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
-import { DocumentGenerationRequest, DocumentGenerationResponse } from '@/types/documents';
+import { DocumentGenerationRequest, DocumentGenerationResponse } from '@/lib/types/documents';
 import { prisma } from '@/lib/prisma';
 
 /**

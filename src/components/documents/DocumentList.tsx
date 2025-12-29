@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Loader2, FileText } from 'lucide-react';
 import { DocumentCard } from './DocumentCard';
-import { Document, DocumentType, DOCUMENT_TYPE_LABELS } from '@/types/documents';
+import { Document, DocumentType, DOCUMENT_TYPE_LABELS } from '@/lib/types/documents';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface DocumentListProps {

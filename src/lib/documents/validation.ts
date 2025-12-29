@@ -10,7 +10,7 @@ import {
   ValidationResult,
   ValidationError,
   ValidationStatus,
-} from '@/types/documents';
+} from '@/lib/types/documents';
 
 /**
  * Validate document based on its type and extracted data
