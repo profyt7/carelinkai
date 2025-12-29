@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import { FiMessageSquare, FiSend, FiUser } from 'react-icons/fi';
+import { FiSend, FiUser } from 'react-icons/fi';
+import { MessageSquare } from 'lucide-react';
 import EmptyState from './EmptyState';
 import LoadingState from './LoadingState';
 
@@ -271,7 +272,7 @@ export default function MessagesTab({ familyId, showMock = false, currentUserId 
         {!selectedUser ? (
           <div className="flex-1 flex items-center justify-center p-8">
             <EmptyState
-              icon={FiMessageSquare}
+              icon={MessageSquare}
               title="Select a Conversation"
               description="Choose a conversation from the left to view messages and start chatting."
             />

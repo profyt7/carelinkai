@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import { FiCamera, FiUpload, FiX, FiDownload, FiTrash2, FiMessageSquare, FiChevronLeft, FiChevronRight, FiImage, FiVideo, FiSearch, FiFilter, FiFolder } from 'react-icons/fi';
+import { FiUpload, FiX, FiDownload, FiTrash2, FiMessageSquare, FiChevronLeft, FiChevronRight, FiImage, FiVideo, FiSearch, FiFilter, FiFolder } from 'react-icons/fi';
+import { Camera } from 'lucide-react';
 import Image from 'next/image';
 import EmptyState from './EmptyState';
 import LoadingState from './LoadingState';
@@ -745,7 +746,7 @@ export default function GalleryTab({ familyId, showMock = false, isGuest = false
       {/* Photos Grid */}
       {photos.length === 0 && !search && !selectedAlbum ? (
         <EmptyState
-          icon={FiCamera}
+          icon={Camera}
           title="No photos yet"
           description="Upload photos and videos to share precious moments with your family. Create albums to organize your memories."
           actionLabel="Upload First Photo"

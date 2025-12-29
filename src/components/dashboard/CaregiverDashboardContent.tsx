@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { MetricCard } from './MetricCard';
 import { AlertCard } from './AlertCard';
 import { DashboardSkeleton } from './DashboardSkeleton';
-import { FiUsers, FiClipboard, FiCalendar } from 'react-icons/fi';
+import { Users, Clipboard, Calendar } from 'lucide-react';
 import Link from 'next/link';
 
 interface Metrics {
@@ -105,7 +105,7 @@ export function CaregiverDashboardContent() {
             title="My Residents"
             value={metrics.myResidents.value}
             subtitle={metrics.myResidents.subtitle}
-            icon={FiUsers}
+            icon={Users}
             trend={metrics.myResidents.trend}
             href="/operator/residents"
           />
@@ -115,7 +115,7 @@ export function CaregiverDashboardContent() {
             title="Today's Tasks"
             value={metrics.todayTasks.value}
             subtitle={metrics.todayTasks.subtitle}
-            icon={FiClipboard}
+            icon={Clipboard}
             trend={metrics.todayTasks.trend}
             iconColor="text-amber-600"
           />
@@ -125,7 +125,7 @@ export function CaregiverDashboardContent() {
             title="Upcoming Shifts"
             value={metrics.upcomingShifts.value}
             subtitle={metrics.upcomingShifts.subtitle}
-            icon={FiCalendar}
+            icon={Calendar}
             trend={metrics.upcomingShifts.trend}
             href="/shifts"
           />

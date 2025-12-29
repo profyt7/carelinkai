@@ -4,9 +4,9 @@ import React from 'react';
 import { 
   FiCheck, 
   FiUsers, 
-  FiBrain, 
   FiHeart 
 } from 'react-icons/fi';
+import { Brain } from 'lucide-react';
 
 type CareLevel = 'INDEPENDENT' | 'ASSISTED' | 'MEMORY_CARE' | 'SKILLED_NURSING';
 type BadgeSize = 'sm' | 'md' | 'lg';
@@ -38,7 +38,7 @@ const careLevelConfig: Record<CareLevel, {
   },
   MEMORY_CARE: {
     color: 'bg-purple-50 text-purple-700 border-purple-200',
-    icon: <FiBrain />,
+    icon: <Brain />,
     label: 'Memory Care',
     description: 'Specialized care',
   },

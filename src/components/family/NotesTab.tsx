@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { FiEdit3, FiTrash2, FiPlus, FiX, FiSave, FiSearch, FiTag } from 'react-icons/fi';
+import { FiTrash2, FiPlus, FiX, FiSave, FiSearch, FiTag } from 'react-icons/fi';
+import { Edit3 } from 'lucide-react';
 import EmptyState from './EmptyState';
 import LoadingState from './LoadingState';
 
@@ -293,7 +294,7 @@ export default function NotesTab({ familyId, showMock = false, isGuest = false }
       {/* Notes List */}
       {notes.length === 0 && !search ? (
         <EmptyState
-          icon={FiEdit3}
+          icon={Edit3}
           title="No notes yet"
           description="Create notes to keep track of important information, care updates, and personal observations about your loved one."
           actionLabel="Create First Note"

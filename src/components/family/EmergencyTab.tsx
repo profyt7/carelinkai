@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { FiAlertCircle, FiPhone, FiMail, FiPlus, FiEdit2, FiTrash2, FiX, FiSave } from 'react-icons/fi';
+import { FiPhone, FiMail, FiPlus, FiEdit2, FiTrash2, FiX, FiSave } from 'react-icons/fi';
+import { AlertCircle } from 'lucide-react';
 import EmptyState from './EmptyState';
 import LoadingState from './LoadingState';
 
@@ -305,7 +306,7 @@ export default function EmergencyTab({ familyId, showMock = false, isGuest = fal
       {/* Contacts List */}
       {contacts.length === 0 ? (
         <EmptyState
-          icon={FiAlertCircle}
+          icon={AlertCircle}
           title="No emergency contacts"
           description="Add emergency contacts who should be notified in case of urgent situations. They will be contacted in order of priority."
           actionLabel={isGuest ? undefined : 'Add First Contact'}

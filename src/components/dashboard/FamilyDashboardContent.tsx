@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { MetricCard } from './MetricCard';
 import { AlertCard } from './AlertCard';
 import { DashboardSkeleton } from './DashboardSkeleton';
-import { FiFileText, FiCalendar, FiCheckCircle, FiMapPin } from 'react-icons/fi';
+import { FileText, Calendar, CheckCircle, MapPin } from 'lucide-react';
 import Link from 'next/link';
 
 interface Metrics {
@@ -105,7 +105,7 @@ export function FamilyDashboardContent() {
             title="Inquiry Status"
             value={metrics.inquiryStatus.value}
             subtitle={metrics.inquiryStatus.subtitle}
-            icon={FiFileText}
+            icon={FileText}
             trend={metrics.inquiryStatus.trend}
             href="/dashboard/inquiries"
           />
@@ -115,7 +115,7 @@ export function FamilyDashboardContent() {
             title="Tour Schedule"
             value={metrics.tourSchedule.value}
             subtitle={metrics.tourSchedule.subtitle}
-            icon={FiCalendar}
+            icon={Calendar}
             trend={metrics.tourSchedule.trend}
             href="/dashboard/inquiries"
           />
@@ -125,7 +125,7 @@ export function FamilyDashboardContent() {
             title="Application Progress"
             value={metrics.applicationProgress.value}
             subtitle={metrics.applicationProgress.subtitle}
-            icon={FiCheckCircle}
+            icon={CheckCircle}
             trend={metrics.applicationProgress.trend}
             trendValue={metrics.applicationProgress.trendValue}
           />
@@ -155,7 +155,7 @@ export function FamilyDashboardContent() {
             className="bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-lg p-4 transition-colors duration-200"
           >
             <div className="flex items-center space-x-3">
-              <FiFileText size={24} className="text-primary-600" />
+              <FileText size={24} className="text-primary-600" />
               <div>
                 <h3 className="font-medium text-neutral-900">My Inquiries</h3>
                 <p className="text-sm text-neutral-600">View inquiry status</p>

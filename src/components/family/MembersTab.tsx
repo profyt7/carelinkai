@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { FiUserPlus, FiUsers, FiX, FiMail, FiShield, FiTrash2, FiEdit, FiCheck, FiRefreshCw } from 'react-icons/fi';
+import { FiUserPlus, FiX, FiMail, FiShield, FiTrash2, FiEdit, FiCheck, FiRefreshCw } from 'react-icons/fi';
+import { Users } from 'lucide-react';
 import EmptyState from './EmptyState';
 import LoadingState from './LoadingState';
 
@@ -513,7 +514,7 @@ export default function MembersTab({ familyId, showMock = false, isGuest = false
       {/* Members List */}
       {members.length === 0 ? (
         <EmptyState
-          icon={FiUsers}
+          icon={Users}
           title="No members yet"
           description="Invite family members to access the portal and stay connected with their loved one's care."
           actionLabel={isOwner ? 'Invite First Member' : undefined}

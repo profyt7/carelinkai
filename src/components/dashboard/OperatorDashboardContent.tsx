@@ -10,15 +10,15 @@ import { ActivityFeedItem } from './ActivityFeedItem';
 import { QuickActionButton } from './QuickActionButton';
 import { DashboardSkeleton } from './DashboardSkeleton';
 import {
-  FiUsers,
-  FiUserCheck,
-  FiFileText,
-  FiAlertCircle,
-  FiClipboard,
-  FiCalendar,
-  FiPlus,
-  FiDownload,
-} from 'react-icons/fi';
+  Users,
+  UserCheck,
+  FileText,
+  AlertCircle,
+  Clipboard,
+  Calendar,
+  Plus,
+  Download,
+} from 'lucide-react';
 import Link from 'next/link';
 
 interface Metrics {
@@ -161,7 +161,7 @@ export function OperatorDashboardContent() {
             title="Total Residents"
             value={metrics.totalResidents.value}
             subtitle={metrics.totalResidents.subtitle}
-            icon={FiUsers}
+            icon={Users}
             trend={metrics.totalResidents.trend}
             trendValue={metrics.totalResidents.trendValue}
             href="/operator/residents"
@@ -172,7 +172,7 @@ export function OperatorDashboardContent() {
             title="Active Caregivers"
             value={metrics.activeCaregivers.value}
             subtitle={metrics.activeCaregivers.subtitle}
-            icon={FiUserCheck}
+            icon={UserCheck}
             trend={metrics.activeCaregivers.trend}
             trendValue={metrics.activeCaregivers.trendValue}
             href="/operator/caregivers"
@@ -183,7 +183,7 @@ export function OperatorDashboardContent() {
             title="Pending Inquiries"
             value={metrics.pendingInquiries.value}
             subtitle={metrics.pendingInquiries.subtitle}
-            icon={FiFileText}
+            icon={FileText}
             trend={metrics.pendingInquiries.trend}
             trendValue={metrics.pendingInquiries.trendValue}
             href="/operator/inquiries"
@@ -194,7 +194,7 @@ export function OperatorDashboardContent() {
             title="Critical Incidents"
             value={metrics.criticalIncidents.value}
             subtitle={metrics.criticalIncidents.subtitle}
-            icon={FiAlertCircle}
+            icon={AlertCircle}
             trend={metrics.criticalIncidents.trend}
             trendValue={metrics.criticalIncidents.trendValue}
             iconColor="text-red-600"
@@ -205,7 +205,7 @@ export function OperatorDashboardContent() {
             title="Overdue Assessments"
             value={metrics.overdueAssessments.value}
             subtitle={metrics.overdueAssessments.subtitle}
-            icon={FiClipboard}
+            icon={Clipboard}
             trend={metrics.overdueAssessments.trend}
             trendValue={metrics.overdueAssessments.trendValue}
             iconColor="text-amber-600"
@@ -216,7 +216,7 @@ export function OperatorDashboardContent() {
             title="Tours This Week"
             value={metrics.toursThisWeek.value}
             subtitle={metrics.toursThisWeek.subtitle}
-            icon={FiCalendar}
+            icon={Calendar}
             trend={metrics.toursThisWeek.trend}
             trendValue={metrics.toursThisWeek.trendValue}
           />
@@ -270,16 +270,16 @@ export function OperatorDashboardContent() {
       <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6">
         <h2 className="text-lg font-semibold text-neutral-900 mb-4">Quick Actions</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-          <QuickActionButton label="Add Resident" icon={FiPlus} href="/operator/residents/new" />
-          <QuickActionButton label="Add Inquiry" icon={FiPlus} href="/operator/inquiries/new" />
+          <QuickActionButton label="Add Resident" icon={Plus} href="/operator/residents/new" />
+          <QuickActionButton label="Add Inquiry" icon={Plus} href="/operator/inquiries/new" />
           <QuickActionButton
             label="Schedule Tour"
-            icon={FiCalendar}
+            icon={Calendar}
             href="/operator/inquiries?status=TOUR_SCHEDULED"
           />
-          <QuickActionButton label="Report Incident" icon={FiAlertCircle} href="/operator/residents" />
-          <QuickActionButton label="Add Caregiver" icon={FiPlus} href="/operator/caregivers/new" />
-          <QuickActionButton label="Export Data" icon={FiDownload} href="/operator/residents?export=csv" />
+          <QuickActionButton label="Report Incident" icon={AlertCircle} href="/operator/residents" />
+          <QuickActionButton label="Add Caregiver" icon={Plus} href="/operator/caregivers/new" />
+          <QuickActionButton label="Export Data" icon={Download} href="/operator/residents?export=csv" />
         </div>
       </div>
     </div>

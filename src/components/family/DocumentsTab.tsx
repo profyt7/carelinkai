@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { FiFileText, FiDownload, FiSearch, FiFilter } from 'react-icons/fi';
+import { FiDownload, FiSearch, FiFilter } from 'react-icons/fi';
+import { FileText } from 'lucide-react';
 import LoadingState from './LoadingState';
 import EmptyState from './EmptyState';
 
@@ -202,7 +203,7 @@ export default function DocumentsTab({ familyId, showMock = false, onUploadClick
   if (docs.length === 0 && !search && !docType) {
     return (
       <EmptyState
-        icon={FiFileText}
+        icon={FileText}
         title="No documents yet"
         description="Upload your first document to get started. You can upload care plans, medical records, insurance documents, and more."
         actionLabel="Upload Document"
@@ -253,7 +254,7 @@ export default function DocumentsTab({ familyId, showMock = false, onUploadClick
       {/* Documents Grid */}
       {docs.length === 0 ? (
         <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-          <FiFileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+          <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
           <p className="text-gray-500">No documents found matching your filters</p>
         </div>
       ) : (
@@ -265,7 +266,7 @@ export default function DocumentsTab({ familyId, showMock = false, onUploadClick
             >
               {/* Icon Header */}
               <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-cyan-400 shadow-lg group-hover:shadow-xl transition-all duration-300">
-                <FiFileText className="h-6 w-6 text-white" />
+                <FileText className="h-6 w-6 text-white" />
               </div>
               
               {/* Title */}

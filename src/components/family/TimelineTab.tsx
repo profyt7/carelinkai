@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { FiFileText, FiEdit2, FiMessageSquare, FiImage, FiUsers, FiUserPlus, FiUserCheck, FiFolder } from 'react-icons/fi';
+import { FiEdit2, FiMessageSquare, FiImage, FiUsers, FiUserPlus, FiUserCheck, FiFolder } from 'react-icons/fi';
+import { FileText } from 'lucide-react';
 import LoadingState from './LoadingState';
 import EmptyState from './EmptyState';
 
@@ -53,7 +54,7 @@ export default function TimelineTab({ familyId, showMock = false }: TimelineTabP
   }, []);
 
   const iconForType = (t: string) => {
-    if (t.startsWith('DOCUMENT')) return <FiFileText />;
+    if (t.startsWith('DOCUMENT')) return <FileText />;
     if (t.startsWith('NOTE_') && !t.includes('COMMENT')) return <FiEdit2 />;
     if (t.endsWith('COMMENTED')) return <FiMessageSquare />;
     if (t.startsWith('GALLERY') || t === 'PHOTO_UPLOADED') return <FiImage />;
@@ -157,7 +158,7 @@ export default function TimelineTab({ familyId, showMock = false }: TimelineTabP
   if (filteredActivities.length === 0 && activityFilter === 'ALL') {
     return (
       <EmptyState
-        icon={FiFileText}
+        icon={FileText}
         title="No activity yet"
         description="Activity will appear here as you and your family interact with documents, notes, and other features."
       />
@@ -188,7 +189,7 @@ export default function TimelineTab({ familyId, showMock = false }: TimelineTabP
       {/* Activity Timeline */}
       {filteredActivities.length === 0 ? (
         <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-          <FiFileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+          <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
           <p className="text-gray-500">No {activityFilter.toLowerCase()} activity found</p>
         </div>
       ) : (
