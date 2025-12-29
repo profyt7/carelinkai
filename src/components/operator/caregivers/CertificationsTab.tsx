@@ -134,7 +134,7 @@ export function CertificationsTab({ caregiverId }: CertificationsTabProps) {
             Manage certifications and track expiration dates
           </p>
         </div>
-        <PermissionGuard permission={PERMISSIONS.CERTIFICATIONS_CREATE}>
+        <PermissionGuard permission={PERMISSIONS.CAREGIVERS_MANAGE_CERTIFICATIONS}>
           <button
             onClick={() => {
               setEditingCert(undefined);
@@ -200,7 +200,7 @@ export function CertificationsTab({ caregiverId }: CertificationsTabProps) {
           <p className="text-neutral-600 mb-6">
             Add certifications to track compliance and expiration dates
           </p>
-          <PermissionGuard permission={PERMISSIONS.CERTIFICATIONS_CREATE}>
+          <PermissionGuard permission={PERMISSIONS.CAREGIVERS_MANAGE_CERTIFICATIONS}>
             <button
               onClick={() => setShowModal(true)}
               className="btn btn-primary inline-flex items-center gap-2"

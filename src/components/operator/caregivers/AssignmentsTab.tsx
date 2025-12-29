@@ -97,7 +97,7 @@ export function AssignmentsTab({ caregiverId }: AssignmentsTabProps) {
             Manage resident assignments for this caregiver
           </p>
         </div>
-        <PermissionGuard permission={PERMISSIONS.ASSIGNMENTS_CREATE}>
+        <PermissionGuard permission={PERMISSIONS.CAREGIVERS_ASSIGN}>
           <button
             onClick={() => setShowModal(true)}
             className="btn btn-primary flex items-center gap-2"
@@ -116,7 +116,7 @@ export function AssignmentsTab({ caregiverId }: AssignmentsTabProps) {
           <p className="text-neutral-600 mb-6">
             Assign residents to this caregiver to manage their care responsibilities
           </p>
-          <PermissionGuard permission={PERMISSIONS.ASSIGNMENTS_CREATE}>
+          <PermissionGuard permission={PERMISSIONS.CAREGIVERS_ASSIGN}>
             <button
               onClick={() => setShowModal(true)}
               className="btn btn-primary inline-flex items-center gap-2"

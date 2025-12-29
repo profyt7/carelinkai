@@ -149,8 +149,8 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Require CAREGIVERS_EDIT permission
-    const user = await requirePermission(PERMISSIONS.CAREGIVERS_EDIT);
+    // Require CAREGIVERS_UPDATE permission
+    const user = await requirePermission(PERMISSIONS.CAREGIVERS_UPDATE);
     
     // Get user scope
     const scope = await getUserScope(user.id);

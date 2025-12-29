@@ -22,12 +22,12 @@ export function ResidentQuickActionsMenu({ residentId, residentName, onUpdate }:
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const canAssign = useHasPermission(PERMISSIONS.CAREGIVER_ASSIGNMENTS_CREATE);
+  const canAssign = useHasPermission(PERMISSIONS.CAREGIVERS_ASSIGN);
   const canScheduleAssessment = useHasPermission(PERMISSIONS.ASSESSMENTS_CREATE);
   const canAddIncident = useHasPermission(PERMISSIONS.INCIDENTS_CREATE);
   const canUpdateCareLevel = useHasPermission(PERMISSIONS.RESIDENTS_UPDATE);
   const canUpdateStatus = useHasPermission(PERMISSIONS.RESIDENTS_UPDATE);
-  const canAddNote = useHasPermission(PERMISSIONS.CARE_NOTES_CREATE);
+  const canAddNote = useHasPermission(PERMISSIONS.ASSESSMENTS_CREATE);
 
   // Close menu when clicking outside
   useEffect(() => {

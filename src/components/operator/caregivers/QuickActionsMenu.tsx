@@ -39,7 +39,7 @@ export function QuickActionsMenu({ caregiver, onUpdate }: QuickActionsMenuProps)
   const menuRef = useRef<HTMLDivElement>(null);
 
   const canEdit = useHasPermission(PERMISSIONS.CAREGIVERS_UPDATE);
-  const canAssign = useHasPermission(PERMISSIONS.CAREGIVER_ASSIGNMENTS_CREATE);
+  const canAssign = useHasPermission(PERMISSIONS.CAREGIVERS_ASSIGN);
 
   // Close menu when clicking outside
   useEffect(() => {
