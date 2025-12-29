@@ -121,7 +121,7 @@ export function FollowUpScheduler({ inquiryId, onClose }: FollowUpSchedulerProps
             </label>
             <input
               type="datetime-local"
-              value={formData.scheduledFor || ""}
+              value={typeof formData.scheduledFor === 'string' ? formData.scheduledFor : (formData.scheduledFor ? new Date(formData.scheduledFor).toISOString().slice(0, 16) : "")}
               onChange={(e) => handleChange('scheduledFor', e.target.value)}
               min={minDateTime}
               className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${

@@ -56,8 +56,8 @@ export function AIResponseGenerator({ inquiryId, onClose }: AIResponseGeneratorP
         sendEmail: false,
         customInstructions: customInstructions || undefined,
       });
-      // Fix: Access nested response.response.content from API response
-      setGeneratedResponse(response.response.content);
+      // API returns InquiryResponse directly with content field
+      setGeneratedResponse(response.content);
       setStep('preview');
       toast.success('Response generated successfully');
     } catch (error: any) {

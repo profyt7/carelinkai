@@ -1,6 +1,6 @@
 {
   "name": "carelinkai",
-  "version": "1.0.0-build.20251221212054",
+  "version": "1.0.0-build.20251229165315",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -161,7 +161,7 @@
     "@types/jest": "^29.5.10",
     "@types/leaflet": "^1.9.20",
     "@types/papaparse": "^5.5.1",
-    "@types/pdfkit": "^0.13.9",
+    "@types/pdfkit": "^0.17.4",
     "@types/qrcode": "^1.5.5",
     "@types/twilio": "^3.19.2",
     "@types/uuid": "^9.0.8",
