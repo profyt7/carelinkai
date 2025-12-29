@@ -47,7 +47,7 @@ export async function DELETE(
         resourceType: 'ResidentDocument',
         residentId: document.residentId,
         documentId: document.id,
-        documentType: document.documentType,
+        documentType: document.type,
         fileName: document.fileName,
       }
     );

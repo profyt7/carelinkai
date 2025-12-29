@@ -74,7 +74,7 @@ export async function runDemoSeed() {
       await prisma.inspection.create({ data: { homeId, inspectionDate: new Date(Date.now() - (60 - i) * 86400000), inspectionType: i % 2 ? 'ANNUAL' : 'FOLLOW_UP', inspector: 'State Health Dept', result: i % 2 ? 'PASS' : 'PASS_WITH_NOTES', findings: i % 2 ? null : 'Minor documentation issues' } });
     }
     const anyResident = randomChoice(residentIds);
-    await prisma.residentComplianceItem.create({ data: { residentId: anyResident, type: 'CARE_PLAN_REVIEW', title: 'Quarterly Care Plan Review', status: ComplianceStatus.OPEN, dueDate: new Date(Date.now() + 14 * 86400000) } });
+    await prisma.residentComplianceItem.create({ data: { residentId: anyResident, type: 'CARE_PLAN_REVIEW', title: 'Quarterly Care Plan Review', status: ComplianceStatus.CURRENT, expiryDate: new Date(Date.now() + 14 * 86400000) } });
   }
 
   // Admission fit scores (6 pairs)

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  FiMessageSquare, 
+  MessageSquare, 
   FiCalendar, 
   FiClock, 
   FiCheckCircle,
@@ -18,6 +18,7 @@ import {
   FiBellOff,
   FiFilter
 } from 'react-icons/fi';
+import { MessageSquare } from "lucide-react";
 import { useWebSocket } from '../../contexts/WebSocketContext';
 
 // Types
@@ -289,7 +290,7 @@ const RealTimeInquiryUpdates: React.FC<RealTimeInquiryUpdatesProps> = ({
       case 'STATUS_CHANGE':
         return <FiCheckCircle className="h-5 w-5 text-green-500" />;
       case 'NEW_MESSAGE':
-        return <FiMessageSquare className="h-5 w-5 text-blue-500" />;
+        return <MessageSquare className="h-5 w-5 text-blue-500" />;
       case 'TOUR_REMINDER':
         return <FiCalendar className="h-5 w-5 text-amber-500" />;
       case 'DOCUMENT_SHARED':
@@ -543,7 +544,7 @@ const RealTimeInquiryUpdates: React.FC<RealTimeInquiryUpdatesProps> = ({
                   : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
               }`}
             >
-              <FiMessageSquare className="mr-1 h-3 w-3" />
+              <MessageSquare className="mr-1 h-3 w-3" />
               Messages
             </button>
             <button

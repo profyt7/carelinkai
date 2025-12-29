@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     const user = await requireAuth();
 
     // Check permission to view inquiries
-    await requirePermission(PERMISSIONS.INQUIRIES_VIEW, user.id);
+    await requirePermission(PERMISSIONS.INQUIRIES_VIEW);
 
     // Get user scope
     const scope = await getUserScope(user.id);

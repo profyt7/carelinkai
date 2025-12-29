@@ -361,7 +361,7 @@ export async function POST(request: NextRequest) {
       operatorId: home.operatorId,
       requestedTimes: validatedData.requestedTimes,
       familyNotes: validatedData.familyNotes,
-      status: "PENDING",
+      status: "PENDING" as const,
     };
     
     console.log('🟢 [TOUR API] Data to insert:', {

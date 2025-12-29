@@ -22,7 +22,7 @@ export async function GET(
     
     // Verify access to this caregiver
     const whereClause: any = { id: params.id };
-    if (scope.role === UserRole.OPERATOR && scope.operatorIds && scope.operatorIds !== "ALL") {
+    if (scope.role === UserRole.OPERATOR && scope.operatorIds && Array.isArray(scope.operatorIds)) {
       whereClause.employments = {
         some: {
           operatorId: { in: scope.operatorIds },
@@ -64,7 +64,7 @@ const createCertificationSchema = z.object({
   expiryDate: z.string().datetime().optional().nullable(),
   documentUrl: z.string().url().optional().nullable(),
   notes: z.string().optional().nullable(),
-  status: z.nativeEnum(CertificationStatus).optional().default(CertificationStatus.ACTIVE),
+  status: z.nativeEnum(CertificationStatus).optional().default(CertificationStatus.CURRENT),
 });
 
 export async function POST(
@@ -80,7 +80,7 @@ export async function POST(
     
     // Verify access to this caregiver
     const whereClause: any = { id: params.id };
-    if (scope.role === UserRole.OPERATOR && scope.operatorIds && scope.operatorIds !== "ALL") {
+    if (scope.role === UserRole.OPERATOR && scope.operatorIds && Array.isArray(scope.operatorIds)) {
       whereClause.employments = {
         some: {
           operatorId: { in: scope.operatorIds },
@@ -116,7 +116,7 @@ export async function POST(
       data: {
         caregiverId: params.id,
         ...parsed.data,
-        issuedDate: new Date(parsed.data.issuedDate),
+        issueDate: new Date(parsed.data.issuedDate),
         expiryDate: parsed.data.expiryDate ? new Date(parsed.data.expiryDate) : null,
         verifiedBy: user.id,
         verifiedAt: new Date(),

@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
-import { FiMessageSquare, FiSearch, FiMoreVertical, FiChevronLeft } from 'react-icons/fi';
+import { FiSearch, FiMoreVertical, FiChevronLeft } from 'react-icons/fi';
+import { MessageSquare } from 'lucide-react';
 import ChatInterface, {
   type Conversation,
   type Message,
@@ -417,7 +418,7 @@ export default function MessagesPage() {
                 </div>
               ) : threads.length === 0 ? (
                 <div className="flex h-full flex-col items-center justify-center p-4 text-center">
-                  <FiMessageSquare className="mb-4 h-12 w-12 text-neutral-400" />
+                  <MessageSquare className="mb-4 h-12 w-12 text-neutral-400" />
                   <h2 className="mb-1 text-lg font-medium">No messages yet</h2>
                   <p className="text-sm text-neutral-500">When you start conversations, they&apos;ll appear here.</p>
                 </div>
@@ -557,7 +558,7 @@ export default function MessagesPage() {
                 </div>
               ) : (
                 <div className="flex h-full flex-col items-center justify-center p-4 text-center">
-                  <FiMessageSquare className="mb-4 h-16 w-16 text-neutral-200" />
+                  <MessageSquare className="mb-4 h-16 w-16 text-neutral-200" />
                   <h2 className="mb-2 text-xl font-medium">Select a conversation</h2>
                   <p className="text-neutral-500">Choose a conversation from the list to start messaging</p>
                 </div>

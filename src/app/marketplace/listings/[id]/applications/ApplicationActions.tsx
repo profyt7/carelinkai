@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { FiSend, FiCalendar, FiMessageSquare } from "react-icons/fi";
+import { FiSend, FiCalendar } from "react-icons/fi";
+import { MessageSquare } from "lucide-react";
 
 interface ApplicationActionsProps {
   applicationId: string;
@@ -128,7 +129,7 @@ export default function ApplicationActions({
         
         <div className="mb-3">
           <label htmlFor="message" className="block text-xs font-medium text-gray-500 mb-1 flex items-center">
-            <FiMessageSquare className="mr-1 text-gray-400" size={14} />
+            <MessageSquare className="mr-1 text-gray-400" size={14} />
             Message (optional)
           </label>
           <textarea

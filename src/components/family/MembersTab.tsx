@@ -523,7 +523,7 @@ export default function MembersTab({ familyId, showMock = false, isGuest = false
       ) : (
         <div>
           <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
-            <FiUsers className="w-5 h-5 text-blue-600" />
+            <Users className="w-5 h-5 text-blue-600" />
             Active Members ({members.length})
           </h3>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

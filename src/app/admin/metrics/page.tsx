@@ -9,13 +9,13 @@ import {
   FiUsers,
   FiFileText,
   FiShoppingBag,
-  FiMessageSquare,
   FiTrendingUp,
   FiCheckCircle,
   FiAlertCircle,
   FiClock,
   FiArrowRight,
 } from "react-icons/fi";
+import { MessageSquare } from "lucide-react";
 
 // ========== TYPE DEFINITIONS ==========
 
@@ -710,7 +710,7 @@ export default function AdminMetricsPage() {
             {/* Engagement Metrics Section */}
             <div className="bg-white border border-neutral-200 rounded-lg p-6">
               <h2 className="text-lg font-semibold text-neutral-900 mb-4 flex items-center">
-                <FiMessageSquare className="mr-2 h-5 w-5 text-indigo-600" />
+                <MessageSquare className="mr-2 h-5 w-5 text-indigo-600" />
                 Engagement Metrics
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
       try {
         event = stripe.webhooks.constructEvent(rawBody, signature, secret);
       } catch (err) {
-        logger.error({ msg: "Webhook signature verification failed", err: err instanceof Error ? err.message : err });
+        logger.error("Webhook signature verification failed", { err: err instanceof Error ? err.message : err });
         return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
       }
     } else {
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
           logger.info({ msg: "Webhook signature bypassed (non-production)" });
         }
       } catch (err) {
-        logger.error({ msg: "Invalid webhook payload", err: err instanceof Error ? err.message : err });
+        logger.error("Invalid webhook payload", { err: err instanceof Error ? err.message : err });
         return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
       }
     }
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
         updatedCount += byHire.count;
       }
 
-      logger.info({ msg: "Stripe transfer processed", transferId, updatedCount });
+      logger.info("Stripe transfer processed", { transferId, updatedCount });
       return NextResponse.json({ received: true, message: "Transfer processed", updated: updatedCount }, { status: 200 });
     }
 
@@ -123,14 +123,14 @@ export async function POST(request: NextRequest) {
     const userId = (metadata as any)["userId"];
 
     if (!familyId || !userId) {
-      logger.warn({ msg: "Missing required metadata", stripePaymentId, hasFamilyId: !!familyId, hasUserId: !!userId });
+      logger.warn("Missing required metadata", { stripePaymentId, hasFamilyId: !!familyId, hasUserId: !!userId });
       return NextResponse.json({ error: "Missing required metadata" }, { status: 400 });
     }
 
     // Idempotency: skip if already processed
     const existingPayment = await prisma.payment.findFirst({ where: { stripePaymentId } });
     if (existingPayment) {
-      logger.info({ msg: "Payment already processed", stripePaymentId });
+      logger.info("Payment already processed", { stripePaymentId });
       return NextResponse.json({ received: true, message: "Payment already processed" }, { status: 200 });
     }
 
@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
       if (walletId) {
         wallet = await tx.familyWallet.findUnique({ where: { id: walletId } });
         if (!wallet) {
-          logger.warn({ msg: "Wallet not found by id; falling back to familyId", walletId, familyId });
+          logger.warn("Wallet not found by id; falling back to familyId", { walletId, familyId });
         }
       }
 
@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
 
       if (!wallet) {
         wallet = await tx.familyWallet.create({ data: { familyId, balance: 0 } });
-        logger.info({ msg: "Created wallet for family", familyId, walletId: wallet.id });
+        logger.info("Created wallet for family", { familyId, walletId: wallet.id });
       }
 
       const amountDecimal = amount / 100;
@@ -174,10 +174,10 @@ export async function POST(request: NextRequest) {
       });
     });
 
-    logger.info({ msg: "Payment processed", stripePaymentId });
+    logger.info("Payment processed", { stripePaymentId });
     return NextResponse.json({ received: true, success: true }, { status: 200 });
   } catch (error) {
-    logger.error({ msg: "Error processing Stripe webhook", err: error instanceof Error ? error.message : error });
+    logger.error("Error processing Stripe webhook", { err: error instanceof Error ? error.message : error });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

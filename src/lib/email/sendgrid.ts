@@ -171,7 +171,7 @@ export async function sendEmail(emailData: EmailData): Promise<EmailResult> {
       messageId: response.headers['x-message-id']
     };
   } catch (error) {
-    logger.error('Failed to send email:', error);
+    logger.error('Failed to send email', { error: error instanceof Error ? error.message : String(error) });
     return {
       success: false,
       error

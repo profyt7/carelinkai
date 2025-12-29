@@ -33,6 +33,7 @@ export async function validateDocument(
     
     return {
       success: true,
+      valid: false,
       isValid: false,
       errors,
       warnings,
@@ -68,9 +69,11 @@ export async function validateDocument(
       break;
   }
 
+  const isValid = errors.length === 0;
   return {
     success: true,
-    isValid: errors.length === 0,
+    valid: isValid,
+    isValid,
     errors,
     warnings,
   };

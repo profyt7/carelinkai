@@ -5,8 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { 
-  FiArrowLeft,
-  FiMessageSquare, 
+  FiArrowLeft, 
   FiCalendar, 
   FiClock, 
   FiCheck, 
@@ -32,6 +31,7 @@ import {
   FiCopy,
   FiAlertCircle
 } from 'react-icons/fi';
+import { MessageSquare } from "lucide-react";
 import DashboardLayout from '../../../../components/layout/DashboardLayout';
 
 // Types
@@ -155,7 +155,7 @@ const STATUS_INFO = {
   FOLLOW_UP: {
     label: "Follow-up",
     color: "bg-indigo-100 text-indigo-800",
-    icon: <FiMessageSquare className="h-4 w-4" />,
+    icon: <MessageSquare className="h-4 w-4" />,
     description: "Additional follow-up is needed"
   },
   DECIDED: {
@@ -190,7 +190,7 @@ const PERMISSION_LEVELS = {
   COMMENT: { 
     label: "Commenter", 
     color: "bg-green-100 text-green-800", 
-    icon: <FiMessageSquare className="h-4 w-4" />,
+    icon: <MessageSquare className="h-4 w-4" />,
     description: "Can view and add comments/notes to the inquiry"
   },
   VOTE: { 
@@ -698,7 +698,7 @@ export default function InquiryDetailPage() {
                     onClick={() => setActiveTab('messages')}
                     className="flex items-center rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
                   >
-                    <FiMessageSquare className="mr-2 h-4 w-4" />
+                    <MessageSquare className="mr-2 h-4 w-4" />
                     Send Message
                   </button>
                   <button

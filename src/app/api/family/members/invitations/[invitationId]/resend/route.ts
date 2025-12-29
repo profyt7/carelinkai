@@ -24,6 +24,13 @@ export async function POST(
     // Fetch invitation
     const invitation = await prisma.familyMember.findUnique({
       where: { id: invitationId },
+      include: {
+        user: {
+          select: {
+            email: true,
+          },
+        },
+      },
     });
 
     if (!invitation) {
@@ -50,7 +57,7 @@ export async function POST(
     });
 
     // TODO: Resend invitation email
-    console.log('Invitation email would be resent to:', invitation.email);
+    console.log('Invitation email would be resent to:', invitation.user?.email);
 
     // Create activity feed item
     await prisma.activityFeedItem.create({
@@ -60,10 +67,10 @@ export async function POST(
         type: 'OTHER',
         resourceType: 'family_member',
         resourceId: invitationId,
-        description: `resent invitation to ${invitation.email ?? 'unknown'}`,
+        description: `resent invitation to ${invitation.user?.email ?? 'unknown'}`,
         metadata: {
           invitationId,
-          email: invitation.email,
+          email: invitation.user?.email,
           action: 'INVITATION_RESENT',
         },
       },
@@ -75,7 +82,7 @@ export async function POST(
       AuditAction.UPDATE,
       'FAMILY_MEMBER',
       invitationId,
-      `Resent invitation to ${invitation.email}`,
+      `Resent invitation to ${invitation.user?.email}`,
       undefined
     );
 

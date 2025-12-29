@@ -16,9 +16,9 @@ import {
   FiCornerDownRight,
   FiSmile,
   FiMic,
-  FiVideo,
-  FiMessageSquare
+  FiVideo
 } from 'react-icons/fi';
+import { MessageSquare } from "lucide-react";
 
 // Types
 export type ParticipantRole = 'USER' | 'CARE_HOME' | 'CARE_ADVISOR' | 'FAMILY_MEMBER' | 'SYSTEM';
@@ -533,7 +533,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         ) : conversation.messages.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center text-center">
             <div className="mb-4 rounded-full bg-neutral-100 p-4">
-              <FiMessageSquare className="h-8 w-8 text-neutral-400" />
+              <MessageSquare className="h-8 w-8 text-neutral-400" />
             </div>
             <p className="mb-1 text-lg font-medium text-neutral-800">No messages yet</p>
             <p className="text-sm text-neutral-500">Start the conversation by sending a message</p>

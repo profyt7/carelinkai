@@ -743,7 +743,7 @@ export async function PUT(request: NextRequest) {
     
     if (body.title !== undefined) updates.title = body.title;
     if (body.description !== undefined) updates.description = body.description;
-    if (body.type !== undefined) updates.type = body.type;
+    if (body.documentType !== undefined) updates.type = body.documentType;
     if (body.isEncrypted !== undefined) updates.isEncrypted = body.isEncrypted;
     if (body.tags !== undefined) updates.tags = body.tags;
     

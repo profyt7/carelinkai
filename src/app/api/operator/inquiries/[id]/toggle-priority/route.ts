@@ -65,12 +65,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     // Create audit log
     await createAuditLogFromRequest(
       req,
-      user.id,
       AuditAction.UPDATE,
       'Inquiry',
       inquiry.id,
-      { priority: newPriority },
-      'Priority toggled'
+      'Priority toggled',
+      { priority: newPriority }
     );
 
     return NextResponse.json({ inquiry: updated, priority: newPriority });

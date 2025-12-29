@@ -78,12 +78,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     // Create audit log
     await createAuditLogFromRequest(
       req,
-      user.id,
       AuditAction.UPDATE,
       'Inquiry',
       inquiry.id,
-      { tourDate: parsed.data.tourDate, status: 'TOUR_SCHEDULED' },
-      'Tour scheduled'
+      'Tour scheduled',
+      { tourDate: parsed.data.tourDate, status: 'TOUR_SCHEDULED' }
     );
 
     return NextResponse.json({ inquiry: updated });

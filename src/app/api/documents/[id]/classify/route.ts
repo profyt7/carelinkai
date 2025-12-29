@@ -75,7 +75,7 @@ export async function POST(
     }
 
     const confidence = result.confidence || 0;
-    const documentType = result.type!;
+    const documentType = result.type! as any;
     const reasoning = result.reasoning || 'No reasoning provided';
     const reviewStatus = determineReviewStatus(confidence);
     const autoClassify = shouldAutoClassify(confidence);

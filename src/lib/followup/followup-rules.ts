@@ -1,10 +1,10 @@
-import { InquiryStage, InquiryUrgency, InquirySource } from '@prisma/client';
+import { InquiryStatus, InquiryUrgency, InquirySource } from '@prisma/client';
 
 export interface FollowUpRule {
   name: string;
   description: string;
   conditions: {
-    stage?: InquiryStage[];
+    stage?: InquiryStatus[];
     urgency?: InquiryUrgency[];
     source?: InquirySource[];
     daysAfterInquiry?: number;

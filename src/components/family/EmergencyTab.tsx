@@ -184,7 +184,7 @@ export default function EmergencyTab({ familyId, showMock = false, isGuest = fal
       <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-xl border-2 border-red-200 p-6 mb-6 shadow-md">
         <div className="flex items-start gap-4">
           <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-orange-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg">
-            <FiAlertCircle className="w-6 h-6 text-white" />
+            <AlertCircle className="w-6 h-6 text-white" />
           </div>
           <div className="flex-1">
             <h3 className="text-lg font-bold text-red-900 mb-2">Emergency Contact List</h3>
@@ -219,7 +219,7 @@ export default function EmergencyTab({ familyId, showMock = false, isGuest = fal
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                <FiAlertCircle className="w-6 h-6 text-red-600" />
+                <AlertCircle className="w-6 h-6 text-red-600" />
                 {editIndex !== null ? 'Edit' : 'Add'} Emergency Contact
               </h3>
               <button

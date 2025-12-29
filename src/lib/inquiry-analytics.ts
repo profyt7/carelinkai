@@ -103,7 +103,7 @@ export function calculateInquiryAnalytics(
   const totalInquiries = inquiries.length;
   
   // Active inquiries (not converted, lost, or fully closed)
-  const activeStatuses = [
+  const activeStatuses: InquiryStatus[] = [
     InquiryStatus.NEW,
     InquiryStatus.CONTACTED,
     InquiryStatus.TOUR_SCHEDULED,
@@ -232,7 +232,8 @@ export function calculateInquiryAnalytics(
     if ('status' in stage) {
       count = inquiries.filter(i => i.status === stage.status).length;
     } else if ('statuses' in stage && stage.statuses) {
-      count = inquiries.filter(i => stage.statuses?.includes(i.status)).length;
+      const statuses = stage.statuses as InquiryStatus[];
+      count = inquiries.filter(i => statuses.includes(i.status)).length;
     }
     
     const conversionRate = index === 0 

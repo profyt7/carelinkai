@@ -19,6 +19,7 @@ export async function extractTextFromPDF(
 
     // Dynamic import to avoid issues during build
     const pdf = await import('pdf-parse');
+    // @ts-ignore - pdf-parse has inconsistent module exports
     const pdfParse = pdf.default || pdf;
     
     const data = await pdfParse(pdfBuffer);

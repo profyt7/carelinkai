@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { FiMoreVertical, FiUserPlus, FiCalendar, FiAlertTriangle, FiActivity, FiEdit, FiMessageSquare, FiUsers } from 'react-icons/fi';
+import { FiMoreVertical, FiUserPlus, FiCalendar, FiAlertTriangle, FiActivity, FiEdit, FiUsers } from 'react-icons/fi';
+import { MessageSquare } from 'lucide-react';
 import { useHasPermission } from '@/hooks/usePermissions';
 import { PERMISSIONS } from '@/lib/permissions';
 import { AssignCaregiverModal } from './modals/AssignCaregiverModal';
@@ -41,6 +42,7 @@ export function ResidentQuickActionsMenu({ residentId, residentName, onUpdate }:
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
+    return undefined;
   }, [isOpen]);
 
   const handleAction = (actionId: string) => {
@@ -59,7 +61,7 @@ export function ResidentQuickActionsMenu({ residentId, residentName, onUpdate }:
     { id: 'add-incident', label: 'Add Incident Report', icon: <FiAlertTriangle className="w-4 h-4" />, show: canAddIncident },
     { id: 'update-care-level', label: 'Update Care Level', icon: <FiActivity className="w-4 h-4" />, show: canUpdateCareLevel },
     { id: 'update-status', label: 'Update Status', icon: <FiEdit className="w-4 h-4" />, show: canUpdateStatus },
-    { id: 'add-note', label: 'Add Care Note', icon: <FiMessageSquare className="w-4 h-4" />, show: canAddNote },
+    { id: 'add-note', label: 'Add Care Note', icon: <MessageSquare className="w-4 h-4" />, show: canAddNote },
   ].filter(action => action.show);
 
   if (actions.length === 0) {

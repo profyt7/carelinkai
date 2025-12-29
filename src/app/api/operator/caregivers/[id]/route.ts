@@ -24,7 +24,7 @@ export async function GET(
     const whereClause: any = { id: params.id };
     
     // Apply scope-based filtering for operators
-    if (scope.role === UserRole.OPERATOR && scope.operatorIds && scope.operatorIds !== "ALL") {
+    if (scope.role === UserRole.OPERATOR && scope.operatorIds && Array.isArray(scope.operatorIds)) {
       whereClause.employments = {
         some: {
           operatorId: { in: scope.operatorIds },
@@ -103,9 +103,9 @@ export async function GET(
         phoneNumber: caregiver.user.phone || null,
       },
       photoUrl: caregiver.photoUrl,
-      specializations: caregiver.specializations || [],
+      specializations: caregiver.specialties || [],
       languages: caregiver.languages || [],
-      yearsOfExperience: caregiver.yearsOfExperience,
+      yearsOfExperience: caregiver.yearsExperience,
       bio: caregiver.bio,
       employmentType: caregiver.employmentType,
       employmentStatus: caregiver.employmentStatus,
@@ -119,8 +119,9 @@ export async function GET(
           fullName: `${assignment.resident.firstName} ${assignment.resident.lastName}`
         }
       })),
-      rating: caregiver.rating,
-      totalReviews: caregiver.totalReviews,
+      // Rating fields not in schema yet
+      // rating: caregiver.rating,
+      // totalReviews: caregiver.totalReviews,
       createdAt: caregiver.createdAt,
       updatedAt: caregiver.updatedAt,
     };
@@ -140,7 +141,7 @@ const updateCaregiverSchema = z.object({
   yearsOfExperience: z.number().int().min(0).optional().nullable(),
   bio: z.string().optional().nullable(),
   employmentType: z.enum(['FULL_TIME', 'PART_TIME', 'CONTRACT', 'PER_DIEM']).optional(),
-  employmentStatus: z.enum(['ACTIVE', 'ON_LEAVE', 'TERMINATED', 'SUSPENDED']).optional(),
+  employmentStatus: z.enum(['ACTIVE', 'ON_LEAVE', 'TERMINATED', 'INACTIVE']).optional(),
   hireDate: z.string().datetime().optional().nullable(),
 });
 
@@ -157,7 +158,7 @@ export async function PATCH(
     
     // Verify access to this caregiver
     const whereClause: any = { id: params.id };
-    if (scope.role === UserRole.OPERATOR && scope.operatorIds && scope.operatorIds !== "ALL") {
+    if (scope.role === UserRole.OPERATOR && scope.operatorIds && Array.isArray(scope.operatorIds)) {
       whereClause.employments = {
         some: {
           operatorId: { in: scope.operatorIds },
@@ -229,7 +230,7 @@ export async function DELETE(
     
     // Verify access to this caregiver
     const whereClause: any = { id: params.id };
-    if (scope.role === UserRole.OPERATOR && scope.operatorIds && scope.operatorIds !== "ALL") {
+    if (scope.role === UserRole.OPERATOR && scope.operatorIds && Array.isArray(scope.operatorIds)) {
       whereClause.employments = {
         some: {
           operatorId: { in: scope.operatorIds },

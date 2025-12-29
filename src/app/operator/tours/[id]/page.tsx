@@ -11,7 +11,6 @@ import {
   FiUser,
   FiMail,
   FiPhone,
-  FiMessageSquare,
   FiCheckCircle,
   FiXCircle,
   FiEdit,
@@ -19,6 +18,7 @@ import {
   FiLoader,
   FiHome,
 } from "react-icons/fi";
+import { MessageSquare } from "lucide-react";
 import TourStatusBadge from "@/components/tours/TourStatusBadge";
 import TimeSlotSelector from "@/components/tours/TimeSlotSelector";
 
@@ -413,7 +413,7 @@ export default function OperatorTourDetailPage() {
           {tour.familyNotes && (
             <div className="mb-4">
               <h3 className="mb-2 text-sm font-medium text-gray-700">
-                <FiMessageSquare className="mr-1 inline h-4 w-4" />
+                <MessageSquare className="mr-1 inline h-4 w-4" />
                 Family Notes:
               </h3>
               <div className="rounded-md bg-gray-50 p-3">

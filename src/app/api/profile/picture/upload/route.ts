@@ -173,7 +173,7 @@ export async function POST(request: NextRequest) {
 
       request,
 
-      AuditAction.PROFILE,
+      AuditAction.UPDATE,
 
       'USER_PROFILE',
 
@@ -260,7 +260,7 @@ export async function DELETE(request: NextRequest) {
 
       request,
 
-      AuditAction.PROFILE,
+      AuditAction.UPDATE,
 
       'USER_PROFILE',
 

@@ -11,7 +11,6 @@ import {
   FiUsers, 
   FiDollarSign, 
   FiCalendar, 
-  FiMessageSquare, 
   FiSettings, 
   FiTool,
   FiHelpCircle,
@@ -29,6 +28,7 @@ import {
   FiHeart,
   FiZap
 } from "react-icons/fi";
+import { MessageSquare } from "lucide-react";
 // Real-time notification center
 import NotificationCenter from "../notifications/NotificationCenter";
 // PWA helpers
@@ -86,7 +86,7 @@ const navItems: NavItem[] = [
   { name: "Family", icon: <FiUsers size={20} />, href: "/family", showInMobileBar: true },
   { name: "Finances", icon: <FiDollarSign size={20} />, href: "/settings/payouts", showInMobileBar: true },
   { name: "Reports", icon: <FiBarChart2 size={20} />, href: "/reports", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN"] },
-  { name: "Messages", icon: <FiMessageSquare size={20} />, href: "/messages", showInMobileBar: true },
+  { name: "Messages", icon: <MessageSquare size={20} />, href: "/messages", showInMobileBar: true },
   { name: "Settings", icon: <FiSettings size={20} />, href: "/settings", showInMobileBar: false },
   // Admin-only tools section
   { 

@@ -4,7 +4,6 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { 
   FiBell, 
-  FiMessageSquare, 
   FiCalendar, 
   FiClock, 
   FiCheckCircle,
@@ -15,6 +14,7 @@ import {
   FiTrash2,
   FiSettings
 } from 'react-icons/fi';
+import { MessageSquare } from "lucide-react";
 import { useWebSocket } from '../../contexts/WebSocketContext';
 
 // Notification types
@@ -163,7 +163,7 @@ const Toast: React.FC<ToastProps> = ({ notification, onClose, autoClose = true, 
   const getIcon = () => {
     switch (notification.type) {
       case 'MESSAGE':
-        return <FiMessageSquare className="h-5 w-5 text-blue-500" />;
+        return <MessageSquare className="h-5 w-5 text-blue-500" />;
       case 'INQUIRY_UPDATE':
         return <FiInfo className="h-5 w-5 text-purple-500" />;
       case 'TOUR_REMINDER':
@@ -391,7 +391,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
   const getNotificationIcon = (type: NotificationType) => {
     switch (type) {
       case 'MESSAGE':
-        return <FiMessageSquare className="h-5 w-5 text-blue-500" />;
+        return <MessageSquare className="h-5 w-5 text-blue-500" />;
       case 'INQUIRY_UPDATE':
         return <FiInfo className="h-5 w-5 text-purple-500" />;
       case 'TOUR_REMINDER':

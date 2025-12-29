@@ -213,7 +213,7 @@ export default function MessagesTab({ familyId, showMock = false, currentUserId 
       <div className="w-1/3 bg-white rounded-xl border border-gray-200 shadow-md overflow-hidden flex flex-col">
         <div className="bg-gradient-to-r from-blue-600 to-cyan-500 p-4">
           <h3 className="text-lg font-bold text-white flex items-center gap-2">
-            <FiMessageSquare className="w-5 h-5" />
+            <MessageSquare className="w-5 h-5" />
             Conversations
           </h3>
         </div>
@@ -221,7 +221,7 @@ export default function MessagesTab({ familyId, showMock = false, currentUserId 
         <div className="flex-1 overflow-y-auto">
           {conversations.length === 0 ? (
             <div className="p-6 text-center">
-              <FiMessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-3" />
               <p className="text-sm text-gray-500">No conversations yet</p>
               <p className="text-xs text-gray-400 mt-1">
                 Start chatting with caregivers and staff

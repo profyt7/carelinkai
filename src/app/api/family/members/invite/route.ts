@@ -38,16 +38,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
+    let targetUser = await prisma.user.findUnique({
       where: { email },
     });
 
     // Check if already a member or invited
-    if (existingUser) {
+    if (targetUser) {
       const existingMembership = await prisma.familyMember.findFirst({
         where: {
           familyId,
-          userId: existingUser.id,
+          userId: targetUser.id,
         },
       });
 
@@ -57,14 +57,24 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
+    } else {
+      // Create placeholder user for invitation
+      targetUser = await prisma.user.create({
+        data: {
+          email,
+          firstName: email.split('@')[0],
+          lastName: '',
+          role: 'FAMILY',
+          passwordHash: null, // Will be set when they accept invitation
+        },
+      });
     }
 
     // Create pending invitation
     const invitation = await prisma.familyMember.create({
       data: {
         familyId,
-        userId: existingUser?.id,
-        email,
+        userId: targetUser.id,
         role,
         status: 'PENDING',
         invitedById: session.user.id,
@@ -96,7 +106,7 @@ export async function POST(request: NextRequest) {
     // Create audit log
     await createAuditLogFromRequest(
       request,
-      AuditAction.USER_CREATED,
+      AuditAction.CREATE,
       'FAMILY_MEMBER',
       invitation.id,
       `Invited ${email} as ${role}`,

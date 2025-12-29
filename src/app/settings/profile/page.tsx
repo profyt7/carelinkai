@@ -12,7 +12,6 @@ import {
   FiMail, 
   FiPhone, 
   FiMapPin, 
-  FiCamera, 
   FiSave, 
   FiAlertCircle,
   FiCheck,
@@ -24,6 +23,7 @@ import {
   FiCheckCircle,
   FiXCircle
 } from "react-icons/fi";
+import { Camera } from "lucide-react";
 
 // Profile schema for validation
 const baseProfileSchema = z.object({
@@ -1786,7 +1786,7 @@ export default function ProfileSettings() {
                   {uploadingPhoto ? (
                     <FiLoader className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
-                    <FiCamera className="mr-2 h-4 w-4" />
+                    <Camera className="mr-2 h-4 w-4" />
                   )}
                   {photoPreview ? "Change Photo" : "Upload Photo"}
                 </button>

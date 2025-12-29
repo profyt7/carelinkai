@@ -25,6 +25,13 @@ export async function DELETE(
     // Fetch invitation
     const invitation = await prisma.familyMember.findUnique({
       where: { id: invitationId },
+      include: {
+        user: {
+          select: {
+            email: true,
+          },
+        },
+      },
     });
 
     if (!invitation) {
@@ -57,10 +64,10 @@ export async function DELETE(
         type: 'OTHER',
         resourceType: 'family_member',
         resourceId: invitationId,
-        description: `cancelled invitation for ${invitation.email ?? 'unknown'}`,
+        description: `cancelled invitation for ${invitation.user?.email ?? 'unknown'}`,
         metadata: {
           invitationId,
-          email: invitation.email,
+          email: invitation.user?.email,
           action: 'INVITATION_CANCELLED',
         },
       },
@@ -72,7 +79,7 @@ export async function DELETE(
       AuditAction.DELETE,
       'FAMILY_MEMBER',
       invitationId,
-      `Cancelled invitation for ${invitation.email}`,
+      `Cancelled invitation for ${invitation.user?.email}`,
       undefined
     );
 

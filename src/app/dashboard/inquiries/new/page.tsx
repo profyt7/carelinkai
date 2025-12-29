@@ -4,13 +4,14 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { 
-  FiMessageSquare,
+  
   FiCalendar,
   FiUsers,
   FiHome,
   FiChevronLeft,
   FiCheck,
 } from "react-icons/fi";
+import { MessageSquare } from "lucide-react";
 
 type InquiryForm = {
   homeName: string;
@@ -204,7 +205,7 @@ export default function NewInquiryPage() {
 
             <section className="rounded-lg border border-neutral-200 bg-white p-6">
               <h2 className="mb-4 flex items-center text-lg font-medium text-neutral-800">
-                <FiMessageSquare className="mr-2" /> Care Needs & Message
+                <MessageSquare className="mr-2" /> Care Needs & Message
               </h2>
               <div className="mb-4">
                 <label className="mb-1 block text-sm font-medium text-neutral-700">

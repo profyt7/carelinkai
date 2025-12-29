@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { FiX, FiMessageSquare } from 'react-icons/fi';
+import { FiX } from 'react-icons/fi';
+import { MessageSquare } from 'lucide-react';
 
 interface AddNoteModalProps {
   isOpen: boolean;
@@ -65,7 +66,7 @@ export function AddNoteModal({ isOpen, onClose, inquiryId, inquiryData }: AddNot
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-xl font-semibold flex items-center gap-2">
-            <FiMessageSquare className="w-5 h-5" />
+            <MessageSquare className="w-5 h-5" />
             Add Note
           </h2>
           <button

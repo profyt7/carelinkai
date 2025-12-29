@@ -28,7 +28,7 @@ export async function POST(
     const user = await requireAuth();
 
     // Check permission to convert inquiries
-    await requirePermission(PERMISSIONS.INQUIRIES_CONVERT, user.id);
+    await requirePermission(PERMISSIONS.INQUIRIES_CONVERT);
 
     // Parse request body
     const body = await request.json();
@@ -113,7 +113,7 @@ export async function GET(
     const user = await requireAuth();
 
     // Check permission to view inquiries
-    await requirePermission(PERMISSIONS.INQUIRIES_VIEW, user.id);
+    await requirePermission(PERMISSIONS.INQUIRIES_VIEW);
 
     // Get inquiry details
     const inquiry = await getInquiryForConversion(params.id);

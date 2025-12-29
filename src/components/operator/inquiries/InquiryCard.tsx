@@ -23,9 +23,9 @@ import {
   FiUser,
   FiClock,
   FiEdit,
-  FiEye,
-  FiMessageSquare,
+  FiEye
 } from 'react-icons/fi';
+import { MessageSquare } from "lucide-react";
 import StatusBadge from './StatusBadge';
 import SourceBadge, { InquirySource } from './SourceBadge';
 import PriorityIndicator from './PriorityIndicator';
@@ -226,7 +226,7 @@ export default function InquiryCard({ inquiry, onEdit, onContact, isFamily = fal
               onClick={() => onContact(inquiry.id)}
               className="flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-primary-700 bg-primary-50 rounded-md hover:bg-primary-100 transition-colors"
             >
-              <FiMessageSquare className="w-4 h-4" />
+              <MessageSquare className="w-4 h-4" />
               Contact
             </button>
           )}

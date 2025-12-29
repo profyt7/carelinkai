@@ -43,7 +43,7 @@ export async function GET(request: Request) {
     }
 
     // Apply scope-based filtering (Phase 4 RBAC)
-    if (scope.role === UserRole.OPERATOR && scope.operatorIds && scope.operatorIds !== "ALL") {
+    if (scope.role === UserRole.OPERATOR && scope.operatorIds && Array.isArray(scope.operatorIds)) {
       console.log('[Caregivers API] Applying OPERATOR scope filtering...');
       // For operators, filter by their employment records
       caregiverWhere.employments = {
@@ -99,7 +99,7 @@ export async function GET(request: Request) {
             phoneNumber: caregiver.user?.phone || null,
           },
           photoUrl: caregiver.photoUrl || null,
-          specializations: Array.isArray(caregiver.specializations) ? caregiver.specializations : [],
+          specializations: Array.isArray(caregiver.specialties) ? caregiver.specialties : [],
           languages: Array.isArray(caregiver.languages) ? caregiver.languages : [],
           employmentType: caregiver.employmentType || 'FULL_TIME',
           employmentStatus: caregiver.employmentStatus || 'ACTIVE',

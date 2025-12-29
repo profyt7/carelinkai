@@ -20,9 +20,7 @@ import {
   FiShare2,
   FiClock,
   FiInfo,
-  FiMessageSquare,
   FiVideo,
-  FiCamera,
   FiThumbsUp,
   FiThumbsDown,
   FiShield,
@@ -38,6 +36,7 @@ import {
   FiChevronUp,
   FiAlertCircle
 } from "react-icons/fi";
+import { Camera, MessageSquare } from "lucide-react";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import TourRequestModal from "@/components/tours/TourRequestModal";
@@ -884,7 +883,7 @@ export default function HomeDetailPage() {
                         Schedule a Tour
                       </Link>
                       <Link href={`/inquiry?homeId=${realHome.id}`} className="flex w-full items-center justify-center rounded-md border border-neutral-300 bg-white px-4 py-2 font-medium text-neutral-700 hover:bg-neutral-50">
-                        <FiMessageSquare className="mr-2 h-5 w-5" />
+                        <MessageSquare className="mr-2 h-5 w-5" />
                         Send Inquiry
                       </Link>
                     </div>
@@ -1486,7 +1485,7 @@ export default function HomeDetailPage() {
                     Our CareLinkAI care advisors are available to help you navigate your options and find the perfect home.
                   </p>
                   <button className="flex items-center rounded-md bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600">
-                    <FiMessageSquare className="mr-2 h-4 w-4" />
+                    <MessageSquare className="mr-2 h-4 w-4" />
                     Chat with a Care Advisor
                   </button>
                 </div>
@@ -1519,7 +1518,7 @@ export default function HomeDetailPage() {
                         onClick={() => setBookingStep(1)}
                         className="flex w-full items-center justify-center rounded-md border border-neutral-300 bg-white px-4 py-2 font-medium text-neutral-700 hover:bg-neutral-50"
                       >
-                        <FiMessageSquare className="mr-2 h-5 w-5" />
+                        <MessageSquare className="mr-2 h-5 w-5" />
                         Send Inquiry
                       </button>
                     </div>

@@ -7,11 +7,11 @@ import {
   FiCalendar, 
   FiEdit, 
   FiUsers, 
-  FiMessageSquare, 
   FiBell, 
   FiFlag,
   FiMail 
 } from 'react-icons/fi';
+import { MessageSquare } from "lucide-react";
 import { useHasPermission } from '@/hooks/usePermissions';
 import { PERMISSIONS } from '@/lib/permissions';
 import { ScheduleTourModal } from './modals/ScheduleTourModal';
@@ -111,7 +111,7 @@ export function InquiryQuickActionsMenu({
     { 
       id: 'add-note', 
       label: 'Add Note', 
-      icon: <FiMessageSquare className="w-4 h-4" />, 
+      icon: <MessageSquare className="w-4 h-4" />, 
       show: canUpdate,
       color: 'text-gray-700'
     },

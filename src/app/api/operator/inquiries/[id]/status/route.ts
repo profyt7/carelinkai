@@ -28,7 +28,7 @@ export async function PATCH(
     const user = await requireAuth();
 
     // Check permission to update inquiries
-    await requirePermission(PERMISSIONS.INQUIRIES_UPDATE, user.id);
+    await requirePermission(PERMISSIONS.INQUIRIES_UPDATE);
 
     // Parse request body
     const body = await request.json();

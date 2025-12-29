@@ -332,6 +332,11 @@ export async function canAccessResident(
   
   // Operators and caregivers: check if resident is in their homes
   if (scope.role === "OPERATOR" || scope.role === "CAREGIVER") {
+    // Check if admin (has access to all)
+    if (scope.homeIds === "ALL") {
+      return true;
+    }
+    
     const resident = await prisma.resident.findUnique({
       where: { id: residentId },
       select: { homeId: true },
@@ -341,7 +346,8 @@ export async function canAccessResident(
       return false;
     }
     
-    return scope.homeIds === "ALL" || scope.homeIds.includes(resident.homeId);
+    // Check if operator has access to this home
+    return scope.homeIds.includes(resident.homeId);
   }
   
   return false;

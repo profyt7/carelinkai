@@ -69,7 +69,7 @@ export class InquiryResponseGenerator {
     const tone = options.tone || this.getToneFromUrgency(inquiry.urgency);
     
     // Build context prompt
-    const prompt = this.buildPrompt(inquiry, home, matchedHomes, options, tone);
+    const prompt = this.buildPrompt(inquiry, home, matchedHomes || [], options, tone);
     
     // Generate response using OpenAI
     const openai = getOpenAIClient();

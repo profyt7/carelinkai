@@ -1,7 +1,8 @@
 "use client";
 import { useState, useRef } from 'react';
 import { toast } from 'react-hot-toast';
-import { FiCamera, FiTrash2, FiUpload } from 'react-icons/fi';
+import { FiTrash2, FiUpload } from 'react-icons/fi';
+import { Camera } from 'lucide-react';
 import Image from 'next/image';
 
 interface ResidentPhotoUploadProps {
@@ -140,7 +141,7 @@ export function ResidentPhotoUpload({
       {/* Action Buttons */}
       <div className="flex gap-2">
         <label className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-md hover:bg-primary-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-          <FiCamera size={16} />
+          <Camera size={16} />
           {photoUrl ? 'Change Photo' : 'Upload Photo'}
           <input
             ref={fileInputRef}

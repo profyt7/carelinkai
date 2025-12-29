@@ -58,11 +58,11 @@ export async function DELETE(
     // Create audit log
     await createAuditLogFromRequest(
       request,
-      user.id,
-      AuditAction.NOTE_DELETED,
+      AuditAction.DELETE,
       'FamilyNote',
       noteId,
-      { title: note.title }
+      `Deleted note: ${note.title}`,
+      { userId: user.id, title: note.title }
     );
 
     return NextResponse.json({ success: true });

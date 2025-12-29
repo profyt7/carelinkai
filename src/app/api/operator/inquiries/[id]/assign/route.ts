@@ -62,12 +62,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     // Create audit log
     await createAuditLogFromRequest(
       req,
-      user.id,
       AuditAction.UPDATE,
       'Inquiry',
       inquiry.id,
-      { assignedTo: parsed.data.assignedTo },
-      'Staff member assigned'
+      'Staff member assigned',
+      { assignedTo: parsed.data.assignedTo }
     );
 
     return NextResponse.json({ inquiry: updated });

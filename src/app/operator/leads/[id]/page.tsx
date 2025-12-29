@@ -37,9 +37,9 @@ import {
   FiClock,
   FiCalendar,
   FiFileText,
-  FiMessageSquare,
   FiInfo
 } from "react-icons/fi";
+import { MessageSquare } from "lucide-react";
 
 interface Lead {
   id: string;
@@ -502,7 +502,7 @@ export default function OperatorLeadDetailPage() {
                 {lead.message && (
                   <div>
                     <div className="text-xs text-neutral-500 mb-2 flex items-center gap-1">
-                      <FiMessageSquare size={12} />
+                      <MessageSquare size={12} />
                       Message from Family
                     </div>
                     <div className="p-3 bg-neutral-50 rounded-lg">
@@ -637,7 +637,7 @@ export default function OperatorLeadDetailPage() {
               className="w-full flex items-center justify-center gap-2 py-3 px-4 border border-neutral-300 text-neutral-700 rounded-lg hover:bg-neutral-50 transition-colors"
               title="Start a conversation with the family member"
             >
-              <FiMessageSquare size={18} />
+              <MessageSquare size={18} />
               Open Conversation
             </button>
           </div>

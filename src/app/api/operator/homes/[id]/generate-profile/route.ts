@@ -9,7 +9,7 @@
 // Force dynamic rendering for this API route
 export const dynamic = 'force-dynamic';
 
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient, UserRole, AuditAction } from '@prisma/client';
@@ -19,7 +19,7 @@ import { createAuditLogFromRequest } from '@/lib/audit';
 const prisma = new PrismaClient();
 
 export async function POST(
-  req: Request,
+  req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {

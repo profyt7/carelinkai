@@ -15,7 +15,7 @@ export class InquiryEmailService {
    */
   private getTransporter(): nodemailer.Transporter {
     if (!this.transporter) {
-      this.transporter = nodemailer.createTransporter({
+      this.transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST || 'smtp.gmail.com',
         port: parseInt(process.env.SMTP_PORT || '587'),
         secure: false,

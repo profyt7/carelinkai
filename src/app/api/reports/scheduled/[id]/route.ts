@@ -101,7 +101,7 @@ export async function PUT(
 
     // Only update provided fields
     if (body.title !== undefined) updateData.title = body.title;
-    if (body.type !== undefined) updateData.type = body.type;
+    if (body.documentType !== undefined) updateData.type = body.documentType;
     if (body.format !== undefined) updateData.format = body.format;
     if (body.schedule !== undefined) updateData.schedule = body.schedule;
     if (body.dayOfWeek !== undefined) updateData.dayOfWeek = body.dayOfWeek;

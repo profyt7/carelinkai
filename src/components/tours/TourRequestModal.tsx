@@ -6,13 +6,13 @@ import {
   FiX,
   FiCalendar,
   FiClock,
-  FiMessageSquare,
   FiCheckCircle,
   FiArrowLeft,
   FiArrowRight,
   FiAlertCircle,
   FiLoader,
 } from "react-icons/fi";
+import { MessageSquare } from "lucide-react";
 import { addDays, format, startOfDay } from "date-fns";
 import TimeSlotSelector from "./TimeSlotSelector";
 
@@ -751,7 +751,7 @@ export default function TourRequestModal({
                     <div className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700">
-                          <FiMessageSquare className="mr-1 inline h-4 w-4" />
+                          <MessageSquare className="mr-1 inline h-4 w-4" />
                           Add Notes or Questions (Optional)
                         </label>
                         <p className="mt-1 text-xs text-gray-500">

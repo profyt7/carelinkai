@@ -72,7 +72,7 @@ export function ResidentAnalytics({ residents, totalCapacity = 100 }: ResidentAn
                   cx="50%"
                   cy="50%"
                   outerRadius={80}
-                  label={({ careLevel, percentage }) => `${careLevel}: ${percentage}%`}
+                  label={(entry: any) => `${entry.careLevel || entry.name}: ${entry.percent?.toFixed(0) || 0}%`}
                 >
                   {analytics.byCareLevelData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.fill} />

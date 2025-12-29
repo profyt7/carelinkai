@@ -33,7 +33,7 @@ export async function PATCH(
     
     // Verify access to this caregiver
     const whereClause: any = { id: params.id };
-    if (scope.role === UserRole.OPERATOR && scope.operatorIds && scope.operatorIds !== "ALL") {
+    if (scope.role === UserRole.OPERATOR && scope.operatorIds && Array.isArray(scope.operatorIds)) {
       whereClause.employments = {
         some: {
           operatorId: { in: scope.operatorIds },
@@ -118,7 +118,7 @@ export async function DELETE(
     
     // Verify access to this caregiver
     const whereClause: any = { id: params.id };
-    if (scope.role === UserRole.OPERATOR && scope.operatorIds && scope.operatorIds !== "ALL") {
+    if (scope.role === UserRole.OPERATOR && scope.operatorIds && Array.isArray(scope.operatorIds)) {
       whereClause.employments = {
         some: {
           operatorId: { in: scope.operatorIds },

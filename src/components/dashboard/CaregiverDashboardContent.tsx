@@ -155,7 +155,7 @@ export function CaregiverDashboardContent() {
             className="bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-lg p-4 transition-colors duration-200"
           >
             <div className="flex items-center space-x-3">
-              <FiUsers size={24} className="text-primary-600" />
+              <Users size={24} className="text-primary-600" />
               <div>
                 <h3 className="font-medium text-neutral-900">My Residents</h3>
                 <p className="text-sm text-neutral-600">View assigned residents</p>

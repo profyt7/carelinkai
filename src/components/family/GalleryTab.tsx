@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import { FiUpload, FiX, FiDownload, FiTrash2, FiMessageSquare, FiChevronLeft, FiChevronRight, FiImage, FiVideo, FiSearch, FiFilter, FiFolder } from 'react-icons/fi';
-import { Camera } from 'lucide-react';
+import { FiUpload, FiX, FiDownload, FiTrash2, FiChevronLeft, FiChevronRight, FiImage, FiVideo, FiSearch, FiFilter, FiFolder } from 'react-icons/fi';
+import { Camera, MessageSquare } from 'lucide-react';
 import Image from 'next/image';
 import EmptyState from './EmptyState';
 import LoadingState from './LoadingState';
@@ -408,7 +408,7 @@ export default function GalleryTab({ familyId, showMock = false, isGuest = false
           <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                <FiCamera className="w-6 h-6 text-blue-600" />
+                <Camera className="w-6 h-6 text-blue-600" />
                 Upload Photos
               </h3>
               <button
@@ -689,7 +689,7 @@ export default function GalleryTab({ familyId, showMock = false, isGuest = false
                 {/* DISABLED: Gallery comments feature incomplete - missing GalleryComment model in Prisma schema */}
                 {/* <div className="flex-1 border-t border-gray-200 pt-4 flex flex-col">
                   <h4 className="font-bold text-lg text-gray-900 mb-3 flex items-center gap-2">
-                    <FiMessageSquare className="w-5 h-5" />
+                    <MessageSquare className="w-5 h-5" />
                     Comments ({selectedPhoto.comments?.length || 0})
                   </h4>
 
@@ -732,7 +732,7 @@ export default function GalleryTab({ familyId, showMock = false, isGuest = false
                         onClick={() => handleAddComment(selectedPhoto.id)}
                         className="p-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-lg hover:from-blue-700 hover:to-cyan-600 transition-colors"
                       >
-                        <FiMessageSquare className="w-5 h-5" />
+                        <MessageSquare className="w-5 h-5" />
                       </button>
                     </div>
                   )}
@@ -754,7 +754,7 @@ export default function GalleryTab({ familyId, showMock = false, isGuest = false
         />
       ) : photos.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-          <FiCamera className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+          <Camera className="w-12 h-12 text-gray-400 mx-auto mb-3" />
           <p className="text-gray-500">No photos found matching your filters</p>
         </div>
       ) : (

@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { FiEdit2, FiMessageSquare, FiImage, FiUsers, FiUserPlus, FiUserCheck, FiFolder } from 'react-icons/fi';
-import { FileText } from 'lucide-react';
+import { FiEdit2, FiImage, FiUsers, FiUserPlus, FiUserCheck, FiFolder } from 'react-icons/fi';
+import { FileText, MessageSquare } from 'lucide-react';
 import LoadingState from './LoadingState';
 import EmptyState from './EmptyState';
 
@@ -56,7 +56,7 @@ export default function TimelineTab({ familyId, showMock = false }: TimelineTabP
   const iconForType = (t: string) => {
     if (t.startsWith('DOCUMENT')) return <FileText />;
     if (t.startsWith('NOTE_') && !t.includes('COMMENT')) return <FiEdit2 />;
-    if (t.endsWith('COMMENTED')) return <FiMessageSquare />;
+    if (t.endsWith('COMMENTED')) return <MessageSquare />;
     if (t.startsWith('GALLERY') || t === 'PHOTO_UPLOADED') return <FiImage />;
     if (t === 'MEMBER_INVITED') return <FiUserPlus />;
     if (t === 'MEMBER_JOINED') return <FiUserCheck />;

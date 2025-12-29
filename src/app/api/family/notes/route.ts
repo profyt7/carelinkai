@@ -165,11 +165,11 @@ export async function POST(request: NextRequest) {
     // Create audit log
     await createAuditLogFromRequest(
       request,
-      user.id,
-      AuditAction.NOTE_CREATED,
+      AuditAction.CREATE,
       'FamilyNote',
       note.id,
-      { title: data.title }
+      `Created note: ${data.title}`,
+      { userId: user.id, title: data.title }
     );
 
     return NextResponse.json({ note }, { status: 201 });

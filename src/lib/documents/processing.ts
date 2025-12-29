@@ -87,7 +87,7 @@ export async function processDocument(documentId: string): Promise<ProcessingRes
     }
 
     const confidence = classificationResult.confidence || 0;
-    const documentType = classificationResult.type!;
+    const documentType = classificationResult.type! as DocumentType;
     const reasoning = classificationResult.reasoning || 'No reasoning provided';
     const reviewStatus = determineReviewStatus(confidence);
     const autoClassify = shouldAutoClassify(confidence);
@@ -152,7 +152,7 @@ export async function processDocument(documentId: string): Promise<ProcessingRes
         autoClassified: autoClassify,
         reviewStatus,
         validationStatus,
-        validationErrors: allValidationErrors.length > 0 ? allValidationErrors : null,
+        validationErrors: allValidationErrors.length > 0 ? JSON.parse(JSON.stringify(allValidationErrors)) : undefined,
         category: classificationResult.category,
       },
     });
@@ -268,7 +268,7 @@ export async function markDocumentAsReviewed(
   };
 
   if (updates?.type) {
-    data.type = updates.type;
+    data.documentType = updates.type;
     // If type was manually changed, mark as not auto-classified
     data.autoClassified = false;
   }

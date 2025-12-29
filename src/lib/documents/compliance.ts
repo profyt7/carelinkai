@@ -12,8 +12,8 @@ import { ComplianceStatus } from '@prisma/client';
  */
 const REQUIRED_DOCUMENTS: DocumentType[] = [
   'MEDICAL_RECORD',
-  'INSURANCE_CARD',
-  'ID_DOCUMENT',
+  'INSURANCE',
+  'IDENTIFICATION',
   'EMERGENCY_CONTACT',
 ];
 
@@ -94,13 +94,13 @@ export async function checkResidentCompliance(
 function getDocumentTypeDescription(type: DocumentType): string {
   const descriptions: Record<DocumentType, string> = {
     MEDICAL_RECORD: 'Medical records and health history',
-    INSURANCE_CARD: 'Insurance card with coverage information',
-    ID_DOCUMENT: 'Government-issued identification',
-    CONTRACT: 'Admission or service contract',
+    INSURANCE: 'Insurance card with coverage information',
+    IDENTIFICATION: 'Government-issued identification',
+    LEGAL: 'Legal documents and contracts',
     FINANCIAL: 'Financial information and payment details',
-    CARE_PLAN: 'Personalized care plan',
+    ASSESSMENT_FORM: 'Assessment forms',
     EMERGENCY_CONTACT: 'Emergency contact information',
-    OTHER: 'Other supporting documents',
+    GENERAL: 'Other supporting documents',
   };
 
   return descriptions[type] || 'Document';

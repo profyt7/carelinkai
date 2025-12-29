@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
         where: inquiryFilter,
         include: {
           home: { select: { name: true } },
-          family: { select: { name: true } },
+          family: { select: { primaryContactName: true } },
         },
         orderBy: { createdAt: "desc" },
         take: 5,

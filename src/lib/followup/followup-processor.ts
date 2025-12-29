@@ -58,7 +58,7 @@ export class FollowUpProcessor {
     await prisma.followUp.update({
       where: { id: followUp.id },
       data: {
-        status: success ? 'COMPLETED' : 'FAILED',
+        status: success ? 'COMPLETED' : 'CANCELLED',
         completedAt: success ? new Date() : null,
         content: content,
       },

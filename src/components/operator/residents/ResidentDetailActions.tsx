@@ -91,7 +91,7 @@ export function ResidentDetailActionsBar({ residentId, residentName, showArchive
       <SummaryPDFButton residentId={residentId} />
       {showArchiveButton && (
         <PermissionGuard permission={PERMISSIONS.RESIDENTS_DELETE}>
-          {/* Archive button component will be imported separately */}
+          <span className="text-gray-400 text-sm">Archive button</span>
         </PermissionGuard>
       )}
     </div>

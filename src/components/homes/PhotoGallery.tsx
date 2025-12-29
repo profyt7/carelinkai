@@ -8,9 +8,9 @@ import {
   FiX, 
   FiMaximize, 
   FiMinimize,
-  FiCamera,
   FiGrid
 } from 'react-icons/fi';
+import { Camera } from 'lucide-react';
 
 export interface Photo {
   id: string;
@@ -152,7 +152,7 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
     return (
       <div className="relative h-64 w-full rounded-lg bg-neutral-200 md:h-96">
         <div className="flex h-full w-full flex-col items-center justify-center">
-          <FiCamera className="mb-2 h-10 w-10 text-neutral-400" />
+          <Camera className="mb-2 h-10 w-10 text-neutral-400" />
           <p className="text-sm text-neutral-500">No photos available</p>
         </div>
       </div>

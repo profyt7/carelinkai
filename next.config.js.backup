@@ -11,7 +11,7 @@ const cspBase = [
   // Connections: self + Stripe APIs
   "connect-src 'self' https://api.stripe.com",
   // Images: self + data/blob and known hosts (including Cloudinary and OpenStreetMap tiles)
-  "img-src 'self' data: blob: http://localhost:3000 http://localhost:5002 https://res.cloudinary.com https://media2.dev.to https://dev-to-uploads.s3.amazonaws.com https://picsum.photos https://images.unsplash.com https://placehold.co https://ui-avatars.com https://i.ytimg.com https://upload.wikimedia.org https://a.tile.openstreetmap.org https://b.tile.openstreetmap.org https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/Tiled_web_map_numbering.png/320px-Tiled_web_map_numbering.png
+  "img-src 'self' data: blob: http://localhost:3000 http://localhost:5002 https://res.cloudinary.com https://media2.dev.to https://dev-to-uploads.s3.amazonaws.com https://picsum.photos https://images.unsplash.com https://placehold.co https://ui-avatars.com https://i.ytimg.com/vi/YI3SC2hZVGU/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLCo-kwkLFhR01jKZyA6cEdCgLz9jw http://mike.teczno.com/img/osm-terrain/Stanford.jpg https://upload.wikimedia.org https://a.tile.openstreetmap.org https://b.tile.openstreetmap.org https://c.tile.openstreetmap.org",
   // Styles: allow inline for Tailwind runtime classes; restrict to fonts domain
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   // Fonts
@@ -30,6 +30,39 @@ const nextConfig = {
     // Ensure native assets from pdfkit (AFM data files) are resolved at runtime instead of bundled
     serverComponentsExternalPackages: ['pdfkit'],
   },
+  webpack: (config, { isServer }) => {
+    // Add path alias resolution for @ imports
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': require('path').resolve(__dirname, 'src'),
+    };
+
+    // Externalize canvas and related packages to avoid build issues
+    // Canvas requires browser APIs (DOMMatrix, ImageData, Path2D) that don't exist in Node.js
+    if (isServer) {
+      config.externals = config.externals || [];
+      
+      // Add canvas and pdf-parse to externals for server-side builds
+      if (Array.isArray(config.externals)) {
+        config.externals.push({
+          canvas: 'commonjs canvas',
+          'pdf-parse': 'commonjs pdf-parse',
+        });
+      } else {
+        // If externals is a function, wrap it
+        const originalExternals = config.externals;
+        config.externals = [
+          originalExternals,
+          {
+            canvas: 'commonjs canvas',
+            'pdf-parse': 'commonjs pdf-parse',
+          },
+        ];
+      }
+    }
+
+    return config;
+  },
   images: {
     // Disable optimization in development to avoid 400 errors from the _next/image
     // endpoint when serving local files from /public/uploads.
@@ -39,19 +72,20 @@ const nextConfig = {
     domains: [
       'localhost',
       'carelinkai-storage.s3.amazonaws.com',
+      // Cloudinary moved to remotePatterns for Next.js 13+ compatibility
       'example.com', // allows https://lh7-rt.googleusercontent.com/docsz/AD_4nXcOPwbgNp1HdEMpWAMHR-gchG6eznUeQfsqb0J_r0HoOkisz5cfFqsUEMxXLm6eYRkrgN1HKn9s-QgPGWUEeYzWlcRMREwjP_uYIsKwcnLU-pCB0mLWP73USNum7AcQ7HD5UP8S3tJsrec5zR-tYvOPkGeM?key=xWW08Jc0hoeWtBTusdnhTA
-      // Additional remote image hosts used throughout the app
+      // Legacy/fallback image hosts
       'picsum.photos',
       'randomuser.me',
       'placehold.co',
       'ui-avatars.com',
       'fastly.picsum.photos',
       'images.unsplash.com',
-      'res.cloudinary.com', // Cloudinary for gallery images
     ],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
     formats: ['image/webp'],
     // Allow optimization of images served from the local uploads folder in development
+    // remotePatterns is the Next.js 13+ recommended approach for external images
     remotePatterns: [
       {
         protocol: 'http',
@@ -65,6 +99,7 @@ const nextConfig = {
         port: '5002',
         pathname: '/uploads/**',
       },
+      // Cloudinary - primary image storage for homes, profiles, placeholders, gallery
       {
         protocol: 'https',
         hostname: 'res.cloudinary.com',

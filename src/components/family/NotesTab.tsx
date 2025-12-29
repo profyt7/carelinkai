@@ -213,7 +213,7 @@ export default function NotesTab({ familyId, showMock = false, isGuest = false }
           <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 animate-in fade-in zoom-in duration-200">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                <FiEdit3 className="w-6 h-6 text-blue-600" />
+                <Edit3 className="w-6 h-6 text-blue-600" />
                 Create Note
               </h3>
               <button
@@ -302,7 +302,7 @@ export default function NotesTab({ familyId, showMock = false, isGuest = false }
         />
       ) : notes.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-          <FiEdit3 className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+          <Edit3 className="w-12 h-12 text-gray-400 mx-auto mb-3" />
           <p className="text-gray-500">No notes found matching your search</p>
         </div>
       ) : (

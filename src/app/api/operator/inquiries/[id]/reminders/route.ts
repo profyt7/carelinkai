@@ -70,12 +70,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     // Create audit log
     await createAuditLogFromRequest(
       req,
-      user.id,
       AuditAction.UPDATE,
       'Inquiry',
       inquiry.id,
-      { reminderType: parsed.data.type, dueDate: parsed.data.dueDate },
-      'Reminder set'
+      'Reminder set',
+      { reminderType: parsed.data.type, dueDate: parsed.data.dueDate }
     );
 
     return NextResponse.json({ 
