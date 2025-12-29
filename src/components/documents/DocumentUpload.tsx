@@ -34,7 +34,7 @@ export function DocumentUpload({
   onUploadComplete,
   onClose,
 }: DocumentUploadProps) {
-  const [documentType, setDocumentType] = useState<DocumentType>('OTHER');
+  const [documentType, setDocumentType] = useState<DocumentType>('GENERAL');
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -139,17 +139,12 @@ export function DocumentUpload({
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Document Type
         </label>
-        <Select value={documentType} onValueChange={(value) => setDocumentType(value as DocumentType)}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {Object.entries(DOCUMENT_TYPE_LABELS).map(([value, label]) => (
-              <SelectItem key={value} value={value}>
-                {label}
-              </SelectItem>
-            ))}
-          </SelectContent>
+        <Select value={documentType} onChange={(e) => setDocumentType(e.target.value as DocumentType)}>
+          {Object.entries(DOCUMENT_TYPE_LABELS).map(([value, label]) => (
+            <SelectItem key={value} value={value}>
+              {label}
+            </SelectItem>
+          ))}
         </Select>
       </div>
 

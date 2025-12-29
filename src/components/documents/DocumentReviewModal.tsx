@@ -37,7 +37,7 @@ export default function DocumentReviewModal({
   onClose,
   onSave,
 }: DocumentReviewModalProps) {
-  const [selectedType, setSelectedType] = useState<DocumentType>(document.documentType);
+  const [selectedType, setSelectedType] = useState<DocumentType>(document.type);
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
   const [showOverride, setShowOverride] = useState(false);
@@ -130,7 +130,7 @@ export default function DocumentReviewModal({
                     <div>
                       <dt className="text-gray-600">Uploaded</dt>
                       <dd className="text-gray-900 font-medium">
-                        {formatDistanceToNow(new Date(document.uploadedAt), { addSuffix: true })}
+                        {formatDistanceToNow(new Date(document.createdAt), { addSuffix: true })}
                       </dd>
                     </div>
                     <div>
@@ -157,7 +157,7 @@ export default function DocumentReviewModal({
                     <div>
                       <label className="text-sm text-gray-600 mb-1 block">Classified As:</label>
                       <ClassificationBadge
-                        documentType={document.documentType}
+                        documentType={document.type}
                         confidence={document.classificationConfidence || 0}
                         reasoning={document.classificationReasoning || undefined}
                         autoClassified={document.autoClassified || false}

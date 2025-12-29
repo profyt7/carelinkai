@@ -24,33 +24,33 @@ export type ComplianceStatus =
 export interface Document {
   id: string;
   type: DocumentType;
-  category?: string;
+  category: string | null;
   fileName: string;
   fileUrl: string;
   fileSize: number;
   mimeType: string;
-  extractedText?: string;
-  extractedData?: any;
+  extractedText: string | null;
+  extractedData: any;
   extractionStatus: ExtractionStatus;
-  extractionError?: string;
+  extractionError: string | null;
   // Phase 3: Classification & Validation
-  classificationConfidence?: number;
-  classificationReasoning?: string;
+  classificationConfidence: number | null;
+  classificationReasoning: string | null;
   autoClassified: boolean;
   validationStatus: ValidationStatus;
-  validationErrors?: any;
+  validationErrors: any;
   reviewStatus: ReviewStatus;
-  reviewedById?: string;
-  reviewedAt?: Date;
+  reviewedById: string | null;
+  reviewedAt: Date | null;
   // Compliance
   isRequired: boolean;
-  expirationDate?: Date;
+  expirationDate: Date | null;
   complianceStatus: ComplianceStatus;
-  residentId?: string;
-  inquiryId?: string;
+  residentId: string | null;
+  inquiryId: string | null;
   uploadedById: string;
   tags: string[];
-  notes?: string;
+  notes: string | null;
   version: number;
   createdAt: Date;
   updatedAt: Date;

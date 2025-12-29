@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Loader2, FileText } from 'lucide-react';
-import { DocumentCard } from './DocumentCard';
+import DocumentCard from './DocumentCard';
 import { Document, DocumentType, DOCUMENT_TYPE_LABELS } from '@/lib/types/documents';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -64,18 +64,13 @@ export function DocumentList({
       {/* Filter */}
       <div className="flex items-center gap-4">
         <label className="text-sm font-medium text-gray-700">Filter by type:</label>
-        <Select value={filterType} onValueChange={setFilterType}>
-          <SelectTrigger className="w-48">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Documents</SelectItem>
-            {Object.entries(DOCUMENT_TYPE_LABELS).map(([value, label]) => (
-              <SelectItem key={value} value={value}>
-                {label}
-              </SelectItem>
-            ))}
-          </SelectContent>
+        <Select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="w-48">
+          <SelectItem value="all">All Documents</SelectItem>
+          {Object.entries(DOCUMENT_TYPE_LABELS).map(([value, label]) => (
+            <SelectItem key={value} value={value}>
+              {label}
+            </SelectItem>
+          ))}
         </Select>
         <span className="text-sm text-gray-500">
           {documents.length} document{documents.length !== 1 ? 's' : ''}
@@ -99,8 +94,8 @@ export function DocumentList({
             <DocumentCard
               key={document.id}
               document={document}
-              onView={onViewDocument}
-              onDelete={handleDelete}
+              onReview={onViewDocument ? () => onViewDocument(document) : undefined}
+              onDelete={() => handleDelete(document.id)}
             />
           ))}
         </div>

@@ -336,7 +336,7 @@ export default function GalleryTab({ familyId, showMock = false, isGuest = false
   });
 
   if (loading) {
-    return <LoadingState type="grid" count={6} />;
+    return <LoadingState type="cards" count={6} />;
   }
 
   if (error) {
