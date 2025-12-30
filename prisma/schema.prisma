@@ -71,6 +71,7 @@ model User {
   sessions                  Session[]
   createdGalleries          SharedGallery[]          @relation("GalleryCreator")
   approvedTimesheets        Timesheet[]
+  placementSearches         PlacementSearch[]
 
   @@index([email])
   @@index([role])
@@ -362,6 +363,7 @@ model AssistedLivingHome {
   residents              Resident[]
   tourRequests           TourRequest[]
   tourSlots              TourSlot[]
+  placementRequests      PlacementRequest[]
 
   @@index([operatorId])
   @@index([status])
@@ -1763,6 +1765,47 @@ model DocumentTemplate {
   @@index([isActive])
 }
 
+/// Discharge planner AI placement search
+model PlacementSearch {
+  id                 String             @id @default(cuid())
+  userId             String
+  queryText          String             // Natural language query from social worker
+  parsedCriteria     Json               // AI-extracted criteria
+  searchResults      Json               // Matched homes with scores
+  status             PlacementStatus    @default(SEARCHING)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  placementRequests  PlacementRequest[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+/// Placement request sent to homes
+model PlacementRequest {
+  id                  String             @id @default(cuid())
+  searchId            String
+  homeId              String
+  patientInfo         Json               // Patient details, needs, timeline
+  status              RequestStatus      @default(PENDING)
+  emailSentAt         DateTime?
+  emailDeliveryStatus String?
+  homeResponse        String?
+  homeResponseAt      DateTime?
+  notes               String?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  search              PlacementSearch    @relation(fields: [searchId], references: [id], onDelete: Cascade)
+  home                AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
+
+  @@index([searchId])
+  @@index([homeId])
+  @@index([status])
+  @@index([createdAt])
+}
+
 enum UserRole {
   FAMILY
   OPERATOR
@@ -1771,6 +1814,7 @@ enum UserRole {
   AFFILIATE
   STAFF
   PROVIDER
+  DISCHARGE_PLANNER
 }
 
 enum UserStatus {
@@ -2232,4 +2276,19 @@ enum ReviewStatus {
   NOT_REQUIRED
   PENDING_REVIEW
   REVIEWED
+}
+
+enum PlacementStatus {
+  SEARCHING
+  COMPLETED
+  CANCELLED
+}
+
+enum RequestStatus {
+  PENDING
+  SENT
+  VIEWED
+  RESPONDED
+  ACCEPTED
+  DECLINED
 }
