@@ -12,3 +12,23 @@ services:
       - key: NODE_ENV
         value: production
     healthCheckPath: /
+
+# Render Cron Jobs (Requires Standard Plan or Higher)
+# Uncomment and configure when upgrading from Starter plan
+# 
+# - type: cron
+#   name: process-followups
+#   runtime: node
+#   region: oregon
+#   plan: starter
+#   schedule: "0 */6 * * *"  # Every 6 hours
+#   buildCommand: npm install
+#   startCommand: |
+#     curl -X POST \
+#       -H "Authorization: Bearer $CRON_SECRET" \
+#       https://carelinkai.onrender.com/api/follow-ups/process
+#   envVars:
+#     - key: NODE_ENV
+#       value: production
+#     - key: CRON_SECRET
+#       sync: false  # Pull from environment variables
