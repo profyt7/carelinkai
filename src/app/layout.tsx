@@ -15,6 +15,8 @@ export const fetchCache = "force-no-store";
 // PWA Manager & notifications
 import PWAManager from "../components/pwa/PWAManager";
 import { ToastProvider } from "../components/ui/toast-provider";
+// CareBot - 24/7 AI assistance
+import FloatingChatButton from "../components/carebot/FloatingChatButton";
 
 // Load Inter font with Latin subset for performance
 const inter = Inter({
@@ -124,6 +126,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={inter.variable}>
       <head>
+        {/* Abacus AI LLM Integration */}
+        <script src="https://apps.abacus.ai/chatllm/appllm-lib.js"></script>
+        
         {/* PWA specific meta tags */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta
@@ -225,6 +230,8 @@ export default function RootLayout({
               {/* Global toaster for notifications */}
               <ToastProvider />
               
+              {/* CareBot - 24/7 AI Chat Assistant */}
+              <FloatingChatButton />
             </PWAManager>
           </Providers>
         </WebSocketProvider>
