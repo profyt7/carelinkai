@@ -11,6 +11,8 @@ import {
   FiArrowRight,
   FiAlertCircle,
   FiLoader,
+  FiStar,
+  FiZap,
 } from "react-icons/fi";
 import { MessageSquare } from "lucide-react";
 import { addDays, format, startOfDay } from "date-fns";
@@ -30,6 +32,7 @@ interface TimeSlot {
   time: string;
   available: boolean;
   reason?: string;
+  score?: number; // AI confidence score (0-100)
 }
 
 export default function TourRequestModal({
@@ -200,6 +203,7 @@ export default function TourRequestModal({
             time: suggestion.time,
             available: true,
             reason: suggestion.reason || "Available",
+            score: suggestion.score || 0, // AI confidence score
           }));
         
         console.error("[TourRequestModal] Filtered valid slots:", slots.length);
@@ -715,13 +719,31 @@ export default function TourRequestModal({
                   {/* Step 2: Time Slots */}
                   {currentStep === "time-slots" && (
                     <div className="space-y-4">
+                      {/* AI Branding Section */}
+                      <div className="rounded-lg border-2 border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 p-4">
+                        <div className="flex items-start">
+                          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-green-600">
+                            <FiZap className="h-5 w-5 text-white" />
+                          </div>
+                          <div className="ml-4">
+                            <h4 className="flex items-center text-base font-semibold text-green-900">
+                              <FiStar className="mr-2 h-4 w-4" />
+                              AI-Powered Tour Recommendations
+                            </h4>
+                            <p className="mt-1 text-sm text-green-800">
+                              Our intelligent system has analyzed home availability, tour duration, and optimal scheduling patterns to suggest the best times for your visit. Times are ranked by confidence level.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700">
                           <FiClock className="mr-1 inline h-4 w-4" />
                           Select a Time Slot
                         </label>
                         <p className="mt-1 text-xs text-gray-500">
-                          Our AI has suggested the best times based on availability
+                          Choose from AI-recommended times sorted by best match
                         </p>
                       </div>
                       {availableSlots.length > 0 ? (
