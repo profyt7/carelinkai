@@ -27,10 +27,11 @@ export async function generatePDF(reportData: ReportData): Promise<Buffer> {
       doc.on('error', reject);
 
       // Header with title
+      const leftAlign = { align: 'left' as const };
       doc
         .fontSize(24)
         .fillColor('#1e40af')
-        .text(reportData?.title ?? 'Report', { align: 'left' })
+        .text(reportData?.title ?? 'Report', leftAlign)
         .moveDown(0.5);
 
       // Add a line separator
@@ -151,17 +152,16 @@ export async function generatePDF(reportData: ReportData): Promise<Buffer> {
       }
 
       // Footer
+      const centerAlign = { align: 'center' as const };
       doc
         .moveDown(2)
         .fontSize(9)
         .fillColor('#666666')
         .text(
           `© ${new Date().getFullYear()} CareLinkAI. All rights reserved.`,
-          { align: 'center' }
+          centerAlign
         )
-        .text('This report contains confidential information.', {
-          align: 'center',
-        });
+        .text('This report contains confidential information.', centerAlign);
 
       // Finalize the PDF
       doc.end();
