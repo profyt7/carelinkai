@@ -124,6 +124,54 @@ export const defaultFollowUpRules: FollowUpRule[] = [
       priority: 'HIGH',
     },
   },
+  
+  // Rule 8: Qualified Lead Follow-up
+  {
+    name: 'Qualified Lead Follow-up',
+    description: 'Follow-up 48 hours after inquiry reaches qualified stage',
+    conditions: {
+      stage: ['QUALIFIED'],
+      daysAfterLastContact: 2,
+    },
+    action: {
+      type: 'EMAIL',
+      delayHours: 48,
+      priority: 'MEDIUM',
+      content: 'Check if qualified lead is ready to move forward with next steps',
+    },
+  },
+  
+  // Rule 9: Post-Tour Completion Follow-up
+  {
+    name: 'Post-Tour Completion Follow-up',
+    description: 'Follow-up 24 hours after tour completion to get feedback',
+    conditions: {
+      stage: ['TOUR_COMPLETED'],
+      daysAfterLastContact: 1,
+    },
+    action: {
+      type: 'EMAIL',
+      delayHours: 24,
+      priority: 'HIGH',
+      content: 'Thank you for touring our facility. We would love to hear your feedback and discuss next steps',
+    },
+  },
+  
+  // Rule 10: Extended NEW Inquiry Follow-up
+  {
+    name: 'Extended New Inquiry Follow-up',
+    description: 'Re-engage inquiries that have been in NEW stage for 7 days',
+    conditions: {
+      stage: ['NEW'],
+      daysAfterInquiry: 7,
+    },
+    action: {
+      type: 'EMAIL',
+      delayHours: 168, // 7 days
+      priority: 'MEDIUM',
+      content: 'Checking in to see if we can help with your care needs',
+    },
+  },
 ];
 
 export class FollowUpRulesEngine {
