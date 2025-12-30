@@ -24,8 +24,8 @@ const documentTypeConfig: Record<DocumentType, { label: string; icon: string; co
 };
 
 const confidenceColor = (confidence: number): string => {
-  if (confidence >= 85) return 'green';
-  if (confidence >= 70) return 'yellow';
+  if (confidence >= 80) return 'green';
+  if (confidence >= 60) return 'yellow';
   return 'red';
 };
 
@@ -72,8 +72,8 @@ export default function ClassificationBadge({
   // Get confidence icon
   const getConfidenceIcon = () => {
     if (score === null) return null;
-    if (score >= 85) return '✓';
-    if (score >= 70) return '⚠';
+    if (score >= 80) return '✓';
+    if (score >= 60) return '⚠';
     return '!';
   };
 

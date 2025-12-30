@@ -227,7 +227,7 @@ export default function DocumentLibraryPage() {
   const pendingReviewCount = documents.filter(doc =>
     doc.reviewStatus === 'PENDING_REVIEW' ||
     doc.validationStatus === 'NEEDS_REVIEW' ||
-    (doc.classificationConfidence && doc.classificationConfidence < 85)
+    (doc.classificationConfidence && doc.classificationConfidence < 80)
   ).length;
 
   if (loading) {

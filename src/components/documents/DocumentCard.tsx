@@ -24,7 +24,7 @@ export default function DocumentCard({
 }: DocumentCardProps) {
   const needsReview = document.reviewStatus === 'PENDING_REVIEW' || 
                       document.validationStatus === 'NEEDS_REVIEW' || 
-                      (document.classificationConfidence && document.classificationConfidence < 85);
+                      (document.classificationConfidence && document.classificationConfidence < 80);
 
   const fileSize = document.fileSize ? `${(document.fileSize / 1024).toFixed(1)} KB` : 'Unknown size';
   const uploadedAgo = formatDistanceToNow(new Date(document.createdAt), { addSuffix: true });
@@ -55,6 +55,14 @@ export default function DocumentCard({
               confidence={document.classificationConfidence || 0}
               size="sm"
             />
+            {document.classificationConfidence !== null && document.classificationConfidence !== undefined && (
+              <ConfidenceIndicator
+                confidence={document.classificationConfidence}
+                showLabel={false}
+                size="sm"
+                variant="badge"
+              />
+            )}
             <span className="text-xs text-gray-500">{fileSize}</span>
           </div>
         </div>
@@ -135,10 +143,25 @@ export default function DocumentCard({
         )}
 
         {/* Review status */}
-        {document.reviewStatus === 'REVIEWED' && document.reviewedAt && (
-          <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 px-3 py-1.5 rounded">
-            <span>✓</span>
-            <span>Reviewed {formatDistanceToNow(new Date(document.reviewedAt), { addSuffix: true })}</span>
+        {document.reviewStatus && document.reviewStatus !== 'NOT_REQUIRED' && (
+          <div className={`flex items-center gap-2 text-sm px-3 py-2 rounded-lg border-l-4 ${
+            document.reviewStatus === 'REVIEWED'
+              ? 'bg-green-50 border-green-500 text-green-700'
+              : 'bg-yellow-50 border-yellow-500 text-yellow-700'
+          }`}>
+            <span className="text-base font-bold">
+              {document.reviewStatus === 'REVIEWED' ? '✓' : '⏳'}
+            </span>
+            <div className="flex-1">
+              <div className="font-semibold">
+                {document.reviewStatus === 'REVIEWED' ? 'Reviewed' : 'Pending Review'}
+              </div>
+              {document.reviewStatus === 'REVIEWED' && document.reviewedAt && (
+                <div className="text-xs opacity-75">
+                  {formatDistanceToNow(new Date(document.reviewedAt), { addSuffix: true })}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

@@ -27,14 +27,14 @@ export default function ConfidenceIndicator({
   // Ensure confidence is a number between 0-100
   const score = Math.max(0, Math.min(100, confidence));
   const getColor = () => {
-    if (score >= 85) return { bg: 'bg-green-500', text: 'text-green-700', border: 'border-green-500' };
-    if (score >= 70) return { bg: 'bg-yellow-500', text: 'text-yellow-700', border: 'border-yellow-500' };
+    if (score >= 80) return { bg: 'bg-green-500', text: 'text-green-700', border: 'border-green-500' };
+    if (score >= 60) return { bg: 'bg-yellow-500', text: 'text-yellow-700', border: 'border-yellow-500' };
     return { bg: 'bg-red-500', text: 'text-red-700', border: 'border-red-500' };
   };
 
   const getLabel = () => {
-    if (score >= 85) return 'High Confidence';
-    if (score >= 70) return 'Medium Confidence';
+    if (score >= 80) return 'High Confidence';
+    if (score >= 60) return 'Medium Confidence';
     return 'Low Confidence';
   };
 
