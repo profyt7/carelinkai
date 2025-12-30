@@ -136,6 +136,7 @@
     "react-pdf": "^10.2.0",
     "react-virtuoso": "4.14.1",
     "recharts": "^3.6.0",
+    "resend": "^6.6.0",
     "sharp": "^0.33.0",
     "socket.io": "^4.7.2",
     "socket.io-client": "^4.7.2",

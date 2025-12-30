@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
 interface EmailOptions {
   to: string;
@@ -8,24 +8,20 @@ interface EmailOptions {
 }
 
 export class InquiryEmailService {
-  private transporter: nodemailer.Transporter | null = null;
+  private resend: Resend | null = null;
   
   /**
-   * Lazy-load email transporter to avoid build-time initialization
+   * Lazy-load Resend client to avoid build-time initialization
    */
-  private getTransporter(): nodemailer.Transporter {
-    if (!this.transporter) {
-      this.transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST || 'smtp.gmail.com',
-        port: parseInt(process.env.SMTP_PORT || '587'),
-        secure: false,
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS,
-        },
-      });
+  private getResend(): Resend {
+    if (!this.resend) {
+      const apiKey = process.env.RESEND_API_KEY;
+      if (!apiKey) {
+        throw new Error('RESEND_API_KEY environment variable is not set');
+      }
+      this.resend = new Resend(apiKey);
     }
-    return this.transporter;
+    return this.resend;
   }
   
   /**
@@ -41,9 +37,11 @@ export class InquiryEmailService {
       const html = this.formatResponseEmail(contactName, content, inquiryId);
       const text = this.stripHtml(content);
       
-      const transporter = this.getTransporter();
-      await transporter.sendMail({
-        from: `"CareLinkAI" <${process.env.SMTP_FROM || 'noreply@carelinkai.com'}>`,
+      const resend = this.getResend();
+      const from = process.env.RESEND_FROM_EMAIL || 'noreply@carelinkai.com';
+      
+      await resend.emails.send({
+        from: `CareLinkAI <${from}>`,
         to,
         subject: 'Thank you for your inquiry - CareLinkAI',
         html,
