@@ -8,11 +8,11 @@
 export async function register() {
   // Only run on server-side
   if (process.env.NEXT_RUNTIME === 'nodejs') {
-    await import('./lib/sentry.server');
+    await import('../sentry.server.config');
   }
   
   // Only run on Edge runtime
   if (process.env.NEXT_RUNTIME === 'edge') {
-    await import('./lib/sentry.server');
+    await import('../sentry.edge.config');
   }
 }
