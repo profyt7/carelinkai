@@ -1,7 +1,7 @@
 // Analytics tracking utilities for Google Analytics 4, Facebook Pixel, and Microsoft Clarity
 
 // Google Analytics 4
-export const GA_TRACKING_ID = process.env.NEXT_PUBLIC_GA_ID || '';
+export const GA_TRACKING_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || '';
 
 // Check if analytics is enabled (user consent)
 export const isAnalyticsEnabled = () => {

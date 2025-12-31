@@ -4,7 +4,7 @@ const SENTRY_DSN = process.env.NEXT_PUBLIC_SENTRY_DSN;
 const ENVIRONMENT = process.env.NEXT_PUBLIC_ENVIRONMENT || process.env.NODE_ENV || 'development';
 
 // Initialize Sentry for client-side error tracking
-if (SENTRY_DSN && ENVIRONMENT === 'production') {
+if (SENTRY_DSN && typeof window !== 'undefined') {
   Sentry.init({
     dsn: SENTRY_DSN,
     environment: ENVIRONMENT,
@@ -40,10 +40,9 @@ if (SENTRY_DSN && ENVIRONMENT === 'production') {
       return event;
     },
     
-    // Integrations
+    // Integrations - Using simplified approach for Next.js
     integrations: [
-      new Sentry.BrowserTracing(),
-      new Sentry.Replay({
+      Sentry.replayIntegration({
         maskAllText: true,
         blockAllMedia: true,
       }),

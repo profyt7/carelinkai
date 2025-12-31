@@ -43,7 +43,7 @@ export default function CookieConsent() {
   const applyConsent = (prefs: ConsentPreferences) => {
     // Enable/disable analytics based on consent
     if (typeof window !== 'undefined') {
-      (window as any)['ga-disable-' + process.env.NEXT_PUBLIC_GA_ID] = !prefs.analytics;
+      (window as any)['ga-disable-' + process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID] = !prefs.analytics;
       
       // Facebook Pixel consent
       if (prefs.marketing && (window as any).fbq) {
