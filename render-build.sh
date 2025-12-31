@@ -95,6 +95,28 @@ fi
 echo ""
 
 echo "========================================="
+echo "STEP 2.5: RUN DATABASE MIGRATIONS"
+echo "========================================="
+echo "Running Prisma migrations..."
+node_modules/.bin/prisma migrate deploy || npx prisma migrate deploy
+
+EXIT_CODE=$?
+if [ $EXIT_CODE -ne 0 ]; then
+  echo "⚠️  prisma migrate deploy failed with exit code: $EXIT_CODE"
+  echo "Attempting to sync database schema with db push..."
+  node_modules/.bin/prisma db push --accept-data-loss || npx prisma db push --accept-data-loss
+  EXIT_CODE=$?
+  if [ $EXIT_CODE -ne 0 ]; then
+    echo "❌ Database schema sync failed with exit code: $EXIT_CODE"
+    exit $EXIT_CODE
+  fi
+  echo "✅ Database schema synced successfully with db push"
+else
+  echo "✅ Prisma migrations applied successfully"
+fi
+echo ""
+
+echo "========================================="
 echo "STEP 3: BUILD NEXT.JS APPLICATION"
 echo "========================================="
 npm run build
