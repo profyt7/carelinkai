@@ -26,7 +26,7 @@ import {
 } from "react-icons/fi";
 
 // Types from schema
-type UserRole = "FAMILY" | "OPERATOR" | "CAREGIVER" | "AFFILIATE" | "PROVIDER";
+type UserRole = "FAMILY" | "OPERATOR" | "CAREGIVER" | "AFFILIATE" | "PROVIDER" | "DISCHARGE_PLANNER";
 
 type FormData = {
   email: string;
@@ -52,6 +52,12 @@ const roleOptions = [
     label: "Care Home Operator", 
     description: "I operate an assisted living or memory care facility",
     icon: <FiHome className="h-5 w-5" />
+  },
+  { 
+    id: "DISCHARGE_PLANNER", 
+    label: "Healthcare Professional", 
+    description: "I work at a hospital, rehab center, or healthcare facility",
+    icon: <FiActivity className="h-5 w-5" />
   },
   { 
     id: "CAREGIVER", 
@@ -143,6 +149,9 @@ export default function RegisterPage() {
             if (data.role === "FAMILY") {
               // Family users go to onboarding
               router.push("/settings/family?onboarding=true");
+            } else if (data.role === "DISCHARGE_PLANNER") {
+              // Discharge planners go to discharge planner portal
+              router.push("/discharge-planner");
             } else {
               // Other users go to dashboard
               router.push("/dashboard");

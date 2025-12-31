@@ -28,7 +28,7 @@ import {
   FiHeart,
   FiZap
 } from "react-icons/fi";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, Stethoscope } from "lucide-react";
 // Real-time notification center
 import NotificationCenter from "../notifications/NotificationCenter";
 // PWA helpers
@@ -42,6 +42,7 @@ const roleBadgeColors = {
   CAREGIVER: { bg: "bg-green-100", text: "text-green-800" },
   FAMILY: { bg: "bg-amber-100", text: "text-amber-800" },
   AFFILIATE: { bg: "bg-pink-100", text: "text-pink-800" },
+  DISCHARGE_PLANNER: { bg: "bg-teal-100", text: "text-teal-800" },
 };
 
 // ---------------------------------------------
@@ -64,6 +65,7 @@ interface NavItem {
 // Navigation items
 const navItems: NavItem[] = [
   { name: "Dashboard", icon: <FiHome size={20} />, href: "/dashboard", showInMobileBar: true },
+  { name: "Discharge Planner", icon: <Stethoscope size={20} />, href: "/discharge-planner", showInMobileBar: true, roleRestriction: ["DISCHARGE_PLANNER"] },
   { name: "Search Homes", icon: <FiSearch size={20} />, href: "/search", showInMobileBar: false },
   { name: "AI Match", icon: <FiZap size={20} />, href: "/dashboard/find-care", showInMobileBar: true, roleRestriction: ["FAMILY", "OPERATOR", "ADMIN"] },
   // Marketplace (feature-flagged)

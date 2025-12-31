@@ -73,8 +73,7 @@ export default function LoginPage() {
       setError(null);
 
       const result = await signIn("credentials", {
-        redirect: true,
-        callbackUrl: "/dashboard",
+        redirect: false,
         email: data.email,
         password: data.password,
       });
@@ -92,7 +91,21 @@ export default function LoginPage() {
         return;
       }
 
-      // If redirect is handled by NextAuth, no manual navigation is needed.
+      // Sign-in successful - fetch session to determine role-based redirect
+      if (result?.ok) {
+        // Fetch the session to get user role
+        const response = await fetch('/api/auth/session');
+        const session = await response.json();
+        
+        // Role-based redirect
+        if (session?.user?.role === 'DISCHARGE_PLANNER') {
+          router.push('/discharge-planner');
+        } else if (callbackUrl && callbackUrl !== '/') {
+          router.push(callbackUrl);
+        } else {
+          router.push('/dashboard');
+        }
+      }
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error("Unhandled sign-in exception:", error);

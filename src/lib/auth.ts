@@ -314,6 +314,23 @@ export const authOptions: NextAuthOptions = {
         session.user.role = token["role"] as UserRole;
       }
       return session;
+    },
+    
+    // Role-based redirect after sign-in
+    async redirect({ url, baseUrl }) {
+      // If the URL is already pointing to a specific path, use it
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      // If the URL contains the baseUrl, extract the path
+      else if (new URL(url).origin === baseUrl) return url;
+      
+      // Default redirect to baseUrl
+      return baseUrl;
+    },
+    
+    // Sign-in callback for role-based routing
+    async signIn({ user }) {
+      // Allow sign-in for all users
+      return true;
     }
   },
   
