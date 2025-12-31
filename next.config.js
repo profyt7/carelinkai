@@ -10,6 +10,11 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   
+  // Enable instrumentation for Sentry and other monitoring tools
+  experimental: {
+    instrumentationHook: true,
+  },
+  
   // Skip ESLint during builds (we'll run it separately)
   eslint: {
     ignoreDuringBuilds: true,

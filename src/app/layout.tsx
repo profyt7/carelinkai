@@ -265,7 +265,9 @@ export default function RootLayout({
                   gtag('js', new Date());
                   gtag('config', '${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}', {
                     page_path: window.location.pathname,
+                    send_page_view: true
                   });
+                  console.log('[GA4] Google Analytics 4 initialized with ID: ${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}');
                 `,
               }}
             />
