@@ -1,31 +1,33 @@
 import Link from "next/link";
 import Image from "next/image";
-import { FiArrowRight, FiCheck, FiShield, FiUsers, FiHeart, FiActivity, FiSearch } from "react-icons/fi";
+import { FiArrowRight, FiCheck, FiShield, FiUsers, FiHeart, FiActivity, FiSearch, FiStar, FiZap, FiBriefcase, FiMessageCircle, FiCalendar, FiFileText } from "react-icons/fi";
 
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Navigation */}
-      <nav className="bg-white border-b border-neutral-200 px-4 md:px-6 py-4">
+      <nav className="bg-white border-b border-neutral-200 px-4 md:px-6 py-4 sticky top-0 z-50 backdrop-blur-sm bg-white/90">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center">
-            <div className="h-10 w-10 rounded-md bg-primary-500 flex items-center justify-center mr-2">
-              <span className="text-white font-bold text-lg">C</span>
+          <Link href="/" className="flex items-center space-x-3 group">
+            <div className="relative h-10 w-10">
+              <Image 
+                src="/images/logo.png" 
+                alt="CareLinkAI"
+                fill
+                className="object-contain"
+              />
             </div>
-            <span className="text-neutral-800 font-semibold text-xl">CareLinkAI</span>
-          </div>
+            <span className="text-[#1A1A1A] font-heading font-bold text-xl group-hover:text-[#3978FC] transition-colors">CareLinkAI</span>
+          </Link>
           
           <div className="hidden md:flex items-center space-x-8">
-            <Link href="#features" className="text-neutral-600 hover:text-primary-600 font-medium">
+            <Link href="#features" className="text-[#63666A] hover:text-[#3978FC] font-medium transition-colors">
               Features
             </Link>
-            <Link href="#how-it-works" className="text-neutral-600 hover:text-primary-600 font-medium">
+            <Link href="#how-it-works" className="text-[#63666A] hover:text-[#3978FC] font-medium transition-colors">
               How It Works
             </Link>
-            <Link href="#pricing" className="text-neutral-600 hover:text-primary-600 font-medium">
-              Pricing
-            </Link>
-            <Link href="#testimonials" className="text-neutral-600 hover:text-primary-600 font-medium">
+            <Link href="#testimonials" className="text-[#63666A] hover:text-[#3978FC] font-medium transition-colors">
               Testimonials
             </Link>
           </div>
@@ -33,13 +35,13 @@ export default function HomePage() {
           <div className="flex items-center space-x-4">
             <Link 
               href="/auth/login" 
-              className="text-primary-600 hover:text-primary-700 font-medium"
+              className="text-[#3978FC] hover:text-[#3167d4] font-medium transition-colors"
             >
               Log in
             </Link>
             <Link 
               href="/auth/register" 
-              className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md font-medium"
+              className="bg-gradient-to-r from-[#3978FC] to-[#7253B7] hover:opacity-90 text-white px-6 py-2.5 rounded-lg font-medium transition-opacity"
             >
               Sign up
             </Link>
@@ -48,52 +50,73 @@ export default function HomePage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-blue-50 to-blue-100 py-16 md:py-24">
+      <section className="relative bg-gradient-to-br from-[#e8f2ff] to-[#f3f0f9] py-16 md:py-24 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 md:px-6">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-neutral-800 leading-tight">
-                Connecting Families, Homes, and Caregivers
+              <div className="inline-flex items-center bg-white rounded-full px-4 py-2 shadow-sm mb-6">
+                <FiStar className="text-[#7253B7] mr-2" />
+                <span className="text-sm font-medium text-[#1A1A1A]">Trusted by 10,000+ families</span>
+              </div>
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-heading font-bold text-[#1A1A1A] leading-tight">
+                AI-Powered Senior Care <span className="text-[#3978FC]">Made Simple</span>
               </h1>
-              <p className="mt-6 text-xl text-neutral-600 max-w-lg">
-                CareLinkAI is a HIPAA-compliant platform that uses AI to match families with the perfect assisted living homes and caregivers.
+              <p className="mt-6 text-xl text-[#63666A] max-w-lg leading-relaxed">
+                Connect with the perfect care homes and caregivers using intelligent matching. HIPAA-compliant, trusted, and built for families.
               </p>
               <div className="mt-8 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
                 <Link 
-                  href="/auth/login" 
-                  className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-md font-medium text-center flex items-center justify-center"
+                  href="/auth/register" 
+                  className="bg-gradient-to-r from-[#3978FC] to-[#7253B7] hover:opacity-90 text-white px-8 py-4 rounded-lg font-semibold text-center flex items-center justify-center shadow-lg transition-opacity"
                 >
-                  Get Started
+                  Get Started Free
                   <FiArrowRight className="ml-2" />
                 </Link>
                 <Link 
                   href="/search" 
-                  className="bg-white hover:bg-neutral-100 text-neutral-800 px-6 py-3 rounded-md font-medium border border-neutral-300 text-center flex items-center justify-center"
+                  className="bg-white hover:bg-neutral-50 text-[#1A1A1A] px-8 py-4 rounded-lg font-semibold border-2 border-neutral-200 text-center flex items-center justify-center transition-colors"
                 >
                   <FiSearch className="mr-2" />
-                  Search Homes
+                  Find Care Now
                 </Link>
               </div>
-            </div>
-            <div className="hidden md:block">
-              <div className="relative h-96 w-full">
-                <div className="absolute top-0 right-0 w-5/6 h-full bg-white rounded-lg shadow-xl overflow-hidden">
-                  <Image 
-                    src="/images/hero-dashboard.jpg" 
-                    alt="CareLinkAI Dashboard" 
-                    width={600} 
-                    height={400}
-                    className="object-cover w-full h-full"
-                  />
+              <div className="mt-8 flex items-center space-x-6 text-sm text-[#63666A]">
+                <div className="flex items-center">
+                  <FiCheck className="text-[#7253B7] mr-2" />
+                  <span>No credit card required</span>
                 </div>
-                <div className="absolute bottom-0 left-0 w-2/3 bg-white p-4 rounded-lg shadow-lg">
-                  <div className="flex items-center">
-                    <div className="h-12 w-12 rounded-full bg-primary-100 flex items-center justify-center mr-4">
-                      <FiHeart className="text-primary-600 text-xl" />
-                    </div>
-                    <div>
-                      <h3 className="font-medium text-neutral-800">Perfect Match Found</h3>
-                      <p className="text-sm text-neutral-500">Sunshine Valley Care Home - 98% match</p>
+                <div className="flex items-center">
+                  <FiCheck className="text-[#7253B7] mr-2" />
+                  <span>HIPAA compliant</span>
+                </div>
+              </div>
+            </div>
+            <div className="hidden md:block relative">
+              <div className="relative h-96 w-full">
+                <div className="absolute inset-0 bg-gradient-to-br from-[#3978FC]/10 to-[#7253B7]/10 rounded-2xl"></div>
+                <div className="relative z-10 flex items-center justify-center h-full">
+                  <div className="w-full max-w-md space-y-4">
+                    <div className="bg-white p-6 rounded-xl shadow-lg border border-neutral-200 transform rotate-2 hover:rotate-0 transition-transform">
+                      <div className="flex items-center space-x-3 mb-4">
+                        <div className="h-12 w-12 rounded-full bg-gradient-to-br from-[#3978FC] to-[#7253B7] flex items-center justify-center">
+                          <FiHeart className="text-white text-xl" />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-[#1A1A1A]">Perfect Match Found</h3>
+                          <p className="text-sm text-[#63666A]">Sunshine Valley Care</p>
+                        </div>
+                        <div className="text-[#7253B7] font-bold">98%</div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <div className="flex-1 bg-[#e8f2ff] rounded-lg p-3 text-center">
+                          <div className="text-2xl font-bold text-[#3978FC]">24/7</div>
+                          <div className="text-xs text-[#63666A]">Care</div>
+                        </div>
+                        <div className="flex-1 bg-[#f3f0f9] rounded-lg p-3 text-center">
+                          <div className="text-2xl font-bold text-[#7253B7]">5★</div>
+                          <div className="text-xs text-[#63666A]">Rating</div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

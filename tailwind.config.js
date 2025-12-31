@@ -8,18 +8,57 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Primary brand colors
+        // Primary brand colors - Updated to CareLinkAI branding
         primary: {
-          50: "#e6f7ff",
-          100: "#b3e6ff",
-          200: "#80d4ff",
-          300: "#4dc2ff",
-          400: "#1aafff",
-          500: "#0099e6", // Main primary color
-          600: "#007bb8",
-          700: "#005c8a",
-          800: "#003e5c",
-          900: "#001f2e",
+          50: "#e8f2ff",
+          100: "#c2dcff",
+          200: "#9bc6ff",
+          300: "#74b0ff",
+          400: "#4d9aff",
+          500: "#3978FC", // Main primary color (CareLinkAI Blue)
+          600: "#2d60ca",
+          700: "#214898",
+          800: "#163066",
+          900: "#0a1834",
+        },
+        // Secondary brand colors - CareLinkAI Purple
+        secondary: {
+          50: "#f3f0f9",
+          100: "#dfd5ed",
+          200: "#cbbae1",
+          300: "#b79fd5",
+          400: "#a384c9",
+          500: "#7253B7", // Main secondary color (CareLinkAI Purple)
+          600: "#5b4292",
+          700: "#44326e",
+          800: "#2d2149",
+          900: "#161125",
+        },
+        // Dark navy for text
+        dark: {
+          50: "#f5f5f5",
+          100: "#e0e0e0",
+          200: "#bdbdbd",
+          300: "#9e9e9e",
+          400: "#757575",
+          500: "#1A1A1A", // Main dark color (CareLinkAI Dark Navy)
+          600: "#151515",
+          700: "#101010",
+          800: "#0a0a0a",
+          900: "#050505",
+        },
+        // Gray colors
+        gray: {
+          50: "#f9fafb",
+          100: "#f3f4f6",
+          200: "#e5e7eb",
+          300: "#d1d5db",
+          400: "#9ca3af",
+          500: "#63666A", // CareLinkAI Gray
+          600: "#4f5256",
+          700: "#3b3e42",
+          800: "#27292d",
+          900: "#131519",
         },
         // Secondary brand colors - greens for positive indicators
         success: {
@@ -75,7 +114,19 @@ module.exports = {
         },
       },
       fontFamily: {
+        // CareLinkAI Branding: Inter for headers, Roboto for body
         sans: [
+          "Roboto",
+          "ui-sans-serif",
+          "system-ui",
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "Segoe UI",
+          "Helvetica Neue",
+          "Arial",
+          "sans-serif",
+        ],
+        display: [
           "Inter",
           "ui-sans-serif",
           "system-ui",
@@ -87,7 +138,7 @@ module.exports = {
           "Arial",
           "sans-serif",
         ],
-        display: [
+        heading: [
           "Inter",
           "ui-sans-serif",
           "system-ui",
