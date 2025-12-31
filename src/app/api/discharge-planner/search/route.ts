@@ -241,7 +241,8 @@ Respond with raw JSON only. Do not include code blocks, markdown, or any other f
       return NextResponse?.json?.(
         {
           searchId: searchRecord.id,
-          parsedCriteria,
+          query: query,
+          totalMatches: 0,
           matches: [],
           message: "No matching homes found. Try broadening your search criteria.",
         },
@@ -372,26 +373,36 @@ Respond with raw JSON only. Do not include code blocks, markdown, or any other f
     console.log("🏥 [DISCHARGE-PLANNER] ✅ Scoring results:", scoringResults);
 
     // Build final matches with home details
-    const matches: HomeMatch[] = (scoringResults?.matches ?? [])?.map?.((match: any) => {
+    const matches = (scoringResults?.matches ?? [])?.map?.((match: any) => {
       const home = homes?.find?.((h) => h?.id === match?.homeId);
       if (!home) return null;
 
+      // Format address as string
+      const addressString = home?.address
+        ? `${home.address.street}, ${home.address.city}, ${home.address.state} ${home.address.zipCode}`
+        : "Address not available";
+
+      // Calculate available beds
+      const availableBeds = home.capacity - home.currentOccupancy;
+
+      // Get contact info from operator
+      const contactEmail = home?.operator?.user?.email ?? undefined;
+      const contactPhone = home?.operator?.user?.phone ?? undefined;
+
       return {
-        id: home.id,
-        name: home.name,
-        description: home.description,
-        address: home.address,
-        careLevel: home.careLevel,
-        amenities: home.amenities,
-        priceMin: parseFloat(home?.priceMin?.toString?.() ?? "0"),
-        priceMax: parseFloat(home?.priceMax?.toString?.() ?? "0"),
-        capacity: home.capacity,
-        currentOccupancy: home.currentOccupancy,
+        homeId: home.id,  // Changed from 'id' to 'homeId'
+        homeName: home.name,  // Changed from 'name' to 'homeName'
+        address: addressString,  // Changed from object to string
         score: match?.score ?? 0,
         reasoning: match?.reasoning ?? "Good match",
-        confidence: match?.confidence ?? "MEDIUM",
+        careTypes: home.careLevel,  // Changed from 'careLevel' to 'careTypes'
+        availableBeds,  // Added calculated field
+        startingPrice: parseFloat(home?.priceMin?.toString?.() ?? "0"),  // Changed from 'priceMin' to 'startingPrice'
+        amenities: home.amenities,
+        contactEmail,  // Added contact info
+        contactPhone,  // Added contact info
       };
-    })?.filter?.((m): m is HomeMatch => m !== null) ?? [];
+    })?.filter?.((m) => m !== null) ?? [];
 
     // Update search record with results
     await prisma.placementSearch.update({
@@ -408,7 +419,8 @@ Respond with raw JSON only. Do not include code blocks, markdown, or any other f
     return NextResponse?.json?.(
       {
         searchId: searchRecord.id,
-        parsedCriteria,
+        query: query,  // Added query field
+        totalMatches: matches.length,  // Added totalMatches field
         matches,
       },
       { status: 200 }
