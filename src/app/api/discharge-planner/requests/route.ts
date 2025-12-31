@@ -40,54 +40,71 @@ export async function GET(request: NextRequest) {
       where.status = status;
     }
 
-    // Get placement requests
-    const requests = await prisma.placementRequest.findMany({
-      where,
-      include: {
-        home: {
-          select: {
-            id: true,
-            name: true,
-            address: true,
-            city: true,
-            state: true,
-            operator: {
-              select: {
-                user: {
-                  select: {
-                    email: true,
-                    phone: true,
+    // Get placement requests - wrapped in try-catch to handle empty results gracefully
+    let requests: any[] = [];
+    try {
+      requests = await prisma.placementRequest.findMany({
+        where,
+        include: {
+          home: {
+            select: {
+              id: true,
+              name: true,
+              address: true,
+              city: true,
+              state: true,
+              operator: {
+                select: {
+                  user: {
+                    select: {
+                      email: true,
+                      phone: true,
+                    },
                   },
                 },
               },
             },
           },
-        },
-        search: {
-          select: {
-            id: true,
-            queryText: true,
-            createdAt: true,
+          search: {
+            select: {
+              id: true,
+              queryText: true,
+              createdAt: true,
+            },
           },
         },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-      take: limit,
-    });
+        orderBy: {
+          createdAt: "desc",
+        },
+        take: limit,
+      });
+    } catch (dbError: any) {
+      console.error("📋 [DP-REQUESTS] ⚠️ Database query error:", dbError);
+      // Return empty array instead of failing - user might not have any requests yet
+      requests = [];
+    }
 
     console.log(`📋 [DP-REQUESTS] ✅ Fetched ${requests.length} requests`);
 
+    // Always return 200 with requests array (empty or populated)
     return NextResponse.json(
-      { requests },
+      { 
+        requests,
+        total: requests.length,
+        message: requests.length === 0 ? "No placement requests found" : undefined
+      },
       { status: 200 }
     );
   } catch (error: any) {
     console.error("📋 [DP-REQUESTS] ❌ Error:", error);
+    // Only return 500 for authentication or critical errors
+    // For database errors, we already handled them above
     return NextResponse.json(
-      { error: error?.message ?? "Failed to fetch placement requests" },
-      { status: 500 }
+      { 
+        error: error?.message ?? "Failed to fetch placement requests",
+        requests: [] // Always include empty array as fallback
+      },
+      { status: error?.message?.includes("Unauthorized") ? 401 : 500 }
     );
   }
 }

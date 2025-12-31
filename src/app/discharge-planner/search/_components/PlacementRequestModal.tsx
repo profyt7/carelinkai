@@ -32,12 +32,21 @@ export default function PlacementRequestModal({ isOpen, onClose, home, searchId 
   const [error, setError] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e?.target || {};
-    setFormData(prev => ({ ...prev, [name || '']: value || '' }));
+    if (!e || !e.target) return;
+    const { name, value } = e.target;
+    if (!name) return;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e?.preventDefault();
+    e.preventDefault();
+    
+    // Validate required fields before submission
+    if (!formData.patientName || !formData.patientAge || !formData.medicalNeeds) {
+      setError('Please fill in all required fields');
+      return;
+    }
+    
     setIsSending(true);
     setError(null);
 
@@ -148,11 +157,12 @@ export default function PlacementRequestModal({ isOpen, onClose, home, searchId 
                           type="text"
                           id="patientName"
                           name="patientName"
-                          value={formData?.patientName || ''}
+                          value={formData.patientName}
                           onChange={handleChange}
                           required
                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           placeholder="John Doe"
+                          autoComplete="name"
                         />
                       </div>
 
@@ -165,13 +175,14 @@ export default function PlacementRequestModal({ isOpen, onClose, home, searchId 
                           type="number"
                           id="patientAge"
                           name="patientAge"
-                          value={formData?.patientAge || ''}
+                          value={formData.patientAge}
                           onChange={handleChange}
                           required
                           min="0"
                           max="150"
                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           placeholder="78"
+                          autoComplete="off"
                         />
                       </div>
 
@@ -183,7 +194,7 @@ export default function PlacementRequestModal({ isOpen, onClose, home, searchId 
                         <textarea
                           id="medicalNeeds"
                           name="medicalNeeds"
-                          value={formData?.medicalNeeds || ''}
+                          value={formData.medicalNeeds}
                           onChange={handleChange}
                           required
                           rows={4}
@@ -200,7 +211,7 @@ export default function PlacementRequestModal({ isOpen, onClose, home, searchId 
                         <select
                           id="timeline"
                           name="timeline"
-                          value={formData?.timeline || ''}
+                          value={formData.timeline}
                           onChange={handleChange}
                           required
                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -220,7 +231,7 @@ export default function PlacementRequestModal({ isOpen, onClose, home, searchId 
                         <select
                           id="paymentType"
                           name="paymentType"
-                          value={formData?.paymentType || ''}
+                          value={formData.paymentType}
                           onChange={handleChange}
                           required
                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -242,7 +253,7 @@ export default function PlacementRequestModal({ isOpen, onClose, home, searchId 
                         <textarea
                           id="additionalNotes"
                           name="additionalNotes"
-                          value={formData?.additionalNotes || ''}
+                          value={formData.additionalNotes}
                           onChange={handleChange}
                           rows={3}
                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"

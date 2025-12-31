@@ -82,15 +82,23 @@ export default function RequestsPage() {
         cache: "no-store",
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch placement requests");
-      }
-
       const data = await response.json();
+      
+      // Always handle the requests array, even if response is not ok
       setRequests(data.requests || []);
+      
+      // Only set error for critical failures (not for empty results)
+      if (!response.ok && response.status !== 401) {
+        console.warn("Non-critical API error:", data.error);
+        // Don't throw error for empty results or minor issues
+        if (response.status >= 500) {
+          throw new Error(data.error || "Failed to fetch placement requests");
+        }
+      }
     } catch (err: any) {
       console.error("Error fetching requests:", err);
       setError(err.message || "Failed to load placement requests");
+      setRequests([]); // Ensure requests is always an array
     } finally {
       setLoading(false);
     }
@@ -288,12 +296,23 @@ export default function RequestsPage() {
           {filteredRequests.length === 0 ? (
             <div className="p-12 text-center">
               <FiSend className="mx-auto text-neutral-300 mb-4" size={64} />
-              <p className="text-neutral-600 font-medium mb-2">No requests found</p>
-              <p className="text-neutral-500 text-sm">
-                {searchQuery || filter !== "all"
-                  ? "Try adjusting your filters"
-                  : "Send your first placement request to see it here"}
+              <p className="text-neutral-600 font-medium mb-2">
+                {requests.length === 0 ? "No placement requests yet" : "No requests found"}
               </p>
+              <p className="text-neutral-500 text-sm mb-6">
+                {searchQuery || filter !== "all"
+                  ? "Try adjusting your filters to see more results"
+                  : "Start a new search to find assisted living homes and send placement requests"}
+              </p>
+              {requests.length === 0 && (
+                <button
+                  onClick={() => router.push("/discharge-planner/search")}
+                  className="btn-primary inline-flex items-center"
+                >
+                  <FiSend className="mr-2" size={18} />
+                  Start New Search
+                </button>
+              )}
             </div>
           ) : (
             <>
