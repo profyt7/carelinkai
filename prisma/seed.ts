@@ -74,10 +74,42 @@ async function upsertAdminUser() {
   console.log(`Admin user ready: ${admin.email} (${admin.id})`);
 }
 
+/**
+ * Ensure a development DISCHARGE_PLANNER user exists
+ */
+async function upsertDischargePlannerUser() {
+  const email = process.env.DISCHARGE_PLANNER_EMAIL ?? 'demo.discharge@carelinkai.com';
+  const rawPassword = process.env.DISCHARGE_PLANNER_PASSWORD ?? 'Demo123!';
+
+  // Hash password (bcrypt, 10 rounds)
+  const passwordHash = await bcrypt.hash(rawPassword, 10);
+
+  const dischargePlanner = await prisma.user.upsert({
+    where: { email },
+    update: {
+      passwordHash,
+      status: UserStatus.ACTIVE,
+      emailVerified: new Date(),
+    },
+    create: {
+      email,
+      firstName: 'Demo',
+      lastName: 'Discharge Planner',
+      passwordHash,
+      role: UserRole.DISCHARGE_PLANNER,
+      status: UserStatus.ACTIVE,
+      emailVerified: new Date(),
+    },
+  });
+
+  console.log(`Discharge Planner user ready: ${dischargePlanner.email} (${dischargePlanner.id})`);
+}
+
 async function main() {
   console.log('Starting database seed process...');
   await seedMarketplaceTaxonomy();
   await upsertAdminUser();
+  await upsertDischargePlannerUser();
   await seedMockCaregivers(12);
   // ---------------- Mock family job listings ----------------
   await seedMockFamilyJobs(15);
