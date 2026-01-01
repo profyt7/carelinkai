@@ -9,7 +9,7 @@ export default function HomePage() {
       <nav className="bg-white border-b border-neutral-200 px-4 md:px-6 py-4 sticky top-0 z-50 backdrop-blur-sm bg-white/90">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <Link href="/" className="flex items-center group">
-            <div className="relative h-12 w-48">
+            <div className="relative h-20 w-80">
               <Image 
                 src="/images/logo.png" 
                 alt="CareLinkAI"
@@ -255,7 +255,7 @@ export default function HomePage() {
           <div className="grid md:grid-cols-4 gap-8">
             <div>
               <div className="flex items-center mb-4">
-                <div className="relative h-10 w-40">
+                <div className="relative h-16 w-64">
                   <Image 
                     src="/images/logo.png" 
                     alt="CareLinkAI"
