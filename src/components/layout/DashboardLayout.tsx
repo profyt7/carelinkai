@@ -22,6 +22,7 @@ import {
   FiFileText,
   FiBarChart2,
   FiChevronDown,
+  FiChevronRight,
   FiLogOut,
   FiArrowUp,
   FiMoreHorizontal,
@@ -53,52 +54,108 @@ const roleBadgeColors = {
 interface NavItem {
   name: string;
   icon: React.ReactNode;
-  href: string;
-  showInMobileBar: boolean;
+  href?: string;
+  showInMobileBar?: boolean;
   /**
    * If provided, restricts visibility to the given user roles.
    * Omitting this property makes the item visible to everyone.
    */
   roleRestriction?: string[];
+  /**
+   * Collapsible section with nested items
+   */
+  children?: NavItem[];
 }
 
-// Navigation items
+// Navigation items with collapsible structure (8 main categories)
 const navItems: NavItem[] = [
-  { name: "Dashboard", icon: <FiHome size={20} />, href: "/dashboard", showInMobileBar: true },
-  { name: "Discharge Planner", icon: <Stethoscope size={20} />, href: "/discharge-planner", showInMobileBar: true, roleRestriction: ["DISCHARGE_PLANNER"] },
-  { name: "Search Homes", icon: <FiSearch size={20} />, href: "/search", showInMobileBar: false },
-  { name: "AI Match", icon: <FiZap size={20} />, href: "/dashboard/find-care", showInMobileBar: true, roleRestriction: ["FAMILY", "OPERATOR", "ADMIN"] },
-  // Marketplace (feature-flagged)
-  { name: "Marketplace", icon: <FiUsers size={20} />, href: "/marketplace", showInMobileBar: true },
-  { name: "Operator", icon: <FiHome size={20} />, href: "/operator", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
-  // Inquiries - Shared page for both FAMILY and OPERATOR/ADMIN roles
-  { name: "My Inquiries", icon: <FiFileText size={20} />, href: "/operator/inquiries", showInMobileBar: false, roleRestriction: ["FAMILY"] },
-  { name: "Home Inquiries", icon: <FiFileText size={20} />, href: "/operator/inquiries", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
-  { name: "Pipeline Dashboard", icon: <FiBarChart2 size={20} />, href: "/operator/inquiries/pipeline", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
-  // Tours - Separate pages for FAMILY and OPERATOR/ADMIN roles
-  { name: "My Tours", icon: <FiCalendar size={20} />, href: "/dashboard/tours", showInMobileBar: true, roleRestriction: ["FAMILY"] },
-  { name: "Tour Requests", icon: <FiCalendar size={20} />, href: "/operator/tours", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
-  { name: "Leads", icon: <FiUsers size={20} />, href: "/operator/leads", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
-  { name: "Residents", icon: <FiUsers size={20} />, href: "/operator/residents", showInMobileBar: true, roleRestriction: ["OPERATOR", "ADMIN", "CAREGIVER", "STAFF"] },
-  { name: "Caregivers", icon: <FiUsers size={20} />, href: "/operator/caregivers", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
-  { name: "Calendar", icon: <FiCalendar size={20} />, href: "/calendar", showInMobileBar: true },
-  // Shifts page
-  { name: "Shifts", icon: <FiCalendar size={20} />, href: "/shifts", showInMobileBar: true },
-  // Family collaboration (visible to all)
-  { name: "Family", icon: <FiUsers size={20} />, href: "/family", showInMobileBar: true },
-  { name: "Finances", icon: <FiDollarSign size={20} />, href: "/settings/payouts", showInMobileBar: true },
-  { name: "Reports", icon: <FiBarChart2 size={20} />, href: "/reports", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN"] },
-  { name: "Messages", icon: <MessageSquare size={20} />, href: "/messages", showInMobileBar: true },
-  { name: "Settings", icon: <FiSettings size={20} />, href: "/settings", showInMobileBar: false },
-  // Admin-only tools section
+  // 1. Dashboard (standalone)
   { 
-    name: "Admin Tools", 
-    icon: <FiTool size={20} />, 
-    href: "/admin/tools", 
-    showInMobileBar: false,
-    roleRestriction: ["ADMIN"] 
+    name: "Dashboard", 
+    icon: <FiHome size={20} />, 
+    href: "/dashboard", 
+    showInMobileBar: true 
   },
-  { name: "Help", icon: <FiHelpCircle size={20} />, href: "/help", showInMobileBar: false },
+  
+  // 2. Listings (collapsible)
+  {
+    name: "Listings",
+    icon: <FiSearch size={20} />,
+    children: [
+      { name: "Search Homes", icon: <FiSearch size={18} />, href: "/search", showInMobileBar: false },
+      { name: "Marketplace", icon: <FiUsers size={18} />, href: "/marketplace", showInMobileBar: true },
+      { name: "Caregivers", icon: <FiUsers size={18} />, href: "/operator/caregivers", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
+      { name: "Operator", icon: <FiHome size={18} />, href: "/operator", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
+    ]
+  },
+  
+  // 3. Leads & Inquiries (collapsible)
+  {
+    name: "Leads & Inquiries",
+    icon: <FiFileText size={20} />,
+    roleRestriction: ["OPERATOR", "ADMIN", "STAFF", "FAMILY"],
+    children: [
+      { name: "Leads", icon: <FiUsers size={18} />, href: "/operator/leads", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
+      { name: "My Inquiries", icon: <FiFileText size={18} />, href: "/operator/inquiries", showInMobileBar: false, roleRestriction: ["FAMILY"] },
+      { name: "Home Inquiries", icon: <FiFileText size={18} />, href: "/operator/inquiries", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
+      { name: "Tour Requests", icon: <FiCalendar size={18} />, href: "/operator/tours", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
+      { name: "My Tours", icon: <FiCalendar size={18} />, href: "/dashboard/tours", showInMobileBar: true, roleRestriction: ["FAMILY"] },
+      { name: "Pipeline Dashboard", icon: <FiBarChart2 size={18} />, href: "/operator/inquiries/pipeline", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
+    ]
+  },
+  
+  // 4. AI Tools (collapsible)
+  {
+    name: "AI Tools",
+    icon: <FiZap size={20} />,
+    roleRestriction: ["FAMILY", "OPERATOR", "ADMIN", "DISCHARGE_PLANNER"],
+    children: [
+      { name: "AI Match", icon: <FiZap size={18} />, href: "/dashboard/find-care", showInMobileBar: true, roleRestriction: ["FAMILY", "OPERATOR", "ADMIN"] },
+      { name: "Discharge Planner", icon: <Stethoscope size={18} />, href: "/discharge-planner", showInMobileBar: true, roleRestriction: ["DISCHARGE_PLANNER"] },
+    ]
+  },
+  
+  // 5. Residents & Family (collapsible)
+  {
+    name: "Residents & Family",
+    icon: <FiUsers size={20} />,
+    children: [
+      { name: "Residents", icon: <FiUsers size={18} />, href: "/operator/residents", showInMobileBar: true, roleRestriction: ["OPERATOR", "ADMIN", "CAREGIVER", "STAFF"] },
+      { name: "Family", icon: <FiUsers size={18} />, href: "/family", showInMobileBar: true },
+      { name: "Messages", icon: <MessageSquare size={18} />, href: "/messages", showInMobileBar: true },
+    ]
+  },
+  
+  // 6. Operations (collapsible)
+  {
+    name: "Operations",
+    icon: <FiCalendar size={20} />,
+    children: [
+      { name: "Calendar", icon: <FiCalendar size={18} />, href: "/calendar", showInMobileBar: true },
+      { name: "Shifts", icon: <FiCalendar size={18} />, href: "/shifts", showInMobileBar: true },
+      { name: "Finances", icon: <FiDollarSign size={18} />, href: "/settings/payouts", showInMobileBar: true },
+    ]
+  },
+  
+  // 7. Reports (standalone)
+  { 
+    name: "Reports", 
+    icon: <FiBarChart2 size={20} />, 
+    href: "/reports", 
+    showInMobileBar: false, 
+    roleRestriction: ["OPERATOR", "ADMIN"] 
+  },
+  
+  // 8. Settings (collapsible)
+  {
+    name: "Settings",
+    icon: <FiSettings size={20} />,
+    children: [
+      { name: "Settings", icon: <FiSettings size={18} />, href: "/settings", showInMobileBar: false },
+      { name: "Admin Tools", icon: <FiTool size={18} />, href: "/admin/tools", showInMobileBar: false, roleRestriction: ["ADMIN"] },
+      { name: "Help", icon: <FiHelpCircle size={18} />, href: "/help", showInMobileBar: false },
+    ]
+  },
 ];
 
 interface DashboardLayoutProps {
@@ -132,6 +189,9 @@ export default function DashboardLayout({
   const [mounted, setMounted] = useState(false);
   const [sessionStall, setSessionStall] = useState(false);
   
+  // Collapsible navigation state
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
+  
   // Touch gesture handling
   const [touchStartX, setTouchStartX] = useState(0);
   const [touchStartY, setTouchStartY] = useState(0);
@@ -151,7 +211,30 @@ export default function DashboardLayout({
   // Check if component is mounted (to prevent hydration issues)
   useEffect(() => {
     setMounted(true);
+    
+    // Load collapsed sections from localStorage
+    const savedCollapsed = localStorage.getItem('carelinkai-nav-collapsed');
+    if (savedCollapsed) {
+      try {
+        setCollapsedSections(JSON.parse(savedCollapsed));
+      } catch (e) {
+        console.error('Failed to parse collapsed sections:', e);
+      }
+    }
   }, []);
+  
+  // Toggle collapsible section
+  const toggleSection = (sectionName: string) => {
+    setCollapsedSections(prev => {
+      const newState = {
+        ...prev,
+        [sectionName]: !prev[sectionName]
+      };
+      // Save to localStorage
+      localStorage.setItem('carelinkai-nav-collapsed', JSON.stringify(newState));
+      return newState;
+    });
+  };
 
   // Check responsive breakpoints on mount and window resize
   useEffect(() => {
@@ -436,59 +519,146 @@ export default function DashboardLayout({
 
         {/* Navigation */}
         {/*
-          Filter navigation items once based on optional roleRestriction.
-          Items without a roleRestriction are always shown.
+          Filter navigation items based on role restrictions and feature flags.
+          Support collapsible sections with children.
         */}
         {(() => {
           const normalizedRole = String(userRole || '').toUpperCase();
-          const visibleNavItems = navItems.filter(
-            (item) =>
-              !("roleRestriction" in item) ||
-              !item.roleRestriction ||
-              item.roleRestriction.map(r => r.toUpperCase()).includes(normalizedRole)
-            // Feature-flag gate for Marketplace
-            ).filter(
-              (item) =>
-                item.name !== "Marketplace" || marketplaceEnabled
-          );
-          // Determine the most specific (longest) matching href for current pathname
-          const hrefs = visibleNavItems.map((i) => {
-            if (i.name === 'Caregivers') {
+          
+          // Helper function to check if item is visible based on role
+          const isItemVisible = (item: NavItem) => {
+            // Check role restriction
+            if (item.roleRestriction && item.roleRestriction.length > 0) {
+              if (!item.roleRestriction.map(r => r.toUpperCase()).includes(normalizedRole)) {
+                return false;
+              }
+            }
+            // Check marketplace feature flag
+            if (item.name === "Marketplace" && !marketplaceEnabled) {
+              return false;
+            }
+            return true;
+          };
+          
+          // Helper function to get computed href for special items
+          const getComputedHref = (item: NavItem) => {
+            if (item.name === 'Caregivers') {
               const role = String(userRole).toUpperCase();
               if (role === 'OPERATOR' || role === 'ADMIN') return '/operator/caregivers';
               if (role === 'CAREGIVER') return '/settings/profile';
               return '/marketplace?tab=caregivers';
             }
-            return i.href;
-          });
-          const longestMatch = hrefs
-            .filter((h) => pathname === h || pathname?.startsWith(`${h}/`))
-            .sort((a, b) => b.length - a.length)[0];
+            return item.href || '';
+          };
+          
+          // Helper function to check if path is active
+          const isPathActive = (href: string) => {
+            if (!href) return false;
+            return pathname === href || pathname?.startsWith(`${href}/`);
+          };
+          
+          // Filter visible nav items (parent level)
+          const visibleNavItems = navItems
+            .map(item => {
+              // If item has children, filter them too
+              if (item.children) {
+                const visibleChildren = item.children.filter(isItemVisible);
+                // Only show parent if it has visible children or no role restriction
+                if (visibleChildren.length === 0 && item.roleRestriction) {
+                  return null;
+                }
+                return { ...item, children: visibleChildren };
+              }
+              return isItemVisible(item) ? item : null;
+            })
+            .filter((item): item is NavItem => item !== null);
 
           return (
-            <nav className="sidebar-nav mt-4" aria-label="Sidebar navigation">
+            <nav className="sidebar-nav mt-4 px-2" aria-label="Sidebar navigation">
               {visibleNavItems.map((item) => {
-              const computedHref = (() => {
-                if (item.name === 'Caregivers') {
-                  const role = String(userRole).toUpperCase();
-                  if (role === 'OPERATOR' || role === 'ADMIN') return '/operator/caregivers';
-                  if (role === 'CAREGIVER') return '/settings/profile';
-                  return '/marketplace?tab=caregivers';
+                // If item has children, render as collapsible section
+                if (item.children && item.children.length > 0) {
+                  const isExpanded = !collapsedSections[item.name];
+                  const hasActiveChild = item.children.some(child => {
+                    const href = getComputedHref(child);
+                    return isPathActive(href);
+                  });
+                  
+                  return (
+                    <div key={item.name} className="mb-1">
+                      {/* Collapsible section header */}
+                      <button
+                        onClick={() => toggleSection(item.name)}
+                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left transition-all duration-200 ${
+                          hasActiveChild 
+                            ? 'bg-primary-500 text-white' 
+                            : 'text-neutral-300 hover:bg-neutral-700 hover:text-white'
+                        }`}
+                        aria-expanded={isExpanded}
+                      >
+                        <div className="flex items-center">
+                          <span className="mr-3">{item.icon}</span>
+                          <span className="font-medium text-sm">{item.name}</span>
+                        </div>
+                        <FiChevronRight 
+                          size={16} 
+                          className={`transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
+                        />
+                      </button>
+                      
+                      {/* Collapsible section content */}
+                      <div
+                        className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                          isExpanded ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'
+                        }`}
+                      >
+                        <div className="ml-4 mt-1 space-y-1">
+                          {item.children.map((child) => {
+                            const childHref = getComputedHref(child);
+                            const isActive = isPathActive(childHref);
+                            
+                            return (
+                              <Link
+                                key={child.name}
+                                href={childHref}
+                                className={`flex items-center px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                                  isActive
+                                    ? 'bg-primary-600 text-white font-medium'
+                                    : 'text-neutral-400 hover:bg-neutral-700 hover:text-white'
+                                }`}
+                                onClick={() => isMobile && setSidebarOpen(false)}
+                                aria-current={isActive ? "page" : undefined}
+                              >
+                                <span className="mr-2.5">{child.icon}</span>
+                                {child.name}
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  );
                 }
-                return item.href;
-              })();
-                const isActive = computedHref === longestMatch || pathname === computedHref;
+                
+                // Render standalone item (no children)
+                const itemHref = getComputedHref(item);
+                const isActive = isPathActive(itemHref);
+                
                 return (
-            <Link
-              key={item.name}
-              href={computedHref}
-              className={`sidebar-nav-item ${isActive ? "sidebar-nav-item-active" : ""}`}
-              onClick={() => isMobile && setSidebarOpen(false)}
-              aria-current={isActive ? "page" : undefined}
-            >
-              <span className="mr-3">{item.icon}</span>
-              {item.name}
-            </Link>
+                  <Link
+                    key={item.name}
+                    href={itemHref}
+                    className={`flex items-center px-3 py-2.5 rounded-lg mb-1 transition-all duration-200 ${
+                      isActive
+                        ? 'bg-primary-500 text-white font-medium'
+                        : 'text-neutral-300 hover:bg-neutral-700 hover:text-white'
+                    }`}
+                    onClick={() => isMobile && setSidebarOpen(false)}
+                    aria-current={isActive ? "page" : undefined}
+                  >
+                    <span className="mr-3">{item.icon}</span>
+                    <span className="text-sm font-medium">{item.name}</span>
+                  </Link>
                 );
               })}
             </nav>
@@ -815,28 +985,46 @@ export default function DashboardLayout({
         >
           {(() => {
             const normalizedRole = String(userRole || '').toUpperCase();
-            const visibleNavItems = navItems
-              .filter(
-                (item) =>
-                  item.showInMobileBar &&
-                  (
-                    !("roleRestriction" in item) ||
-                    !item.roleRestriction ||
-                    item.roleRestriction.map(r => r.toUpperCase()).includes(normalizedRole)
-                  )
-              )
-              .filter((item) => item.name !== "Marketplace" || marketplaceEnabled);
-            const hrefs = visibleNavItems.map(i => i.href);
+            
+            // Helper to check if item is visible
+            const isItemVisible = (item: NavItem) => {
+              if (item.roleRestriction && item.roleRestriction.length > 0) {
+                return item.roleRestriction.map(r => r.toUpperCase()).includes(normalizedRole);
+              }
+              if (item.name === "Marketplace" && !marketplaceEnabled) {
+                return false;
+              }
+              return true;
+            };
+            
+            // Flatten all nav items including children to find showInMobileBar items
+            const mobileBarItems: NavItem[] = [];
+            navItems.forEach(item => {
+              if (item.children) {
+                // Add children that should show in mobile bar
+                item.children.forEach(child => {
+                  if (child.showInMobileBar && isItemVisible(child)) {
+                    mobileBarItems.push(child);
+                  }
+                });
+              } else if (item.showInMobileBar && isItemVisible(item)) {
+                // Add parent item if it should show in mobile bar
+                mobileBarItems.push(item);
+              }
+            });
+            
+            // Determine active item
+            const hrefs = mobileBarItems.map(i => i.href || '');
             const longestMatch = hrefs
               .filter((h) => pathname === h || pathname?.startsWith(`${h}/`))
               .sort((a, b) => b.length - a.length)[0];
 
-            return visibleNavItems.map((item) => {
+            return mobileBarItems.slice(0, 4).map((item) => {
               const isActive = item.href === longestMatch || pathname === item.href;
               return (
               <Link 
                 key={item.name}
-                href={item.href}
+                href={item.href || '/dashboard'}
                 className={`mobile-tab-item ${isActive ? 'mobile-tab-item-active' : ''}`}
                 aria-current={isActive ? "page" : undefined}
               >
