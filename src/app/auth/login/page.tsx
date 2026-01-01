@@ -130,13 +130,14 @@ export default function LoginPage() {
         <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-blue-700 opacity-90"></div>
         <div className="absolute inset-0 flex flex-col justify-center items-center p-12 z-10">
           <div className="mb-8">
-            <Image 
-              src="/logo-white.svg" 
-              alt="CareLinkAI Logo" 
-              width={200} 
-              height={60}
-              className="mb-6"
-            />
+            <div className="relative h-40 w-160 mb-6">
+              <Image 
+                src="/images/logo.png" 
+                alt="CareLinkAI Logo"
+                fill
+                className="object-contain brightness-0 invert"
+              />
+            </div>
             <h1 className="text-4xl font-bold text-white mb-6">
               Welcome to CareLinkAI
             </h1>
@@ -169,12 +170,14 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
           {/* Mobile logo */}
           <div className="flex justify-center mb-8 lg:hidden">
-            <Image 
-              src="/logo.svg" 
-              alt="CareLinkAI Logo" 
-              width={180} 
-              height={50} 
-            />
+            <div className="relative h-32 w-128">
+              <Image 
+                src="/images/logo.png" 
+                alt="CareLinkAI Logo"
+                fill
+                className="object-contain"
+              />
+            </div>
           </div>
 
           <div className="bg-white rounded-lg shadow-lg p-8">

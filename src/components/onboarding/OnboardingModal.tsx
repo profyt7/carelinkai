@@ -127,6 +127,7 @@ export default function OnboardingModal() {
   }, []);
 
   useEffect(() => {
+    // Only show onboarding for logged-in users
     if (!isClient || !session?.user) return;
 
     // Check if onboarding has been completed
@@ -157,7 +158,8 @@ export default function OnboardingModal() {
     }
   };
 
-  if (!isClient) return null;
+  // Don't render anything if client is not mounted or user is not logged in
+  if (!isClient || !session?.user) return null;
 
   return (
     <AnimatePresence>
