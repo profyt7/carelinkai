@@ -8,16 +8,16 @@ export default function HomePage() {
       {/* Navigation */}
       <nav className="bg-white border-b border-neutral-200 px-4 md:px-6 py-4 sticky top-0 z-50 backdrop-blur-sm bg-white/90">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <Link href="/" className="flex items-center space-x-3 group">
-            <div className="relative h-10 w-10">
+          <Link href="/" className="flex items-center group">
+            <div className="relative h-12 w-48">
               <Image 
                 src="/images/logo.png" 
                 alt="CareLinkAI"
                 fill
-                className="object-contain"
+                className="object-contain object-left"
+                priority
               />
             </div>
-            <span className="text-[#1A1A1A] font-heading font-bold text-xl group-hover:text-[#3978FC] transition-colors">CareLinkAI</span>
           </Link>
           
           <div className="hidden md:flex items-center space-x-8">
@@ -255,10 +255,14 @@ export default function HomePage() {
           <div className="grid md:grid-cols-4 gap-8">
             <div>
               <div className="flex items-center mb-4">
-                <div className="h-10 w-10 rounded-md bg-primary-500 flex items-center justify-center mr-2">
-                  <span className="text-white font-bold text-lg">C</span>
+                <div className="relative h-10 w-40">
+                  <Image 
+                    src="/images/logo.png" 
+                    alt="CareLinkAI"
+                    fill
+                    className="object-contain object-left brightness-0 invert"
+                  />
                 </div>
-                <span className="text-white font-semibold text-xl">CareLinkAI</span>
               </div>
               <p className="text-neutral-400">
                 Connecting families with the perfect assisted living homes through our AI-powered matching platform.
