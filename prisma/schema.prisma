@@ -1806,6 +1806,34 @@ model PlacementRequest {
   @@index([createdAt])
 }
 
+model BugReport {
+  id                String      @id @default(cuid())
+  userId            String?
+  userEmail         String
+  userName          String
+  userType          UserRole?
+  title             String
+  description       String
+  stepsToReproduce  String?
+  severity          BugSeverity @default(MEDIUM)
+  pageUrl           String
+  browserInfo       String
+  deviceInfo        String?
+  screenshotUrl     String?
+  status            BugStatus   @default(NEW)
+  assignedTo        String?
+  adminNotes        String?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  resolvedAt        DateTime?
+
+  @@index([status])
+  @@index([severity])
+  @@index([userEmail])
+  @@index([createdAt])
+  @@index([assignedTo])
+}
+
 enum UserRole {
   FAMILY
   OPERATOR
@@ -2291,4 +2319,17 @@ enum RequestStatus {
   RESPONDED
   ACCEPTED
   DECLINED
+}
+
+enum BugSeverity {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum BugStatus {
+  NEW
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
 }

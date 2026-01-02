@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth';
 import authOptions from '@/lib/auth';
-import { FiUsers, FiHome, FiActivity, FiTrendingUp, FiMessageSquare, FiFileText } from 'react-icons/fi';
+import { FiUsers, FiHome, FiActivity, FiTrendingUp, FiMessageSquare, FiFileText, FiAlertCircle } from 'react-icons/fi';
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 
@@ -49,6 +49,13 @@ export default async function AdminDashboard() {
       icon: FiUsers,
       href: '/admin/users',
       color: 'from-blue-500 to-blue-600',
+    },
+    {
+      title: 'Bug Reports',
+      description: 'Review and manage bug reports from beta testing',
+      icon: FiAlertCircle,
+      href: '/admin/bug-reports',
+      color: 'from-red-500 to-red-600',
     },
     {
       title: 'Listing Management',

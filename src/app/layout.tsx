@@ -18,6 +18,8 @@ import PWAManager from "../components/pwa/PWAManager";
 import { ToastProvider } from "../components/ui/toast-provider";
 // CareBot - 24/7 AI assistance
 import FloatingChatButton from "../components/carebot/FloatingChatButton";
+// Bug Report Button
+import { BugReportButton } from "../components/bug-report/BugReportButton";
 // Cookie consent banner
 import CookieConsent from "../components/analytics/CookieConsent";
 // Error boundary
@@ -349,6 +351,9 @@ export default function RootLayout({
                 
                 {/* CareBot - 24/7 AI Chat Assistant */}
                 <FloatingChatButton />
+                
+                {/* Bug Report Button - Beta Testing */}
+                <BugReportButton />
                 
                 {/* Cookie Consent Banner */}
                 <CookieConsent />
