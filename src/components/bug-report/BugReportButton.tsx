@@ -8,10 +8,10 @@ export function BugReportButton() {
 
   return (
     <>
-      {/* Floating Bug Report Button */}
+      {/* Floating Bug Report Button - Positioned above CareBot */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 rounded-full shadow-lg transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+        className="fixed bottom-24 right-4 z-50 flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 rounded-full shadow-lg transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 md:right-6"
         title="Report a bug"
       >
         <svg
