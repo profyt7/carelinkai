@@ -1,11 +1,25 @@
 import * as Sentry from "@sentry/nextjs";
 
-Sentry.init({
-  dsn: "https://d649b9c85c145427fcfb62cecdeaa2d9e@o4510110703216128.ingest.us.sentry.io/4510154420089472",
+// Use environment variable for DSN to support multiple environments
+const SENTRY_DSN = process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN;
+const ENVIRONMENT = process.env.NODE_ENV || 'production';
 
-  // Adjust this value in production, or use tracesSampler for greater control
-  tracesSampleRate: 1.0,
+// Only initialize Sentry if DSN is provided and not already initialized
+if (SENTRY_DSN && !Sentry.isInitialized()) {
+  Sentry.init({
+    dsn: SENTRY_DSN,
 
-  // Setting this option to true will print useful information to the console while you're setting up Sentry.
-  debug: false,
-});
+    // Set environment
+    environment: ENVIRONMENT,
+
+    // Adjust this value in production, or use tracesSampler for greater control
+    tracesSampleRate: ENVIRONMENT === 'production' ? 0.1 : 1.0,
+
+    // Setting this option to true will print useful information to the console while you're setting up Sentry.
+    debug: ENVIRONMENT === 'development',
+  });
+  
+  console.log('[Sentry] Edge initialization successful');
+} else if (!SENTRY_DSN) {
+  console.warn('[Sentry] SENTRY_DSN is not set - error tracking disabled on edge');
+}

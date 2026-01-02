@@ -167,26 +167,24 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
     
     try {
-      setConnectionState('CONNECTING');
-      
       // In a real implementation, we would connect to a real WebSocket server
-      // For now, we'll simulate a WebSocket connection
-      setTimeout(() => {
-        // Simulate successful connection
-        setConnectionState('CONNECTED');
-        reconnectAttemptsRef.current = 0;
-        
-        // Simulate some participants being online
-        setActiveParticipants({
-          'facility-001': true,
-          'advisor-001': true
-        });
-        
-        console.log('WebSocket connected');
-      }, 1000);
+      // For now, we'll use a mock WebSocket connection that connects instantly
+      setConnectionState('CONNECTED');
+      reconnectAttemptsRef.current = 0;
+      
+      // Simulate some participants being online
+      setActiveParticipants({
+        'facility-001': true,
+        'advisor-001': true
+      });
+      
+      // Only log in development
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[WebSocket Mock] Connected successfully');
+      }
       
     } catch (error) {
-      console.error('WebSocket connection error:', error);
+      console.error('[WebSocket Mock] Connection error:', error);
       setConnectionState('DISCONNECTED');
       // use ref to avoid circular dependency
       scheduleReconnectRef.current();
@@ -199,7 +197,9 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const scheduleReconnect = useCallback(() => {
     if (reconnectAttemptsRef.current >= maxReconnectAttempts) {
-      console.error('Max reconnect attempts reached');
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[WebSocket Mock] Max reconnect attempts reached');
+      }
       return;
     }
 
@@ -211,7 +211,9 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     // Calculate delay with exponential backoff
     const delay = baseReconnectDelay * Math.pow(2, reconnectAttemptsRef.current);
 
-    console.log(`Scheduling reconnect in ${delay}ms (attempt ${reconnectAttemptsRef.current + 1})`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[WebSocket Mock] Scheduling reconnect in ${delay}ms (attempt ${reconnectAttemptsRef.current + 1})`);
+    }
 
     reconnectTimeoutRef.current = setTimeout(() => {
       reconnectAttemptsRef.current++;

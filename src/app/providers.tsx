@@ -235,23 +235,43 @@ function SocketProvider({ children }: { children: React.ReactNode }) {
     // Only run in the browser
     if (typeof window === "undefined") return;
 
+    // Check if Socket.io URL is configured
+    const socketUrl = process.env["NEXT_PUBLIC_SOCKET_URL"];
+    if (!socketUrl) {
+      console.warn('[Socket.io] NEXT_PUBLIC_SOCKET_URL is not set - real-time features disabled');
+      return;
+    }
+
     // Retrieve auth token
     const token = localStorage.getItem("token");
-    if (!token) return;
+    if (!token) {
+      console.warn('[Socket.io] No auth token found - skipping connection');
+      return;
+    }
 
     // Establish socket connection
-    const socket = io(process.env["NEXT_PUBLIC_SOCKET_URL"] || "", {
+    const socket = io(socketUrl, {
       auth: { token },
       transports: ["websocket"],
       secure: true, // HIPAA compliance: ensure secure transport
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      reconnectionAttempts: 5,
     });
 
     socket.on("connect", () => {
+      console.log('[Socket.io] Connected successfully');
       setSocketState({ socket, connected: true });
     });
 
-    socket.on("disconnect", () => {
+    socket.on("disconnect", (reason) => {
+      console.log('[Socket.io] Disconnected:', reason);
       setSocketState((prev) => ({ ...prev, connected: false }));
+    });
+
+    socket.on("connect_error", (error) => {
+      console.warn('[Socket.io] Connection error:', error.message);
     });
 
     // Cleanup on unmount

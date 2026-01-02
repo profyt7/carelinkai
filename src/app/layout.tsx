@@ -174,7 +174,8 @@ export default function RootLayout({
         <meta name="msapplication-TileColor" content="#3978FC" />
         <meta name="msapplication-config" content="/browserconfig.xml" />
         
-        {/* iOS splash screens */}
+        {/* iOS splash screens - Commented out to avoid 404 errors until splash images are generated */}
+        {/* 
         <link
           rel="apple-touch-startup-image"
           href="/splash/apple-splash-2048-2732.jpg"
@@ -215,6 +216,7 @@ export default function RootLayout({
           href="/splash/apple-splash-640-1136.jpg"
           media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
         />
+        */}
       </head>
       <body className="min-h-screen bg-neutral-50 antialiased font-sans">
         {/* Abacus AI LLM Integration */}
