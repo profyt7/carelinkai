@@ -45,6 +45,9 @@ echo ""
 echo "========================================="
 echo "STEP 3: BUILD NEXT.JS APPLICATION"
 echo "========================================="
+# Increase Node.js memory limit to prevent OOM errors during build
+export NODE_OPTIONS="--max-old-space-size=4096"
+echo "NODE_OPTIONS set to: $NODE_OPTIONS"
 npm run build
 EXIT_CODE=$?
 if [ $EXIT_CODE -ne 0 ]; then
