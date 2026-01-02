@@ -8,6 +8,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { calculateAIMatchScore } from "@/lib/ai-matching";
 import { createAuditLog } from "@/lib/audit";
+import * as Sentry from "@sentry/nextjs";
 
 // Initialize Prisma client
 const prisma = new PrismaClient();
@@ -246,36 +247,54 @@ export async function GET(req: NextRequest) {
         orderBy.createdAt = "desc";
     }
     
-    // Execute the main query
+    // Execute optimized query with specific field selection to reduce memory usage
     const [homes, totalCount] = await Promise.all([
       prisma.assistedLivingHome.findMany({
         where,
         orderBy,
         skip,
         take: limit,
-        include: {
-          address: true,
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          careLevel: true,
+          priceMin: true,
+          priceMax: true,
+          capacity: true,
+          currentOccupancy: true,
+          genderRestriction: true,
+          amenities: true,
+          status: true,
+          createdAt: true,
+          address: {
+            select: {
+              street: true,
+              city: true,
+              state: true,
+              zipCode: true,
+              latitude: true,
+              longitude: true,
+            },
+          },
           photos: {
             where: {
               isPrimary: true,
             },
-            take: 1,
-          },
-          reviews: {
             select: {
-              rating: true,
+              url: true,
             },
+            take: 1,
           },
           operator: {
             select: {
               id: true,
               companyName: true,
-              user: {
-                select: {
-                  firstName: true,
-                  lastName: true,
-                },
-              },
+            },
+          },
+          _count: {
+            select: {
+              reviews: true,
             },
           },
         },
@@ -283,19 +302,40 @@ export async function GET(req: NextRequest) {
       prisma.assistedLivingHome.count({ where }),
     ]);
     
-    // Calculate average ratings
-    const homesWithRatings = homes.map(home => {
-      const ratings = home.reviews.map(review => review.rating);
-      const averageRating = ratings.length > 0
-        ? ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length
-        : null;
-      
-      return {
-        ...home,
-        averageRating,
-        reviewCount: ratings.length,
-      };
+    // Get average ratings using aggregate query (memory efficient)
+    const homeIds = homes.map(home => home.id);
+    const ratingAggregates = await prisma.review.groupBy({
+      by: ['assistedLivingHomeId'],
+      where: {
+        assistedLivingHomeId: {
+          in: homeIds,
+        },
+      },
+      _avg: {
+        rating: true,
+      },
+      _count: {
+        rating: true,
+      },
     });
+    
+    // Create a map of ratings for quick lookup
+    const ratingsMap = new Map(
+      ratingAggregates.map(agg => [
+        agg.assistedLivingHomeId,
+        {
+          averageRating: agg._avg.rating,
+          reviewCount: agg._count.rating,
+        },
+      ])
+    );
+    
+    // Merge ratings with homes
+    const homesWithRatings = homes.map(home => ({
+      ...home,
+      averageRating: ratingsMap.get(home.id)?.averageRating ?? null,
+      reviewCount: ratingsMap.get(home.id)?.reviewCount ?? 0,
+    }));
     
     // Handle geo filtering and distance calculation if needed
     let processedHomes = homesWithRatings;
@@ -336,13 +376,34 @@ export async function GET(req: NextRequest) {
       try {
         const residentProfile = JSON.parse(params.residentProfile);
         
-        // Calculate match scores for each home
-        const homesWithMatchScores = await Promise.all(
-          processedHomes.map(async (home) => {
-            const matchScore = await calculateAIMatchScore(home, residentProfile);
-            return { ...home, aiMatchScore: matchScore };
-          })
-        );
+        // Calculate match scores for each home with batching to prevent memory issues
+        const batchSize = 10;
+        const homesWithMatchScores: any[] = [];
+        
+        for (let i = 0; i < processedHomes.length; i += batchSize) {
+          const batch = processedHomes.slice(i, i + batchSize);
+          const batchResults = await Promise.all(
+            batch.map(async (home) => {
+              try {
+                const matchScore = await calculateAIMatchScore(home, residentProfile);
+                return { ...home, aiMatchScore: matchScore };
+              } catch (error) {
+                console.error(`Error calculating match score for home ${home.id}:`, error);
+                Sentry.captureException(error, {
+                  tags: {
+                    api: 'homes-search',
+                    operation: 'ai-matching',
+                  },
+                  extra: {
+                    homeId: home.id,
+                  },
+                });
+                return { ...home, aiMatchScore: null };
+              }
+            })
+          );
+          homesWithMatchScores.push(...batchResults);
+        }
         
         // Sort by match score if requested
         if (params.sortBy === "match") {
@@ -356,6 +417,12 @@ export async function GET(req: NextRequest) {
         processedHomes = homesWithMatchScores;
       } catch (error) {
         console.error("Error parsing resident profile or calculating match scores:", error);
+        Sentry.captureException(error, {
+          tags: {
+            api: 'homes-search',
+            operation: 'ai-matching-parse',
+          },
+        });
         // Continue without match scoring if there's an error
       }
     }
@@ -436,6 +503,18 @@ export async function GET(req: NextRequest) {
     
   } catch (error) {
     console.error("Error in homes search API:", error);
+    
+    // Capture error in Sentry for monitoring
+    Sentry.captureException(error, {
+      tags: {
+        api: 'homes-search',
+        endpoint: '/api/homes/search',
+      },
+      extra: {
+        url: req.url,
+        method: req.method,
+      },
+    });
     
     // Return error response
     return NextResponse.json({

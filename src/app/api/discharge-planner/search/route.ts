@@ -11,6 +11,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, requireRole } from "@/lib/auth-utils";
 import { UserRole } from "@prisma/client";
+import * as Sentry from "@sentry/nextjs";
 
 const searchRequestSchema = z.object({
   query: z.string().min(10, "Query must be at least 10 characters"),
@@ -201,13 +202,36 @@ Respond with raw JSON only. Do not include code blocks, markdown, or any other f
       ];
     }
 
-    // Query homes
+    // Query homes with optimized field selection to reduce memory usage
     const homes = await prisma.assistedLivingHome.findMany({
       where: whereClause,
-      include: {
-        address: true,
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        careLevel: true,
+        amenities: true,
+        priceMin: true,
+        priceMax: true,
+        capacity: true,
+        currentOccupancy: true,
+        genderRestriction: true,
+        status: true,
+        address: {
+          select: {
+            street: true,
+            city: true,
+            state: true,
+            zipCode: true,
+            latitude: true,
+            longitude: true,
+          },
+        },
         photos: {
           where: { isPrimary: true },
+          select: {
+            url: true,
+          },
           take: 1,
         },
         operator: {
@@ -427,6 +451,18 @@ Respond with raw JSON only. Do not include code blocks, markdown, or any other f
     );
   } catch (error: any) {
     console.error("🏥 [DISCHARGE-PLANNER] ❌ Error:", error);
+    
+    // Capture error in Sentry for monitoring
+    Sentry.captureException(error, {
+      tags: {
+        api: 'discharge-planner-search',
+        endpoint: '/api/discharge-planner/search',
+      },
+      extra: {
+        method: request.method,
+      },
+    });
+    
     return NextResponse?.json?.(
       { error: error?.message ?? "Failed to process search request" },
       { status: 500 }
