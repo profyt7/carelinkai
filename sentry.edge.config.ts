@@ -30,7 +30,8 @@ if (SENTRY_DSN && !Sentry.isInitialized()) {
       environment: ENVIRONMENT,
 
       // Adjust this value in production, or use tracesSampler for greater control
-      tracesSampleRate: ENVIRONMENT === 'production' ? 0.1 : 1.0,
+      // TEMPORARY: Set to 100% for debugging - TODO: revert to 0.1 after debugging
+      tracesSampleRate: 1.0,
 
       // Enable debug mode only in development
       // TEMPORARY: Enabled in production for troubleshooting - TODO: revert after debugging
@@ -38,6 +39,52 @@ if (SENTRY_DSN && !Sentry.isInitialized()) {
       
       // Enable sending logs to Sentry
       enableLogs: true,
+      
+      // Enhanced debug logging
+      beforeSend(event, hint) {
+        console.log('[Sentry beforeSend] ==================== EDGE EVENT BEING SENT ====================');
+        console.log('[Sentry beforeSend] Event ID:', event.event_id);
+        console.log('[Sentry beforeSend] Event Type:', event.type);
+        console.log('[Sentry beforeSend] Level:', event.level);
+        console.log('[Sentry beforeSend] Message:', event.message);
+        console.log('[Sentry beforeSend] Timestamp:', event.timestamp);
+        console.log('[Sentry beforeSend] Environment:', event.environment);
+        console.log('[Sentry beforeSend] Platform:', event.platform);
+        
+        if (event.exception) {
+          console.log('[Sentry beforeSend] Exception:', {
+            values: event.exception.values?.map(v => ({
+              type: v.type,
+              value: v.value,
+              mechanism: v.mechanism,
+            })),
+          });
+        }
+        
+        if (event.tags) {
+          console.log('[Sentry beforeSend] Tags:', event.tags);
+        }
+        
+        if (event.extra) {
+          console.log('[Sentry beforeSend] Extra Data:', event.extra);
+        }
+        
+        const error = hint?.originalException;
+        
+        // Don't send connection timeout errors to Sentry (they clutter the dashboard)
+        if (error && typeof error === 'object' && 'code' in error) {
+          const code = (error as any).code;
+          if (code === 'ETIMEDOUT' || code === 'ENETUNREACH') {
+            console.log('[Sentry beforeSend] ❌ Suppressing timeout error:', code);
+            console.log('[Sentry beforeSend] ================================================================');
+            return null;
+          }
+        }
+        
+        console.log('[Sentry beforeSend] ✅ Event will be sent to Sentry');
+        console.log('[Sentry beforeSend] ================================================================');
+        return event;
+      },
     });
     
     console.log('[Sentry] ✅ Edge initialization successful');

@@ -30,7 +30,8 @@ if (SENTRY_DSN) {
       environment: ENVIRONMENT,
 
       // Adjust this value in production, or use tracesSampler for greater control
-      tracesSampleRate: ENVIRONMENT === 'production' ? 0.1 : 1.0,
+      // TEMPORARY: Set to 100% for debugging - TODO: revert to 0.1 after debugging
+      tracesSampleRate: 1.0,
 
       // Enable debug mode only in development
       // TEMPORARY: Enabled in production for troubleshooting - TODO: revert after debugging
@@ -44,7 +45,8 @@ if (SENTRY_DSN) {
       
       // Capture 100% of transactions for performance monitoring in development
       // In production, adjust this value
-      profilesSampleRate: ENVIRONMENT === 'production' ? 0.1 : 1.0,
+      // TEMPORARY: Set to 100% for debugging - TODO: revert to 0.1 after debugging
+      profilesSampleRate: 1.0,
       
       // Add integrations for node profiling
       integrations: [
@@ -53,14 +55,41 @@ if (SENTRY_DSN) {
       
       // Filter out certain errors
       beforeSend(event, hint) {
-        console.log('[Sentry Debug] Server beforeSend called - event will be sent to Sentry');
+        console.log('[Sentry beforeSend] ==================== EVENT BEING SENT ====================');
+        console.log('[Sentry beforeSend] Event ID:', event.event_id);
+        console.log('[Sentry beforeSend] Event Type:', event.type);
+        console.log('[Sentry beforeSend] Level:', event.level);
+        console.log('[Sentry beforeSend] Message:', event.message);
+        console.log('[Sentry beforeSend] Timestamp:', event.timestamp);
+        console.log('[Sentry beforeSend] Environment:', event.environment);
+        console.log('[Sentry beforeSend] Platform:', event.platform);
+        
+        if (event.exception) {
+          console.log('[Sentry beforeSend] Exception:', {
+            values: event.exception.values?.map(v => ({
+              type: v.type,
+              value: v.value,
+              mechanism: v.mechanism,
+            })),
+          });
+        }
+        
+        if (event.tags) {
+          console.log('[Sentry beforeSend] Tags:', event.tags);
+        }
+        
+        if (event.extra) {
+          console.log('[Sentry beforeSend] Extra Data:', event.extra);
+        }
+        
         const error = hint?.originalException;
         
         // Ignore Prisma client initialization errors in development
         if (ENVIRONMENT === 'development' && error && typeof error === 'object' && 'message' in error) {
           const message = (error as any).message;
           if (message?.includes('PrismaClient')) {
-            console.log('[Sentry Debug] Suppressing Prisma error');
+            console.log('[Sentry beforeSend] ❌ Suppressing Prisma error');
+            console.log('[Sentry beforeSend] ================================================================');
             return null;
           }
         }
@@ -69,11 +98,14 @@ if (SENTRY_DSN) {
         if (error && typeof error === 'object' && 'code' in error) {
           const code = (error as any).code;
           if (code === 'ETIMEDOUT' || code === 'ENETUNREACH') {
-            console.log('[Sentry Debug] Suppressing timeout error:', code);
+            console.log('[Sentry beforeSend] ❌ Suppressing timeout error:', code);
+            console.log('[Sentry beforeSend] ================================================================');
             return null;
           }
         }
         
+        console.log('[Sentry beforeSend] ✅ Event will be sent to Sentry');
+        console.log('[Sentry beforeSend] ================================================================');
         return event;
       },
     });

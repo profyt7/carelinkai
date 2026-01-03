@@ -12,6 +12,10 @@ import { NextRequest, NextResponse } from 'next/server';
  * 3. Error should appear in Sentry dashboard within a few minutes
  */
 export async function GET(request: NextRequest) {
+  // Generate unique test run ID to prevent caching
+  const testRunId = `client-test-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+  const timestamp = new Date().toISOString();
+  
   const html = `
 <!DOCTYPE html>
 <html lang="en">
@@ -179,6 +183,10 @@ export async function GET(request: NextRequest) {
   return new NextResponse(html, {
     headers: {
       'Content-Type': 'text/html',
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+      'X-Test-Run-ID': testRunId,
     },
   });
 }
