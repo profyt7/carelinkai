@@ -1,4 +1,5 @@
 import * as Sentry from "@sentry/nextjs";
+import { nodeProfilingIntegration } from "@sentry/profiling-node";
 
 // Use environment variable for DSN to support multiple environments
 const SENTRY_DSN = process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN;
@@ -35,12 +36,20 @@ if (SENTRY_DSN) {
       // TEMPORARY: Enabled in production for troubleshooting - TODO: revert after debugging
       debug: true,
       
+      // Enable sending logs to Sentry
+      enableLogs: true,
+      
       // Enable performance monitoring
       enableTracing: true,
       
       // Capture 100% of transactions for performance monitoring in development
       // In production, adjust this value
       profilesSampleRate: ENVIRONMENT === 'production' ? 0.1 : 1.0,
+      
+      // Add integrations for node profiling
+      integrations: [
+        nodeProfilingIntegration(),
+      ],
       
       // Filter out certain errors
       beforeSend(event, hint) {

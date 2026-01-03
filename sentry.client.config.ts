@@ -48,14 +48,32 @@ if (isBrowser && SENTRY_DSN) {
         // in development and sample at a lower rate in production
         replaysSessionSampleRate: ENVIRONMENT === 'production' ? 0.1 : 0.1,
 
+        // Enable sending logs to Sentry
+        enableLogs: true,
+
         // You can remove this option if you're not planning to use the Sentry Session Replay feature:
         integrations: [
+          // Browser tracing for performance monitoring
+          Sentry.browserTracingIntegration(),
+          
+          // Browser profiling for performance insights
+          Sentry.browserProfilingIntegration(),
+          
+          // Console logging integration to capture console.log/warn/error
+          Sentry.consoleLoggingIntegration({ 
+            levels: ["log", "warn", "error"] 
+          }),
+          
+          // Session replay for debugging
           Sentry.replayIntegration({
             // Additional Replay configuration goes in here, for example:
             maskAllText: true,
             blockAllMedia: true,
           }),
         ],
+        
+        // Profile session sample rate for browser profiling
+        profilesSampleRate: ENVIRONMENT === 'production' ? 0.1 : 1.0,
         
         // Suppress connection timeout errors in console
         beforeSend(event, hint) {

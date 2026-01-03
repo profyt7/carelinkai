@@ -46,6 +46,10 @@ const nextConfig = {
             key: 'Expires',
             value: '0',
           },
+          {
+            key: 'Document-Policy',
+            value: 'js-profiling',
+          },
         ],
       },
     ];

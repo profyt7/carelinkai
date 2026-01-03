@@ -19,8 +19,8 @@ import { NextRequest, NextResponse } from 'next/server';
 
 // Configure allowed DSN (from environment)
 const SENTRY_DSN = process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN;
-const SENTRY_HOST = 'o4510110703216128.ingest.us.sentry.io';
-const SENTRY_PROJECT_ID = '4510154442089472';
+const SENTRY_HOST = 'o4510119703216128.ingest.us.sentry.io';
+const SENTRY_PROJECT_ID = '4510154426089472';
 
 export async function POST(request: NextRequest) {
   try {
@@ -86,11 +86,25 @@ export async function POST(request: NextRequest) {
     
     console.log('[Sentry Tunnel] Forwarding to:', sentryIngestUrl);
     
-    // Forward the envelope to Sentry
+    // Extract public key from DSN for authentication
+    // DSN format: https://<public_key>@<host>/<project_id>
+    const publicKey = SENTRY_DSN.split('@')[0].split('//')[1];
+    
+    // Build X-Sentry-Auth header
+    const sentryAuth = [
+      `Sentry sentry_version=7`,
+      `sentry_key=${publicKey}`,
+      `sentry_client=sentry.javascript.nextjs/10.32.1`,
+    ].join(', ');
+    
+    console.log('[Sentry Tunnel] Using public key:', publicKey);
+    
+    // Forward the envelope to Sentry with proper authentication
     const sentryResponse = await fetch(sentryIngestUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-sentry-envelope',
+        'X-Sentry-Auth': sentryAuth,
       },
       body: envelope,
     });

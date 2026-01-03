@@ -35,6 +35,9 @@ if (SENTRY_DSN && !Sentry.isInitialized()) {
       // Enable debug mode only in development
       // TEMPORARY: Enabled in production for troubleshooting - TODO: revert after debugging
       debug: true,
+      
+      // Enable sending logs to Sentry
+      enableLogs: true,
     });
     
     console.log('[Sentry] ✅ Edge initialization successful');
