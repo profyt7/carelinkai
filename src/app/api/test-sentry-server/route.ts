@@ -12,6 +12,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 
+// Force dynamic rendering - never cache this route
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(request: NextRequest) {
   // Generate unique test run ID to prevent caching
   const testRunId = `test-${Date.now()}-${Math.random().toString(36).substring(7)}`;
