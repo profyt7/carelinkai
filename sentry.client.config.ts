@@ -8,10 +8,23 @@ const ENVIRONMENT = process.env.NODE_ENV || 'production';
 // Check if we're in a browser environment
 const isBrowser = typeof window !== 'undefined';
 
+// ====== COMPREHENSIVE DEBUG LOGGING ======
+console.log('[Sentry Debug] ==================== CLIENT CONFIG ====================');
+console.log('[Sentry Debug] Browser Environment:', isBrowser);
+console.log('[Sentry Debug] NEXT_PUBLIC_SENTRY_DSN exists:', !!SENTRY_DSN);
+console.log('[Sentry Debug] NEXT_PUBLIC_SENTRY_DSN length:', SENTRY_DSN ? SENTRY_DSN.length : 0);
+console.log('[Sentry Debug] NODE_ENV:', ENVIRONMENT);
+console.log('[Sentry Debug] Sentry already initialized:', isBrowser ? Sentry.isInitialized() : 'N/A (not in browser)');
+console.log('[Sentry Debug] Window object exists:', typeof window !== 'undefined');
+console.log('[Sentry Debug] Document object exists:', typeof document !== 'undefined');
+console.log('[Sentry Debug] ================================================================');
+
 if (isBrowser && SENTRY_DSN) {
   try {
     // Only initialize if not already initialized
     if (!Sentry.isInitialized()) {
+      console.log('[Sentry Debug] Attempting to initialize client-side Sentry...');
+      
       Sentry.init({
         dsn: SENTRY_DSN,
 
@@ -21,8 +34,8 @@ if (isBrowser && SENTRY_DSN) {
         // Adjust this value in production, or use tracesSampler for greater control
         tracesSampleRate: ENVIRONMENT === 'production' ? 0.1 : 1.0,
 
-        // Setting this option to true will print useful information to the console while you're setting up Sentry.
-        debug: ENVIRONMENT === 'development',
+        // TEMPORARY: Enable debug mode even in production to see what's happening
+        debug: true, // Force debug mode for troubleshooting
 
         replaysOnErrorSampleRate: 1.0,
 
@@ -41,12 +54,14 @@ if (isBrowser && SENTRY_DSN) {
         
         // Suppress connection timeout errors in console
         beforeSend(event, hint) {
+          console.log('[Sentry Debug] beforeSend called - event will be sent to Sentry');
           const error = hint?.originalException;
           
           // Don't send connection timeout errors to Sentry (they clutter the dashboard)
           if (error && typeof error === 'object' && 'code' in error) {
             const code = (error as any).code;
             if (code === 'ETIMEDOUT' || code === 'ENETUNREACH') {
+              console.log('[Sentry Debug] Suppressing timeout error:', code);
               return null;
             }
           }
@@ -55,15 +70,21 @@ if (isBrowser && SENTRY_DSN) {
         },
       });
       
-      console.log('[Sentry] Client-side initialization successful');
+      console.log('[Sentry] ✅ Client-side initialization successful');
+      console.log('[Sentry Debug] Sentry.isInitialized():', Sentry.isInitialized());
     } else {
       console.log('[Sentry] Client already initialized');
     }
   } catch (error) {
-    console.error('[Sentry] Client initialization failed:', error);
+    console.error('[Sentry] ❌ Client initialization failed:', error);
+    console.error('[Sentry Debug] Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+    });
   }
 } else if (!isBrowser) {
-  console.log('[Sentry] Not running in browser environment');
+  console.log('[Sentry] ⚠️ Not running in browser environment (this is normal during SSR)');
 } else if (!SENTRY_DSN) {
-  console.warn('[Sentry] NEXT_PUBLIC_SENTRY_DSN is not set - error tracking disabled on client');
+  console.error('[Sentry] ❌ CRITICAL: NEXT_PUBLIC_SENTRY_DSN is not set - error tracking disabled on client');
+  console.error('[Sentry Debug] This MUST be set in Render environment variables!');
 }
