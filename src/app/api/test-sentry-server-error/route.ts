@@ -38,6 +38,9 @@ export async function GET(request: NextRequest) {
     // Manually capture the error to ensure it's sent to Sentry
     Sentry.captureException(error);
 
+    // Force Sentry to send events immediately (don't wait for buffer)
+    await Sentry.flush(2000); // Wait up to 2 seconds for events to be sent
+
     // Return error response
     return NextResponse.json(
       {
