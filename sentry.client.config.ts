@@ -27,6 +27,10 @@ if (isBrowser && SENTRY_DSN) {
       
       Sentry.init({
         dsn: SENTRY_DSN,
+        
+        // Use tunnel to proxy events through our server
+        // This bypasses network restrictions, ad blockers, and firewalls
+        tunnel: '/api/sentry-tunnel',
 
         // Set environment
         environment: ENVIRONMENT,
