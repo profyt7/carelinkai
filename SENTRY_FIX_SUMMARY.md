@@ -39,18 +39,36 @@
 - Prevents `ETIMEDOUT` and `ENETUNREACH` errors from being sent to Sentry
 - These network errors are not actionable and clutter the dashboard
 
-### 3. Created Test Endpoints
+### 3. Disabled Tunnel Route (`next.config.js`)
+
+**Changes:**
+- Commented out `tunnelRoute: '/monitoring'` option
+- The tunnel route was causing 404 errors
+- Direct communication with Sentry is more reliable
+- Tunnel route is optional and mainly used to bypass ad-blockers
+
+**Reason:**
+- The tunnel route requires additional server configuration
+- It was returning 404 and blocking error transmission
+- Direct DSN connection is simpler and more reliable
+
+### 4. Created Test Endpoints
 
 #### Server-Side Test: `/api/test-sentry-server-error`
 - Throws intentional server-side error
 - Adds context and breadcrumbs for debugging
 - Returns JSON with instructions to check Sentry dashboard
 
-#### Client-Side Test: `/api/test-sentry-client-error`
-- Returns HTML page with interactive test buttons
-- Throws client-side JavaScript errors
-- Can send test messages to Sentry
+#### Client-Side Test 1: `/test-sentry-client` (Recommended)
+- Full Next.js page with Sentry loaded
+- Interactive test buttons for errors and messages
+- Shows Sentry initialization status
 - Provides visual feedback and instructions
+
+#### Client-Side Test 2: `/api/test-sentry-client-error`
+- Standalone HTML page (Sentry may not be loaded)
+- Basic test functionality
+- Use Test 1 for proper testing
 
 ## 🧪 Testing Instructions
 
@@ -72,21 +90,25 @@
 
 ### Test Client-Side Error Tracking
 
-1. **Visit the client test page:**
+1. **Visit the client test page (Recommended):**
    ```
-   https://getcarelinkai.com/api/test-sentry-client-error
+   https://getcarelinkai.com/test-sentry-client
    ```
 
-2. **Click "Throw Test Error" button**
+2. **Verify Sentry Status:**
+   - Page should show "✅ Sentry Status: Loaded and Ready"
+   - If not loaded, there's a configuration issue
+
+3. **Click "Throw Test Error" button**
    - This will throw an error in the browser
-   - You should see a success message
+   - You should see a green success message
 
-3. **Check Browser Console:**
+4. **Check Browser Console:**
    - Open browser DevTools (F12)
-   - Look for Sentry initialization message
-   - Should see: "✅ Sentry is loaded and ready"
+   - Look for "Test error captured by Sentry:" message
+   - Should see the error details logged
 
-4. **Check Sentry Dashboard:**
+5. **Check Sentry Dashboard:**
    - Go to: https://sentry.io/organizations/carelinkai/issues/
    - Within 1-5 minutes, you should see the error appear
    - Error message will start with "🧪 TEST ERROR: Sentry client-side monitoring test"
@@ -159,8 +181,10 @@ Both client and server configs now filter out:
 
 1. `sentry.client.config.ts` - Fixed client-side initialization
 2. `sentry.server.config.ts` - Added error filtering
-3. `src/app/api/test-sentry-server-error/route.ts` - New test endpoint
-4. `src/app/api/test-sentry-client-error/route.ts` - New test endpoint
+3. `next.config.js` - Disabled problematic tunnel route
+4. `src/app/api/test-sentry-server-error/route.ts` - New server test endpoint
+5. `src/app/api/test-sentry-client-error/route.ts` - New client test endpoint (standalone HTML)
+6. `src/app/test-sentry-client/page.tsx` - New client test page (Next.js page)
 
 ## 🎉 Success Criteria
 

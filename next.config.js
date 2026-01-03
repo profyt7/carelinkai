@@ -72,7 +72,8 @@ const sentryWebpackPluginOptions = {
   // Route browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers.
   // This can increase your server load as well as your hosting bill.
   // Note: Check that the Sentry DSN in `.env.local` matches the url in `package.json`.
-  tunnelRoute: '/monitoring',
+  // DISABLED: Tunnel route can cause 404 errors and is optional
+  // tunnelRoute: '/monitoring',
 
   // Hides source maps from generated client bundles
   hideSourceMaps: true,
