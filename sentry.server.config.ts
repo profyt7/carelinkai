@@ -36,6 +36,14 @@ if (SENTRY_DSN) {
         }
       }
       
+      // Don't send connection timeout errors to Sentry (they clutter the dashboard)
+      if (error && typeof error === 'object' && 'code' in error) {
+        const code = (error as any).code;
+        if (code === 'ETIMEDOUT' || code === 'ENETUNREACH') {
+          return null;
+        }
+      }
+      
       return event;
     },
   });
