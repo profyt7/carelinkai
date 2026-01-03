@@ -29,7 +29,8 @@ if (SENTRY_DSN && !Sentry.isInitialized()) {
       tracesSampleRate: ENVIRONMENT === 'production' ? 0.1 : 1.0,
 
       // Enable debug mode only in development
-      debug: ENVIRONMENT === 'development',
+      // TEMPORARY: Enabled in production for troubleshooting - TODO: revert after debugging
+      debug: true,
     });
     
     console.log('[Sentry] ✅ Edge initialization successful');
