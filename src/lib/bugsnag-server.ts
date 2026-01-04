@@ -1,8 +1,9 @@
-import Bugsnag from '@bugsnag/js';
+import Bugsnag from '@bugsnag/node';
+import type { Client } from '@bugsnag/node';
 
-let bugsnagServer: typeof Bugsnag | null = null;
+let bugsnagServer: Client | null = null;
 
-export function initializeBugsnagServer() {
+export function initializeBugsnagServer(): Client | null {
   // Only run on server
   if (typeof window !== 'undefined') {
     return null;
@@ -60,7 +61,7 @@ export function initializeBugsnagServer() {
   }
 }
 
-export function getBugsnagServer() {
+export function getBugsnagServer(): Client | null {
   return bugsnagServer || initializeBugsnagServer();
 }
 
