@@ -3,7 +3,7 @@ export const revalidate = 0;
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireOperatorOrAdmin } from '@/lib/rbac';
-import * as Sentry from '@sentry/nextjs';
+import { notifyBugsnagServer } from '@/lib/bugsnag-server';
 import { createAuditLogFromRequest } from '@/lib/audit';
 
 export async function DELETE(req: Request, { params }: { params: { id: string; docId: string } }) {

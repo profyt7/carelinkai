@@ -26,8 +26,8 @@ import CookieConsent from "../components/analytics/CookieConsent";
 import ErrorBoundary from "../components/ErrorBoundary";
 // Onboarding modal
 import OnboardingModal from "../components/onboarding/OnboardingModal";
-// Sentry client initialization
-import "../lib/sentry.client";
+// Bugsnag error tracking
+import BugsnagProvider from "../components/BugsnagProvider";
 
 // Load Inter font for headers (CareLinkAI branding)
 const inter = Inter({
@@ -319,7 +319,8 @@ export default function RootLayout({
         
         <WebSocketProvider>
           <Providers>
-            <ErrorBoundary>
+            <BugsnagProvider>
+              <ErrorBoundary>
               {/* ------ PWA Manager wraps the entire UI for install prompts, offline banners, etc. ------ */}
               <PWAManager>
                 {/* Main layout structure inspired by QuickBooks design */}
@@ -361,7 +362,8 @@ export default function RootLayout({
                 {/* User Onboarding Modal */}
                 <OnboardingModal />
               </PWAManager>
-            </ErrorBoundary>
+              </ErrorBoundary>
+            </BugsnagProvider>
           </Providers>
         </WebSocketProvider>
         

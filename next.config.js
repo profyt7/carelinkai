@@ -1,5 +1,3 @@
-const { withSentryConfig } = require('@sentry/nextjs');
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Force new build ID on each deployment for cache busting
@@ -12,7 +10,7 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   
-  // Enable instrumentation for Sentry and other monitoring tools
+  // Enable instrumentation for monitoring tools
   experimental: {
     instrumentationHook: true,
   },
@@ -56,48 +54,4 @@ const nextConfig = {
   },
 };
 
-// Sentry configuration options
-const sentryWebpackPluginOptions = {
-  // For all available options, see:
-  // https://github.com/getsentry/sentry-webpack-plugin#options
-
-  org: 'carelinkai',
-  project: 'carelinkai-nextjs',
-
-  // Only print logs for uploading source maps in CI
-  silent: !process.env.CI,
-
-  // For all available options, see:
-  // https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/
-
-  // Upload a larger set of source maps for prettier stack traces (increases build time)
-  widenClientFileUpload: true,
-
-  // Route browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers.
-  // This can increase your server load as well as your hosting bill.
-  // Note: Check that the Sentry DSN in `.env.local` matches the url in `package.json`.
-  // DISABLED: Tunnel route can cause 404 errors and is optional
-  // tunnelRoute: '/monitoring',
-
-  // Hides source maps from generated client bundles
-  hideSourceMaps: true,
-
-  // Webpack-specific options (updated to fix deprecation warnings)
-  webpack: {
-    // Automatically tree-shake Sentry logger statements to reduce bundle size
-    treeshake: {
-      removeDebugLogging: true,
-    },
-
-    // Automatically annotate React components to show their full name in breadcrumbs and session replay
-    reactComponentAnnotation: {
-      enabled: true,
-    },
-
-    // Enables automatic instrumentation of Vercel Cron Monitors
-    automaticVercelMonitors: true,
-  },
-};
-
-// Make sure adding Sentry options is the last code to run before exporting
-module.exports = withSentryConfig(nextConfig, sentryWebpackPluginOptions);
+module.exports = nextConfig;

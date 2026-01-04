@@ -11,7 +11,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, requireRole } from "@/lib/auth-utils";
 import { UserRole } from "@prisma/client";
-import * as Sentry from "@sentry/nextjs";
+import { notifyBugsnagServer } from "@/lib/bugsnag-server";
 
 const searchRequestSchema = z.object({
   query: z.string().min(10, "Query must be at least 10 characters"),
@@ -453,7 +453,7 @@ Respond with raw JSON only. Do not include code blocks, markdown, or any other f
     console.error("🏥 [DISCHARGE-PLANNER] ❌ Error:", error);
     
     // Capture error in Sentry for monitoring
-    Sentry.captureException(error, {
+    notifyBugsnagServer(error as Error, {
       tags: {
         api: 'discharge-planner-search',
         endpoint: '/api/discharge-planner/search',

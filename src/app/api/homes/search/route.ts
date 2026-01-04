@@ -8,7 +8,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { calculateAIMatchScore } from "@/lib/ai-matching";
 import { createAuditLog } from "@/lib/audit";
-import * as Sentry from "@sentry/nextjs";
+import { notifyBugsnagServer } from "@/lib/bugsnag-server";
 
 // Initialize Prisma client
 const prisma = new PrismaClient();
@@ -389,7 +389,7 @@ export async function GET(req: NextRequest) {
                 return { ...home, aiMatchScore: matchScore };
               } catch (error) {
                 console.error(`Error calculating match score for home ${home.id}:`, error);
-                Sentry.captureException(error, {
+                notifyBugsnagServer(error as Error, {
                   tags: {
                     api: 'homes-search',
                     operation: 'ai-matching',
@@ -417,7 +417,7 @@ export async function GET(req: NextRequest) {
         processedHomes = homesWithMatchScores;
       } catch (error) {
         console.error("Error parsing resident profile or calculating match scores:", error);
-        Sentry.captureException(error, {
+        notifyBugsnagServer(error as Error, {
           tags: {
             api: 'homes-search',
             operation: 'ai-matching-parse',
@@ -505,7 +505,7 @@ export async function GET(req: NextRequest) {
     console.error("Error in homes search API:", error);
     
     // Capture error in Sentry for monitoring
-    Sentry.captureException(error, {
+    notifyBugsnagServer(error as Error, {
       tags: {
         api: 'homes-search',
         endpoint: '/api/homes/search',

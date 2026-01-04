@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { requireOperatorOrAdmin } from '@/lib/rbac';
-import * as Sentry from '@sentry/nextjs';
+import { notifyBugsnagServer } from '@/lib/bugsnag-server';
 import { createAuditLogFromRequest } from '@/lib/audit';
 
 const CreateDocSchema = z.object({

@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { requireOperatorOrAdmin } from '@/lib/rbac';
 import { prisma } from '@/lib/prisma';
 import { createAuditLogFromRequest } from '@/lib/audit';
-import * as Sentry from '@sentry/nextjs';
+import { notifyBugsnagServer } from '@/lib/bugsnag-server';
 
 // Assumptions:
 // - Operator/Admin can read/update resident contacts they have access to via home/operator scope.

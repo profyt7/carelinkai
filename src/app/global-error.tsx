@@ -1,6 +1,6 @@
 "use client";
 
-import { ErrorBoundary } from "@sentry/nextjs";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 export default function GlobalError({ children }: { children: React.ReactNode }) {
   return (
