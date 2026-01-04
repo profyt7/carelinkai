@@ -24,15 +24,20 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Log error to Sentry
-    if (typeof window !== 'undefined' && (window as any).Sentry) {
-      (window as any).Sentry.captureException(error, {
-        contexts: {
-          react: {
-            componentStack: errorInfo.componentStack,
-          },
-        },
-      });
+    // Log error to Bugsnag
+    if (typeof window !== 'undefined') {
+      try {
+        // Dynamically import Bugsnag client to avoid SSR issues
+        import('@/lib/bugsnag-client').then(({ notifyBugsnag }) => {
+          notifyBugsnag(error, {
+            react: {
+              componentStack: errorInfo.componentStack,
+            },
+          });
+        });
+      } catch (bugsnagError) {
+        console.error('Failed to notify Bugsnag:', bugsnagError);
+      }
     }
     
     console.error('ErrorBoundary caught an error:', error, errorInfo);

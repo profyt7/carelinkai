@@ -1,27 +1,8 @@
-// This file configures the initialization of Sentry on the browser.
+// This file configures the initialization of Bugsnag on the browser.
 // The config you add here will be used whenever a user loads a page in their browser.
-import * as Sentry from '@sentry/nextjs';
+import { initializeBugsnagClient } from '@/lib/bugsnag-client';
 
-Sentry.init({
-  dsn: process.env['NEXT_PUBLIC_SENTRY_DSN'] || process.env['SENTRY_DSN'] || '',
-  tracesSampleRate: Number(process.env['NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE'] || process.env['SENTRY_TRACES_SAMPLE_RATE'] || 0.1),
-  environment: process.env['NEXT_PUBLIC_SENTRY_ENVIRONMENT'] || process.env.NODE_ENV,
-  release: (() => {
-    const version = process.env['NEXT_PUBLIC_APP_VERSION'] || process.env['npm_package_version'];
-    const sha = process.env['NEXT_PUBLIC_COMMIT_SHA'];
-    if (sha) return `${version || '0.0.0'}@${String(sha).slice(0, 7)}`;
-    return version ? `v${version}` : undefined;
-  })(),
-  replaysSessionSampleRate: 0.0,
-  replaysOnErrorSampleRate: 0.0,
-  beforeSend(event) {
-    // Scrub potential PII
-    if (event.request) {
-      delete (event.request as any).cookies;
-      delete (event.request as any).headers;
-      delete (event.request as any).data;
-    }
-    return event;
-  },
-});
-export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
+// Initialize Bugsnag client on page load
+if (typeof window !== 'undefined') {
+  initializeBugsnagClient();
+}
