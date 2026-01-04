@@ -6,13 +6,14 @@
  */
 
 export async function register() {
-  // Only run on server-side
+  // Initialize Bugsnag for server-side error tracking
   if (process.env.NEXT_RUNTIME === 'nodejs') {
-    await import('../sentry.server.config');
+    // Import and initialize Bugsnag server
+    const { initializeBugsnagServer } = await import('./lib/bugsnag-server');
+    initializeBugsnagServer();
+    console.log('✅ Bugsnag server initialized via instrumentation.ts');
   }
   
-  // Only run on Edge runtime
-  if (process.env.NEXT_RUNTIME === 'edge') {
-    await import('../sentry.edge.config');
-  }
+  // Note: Edge runtime support can be added later if needed
+  // For now, we focus on Node.js runtime for server-side tracking
 }
