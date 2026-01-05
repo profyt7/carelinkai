@@ -57,6 +57,10 @@ export async function GET(request: NextRequest) {
         { description: { contains: search, mode: 'insensitive' } },
         { resourceId: { contains: search, mode: 'insensitive' } },
         { ipAddress: { contains: search, mode: 'insensitive' } },
+        // Search by user name and email
+        { user: { firstName: { contains: search, mode: 'insensitive' } } },
+        { user: { lastName: { contains: search, mode: 'insensitive' } } },
+        { user: { email: { contains: search, mode: 'insensitive' } } },
       ];
     }
 
