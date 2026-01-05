@@ -1,4 +1,4 @@
-import Bugsnag from '@bugsnag/js';
+import Bugsnag from '@bugsnag/node';
 
 let bugsnagServer: typeof Bugsnag | null = null;
 
@@ -30,6 +30,12 @@ export function initializeBugsnagServer() {
       
       // Server-specific configuration
       onError: (event) => {
+        // Ensure we have a valid error object
+        if (!event.errors || event.errors.length === 0) {
+          console.warn('Bugsnag received event with no errors');
+          return false;
+        }
+        
         // Add server-specific metadata
         event.addMetadata('server', {
           platform: 'node',
@@ -64,17 +70,29 @@ export function getBugsnagServer() {
 }
 
 // Export a method to manually notify Bugsnag from server
-export function notifyBugsnagServer(error: Error, metadata?: Record<string, any>) {
+export function notifyBugsnagServer(error: Error | unknown, metadata?: Record<string, any>) {
   const server = getBugsnagServer();
   
+  // Ensure we have a proper Error object
+  const errorObj = error instanceof Error 
+    ? error 
+    : new Error(String(error || 'Unknown error'));
+  
   if (server) {
-    server.notify(error, (event) => {
+    server.notify(errorObj, (event) => {
       if (metadata) {
         event.addMetadata('custom', metadata);
       }
+      // If the original error wasn't an Error instance, add that info
+      if (!(error instanceof Error)) {
+        event.addMetadata('debug', {
+          originalErrorType: typeof error,
+          originalErrorValue: error,
+        });
+      }
     });
   } else {
-    console.error('Bugsnag server not initialized. Error:', error, metadata);
+    console.error('Bugsnag server not initialized. Error:', errorObj, metadata);
   }
 }
 
@@ -95,14 +113,20 @@ export function withBugsnagServerError<T>(
     try {
       return await handler(req, res);
     } catch (error) {
-      notifyBugsnagServer(error as Error, {
+      // Ensure we have a proper Error object before notifying Bugsnag
+      const errorObj = error instanceof Error 
+        ? error 
+        : new Error(String(error || 'Unknown error'));
+      
+      notifyBugsnagServer(errorObj, {
         request: {
           url: req.url,
           method: req.method,
           headers: req.headers,
         },
+        originalError: error,
       });
-      throw error;
+      throw errorObj;
     }
   };
 }
