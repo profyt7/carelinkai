@@ -1,11 +1,15 @@
 /**
- * Resend Verification Email API Endpoint for CareLinkAI
+ * Resend Email Verification API Endpoint
  * 
- * This API handles resending verification emails by:
- * - Validating that the email exists
- * - Checking if the user is still pending verification
- * - Generating a new verification token
- * - Sending a new verification email
+ * This API handles resending verification emails to users who:
+ * - Have registered but not verified their email
+ * - Lost or didn't receive the original verification email
+ * 
+ * Features:
+ * - Rate limiting (max 3 attempts per 15 minutes per email)
+ * - Only works for PENDING users
+ * - Generates new verification token
+ * - Sends verification email
  */
 
 // Force dynamic rendering for this API route
@@ -23,20 +27,58 @@ const prisma = new PrismaClient();
 // Constants
 const TOKEN_EXPIRY_HOURS = 24;
 const APP_URL = process.env.NEXTAUTH_URL || 'http://localhost:5002';
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const MAX_ATTEMPTS = 3;
 
 // Input validation schema
 const resendSchema = z.object({
-  email: z.string().email("Invalid email address")
+  email: z.string().email("Invalid email address"),
 });
 
+// In-memory rate limiting (for production, use Redis)
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+
 /**
- * Generate a verification token and store it in the database
+ * Check rate limit for email
+ */
+function checkRateLimit(email: string): { allowed: boolean; resetIn?: number } {
+  const now = Date.now();
+  const normalizedEmail = email.toLowerCase();
+  
+  const record = rateLimitMap.get(normalizedEmail);
+  
+  if (!record) {
+    // First attempt
+    rateLimitMap.set(normalizedEmail, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return { allowed: true };
+  }
+  
+  if (now > record.resetAt) {
+    // Window expired, reset
+    rateLimitMap.set(normalizedEmail, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return { allowed: true };
+  }
+  
+  if (record.count >= MAX_ATTEMPTS) {
+    // Rate limit exceeded
+    const resetIn = Math.ceil((record.resetAt - now) / 1000 / 60); // minutes
+    return { allowed: false, resetIn };
+  }
+  
+  // Increment count
+  record.count++;
+  return { allowed: true };
+}
+
+/**
+ * Create a verification token and store it in the database
  */
 async function createVerificationToken(userId: string): Promise<string> {
+  console.log(`[resendVerification] Generating token for userId=${userId}`);
   const token = randomBytes(32).toString('hex');
   const expires = new Date();
   expires.setHours(expires.getHours() + TOKEN_EXPIRY_HOURS);
-  
+
   await prisma.user.update({
     where: { id: userId },
     data: {
@@ -44,54 +86,69 @@ async function createVerificationToken(userId: string): Promise<string> {
       verificationTokenExpiry: expires,
     },
   });
-  
+
+  console.log(
+    `[resendVerification] Token persisted for userId=${userId} ` +
+    `expires=${expires.toISOString()}`
+  );
   return token;
 }
 
 /**
  * Send a verification email using nodemailer
  */
-async function sendVerificationEmail(userId: string): Promise<boolean> {
+async function sendVerificationEmail(
+  email: string, 
+  firstName: string, 
+  token: string
+): Promise<boolean> {
   try {
-    // Get user information
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        email: true,
-        firstName: true,
-        verificationToken: true,
-      },
-    });
-    
-    if (!user || !user.verificationToken) {
-      console.error('Cannot send verification email: User not found or missing verification token');
-      return false;
-    }
-    
+    console.log(`[resendVerification] Sending email to ${email}`);
+
     // Generate verification link with token
-    const verificationLink = `${APP_URL}/auth/verify?token=${user.verificationToken}`;
+    const verificationLink = `${APP_URL}/auth/verify?token=${token}`;
     
-    // Create test account for development
-    const testAccount = await nodemailer.createTestAccount();
+    // Check if we should use production SMTP
+    const useProductionSMTP = process.env.SMTP_HOST && 
+                             process.env.SMTP_USER && 
+                             process.env.SMTP_PASSWORD;
     
-    // Create reusable transporter
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.ethereal.email',
-      port: 587,
-      secure: false,
-      auth: {
-        user: testAccount.user,
-        pass: testAccount.pass,
-      },
-    });
+    let transporter;
+    
+    if (useProductionSMTP) {
+      // Use production SMTP (Gmail, SendGrid, etc.)
+      console.log('[resendVerification] Using production SMTP');
+      transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: parseInt(process.env.SMTP_PORT || '587'),
+        secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASSWORD,
+        },
+      });
+    } else {
+      // Use Ethereal for development
+      console.log('[resendVerification] Using Ethereal test account');
+      const testAccount = await nodemailer.createTestAccount();
+      transporter = nodemailer.createTransport({
+        host: 'smtp.ethereal.email',
+        port: 587,
+        secure: false,
+        auth: {
+          user: testAccount.user,
+          pass: testAccount.pass,
+        },
+      });
+    }
     
     // Send email
     const info = await transporter.sendMail({
       from: '"CareLinkAI" <noreply@carelinkai.com>',
-      to: user.email,
+      to: email,
       subject: "Verify Your CareLinkAI Account",
       text: `
-Hello ${user.firstName},
+Hello ${firstName},
 
 Thank you for registering with CareLinkAI. To complete your registration and activate your account, please verify your email address by clicking the link below:
 
@@ -125,7 +182,7 @@ The CareLinkAI Team
   </div>
   <div class="content">
     <h2>Verify Your Email Address</h2>
-    <p>Hello ${user.firstName},</p>
+    <p>Hello ${firstName},</p>
     <p>Thank you for registering with CareLinkAI. To complete your registration and activate your account, please verify your email address by clicking the button below:</p>
     
     <a href="${verificationLink}" class="button">Verify Email Address</a>
@@ -144,65 +201,35 @@ The CareLinkAI Team
       `,
     });
     
-    // Log email details in development
+    // Log email details
     console.log('📧 Verification email sent:');
-    console.log('- To:', user.email);
-    console.log('- Preview URL:', nodemailer.getTestMessageUrl(info));
+    console.log('- To:', email);
+    if (!useProductionSMTP) {
+      console.log('- Preview URL:', nodemailer.getTestMessageUrl(info));
+    }
     
     return true;
   } catch (error) {
-    console.error('Failed to send verification email:', error);
+    console.error('[resendVerification] Failed:', error);
     return false;
   }
 }
 
 /**
- * Resend verification email to a user
- */
-async function resendVerificationEmail(email: string): Promise<boolean> {
-  try {
-    // Find user by email
-    const user = await prisma.user.findUnique({
-      where: { email },
-      select: { id: true, firstName: true, status: true },
-    });
-    
-    if (!user) {
-      console.error('Cannot resend verification email: User not found');
-      return false;
-    }
-    
-    if (user.status !== UserStatus.PENDING) {
-      console.error('Cannot resend verification email: User already verified or not in PENDING status');
-      return false;
-    }
-    
-    // Create new verification token
-    await createVerificationToken(user.id);
-    
-    // Send verification email
-    return await sendVerificationEmail(user.id);
-  } catch (error) {
-    console.error('Failed to resend verification email:', error);
-    return false;
-  }
-}
-
-/**
- * POST handler for resending verification emails
+ * POST handler for resending verification email
  */
 export async function POST(request: NextRequest) {
   try {
     // Parse and validate request body
     const body = await request.json();
     
-    // Validate input against schema
+    // Validate input
     const validationResult = resendSchema.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
         { 
           success: false, 
-          message: "Invalid input data", 
+          message: "Invalid email address",
           errors: validationResult.error.flatten().fieldErrors 
         }, 
         { status: 400 }
@@ -210,59 +237,95 @@ export async function POST(request: NextRequest) {
     }
     
     const { email } = validationResult.data;
+    const normalizedEmail = email.toLowerCase();
     
-    // Check if user exists and needs verification
+    // Check rate limit
+    const rateLimitCheck = checkRateLimit(normalizedEmail);
+    if (!rateLimitCheck.allowed) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: `Too many requests. Please try again in ${rateLimitCheck.resetIn} minutes.`
+        }, 
+        { status: 429 }
+      );
+    }
+    
+    // Find user
     const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
-      select: { id: true, status: true, emailVerified: true }
+      where: { email: normalizedEmail },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        status: true,
+      }
     });
     
-    // User not found
+    // For security, don't reveal if user exists or not
+    // Always return success message
     if (!user) {
-      return NextResponse.json(
-        { success: false, message: "No account found with this email address" },
-        { status: 404 }
-      );
+      console.log(`[resendVerification] User not found: ${normalizedEmail}`);
+      return NextResponse.json({
+        success: true,
+        message: "If an account exists with this email, a verification link has been sent."
+      });
     }
     
-    // User already verified
-    if (user.status !== UserStatus.PENDING || user.emailVerified) {
-      return NextResponse.json(
-        { success: false, message: "This account is already verified" },
-        { status: 400 }
-      );
+    // Check if user is already active
+    if (user.status === UserStatus.ACTIVE) {
+      console.log(`[resendVerification] User already active: ${normalizedEmail}`);
+      return NextResponse.json({
+        success: true,
+        message: "Your account is already verified. You can log in now."
+      });
     }
     
-    // Resend verification email
-    const emailSent = await resendVerificationEmail(email.toLowerCase());
+    // Check if user is pending
+    if (user.status !== UserStatus.PENDING) {
+      console.log(`[resendVerification] User not pending: ${normalizedEmail}, status: ${user.status}`);
+      return NextResponse.json({
+        success: true,
+        message: "If an account exists with this email, a verification link has been sent."
+      });
+    }
+    
+    // Generate new token
+    const token = await createVerificationToken(user.id);
+    
+    // Send verification email
+    const emailSent = await sendVerificationEmail(user.email, user.firstName, token);
     
     if (!emailSent) {
+      console.error(`[resendVerification] Failed to send email to ${normalizedEmail}`);
       return NextResponse.json(
-        { success: false, message: "Failed to send verification email. Please try again later." },
+        { 
+          success: false, 
+          message: "Failed to send verification email. Please try again later."
+        }, 
         { status: 500 }
       );
     }
     
-    // Return success response
+    console.log(`[resendVerification] Success for ${normalizedEmail}`);
+    
     return NextResponse.json({
       success: true,
-      message: "Verification email has been sent. Please check your inbox and spam folder."
+      message: "Verification email sent! Please check your inbox (and spam folder)."
     });
     
   } catch (error: any) {
     console.error("Resend verification error:", error);
     
-    // Generic error response
     return NextResponse.json(
       { 
         success: false, 
-        message: "Failed to resend verification email", 
+        message: "An error occurred. Please try again later.",
         error: process.env.NODE_ENV === "development" ? error.message : undefined 
       }, 
       { status: 500 }
     );
   } finally {
-    // Always disconnect from the database
     await prisma.$disconnect();
   }
 }

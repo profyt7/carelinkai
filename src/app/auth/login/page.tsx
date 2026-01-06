@@ -48,6 +48,9 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [showVerificationHelp, setShowVerificationHelp] = useState(false);
+  const [resendingEmail, setResendingEmail] = useState(false);
+  const [userEmail, setUserEmail] = useState<string>("");
 
   // Show success message only on first render if param exists
   useEffect(() => {
@@ -67,10 +70,39 @@ export default function LoginPage() {
     formState: { errors },
   } = useForm<FormData>();
 
+  const handleResendVerification = async () => {
+    try {
+      setResendingEmail(true);
+      setError(null);
+      
+      const response = await fetch('/api/auth/resend-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: userEmail })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        setSuccess(data.message || "Verification email sent! Please check your inbox.");
+        setShowVerificationHelp(false);
+      } else {
+        setError(data.message || "Failed to resend verification email. Please try again.");
+      }
+    } catch (error) {
+      console.error("Resend verification error:", error);
+      setError("An error occurred. Please try again.");
+    } finally {
+      setResendingEmail(false);
+    }
+  };
+
   const onSubmit = async (data: FormData) => {
     try {
       setIsLoading(true);
       setError(null);
+      setShowVerificationHelp(false);
+      setUserEmail(data.email);
 
       const result = await signIn("credentials", {
         redirect: false,
@@ -86,7 +118,15 @@ export default function LoginPage() {
         // eslint-disable-next-line no-console
         console.error("NextAuth signIn error:", result.error);
 
-        setError("Invalid email or password");
+        // Show the actual error message from NextAuth
+        setError(result.error);
+        
+        // Check if error is about email verification
+        if (result.error.toLowerCase().includes("verify") || 
+            result.error.toLowerCase().includes("pending")) {
+          setShowVerificationHelp(true);
+        }
+        
         setIsLoading(false);
         return;
       }
@@ -187,6 +227,50 @@ export default function LoginPage() {
               <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md flex items-start">
                 <FiAlertCircle className="text-red-500 mt-0.5 mr-2 flex-shrink-0" />
                 <p className="text-red-700 text-sm">{error}</p>
+              </div>
+            )}
+
+            {showVerificationHelp && (
+              <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
+                <div className="flex items-start mb-3">
+                  <FiAlertCircle className="text-blue-500 mt-0.5 mr-2 flex-shrink-0" />
+                  <div className="flex-1">
+                    <h3 className="text-sm font-semibold text-blue-900 mb-1">
+                      Email Verification Required
+                    </h3>
+                    <p className="text-sm text-blue-800">
+                      Your account needs to be verified before you can log in. Please check your email inbox for a verification link.
+                    </p>
+                  </div>
+                </div>
+                <div className="ml-6 space-y-2">
+                  <p className="text-xs text-blue-700">
+                    <strong>Didn&apos;t receive the email?</strong>
+                  </p>
+                  <ul className="text-xs text-blue-700 space-y-1 list-disc list-inside">
+                    <li>Check your spam or junk folder</li>
+                    <li>Make sure you entered the correct email address</li>
+                    <li>Wait a few minutes for the email to arrive</li>
+                  </ul>
+                  <button
+                    type="button"
+                    onClick={handleResendVerification}
+                    disabled={resendingEmail}
+                    className="mt-3 inline-flex items-center px-3 py-1.5 border border-blue-300 rounded-md shadow-sm text-xs font-medium text-blue-700 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {resendingEmail ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-2 h-3 w-3 text-blue-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Sending...
+                      </>
+                    ) : (
+                      "Resend Verification Email"
+                    )}
+                  </button>
+                </div>
               </div>
             )}
 

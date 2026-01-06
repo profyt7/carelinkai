@@ -116,20 +116,39 @@ async function sendVerificationEmail(userId: string): Promise<boolean> {
     const verificationLink = `${APP_URL}/auth/verify?token=${user.verificationToken}`;
     console.log(`[sendVerificationEmail] verificationLink=${verificationLink}`);
     
-    // Create test account for development
-    const testAccount = await nodemailer.createTestAccount();
-    console.log('[sendVerificationEmail] Created Ethereal test account');
+    // Check if we should use production SMTP
+    const useProductionSMTP = process.env.SMTP_HOST && 
+                             process.env.SMTP_USER && 
+                             process.env.SMTP_PASSWORD;
     
-    // Create reusable transporter
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.ethereal.email',
-      port: 587,
-      secure: false,
-      auth: {
-        user: testAccount.user,
-        pass: testAccount.pass,
-      },
-    });
+    let transporter;
+    
+    if (useProductionSMTP) {
+      // Use production SMTP (Gmail, SendGrid, etc.)
+      console.log('[sendVerificationEmail] Using production SMTP');
+      transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: parseInt(process.env.SMTP_PORT || '587'),
+        secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASSWORD,
+        },
+      });
+    } else {
+      // Create test account for development
+      console.log('[sendVerificationEmail] Using Ethereal test account');
+      const testAccount = await nodemailer.createTestAccount();
+      transporter = nodemailer.createTransport({
+        host: 'smtp.ethereal.email',
+        port: 587,
+        secure: false,
+        auth: {
+          user: testAccount.user,
+          pass: testAccount.pass,
+        },
+      });
+    }
     
     // Send email
     const info = await transporter.sendMail({
@@ -190,10 +209,12 @@ The CareLinkAI Team
       `,
     });
     
-    // Log email details in development
+    // Log email details
     console.log('📧 Verification email sent:');
     console.log('- To:', user.email);
-    console.log('- Preview URL:', nodemailer.getTestMessageUrl(info));
+    if (!useProductionSMTP) {
+      console.log('- Preview URL:', nodemailer.getTestMessageUrl(info));
+    }
     
     await localPrisma.$disconnect();
     return true;
