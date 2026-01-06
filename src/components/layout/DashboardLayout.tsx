@@ -154,6 +154,7 @@ const navItems: NavItem[] = [
       { name: "Settings", icon: <FiSettings size={18} />, href: "/settings", showInMobileBar: false },
       { name: "Admin Tools", icon: <FiTool size={18} />, href: "/admin/tools", showInMobileBar: false, roleRestriction: ["ADMIN"] },
       { name: "Audit Logs", icon: <FiFileText size={18} />, href: "/admin/audit-logs", showInMobileBar: false, roleRestriction: ["ADMIN"] },
+      { name: "System Health", icon: <FiBarChart2 size={18} />, href: "/admin/system-health", showInMobileBar: false, roleRestriction: ["ADMIN"] },
       { name: "Help", icon: <FiHelpCircle size={18} />, href: "/help", showInMobileBar: false },
     ]
   },
