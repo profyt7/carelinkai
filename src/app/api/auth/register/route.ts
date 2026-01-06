@@ -19,7 +19,7 @@ import { hash } from "bcryptjs";
 import { z } from "zod";
 import { v4 as uuidv4 } from "uuid";
 import { randomBytes } from "crypto";
-import * as nodemailer from "nodemailer";
+import { sendVerificationEmail } from "@/lib/email";
 
 // Initialize Prisma client
 const prisma = new PrismaClient();
@@ -27,7 +27,6 @@ const prisma = new PrismaClient();
 // Constants
 const SALT_ROUNDS = 12;
 const TOKEN_EXPIRY_HOURS = 24;
-const APP_URL = process.env.NEXTAUTH_URL || 'http://localhost:5002';
 
 // Input validation schema
 const registrationSchema = z.object({
@@ -82,14 +81,14 @@ async function createVerificationToken(userId: string): Promise<string> {
 }
 
 /**
- * Send a verification email using nodemailer
- * In development, uses Ethereal for testing (logs preview URL)
+ * Send verification email using Resend API
+ * Wrapper function that fetches user data and calls the Resend email utility
  */
-async function sendVerificationEmail(userId: string): Promise<boolean> {
+async function sendVerificationEmailToUser(userId: string): Promise<boolean> {
   try {
     console.log(`[sendVerificationEmail] Attempting to send email for userId=${userId}`);
 
-    /* Use a dedicated Prisma client for the same reason as above */
+    /* Use a dedicated Prisma client to avoid disconnection issues */
     const localPrisma = new PrismaClient();
 
     // Get user information
@@ -102,124 +101,33 @@ async function sendVerificationEmail(userId: string): Promise<boolean> {
       },
     });
     
+    await localPrisma.$disconnect();
+    
     if (!user || !user.verificationToken) {
-      console.error('Cannot send verification email: User not found or missing verification token');
+      console.error('[sendVerificationEmail] User not found or missing verification token');
       return false;
     }
     
     console.log(
-      `[sendVerificationEmail] user.email=${user.email} ` +
-      `token=${user.verificationToken}`
+      `[sendVerificationEmail] Sending to user.email=${user.email} with token`
     );
 
-    // Generate verification link with token
-    const verificationLink = `${APP_URL}/auth/verify?token=${user.verificationToken}`;
-    console.log(`[sendVerificationEmail] verificationLink=${verificationLink}`);
+    // Call Resend email utility
+    const emailSent = await sendVerificationEmail(
+      user.email,
+      user.firstName,
+      user.verificationToken
+    );
     
-    // Check if we should use production SMTP
-    const useProductionSMTP = process.env.SMTP_HOST && 
-                             process.env.SMTP_USER && 
-                             process.env.SMTP_PASSWORD;
-    
-    let transporter;
-    
-    if (useProductionSMTP) {
-      // Use production SMTP (Gmail, SendGrid, etc.)
-      console.log('[sendVerificationEmail] Using production SMTP');
-      transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: parseInt(process.env.SMTP_PORT || '587'),
-        secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASSWORD,
-        },
-      });
+    if (emailSent) {
+      console.log('[sendVerificationEmail] ✅ Email sent successfully via Resend');
     } else {
-      // Create test account for development
-      console.log('[sendVerificationEmail] Using Ethereal test account');
-      const testAccount = await nodemailer.createTestAccount();
-      transporter = nodemailer.createTransport({
-        host: 'smtp.ethereal.email',
-        port: 587,
-        secure: false,
-        auth: {
-          user: testAccount.user,
-          pass: testAccount.pass,
-        },
-      });
+      console.error('[sendVerificationEmail] ❌ Failed to send email via Resend');
     }
     
-    // Send email
-    const info = await transporter.sendMail({
-      from: '"CareLinkAI" <noreply@carelinkai.com>',
-      to: user.email,
-      subject: "Verify Your CareLinkAI Account",
-      text: `
-Hello ${user.firstName},
-
-Thank you for registering with CareLinkAI. To complete your registration and activate your account, please verify your email address by clicking the link below:
-
-${verificationLink}
-
-This verification link will expire in ${TOKEN_EXPIRY_HOURS} hours.
-
-If you did not create an account with CareLinkAI, please ignore this email.
-
-Best regards,
-The CareLinkAI Team
-      `.trim(),
-      html: `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>Verify Your Email</title>
-  <style>
-    body { font-family: sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background-color: #3b82f6; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
-    .content { background-color: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-radius: 0 0 8px 8px; }
-    .button { display: inline-block; background-color: #3b82f6; color: white; text-decoration: none; padding: 12px 24px; 
-              border-radius: 4px; margin: 20px 0; font-weight: bold; }
-    .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #6b7280; }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <h2 style="color: white; margin: 0;">CareLinkAI</h2>
-  </div>
-  <div class="content">
-    <h2>Verify Your Email Address</h2>
-    <p>Hello ${user.firstName},</p>
-    <p>Thank you for registering with CareLinkAI. To complete your registration and activate your account, please verify your email address by clicking the button below:</p>
-    
-    <a href="${verificationLink}" class="button">Verify Email Address</a>
-    
-    <p>This verification link will expire in ${TOKEN_EXPIRY_HOURS} hours.</p>
-    <p>If you did not create an account with CareLinkAI, please ignore this email.</p>
-    <p>Best regards,<br>The CareLinkAI Team</p>
-    
-    <div class="footer">
-      <p>If you're having trouble clicking the button, copy and paste the URL below into your web browser:</p>
-      <p><a href="${verificationLink}">${verificationLink}</a></p>
-    </div>
-  </div>
-</body>
-</html>
-      `,
-    });
-    
-    // Log email details
-    console.log('📧 Verification email sent:');
-    console.log('- To:', user.email);
-    if (!useProductionSMTP) {
-      console.log('- Preview URL:', nodemailer.getTestMessageUrl(info));
-    }
-    
-    await localPrisma.$disconnect();
-    return true;
+    return emailSent;
   } catch (error) {
-    console.error('[sendVerificationEmail] Failed:', error);
+    console.error('[sendVerificationEmail] Exception:', error);
     return false;
   }
 }
@@ -411,10 +319,10 @@ export async function POST(request: NextRequest) {
       );
       await createVerificationToken(result.id);
       console.log(
-        `[registration] ✓ Token generated, calling sendVerificationEmail(${result.id})`
+        `[registration] ✓ Token generated, calling sendVerificationEmailToUser(${result.id})`
       );
 
-      await sendVerificationEmail(result.id);
+      await sendVerificationEmailToUser(result.id);
 
       console.log(
         `[registration] ✓ Verification e-mail queued successfully for userId=${result.id}`

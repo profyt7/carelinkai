@@ -19,14 +19,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient, UserStatus } from "@prisma/client";
 import { z } from "zod";
 import { randomBytes } from "crypto";
-import * as nodemailer from "nodemailer";
+import { sendVerificationEmail } from "@/lib/email";
 
 // Initialize Prisma client
 const prisma = new PrismaClient();
 
 // Constants
 const TOKEN_EXPIRY_HOURS = 24;
-const APP_URL = process.env.NEXTAUTH_URL || 'http://localhost:5002';
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 const MAX_ATTEMPTS = 3;
 
@@ -94,126 +93,8 @@ async function createVerificationToken(userId: string): Promise<string> {
   return token;
 }
 
-/**
- * Send a verification email using nodemailer
- */
-async function sendVerificationEmail(
-  email: string, 
-  firstName: string, 
-  token: string
-): Promise<boolean> {
-  try {
-    console.log(`[resendVerification] Sending email to ${email}`);
-
-    // Generate verification link with token
-    const verificationLink = `${APP_URL}/auth/verify?token=${token}`;
-    
-    // Check if we should use production SMTP
-    const useProductionSMTP = process.env.SMTP_HOST && 
-                             process.env.SMTP_USER && 
-                             process.env.SMTP_PASSWORD;
-    
-    let transporter;
-    
-    if (useProductionSMTP) {
-      // Use production SMTP (Gmail, SendGrid, etc.)
-      console.log('[resendVerification] Using production SMTP');
-      transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: parseInt(process.env.SMTP_PORT || '587'),
-        secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASSWORD,
-        },
-      });
-    } else {
-      // Use Ethereal for development
-      console.log('[resendVerification] Using Ethereal test account');
-      const testAccount = await nodemailer.createTestAccount();
-      transporter = nodemailer.createTransport({
-        host: 'smtp.ethereal.email',
-        port: 587,
-        secure: false,
-        auth: {
-          user: testAccount.user,
-          pass: testAccount.pass,
-        },
-      });
-    }
-    
-    // Send email
-    const info = await transporter.sendMail({
-      from: '"CareLinkAI" <noreply@carelinkai.com>',
-      to: email,
-      subject: "Verify Your CareLinkAI Account",
-      text: `
-Hello ${firstName},
-
-Thank you for registering with CareLinkAI. To complete your registration and activate your account, please verify your email address by clicking the link below:
-
-${verificationLink}
-
-This verification link will expire in ${TOKEN_EXPIRY_HOURS} hours.
-
-If you did not create an account with CareLinkAI, please ignore this email.
-
-Best regards,
-The CareLinkAI Team
-      `.trim(),
-      html: `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>Verify Your Email</title>
-  <style>
-    body { font-family: sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background-color: #3b82f6; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
-    .content { background-color: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-radius: 0 0 8px 8px; }
-    .button { display: inline-block; background-color: #3b82f6; color: white; text-decoration: none; padding: 12px 24px; 
-              border-radius: 4px; margin: 20px 0; font-weight: bold; }
-    .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #6b7280; }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <h2 style="color: white; margin: 0;">CareLinkAI</h2>
-  </div>
-  <div class="content">
-    <h2>Verify Your Email Address</h2>
-    <p>Hello ${firstName},</p>
-    <p>Thank you for registering with CareLinkAI. To complete your registration and activate your account, please verify your email address by clicking the button below:</p>
-    
-    <a href="${verificationLink}" class="button">Verify Email Address</a>
-    
-    <p>This verification link will expire in ${TOKEN_EXPIRY_HOURS} hours.</p>
-    <p>If you did not create an account with CareLinkAI, please ignore this email.</p>
-    <p>Best regards,<br>The CareLinkAI Team</p>
-    
-    <div class="footer">
-      <p>If you're having trouble clicking the button, copy and paste the URL below into your web browser:</p>
-      <p><a href="${verificationLink}">${verificationLink}</a></p>
-    </div>
-  </div>
-</body>
-</html>
-      `,
-    });
-    
-    // Log email details
-    console.log('📧 Verification email sent:');
-    console.log('- To:', email);
-    if (!useProductionSMTP) {
-      console.log('- Preview URL:', nodemailer.getTestMessageUrl(info));
-    }
-    
-    return true;
-  } catch (error) {
-    console.error('[resendVerification] Failed:', error);
-    return false;
-  }
-}
+// Note: sendVerificationEmail is now imported from @/lib/email
+// No need to redefine it here - the imported function will be used directly
 
 /**
  * POST handler for resending verification email
