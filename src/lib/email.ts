@@ -17,7 +17,7 @@ import { Resend } from 'resend';
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Constants
-const FROM_EMAIL = 'profyt7@gmail.com'; // Will use noreply@getcarelinkai.com when domain is verified
+const FROM_EMAIL = process.env.EMAIL_FROM || 'noreply@applyedge.co'; // Use environment variable or fallback to verified domain
 const APP_NAME = 'CareLinkAI';
 const TOKEN_EXPIRY_HOURS = 24;
 
