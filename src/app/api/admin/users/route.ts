@@ -9,8 +9,15 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
+    console.log('[Admin Users API] Session:', session?.user ? {
+      id: session.user.id,
+      email: session.user.email,
+      role: session.user.role
+    } : 'No session');
+
     // Check if user is admin
     if (!session || session.user?.role !== 'ADMIN') {
+      console.log('[Admin Users API] Unauthorized access attempt');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
@@ -20,6 +27,8 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || '';
     const role = searchParams.get('role');
     const status = searchParams.get('status');
+
+    console.log('[Admin Users API] Query params:', { page, limit, search, role, status });
 
     const skip = (page - 1) * limit;
 
@@ -42,6 +51,8 @@ export async function GET(request: NextRequest) {
       where.status = status;
     }
 
+    console.log('[Admin Users API] Where clause:', JSON.stringify(where, null, 2));
+
     const [users, totalCount] = await Promise.all([
       prisma.user.findMany({
         where,
@@ -62,6 +73,8 @@ export async function GET(request: NextRequest) {
       prisma.user.count({ where }),
     ]);
 
+    console.log('[Admin Users API] Found', totalCount, 'users total,', users.length, 'in current page');
+
     return NextResponse.json({
       users,
       totalCount,
@@ -69,7 +82,10 @@ export async function GET(request: NextRequest) {
       currentPage: page,
     });
   } catch (error) {
-    console.error('Admin users fetch error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('[Admin Users API] Error:', error);
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }

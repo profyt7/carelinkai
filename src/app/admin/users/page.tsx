@@ -42,15 +42,31 @@ export default function AdminUsersPage() {
         ...(filterStatus !== 'ALL' && { status: filterStatus }),
       });
 
+      console.log('Fetching users with params:', params.toString());
       const response = await fetch(`/api/admin/users?${params}`);
+      console.log('Response status:', response.status);
+      
       const data = await response.json();
+      console.log('Response data:', data);
+      
+      if (!response.ok) {
+        console.error('API returned error:', data);
+        alert(`Failed to load users: ${data.error || 'Unknown error'}`);
+        return;
+      }
       
       if (data.users) {
         setUsers(data.users);
         setTotalPages(data.totalPages || 1);
+        console.log(`Loaded ${data.users.length} users, total count: ${data.totalCount}`);
+      } else {
+        console.warn('No users array in response:', data);
+        setUsers([]);
       }
     } catch (error) {
       console.error('Failed to fetch users:', error);
+      alert(`Error loading users: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setUsers([]);
     } finally {
       setLoading(false);
     }
