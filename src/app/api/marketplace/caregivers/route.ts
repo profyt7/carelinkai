@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth/next';
-import authOptions from '@/lib/auth';
+import { authOptions } from '@/lib/auth';
 import { Prisma } from '@prisma/client';
 import { rateLimitAsync, getClientIp, buildRateLimitHeaders } from '@/lib/rateLimit';
 import { isMockModeEnabled } from '@/lib/mockMode';
