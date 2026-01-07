@@ -1,5 +1,8 @@
+-- Drop existing table if it exists (for clean migration)
+DROP TABLE IF EXISTS "ImpersonationSession" CASCADE;
+
 -- CreateTable
-CREATE TABLE IF NOT EXISTS "ImpersonationSession" (
+CREATE TABLE "ImpersonationSession" (
     "id" TEXT NOT NULL,
     "adminId" TEXT NOT NULL,
     "targetUserId" TEXT NOT NULL,
@@ -14,13 +17,13 @@ CREATE TABLE IF NOT EXISTS "ImpersonationSession" (
 );
 
 -- CreateIndex
-CREATE INDEX IF NOT EXISTS "ImpersonationSession_adminId_idx" ON "ImpersonationSession"("adminId");
+CREATE INDEX "ImpersonationSession_adminId_idx" ON "ImpersonationSession"("adminId");
 
 -- CreateIndex
-CREATE INDEX IF NOT EXISTS "ImpersonationSession_targetUserId_idx" ON "ImpersonationSession"("targetUserId");
+CREATE INDEX "ImpersonationSession_targetUserId_idx" ON "ImpersonationSession"("targetUserId");
 
 -- CreateIndex
-CREATE INDEX IF NOT EXISTS "ImpersonationSession_expiresAt_idx" ON "ImpersonationSession"("expiresAt");
+CREATE INDEX "ImpersonationSession_expiresAt_idx" ON "ImpersonationSession"("expiresAt");
 
 -- AddForeignKey
 ALTER TABLE "ImpersonationSession" ADD CONSTRAINT "ImpersonationSession_adminId_fkey" FOREIGN KEY ("adminId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -29,5 +32,12 @@ ALTER TABLE "ImpersonationSession" ADD CONSTRAINT "ImpersonationSession_adminId_
 ALTER TABLE "ImpersonationSession" ADD CONSTRAINT "ImpersonationSession_targetUserId_fkey" FOREIGN KEY ("targetUserId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AlterEnum
-ALTER TYPE "AuditAction" ADD VALUE IF NOT EXISTS 'IMPERSONATION_STARTED';
-ALTER TYPE "AuditAction" ADD VALUE IF NOT EXISTS 'IMPERSONATION_STOPPED';
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'IMPERSONATION_STARTED' AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'AuditAction')) THEN
+        ALTER TYPE "AuditAction" ADD VALUE 'IMPERSONATION_STARTED';
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'IMPERSONATION_STOPPED' AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'AuditAction')) THEN
+        ALTER TYPE "AuditAction" ADD VALUE 'IMPERSONATION_STOPPED';
+    END IF;
+END $$;
