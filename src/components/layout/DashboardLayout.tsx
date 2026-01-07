@@ -35,6 +35,8 @@ import NotificationCenter from "../notifications/NotificationCenter";
 // PWA helpers
 import PWAInstallButton from "../pwa/PWAInstallButton";
 import PWAStatus from "../pwa/PWAStatus";
+// Admin impersonation banner
+import ImpersonationBanner from "../admin/ImpersonationBanner";
 
 // Role badge colors
 const roleBadgeColors = {
@@ -961,6 +963,9 @@ export default function DashboardLayout({
             </div>
           </div>
         )}
+
+        {/* Impersonation Banner */}
+        <ImpersonationBanner />
 
         {/* Main content area */}
         <main 

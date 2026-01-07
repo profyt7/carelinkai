@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FiSearch, FiEdit, FiTrash2, FiPlus, FiFilter, FiDownload } from 'react-icons/fi';
+import { FiSearch, FiEdit, FiTrash2, FiPlus, FiFilter, FiDownload, FiUserCheck } from 'react-icons/fi';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 type User = {
   id: string;
@@ -16,6 +17,7 @@ type User = {
 };
 
 export default function AdminUsersPage() {
+  const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -23,6 +25,7 @@ export default function AdminUsersPage() {
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [impersonatingUserId, setImpersonatingUserId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -66,6 +69,68 @@ export default function AdminUsersPage() {
       }
     } catch (error) {
       console.error('Failed to delete user:', error);
+    }
+  };
+
+  const handleImpersonateUser = async (user: User) => {
+    // Prevent impersonating admins
+    if (user.role === 'ADMIN') {
+      alert('Cannot impersonate other administrators');
+      return;
+    }
+
+    // Prevent impersonating inactive users
+    if (user.status !== 'ACTIVE') {
+      alert('Cannot impersonate inactive users');
+      return;
+    }
+
+    const reason = prompt(
+      `Impersonate ${user.firstName} ${user.lastName} (${user.email})?\n\nPlease provide a reason for this impersonation:`
+    );
+
+    if (!reason) {
+      return; // User cancelled
+    }
+
+    setImpersonatingUserId(user.id);
+
+    try {
+      const response = await fetch('/api/admin/impersonate/start', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          targetUserId: user.id,
+          reason,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Redirect to user's role-specific dashboard
+        const roleDashboards: Record<string, string> = {
+          FAMILY: '/dashboard',
+          OPERATOR: '/operator',
+          CAREGIVER: '/caregiver',
+          DISCHARGE_PLANNER: '/discharge-planner',
+        };
+
+        const redirectUrl = roleDashboards[user.role] || '/dashboard';
+        
+        // Refresh and redirect
+        router.push(redirectUrl);
+        router.refresh();
+      } else {
+        alert(`Failed to start impersonation: ${data.error}`);
+      }
+    } catch (error) {
+      console.error('Failed to impersonate user:', error);
+      alert('Failed to start impersonation. Please try again.');
+    } finally {
+      setImpersonatingUserId(null);
     }
   };
 
@@ -252,12 +317,28 @@ export default function AdminUsersPage() {
                         <Link
                           href={`/admin/users/${user.id}`}
                           className="text-[#3978FC] hover:text-[#3167d4] p-2"
+                          title="Edit user"
                         >
                           <FiEdit />
                         </Link>
+                        {user.role !== 'ADMIN' && user.status === 'ACTIVE' && (
+                          <button
+                            onClick={() => handleImpersonateUser(user)}
+                            disabled={impersonatingUserId === user.id}
+                            className="text-amber-600 hover:text-amber-800 p-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Impersonate user"
+                          >
+                            {impersonatingUserId === user.id ? (
+                              <span className="animate-spin">⏳</span>
+                            ) : (
+                              <FiUserCheck />
+                            )}
+                          </button>
+                        )}
                         <button
                           onClick={() => handleDeleteUser(user.id)}
                           className="text-red-600 hover:text-red-800 p-2"
+                          title="Delete user"
                         >
                           <FiTrash2 />
                         </button>

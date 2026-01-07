@@ -68,6 +68,8 @@ model User {
   createdResidentNotes      ResidentNote[]
   scheduledNotifications    ScheduledNotification[]
   scheduledReports          ScheduledReport[]        @relation("ScheduledReportCreator")
+  adminImpersonations       ImpersonationSession[]   @relation("AdminImpersonations")
+  impersonatedSessions      ImpersonationSession[]   @relation("ImpersonatedSessions")
   sessions                  Session[]
   createdGalleries          SharedGallery[]          @relation("GalleryCreator")
   approvedTimesheets        Timesheet[]
@@ -1834,6 +1836,25 @@ model BugReport {
   @@index([assignedTo])
 }
 
+model ImpersonationSession {
+  id            String    @id @default(cuid())
+  adminId       String
+  targetUserId  String
+  startedAt     DateTime  @default(now())
+  endedAt       DateTime?
+  expiresAt     DateTime
+  ipAddress     String?
+  userAgent     String?
+  reason        String?
+  admin         User      @relation("AdminImpersonations", fields: [adminId], references: [id], onDelete: Cascade)
+  targetUser    User      @relation("ImpersonatedSessions", fields: [targetUserId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([targetUserId])
+  @@index([expiresAt])
+}
+
+
 enum UserRole {
   FAMILY
   OPERATOR
@@ -2152,6 +2173,8 @@ enum AuditAction {
   REPORT_GENERATED
   REPORT_SCHEDULED
   REPORT_DOWNLOADED
+  IMPERSONATION_STARTED
+  IMPERSONATION_STOPPED
 }
 
 /// Appointment-related enums
