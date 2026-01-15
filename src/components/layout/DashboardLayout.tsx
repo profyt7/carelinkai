@@ -154,9 +154,12 @@ const navItems: NavItem[] = [
     icon: <FiSettings size={20} />,
     children: [
       { name: "Settings", icon: <FiSettings size={18} />, href: "/settings", showInMobileBar: false },
-      { name: "Admin Tools", icon: <FiTool size={18} />, href: "/admin/tools", showInMobileBar: false, roleRestriction: ["ADMIN"] },
+      { name: "User Management", icon: <FiUsers size={18} />, href: "/admin/users", showInMobileBar: false, roleRestriction: ["ADMIN"] },
+      { name: "Analytics", icon: <FiBarChart2 size={18} />, href: "/admin/analytics", showInMobileBar: false, roleRestriction: ["ADMIN"] },
       { name: "Audit Logs", icon: <FiFileText size={18} />, href: "/admin/audit-logs", showInMobileBar: false, roleRestriction: ["ADMIN"] },
+      { name: "Data Exports", icon: <FiFileText size={18} />, href: "/admin/exports", showInMobileBar: false, roleRestriction: ["ADMIN"] },
       { name: "System Health", icon: <FiBarChart2 size={18} />, href: "/admin/system-health", showInMobileBar: false, roleRestriction: ["ADMIN"] },
+      { name: "Admin Tools", icon: <FiTool size={18} />, href: "/admin/tools", showInMobileBar: false, roleRestriction: ["ADMIN"] },
       { name: "Help", icon: <FiHelpCircle size={18} />, href: "/help", showInMobileBar: false },
     ]
   },
