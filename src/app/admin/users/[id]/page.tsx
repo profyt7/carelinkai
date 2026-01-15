@@ -260,6 +260,13 @@ export default function AdminUserDetailPage() {
             </div>
           </div>
 
+          {/* Debug info */}
+          <div className="mt-6 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-xs font-mono">
+            <p>Debug: role="{role}" | status="{status}"</p>
+            <p>Condition: role.toUpperCase() !== 'ADMIN' = {String(role.toUpperCase() !== 'ADMIN')}</p>
+            <p>Condition: status.toUpperCase() === 'ACTIVE' = {String(status.toUpperCase() === 'ACTIVE')}</p>
+          </div>
+
           <div className="mt-6 pt-6 border-t border-neutral-200 flex flex-wrap gap-3">
             <button
               onClick={handleSave}
@@ -270,6 +277,7 @@ export default function AdminUserDetailPage() {
               {saving ? 'Saving...' : 'Save Changes'}
             </button>
 
+            {/* Impersonate button - show for non-admin active users */}
             {role.toUpperCase() !== 'ADMIN' && status.toUpperCase() === 'ACTIVE' && (
               <button
                 onClick={handleImpersonate}
@@ -280,6 +288,17 @@ export default function AdminUserDetailPage() {
                 {impersonating ? 'Starting...' : 'Impersonate User'}
               </button>
             )}
+
+            {/* Debug: Always show impersonate button for testing */}
+            <button
+              onClick={handleImpersonate}
+              disabled={impersonating}
+              className="bg-purple-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-600 transition-colors flex items-center gap-2 disabled:opacity-50"
+              title="Debug: Always visible impersonate button"
+            >
+              <FiUserCheck />
+              {impersonating ? 'Starting...' : '[DEBUG] Impersonate'}
+            </button>
 
             <button
               onClick={handleDelete}
