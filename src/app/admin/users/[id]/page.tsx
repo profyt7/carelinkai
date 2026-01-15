@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { FiArrowLeft, FiSave, FiUserCheck, FiTrash2 } from 'react-icons/fi';
+import { FiArrowLeft, FiSave, FiUserCheck, FiTrash2, FiX } from 'react-icons/fi';
 
 type User = {
   id: string;
@@ -27,6 +27,10 @@ export default function AdminUserDetailPage() {
   const [saving, setSaving] = useState(false);
   const [impersonating, setImpersonating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Impersonation modal state
+  const [showImpersonateModal, setShowImpersonateModal] = useState(false);
+  const [impersonateReason, setImpersonateReason] = useState('');
 
   // Form state
   const [firstName, setFirstName] = useState('');
@@ -81,31 +85,46 @@ export default function AdminUserDetailPage() {
     }
   };
 
-  const handleImpersonate = async () => {
-    if (!user) return;
+  // Open the impersonation modal
+  const handleImpersonate = () => {
+    console.log('[Impersonate] Button clicked, user:', user?.id, 'role:', role, 'status:', status);
+    
+    if (!user) {
+      console.log('[Impersonate] No user, returning');
+      return;
+    }
 
-    if (role.toUpperCase() === 'ADMIN') {
+    // Use user.role and user.status (the actual values) for validation
+    if (user.role.toUpperCase() === 'ADMIN') {
       alert('Cannot impersonate other administrators');
       return;
     }
 
-    if (status.toUpperCase() !== 'ACTIVE') {
+    if (user.status.toUpperCase() !== 'ACTIVE') {
       alert('Cannot impersonate inactive users');
       return;
     }
 
-    const reason = prompt(
-      `Impersonate ${user.firstName || ''} ${user.lastName || ''} (${user.email})?\n\nPlease provide a reason for this impersonation:`
-    );
+    console.log('[Impersonate] Opening modal');
+    setImpersonateReason('');
+    setShowImpersonateModal(true);
+  };
 
-    if (!reason) return;
+  // Execute the impersonation after modal confirmation
+  const executeImpersonation = async () => {
+    if (!user || !impersonateReason.trim()) {
+      alert('Please provide a reason for impersonation');
+      return;
+    }
 
     setImpersonating(true);
+    setShowImpersonateModal(false);
+    
     try {
       const response = await fetch('/api/admin/impersonate/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ targetUserId: user.id, reason }),
+        body: JSON.stringify({ targetUserId: user.id, reason: impersonateReason.trim() }),
       });
 
       const data = await response.json();
@@ -260,15 +279,9 @@ export default function AdminUserDetailPage() {
             </div>
           </div>
 
-          {/* Debug info */}
-          <div className="mt-6 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-xs font-mono">
-            <p>Debug: role="{role}" | status="{status}"</p>
-            <p>Condition: role.toUpperCase() !== 'ADMIN' = {String(role.toUpperCase() !== 'ADMIN')}</p>
-            <p>Condition: status.toUpperCase() === 'ACTIVE' = {String(status.toUpperCase() === 'ACTIVE')}</p>
-          </div>
-
           <div className="mt-6 pt-6 border-t border-neutral-200 flex flex-wrap gap-3">
             <button
+              type="button"
               onClick={handleSave}
               disabled={saving}
               className="bg-[#3978FC] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#3167d4] transition-colors flex items-center gap-2 disabled:opacity-50"
@@ -278,8 +291,9 @@ export default function AdminUserDetailPage() {
             </button>
 
             {/* Impersonate button - show for non-admin active users */}
-            {role.toUpperCase() !== 'ADMIN' && status.toUpperCase() === 'ACTIVE' && (
+            {user.role.toUpperCase() !== 'ADMIN' && user.status.toUpperCase() === 'ACTIVE' && (
               <button
+                type="button"
                 onClick={handleImpersonate}
                 disabled={impersonating}
                 className="bg-amber-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-amber-600 transition-colors flex items-center gap-2 disabled:opacity-50"
@@ -289,18 +303,8 @@ export default function AdminUserDetailPage() {
               </button>
             )}
 
-            {/* Debug: Always show impersonate button for testing */}
             <button
-              onClick={handleImpersonate}
-              disabled={impersonating}
-              className="bg-purple-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-600 transition-colors flex items-center gap-2 disabled:opacity-50"
-              title="Debug: Always visible impersonate button"
-            >
-              <FiUserCheck />
-              {impersonating ? 'Starting...' : '[DEBUG] Impersonate'}
-            </button>
-
-            <button
+              type="button"
               onClick={handleDelete}
               className="bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors flex items-center gap-2 ml-auto"
             >
@@ -310,6 +314,66 @@ export default function AdminUserDetailPage() {
           </div>
         </div>
       </main>
+
+      {/* Impersonation Modal */}
+      {showImpersonateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-neutral-900">
+                Impersonate User
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowImpersonateModal(false)}
+                className="text-neutral-500 hover:text-neutral-700"
+              >
+                <FiX className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <p className="text-neutral-600 mb-4">
+              You are about to impersonate{' '}
+              <span className="font-medium">
+                {user.firstName || ''} {user.lastName || ''} ({user.email})
+              </span>
+            </p>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-neutral-700 mb-2">
+                Reason for impersonation <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                value={impersonateReason}
+                onChange={(e) => setImpersonateReason(e.target.value)}
+                placeholder="Enter the reason for this impersonation..."
+                className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
+                rows={3}
+                autoFocus
+              />
+            </div>
+            
+            <div className="flex gap-3 justify-end">
+              <button
+                type="button"
+                onClick={() => setShowImpersonateModal(false)}
+                className="px-4 py-2 text-neutral-700 bg-neutral-100 rounded-lg hover:bg-neutral-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={executeImpersonation}
+                disabled={!impersonateReason.trim() || impersonating}
+                className="px-4 py-2 bg-amber-500 text-white rounded-lg font-medium hover:bg-amber-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                <FiUserCheck />
+                {impersonating ? 'Starting...' : 'Start Impersonation'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
