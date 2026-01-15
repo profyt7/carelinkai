@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
           role: true,
           status: true,
           createdAt: true,
-          lastLogin: true,
+          lastLoginAt: true,
         },
       }),
       prisma.user.count({ where }),
