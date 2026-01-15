@@ -84,12 +84,12 @@ export default function AdminUserDetailPage() {
   const handleImpersonate = async () => {
     if (!user) return;
 
-    if (user.role === 'ADMIN') {
+    if (role.toUpperCase() === 'ADMIN') {
       alert('Cannot impersonate other administrators');
       return;
     }
 
-    if (user.status !== 'ACTIVE') {
+    if (status.toUpperCase() !== 'ACTIVE') {
       alert('Cannot impersonate inactive users');
       return;
     }
@@ -270,7 +270,7 @@ export default function AdminUserDetailPage() {
               {saving ? 'Saving...' : 'Save Changes'}
             </button>
 
-            {user.role !== 'ADMIN' && user.status === 'ACTIVE' && (
+            {role.toUpperCase() !== 'ADMIN' && status.toUpperCase() === 'ACTIVE' && (
               <button
                 onClick={handleImpersonate}
                 disabled={impersonating}
