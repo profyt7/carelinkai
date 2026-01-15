@@ -16,7 +16,7 @@ async function getAdminStats() {
     prisma.placementSearch.count(),
     prisma.user.count({
       where: {
-        lastLogin: {
+        lastLoginAt: {
           gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
         },
       },

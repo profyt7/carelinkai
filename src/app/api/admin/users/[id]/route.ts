@@ -23,7 +23,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         role: true,
         status: true,
         createdAt: true,
-        lastLogin: true,
+        lastLoginAt: true,
         emailVerified: true,
       },
     });

@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
         prisma.inquiry.count(),
         prisma.user.count({
           where: {
-            lastLogin: {
+            lastLoginAt: {
               gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // Last 24 hours
             },
           },

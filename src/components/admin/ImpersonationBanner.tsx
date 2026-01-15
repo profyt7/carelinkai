@@ -68,9 +68,8 @@ export default function ImpersonationBanner() {
 
       if (response.ok) {
         setSession(null);
-        // Redirect to admin dashboard
+        // Redirect to admin dashboard - router.push will load fresh page data
         router.push("/admin");
-        router.refresh();
       } else {
         const data = await response.json();
         alert(`Failed to stop impersonation: ${data.error}`);
