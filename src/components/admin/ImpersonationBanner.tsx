@@ -30,31 +30,61 @@ export default function ImpersonationBanner() {
   const [loading, setLoading] = useState(true);
   const [stopping, setStopping] = useState(false);
 
-  // Check impersonation status on mount and periodically
+  // Check impersonation status on mount and periodically with exponential backoff
   useEffect(() => {
+    let errorCount = 0;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    let cancelled = false;
+    const MAX_ERRORS = 3;
+    const BASE_INTERVAL = 30000; // 30 seconds
+    const MAX_INTERVAL = 300000; // 5 minutes max
+    
     const checkStatus = async () => {
+      if (cancelled) return;
+      
       try {
         const response = await fetch("/api/admin/impersonate/status");
-        const data = await response.json();
-
-        if (data.active && data.session) {
-          setSession(data.session);
+        if (cancelled) return;
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data?.active && data?.session) {
+            setSession(data.session);
+          } else {
+            setSession(null);
+          }
+          errorCount = 0; // Reset on success
+        } else if (response.status >= 500 || response.status === 404) {
+          // Server error - back off
+          errorCount++;
+          console.warn(`[ImpersonationBanner] Status API error: ${response.status}, error count: ${errorCount}`);
         } else {
+          // 403, 401 etc - not an error, just not impersonating
           setSession(null);
         }
       } catch (error) {
-        console.error("Failed to check impersonation status:", error);
+        if (cancelled) return;
+        errorCount++;
+        console.warn("[ImpersonationBanner] Status check failed:", error);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
+      }
+      
+      // Schedule next poll with exponential backoff
+      if (!cancelled && errorCount < MAX_ERRORS) {
+        const delay = Math.min(BASE_INTERVAL * Math.pow(2, errorCount), MAX_INTERVAL);
+        timeoutId = setTimeout(checkStatus, delay);
+      } else if (errorCount >= MAX_ERRORS) {
+        console.warn('[ImpersonationBanner] Stopping polling after max errors');
       }
     };
 
     checkStatus();
 
-    // Check every 30 seconds
-    const interval = setInterval(checkStatus, 30000);
-
-    return () => clearInterval(interval);
+    return () => {
+      cancelled = true;
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, []);
 
   // Handle stop impersonation

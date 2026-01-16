@@ -54,7 +54,7 @@ export async function GET(
         },
         address: true,
         licenses: {
-          orderBy: { expiryDate: 'desc' },
+          orderBy: { expirationDate: 'desc' },
         },
         inspections: {
           orderBy: { inspectionDate: 'desc' },
@@ -137,15 +137,15 @@ export async function GET(
     const activeLicenses = home.licenses.filter(l => l.status === 'ACTIVE').length;
     
     const expiringLicenses = home.licenses.filter(l => {
-      if (!l.expiryDate || l.status !== 'ACTIVE') return false;
+      if (!l.expirationDate || l.status !== 'ACTIVE') return false;
       const daysUntilExpiry = Math.floor(
-        (new Date(l.expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+        (new Date(l.expirationDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
       );
       return daysUntilExpiry <= 30 && daysUntilExpiry > 0;
     }).length;
 
     const expiredLicenses = home.licenses.filter(l => 
-      l.expiryDate && new Date(l.expiryDate) < new Date()
+      l.expirationDate && new Date(l.expirationDate) < new Date()
     ).length;
 
     const pendingInquiries = home.inquiries.filter(i => i.status === 'NEW' || i.status === 'IN_PROGRESS').length;

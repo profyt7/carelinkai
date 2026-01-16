@@ -45,6 +45,7 @@ export default function SystemHealthPage() {
       const interval = setInterval(fetchHealth, 30000); // 30 seconds
       return () => clearInterval(interval);
     }
+    return undefined;
   }, [autoRefresh]);
 
   const fetchHealth = async () => {

@@ -61,10 +61,10 @@ type HomeDetail = {
   licenses: Array<{
     id: string;
     licenseNumber: string;
-    licenseType: string;
+    type: string;
     status: string;
     issueDate: string;
-    expiryDate: string | null;
+    expirationDate: string | null;
   }>;
   inspections: Array<{
     id: string;
@@ -719,8 +719,8 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
                 {home.licenses.length > 0 ? (
                   <div className="space-y-4">
                     {home.licenses.map((license) => {
-                      const daysUntilExpiry = license.expiryDate 
-                        ? Math.floor((new Date(license.expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+                      const daysUntilExpiry = license.expirationDate 
+                        ? Math.floor((new Date(license.expirationDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
                         : null;
                       const isExpiringSoon = daysUntilExpiry !== null && daysUntilExpiry <= 30 && daysUntilExpiry > 0;
                       const isExpired = daysUntilExpiry !== null && daysUntilExpiry < 0;
@@ -731,7 +731,7 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
                             <div>
                               <div className="flex items-center gap-2 mb-2">
                                 <FiShield className="text-blue-600" />
-                                <h4 className="font-semibold text-gray-900">{license.licenseType}</h4>
+                                <h4 className="font-semibold text-gray-900">{license.type}</h4>
                                 <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                                   license.status === 'ACTIVE' 
                                     ? 'bg-green-100 text-green-800'
@@ -753,8 +753,8 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
                               <p className="text-sm text-gray-600">License #: {license.licenseNumber}</p>
                               <div className="mt-2 text-sm text-gray-600">
                                 <p>Issued: {new Date(license.issueDate).toLocaleDateString()}</p>
-                                {license.expiryDate && (
-                                  <p>Expires: {new Date(license.expiryDate).toLocaleDateString()}</p>
+                                {license.expirationDate && (
+                                  <p>Expires: {new Date(license.expirationDate).toLocaleDateString()}</p>
                                 )}
                               </div>
                             </div>

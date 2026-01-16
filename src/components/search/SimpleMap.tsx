@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useMemo, useCallback, memo } from 'react';
 import L from 'leaflet';
 import { FiMapPin } from 'react-icons/fi';
 
@@ -9,7 +9,7 @@ import 'leaflet/dist/leaflet.css';
 
 // GLOBAL singleton to prevent ANY re-initialization across component remounts
 let GLOBAL_MAP_INIT_COUNT = 0;
-const GLOBAL_MAX_INIT = 5;
+const GLOBAL_MAX_INIT = 10; // Increased limit
 
 // Define types
 interface HomeAddress {
@@ -167,8 +167,8 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
           zoomControl: true
         });
 
-        L.tileLayer('https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Tissot_mercator.png/400px-Tissot_mercator.png', {
-          attribution: '&copy; OpenStreetMap contributors',
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
           maxZoom: 19
         }).addTo(map);
 
@@ -273,4 +273,5 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
   );
 };
 
-export default SimpleMap;
+// Memoize to prevent unnecessary re-renders
+export default memo(SimpleMap);

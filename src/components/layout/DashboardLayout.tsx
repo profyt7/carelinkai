@@ -310,31 +310,56 @@ export default function DashboardLayout({
     }
   }, [showMobileSearch]);
 
-  // Fetch favorites count when user is authenticated
+  // Fetch favorites count when user is authenticated with exponential backoff
   useEffect(() => {
+    let errorCount = 0;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    let cancelled = false;
+    const MAX_ERRORS = 3;
+    const BASE_INTERVAL = 30000; // 30 seconds
+    const MAX_INTERVAL = 300000; // 5 minutes max
+    
     const fetchFavoritesCount = async () => {
+      if (cancelled) return;
+      
       if (session?.user) {
         try {
           const res = await fetch('/api/favorites/all', { cache: 'no-store' });
+          if (cancelled) return;
+          
           if (res.ok) {
             const data = await res.json();
-            setFavoritesCount(data.data?.counts?.total || 0);
+            setFavoritesCount(data?.data?.counts?.total || 0);
+            errorCount = 0; // Reset on success
+          } else if (res.status >= 500 || res.status === 404) {
+            // Server error - back off
+            errorCount++;
+            console.warn(`[DashboardLayout] Favorites API error: ${res.status}, error count: ${errorCount}`);
           }
         } catch (error) {
-          // Silently fail - count badge will just show 0
-          console.error('Failed to fetch favorites count:', error);
+          if (cancelled) return;
+          errorCount++;
+          console.warn('[DashboardLayout] Favorites fetch failed:', error);
         }
       } else {
         setFavoritesCount(0);
+      }
+      
+      // Schedule next poll with exponential backoff
+      if (!cancelled && errorCount < MAX_ERRORS) {
+        const delay = Math.min(BASE_INTERVAL * Math.pow(2, errorCount), MAX_INTERVAL);
+        timeoutId = setTimeout(fetchFavoritesCount, delay);
+      } else if (errorCount >= MAX_ERRORS) {
+        console.warn('[DashboardLayout] Stopping favorites polling after max errors');
       }
     };
     
     fetchFavoritesCount();
     
-    // Refresh favorites count every 30 seconds
-    const interval = setInterval(fetchFavoritesCount, 30000);
-    
-    return () => clearInterval(interval);
+    return () => {
+      cancelled = true;
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [session?.user]);
 
   // Compute E2E bypass (env flag OR cookie set by middleware)
