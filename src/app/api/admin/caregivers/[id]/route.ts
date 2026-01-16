@@ -1,94 +1,239 @@
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
-export const fetchCache = 'force-no-store';
-
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { requireAnyRole } from '@/lib/rbac';
+import { z } from 'zod';
 
-type Params = { params: { id: string } };
+export const dynamic = 'force-dynamic';
 
-export async function GET(_req: NextRequest, { params }: Params) {
-  const { session, error } = await requireAnyRole(['ADMIN' as any]);
-  if (error) return error;
-  if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+const updateCaregiverSchema = z.object({
+  backgroundCheckStatus: z.enum(['NOT_STARTED', 'PENDING', 'CLEAR', 'CONSIDER', 'EXPIRED']).optional(),
+  employmentStatus: z.enum(['ACTIVE', 'INACTIVE', 'ON_LEAVE', 'TERMINATED']).optional(),
+  employmentType: z.enum(['FULL_TIME', 'PART_TIME', 'PER_DIEM', 'CONTRACT']).optional(),
+  hourlyRate: z.number().nullable().optional(),
+  yearsExperience: z.number().nullable().optional(),
+  bio: z.string().optional(),
+  isVisibleInMarketplace: z.boolean().optional(),
+});
 
-  const id = params.id;
-  if (!id) return NextResponse.json({ error: 'Missing caregiver id' }, { status: 400 });
-
-  const caregiver = await prisma.caregiver.findUnique({
-    where: { id },
-    include: {
-      user: {
-        select: {
-          id: true,
-          email: true,
-          firstName: true,
-          lastName: true,
-          addresses: { select: { city: true, state: true, zipCode: true }, take: 1, orderBy: { createdAt: 'desc' } },
-        },
-      },
-      credentials: {
-        select: {
-          id: true,
-          type: true,
-          documentUrl: true,
-          issueDate: true,
-          expirationDate: true,
-          isVerified: true,
-          verifiedBy: true,
-          verifiedAt: true,
-          createdAt: true,
-        },
-        orderBy: { createdAt: 'desc' },
-      },
-    },
-  });
-
-  if (!caregiver) {
-    return NextResponse.json({ error: 'Caregiver not found' }, { status: 404 });
-  }
-
-  const addr = caregiver.user?.addresses?.[0] || null;
-  const name = `${caregiver.user?.firstName ?? ''} ${caregiver.user?.lastName ?? ''}`.trim();
-  const credentialCount = caregiver.credentials.length;
-  const verifiedCredentialCount = caregiver.credentials.filter((c) => c.isVerified).length;
-
-  // Optional: availability summary for next 7 days
-  // Count slots for the caregiver's userId
-  let availabilitySummary: { upcomingSlots7d: number } | null = null;
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const now = new Date();
-    const in7d = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-    const upcomingSlots7d = await prisma.availabilitySlot.count({
-      where: {
-        userId: caregiver.userId,
-        startTime: { gte: now },
-        endTime: { lte: in7d },
-        isAvailable: true,
+    const session = await getServerSession(authOptions);
+
+    // Check if user is admin
+    if (!session || session.user?.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
+    const caregiver = await prisma.caregiver.findUnique({
+      where: { id: params.id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+            status: true,
+            createdAt: true,
+            lastLoginAt: true,
+          },
+        },
+        certifications: {
+          select: {
+            id: true,
+            certificationType: true,
+            certificationName: true,
+            issueDate: true,
+            expiryDate: true,
+            status: true,
+          },
+          orderBy: { issueDate: 'desc' },
+        },
+        documents: {
+          select: {
+            id: true,
+            documentType: true,
+            title: true,
+            uploadDate: true,
+            expiryDate: true,
+          },
+          orderBy: { uploadDate: 'desc' },
+        },
+        assignments: {
+          select: {
+            id: true,
+            resident: {
+              select: {
+                firstName: true,
+                lastName: true,
+              },
+            },
+            isPrimary: true,
+            startDate: true,
+            endDate: true,
+          },
+          orderBy: { startDate: 'desc' },
+        },
+        reviews: {
+          select: {
+            id: true,
+            rating: true,
+            title: true,
+            content: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: 'desc' },
+        },
       },
     });
-    availabilitySummary = { upcomingSlots7d };
-  } catch {
-    availabilitySummary = null;
-  }
 
-  return NextResponse.json({
-    id: caregiver.id,
-    userId: caregiver.userId,
-    name,
-    email: caregiver.user?.email ?? null,
-    location: { city: addr?.city ?? null, state: addr?.state ?? null, zipCode: addr?.zipCode ?? null },
-    createdAt: caregiver.createdAt,
-    bio: caregiver.bio,
-    yearsExperience: caregiver.yearsExperience,
-    hourlyRate: caregiver.hourlyRate,
-    specialties: caregiver.specialties,
-    settings: caregiver.settings,
-    careTypes: caregiver.careTypes,
-    isVisibleInMarketplace: null as null, // not implemented yet
-    credentials: caregiver.credentials,
-    credentialSummary: { credentialCount, verifiedCredentialCount },
-    availabilitySummary,
-  });
+    if (!caregiver) {
+      return NextResponse.json({ error: 'Caregiver not found' }, { status: 404 });
+    }
+
+    // Calculate stats
+    const ratings = caregiver.reviews.map((r) => r.rating);
+    const averageRating = ratings.length > 0
+      ? ratings.reduce((a, b) => a + b, 0) / ratings.length
+      : null;
+
+    const result = {
+      ...caregiver,
+      averageRating,
+      reviewCount: caregiver.reviews.length,
+      assignmentCount: caregiver.assignments.length,
+      certificationCount: caregiver.certifications.length,
+    };
+
+    return NextResponse.json(result);
+  } catch (error) {
+    console.error('[Admin Caregiver Detail API] Error:', error);
+    return NextResponse.json(
+      {
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    // Check if user is admin
+    if (!session || session.user?.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const validatedData = updateCaregiverSchema.parse(body);
+
+    // Update the caregiver
+    const updatedCaregiver = await prisma.caregiver.update({
+      where: { id: params.id },
+      data: validatedData,
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+            status: true,
+            createdAt: true,
+            lastLoginAt: true,
+          },
+        },
+        certifications: {
+          select: {
+            id: true,
+            certificationType: true,
+            certificationName: true,
+            issueDate: true,
+            expiryDate: true,
+            status: true,
+          },
+          orderBy: { issueDate: 'desc' },
+        },
+        documents: {
+          select: {
+            id: true,
+            documentType: true,
+            title: true,
+            uploadDate: true,
+            expiryDate: true,
+          },
+          orderBy: { uploadDate: 'desc' },
+        },
+        assignments: {
+          select: {
+            id: true,
+            resident: {
+              select: {
+                firstName: true,
+                lastName: true,
+              },
+            },
+            isPrimary: true,
+            startDate: true,
+            endDate: true,
+          },
+          orderBy: { startDate: 'desc' },
+        },
+        reviews: {
+          select: {
+            id: true,
+            rating: true,
+            title: true,
+            content: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    });
+
+    // Calculate stats
+    const ratings = updatedCaregiver.reviews.map((r) => r.rating);
+    const averageRating = ratings.length > 0
+      ? ratings.reduce((a, b) => a + b, 0) / ratings.length
+      : null;
+
+    const result = {
+      ...updatedCaregiver,
+      averageRating,
+      reviewCount: updatedCaregiver.reviews.length,
+      assignmentCount: updatedCaregiver.assignments.length,
+      certificationCount: updatedCaregiver.certifications.length,
+    };
+
+    return NextResponse.json(result);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: 'Invalid request data', details: error.errors },
+        { status: 400 }
+      );
+    }
+
+    console.error('[Admin Caregiver Update API] Error:', error);
+    return NextResponse.json(
+      {
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    );
+  }
 }
