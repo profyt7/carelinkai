@@ -86,7 +86,7 @@ async function handleBulkDelete(homeIds: string[], adminId: string) {
         continue;
       }
 
-      await prisma.home.delete({ where: { id: homeId } });
+      await prisma.assistedLivingHome.delete({ where: { id: homeId } });
       success++;
     } catch (error) {
       console.error(`Failed to delete home ${homeId}:`, error);
@@ -107,7 +107,7 @@ async function handleBulkStatusUpdate(homeIds: string[], status: string, adminId
 
   for (const homeId of homeIds) {
     try {
-      await prisma.home.update({
+      await prisma.assistedLivingHome.update({
         where: { id: homeId },
         data: { status },
       });
