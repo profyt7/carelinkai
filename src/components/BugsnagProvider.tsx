@@ -1,29 +1,47 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import { initializeBugsnagClient, getBugsnagErrorBoundary } from '@/lib/bugsnag-client';
+import React, { useEffect, useState } from 'react';
+import { initializeBugsnagClient, getBugsnagErrorBoundary, isBugsnagInitialized } from '@/lib/bugsnag-client';
 
 interface BugsnagProviderProps {
   children: React.ReactNode;
 }
 
 export default function BugsnagProvider({ children }: BugsnagProviderProps) {
+  const [isReady, setIsReady] = useState(false);
+  const [ErrorBoundary, setErrorBoundary] = useState<React.ComponentType<any> | null>(null);
+
   useEffect(() => {
     // Initialize Bugsnag on client mount
-    initializeBugsnagClient();
+    console.log('[BugsnagProvider] Initializing...');
+    const client = initializeBugsnagClient();
+    
+    if (client) {
+      const boundary = getBugsnagErrorBoundary();
+      setErrorBoundary(() => boundary);
+      console.log('[BugsnagProvider] ErrorBoundary set:', !!boundary);
+    } else {
+      console.log('[BugsnagProvider] Client not initialized, using fallback');
+      // Get fallback error boundary
+      const fallback = getBugsnagErrorBoundary();
+      setErrorBoundary(() => fallback);
+    }
+    
+    setIsReady(true);
   }, []);
 
-  const ErrorBoundary = getBugsnagErrorBoundary();
+  // During server-side rendering or before initialization, render children directly
+  if (!isReady) {
+    return <>{children}</>;
+  }
 
+  // If no ErrorBoundary available, render children directly
   if (!ErrorBoundary) {
-    // If Bugsnag is not configured, just render children without error boundary
     return <>{children}</>;
   }
 
   return (
-    <ErrorBoundary
-      FallbackComponent={ErrorFallback}
-    >
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
       {children}
     </ErrorBoundary>
   );
@@ -76,4 +94,21 @@ function ErrorFallback() {
       </div>
     </div>
   );
+}
+
+// Export a hook to check Bugsnag status
+export function useBugsnagStatus() {
+  const [status, setStatus] = useState({
+    initialized: false,
+    windowBugsnag: false,
+  });
+
+  useEffect(() => {
+    setStatus({
+      initialized: isBugsnagInitialized(),
+      windowBugsnag: !!(typeof window !== 'undefined' && (window as any).Bugsnag),
+    });
+  }, []);
+
+  return status;
 }

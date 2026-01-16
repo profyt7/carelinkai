@@ -1,6 +1,7 @@
 import Bugsnag from '@bugsnag/node';
 
 let bugsnagServer: typeof Bugsnag | null = null;
+let initializationAttempted = false;
 
 export function initializeBugsnagServer() {
   // Only run on server
@@ -13,28 +14,53 @@ export function initializeBugsnagServer() {
     return bugsnagServer;
   }
 
+  // Prevent multiple initialization attempts
+  if (initializationAttempted) {
+    return null;
+  }
+  initializationAttempted = true;
+
   const apiKey = process.env.NEXT_PUBLIC_BUGSNAG_API_KEY;
 
+  console.log('[Bugsnag Server] Attempting initialization...');
+  console.log('[Bugsnag Server] API Key present:', !!apiKey);
+  console.log('[Bugsnag Server] API Key length:', apiKey?.length);
+  console.log('[Bugsnag Server] NODE_ENV:', process.env.NODE_ENV);
+
   // Don't initialize if no API key is provided
-  if (!apiKey || apiKey === 'YOUR_BUGSNAG_API_KEY_HERE') {
-    console.warn('Bugsnag API key not configured. Server error tracking is disabled.');
+  if (!apiKey || apiKey === 'YOUR_BUGSNAG_API_KEY_HERE' || apiKey.length < 32) {
+    console.warn('[Bugsnag Server] API key not configured or invalid. Server error tracking is disabled.');
     return null;
   }
 
   try {
+    // Determine release stage - default to 'production' for deployed environments
+    const releaseStage = process.env.NEXT_PUBLIC_BUGSNAG_RELEASE_STAGE || 
+                         process.env.NODE_ENV || 
+                         'production';
+    
+    console.log('[Bugsnag Server] Release stage:', releaseStage);
+
     bugsnagServer = Bugsnag.start({
       apiKey,
-      enabledReleaseStages: ['production', 'staging'],
-      releaseStage: process.env.NODE_ENV || 'development',
+      // Enable all release stages to ensure errors are always captured
+      enabledReleaseStages: ['production', 'staging', 'development'],
+      releaseStage,
       appVersion: process.env.NEXT_PUBLIC_APP_VERSION || '1.0.0',
+      
+      // Auto-detect unhandled errors
+      autoDetectErrors: true,
+      autoTrackSessions: true,
       
       // Server-specific configuration
       onError: (event) => {
         // Ensure we have a valid error object
         if (!event.errors || event.errors.length === 0) {
-          console.warn('Bugsnag received event with no errors');
+          console.warn('[Bugsnag Server] Received event with no errors');
           return false;
         }
+        
+        console.log('[Bugsnag Server] Error captured:', event.errors[0]?.errorMessage);
         
         // Add server-specific metadata
         event.addMetadata('server', {
@@ -42,6 +68,7 @@ export function initializeBugsnagServer() {
           framework: 'Next.js',
           environment: process.env.NODE_ENV,
           nodeVersion: process.version,
+          hostname: process.env.HOSTNAME || process.env.RENDER_SERVICE_NAME || 'unknown',
         });
         
         return true;
@@ -60,13 +87,21 @@ export function initializeBugsnagServer() {
     console.log('✅ Bugsnag server initialized successfully');
     return bugsnagServer;
   } catch (error) {
-    console.error('Failed to initialize Bugsnag server:', error);
+    console.error('[Bugsnag Server] Failed to initialize:', error);
     return null;
   }
 }
 
 export function getBugsnagServer() {
+  if (typeof window !== 'undefined') {
+    return null;
+  }
   return bugsnagServer || initializeBugsnagServer();
+}
+
+// Check if Bugsnag server is properly initialized
+export function isBugsnagServerInitialized(): boolean {
+  return bugsnagServer !== null;
 }
 
 // Export a method to manually notify Bugsnag from server
@@ -79,6 +114,7 @@ export function notifyBugsnagServer(error: Error | unknown, metadata?: Record<st
     : new Error(String(error || 'Unknown error'));
   
   if (server) {
+    console.log('[Bugsnag Server] Manually notifying error:', errorObj.message);
     server.notify(errorObj, (event) => {
       if (metadata) {
         event.addMetadata('custom', metadata);
@@ -92,7 +128,7 @@ export function notifyBugsnagServer(error: Error | unknown, metadata?: Record<st
       }
     });
   } else {
-    console.error('Bugsnag server not initialized. Error:', errorObj, metadata);
+    console.error('[Bugsnag Server] Not initialized. Error:', errorObj.message, metadata);
   }
 }
 
@@ -128,5 +164,19 @@ export function withBugsnagServerError<T>(
       });
       throw errorObj;
     }
+  };
+}
+
+// Test function to verify Bugsnag server is working
+export function testBugsnagServer() {
+  console.log('[Bugsnag Server] Running test...');
+  console.log('[Bugsnag Server] Initialized:', isBugsnagServerInitialized());
+  
+  const testError = new Error('Bugsnag Server Test Error - ' + new Date().toISOString());
+  notifyBugsnagServer(testError, { test: true, source: 'testBugsnagServer' });
+  
+  return {
+    initialized: isBugsnagServerInitialized(),
+    testErrorSent: true,
   };
 }
