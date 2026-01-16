@@ -78,6 +78,13 @@ export default async function AdminDashboard() {
       href: '/admin/analytics',
       color: 'from-green-500 to-green-600',
     },
+    {
+      title: 'Inquiries Management',
+      description: 'View and manage all platform inquiries',
+      icon: FiFileText,
+      href: '/admin/inquiries',
+      color: 'from-cyan-500 to-cyan-600',
+    },
   ];
 
   return (

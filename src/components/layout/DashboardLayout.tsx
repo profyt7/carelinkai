@@ -157,6 +157,7 @@ const navItems: NavItem[] = [
       { name: "User Management", icon: <FiUsers size={18} />, href: "/admin/users", showInMobileBar: false, roleRestriction: ["ADMIN"] },
       { name: "Caregivers", icon: <FiUsers size={18} />, href: "/admin/caregivers", showInMobileBar: false, roleRestriction: ["ADMIN"] },
       { name: "Homes", icon: <FiHome size={18} />, href: "/admin/homes", showInMobileBar: false, roleRestriction: ["ADMIN"] },
+      { name: "Inquiries", icon: <FiFileText size={18} />, href: "/admin/inquiries", showInMobileBar: false, roleRestriction: ["ADMIN"] },
       { name: "Analytics", icon: <FiBarChart2 size={18} />, href: "/admin/analytics", showInMobileBar: false, roleRestriction: ["ADMIN"] },
       { name: "Audit Logs", icon: <FiFileText size={18} />, href: "/admin/audit-logs", showInMobileBar: false, roleRestriction: ["ADMIN"] },
       { name: "Data Exports", icon: <FiFileText size={18} />, href: "/admin/exports", showInMobileBar: false, roleRestriction: ["ADMIN"] },
