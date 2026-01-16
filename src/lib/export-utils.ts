@@ -23,7 +23,15 @@ export async function saveExportHistory({
   exportedById: string;
 }) {
   try {
-    await prisma.exportHistory.create({
+    console.log('[saveExportHistory] Saving export history:', {
+      exportType,
+      fileName,
+      recordCount,
+      format,
+      exportedById,
+    });
+    
+    const record = await prisma.exportHistory.create({
       data: {
         exportType,
         fileName,
@@ -35,9 +43,11 @@ export async function saveExportHistory({
         exportedById,
       },
     });
+    
+    console.log('[saveExportHistory] Export history saved successfully:', record.id);
   } catch (error) {
     // Log but don't fail the export if history save fails
-    console.error('Failed to save export history:', error);
+    console.error('[saveExportHistory] Failed to save export history:', error);
   }
 }
 

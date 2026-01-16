@@ -273,12 +273,28 @@ export default function DataExportsPage() {
     try {
       setHistoryLoading(true);
       const response = await fetch('/api/admin/exports/history');
+      
+      // Check content type to ensure we got JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType?.includes('application/json')) {
+        console.error('Export history API returned non-JSON:', contentType);
+        setExportHistory([]);
+        return;
+      }
+      
+      const data = await response.json();
+      
       if (response.ok) {
-        const data = await response.json();
+        console.log('Export history loaded:', data.count || 0, 'records');
         setExportHistory(data.exports || []);
+      } else {
+        // Handle error response
+        console.error('Export history API error:', response.status, data.error || data.message);
+        setExportHistory([]);
       }
     } catch (error) {
       console.error('Failed to fetch export history:', error);
+      setExportHistory([]);
     } finally {
       setHistoryLoading(false);
     }

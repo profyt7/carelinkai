@@ -7,13 +7,14 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {
-    const user = await requirePermission(PERMISSIONS.ADMIN_FULL_ACCESS);
+    console.log('[Export History] API called');
     
-    // Fetch export history for the current user (admins see their own exports)
+    const user = await requirePermission(PERMISSIONS.ADMIN_FULL_ACCESS);
+    console.log('[Export History] User authenticated:', user.id, user.email);
+    
+    // For admin users, show all exports (not just their own)
+    // This is more useful for debugging and admin oversight
     const exports = await prisma.exportHistory.findMany({
-      where: {
-        exportedById: user.id,
-      },
       include: {
         exportedBy: {
           select: {
@@ -24,12 +25,24 @@ export async function GET(req: NextRequest) {
         },
       },
       orderBy: { createdAt: 'desc' },
-      take: 50,
+      take: 100,
     });
     
-    return NextResponse.json({ exports: exports || [] });
+    console.log('[Export History] Found', exports?.length || 0, 'export records');
+    
+    // Serialize dates for JSON response
+    const serializedExports = (exports || []).map(exp => ({
+      ...exp,
+      completedAt: exp.completedAt?.toISOString() || null,
+      createdAt: exp.createdAt?.toISOString() || null,
+    }));
+    
+    return NextResponse.json({ 
+      exports: serializedExports,
+      count: serializedExports.length 
+    });
   } catch (error) {
-    console.error('Export history fetch error:', error);
+    console.error('[Export History] Error:', error);
     return handleAuthError(error);
   }
 }
