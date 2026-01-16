@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FiSearch, FiEdit, FiTrash2, FiPlus, FiFilter, FiDownload, FiUserCheck } from 'react-icons/fi';
+import { FiSearch, FiEdit, FiTrash2, FiPlus, FiFilter, FiDownload, FiUserCheck, FiCheck, FiX } from 'react-icons/fi';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { BulkActionsBar, BulkAction } from '@/components/admin/BulkActionsBar';
+import toast from 'react-hot-toast';
 
 type User = {
   id: string;
@@ -25,10 +27,19 @@ export default function AdminUsersPage() {
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const [impersonatingUserId, setImpersonatingUserId] = useState<string | null>(null);
+  
+  // Bulk selection state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchUsers();
+  }, [page, filterRole, filterStatus, searchQuery]);
+
+  // Clear selections when data changes
+  useEffect(() => {
+    setSelectedIds(new Set());
   }, [page, filterRole, filterStatus, searchQuery]);
 
   const fetchUsers = async () => {
@@ -42,30 +53,25 @@ export default function AdminUsersPage() {
         ...(filterStatus !== 'ALL' && { status: filterStatus }),
       });
 
-      console.log('Fetching users with params:', params.toString());
       const response = await fetch(`/api/admin/users?${params}`);
-      console.log('Response status:', response.status);
-      
       const data = await response.json();
-      console.log('Response data:', data);
       
       if (!response.ok) {
         console.error('API returned error:', data);
-        alert(`Failed to load users: ${data.error || 'Unknown error'}`);
+        toast.error(`Failed to load users: ${data.error || 'Unknown error'}`);
         return;
       }
       
       if (data.users) {
         setUsers(data.users);
         setTotalPages(data.totalPages || 1);
-        console.log(`Loaded ${data.users.length} users, total count: ${data.totalCount}`);
+        setTotalCount(data.totalCount || 0);
       } else {
-        console.warn('No users array in response:', data);
         setUsers([]);
       }
     } catch (error) {
       console.error('Failed to fetch users:', error);
-      alert(`Error loading users: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      toast.error(`Error loading users: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setUsers([]);
     } finally {
       setLoading(false);
@@ -81,23 +87,25 @@ export default function AdminUsersPage() {
       });
 
       if (response.ok) {
+        toast.success('User deleted successfully');
         fetchUsers();
+      } else {
+        toast.error('Failed to delete user');
       }
     } catch (error) {
       console.error('Failed to delete user:', error);
+      toast.error('Failed to delete user');
     }
   };
 
   const handleImpersonateUser = async (user: User) => {
-    // Prevent impersonating admins
     if (user.role === 'ADMIN') {
-      alert('Cannot impersonate other administrators');
+      toast.error('Cannot impersonate other administrators');
       return;
     }
 
-    // Prevent impersonating inactive users
     if (user.status !== 'ACTIVE') {
-      alert('Cannot impersonate inactive users');
+      toast.error('Cannot impersonate inactive users');
       return;
     }
 
@@ -105,53 +113,91 @@ export default function AdminUsersPage() {
       `Impersonate ${user.firstName} ${user.lastName} (${user.email})?\n\nPlease provide a reason for this impersonation:`
     );
 
-    if (!reason) {
-      return; // User cancelled
-    }
+    if (!reason) return;
 
     setImpersonatingUserId(user.id);
 
     try {
       const response = await fetch('/api/admin/impersonate/start', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          targetUserId: user.id,
-          reason,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetUserId: user.id, reason }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        // Redirect to user's role-specific dashboard
         const roleDashboards: Record<string, string> = {
           FAMILY: '/dashboard',
           OPERATOR: '/operator',
           CAREGIVER: '/caregiver',
           DISCHARGE_PLANNER: '/discharge-planner',
         };
-
         const redirectUrl = roleDashboards[user.role] || '/dashboard';
-        
-        // Refresh and redirect
         router.push(redirectUrl);
         router.refresh();
       } else {
-        alert(`Failed to start impersonation: ${data.error}`);
+        toast.error(`Failed to start impersonation: ${data.error}`);
       }
     } catch (error) {
       console.error('Failed to impersonate user:', error);
-      alert('Failed to start impersonation. Please try again.');
+      toast.error('Failed to start impersonation');
     } finally {
       setImpersonatingUserId(null);
     }
   };
 
+  // Bulk operations
+  const toggleSelection = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === users.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(users.map(u => u.id)));
+    }
+  };
+
+  const handleBulkAction = async (actionId: string) => {
+    const userIds = Array.from(selectedIds);
+    
+    try {
+      const response = await fetch('/api/admin/users/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: actionId, userIds }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        toast.success(result.message);
+        setSelectedIds(new Set());
+        fetchUsers();
+      } else {
+        toast.error(result.error || 'Bulk operation failed');
+      }
+    } catch (error) {
+      console.error('Bulk operation failed:', error);
+      toast.error('Bulk operation failed');
+    }
+  };
+
+  const bulkActions: BulkAction[] = [
+    { id: 'activate', label: 'Activate Users', icon: <FiCheck size={16} />, variant: 'success' },
+    { id: 'deactivate', label: 'Deactivate Users', icon: <FiX size={16} />, variant: 'warning' },
+    { id: 'delete', label: 'Delete Users', icon: <FiTrash2 size={16} />, variant: 'danger', requireConfirmation: true },
+  ];
+
   const exportUsers = () => {
-    // Convert users to CSV
     const csvContent = [
       ['Email', 'Name', 'Role', 'Status', 'Created At', 'Last Login'].join(','),
       ...users.map(u => [
@@ -184,7 +230,7 @@ export default function AdminUsersPage() {
                 ← Back to Dashboard
               </Link>
               <h1 className="text-3xl font-bold text-neutral-900">User Management</h1>
-              <p className="mt-1 text-neutral-600">Manage all platform users</p>
+              <p className="mt-1 text-neutral-600">Manage all platform users ({totalCount} total)</p>
             </div>
             <button
               onClick={exportUsers}
@@ -201,11 +247,8 @@ export default function AdminUsersPage() {
         {/* Filters */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6 border border-neutral-200">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Search */}
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-2">
-                Search Users
-              </label>
+              <label className="block text-sm font-medium text-neutral-700 mb-2">Search Users</label>
               <div className="relative">
                 <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400" />
                 <input
@@ -217,12 +260,8 @@ export default function AdminUsersPage() {
                 />
               </div>
             </div>
-
-            {/* Role filter */}
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-2">
-                Filter by Role
-              </label>
+              <label className="block text-sm font-medium text-neutral-700 mb-2">Filter by Role</label>
               <select
                 value={filterRole}
                 onChange={(e) => setFilterRole(e.target.value)}
@@ -236,12 +275,8 @@ export default function AdminUsersPage() {
                 <option value="ADMIN">Admin</option>
               </select>
             </div>
-
-            {/* Status filter */}
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-2">
-                Filter by Status
-              </label>
+              <label className="block text-sm font-medium text-neutral-700 mb-2">Filter by Status</label>
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
@@ -255,70 +290,70 @@ export default function AdminUsersPage() {
           </div>
         </div>
 
+        {/* Bulk Actions Bar */}
+        <BulkActionsBar
+          selectedCount={selectedIds.size}
+          totalCount={users.length}
+          actions={bulkActions}
+          onAction={handleBulkAction}
+          onClearSelection={() => setSelectedIds(new Set())}
+          loading={loading}
+        />
+
         {/* Users Table */}
         <div className="bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden">
           <table className="min-w-full divide-y divide-neutral-200">
             <thead className="bg-neutral-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-700 uppercase tracking-wider">
-                  User
+                <th className="px-4 py-3 text-left">
+                  <input
+                    type="checkbox"
+                    checked={users.length > 0 && selectedIds.size === users.length}
+                    onChange={toggleSelectAll}
+                    className="rounded border-neutral-300 text-[#3978FC] focus:ring-[#3978FC]"
+                  />
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-700 uppercase tracking-wider">
-                  Role
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-700 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-700 uppercase tracking-wider">
-                  Created
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-700 uppercase tracking-wider">
-                  Last Login
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-neutral-700 uppercase tracking-wider">
-                  Actions
-                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-700 uppercase tracking-wider">User</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-700 uppercase tracking-wider">Role</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-700 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-700 uppercase tracking-wider">Created</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-700 uppercase tracking-wider">Last Login</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-neutral-700 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-neutral-200">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-neutral-500">
-                    Loading users...
-                  </td>
+                  <td colSpan={7} className="px-6 py-12 text-center text-neutral-500">Loading users...</td>
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-neutral-500">
-                    No users found
-                  </td>
+                  <td colSpan={7} className="px-6 py-12 text-center text-neutral-500">No users found</td>
                 </tr>
               ) : (
                 users.map((user) => (
-                  <tr key={user.id} className="hover:bg-neutral-50">
+                  <tr key={user.id} className={`hover:bg-neutral-50 ${selectedIds.has(user.id) ? 'bg-blue-50' : ''}`}>
+                    <td className="px-4 py-4">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(user.id)}
+                        onChange={() => toggleSelection(user.id)}
+                        className="rounded border-neutral-300 text-[#3978FC] focus:ring-[#3978FC]"
+                      />
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm font-medium text-neutral-900">
-                          {user.firstName && user.lastName
-                            ? `${user.firstName} ${user.lastName}`
-                            : user.email}
+                          {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email}
                         </div>
                         <div className="text-sm text-neutral-500">{user.email}</div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-                        {user.role}
-                      </span>
+                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">{user.role}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-2 py-1 text-xs font-medium rounded-full ${
-                          user.status === 'ACTIVE'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
-                        }`}
-                      >
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${user.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                         {user.status}
                       </span>
                     </td>
@@ -330,32 +365,20 @@ export default function AdminUsersPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end space-x-2">
-                        <Link
-                          href={`/admin/users/${user.id}`}
-                          className="text-[#3978FC] hover:text-[#3167d4] p-2"
-                          title="Edit user"
-                        >
+                        <Link href={`/admin/users/${user.id}`} className="text-[#3978FC] hover:text-[#3167d4] p-2" title="Edit user">
                           <FiEdit />
                         </Link>
                         {user.role !== 'ADMIN' && user.status === 'ACTIVE' && (
                           <button
                             onClick={() => handleImpersonateUser(user)}
                             disabled={impersonatingUserId === user.id}
-                            className="text-amber-600 hover:text-amber-800 p-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="text-amber-600 hover:text-amber-800 p-2 disabled:opacity-50"
                             title="Impersonate user"
                           >
-                            {impersonatingUserId === user.id ? (
-                              <span className="animate-spin">⏳</span>
-                            ) : (
-                              <FiUserCheck />
-                            )}
+                            {impersonatingUserId === user.id ? <span className="animate-spin">⏳</span> : <FiUserCheck />}
                           </button>
                         )}
-                        <button
-                          onClick={() => handleDeleteUser(user.id)}
-                          className="text-red-600 hover:text-red-800 p-2"
-                          title="Delete user"
-                        >
+                        <button onClick={() => handleDeleteUser(user.id)} className="text-red-600 hover:text-red-800 p-2" title="Delete user">
                           <FiTrash2 />
                         </button>
                       </div>
@@ -377,9 +400,7 @@ export default function AdminUsersPage() {
             >
               Previous
             </button>
-            <span className="text-neutral-600">
-              Page {page} of {totalPages}
-            </span>
+            <span className="text-neutral-600">Page {page} of {totalPages}</span>
             <button
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}

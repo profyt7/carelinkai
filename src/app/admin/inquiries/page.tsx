@@ -6,9 +6,11 @@ import Link from 'next/link';
 import { 
   FiArrowLeft, FiSearch, FiFilter, FiRefreshCw, FiDownload, 
   FiEye, FiUser, FiHome, FiCalendar, FiMessageCircle, FiClock,
-  FiAlertTriangle, FiCheckCircle, FiX, FiChevronLeft, FiChevronRight
+  FiAlertTriangle, FiCheckCircle, FiX, FiChevronLeft, FiChevronRight, FiTrash2, FiCheck
 } from 'react-icons/fi';
 import { format } from 'date-fns';
+import { BulkActionsBar, BulkAction } from '@/components/admin/BulkActionsBar';
+import toast from 'react-hot-toast';
 
 interface Inquiry {
   id: string;
@@ -121,6 +123,9 @@ export default function AdminInquiriesPage() {
   const [dateTo, setDateTo] = useState('');
   const [showFilters, setShowFilters] = useState(false);
 
+  // Bulk selection state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
   const fetchInquiries = useCallback(async () => {
     setLoading(true);
     try {
@@ -153,6 +158,11 @@ export default function AdminInquiriesPage() {
   useEffect(() => {
     fetchInquiries();
   }, [fetchInquiries]);
+
+  // Clear selections when filters change
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [pagination.page, search, status, urgency, source, assignedFilter, dateFrom, dateTo]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -192,6 +202,56 @@ export default function AdminInquiriesPage() {
     a.click();
   };
 
+  // Bulk operations
+  const toggleSelection = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === inquiries.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(inquiries.map(i => i.id)));
+    }
+  };
+
+  const handleBulkAction = async (actionId: string) => {
+    const inquiryIds = Array.from(selectedIds);
+    
+    try {
+      const response = await fetch('/api/admin/inquiries/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: actionId, inquiryIds }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        toast.success(result.message);
+        setSelectedIds(new Set());
+        fetchInquiries();
+      } else {
+        toast.error(result.error || 'Bulk operation failed');
+      }
+    } catch (error) {
+      toast.error('Bulk operation failed');
+    }
+  };
+
+  const bulkActions: BulkAction[] = [
+    { id: 'markContacted', label: 'Mark as Contacted', icon: <FiCheck size={16} />, variant: 'success' },
+    { id: 'markResolved', label: 'Mark as Resolved', icon: <FiCheckCircle size={16} />, variant: 'success' },
+    { id: 'closeLost', label: 'Close as Lost', icon: <FiX size={16} />, variant: 'warning' },
+    { id: 'delete', label: 'Delete Inquiries', icon: <FiTrash2 size={16} />, variant: 'danger', requireConfirmation: true },
+  ];
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -204,7 +264,7 @@ export default function AdminInquiriesPage() {
               </Link>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Inquiries Management</h1>
-                <p className="text-sm text-gray-500">Manage all platform inquiries</p>
+                <p className="text-sm text-gray-500">Manage all platform inquiries ({pagination.total} total)</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -265,7 +325,6 @@ export default function AdminInquiriesPage() {
                 />
               </div>
             </div>
-            
             <div className="min-w-[150px]">
               <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
               <select
@@ -273,12 +332,9 @@ export default function AdminInquiriesPage() {
                 onChange={(e) => setStatus(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               >
-                {STATUS_OPTIONS.map(opt => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
+                {STATUS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
               </select>
             </div>
-
             <div className="min-w-[130px]">
               <label className="block text-sm font-medium text-gray-700 mb-1">Urgency</label>
               <select
@@ -286,12 +342,9 @@ export default function AdminInquiriesPage() {
                 onChange={(e) => setUrgency(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               >
-                {URGENCY_OPTIONS.map(opt => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
+                {URGENCY_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
               </select>
             </div>
-
             <button
               type="button"
               onClick={() => setShowFilters(!showFilters)}
@@ -300,20 +353,11 @@ export default function AdminInquiriesPage() {
               <FiFilter className="w-4 h-4" />
               More Filters
             </button>
-
-            <button
-              type="submit"
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-            >
+            <button type="submit" className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
               Search
             </button>
-            
             {(search || status || urgency || source || assignedFilter || dateFrom || dateTo) && (
-              <button
-                type="button"
-                onClick={clearFilters}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800"
-              >
+              <button type="button" onClick={clearFilters} className="px-4 py-2 text-gray-600 hover:text-gray-800">
                 Clear
               </button>
             )}
@@ -328,9 +372,7 @@ export default function AdminInquiriesPage() {
                   onChange={(e) => setSource(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 >
-                  {SOURCE_OPTIONS.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
+                  {SOURCE_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                 </select>
               </div>
               <div>
@@ -366,6 +408,16 @@ export default function AdminInquiriesPage() {
           )}
         </div>
 
+        {/* Bulk Actions Bar */}
+        <BulkActionsBar
+          selectedCount={selectedIds.size}
+          totalCount={inquiries.length}
+          actions={bulkActions}
+          onAction={handleBulkAction}
+          onClearSelection={() => setSelectedIds(new Set())}
+          loading={loading}
+        />
+
         {/* Error State */}
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-center gap-3">
@@ -391,6 +443,14 @@ export default function AdminInquiriesPage() {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
+                    <th className="px-4 py-3 text-left">
+                      <input
+                        type="checkbox"
+                        checked={inquiries.length > 0 && selectedIds.size === inquiries.length}
+                        onChange={toggleSelectAll}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                    </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Home</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
@@ -402,7 +462,15 @@ export default function AdminInquiriesPage() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {inquiries.map((inquiry) => (
-                    <tr key={inquiry.id} className="hover:bg-gray-50">
+                    <tr key={inquiry.id} className={`hover:bg-gray-50 ${selectedIds.has(inquiry.id) ? 'bg-blue-50' : ''}`}>
+                      <td className="px-4 py-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(inquiry.id)}
+                          onChange={() => toggleSelection(inquiry.id)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                      </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
@@ -460,12 +528,8 @@ export default function AdminInquiriesPage() {
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {format(new Date(inquiry.createdAt), 'MMM d, yyyy')}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {format(new Date(inquiry.createdAt), 'h:mm a')}
-                        </div>
+                        <div className="text-sm text-gray-900">{format(new Date(inquiry.createdAt), 'MMM d, yyyy')}</div>
+                        <div className="text-xs text-gray-500">{format(new Date(inquiry.createdAt), 'h:mm a')}</div>
                         {inquiry.tourDate && (
                           <div className="flex items-center text-xs text-purple-600 mt-1">
                             <FiCalendar className="w-3 h-3 mr-1" />
@@ -504,9 +568,7 @@ export default function AdminInquiriesPage() {
                 >
                   <FiChevronLeft className="w-5 h-5" />
                 </button>
-                <span className="px-4 py-2 text-sm">
-                  Page {pagination.page} of {pagination.totalPages}
-                </span>
+                <span className="px-4 py-2 text-sm">Page {pagination.page} of {pagination.totalPages}</span>
                 <button
                   onClick={() => setPagination(p => ({ ...p, page: p.page + 1 }))}
                   disabled={pagination.page === pagination.totalPages}

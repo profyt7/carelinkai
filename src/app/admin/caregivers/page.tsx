@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FiSearch, FiEdit, FiEye, FiFilter, FiDownload, FiCheck, FiX, FiClock, FiAlertTriangle } from 'react-icons/fi';
+import { FiSearch, FiEdit, FiEye, FiFilter, FiDownload, FiCheck, FiX, FiClock, FiAlertTriangle, FiTrash2 } from 'react-icons/fi';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { BulkActionsBar, BulkAction } from '@/components/admin/BulkActionsBar';
+import toast from 'react-hot-toast';
 
 type Caregiver = {
   id: string;
@@ -39,9 +41,16 @@ export default function AdminCaregiversPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  
+  // Bulk selection state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchCaregivers();
+  }, [page, filterStatus, filterEmploymentType, filterBackgroundCheck, searchQuery]);
+
+  useEffect(() => {
+    setSelectedIds(new Set());
   }, [page, filterStatus, filterEmploymentType, filterBackgroundCheck, searchQuery]);
 
   const fetchCaregivers = async () => {
@@ -60,8 +69,7 @@ export default function AdminCaregiversPage() {
       const data = await response.json();
       
       if (!response.ok) {
-        console.error('API returned error:', data);
-        alert(`Failed to load caregivers: ${data.error || 'Unknown error'}`);
+        toast.error(`Failed to load caregivers: ${data.error || 'Unknown error'}`);
         return;
       }
       
@@ -73,8 +81,7 @@ export default function AdminCaregiversPage() {
         setCaregivers([]);
       }
     } catch (error) {
-      console.error('Failed to fetch caregivers:', error);
-      alert(`Error loading caregivers: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      toast.error(`Error loading caregivers: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setCaregivers([]);
     } finally {
       setLoading(false);
@@ -102,10 +109,60 @@ export default function AdminCaregiversPage() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (error) {
-      console.error('Failed to export caregivers:', error);
-      alert('Failed to export data');
+      toast.error('Failed to export data');
     }
   };
+
+  // Bulk operations
+  const toggleSelection = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === caregivers.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(caregivers.map(c => c.id)));
+    }
+  };
+
+  const handleBulkAction = async (actionId: string) => {
+    const caregiverIds = Array.from(selectedIds);
+    
+    try {
+      const response = await fetch('/api/admin/caregivers/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: actionId, caregiverIds }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        toast.success(result.message);
+        setSelectedIds(new Set());
+        fetchCaregivers();
+      } else {
+        toast.error(result.error || 'Bulk operation failed');
+      }
+    } catch (error) {
+      toast.error('Bulk operation failed');
+    }
+  };
+
+  const bulkActions: BulkAction[] = [
+    { id: 'approve', label: 'Approve Background Check', icon: <FiCheck size={16} />, variant: 'success' },
+    { id: 'reject', label: 'Flag Background Check', icon: <FiAlertTriangle size={16} />, variant: 'warning' },
+    { id: 'activate', label: 'Activate Caregivers', icon: <FiCheck size={16} />, variant: 'success' },
+    { id: 'deactivate', label: 'Deactivate Caregivers', icon: <FiX size={16} />, variant: 'warning' },
+    { id: 'delete', label: 'Delete Caregivers', icon: <FiTrash2 size={16} />, variant: 'danger', requireConfirmation: true },
+  ];
 
   const getBackgroundCheckBadge = (status: string) => {
     const badges: Record<string, { color: string; icon: React.ReactNode; label: string }> = {
@@ -159,7 +216,7 @@ export default function AdminCaregiversPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Caregiver Management</h1>
         <p className="mt-2 text-sm text-gray-600">
-          Manage all caregivers, verify credentials, and monitor performance
+          Manage all caregivers, verify credentials, and monitor performance ({totalCount} total)
         </p>
       </div>
 
@@ -193,9 +250,7 @@ export default function AdminCaregiversPage() {
       <div className="bg-white rounded-lg shadow mb-6 p-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Search
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
             <div className="relative">
               <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
@@ -207,11 +262,8 @@ export default function AdminCaregiversPage() {
               />
             </div>
           </div>
-
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Employment Status
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Employment Status</label>
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
@@ -224,11 +276,8 @@ export default function AdminCaregiversPage() {
               <option value="TERMINATED">Terminated</option>
             </select>
           </div>
-
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Employment Type
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Employment Type</label>
             <select
               value={filterEmploymentType}
               onChange={(e) => setFilterEmploymentType(e.target.value)}
@@ -241,11 +290,8 @@ export default function AdminCaregiversPage() {
               <option value="CONTRACT">Contract</option>
             </select>
           </div>
-
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Background Check
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Background Check</label>
             <select
               value={filterBackgroundCheck}
               onChange={(e) => setFilterBackgroundCheck(e.target.value)}
@@ -260,7 +306,6 @@ export default function AdminCaregiversPage() {
             </select>
           </div>
         </div>
-
         <div className="mt-4 flex justify-end">
           <button
             onClick={handleExport}
@@ -272,6 +317,16 @@ export default function AdminCaregiversPage() {
         </div>
       </div>
 
+      {/* Bulk Actions Bar */}
+      <BulkActionsBar
+        selectedCount={selectedIds.size}
+        totalCount={caregivers.length}
+        actions={bulkActions}
+        onAction={handleBulkAction}
+        onClearSelection={() => setSelectedIds(new Set())}
+        loading={loading}
+      />
+
       {/* Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         {loading ? (
@@ -280,43 +335,40 @@ export default function AdminCaregiversPage() {
             <p className="mt-4 text-gray-600">Loading caregivers...</p>
           </div>
         ) : caregivers.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
-            <p>No caregivers found</p>
-          </div>
+          <div className="p-8 text-center text-gray-500">No caregivers found</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Caregiver
+                  <th className="px-4 py-3 text-left">
+                    <input
+                      type="checkbox"
+                      checked={caregivers.length > 0 && selectedIds.size === caregivers.length}
+                      onChange={toggleSelectAll}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Contact
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Experience
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Employment
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Background Check
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Performance
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Caregiver</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Experience</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employment</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Background</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {caregivers.map((caregiver) => (
-                  <tr key={caregiver.id} className="hover:bg-gray-50">
+                  <tr key={caregiver.id} className={`hover:bg-gray-50 ${selectedIds.has(caregiver.id) ? 'bg-blue-50' : ''}`}>
+                    <td className="px-4 py-4">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(caregiver.id)}
+                        onChange={() => toggleSelection(caregiver.id)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="h-10 w-10 flex-shrink-0">
@@ -330,51 +382,26 @@ export default function AdminCaregiversPage() {
                           <div className="text-sm font-medium text-gray-900">
                             {caregiver.user.firstName} {caregiver.user.lastName}
                           </div>
-                          <div className="text-sm text-gray-500">
-                            ID: {caregiver.id.slice(0, 8)}
-                          </div>
+                          <div className="text-sm text-gray-500">ID: {caregiver.id.slice(0, 8)}</div>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{caregiver.user.email}</div>
-                      {caregiver.user.phone && (
-                        <div className="text-sm text-gray-500">{caregiver.user.phone}</div>
-                      )}
+                      {caregiver.user.phone && <div className="text-sm text-gray-500">{caregiver.user.phone}</div>}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
                         {caregiver.yearsExperience ? `${caregiver.yearsExperience} years` : 'N/A'}
                       </div>
-                      {caregiver.hourlyRate && (
-                        <div className="text-sm text-gray-500">
-                          ${caregiver.hourlyRate}/hr
-                        </div>
-                      )}
+                      {caregiver.hourlyRate && <div className="text-sm text-gray-500">${caregiver.hourlyRate}/hr</div>}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {caregiver.employmentType?.replace('_', ' ') || 'N/A'}
-                      </div>
+                      <div className="text-sm text-gray-900">{caregiver.employmentType?.replace('_', ' ') || 'N/A'}</div>
                       {caregiver.employmentStatus && getEmploymentStatusBadge(caregiver.employmentStatus)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {getBackgroundCheckBadge(caregiver.backgroundCheckStatus)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {getUserStatusBadge(caregiver.user.status)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {caregiver.rating ? `⭐ ${caregiver.rating.toFixed(1)}` : 'No rating'}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {caregiver.reviewCount} reviews • {caregiver.assignmentCount} assignments
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {caregiver.certificationCount} certs
-                      </div>
-                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">{getBackgroundCheckBadge(caregiver.backgroundCheckStatus)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{getUserStatusBadge(caregiver.user.status)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <Link
                         href={`/admin/caregivers/${caregiver.id}`}
@@ -394,80 +421,28 @@ export default function AdminCaregiversPage() {
         {/* Pagination */}
         {totalPages > 1 && (
           <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-            <div className="flex-1 flex justify-between sm:hidden">
-              <button
-                onClick={() => setPage(Math.max(1, page - 1))}
-                disabled={page === 1}
-                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-              >
-                Previous
-              </button>
-              <button
-                onClick={() => setPage(Math.min(totalPages, page + 1))}
-                disabled={page === totalPages}
-                className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-              >
-                Next
-              </button>
-            </div>
             <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm text-gray-700">
-                  Showing <span className="font-medium">{(page - 1) * 20 + 1}</span> to{' '}
-                  <span className="font-medium">{Math.min(page * 20, totalCount)}</span> of{' '}
-                  <span className="font-medium">{totalCount}</span> results
-                </p>
-              </div>
-              <div>
-                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                  <button
-                    onClick={() => setPage(Math.max(1, page - 1))}
-                    disabled={page === 1}
-                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
-                  >
-                    Previous
-                  </button>
-                  {[...Array(totalPages)].map((_, i) => {
-                    const pageNum = i + 1;
-                    if (
-                      pageNum === 1 ||
-                      pageNum === totalPages ||
-                      (pageNum >= page - 1 && pageNum <= page + 1)
-                    ) {
-                      return (
-                        <button
-                          key={pageNum}
-                          onClick={() => setPage(pageNum)}
-                          className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                            page === pageNum
-                              ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                              : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                          }`}
-                        >
-                          {pageNum}
-                        </button>
-                      );
-                    } else if (pageNum === page - 2 || pageNum === page + 2) {
-                      return (
-                        <span
-                          key={pageNum}
-                          className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700"
-                        >
-                          ...
-                        </span>
-                      );
-                    }
-                    return null;
-                  })}
-                  <button
-                    onClick={() => setPage(Math.min(totalPages, page + 1))}
-                    disabled={page === totalPages}
-                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
-                  >
-                    Next
-                  </button>
-                </nav>
-              </div>
+              <p className="text-sm text-gray-700">
+                Showing <span className="font-medium">{(page - 1) * 20 + 1}</span> to{' '}
+                <span className="font-medium">{Math.min(page * 20, totalCount)}</span> of{' '}
+                <span className="font-medium">{totalCount}</span> results
+              </p>
+              <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                <button
+                  onClick={() => setPage(Math.max(1, page - 1))}
+                  disabled={page === 1}
+                  className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setPage(Math.min(totalPages, page + 1))}
+                  disabled={page === totalPages}
+                  className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </nav>
             </div>
           </div>
         )}
