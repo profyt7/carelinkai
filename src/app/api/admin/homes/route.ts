@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
                 licenseNumber: true,
                 type: true,
                 status: true,
-                expiryDate: true,
+                expirationDate: true,
               },
             },
             residents: {
@@ -137,7 +137,7 @@ export async function GET(request: NextRequest) {
                 licenseNumber: true,
                 type: true,
                 status: true,
-                expiryDate: true,
+                expirationDate: true,
               },
             },
             residents: {
@@ -174,9 +174,9 @@ export async function GET(request: NextRequest) {
         
         const activeLicenses = home.licenses?.filter(l => l.status === 'ACTIVE').length || 0;
         const expiringLicenses = home.licenses?.filter(l => {
-          if (!l.expiryDate || l.status !== 'ACTIVE') return false;
+          if (!l.expirationDate || l.status !== 'ACTIVE') return false;
           const daysUntilExpiry = Math.floor(
-            (new Date(l.expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+            (new Date(l.expirationDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
           );
           return daysUntilExpiry <= 30 && daysUntilExpiry > 0;
         }).length || 0;
