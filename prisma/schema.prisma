@@ -2356,3 +2356,17 @@ enum BugStatus {
   RESOLVED
   CLOSED
 }
+
+// System Settings Model for Admin Configuration
+model SystemSettings {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       Json
+  category    String   @default("general")
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
+  @@index([key])
+}
