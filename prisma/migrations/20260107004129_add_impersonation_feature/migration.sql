@@ -1,8 +1,5 @@
--- Drop existing table if it exists (for clean migration)
-DROP TABLE IF EXISTS "ImpersonationSession" CASCADE;
-
--- CreateTable
-CREATE TABLE "ImpersonationSession" (
+-- Idempotent CreateTable (only creates if it doesn't exist)
+CREATE TABLE IF NOT EXISTS "ImpersonationSession" (
     "id" TEXT NOT NULL,
     "adminId" TEXT NOT NULL,
     "targetUserId" TEXT NOT NULL,
@@ -16,20 +13,54 @@ CREATE TABLE "ImpersonationSession" (
     CONSTRAINT "ImpersonationSession_pkey" PRIMARY KEY ("id")
 );
 
--- CreateIndex
-CREATE INDEX "ImpersonationSession_adminId_idx" ON "ImpersonationSession"("adminId");
+-- Idempotent CreateIndex (only creates if it doesn't exist)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'ImpersonationSession_adminId_idx') THEN
+        CREATE INDEX "ImpersonationSession_adminId_idx" ON "ImpersonationSession"("adminId");
+    END IF;
+END $$;
 
--- CreateIndex
-CREATE INDEX "ImpersonationSession_targetUserId_idx" ON "ImpersonationSession"("targetUserId");
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'ImpersonationSession_targetUserId_idx') THEN
+        CREATE INDEX "ImpersonationSession_targetUserId_idx" ON "ImpersonationSession"("targetUserId");
+    END IF;
+END $$;
 
--- CreateIndex
-CREATE INDEX "ImpersonationSession_expiresAt_idx" ON "ImpersonationSession"("expiresAt");
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'ImpersonationSession_expiresAt_idx') THEN
+        CREATE INDEX "ImpersonationSession_expiresAt_idx" ON "ImpersonationSession"("expiresAt");
+    END IF;
+END $$;
 
--- AddForeignKey
-ALTER TABLE "ImpersonationSession" ADD CONSTRAINT "ImpersonationSession_adminId_fkey" FOREIGN KEY ("adminId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+-- Idempotent AddForeignKey (only creates if it doesn't exist)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conname = 'ImpersonationSession_adminId_fkey'
+    ) THEN
+        ALTER TABLE "ImpersonationSession" 
+        ADD CONSTRAINT "ImpersonationSession_adminId_fkey" 
+        FOREIGN KEY ("adminId") REFERENCES "User"("id") 
+        ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+END $$;
 
--- AddForeignKey
-ALTER TABLE "ImpersonationSession" ADD CONSTRAINT "ImpersonationSession_targetUserId_fkey" FOREIGN KEY ("targetUserId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conname = 'ImpersonationSession_targetUserId_fkey'
+    ) THEN
+        ALTER TABLE "ImpersonationSession" 
+        ADD CONSTRAINT "ImpersonationSession_targetUserId_fkey" 
+        FOREIGN KEY ("targetUserId") REFERENCES "User"("id") 
+        ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+END $$;
 
 -- AlterEnum
 DO $$ 
