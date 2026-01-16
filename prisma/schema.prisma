@@ -977,19 +977,38 @@ model WalletTransaction {
 }
 
 model Message {
-  id         String        @id @default(cuid())
-  senderId   String
-  receiverId String
-  content    String
-  status     MessageStatus @default(SENT)
-  createdAt  DateTime      @default(now())
-  readAt     DateTime?
-  receiver   User          @relation("MessageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
-  sender     User          @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  id          String        @id @default(cuid())
+  senderId    String
+  receiverId  String
+  subject     String?
+  content     String
+  status      MessageStatus @default(SENT)
+  createdAt   DateTime      @default(now())
+  readAt      DateTime?
+  broadcastId String?
+  receiver    User          @relation("MessageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  sender      User          @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  broadcast   Broadcast?    @relation(fields: [broadcastId], references: [id])
 
   @@index([senderId])
   @@index([receiverId])
   @@index([status])
+  @@index([broadcastId])
+}
+
+model Broadcast {
+  id           String     @id @default(cuid())
+  senderId     String
+  subject      String
+  content      String
+  targetRole   UserRole?
+  recipientCount Int      @default(0)
+  createdAt    DateTime   @default(now())
+  messages     Message[]
+
+  @@index([senderId])
+  @@index([targetRole])
+  @@index([createdAt])
 }
 
 model Notification {
@@ -1000,6 +1019,7 @@ model Notification {
   message   String
   isRead    Boolean          @default(false)
   data      Json?
+  link      String?
   createdAt DateTime         @default(now())
   readAt    DateTime?
   user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -1007,6 +1027,7 @@ model Notification {
   @@index([userId])
   @@index([type])
   @@index([isRead])
+  @@index([createdAt])
 }
 
 model License {
@@ -2157,6 +2178,9 @@ enum NotificationType {
   PAYMENT
   COMPLIANCE
   SYSTEM
+  BROADCAST
+  ALERT
+  ANNOUNCEMENT
 }
 
 enum AuditAction {
