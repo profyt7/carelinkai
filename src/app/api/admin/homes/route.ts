@@ -7,15 +7,19 @@ import { HomeStatus, CareLevel } from '@prisma/client';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
+  console.log('[Homes API] GET request received');
   try {
     const session = await getServerSession(authOptions);
+    console.log('[Homes API] Session:', session ? `User: ${session.user?.email}, Role: ${session.user?.role}` : 'No session');
 
     // Check if user is admin
     if (!session || session.user?.role !== 'ADMIN') {
+      console.log('[Homes API] Unauthorized access attempt');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
     const { searchParams } = new URL(request.url);
+    console.log('[Homes API] Query params:', Object.fromEntries(searchParams.entries()));
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
     const search = searchParams.get('search') || '';
@@ -60,7 +64,12 @@ export async function GET(request: NextRequest) {
     }
 
     // Get total count for pagination
-    const totalCount = await prisma.assistedLivingHome.count({ where });
+    const totalCount = await prisma.assistedLivingHome.count({ where }).catch((error) => {
+      console.error('[Homes API] Count error:', error);
+      throw new Error(`Database count failed: ${error.message}`);
+    });
+
+    console.log(`[Homes API] Found ${totalCount} homes matching filters`);
 
     // For export, get all records without pagination
     const homesQuery = exportData
@@ -143,40 +152,62 @@ export async function GET(request: NextRequest) {
           },
         });
 
-    const homes = await homesQuery;
+    const homes = await homesQuery.catch((error) => {
+      console.error('[Homes API] Query error:', error);
+      throw new Error(`Database query failed: ${error.message}`);
+    });
+
+    console.log(`[Homes API] Successfully fetched ${homes.length} homes`);
 
     // Calculate additional metrics for each home
     const homesWithMetrics = homes.map((home) => {
-      const occupancyRate = home.capacity > 0 
-        ? ((home.currentOccupancy / home.capacity) * 100).toFixed(1)
-        : '0';
-      
-      const activeResidents = home.residents.filter(r => r.status === 'ACTIVE').length;
-      
-      const averageRating = home.reviews.length > 0
-        ? (home.reviews.reduce((sum, r) => sum + r.rating, 0) / home.reviews.length).toFixed(1)
-        : null;
-      
-      const activeLicenses = home.licenses.filter(l => l.status === 'ACTIVE').length;
-      const expiringLicenses = home.licenses.filter(l => {
-        if (!l.expiryDate || l.status !== 'ACTIVE') return false;
-        const daysUntilExpiry = Math.floor(
-          (new Date(l.expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
-        );
-        return daysUntilExpiry <= 30 && daysUntilExpiry > 0;
-      }).length;
+      try {
+        const occupancyRate = home.capacity > 0 
+          ? ((home.currentOccupancy / home.capacity) * 100).toFixed(1)
+          : '0';
+        
+        const activeResidents = home.residents?.filter(r => r.status === 'ACTIVE').length || 0;
+        
+        const averageRating = home.reviews && home.reviews.length > 0
+          ? (home.reviews.reduce((sum, r) => sum + r.rating, 0) / home.reviews.length).toFixed(1)
+          : null;
+        
+        const activeLicenses = home.licenses?.filter(l => l.status === 'ACTIVE').length || 0;
+        const expiringLicenses = home.licenses?.filter(l => {
+          if (!l.expiryDate || l.status !== 'ACTIVE') return false;
+          const daysUntilExpiry = Math.floor(
+            (new Date(l.expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+          );
+          return daysUntilExpiry <= 30 && daysUntilExpiry > 0;
+        }).length || 0;
 
-      return {
-        ...home,
-        occupancyRate,
-        activeResidents,
-        averageRating,
-        reviewCount: home.reviews.length,
-        photoCount: home.photos.length,
-        activeLicenses,
-        expiringLicenses,
-      };
+        return {
+          ...home,
+          occupancyRate,
+          activeResidents,
+          averageRating,
+          reviewCount: home.reviews?.length || 0,
+          photoCount: home.photos?.length || 0,
+          activeLicenses,
+          expiringLicenses,
+        };
+      } catch (metricError) {
+        console.error('[Homes API] Error calculating metrics for home:', home.id, metricError);
+        // Return home with default metrics if calculation fails
+        return {
+          ...home,
+          occupancyRate: '0',
+          activeResidents: 0,
+          averageRating: null,
+          reviewCount: 0,
+          photoCount: 0,
+          activeLicenses: 0,
+          expiringLicenses: 0,
+        };
+      }
     });
+
+    console.log('[Homes API] Metrics calculated for all homes');
 
     // If export, return CSV
     if (exportData) {
