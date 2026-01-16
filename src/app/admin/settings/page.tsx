@@ -86,6 +86,7 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsCategory>('general');
 
   useEffect(() => {
+    if (status === 'loading') return; // Wait for session to load
     if (status === 'unauthenticated') {
       router.push('/auth/login');
     } else if (session?.user?.role !== 'ADMIN') {
