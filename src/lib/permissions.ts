@@ -114,6 +114,9 @@ export const PERMISSIONS = {
   TOURS_RESCHEDULE: "tours.reschedule",    // Reschedule tours
   TOURS_CANCEL: "tours.cancel",            // Cancel tours
   TOURS_MANAGE_SLOTS: "tours.manage_slots", // Manage available tour slots (operator/admin)
+  
+  // Admin-only Permissions
+  ADMIN_FULL_ACCESS: "admin.full_access",  // Full admin access (for data exports, system settings, etc.)
 } as const;
 
 export type Permission = typeof PERMISSIONS[keyof typeof PERMISSIONS];
