@@ -192,9 +192,9 @@ export default function AdminUsersPage() {
   };
 
   const bulkActions: BulkAction[] = [
-    { id: 'activate', label: 'Activate Users', icon: <FiCheck size={16} />, variant: 'success' },
-    { id: 'deactivate', label: 'Deactivate Users', icon: <FiX size={16} />, variant: 'warning' },
-    { id: 'delete', label: 'Delete Users', icon: <FiTrash2 size={16} />, variant: 'danger', requireConfirmation: true },
+    { id: 'activate', label: 'Activate Users', icon: <FiCheck size={16} />, variant: 'success', requireConfirmation: true, confirmationMessage: 'Are you sure you want to activate the selected users?' },
+    { id: 'deactivate', label: 'Deactivate Users', icon: <FiX size={16} />, variant: 'warning', requireConfirmation: true, confirmationMessage: 'Are you sure you want to deactivate the selected users? They will lose access to the platform.' },
+    { id: 'delete', label: 'Delete Users', icon: <FiTrash2 size={16} />, variant: 'danger', requireConfirmation: true, confirmationMessage: 'Are you sure you want to delete the selected users? This action cannot be undone.' },
   ];
 
   const exportUsers = () => {

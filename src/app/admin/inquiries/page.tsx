@@ -28,8 +28,10 @@ interface Inquiry {
   home: {
     id: string;
     name: string;
-    city: string;
-    state: string;
+    address: {
+      city: string;
+      state: string;
+    } | null;
     operator: {
       id: string;
       companyName: string;
@@ -182,15 +184,16 @@ export default function AdminInquiriesPage() {
   };
 
   const exportCSV = () => {
-    const headers = ['ID', 'Status', 'Urgency', 'Contact Name', 'Contact Email', 'Home', 'Operator', 'Created'];
+    const headers = ['ID', 'Status', 'Urgency', 'Contact Name', 'Contact Email', 'Home', 'Location', 'Operator', 'Created'];
     const rows = inquiries.map(i => [
       i.id,
       i.status,
       i.urgency,
-      i.contactName || i.family?.user?.firstName + ' ' + i.family?.user?.lastName,
-      i.contactEmail || i.family?.user?.email,
-      i.home.name,
-      i.home.operator?.companyName,
+      i.contactName || `${i.family?.user?.firstName || ''} ${i.family?.user?.lastName || ''}`.trim(),
+      i.contactEmail || i.family?.user?.email || '',
+      i.home?.name || '',
+      `${i.home?.address?.city || ''}, ${i.home?.address?.state || ''}`.replace(/^, |, $/g, '') || 'N/A',
+      i.home?.operator?.companyName || '',
       format(new Date(i.createdAt), 'yyyy-MM-dd'),
     ]);
     const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
@@ -246,10 +249,10 @@ export default function AdminInquiriesPage() {
   };
 
   const bulkActions: BulkAction[] = [
-    { id: 'markContacted', label: 'Mark as Contacted', icon: <FiCheck size={16} />, variant: 'success' },
-    { id: 'markResolved', label: 'Mark as Resolved', icon: <FiCheckCircle size={16} />, variant: 'success' },
-    { id: 'closeLost', label: 'Close as Lost', icon: <FiX size={16} />, variant: 'warning' },
-    { id: 'delete', label: 'Delete Inquiries', icon: <FiTrash2 size={16} />, variant: 'danger', requireConfirmation: true },
+    { id: 'markContacted', label: 'Mark as Contacted', icon: <FiCheck size={16} />, variant: 'success', requireConfirmation: true, confirmationMessage: 'Are you sure you want to mark the selected inquiries as contacted?' },
+    { id: 'markResolved', label: 'Mark as Resolved', icon: <FiCheckCircle size={16} />, variant: 'success', requireConfirmation: true, confirmationMessage: 'Are you sure you want to mark the selected inquiries as resolved?' },
+    { id: 'closeLost', label: 'Close as Lost', icon: <FiX size={16} />, variant: 'warning', requireConfirmation: true, confirmationMessage: 'Are you sure you want to close the selected inquiries as lost? This indicates the lead did not convert.' },
+    { id: 'delete', label: 'Delete Inquiries', icon: <FiTrash2 size={16} />, variant: 'danger', requireConfirmation: true, confirmationMessage: 'Are you sure you want to delete the selected inquiries? This action cannot be undone.' },
   ];
 
   return (
@@ -494,7 +497,7 @@ export default function AdminInquiriesPage() {
                           <FiHome className="w-4 h-4 text-gray-400 mr-2" />
                           <div>
                             <div className="text-sm font-medium text-gray-900">{inquiry.home.name}</div>
-                            <div className="text-sm text-gray-500">{inquiry.home.city}, {inquiry.home.state}</div>
+                            <div className="text-sm text-gray-500">{inquiry.home.address?.city || 'N/A'}, {inquiry.home.address?.state || 'N/A'}</div>
                             <div className="text-xs text-gray-400">{inquiry.home.operator?.companyName}</div>
                           </div>
                         </div>

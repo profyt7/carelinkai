@@ -124,8 +124,12 @@ export async function GET(request: NextRequest) {
           select: {
             id: true,
             name: true,
-            city: true,
-            state: true,
+            address: {
+              select: {
+                city: true,
+                state: true,
+              },
+            },
             operator: {
               select: {
                 id: true,

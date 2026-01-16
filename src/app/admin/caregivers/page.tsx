@@ -157,11 +157,11 @@ export default function AdminCaregiversPage() {
   };
 
   const bulkActions: BulkAction[] = [
-    { id: 'approve', label: 'Approve Background Check', icon: <FiCheck size={16} />, variant: 'success' },
-    { id: 'reject', label: 'Flag Background Check', icon: <FiAlertTriangle size={16} />, variant: 'warning' },
-    { id: 'activate', label: 'Activate Caregivers', icon: <FiCheck size={16} />, variant: 'success' },
-    { id: 'deactivate', label: 'Deactivate Caregivers', icon: <FiX size={16} />, variant: 'warning' },
-    { id: 'delete', label: 'Delete Caregivers', icon: <FiTrash2 size={16} />, variant: 'danger', requireConfirmation: true },
+    { id: 'approve', label: 'Approve Background Check', icon: <FiCheck size={16} />, variant: 'success', requireConfirmation: true, confirmationMessage: 'Are you sure you want to approve background checks for the selected caregivers?' },
+    { id: 'reject', label: 'Flag Background Check', icon: <FiAlertTriangle size={16} />, variant: 'warning', requireConfirmation: true, confirmationMessage: 'Are you sure you want to flag background checks for the selected caregivers? This requires manual review.' },
+    { id: 'activate', label: 'Activate Caregivers', icon: <FiCheck size={16} />, variant: 'success', requireConfirmation: true, confirmationMessage: 'Are you sure you want to activate the selected caregivers?' },
+    { id: 'deactivate', label: 'Deactivate Caregivers', icon: <FiX size={16} />, variant: 'warning', requireConfirmation: true, confirmationMessage: 'Are you sure you want to deactivate the selected caregivers? They will lose access to the platform.' },
+    { id: 'delete', label: 'Delete Caregivers', icon: <FiTrash2 size={16} />, variant: 'danger', requireConfirmation: true, confirmationMessage: 'Are you sure you want to delete the selected caregivers? This action cannot be undone.' },
   ];
 
   const getBackgroundCheckBadge = (status: string) => {

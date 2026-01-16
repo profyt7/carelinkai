@@ -170,10 +170,10 @@ export default function AdminHomesPage() {
   };
 
   const bulkActions: BulkAction[] = [
-    { id: 'activate', label: 'Activate Homes', icon: <FiCheck size={16} />, variant: 'success' },
-    { id: 'deactivate', label: 'Deactivate Homes', icon: <FiX size={16} />, variant: 'warning' },
-    { id: 'suspend', label: 'Suspend Homes', icon: <FiAlertTriangle size={16} />, variant: 'warning' },
-    { id: 'delete', label: 'Delete Homes', icon: <FiTrash2 size={16} />, variant: 'danger', requireConfirmation: true, confirmationMessage: 'Are you sure you want to delete these homes? Homes with active residents cannot be deleted.' },
+    { id: 'activate', label: 'Activate Homes', icon: <FiCheck size={16} />, variant: 'success', requireConfirmation: true, confirmationMessage: 'Are you sure you want to activate the selected homes?' },
+    { id: 'deactivate', label: 'Deactivate Homes', icon: <FiX size={16} />, variant: 'warning', requireConfirmation: true, confirmationMessage: 'Are you sure you want to deactivate the selected homes? This will make them invisible to families searching for care.' },
+    { id: 'suspend', label: 'Suspend Homes', icon: <FiAlertTriangle size={16} />, variant: 'warning', requireConfirmation: true, confirmationMessage: 'Are you sure you want to suspend the selected homes? Suspended homes cannot accept new residents.' },
+    { id: 'delete', label: 'Delete Homes', icon: <FiTrash2 size={16} />, variant: 'danger', requireConfirmation: true, confirmationMessage: 'Are you sure you want to delete these homes? Homes with active residents cannot be deleted. This action cannot be undone.' },
   ];
 
   const getStatusBadgeClass = (status: string) => {
