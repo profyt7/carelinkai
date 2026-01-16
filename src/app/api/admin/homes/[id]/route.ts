@@ -150,8 +150,11 @@ export async function GET(
 
     const pendingInquiries = home.inquiries.filter(i => i.status === 'NEW' || i.status === 'IN_PROGRESS').length;
 
+    // Convert Prisma Decimal types to numbers for proper JSON serialization
     return NextResponse.json({
       ...home,
+      priceMin: home.priceMin ? Number(home.priceMin) : null,
+      priceMax: home.priceMax ? Number(home.priceMax) : null,
       metrics: {
         occupancyRate,
         activeResidents,
@@ -263,7 +266,12 @@ export async function PATCH(
       { adminAction: true }
     );
 
-    return NextResponse.json(updatedHome);
+    // Convert Prisma Decimal types to numbers for proper JSON serialization
+    return NextResponse.json({
+      ...updatedHome,
+      priceMin: updatedHome.priceMin ? Number(updatedHome.priceMin) : null,
+      priceMax: updatedHome.priceMax ? Number(updatedHome.priceMax) : null,
+    });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
