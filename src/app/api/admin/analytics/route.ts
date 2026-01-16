@@ -3,11 +3,16 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
+  console.log('[Analytics API] GET request received');
   try {
     const session = await getServerSession(authOptions);
+    console.log('[Analytics API] Session:', session ? `User: ${session.user?.email}, Role: ${session.user?.role}` : 'No session');
     
     if (!session?.user || session.user.role !== 'ADMIN') {
+      console.log('[Analytics API] Unauthorized access attempt');
       return NextResponse.json(
         { error: 'Unauthorized - Admin access required' },
         { status: 403 }
@@ -220,9 +225,12 @@ export async function GET(request: NextRequest) {
       timeRange: days,
     });
   } catch (error) {
-    console.error('Analytics API error:', error);
+    console.error('[Analytics API] Error:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch analytics data' },
+      { 
+        error: 'Failed to fetch analytics data', 
+        details: error instanceof Error ? error.message : 'Unknown error' 
+      },
       { status: 500 }
     );
   }

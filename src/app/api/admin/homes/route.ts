@@ -181,8 +181,11 @@ export async function GET(request: NextRequest) {
           return daysUntilExpiry <= 30 && daysUntilExpiry > 0;
         }).length || 0;
 
+        // Convert Prisma Decimal types to numbers for proper JSON serialization
         return {
           ...home,
+          priceMin: home.priceMin ? Number(home.priceMin) : null,
+          priceMax: home.priceMax ? Number(home.priceMax) : null,
           occupancyRate,
           activeResidents,
           averageRating,
@@ -196,6 +199,8 @@ export async function GET(request: NextRequest) {
         // Return home with default metrics if calculation fails
         return {
           ...home,
+          priceMin: home.priceMin ? Number(home.priceMin) : null,
+          priceMax: home.priceMax ? Number(home.priceMax) : null,
           occupancyRate: '0',
           activeResidents: 0,
           averageRating: null,
