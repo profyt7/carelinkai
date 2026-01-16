@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
               select: {
                 id: true,
                 licenseNumber: true,
-                licenseType: true,
+                type: true,
                 status: true,
                 expiryDate: true,
               },
@@ -135,7 +135,7 @@ export async function GET(request: NextRequest) {
               select: {
                 id: true,
                 licenseNumber: true,
-                licenseType: true,
+                type: true,
                 status: true,
                 expiryDate: true,
               },
