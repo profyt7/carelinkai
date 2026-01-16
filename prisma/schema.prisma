@@ -74,6 +74,7 @@ model User {
   createdGalleries          SharedGallery[]          @relation("GalleryCreator")
   approvedTimesheets        Timesheet[]
   placementSearches         PlacementSearch[]
+  exports                   ExportHistory[]          @relation("UserExports")
 
   @@index([email])
   @@index([role])
@@ -2393,4 +2394,31 @@ model SystemSettings {
 
   @@index([category])
   @@index([key])
+}
+
+
+// Export History Model for tracking data exports
+model ExportHistory {
+  id           String       @id @default(cuid())
+  exportType   String       // users, homes, inquiries, caregivers, residents, audit-logs
+  fileName     String
+  recordCount  Int          @default(0)
+  status       ExportStatus @default(PENDING)
+  filters      Json?        // Stored filters used for the export
+  format       String       @default("csv") // csv, json
+  downloadUrl  String?      // Optional URL for re-download (if stored)
+  completedAt  DateTime?
+  createdAt    DateTime     @default(now())
+  exportedById String
+  exportedBy   User         @relation("UserExports", fields: [exportedById], references: [id])
+
+  @@index([exportedById])
+  @@index([exportType])
+  @@index([createdAt])
+}
+
+enum ExportStatus {
+  PENDING
+  COMPLETED
+  FAILED
 }
