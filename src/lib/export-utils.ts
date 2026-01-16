@@ -2,6 +2,45 @@
  * Export Utilities for Data Exports
  */
 
+import { prisma } from '@/lib/prisma';
+
+/**
+ * Save export history record to database
+ */
+export async function saveExportHistory({
+  exportType,
+  fileName,
+  recordCount,
+  filters,
+  format,
+  exportedById,
+}: {
+  exportType: string;
+  fileName: string;
+  recordCount: number;
+  filters: Record<string, any>;
+  format: string;
+  exportedById: string;
+}) {
+  try {
+    await prisma.exportHistory.create({
+      data: {
+        exportType,
+        fileName,
+        recordCount,
+        status: 'COMPLETED',
+        filters: filters || {},
+        format,
+        completedAt: new Date(),
+        exportedById,
+      },
+    });
+  } catch (error) {
+    // Log but don't fail the export if history save fails
+    console.error('Failed to save export history:', error);
+  }
+}
+
 // Convert array of objects to CSV string
 export function toCSV(data: Record<string, any>[], columns?: { key: string; label: string }[]): string {
   if (data.length === 0) return '';

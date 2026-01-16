@@ -4,7 +4,7 @@ import { requirePermission, handleAuthError } from '@/lib/auth-utils';
 import { PERMISSIONS } from '@/lib/permissions';
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { AuditAction } from '@prisma/client';
-import { toCSV, inquiryExportColumns, buildDateFilter, generateExportFilename, formatExportDateTime } from '@/lib/export-utils';
+import { toCSV, inquiryExportColumns, buildDateFilter, generateExportFilename, formatExportDateTime, saveExportHistory } from '@/lib/export-utils';
 
 export async function GET(req: NextRequest) {
   try {
@@ -53,6 +53,26 @@ export async function GET(req: NextRequest) {
       createdAt: formatExportDateTime(i.createdAt),
     }));
 
+    // Return response based on format
+    const filename = generateExportFilename('inquiries', format as 'csv' | 'json');
+
+    // Build filters object for history
+    const appliedFilters: Record<string, any> = {};
+    if (status) appliedFilters.status = status;
+    if (source) appliedFilters.source = source;
+    if (startDate) appliedFilters.startDate = startDate;
+    if (endDate) appliedFilters.endDate = endDate;
+
+    // Save export history
+    await saveExportHistory({
+      exportType: 'inquiries',
+      fileName: filename,
+      recordCount: formattedData.length,
+      filters: appliedFilters,
+      format: format,
+      exportedById: user.id,
+    });
+
     // Create audit log
     await createAuditLogFromRequest(
       req,
@@ -62,9 +82,6 @@ export async function GET(req: NextRequest) {
       null,
       `Exported ${formattedData.length} inquiries`
     );
-
-    // Return response based on format
-    const filename = generateExportFilename('inquiries', format as 'csv' | 'json');
     
     if (format === 'json') {
       return new NextResponse(JSON.stringify(formattedData, null, 2), {

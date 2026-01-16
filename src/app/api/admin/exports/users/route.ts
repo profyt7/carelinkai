@@ -4,7 +4,7 @@ import { requirePermission, handleAuthError } from '@/lib/auth-utils';
 import { PERMISSIONS } from '@/lib/permissions';
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { AuditAction } from '@prisma/client';
-import { toCSV, userExportColumns, buildDateFilter, generateExportFilename, formatExportDateTime } from '@/lib/export-utils';
+import { toCSV, userExportColumns, buildDateFilter, generateExportFilename, formatExportDateTime, saveExportHistory } from '@/lib/export-utils';
 
 export async function GET(req: NextRequest) {
   try {
@@ -48,6 +48,26 @@ export async function GET(req: NextRequest) {
       lastLoginAt: formatExportDateTime(u.lastLoginAt),
     }));
 
+    // Return response based on format
+    const filename = generateExportFilename('users', format as 'csv' | 'json');
+    
+    // Build filters object for history
+    const appliedFilters: Record<string, any> = {};
+    if (role) appliedFilters.role = role;
+    if (status) appliedFilters.status = status;
+    if (startDate) appliedFilters.startDate = startDate;
+    if (endDate) appliedFilters.endDate = endDate;
+
+    // Save export history
+    await saveExportHistory({
+      exportType: 'users',
+      fileName: filename,
+      recordCount: users.length,
+      filters: appliedFilters,
+      format: format,
+      exportedById: user.id,
+    });
+
     // Create audit log
     await createAuditLogFromRequest(
       req,
@@ -57,9 +77,6 @@ export async function GET(req: NextRequest) {
       null,
       `Exported ${users.length} users`
     );
-
-    // Return response based on format
-    const filename = generateExportFilename('users', format as 'csv' | 'json');
     
     if (format === 'json') {
       return new NextResponse(JSON.stringify(formattedData, null, 2), {
