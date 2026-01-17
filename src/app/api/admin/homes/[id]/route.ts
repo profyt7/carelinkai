@@ -25,9 +25,10 @@ const updateHomeSchema = z.object({
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
 
     // Check if user is admin
@@ -36,7 +37,7 @@ export async function GET(
     }
 
     const home = await prisma.assistedLivingHome.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         operator: {
           include: {
@@ -181,9 +182,10 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
 
     // Check if user is admin
@@ -196,7 +198,7 @@ export async function PATCH(
 
     // Check if home exists
     const existingHome = await prisma.assistedLivingHome.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: { operator: true },
     });
 
@@ -230,7 +232,7 @@ export async function PATCH(
 
     // Update the home
     const updatedHome = await prisma.assistedLivingHome.update({
-      where: { id: params.id },
+      where: { id },
       data: validatedData,
       include: {
         operator: {
@@ -260,7 +262,7 @@ export async function PATCH(
       AuditAction.UPDATE,
       session.user.id,
       'AssistedLivingHome',
-      params.id,
+      id,
       existingHome,
       updatedHome,
       { adminAction: true }
@@ -289,9 +291,10 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
 
     // Check if user is admin
@@ -301,7 +304,7 @@ export async function DELETE(
 
     // Check if home exists
     const home = await prisma.assistedLivingHome.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         residents: true,
       },
@@ -322,7 +325,7 @@ export async function DELETE(
 
     // Delete the home (cascade will handle related records)
     await prisma.assistedLivingHome.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     // Create audit log
@@ -331,7 +334,7 @@ export async function DELETE(
       AuditAction.DELETE,
       session.user.id,
       'AssistedLivingHome',
-      params.id,
+      id,
       home,
       null,
       { adminAction: true, reason: 'Admin deletion' }
