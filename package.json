@@ -1,6 +1,6 @@
 {
   "name": "carelinkai",
-  "version": "1.0.0-build.20251229165315",
+  "version": "1.0.0-build.20260116120000",
   "private": true,
   "scripts": {
     "dev": "next dev",
