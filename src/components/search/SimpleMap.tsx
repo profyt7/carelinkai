@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useMemo, useCallback, memo } from 'react';
+import React, { useEffect, useRef, useState, useMemo, memo } from 'react';
 import L from 'leaflet';
 import { FiMapPin } from 'react-icons/fi';
 
@@ -9,7 +9,7 @@ import 'leaflet/dist/leaflet.css';
 
 // GLOBAL singleton to prevent ANY re-initialization across component remounts
 let GLOBAL_MAP_INIT_COUNT = 0;
-const GLOBAL_MAX_INIT = 10; // Increased limit
+const GLOBAL_MAX_INIT = 10;
 
 // Define types
 interface HomeAddress {
@@ -44,6 +44,35 @@ interface SimpleMapProps {
   favorites?: string[];
 }
 
+// Helper functions outside component to avoid recreating
+const isValidCoord = (n: unknown) => typeof n === 'number' && !Number.isNaN(n) && Number.isFinite(n);
+
+const getLat = (home: HomeData) => {
+  if (typeof home.address !== 'string') {
+    return home.address.coordinates?.lat ?? home.address.latitude;
+  }
+  return home.coordinates?.lat;
+};
+
+const getLng = (home: HomeData) => {
+  if (typeof home.address !== 'string') {
+    return home.address.coordinates?.lng ?? home.address.longitude;
+  }
+  return home.coordinates?.lng;
+};
+
+const createCustomIcon = (price: number | null, isSelected: boolean = false) => {
+  const priceDisplay = price ? `$${Math.floor(price / 1000)}k+` : '$?';
+  const color = isSelected ? '#dc2626' : '#3b82f6';
+  return L.divIcon({
+    html: `<div style="background-color:${color};color:white;border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;box-shadow:0 2px 5px rgba(0,0,0,0.2)">${priceDisplay}</div>`,
+    className: '',
+    iconSize: [40, 40],
+    iconAnchor: [20, 40],
+    popupAnchor: [0, -40]
+  });
+};
+
 const SimpleMap: React.FC<SimpleMapProps> = ({
   homes,
   selectedHome,
@@ -58,79 +87,41 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
   const isInitializingRef = useRef(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
-
-  // Coordinate helpers
-  const isValidCoord = (n: unknown) => typeof n === 'number' && !Number.isNaN(n) && Number.isFinite(n);
   
-  const getLat = useCallback((home: HomeData) => {
-    if (typeof home.address !== 'string') {
-      return home.address.coordinates?.lat ?? home.address.latitude;
-    }
-    return home.coordinates?.lat;
-  }, []);
+  // Store callbacks in refs to avoid dependency changes
+  const onHomeSelectRef = useRef(onHomeSelect);
+  const onToggleFavoriteRef = useRef(onToggleFavorite);
+  const favoritesRef = useRef(favorites);
+  
+  // Update refs when props change (no re-render triggered)
+  useEffect(() => {
+    onHomeSelectRef.current = onHomeSelect;
+    onToggleFavoriteRef.current = onToggleFavorite;
+    favoritesRef.current = favorites;
+  });
 
-  const getLng = useCallback((home: HomeData) => {
-    if (typeof home.address !== 'string') {
-      return home.address.coordinates?.lng ?? home.address.longitude;
-    }
-    return home.coordinates?.lng;
-  }, []);
+  // Create stable home ID string for dependency comparison
+  const homeIdsKey = useMemo(() => {
+    return homes
+      .filter((h) => h.address && isValidCoord(getLat(h)) && isValidCoord(getLng(h)))
+      .map(h => `${h.id}:${getLat(h)}:${getLng(h)}:${h.priceRange.min}`)
+      .join('|');
+  }, [homes]);
 
   const validHomes = useMemo(
     () => homes.filter((h) => h.address && isValidCoord(getLat(h)) && isValidCoord(getLng(h))),
-    [homes, getLat, getLng]
+    [homes]
   );
-
-  const getMapCenter = useCallback((): [number, number] => {
-    if (validHomes.length === 0) return [36.7783, -119.4179];
-    const centerLat = validHomes.reduce((sum, h) => sum + (getLat(h) as number), 0) / validHomes.length;
-    const centerLng = validHomes.reduce((sum, h) => sum + (getLng(h) as number), 0) / validHomes.length;
-    return [centerLat, centerLng];
-  }, [validHomes, getLat, getLng]);
-
-  const createCustomIcon = (price: number | null, isSelected: boolean = false) => {
-    const priceDisplay = price ? `$${Math.floor(price / 1000)}k+` : '$?';
-    const color = isSelected ? '#dc2626' : '#3b82f6';
-    return L.divIcon({
-      html: `<div style="background-color:${color};color:white;border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;box-shadow:0 2px 5px rgba(0,0,0,0.2)">${priceDisplay}</div>`,
-      className: '',
-      iconSize: [40, 40],
-      iconAnchor: [20, 40],
-      popupAnchor: [0, -40]
-    });
-  };
-
-  const createPopupContent = useCallback((home: HomeData) => {
-    const isFavorite = favorites.includes(home.id);
-    const addressText = typeof home.address === 'string' ? home.address : `${home.address.street}, ${home.address.city}, ${home.address.state}`;
-    return `
-      <div class="w-64 p-2">
-        <div class="flex items-start justify-between mb-2">
-          <h3 class="font-semibold text-sm">${home.name}</h3>
-          <button id="fav-btn-${home.id}" class="${isFavorite ? 'text-red-500' : 'text-neutral-400'}">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="${isFavorite ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
-          </button>
-        </div>
-        <p class="text-xs text-neutral-600 mb-2">${addressText}</p>
-        <div class="flex items-center text-xs text-neutral-500 mb-2"><span class="mr-1">$</span>${home.priceRange.formattedMin || '$?'}+/month</div>
-        <a href="/homes/${home.id}" class="block w-full text-center bg-blue-500 hover:bg-blue-600 text-white text-xs py-1.5 rounded transition-colors">View Details</a>
-      </div>
-    `;
-  }, [favorites]);
 
   // ONE-TIME map initialization with empty deps
   useEffect(() => {
-    console.log('[SimpleMap] Mount effect running');
-    
     // Guard 1: Already initialized this instance
     if (isInitializedRef.current) {
-      console.log('[SimpleMap] Already initialized (instance ref), skipping');
       return;
     }
     
     // Guard 2: Currently initializing
     if (isInitializingRef.current) {
-      console.log('[SimpleMap] Already initializing, skipping');
       return;
     }
     
@@ -143,31 +134,27 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
 
     isInitializingRef.current = true;
     GLOBAL_MAP_INIT_COUNT++;
-    console.log(`[SimpleMap] Starting initialization (global count: ${GLOBAL_MAP_INIT_COUNT})`);
 
     const initMap = () => {
       const container = mapContainerRef.current;
       if (!container) {
-        console.log('[SimpleMap] Container not ready, waiting...');
         setTimeout(initMap, 200);
         return;
       }
 
       if (container.clientWidth === 0 || container.clientHeight === 0) {
-        console.log('[SimpleMap] Container has zero dimensions, waiting...');
         setTimeout(initMap, 200);
         return;
       }
 
       try {
-        console.log('[SimpleMap] Creating map instance...');
         const map = L.map(container, {
-          center: [36.7783, -119.4179], // Default center
+          center: [36.7783, -119.4179],
           zoom: 7,
           zoomControl: true
         });
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        L.tileLayer('https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Tissot_mercator.png/400px-Tissot_mercator.png', {
           attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
           maxZoom: 19
         }).addTo(map);
@@ -186,11 +173,9 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
       }
     };
 
-    // Small delay to ensure DOM is ready
     setTimeout(initMap, 100);
 
     return () => {
-      console.log('[SimpleMap] Cleanup running');
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
@@ -201,12 +186,10 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
     };
   }, []); // EMPTY DEPS - runs once only
 
-  // Update markers when data changes (separate effect)
+  // Update markers when data changes - STABLE dependencies only
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map || !isReady) return;
-
-    console.log('[SimpleMap] Updating markers...');
 
     // Clear old markers
     Object.values(markersRef.current).forEach(m => m.remove());
@@ -221,20 +204,40 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
           icon: createCustomIcon(home.priceRange.min, selectedHome === home.id)
         }).addTo(map);
         
-        marker.bindPopup(L.popup().setContent(createPopupContent(home)));
-        marker.on('click', () => onHomeSelect?.(home.id));
+        // Create popup content inline using current favorites ref
+        const createPopupContent = () => {
+          const isFavorite = favoritesRef.current.includes(home.id);
+          const addressText = typeof home.address === 'string' ? home.address : `${home.address.street}, ${home.address.city}, ${home.address.state}`;
+          return `
+            <div class="w-64 p-2">
+              <div class="flex items-start justify-between mb-2">
+                <h3 class="font-semibold text-sm">${home.name}</h3>
+                <button id="fav-btn-${home.id}" class="${isFavorite ? 'text-red-500' : 'text-neutral-400'}">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="${isFavorite ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                </button>
+              </div>
+              <p class="text-xs text-neutral-600 mb-2">${addressText}</p>
+              <div class="flex items-center text-xs text-neutral-500 mb-2"><span class="mr-1">$</span>${home.priceRange.formattedMin || '$?'}+/month</div>
+              <a href="/homes/${home.id}" class="block w-full text-center bg-blue-500 hover:bg-blue-600 text-white text-xs py-1.5 rounded transition-colors">View Details</a>
+            </div>
+          `;
+        };
+        
+        marker.bindPopup(L.popup().setContent(createPopupContent()));
+        marker.on('click', () => onHomeSelectRef.current?.(home.id));
         markersRef.current[home.id] = marker;
       }
     });
 
     // Fit bounds if we have homes
     if (validHomes.length > 0) {
-      const center = getMapCenter();
-      map.setView(center, 8);
+      const centerLat = validHomes.reduce((sum, h) => sum + (getLat(h) as number), 0) / validHomes.length;
+      const centerLng = validHomes.reduce((sum, h) => sum + (getLng(h) as number), 0) / validHomes.length;
+      map.setView([centerLat, centerLng], 8);
     }
-  }, [isReady, validHomes, selectedHome, getLat, getLng, getMapCenter, createPopupContent, onHomeSelect]);
+  }, [isReady, homeIdsKey, selectedHome, validHomes]); // Stable deps: primitive values only
 
-  // Handle popup favorite button
+  // Handle popup favorite button - separate effect with stable deps
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map || !isReady) return;
@@ -243,13 +246,13 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
       const homeId = Object.keys(markersRef.current).find(id => markersRef.current[id]?.getPopup() === e.popup);
       if (homeId) {
         const btn = document.getElementById(`fav-btn-${homeId}`);
-        btn?.addEventListener('click', () => onToggleFavorite?.(homeId));
+        btn?.addEventListener('click', () => onToggleFavoriteRef.current?.(homeId));
       }
     };
 
     map.on('popupopen', handlePopupOpen);
     return () => { map.off('popupopen', handlePopupOpen); };
-  }, [isReady, onToggleFavorite]);
+  }, [isReady]); // Only depends on isReady - callbacks accessed via ref
 
   if (mapError) {
     return (
@@ -273,5 +276,16 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
   );
 };
 
-// Memoize to prevent unnecessary re-renders
-export default memo(SimpleMap);
+// Memoize with custom comparison to prevent unnecessary re-renders
+export default memo(SimpleMap, (prevProps, nextProps) => {
+  // Only re-render if these change
+  if (prevProps.selectedHome !== nextProps.selectedHome) return false;
+  if (prevProps.homes.length !== nextProps.homes.length) return false;
+  
+  // Compare home IDs
+  const prevIds = prevProps.homes.map(h => h.id).sort().join(',');
+  const nextIds = nextProps.homes.map(h => h.id).sort().join(',');
+  if (prevIds !== nextIds) return false;
+  
+  return true; // Props are equal, don't re-render
+});
