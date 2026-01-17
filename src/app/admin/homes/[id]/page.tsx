@@ -311,11 +311,11 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
               </h1>
               <div className="mt-2 flex items-center gap-2">
                 <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusBadgeClass(home.status)}`}>
-                  {home.status.replace('_', ' ')}
+                  {home.status?.replace('_', ' ') || 'Unknown'}
                 </span>
-                {home.metrics.expiringLicenses > 0 && (
+                {(home.metrics?.expiringLicenses ?? 0) > 0 && (
                   <span className="px-3 py-1 rounded-full text-sm font-semibold bg-orange-100 text-orange-800">
-                    {home.metrics.expiringLicenses} License(s) Expiring
+                    {home.metrics?.expiringLicenses} License(s) Expiring
                   </span>
                 )}
               </div>
@@ -392,9 +392,9 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
               <div>
                 <p className="text-sm text-gray-600">Occupancy</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {home.currentOccupancy}/{home.capacity}
+                  {home.currentOccupancy ?? 0}/{home.capacity ?? 0}
                 </p>
-                <p className="text-sm text-gray-500">{home.metrics.occupancyRate}%</p>
+                <p className="text-sm text-gray-500">{home.metrics?.occupancyRate ?? '0'}%</p>
               </div>
               <FiUsers className="text-3xl text-blue-600" />
             </div>
@@ -405,9 +405,9 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
               <div>
                 <p className="text-sm text-gray-600">Average Rating</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {home.metrics.averageRating || 'N/A'}
+                  {home.metrics?.averageRating || 'N/A'}
                 </p>
-                <p className="text-sm text-gray-500">{home.metrics.reviewCount} reviews</p>
+                <p className="text-sm text-gray-500">{home.metrics?.reviewCount ?? 0} reviews</p>
               </div>
               <FiStar className="text-3xl text-yellow-500" />
             </div>
@@ -418,11 +418,11 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
               <div>
                 <p className="text-sm text-gray-600">Licenses</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {home.metrics.activeLicenses}/{home.metrics.totalLicenses}
+                  {home.metrics?.activeLicenses ?? 0}/{home.metrics?.totalLicenses ?? 0}
                 </p>
                 <p className="text-sm text-gray-500">
-                  {home.metrics.expiredLicenses > 0 
-                    ? `${home.metrics.expiredLicenses} expired` 
+                  {(home.metrics?.expiredLicenses ?? 0) > 0 
+                    ? `${home.metrics?.expiredLicenses} expired` 
                     : 'All current'}
                 </p>
               </div>
@@ -435,9 +435,9 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
               <div>
                 <p className="text-sm text-gray-600">Pending Inquiries</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {home.metrics.pendingInquiries}
+                  {home.metrics?.pendingInquiries ?? 0}
                 </p>
-                <p className="text-sm text-gray-500">Total: {home.inquiries.length}</p>
+                <p className="text-sm text-gray-500">Total: {home.inquiries?.length ?? 0}</p>
               </div>
               <FiMail className="text-3xl text-purple-600" />
             </div>
@@ -492,7 +492,7 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
                         Care Levels
                       </label>
                       <div className="flex flex-wrap gap-2">
-                        {home.careLevel.map((level) => (
+                        {(home.careLevel || []).map((level) => (
                           <span
                             key={level}
                             className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
@@ -570,35 +570,37 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
                 </div>
 
                 {/* Operator Info */}
+                {home.operator && (
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Operator Information</h3>
                   <div className="bg-gray-50 rounded-lg p-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <p className="text-sm text-gray-600">Company Name</p>
-                        <p className="font-medium text-gray-900">{home.operator.companyName}</p>
+                        <p className="font-medium text-gray-900">{home.operator.companyName || 'N/A'}</p>
                       </div>
                       <div>
                         <p className="text-sm text-gray-600">Contact Person</p>
                         <p className="font-medium text-gray-900">
-                          {home.operator.user.firstName} {home.operator.user.lastName}
+                          {home.operator.user?.firstName || 'Unknown'} {home.operator.user?.lastName || 'User'}
                         </p>
                       </div>
                       <div>
                         <p className="text-sm text-gray-600 flex items-center gap-1">
                           <FiMail /> Email
                         </p>
-                        <p className="font-medium text-gray-900">{home.operator.user.email}</p>
+                        <p className="font-medium text-gray-900">{home.operator.user?.email || 'N/A'}</p>
                       </div>
                       <div>
                         <p className="text-sm text-gray-600 flex items-center gap-1">
                           <FiPhone /> Phone
                         </p>
-                        <p className="font-medium text-gray-900">{home.operator.user.phone || 'N/A'}</p>
+                        <p className="font-medium text-gray-900">{home.operator.user?.phone || 'N/A'}</p>
                       </div>
                     </div>
                   </div>
                 </div>
+                )}
 
                 {/* Address */}
                 {home.address && (
@@ -619,7 +621,7 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
                 )}
 
                 {/* Amenities */}
-                {home.amenities.length > 0 && (
+                {home.amenities && home.amenities.length > 0 && (
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">Amenities</h3>
                     <div className="flex flex-wrap gap-2">
@@ -639,9 +641,9 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                     <FiImage />
-                    Photos ({home.photos.length})
+                    Photos ({home.photos?.length || 0})
                   </h3>
-                  {home.photos.length > 0 ? (
+                  {home.photos && home.photos.length > 0 ? (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       {home.photos.slice(0, 8).map((photo) => (
                         <div key={photo.id} className="relative aspect-square rounded-lg overflow-hidden">
@@ -668,9 +670,9 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
             {activeTab === 'residents' && (
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Residents ({home.residents.length})
+                  Residents ({home.residents?.length || 0})
                 </h3>
-                {home.residents.length > 0 ? (
+                {home.residents && home.residents.length > 0 ? (
                   <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50">
@@ -714,9 +716,9 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
             {activeTab === 'licenses' && (
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Licenses ({home.licenses.length})
+                  Licenses ({home.licenses?.length || 0})
                 </h3>
-                {home.licenses.length > 0 ? (
+                {home.licenses && home.licenses.length > 0 ? (
                   <div className="space-y-4">
                     {home.licenses.map((license) => {
                       const daysUntilExpiry = license.expirationDate 
@@ -772,9 +774,9 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
             {activeTab === 'reviews' && (
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Reviews ({home.reviews.length})
+                  Reviews ({home.reviews?.length || 0})
                 </h3>
-                {home.reviews.length > 0 ? (
+                {home.reviews && home.reviews.length > 0 ? (
                   <div className="space-y-4">
                     {home.reviews.map((review) => (
                       <div key={review.id} className="bg-gray-50 rounded-lg p-4">
@@ -789,7 +791,7 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
                               ))}
                             </div>
                             <span className="text-sm text-gray-600">
-                              {review.family.user.firstName} {review.family.user.lastName}
+                              {review.family?.user?.firstName || 'Unknown'} {review.family?.user?.lastName || 'User'}
                             </span>
                           </div>
                           <span className="text-sm text-gray-500">
@@ -809,9 +811,9 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
             {activeTab === 'inquiries' && (
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Recent Inquiries ({home.inquiries.length})
+                  Recent Inquiries ({home.inquiries?.length || 0})
                 </h3>
-                {home.inquiries.length > 0 ? (
+                {home.inquiries && home.inquiries.length > 0 ? (
                   <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50">
@@ -825,7 +827,7 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
                         {home.inquiries.map((inquiry) => (
                           <tr key={inquiry.id}>
                             <td className="px-6 py-4 text-sm text-gray-900">
-                              {inquiry.family.user.firstName} {inquiry.family.user.lastName}
+                              {inquiry.family?.user?.firstName || 'Unknown'} {inquiry.family?.user?.lastName || 'User'}
                             </td>
                             <td className="px-6 py-4 text-sm">
                               <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
