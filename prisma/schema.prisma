@@ -29,6 +29,7 @@ model User {
   notificationPrefs         Json?
   preferences               Json?
   timezone                  String                   @default("UTC")
+  preferredContactMethod    String?                  // EMAIL, PHONE, BOTH
   createdAt                 DateTime                 @default(now())
   updatedAt                 DateTime                 @updatedAt
   lastLoginAt               DateTime?

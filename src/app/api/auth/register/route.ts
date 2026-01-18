@@ -38,11 +38,18 @@ const registrationSchema = z.object({
     ),
   firstName: z.string().min(2, "First name must be at least 2 characters"),
   lastName: z.string().min(2, "Last name must be at least 2 characters"),
-  phone: z.string().optional(),
+  phone: z.string().optional().refine(
+    (val) => !val || /^(\+1\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/.test(val),
+    { message: "Please enter a valid US phone number" }
+  ),
   role: z.enum(["FAMILY", "OPERATOR", "CAREGIVER", "AFFILIATE", "PROVIDER"]),
   agreeToTerms: z.boolean().refine(val => val === true, {
     message: "You must agree to the terms and conditions"
-  })
+  }),
+  // New optional fields
+  relationshipToRecipient: z.enum(["SELF", "PARENT", "SPOUSE", "SIBLING", "OTHER"]).optional(),
+  carePreferences: z.string().max(1000, "Care preferences must be under 1000 characters").optional(),
+  preferredContactMethod: z.enum(["EMAIL", "PHONE", "BOTH"]).optional()
 });
 
 /**
@@ -161,7 +168,10 @@ export async function POST(request: NextRequest) {
       lastName, 
       phone, 
       role, 
-      agreeToTerms 
+      agreeToTerms,
+      relationshipToRecipient,
+      carePreferences,
+      preferredContactMethod
     } = validationResult.data;
     
     // Normalize email to lowercase
@@ -194,6 +204,7 @@ export async function POST(request: NextRequest) {
           phone,
           role: role as UserRole,
           status: UserStatus.PENDING,  // Users start as PENDING until email verification
+          preferredContactMethod: preferredContactMethod || null,
         }
       });
       
@@ -209,12 +220,12 @@ export async function POST(request: NextRequest) {
               // Primary contact info (new care context fields)
               primaryContactName: null,
               phone: phone || null, // Use registration phone if provided
-              relationshipToRecipient: null,
+              relationshipToRecipient: relationshipToRecipient || null,
               // Care recipient details
               recipientAge: null,
               primaryDiagnosis: null,
               mobilityLevel: null,
-              careNotes: null
+              careNotes: carePreferences || null
             }
           });
           break;
