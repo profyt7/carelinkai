@@ -26,8 +26,8 @@ import CookieConsent from "../components/analytics/CookieConsent";
 import ErrorBoundary from "../components/ErrorBoundary";
 // Onboarding modal
 import OnboardingModal from "../components/onboarding/OnboardingModal";
-// Bugsnag error tracking
-import BugsnagProvider from "../components/BugsnagProvider";
+// Sentry error tracking
+import SentryProvider from "../components/SentryProvider";
 
 // Load Inter font for headers (CareLinkAI branding)
 const inter = Inter({
@@ -319,7 +319,7 @@ export default function RootLayout({
         
         <WebSocketProvider>
           <Providers>
-            <BugsnagProvider>
+            <SentryProvider>
               <ErrorBoundary>
               {/* ------ PWA Manager wraps the entire UI for install prompts, offline banners, etc. ------ */}
               <PWAManager>
@@ -363,7 +363,7 @@ export default function RootLayout({
                 <OnboardingModal />
               </PWAManager>
               </ErrorBoundary>
-            </BugsnagProvider>
+            </SentryProvider>
           </Providers>
         </WebSocketProvider>
         

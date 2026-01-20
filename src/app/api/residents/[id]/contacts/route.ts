@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { requireOperatorOrAdmin } from '@/lib/rbac';
 import { prisma } from '@/lib/prisma';
 import { createAuditLogFromRequest } from '@/lib/audit';
-import { notifyBugsnagServer } from '@/lib/bugsnag-server';
+import { captureError, addBreadcrumb, Sentry } from '@/lib/sentry';
 
 // Assumptions:
 // - Operator/Admin can read/update resident contacts they have access to via home/operator scope.
@@ -84,7 +84,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       }),
     ]);
 
-    Sentry.addBreadcrumb({ category: 'resident', message: 'contacts_updated', level: 'info', data: { residentId: resident.id, count: items.length } });
+    addBreadcrumb('contacts_updated', 'resident', { residentId: resident.id, count: items.length }, 'info');
     await createAuditLogFromRequest(req, 'UPDATE', 'ResidentContact', resident.id, 'Updated resident contacts');
     return NextResponse.json({ success: true }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (e: any) {
