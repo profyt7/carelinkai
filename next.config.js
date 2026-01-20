@@ -61,11 +61,18 @@ const sentryWebpackPluginOptions = {
   // For all available options, see:
   // https://github.com/getsentry/sentry-webpack-plugin#options
 
-  org: 'the-council-labs',
-  project: 'carelinkai',
+  org: process.env.SENTRY_ORG || 'the-council-labs',
+  project: process.env.SENTRY_PROJECT || 'carelinkai',
   
   // Only print logs for uploading source maps in CI
   silent: !process.env.CI,
+
+  // CRITICAL FIX: Disable source map upload if auth token is missing
+  // This allows the build to succeed even without Sentry credentials
+  // Error tracking will still work, just without source maps
+  sourcemaps: {
+    disable: !process.env.SENTRY_AUTH_TOKEN,
+  },
 
   // Upload a larger set of source maps for prettier stack traces (increases build time)
   widenClientFileUpload: true,
