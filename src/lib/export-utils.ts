@@ -210,3 +210,47 @@ export const auditLogExportColumns = [
   { key: 'ipAddress', label: 'IP Address' },
   { key: 'createdAt', label: 'Timestamp' },
 ];
+
+// Format file size for display
+export function formatFileSize(bytes: number): string {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// Format date for CSV export
+export function formatDateForCSV(date: Date | string | null | undefined): string {
+  if (!date) return '';
+  const d = new Date(date);
+  return d.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+}
+
+// Download CSV file in browser
+export function downloadCSV(csvContent: string, filename: string): void {
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+// Export inquiries to CSV
+export function exportInquiriesToCSV(inquiries: any[]): string {
+  return toCSV(inquiries, inquiryExportColumns);
+}
+
+// Export caregivers to CSV
+export function exportCaregiversToCSV(caregivers: any[]): string {
+  return toCSV(caregivers, caregiverExportColumns);
+}
