@@ -2,24 +2,76 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { motion, useInView, AnimatePresence } from "framer-motion";
+import { useRef } from "react";
 import { 
   FiArrowRight, FiCheck, FiShield, FiUsers, FiHeart, FiActivity, 
   FiSearch, FiStar, FiZap, FiBriefcase, FiMessageCircle, FiCalendar, 
   FiFileText, FiClock, FiTarget, FiTrendingUp, FiAward, FiSmartphone,
   FiVideo, FiGlobe, FiBarChart, FiChevronDown, FiPhone, FiMail, FiMapPin
 } from "react-icons/fi";
+import { prefersReducedMotion, durations, easings } from "@/lib/animations";
+
+// Animation variants
+const fadeInUp = {
+  initial: { opacity: 0, y: 30 },
+  animate: { opacity: 1, y: 0 },
+};
+
+const staggerContainer = {
+  animate: {
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const cardHover = {
+  initial: { scale: 1, y: 0 },
+  hover: { scale: 1.03, y: -5 },
+};
 
 export default function HomePage() {
   const [activeBenefitTab, setActiveBenefitTab] = useState('families');
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+  const [mounted, setMounted] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    setReducedMotion(prefersReducedMotion());
+  }, []);
 
   const toggleFaq = (index: number) => {
     setOpenFaqIndex(openFaqIndex === index ? null : index);
   };
 
+  // Animation wrapper helper
+  const AnimatedSection = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => {
+    const ref = useRef<HTMLDivElement>(null);
+    const isInView = useInView(ref, { once: true, margin: '-50px' });
+    
+    if (!mounted || reducedMotion) {
+      return <div className={className}>{children}</div>;
+    }
+    
+    return (
+      <motion.div
+        ref={ref}
+        initial="initial"
+        animate={isInView ? "animate" : "initial"}
+        variants={fadeInUp}
+        transition={{ duration: durations.slow, ease: easings.easeOut  }}
+        className={className}
+      >
+        {children}
+      </motion.div>
+    );
+  };
+
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white overflow-x-hidden">
       {/* Navigation */}
       <nav className="bg-white border-b border-neutral-200 px-4 md:px-6 py-4 sticky top-0 z-50 backdrop-blur-sm bg-white/90">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
@@ -100,22 +152,37 @@ export default function HomePage() {
               </p>
               
               {/* CTAs */}
-              <div className="mt-8 flex flex-col sm:flex-row gap-4">
-                <Link 
-                  href="/auth/register" 
-                  className="group bg-gradient-to-r from-[#3978FC] to-[#7253B7] hover:shadow-xl text-white px-8 py-4 rounded-lg font-semibold text-center flex items-center justify-center shadow-lg transition-all duration-300 transform hover:-translate-y-1"
+              <motion.div 
+                className="mt-8 flex flex-col sm:flex-row gap-4"
+                initial={mounted && !reducedMotion ? { opacity: 0, y: 20 } : undefined}
+                animate={mounted && !reducedMotion ? { opacity: 1, y: 0 } : undefined}
+                transition={{ duration: 0.5, delay: 0.3 }}
+              >
+                <motion.div
+                  whileHover={reducedMotion ? undefined : { scale: 1.02, y: -2 }}
+                  whileTap={reducedMotion ? undefined : { scale: 0.98 }}
                 >
-                  Get Started Free
-                  <FiArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
-                </Link>
-                <Link 
-                  href="/search" 
-                  className="bg-white hover:bg-neutral-50 text-[#1A1A1A] px-8 py-4 rounded-lg font-semibold border-2 border-neutral-300 text-center flex items-center justify-center transition-all duration-300 hover:border-[#3978FC]"
+                  <Link 
+                    href="/auth/register" 
+                    className="group bg-gradient-to-r from-[#3978FC] to-[#7253B7] hover:shadow-xl text-white px-8 py-4 rounded-lg font-semibold text-center flex items-center justify-center shadow-lg transition-all duration-300"
+                  >
+                    Get Started Free
+                    <FiArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                </motion.div>
+                <motion.div
+                  whileHover={reducedMotion ? undefined : { scale: 1.02, y: -2 }}
+                  whileTap={reducedMotion ? undefined : { scale: 0.98 }}
                 >
-                  <FiSearch className="mr-2" />
-                  Find Care Now
-                </Link>
-              </div>
+                  <Link 
+                    href="/search" 
+                    className="bg-white hover:bg-neutral-50 text-[#1A1A1A] px-8 py-4 rounded-lg font-semibold border-2 border-neutral-300 text-center flex items-center justify-center transition-all duration-300 hover:border-[#3978FC]"
+                  >
+                    <FiSearch className="mr-2" />
+                    Find Care Now
+                  </Link>
+                </motion.div>
+              </motion.div>
               
               {/* Trust indicators */}
               <div className="mt-8 flex flex-wrap items-center gap-6 text-sm text-[#63666A]">
@@ -1109,100 +1176,120 @@ export default function HomePage() {
           
           <div className="space-y-4">
             {/* FAQ 1 */}
-            <div className="bg-neutral-50 rounded-xl border border-neutral-200 overflow-hidden">
+            <motion.div 
+              className="bg-neutral-50 rounded-xl border border-neutral-200 overflow-hidden"
+              initial={false}
+            >
               <button
                 onClick={() => toggleFaq(0)}
                 className="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-neutral-100 transition-colors"
               >
                 <span className="font-bold text-lg text-[#1A1A1A]">How does the AI matching work?</span>
-                <FiChevronDown className={`text-[#3978FC] text-xl transition-transform ${openFaqIndex === 0 ? 'transform rotate-180' : ''}`} />
+                <motion.div
+                  animate={{ rotate: openFaqIndex === 0 ? 180 : 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <FiChevronDown className="text-[#3978FC] text-xl" />
+                </motion.div>
               </button>
-              {openFaqIndex === 0 && (
-                <div className="px-6 pb-5 text-[#63666A]">
-                  <p>Our AI analyzes over 50 data points including medical needs, care level, location, budget, amenities, and personal preferences. It then matches you with facilities that best fit your specific requirements, providing match scores and detailed comparisons.</p>
-                </div>
-              )}
-            </div>
+              <AnimatePresence>
+                {openFaqIndex === 0 && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.25 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="px-6 pb-5 text-[#63666A]">
+                      <p>Our AI analyzes over 50 data points including medical needs, care level, location, budget, amenities, and personal preferences. It then matches you with facilities that best fit your specific requirements, providing match scores and detailed comparisons.</p>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
             
             {/* FAQ 2 */}
-            <div className="bg-neutral-50 rounded-xl border border-neutral-200 overflow-hidden">
+            <motion.div className="bg-neutral-50 rounded-xl border border-neutral-200 overflow-hidden" initial={false}>
               <button
                 onClick={() => toggleFaq(1)}
                 className="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-neutral-100 transition-colors"
               >
                 <span className="font-bold text-lg text-[#1A1A1A]">Is my health information secure?</span>
-                <FiChevronDown className={`text-[#3978FC] text-xl transition-transform ${openFaqIndex === 1 ? 'transform rotate-180' : ''}`} />
+                <motion.div animate={{ rotate: openFaqIndex === 1 ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                  <FiChevronDown className="text-[#3978FC] text-xl" />
+                </motion.div>
               </button>
-              {openFaqIndex === 1 && (
-                <div className="px-6 pb-5 text-[#63666A]">
-                  <p>Absolutely. We are fully HIPAA compliant with bank-level encryption, secure data storage, comprehensive audit logging, and regular security audits. Your health information is protected at every level of our platform.</p>
-                </div>
-              )}
-            </div>
+              <AnimatePresence>
+                {openFaqIndex === 1 && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
+                    <div className="px-6 pb-5 text-[#63666A]">
+                      <p>Absolutely. We are fully HIPAA compliant with bank-level encryption, secure data storage, comprehensive audit logging, and regular security audits. Your health information is protected at every level of our platform.</p>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
             
             {/* FAQ 3 */}
-            <div className="bg-neutral-50 rounded-xl border border-neutral-200 overflow-hidden">
-              <button
-                onClick={() => toggleFaq(2)}
-                className="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-neutral-100 transition-colors"
-              >
+            <motion.div className="bg-neutral-50 rounded-xl border border-neutral-200 overflow-hidden" initial={false}>
+              <button onClick={() => toggleFaq(2)} className="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-neutral-100 transition-colors">
                 <span className="font-bold text-lg text-[#1A1A1A]">How much does CareLinkAI cost?</span>
-                <FiChevronDown className={`text-[#3978FC] text-xl transition-transform ${openFaqIndex === 2 ? 'transform rotate-180' : ''}`} />
+                <motion.div animate={{ rotate: openFaqIndex === 2 ? 180 : 0 }} transition={{ duration: 0.2 }}><FiChevronDown className="text-[#3978FC] text-xl" /></motion.div>
               </button>
-              {openFaqIndex === 2 && (
-                <div className="px-6 pb-5 text-[#63666A]">
-                  <p>For families, CareLinkAI is completely free to use - no credit card required. Care homes and healthcare professionals have subscription plans starting at $99/month with different tiers based on features and volume needs.</p>
-                </div>
-              )}
-            </div>
+              <AnimatePresence>
+                {openFaqIndex === 2 && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
+                    <div className="px-6 pb-5 text-[#63666A]"><p>For families, CareLinkAI is completely free to use - no credit card required. Care homes and healthcare professionals have subscription plans starting at $99/month with different tiers based on features and volume needs.</p></div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
             
             {/* FAQ 4 */}
-            <div className="bg-neutral-50 rounded-xl border border-neutral-200 overflow-hidden">
-              <button
-                onClick={() => toggleFaq(3)}
-                className="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-neutral-100 transition-colors"
-              >
+            <motion.div className="bg-neutral-50 rounded-xl border border-neutral-200 overflow-hidden" initial={false}>
+              <button onClick={() => toggleFaq(3)} className="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-neutral-100 transition-colors">
                 <span className="font-bold text-lg text-[#1A1A1A]">How quickly can I find care?</span>
-                <FiChevronDown className={`text-[#3978FC] text-xl transition-transform ${openFaqIndex === 3 ? 'transform rotate-180' : ''}`} />
+                <motion.div animate={{ rotate: openFaqIndex === 3 ? 180 : 0 }} transition={{ duration: 0.2 }}><FiChevronDown className="text-[#3978FC] text-xl" /></motion.div>
               </button>
-              {openFaqIndex === 3 && (
-                <div className="px-6 pb-5 text-[#63666A]">
-                  <p>Our AI provides matches instantly. Most families find the right care home within 3-7 days. Discharge planners can place patients within hours. The speed depends on your specific needs and location, but we're significantly faster than traditional methods.</p>
-                </div>
-              )}
-            </div>
+              <AnimatePresence>
+                {openFaqIndex === 3 && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
+                    <div className="px-6 pb-5 text-[#63666A]"><p>Our AI provides matches instantly. Most families find the right care home within 3-7 days. Discharge planners can place patients within hours. The speed depends on your specific needs and location, but we're significantly faster than traditional methods.</p></div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
             
             {/* FAQ 5 */}
-            <div className="bg-neutral-50 rounded-xl border border-neutral-200 overflow-hidden">
-              <button
-                onClick={() => toggleFaq(4)}
-                className="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-neutral-100 transition-colors"
-              >
+            <motion.div className="bg-neutral-50 rounded-xl border border-neutral-200 overflow-hidden" initial={false}>
+              <button onClick={() => toggleFaq(4)} className="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-neutral-100 transition-colors">
                 <span className="font-bold text-lg text-[#1A1A1A]">What makes CareLinkAI different?</span>
-                <FiChevronDown className={`text-[#3978FC] text-xl transition-transform ${openFaqIndex === 4 ? 'transform rotate-180' : ''}`} />
+                <motion.div animate={{ rotate: openFaqIndex === 4 ? 180 : 0 }} transition={{ duration: 0.2 }}><FiChevronDown className="text-[#3978FC] text-xl" /></motion.div>
               </button>
-              {openFaqIndex === 4 && (
-                <div className="px-6 pb-5 text-[#63666A]">
-                  <p>We're the only platform that uses advanced AI to match all stakeholders - families, care homes, caregivers, and healthcare professionals. Our 8 AI-powered features automate the entire placement process, making it faster, more accurate, and less stressful for everyone involved.</p>
-                </div>
-              )}
-            </div>
+              <AnimatePresence>
+                {openFaqIndex === 4 && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
+                    <div className="px-6 pb-5 text-[#63666A]"><p>We're the only platform that uses advanced AI to match all stakeholders - families, care homes, caregivers, and healthcare professionals. Our 8 AI-powered features automate the entire placement process, making it faster, more accurate, and less stressful for everyone involved.</p></div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
             
             {/* FAQ 6 */}
-            <div className="bg-neutral-50 rounded-xl border border-neutral-200 overflow-hidden">
-              <button
-                onClick={() => toggleFaq(5)}
-                className="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-neutral-100 transition-colors"
-              >
+            <motion.div className="bg-neutral-50 rounded-xl border border-neutral-200 overflow-hidden" initial={false}>
+              <button onClick={() => toggleFaq(5)} className="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-neutral-100 transition-colors">
                 <span className="font-bold text-lg text-[#1A1A1A]">Can I schedule facility tours through CareLinkAI?</span>
-                <FiChevronDown className={`text-[#3978FC] text-xl transition-transform ${openFaqIndex === 5 ? 'transform rotate-180' : ''}`} />
+                <motion.div animate={{ rotate: openFaqIndex === 5 ? 180 : 0 }} transition={{ duration: 0.2 }}><FiChevronDown className="text-[#3978FC] text-xl" /></motion.div>
               </button>
-              {openFaqIndex === 5 && (
-                <div className="px-6 pb-5 text-[#63666A]">
-                  <p>Yes! Our AI-powered tour scheduling finds optimal times for both families and facilities. You'll receive automated reminders and confirmations. Virtual tours and video consultations are coming in Q1 2026.</p>
-                </div>
-              )}
-            </div>
+              <AnimatePresence>
+                {openFaqIndex === 5 && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
+                    <div className="px-6 pb-5 text-[#63666A]"><p>Yes! Our AI-powered tour scheduling finds optimal times for both families and facilities. You'll receive automated reminders and confirmations. Virtual tours and video consultations are coming in Q1 2026.</p></div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
           </div>
         </div>
       </section>

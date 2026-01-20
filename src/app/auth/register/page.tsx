@@ -2,13 +2,15 @@
 
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import axios from "axios";
 import { signIn } from "next-auth/react";
+import { motion, AnimatePresence } from "framer-motion";
+import { prefersReducedMotion } from "@/lib/animations";
 
 // Icons
 import { 
@@ -154,6 +156,7 @@ export default function RegisterPage() {
   /* We only mark the component as mounted after the first client render. */
   React.useEffect(() => {
     setMounted(true);
+    setReducedMotion(prefersReducedMotion());
   }, []);
 
   const router = useRouter();
@@ -161,6 +164,7 @@ export default function RegisterPage() {
   const [apiError, setApiError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [step, setStep] = useState(1);
+  const [reducedMotion, setReducedMotion] = useState(false);
   
   // Password visibility toggles
   const [showPassword, setShowPassword] = useState(false);
@@ -230,6 +234,7 @@ export default function RegisterPage() {
       
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [step, trigger, watch]);
   
   // Format phone number as user types
