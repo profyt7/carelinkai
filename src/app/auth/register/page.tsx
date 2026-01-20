@@ -173,6 +173,8 @@ export default function RegisterPage() {
     formState: { errors, isValid },
     trigger,
     setValue,
+    setError,
+    clearErrors,
   } = useForm<FormData>({
     mode: "onChange",
     defaultValues: {
@@ -181,6 +183,9 @@ export default function RegisterPage() {
       preferredContactMethod: "EMAIL"
     }
   });
+  
+  // Watch confirmPassword for mismatch validation
+  const confirmPassword = watch("confirmPassword");
 
   // Watch form fields
   const password = watch("password");
@@ -191,6 +196,41 @@ export default function RegisterPage() {
   // Calculate password strength
   const passwordStrength = useMemo(() => calculatePasswordStrength(password ?? ""), [password]);
   const passwordRequirements = useMemo(() => checkPasswordRequirements(password ?? ""), [password]);
+  
+  // BUG-002 FIX: Re-validate confirmPassword when password changes
+  React.useEffect(() => {
+    // Only validate if confirmPassword has a value (user has entered something)
+    if (confirmPassword) {
+      if (password !== confirmPassword) {
+        setError("confirmPassword", { 
+          type: "manual", 
+          message: "Passwords do not match" 
+        });
+      } else {
+        clearErrors("confirmPassword");
+      }
+    }
+  }, [password, confirmPassword, setError, clearErrors]);
+  
+  // BUG-001 FIX: Trigger validation when entering step 2 to handle browser autofilled fields
+  // This ensures pre-filled firstName/lastName fields are validated properly
+  React.useEffect(() => {
+    if (step === 2) {
+      // Small delay to allow browser autofill to complete
+      const timer = setTimeout(() => {
+        // Get current values and manually trigger validation if fields have values
+        const firstName = watch("firstName");
+        const lastName = watch("lastName");
+        
+        // If fields have values (either typed or autofilled), trigger validation
+        if (firstName || lastName) {
+          trigger(["firstName", "lastName"]);
+        }
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [step, trigger, watch]);
   
   // Format phone number as user types
   const formatPhoneNumber = (value: string) => {
@@ -278,13 +318,26 @@ export default function RegisterPage() {
     
     if (step === 1) {
       fieldsToValidate = ["email", "password", "confirmPassword"];
+      
+      // BUG-002 FIX: Explicit password mismatch check before proceeding
+      const currentPassword = watch("password");
+      const currentConfirmPassword = watch("confirmPassword");
+      
+      if (currentPassword !== currentConfirmPassword) {
+        setError("confirmPassword", { 
+          type: "manual", 
+          message: "Passwords do not match" 
+        });
+        return; // Block progression
+      }
     } else if (step === 2) {
       fieldsToValidate = ["firstName", "lastName", "phone"];
     }
     
     const isStepValid = await trigger(fieldsToValidate);
     
-    if (isStepValid) {
+    // BUG-002 FIX: Also check for any existing errors
+    if (isStepValid && Object.keys(errors).filter(key => fieldsToValidate.includes(key as keyof FormData)).length === 0) {
       setStep(step + 1);
     }
   };

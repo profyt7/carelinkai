@@ -194,40 +194,60 @@ export async function POST(request: NextRequest) {
     
     // Create user record with transaction to ensure all related records are created
     const result = await prisma.$transaction(async (tx) => {
+      // BUG-003 FIX: Build user data object dynamically to avoid potential field issues
+      const userData: any = {
+        email: normalizedEmail,
+        passwordHash,
+        firstName,
+        lastName,
+        phone: phone || null,
+        role: role as UserRole,
+        status: UserStatus.PENDING,  // Users start as PENDING until email verification
+      };
+      
+      // Only add preferredContactMethod if provided (handles case where field might not exist in DB)
+      if (preferredContactMethod) {
+        userData.preferredContactMethod = preferredContactMethod;
+      }
+      
+      console.log("[registration] Creating user with data:", JSON.stringify({ 
+        ...userData, 
+        passwordHash: '[REDACTED]' 
+      }));
+      
       // Create base user record
       const user = await tx.user.create({
-        data: {
-          email: normalizedEmail,
-          passwordHash,
-          firstName,
-          lastName,
-          phone,
-          role: role as UserRole,
-          status: UserStatus.PENDING,  // Users start as PENDING until email verification
-          preferredContactMethod: preferredContactMethod || null,
-        }
+        data: userData
       });
       
       // Create role-specific profile based on selected role
       switch (role) {
         case "FAMILY":
-          await tx.family.create({
-            data: {
-              userId: user.id,
-              // Emergency contact fields (legacy)
-              emergencyContact: null,
-              emergencyPhone: null,
-              // Primary contact info (new care context fields)
-              primaryContactName: null,
-              phone: phone || null, // Use registration phone if provided
-              relationshipToRecipient: relationshipToRecipient || null,
-              // Care recipient details
-              recipientAge: null,
-              primaryDiagnosis: null,
-              mobilityLevel: null,
-              careNotes: carePreferences || null
-            }
-          });
+          // BUG-003 FIX: Build family data dynamically with better null handling
+          const familyData: any = {
+            userId: user.id,
+            // Emergency contact fields (legacy)
+            emergencyContact: null,
+            emergencyPhone: null,
+            // Primary contact info
+            primaryContactName: null,
+            phone: phone || null,
+            // Care recipient details
+            recipientAge: null,
+            primaryDiagnosis: null,
+            mobilityLevel: null,
+          };
+          
+          // Only add optional fields if they have values
+          if (relationshipToRecipient) {
+            familyData.relationshipToRecipient = relationshipToRecipient;
+          }
+          if (carePreferences) {
+            familyData.careNotes = carePreferences;
+          }
+          
+          console.log("[registration] Creating family profile for user:", user.id);
+          await tx.family.create({ data: familyData });
           break;
           
         case "OPERATOR":
@@ -361,13 +381,35 @@ export async function POST(request: NextRequest) {
     }, { status: 201 });
     
   } catch (error: any) {
-    console.error("Registration error:", error);
+    console.error("[registration] Registration error:", error);
+    console.error("[registration] Error name:", error?.name);
+    console.error("[registration] Error code:", error?.code);
+    console.error("[registration] Error message:", error?.message);
     
-    // Handle specific errors
-    if (error.code === "P2002" && error.meta?.target?.includes("email")) {
+    // Handle specific Prisma errors
+    if (error.code === "P2002") {
+      if (error.meta?.target?.includes("email")) {
+        return NextResponse.json(
+          { success: false, message: "Email already in use" }, 
+          { status: 409 }
+        );
+      }
       return NextResponse.json(
-        { success: false, message: "Email already in use" }, 
+        { success: false, message: "A record with this data already exists" }, 
         { status: 409 }
+      );
+    }
+    
+    // Handle Prisma validation errors (unknown field)
+    if (error.code === "P2025" || error.message?.includes("Unknown argument")) {
+      console.error("[registration] Prisma schema mismatch - possible missing migration");
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: "Registration service temporarily unavailable. Please try again later.",
+          error: process.env.NODE_ENV === "development" ? error.message : undefined 
+        }, 
+        { status: 500 }
       );
     }
     
@@ -375,7 +417,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { 
         success: false, 
-        message: "Registration failed", 
+        message: "Registration failed. Please try again.",
         error: process.env.NODE_ENV === "development" ? error.message : undefined 
       }, 
       { status: 500 }
