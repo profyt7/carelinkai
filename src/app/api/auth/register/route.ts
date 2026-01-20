@@ -143,13 +143,26 @@ async function sendVerificationEmailToUser(userId: string): Promise<boolean> {
  * POST handler for user registration
  */
 export async function POST(request: NextRequest) {
+  console.log("=".repeat(60));
+  console.log("[REGISTER API] Request received at:", new Date().toISOString());
+  console.log("[REGISTER API] Request method:", request.method);
+  console.log("[REGISTER API] Request URL:", request.url);
+  
+  let rawBody: any;
   try {
     // Parse and validate request body
-    const body = await request.json();
+    rawBody = await request.json();
+    console.log("[REGISTER API] Raw request body keys:", Object.keys(rawBody));
+    console.log("[REGISTER API] Raw body (sanitized):", JSON.stringify({
+      ...rawBody,
+      password: rawBody.password ? "[REDACTED]" : undefined
+    }, null, 2));
     
     // Validate input against schema
-    const validationResult = registrationSchema.safeParse(body);
+    console.log("[REGISTER API] Starting validation...");
+    const validationResult = registrationSchema.safeParse(rawBody);
     if (!validationResult.success) {
+      console.log("[REGISTER API] Validation FAILED:", JSON.stringify(validationResult.error.flatten().fieldErrors));
       return NextResponse.json(
         { 
           success: false, 
@@ -159,6 +172,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+    console.log("[REGISTER API] Validation PASSED");
     
     // Extract validated data
     const { 
@@ -176,13 +190,18 @@ export async function POST(request: NextRequest) {
     
     // Normalize email to lowercase
     const normalizedEmail = email.toLowerCase();
+    console.log("[REGISTER API] Normalized email:", normalizedEmail);
+    console.log("[REGISTER API] Role:", role);
     
     // Check if user already exists
+    console.log("[REGISTER API] Checking for existing user...");
     const existingUser = await prisma.user.findUnique({
       where: { email: normalizedEmail }
     });
+    console.log("[REGISTER API] Existing user check complete:", existingUser ? "USER EXISTS" : "NO EXISTING USER");
     
     if (existingUser) {
+      console.log("[REGISTER API] REJECTING: Email already in use");
       return NextResponse.json(
         { success: false, message: "Email already in use" }, 
         { status: 409 }
@@ -190,10 +209,15 @@ export async function POST(request: NextRequest) {
     }
     
     // Hash password
+    console.log("[REGISTER API] Hashing password...");
     const passwordHash = await hash(password, SALT_ROUNDS);
+    console.log("[REGISTER API] Password hashed successfully");
     
     // Create user record with transaction to ensure all related records are created
+    console.log("[REGISTER API] Starting database transaction...");
     const result = await prisma.$transaction(async (tx) => {
+      console.log("[REGISTER API] Inside transaction");
+      
       // BUG-003 FIX: Build user data object dynamically to avoid potential field issues
       const userData: any = {
         email: normalizedEmail,
@@ -207,22 +231,27 @@ export async function POST(request: NextRequest) {
       
       // Only add preferredContactMethod if provided (handles case where field might not exist in DB)
       if (preferredContactMethod) {
+        console.log("[REGISTER API] Adding preferredContactMethod:", preferredContactMethod);
         userData.preferredContactMethod = preferredContactMethod;
       }
       
-      console.log("[registration] Creating user with data:", JSON.stringify({ 
+      console.log("[REGISTER API] Creating user with data:", JSON.stringify({ 
         ...userData, 
         passwordHash: '[REDACTED]' 
       }));
       
       // Create base user record
+      console.log("[REGISTER API] Calling tx.user.create...");
       const user = await tx.user.create({
         data: userData
       });
+      console.log("[REGISTER API] User created successfully, id:", user.id);
       
       // Create role-specific profile based on selected role
+      console.log("[REGISTER API] Creating role-specific profile for role:", role);
       switch (role) {
         case "FAMILY":
+          console.log("[REGISTER API] Creating FAMILY profile...");
           // BUG-003 FIX: Build family data dynamically with better null handling
           const familyData: any = {
             userId: user.id,
@@ -240,17 +269,22 @@ export async function POST(request: NextRequest) {
           
           // Only add optional fields if they have values
           if (relationshipToRecipient) {
+            console.log("[REGISTER API] Adding relationshipToRecipient:", relationshipToRecipient);
             familyData.relationshipToRecipient = relationshipToRecipient;
           }
           if (carePreferences) {
+            console.log("[REGISTER API] Adding careNotes from carePreferences");
             familyData.careNotes = carePreferences;
           }
           
-          console.log("[registration] Creating family profile for user:", user.id);
+          console.log("[REGISTER API] Family data:", JSON.stringify(familyData));
+          console.log("[REGISTER API] Calling tx.family.create...");
           await tx.family.create({ data: familyData });
+          console.log("[REGISTER API] Family profile created successfully");
           break;
           
         case "OPERATOR":
+          console.log("[REGISTER API] Creating OPERATOR profile...");
           await tx.operator.create({
             data: {
               userId: user.id,
@@ -259,9 +293,11 @@ export async function POST(request: NextRequest) {
               businessLicense: null
             }
           });
+          console.log("[REGISTER API] Operator profile created successfully");
           break;
           
         case "CAREGIVER":
+          console.log("[REGISTER API] Creating CAREGIVER profile...");
           await tx.caregiver.create({
             data: {
               userId: user.id,
@@ -271,9 +307,11 @@ export async function POST(request: NextRequest) {
               availability: {} // Empty JSON object for availability
             }
           });
+          console.log("[REGISTER API] Caregiver profile created successfully");
           break;
           
         case "AFFILIATE":
+          console.log("[REGISTER API] Creating AFFILIATE profile...");
           await tx.affiliate.create({
             data: {
               userId: user.id,
@@ -283,9 +321,11 @@ export async function POST(request: NextRequest) {
               paymentDetails: {} // Empty JSON object for payment details
             }
           });
+          console.log("[REGISTER API] Affiliate profile created successfully");
           break;
           
         case "PROVIDER":
+          console.log("[REGISTER API] Creating PROVIDER profile...");
           await tx.provider.create({
             data: {
               userId: user.id,
@@ -304,13 +344,16 @@ export async function POST(request: NextRequest) {
               coverageArea: {} // Empty JSON object for coverage area
             }
           });
+          console.log("[REGISTER API] Provider profile created successfully");
           break;
           
         default:
+          console.log("[REGISTER API] ERROR: Invalid role:", role);
           throw new Error("Invalid role selected");
       }
       
       // Create audit log entry for registration
+      console.log("[REGISTER API] Creating audit log...");
       await tx.auditLog.create({
         data: {
           action: AuditAction.CREATE,
@@ -330,9 +373,12 @@ export async function POST(request: NextRequest) {
           actionedBy: user.id
         }
       });
+      console.log("[REGISTER API] Audit log created successfully");
       
+      console.log("[REGISTER API] Transaction completed successfully, returning user");
       return user;
     });
+    console.log("[REGISTER API] Transaction committed, user id:", result.id);
     
     /* ------------------------------------------------------------------
      * EMAIL VERIFICATION
@@ -381,13 +427,23 @@ export async function POST(request: NextRequest) {
     }, { status: 201 });
     
   } catch (error: any) {
-    console.error("[registration] Registration error:", error);
-    console.error("[registration] Error name:", error?.name);
-    console.error("[registration] Error code:", error?.code);
-    console.error("[registration] Error message:", error?.message);
+    console.error("=".repeat(60));
+    console.error("[REGISTER API] ❌ REGISTRATION ERROR CAUGHT");
+    console.error("[REGISTER API] Error type:", typeof error);
+    console.error("[REGISTER API] Error name:", error?.name);
+    console.error("[REGISTER API] Error code:", error?.code);
+    console.error("[REGISTER API] Error message:", error?.message);
+    console.error("[REGISTER API] Error meta:", JSON.stringify(error?.meta));
+    console.error("[REGISTER API] Full error object:", JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+    if (error?.stack) {
+      console.error("[REGISTER API] Stack trace:");
+      console.error(error.stack);
+    }
+    console.error("=".repeat(60));
     
     // Handle specific Prisma errors
     if (error.code === "P2002") {
+      console.log("[REGISTER API] Handling P2002 (unique constraint violation)");
       if (error.meta?.target?.includes("email")) {
         return NextResponse.json(
           { success: false, message: "Email already in use" }, 
@@ -401,8 +457,9 @@ export async function POST(request: NextRequest) {
     }
     
     // Handle Prisma validation errors (unknown field)
-    if (error.code === "P2025" || error.message?.includes("Unknown argument")) {
-      console.error("[registration] Prisma schema mismatch - possible missing migration");
+    if (error.code === "P2025" || error.message?.includes("Unknown argument") || error.message?.includes("Unknown field")) {
+      console.error("[REGISTER API] Prisma schema mismatch - possible missing migration");
+      console.error("[REGISTER API] This usually means a field in the code doesn't exist in the database schema");
       return NextResponse.json(
         { 
           success: false, 
@@ -414,6 +471,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Generic error response
+    console.log("[REGISTER API] Returning generic 500 error response");
     return NextResponse.json(
       { 
         success: false, 
