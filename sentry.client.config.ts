@@ -3,6 +3,11 @@ import * as Sentry from '@sentry/nextjs';
 
 const SENTRY_DSN = process.env.NEXT_PUBLIC_SENTRY_DSN;
 
+// Debug logging to verify DSN is available at runtime
+if (typeof window !== 'undefined') {
+  console.log('[Sentry Debug] DSN available:', !!SENTRY_DSN, SENTRY_DSN ? `(${SENTRY_DSN.substring(0, 30)}...)` : '(empty)');
+}
+
 // Only initialize if DSN is provided and valid
 if (SENTRY_DSN && SENTRY_DSN.startsWith('https://')) {
   Sentry.init({

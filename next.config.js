@@ -28,6 +28,12 @@ const nextConfig = {
     ignoreBuildErrors: true, // Temporarily enabled to unblock deployment
   },
   
+  // Explicitly expose NEXT_PUBLIC_SENTRY_DSN to client-side
+  // This ensures the DSN is available at runtime in the browser
+  env: {
+    NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
+  },
+  
   // Add cache busting headers to prevent browser caching
   async headers() {
     return [
