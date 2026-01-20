@@ -158,7 +158,7 @@ export default function RegisterPage() {
 
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [step, setStep] = useState(1);
   
@@ -249,7 +249,7 @@ export default function RegisterPage() {
   const onSubmit = async (data: FormData) => {
     try {
       setIsLoading(true);
-      setError(null);
+      setApiError(null);
 
       // Remove confirmPassword before sending to API
       const { confirmPassword, ...registrationData } = data;
@@ -300,10 +300,10 @@ export default function RegisterPage() {
           router.push("/auth/login?registered=true");
         }
       }, 2000);
-    } catch (error: any) {
-      console.error("Registration error:", error);
-      setError(
-        error.response?.data?.message || 
+    } catch (err: any) {
+      console.error("Registration error:", err);
+      setApiError(
+        err.response?.data?.message || 
         "Registration failed. Please try again."
       );
     } finally {
@@ -405,10 +405,10 @@ export default function RegisterPage() {
           </p>
         </div>
 
-        {error && (
+        {apiError && (
           <div className="mb-6 p-3 bg-error-50 border border-error-200 rounded-md flex items-center text-error-800">
             <FiAlertCircle className="h-5 w-5 mr-2 text-error-500" />
-            <span className="text-sm">{error}</span>
+            <span className="text-sm">{apiError}</span>
           </div>
         )}
 
