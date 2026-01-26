@@ -31,6 +31,10 @@ export async function GET(
     const { id } = await params;
     console.log('[Admin Home Detail API] GET request for id:', id);
     
+    // Debug: Check cookies being received
+    const cookies = request.cookies.getAll();
+    console.log('[Admin Home Detail API] Cookies received:', cookies.map(c => `${c.name}=${c.value.substring(0, 20)}...`));
+    
     const session = await getServerSession(authOptions);
     console.log('[Admin Home Detail API] Session:', session ? {
       email: session.user?.email,

@@ -91,7 +91,9 @@ export default function AnalyticsPage() {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch(`/api/admin/analytics?timeRange=${timeRange}`);
+      const response = await fetch(`/api/admin/analytics?timeRange=${timeRange}`, {
+        credentials: 'include',
+      });
       
       if (!response.ok) {
         if (response.status === 403) {
