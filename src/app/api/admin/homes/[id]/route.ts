@@ -29,11 +29,26 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+    console.log('[Admin Home Detail API] GET request for id:', id);
+    
     const session = await getServerSession(authOptions);
+    console.log('[Admin Home Detail API] Session:', session ? {
+      email: session.user?.email,
+      role: session.user?.role,
+      id: session.user?.id
+    } : 'No session');
 
     // Check if user is admin
     if (!session || session.user?.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      console.log('[Admin Home Detail API] Unauthorized - session:', !!session, 'role:', session?.user?.role);
+      return NextResponse.json({ 
+        error: 'Unauthorized',
+        debug: {
+          hasSession: !!session,
+          role: session?.user?.role || null,
+          expectedRole: 'ADMIN'
+        }
+      }, { status: 403 });
     }
 
     const home = await prisma.assistedLivingHome.findUnique({
@@ -186,11 +201,26 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
+    console.log('[Admin Home Detail API] PATCH request for id:', id);
+    
     const session = await getServerSession(authOptions);
+    console.log('[Admin Home Detail API] PATCH Session:', session ? {
+      email: session.user?.email,
+      role: session.user?.role,
+      id: session.user?.id
+    } : 'No session');
 
     // Check if user is admin
     if (!session || session.user?.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      console.log('[Admin Home Detail API] PATCH Unauthorized - session:', !!session, 'role:', session?.user?.role);
+      return NextResponse.json({ 
+        error: 'Unauthorized',
+        debug: {
+          hasSession: !!session,
+          role: session?.user?.role || null,
+          expectedRole: 'ADMIN'
+        }
+      }, { status: 403 });
     }
 
     const body = await request.json();
@@ -289,17 +319,41 @@ export async function PATCH(
   }
 }
 
+// Also export PUT as alias for PATCH (some clients may use PUT)
+export async function PUT(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  console.log('[Admin Home Detail API] PUT request redirecting to PATCH');
+  return PATCH(request, context);
+}
+
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
+    console.log('[Admin Home Detail API] DELETE request for id:', id);
+    
     const session = await getServerSession(authOptions);
+    console.log('[Admin Home Detail API] DELETE Session:', session ? {
+      email: session.user?.email,
+      role: session.user?.role,
+      id: session.user?.id
+    } : 'No session');
 
     // Check if user is admin
     if (!session || session.user?.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      console.log('[Admin Home Detail API] DELETE Unauthorized - session:', !!session, 'role:', session?.user?.role);
+      return NextResponse.json({ 
+        error: 'Unauthorized',
+        debug: {
+          hasSession: !!session,
+          role: session?.user?.role || null,
+          expectedRole: 'ADMIN'
+        }
+      }, { status: 403 });
     }
 
     // Check if home exists

@@ -189,7 +189,9 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
   const fetchHome = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/admin/homes/${resolvedParams.id}`);
+      const response = await fetch(`/api/admin/homes/${resolvedParams.id}`, {
+        credentials: 'include',
+      });
       const data = await response.json();
       
       if (!response.ok) {
@@ -222,6 +224,7 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
     try {
       const response = await fetch(`/api/admin/homes/${resolvedParams.id}`, {
         method: 'PATCH',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editForm),
       });
@@ -254,6 +257,7 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
     try {
       const response = await fetch(`/api/admin/homes/${resolvedParams.id}/verify`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action, reason }),
       });
