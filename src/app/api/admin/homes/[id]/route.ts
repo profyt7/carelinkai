@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { getToken } from 'next-auth/jwt';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { HomeStatus, CareLevel } from '@prisma/client';
@@ -35,22 +36,39 @@ export async function GET(
     const cookies = request.cookies.getAll();
     console.log('[Admin Home Detail API] Cookies received:', cookies.map(c => `${c.name}=${c.value.substring(0, 20)}...`));
     
+    // Try getServerSession first
     const session = await getServerSession(authOptions);
-    console.log('[Admin Home Detail API] Session:', session ? {
+    console.log('[Admin Home Detail API] Session from getServerSession:', session ? {
       email: session.user?.email,
       role: session.user?.role,
       id: session.user?.id
     } : 'No session');
+    
+    // Also try getToken as fallback/debug
+    const token = await getToken({ req: request });
+    console.log('[Admin Home Detail API] Token from getToken:', token ? {
+      email: token.email,
+      role: token.role,
+      id: token.id
+    } : 'No token');
 
+    // Use session if available, otherwise try token
+    const userRole = session?.user?.role || (token?.role as string);
+    const userId = session?.user?.id || (token?.id as string);
+    const userEmail = session?.user?.email || (token?.email as string);
+    
     // Check if user is admin
-    if (!session || session.user?.role !== 'ADMIN') {
-      console.log('[Admin Home Detail API] Unauthorized - session:', !!session, 'role:', session?.user?.role);
+    if (!userRole || userRole !== 'ADMIN') {
+      console.log('[Admin Home Detail API] Unauthorized - session:', !!session, 'token:', !!token, 'role:', userRole);
       return NextResponse.json({ 
         error: 'Unauthorized',
         debug: {
           hasSession: !!session,
-          role: session?.user?.role || null,
-          expectedRole: 'ADMIN'
+          hasToken: !!token,
+          role: userRole || null,
+          expectedRole: 'ADMIN',
+          cookieCount: cookies.length,
+          cookieNames: cookies.map(c => c.name)
         }
       }, { status: 403 });
     }
