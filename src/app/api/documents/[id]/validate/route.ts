@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 /**
  * API Route: POST /api/documents/[id]/validate
  * Validate a document based on its type

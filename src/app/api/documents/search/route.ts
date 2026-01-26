@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 /**
  * API Route: GET /api/documents/search
  * Search and filter documents

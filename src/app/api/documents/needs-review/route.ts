@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 /**
  * API Route: GET /api/documents/needs-review
  * Get documents that need review

@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 /**
  * API Route: GET /api/documents/stats
  * Get document processing statistics

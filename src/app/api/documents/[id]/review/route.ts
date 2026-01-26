@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 /**
  * API Route: POST /api/documents/[id]/review
  * Mark a document as reviewed

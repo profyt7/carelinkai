@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 /**
  * API Route: POST /api/documents/[id]/classify
  * Classify a document using AI

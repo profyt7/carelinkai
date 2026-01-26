@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 /**
  * Admin API: Verify User Email
  * Allows admins to manually verify user emails
