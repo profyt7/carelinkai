@@ -23,6 +23,36 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { use } from 'react';
 
+// Helper function to safely convert any value to a displayable string
+const safeString = (value: unknown, fallback: string = ''): string => {
+  if (value === null || value === undefined) return fallback;
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number') return String(value);
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+  if (value instanceof Date) return value.toLocaleDateString();
+  // Handle Prisma Decimal or other objects
+  if (typeof value === 'object') {
+    try {
+      return String(value);
+    } catch {
+      return fallback;
+    }
+  }
+  return fallback;
+};
+
+// Helper to safely format a date string
+const formatDate = (dateValue: unknown): string => {
+  if (!dateValue) return 'N/A';
+  try {
+    const date = new Date(String(dateValue));
+    if (isNaN(date.getTime())) return 'Invalid date';
+    return date.toLocaleDateString();
+  } catch {
+    return 'Invalid date';
+  }
+};
+
 type HomeDetail = {
   id: string;
   name: string;
@@ -310,8 +340,8 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
                 )}
               </h1>
               <div className="mt-2 flex items-center gap-2">
-                <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusBadgeClass(home.status)}`}>
-                  {home.status?.replace('_', ' ') || 'Unknown'}
+                <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusBadgeClass(safeString(home.status, 'DRAFT'))}`}>
+                  {safeString(home.status, 'Unknown').replace(/_/g, ' ')}
                 </span>
                 {(home.metrics?.expiringLicenses ?? 0) > 0 && (
                   <span className="px-3 py-1 rounded-full text-sm font-semibold bg-orange-100 text-orange-800">
@@ -492,12 +522,12 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
                         Care Levels
                       </label>
                       <div className="flex flex-wrap gap-2">
-                        {(home.careLevel || []).map((level) => (
+                        {(home.careLevel || []).map((level, idx) => (
                           <span
-                            key={level}
+                            key={`level-${idx}`}
                             className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
                           >
-                            {level.replace('_', ' ')}
+                            {safeString(level, 'Unknown').replace(/_/g, ' ')}
                           </span>
                         ))}
                       </div>
@@ -563,7 +593,7 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
                           <option value="INACTIVE">Inactive</option>
                         </select>
                       ) : (
-                        <p className="text-gray-900">{home.status.replace('_', ' ')}</p>
+                        <p className="text-gray-900">{safeString(home.status, 'Unknown').replace(/_/g, ' ')}</p>
                       )}
                     </div>
                   </div>
@@ -690,11 +720,11 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
                             </td>
                             <td className="px-6 py-4 text-sm">
                               <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                                resident.status === 'ACTIVE' 
+                                safeString(resident.status) === 'ACTIVE' 
                                   ? 'bg-green-100 text-green-800'
                                   : 'bg-gray-100 text-gray-800'
                               }`}>
-                                {resident.status}
+                                {safeString(resident.status, 'Unknown')}
                               </span>
                             </td>
                             <td className="px-6 py-4 text-sm text-gray-900">
@@ -733,14 +763,13 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
                             <div>
                               <div className="flex items-center gap-2 mb-2">
                                 <FiShield className="text-blue-600" />
-                                <h4 className="font-semibold text-gray-900">{license.type}</h4>
+                                <h4 className="font-semibold text-gray-900">{safeString(license.type, 'License')}</h4>
                                 <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                                  license.status === 'ACTIVE' 
+                                  safeString(license.status) === 'ACTIVE' 
                                     ? 'bg-green-100 text-green-800'
                                     : 'bg-gray-100 text-gray-800'
                                 }`}>
-                                  {license.status}
-                                </span>
+                                  {safeString(license.status, 'Unknown')}</span>
                                 {isExpiringSoon && (
                                   <span className="px-2 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-800">
                                     Expiring Soon
@@ -752,11 +781,11 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
                                   </span>
                                 )}
                               </div>
-                              <p className="text-sm text-gray-600">License #: {license.licenseNumber}</p>
+                              <p className="text-sm text-gray-600">License #: {safeString(license.licenseNumber, 'N/A')}</p>
                               <div className="mt-2 text-sm text-gray-600">
-                                <p>Issued: {new Date(license.issueDate).toLocaleDateString()}</p>
+                                <p>Issued: {formatDate(license.issueDate)}</p>
                                 {license.expirationDate && (
-                                  <p>Expires: {new Date(license.expirationDate).toLocaleDateString()}</p>
+                                  <p>Expires: {formatDate(license.expirationDate)}</p>
                                 )}
                               </div>
                             </div>
@@ -795,7 +824,7 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
                             </span>
                           </div>
                           <span className="text-sm text-gray-500">
-                            {new Date(review.createdAt).toLocaleDateString()}
+                            {formatDate(review.createdAt)}
                           </span>
                         </div>
                         <p className="text-gray-900">{review.comment}</p>
@@ -831,15 +860,15 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
                             </td>
                             <td className="px-6 py-4 text-sm">
                               <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                                inquiry.status === 'NEW' || inquiry.status === 'IN_PROGRESS'
+                                safeString(inquiry.status) === 'NEW' || safeString(inquiry.status) === 'IN_PROGRESS'
                                   ? 'bg-yellow-100 text-yellow-800'
                                   : 'bg-gray-100 text-gray-800'
                               }`}>
-                                {inquiry.status}
+                                {safeString(inquiry.status, 'Unknown')}
                               </span>
                             </td>
                             <td className="px-6 py-4 text-sm text-gray-500">
-                              {new Date(inquiry.createdAt).toLocaleDateString()}
+                              {formatDate(inquiry.createdAt)}
                             </td>
                           </tr>
                         ))}
