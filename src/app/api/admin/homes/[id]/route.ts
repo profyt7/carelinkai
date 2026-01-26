@@ -115,18 +115,6 @@ export async function GET(
           },
         },
         reviews: {
-          include: {
-            family: {
-              include: {
-                user: {
-                  select: {
-                    firstName: true,
-                    lastName: true,
-                  },
-                },
-              },
-            },
-          },
           orderBy: { createdAt: 'desc' },
         },
         photos: {
