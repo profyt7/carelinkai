@@ -1,9 +1,18 @@
+// TOP OF FILE LOG - This runs when the module is first evaluated
+console.log('='.repeat(60));
+console.log('[INSTRUMENTATION FILE] Module loading at:', new Date().toISOString());
+console.log('[INSTRUMENTATION FILE] This log should appear if instrumentation.ts is loaded');
+console.log('='.repeat(60));
+
 // This file is used to configure server-side instrumentation
 // It runs once when the Next.js server starts
 import * as Sentry from '@sentry/nextjs';
 
+console.log('[INSTRUMENTATION FILE] After Sentry import');
+
 export async function register() {
-  console.log('[Instrumentation] register() called');
+  console.log('='.repeat(60));
+  console.log('[Instrumentation] register() called at:', new Date().toISOString());
   console.log('[Instrumentation] NEXT_RUNTIME:', process.env.NEXT_RUNTIME);
   console.log('[Instrumentation] NODE_ENV:', process.env.NODE_ENV);
   
