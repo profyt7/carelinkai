@@ -10,12 +10,8 @@ const nextConfig = {
   
   // Existing Next.js config
   reactStrictMode: true,
-  swcMinify: true,
-  
-  // Enable instrumentation for monitoring tools
-  experimental: {
-    instrumentationHook: true,
-  },
+  // Note: swcMinify removed - it's now the default in Next.js 15
+  // Note: instrumentationHook removed - it's stable in Next.js 15 (no longer experimental)
   
   // Skip ESLint during builds (we'll run it separately)
   eslint: {
