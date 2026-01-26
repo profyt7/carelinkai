@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import {
   FiHome,
   FiMapPin,
@@ -21,7 +21,16 @@ import {
 } from 'react-icons/fi';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { use } from 'react';
+
+// Helper to safely unwrap params - handles both Promise and plain object
+function unwrapParams<T>(params: T | Promise<T>): T {
+  // Check if params is a Promise (has .then method)
+  if (params && typeof params === 'object' && 'then' in params && typeof (params as any).then === 'function') {
+    return use(params as Promise<T>);
+  }
+  // Already a plain object
+  return params as T;
+}
 
 // Helper function to safely convert any value to a displayable string
 const safeString = (value: unknown, fallback: string = ''): string => {
@@ -152,8 +161,8 @@ type HomeDetail = {
   };
 };
 
-export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const resolvedParams = use(params);
+export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: string }> | { id: string } }) {
+  const resolvedParams = unwrapParams(params);
   const router = useRouter();
   const [home, setHome] = useState<HomeDetail | null>(null);
   const [loading, setLoading] = useState(true);
