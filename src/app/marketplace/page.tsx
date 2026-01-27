@@ -320,18 +320,28 @@ export default function MarketplacePage() {
   const resultsRef = useRef<HTMLDivElement | null>(null);
   const scrollRaf = useRef<number | null>(null);
 
+  // Track if this is the initial page load (not just a tab switch)
+  const isInitialPageLoad = useRef(true);
+
   // Scroll to top on initial page load
   useEffect(() => {
-    // Only scroll to top on very first mount (when coming from another page)
-    const isInitialMount = !sessionStorage.getItem('marketplace:visited');
-    if (isInitialMount) {
+    // Always scroll to top on initial page load
+    if (isInitialPageLoad.current) {
       window.scrollTo({ top: 0, behavior: 'auto' });
+      // Clear the visited flag so we always start fresh
+      sessionStorage.removeItem('marketplace:visited');
       sessionStorage.setItem('marketplace:visited', '1');
+      isInitialPageLoad.current = false;
     }
   }, []);
 
-  // Restore per-tab scroll position when switching tabs
+  // Restore per-tab scroll position when switching tabs (but not on initial load)
   useEffect(() => {
+    // Skip scroll restoration on initial page load
+    if (isInitialPageLoad.current) {
+      return;
+    }
+    
     try {
       const key = SCROLL_KEYS[activeTab];
       const y = Number(sessionStorage.getItem(key) || '0');

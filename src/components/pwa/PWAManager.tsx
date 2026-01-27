@@ -483,8 +483,8 @@ export default function PWAManager({ children }: PWAManagerProps) {
     <PWAContext.Provider value={contextValue}>
       {children}
       
-      {/* Install prompt banner */}
-      {isInstallable && !isPWA && (
+      {/* Install prompt banner - DISABLED (UI cleanup) */}
+      {/* {isInstallable && !isPWA && (
         <div className="fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t border-neutral-200 p-4 flex items-center justify-between z-50 safe-bottom">
           <div>
             <h3 className="font-medium text-neutral-800">Install CareLink AI</h3>
@@ -498,7 +498,7 @@ export default function PWAManager({ children }: PWAManagerProps) {
             Install
           </button>
         </div>
-      )}
+      )} */}
       
       {/* Offline indicator */}
       {!isOnline && (
