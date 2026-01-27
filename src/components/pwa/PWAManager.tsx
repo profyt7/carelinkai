@@ -204,6 +204,15 @@ export default function PWAManager({ children }: PWAManagerProps) {
 
   // Effect to handle beforeinstallprompt event for install button
   useEffect(() => {
+    // Check if PWA is enabled via environment variable
+    const pwaEnabled = (process.env['NEXT_PUBLIC_PWA_ENABLED'] || '').toString() === '1';
+    
+    // Don't handle install prompts if PWA is disabled
+    if (!pwaEnabled) {
+      console.info('[PWAManager] PWA disabled - install prompts suppressed');
+      return;
+    }
+    
     const handleBeforeInstallPrompt = (e: Event) => {
       // Prevent Chrome 67 and earlier from automatically showing the prompt
       e.preventDefault();
