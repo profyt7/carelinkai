@@ -80,23 +80,37 @@ export default function AdminUsersPage() {
   };
 
   const handleDeleteUser = async (userId: string) => {
+    console.log('[DELETE] Starting delete process for user:', userId);
+    
     // Find user details for confirmation message
     const user = users.find(u => u.id === userId);
     const userName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email : 'this user';
     
-    if (!confirm(`Are you sure you want to delete ${userName}?\n\nThis action will:\n- Mark the account as deleted\n- Remove all personal information\n- Cannot be undone`)) {
+    console.log('[DELETE] Showing confirmation dialog for:', userName);
+    
+    // Show confirmation dialog
+    const confirmed = window.confirm(`Are you sure you want to delete ${userName}?\n\nThis action will:\n- Mark the account as deleted\n- Remove all personal information\n- Cannot be undone`);
+    
+    console.log('[DELETE] User confirmation result:', confirmed);
+    
+    if (!confirmed) {
+      console.log('[DELETE] User cancelled deletion');
       return;
     }
 
     // Prevent multiple simultaneous deletions
     if (deletingUserId) {
+      console.log('[DELETE] Already deleting another user, aborting');
       toast.error('Please wait for the current deletion to complete');
       return;
     }
 
+    console.log('[DELETE] Setting deleting state for user:', userId);
     setDeletingUserId(userId);
 
     try {
+      console.log('[DELETE] Making DELETE API call to:', `/api/admin/users/${userId}`);
+      
       const response = await fetch(`/api/admin/users/${userId}`, {
         method: 'DELETE',
         credentials: 'include', // CRITICAL: Include session cookies
@@ -105,21 +119,26 @@ export default function AdminUsersPage() {
         },
       });
 
+      console.log('[DELETE] API response status:', response.status);
+      
       const data = await response.json();
+      console.log('[DELETE] API response data:', data);
 
       if (response.ok) {
+        console.log('[DELETE] Delete successful');
         toast.success(data.message || 'User deleted successfully');
         // Refresh the user list
         await fetchUsers();
       } else {
         // Show specific error message from API
+        console.error('[DELETE] Delete failed:', data);
         toast.error(data.error || 'Failed to delete user');
-        console.error('Delete error:', data);
       }
     } catch (error) {
-      console.error('Failed to delete user:', error);
+      console.error('[DELETE] Exception during delete:', error);
       toast.error(error instanceof Error ? error.message : 'Network error. Please check your connection and try again.');
     } finally {
+      console.log('[DELETE] Clearing deleting state');
       setDeletingUserId(null);
     }
   };
@@ -405,7 +424,13 @@ export default function AdminUsersPage() {
                           </button>
                         )}
                         <button 
-                          onClick={() => handleDeleteUser(user.id)} 
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log('[DELETE BUTTON] Clicked for user:', user.id);
+                            handleDeleteUser(user.id);
+                          }} 
                           disabled={deletingUserId === user.id}
                           className={`p-2 ${deletingUserId === user.id ? 'text-red-400 cursor-not-allowed' : 'text-red-600 hover:text-red-800'}`} 
                           title={deletingUserId === user.id ? 'Deleting...' : 'Delete user'}

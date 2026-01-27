@@ -147,8 +147,8 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
         userId: params.id,
         actionedBy: session.user.id,
         action: 'USER_DELETE',
-        entityType: 'User',
-        entityId: params.id,
+        resourceType: 'User', // ✅ Added to fix missing resourceType error
+        resourceId: params.id, // ✅ Fixed: changed from entityId to resourceId (matches schema)
         description: `User ${userExists.email} (${userExists.role}) was deleted by admin`,
         metadata: {
           deletedEmail: userExists.email,
