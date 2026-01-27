@@ -68,7 +68,7 @@ const sentryWebpackPluginOptions = {
   // https://github.com/getsentry/sentry-webpack-plugin#options
 
   org: process.env.SENTRY_ORG || 'the-council-labs',
-  project: process.env.SENTRY_PROJECT || 'carelinkai',
+  project: process.env.SENTRY_PROJECT || 'carelink-ai',
   
   // Only print logs for uploading source maps in CI
   silent: !process.env.CI,
