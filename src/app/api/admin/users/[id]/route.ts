@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { deleteFromCloudinary } from '@/lib/cloudinary';
 
 export const dynamic = 'force-dynamic';
 
@@ -80,14 +81,51 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       return NextResponse.json({ error: 'Cannot delete your own account' }, { status: 400 });
     }
 
-    // Check if user exists
+    // Check if user exists and fetch profile image info
     const userExists = await prisma.user.findUnique({
       where: { id: params.id },
-      select: { id: true, email: true, role: true },
+      select: { 
+        id: true, 
+        email: true, 
+        role: true,
+        profileImageUrl: true,
+      },
     });
 
     if (!userExists) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Clean up profile photo from Cloudinary if exists
+    if (userExists.profileImageUrl) {
+      try {
+        // Extract Cloudinary publicId from profileImageUrl
+        // The profileImageUrl is stored as JSON and may contain publicId
+        const profileImage = userExists.profileImageUrl as any;
+        
+        if (profileImage && typeof profileImage === 'object' && profileImage.publicId) {
+          // Delete the profile photo from Cloudinary
+          await deleteFromCloudinary(profileImage.publicId, 'image');
+          console.log(`[User Delete] Successfully deleted Cloudinary image for user ${params.id}: ${profileImage.publicId}`);
+        } else if (typeof profileImage === 'string' && profileImage.includes('cloudinary')) {
+          // If profileImageUrl is a string URL, extract publicId from the URL
+          // Example URL: https://i.ytimg.com/vi/LzMXdnABrCM/maxresdefault.jpg
+          const urlParts = profileImage.split('/');
+          const uploadIndex = urlParts.indexOf('upload');
+          if (uploadIndex !== -1 && uploadIndex + 2 < urlParts.length) {
+            // Get the path after /upload/v{version}/
+            const pathAfterUpload = urlParts.slice(uploadIndex + 2).join('/');
+            // Remove file extension
+            const publicId = pathAfterUpload.replace(/\.[^/.]+$/, '');
+            await deleteFromCloudinary(publicId, 'image');
+            console.log(`[User Delete] Successfully deleted Cloudinary image for user ${params.id}: ${publicId}`);
+          }
+        }
+      } catch (cloudinaryError) {
+        // Log the error but don't fail the user deletion
+        console.error(`[User Delete] Failed to delete Cloudinary image for user ${params.id}:`, cloudinaryError);
+        // Continue with user deletion even if Cloudinary cleanup fails
+      }
     }
 
     // SOFT DELETE: Update status to SUSPENDED and mark for deletion
@@ -99,6 +137,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
         email: `deleted_${Date.now()}_${userExists.email}`, // Prevent email reuse
         firstName: '[DELETED]',
         lastName: 'User',
+        profileImageUrl: null, // Clear the profile image reference
       },
     });
 
