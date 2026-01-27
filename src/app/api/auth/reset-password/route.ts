@@ -1,166 +1,97 @@
-
-// Force dynamic rendering for this API route
-export const dynamic = 'force-dynamic';
-
-import { rateLimit } from '@/lib/rate-limit';
-/**
- * Reset Password API Endpoint for CareLinkAI
- * 
- * This API handles password reset by:
- * - Validating the reset token
- * - Checking token expiration
- * - Validating the new password
- * - Updating the user's password
- * - Clearing the reset token after use
- * - Creating an audit log entry
- * 
- * Security features:
- * - Strong password requirements
- * - Secure password hashing with bcrypt
- * - One-time use tokens (cleared after reset)
- * - Token expiration (1 hour)
- * - Audit logging for security tracking
- */
-
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient, AuditAction } from "@prisma/client";
-import { z } from "zod";
-import { hash } from "bcryptjs";
+import { prisma } from "@/lib/prisma";
+import bcrypt from "bcryptjs";
+import crypto from "crypto";
 
-// Initialize Prisma client
-const prisma = new PrismaClient();
+export const dynamic = "force-dynamic";
 
-// Constants
-const SALT_ROUNDS = 12;
-
-// Input validation schema
-const resetPasswordSchema = z.object({
-  token: z.string().min(1, "Reset token is required"),
-  password: z.string().min(8, "Password must be at least 8 characters")
-    .regex(
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
-      "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character"
-    ),
-  confirmPassword: z.string().min(1, "Please confirm your password")
-}).refine(data => data.password === data.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"]
-});
-
-/**
- * POST handler for password reset
- */
 export async function POST(request: NextRequest) {
-  // Basic per-IP rate limiting to prevent abuse
-  {
-    const ip = (request.headers.get('x-forwarded-for') || (request as any).ip || 'unknown').split(',')[0].trim();
-    const limiter = rateLimit({ interval: 60_000, limit: 8, uniqueTokenPerInterval: 5000 });
-    try {
-      await limiter.check(8, 'rp:' + ip);
-    } catch {
-      const __usage = await limiter.getUsage('rp:' + ip).catch(() => null as any); const __reset = __usage ? Math.ceil((((__usage.resetIn) as number ?? 60000) / 1000)) : 60; return NextResponse.json({ success: false, message: 'Too many requests' }, { status: 429, headers: { 'Retry-After': String(__reset), 'X-RateLimit-Limit': '8', 'X-RateLimit-Reset': String(__reset) } });
-    }
-  }
   try {
-    // Parse request body
     const body = await request.json();
-    
-    // Validate input against schema
-    const validationResult = resetPasswordSchema.safeParse(body);
-    if (!validationResult.success) {
+    const { token, password } = body;
+
+    if (!token || !password) {
       return NextResponse.json(
-        { 
-          success: false, 
-          message: "Invalid input data", 
-          errors: validationResult.error.flatten().fieldErrors 
-        }, 
+        { message: "Token and password are required" },
         { status: 400 }
       );
     }
-    
-    const { token, password } = validationResult.data;
-    
-    // Get client IP for audit logging
-    const clientIp = request.headers.get("x-forwarded-for") || 
-                    // @ts-ignore - `ip` exists only in Node runtime requests
-                    (request as any).ip || 
-                    "unknown";
-    
-    // Find user with valid (non-expired) reset token
+
+    // Validate password strength
+    if (password.length < 8) {
+      return NextResponse.json(
+        { message: "Password must be at least 8 characters" },
+        { status: 400 }
+      );
+    }
+
+    if (!/[A-Z]/.test(password)) {
+      return NextResponse.json(
+        { message: "Password must contain an uppercase letter" },
+        { status: 400 }
+      );
+    }
+
+    if (!/[a-z]/.test(password)) {
+      return NextResponse.json(
+        { message: "Password must contain a lowercase letter" },
+        { status: 400 }
+      );
+    }
+
+    if (!/[0-9]/.test(password)) {
+      return NextResponse.json(
+        { message: "Password must contain a number" },
+        { status: 400 }
+      );
+    }
+
+    // Hash the provided token to match stored hash
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(token)
+      .digest("hex");
+
+    // Find user with valid token
     const user = await prisma.user.findFirst({
       where: {
-        resetPasswordToken: token,
+        resetPasswordToken: hashedToken,
         resetPasswordTokenExpiry: {
-          gt: new Date() // not expired
-        }
+          gt: new Date(),
+        },
       },
-      select: {
-        id: true,
-        email: true
-      }
     });
-    
-    // Invalid or expired token
+
     if (!user) {
       return NextResponse.json(
-        { 
-          success: false, 
-          message: "Invalid or expired reset token. Please request a new password reset." 
-        }, 
+        { message: "Invalid or expired reset link. Please request a new one." },
         { status: 400 }
       );
     }
-    
-    // Hash the new password
-    const passwordHash = await hash(password, SALT_ROUNDS);
-    
-    // Update user with new password and clear reset token
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    // Update user password and clear reset token
     await prisma.user.update({
       where: { id: user.id },
       data: {
-        passwordHash,
+        password: hashedPassword,
         resetPasswordToken: null,
         resetPasswordTokenExpiry: null,
-      }
+      },
     });
-    
-    // Create audit log entry
-    await prisma.auditLog.create({
-      data: {
-        action: AuditAction.UPDATE,
-        resourceType: "USER_PASSWORD",
-        resourceId: user.id,
-        description: "Password reset via token",
-        ipAddress: clientIp,
-        metadata: {
-          method: "RESET_TOKEN"
-        },
-        userId: user.id,
-        actionedBy: user.id
-      }
-    });
-    
-    // Return success response
+
+    console.log(`[RESET PASSWORD] Password reset successful for user: ${user.email}`);
+
     return NextResponse.json({
-      success: true,
-      message: "Your password has been reset successfully. You can now log in with your new password."
+      message: "Password has been reset successfully.",
     });
-    
-  } catch (error: any) {
-    console.error("Password reset error:", error);
-    
-    // Generic error response
+  } catch (error) {
+    console.error("[RESET PASSWORD] Error:", error);
     return NextResponse.json(
-      { 
-        success: false, 
-        message: "Failed to reset password. Please try again later.", 
-        error: process.env.NODE_ENV === "development" ? error.message : undefined 
-      }, 
+      { message: "An error occurred. Please try again." },
       { status: 500 }
     );
-  } finally {
-    // Always disconnect from the database
-    await prisma.$disconnect();
   }
 }
-
