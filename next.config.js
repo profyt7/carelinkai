@@ -2,6 +2,10 @@ const { withSentryConfig } = require('@sentry/nextjs');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // MEMORY OPTIMIZATION: Standalone output mode for smaller runtime footprint
+  // This reduces memory usage significantly on constrained environments like Render's 512MB plan
+  output: 'standalone',
+  
   // Force new build ID on each deployment for cache busting
   generateBuildId: async () => {
     // Use timestamp + random string to ensure unique build ID

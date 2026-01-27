@@ -58,5 +58,16 @@ echo "✅ npm run build completed successfully"
 echo ""
 
 echo "========================================="
+echo "STEP 4: COPY STATIC ASSETS FOR STANDALONE"
+echo "========================================="
+# Standalone mode requires copying static files manually
+echo "Copying public folder to standalone..."
+cp -r public .next/standalone/public 2>/dev/null || echo "No public folder to copy"
+echo "Copying static files to standalone..."
+cp -r .next/static .next/standalone/.next/static
+echo "✅ Static assets copied successfully"
+echo ""
+
+echo "========================================="
 echo "BUILD COMPLETED SUCCESSFULLY!"
 echo "========================================="
