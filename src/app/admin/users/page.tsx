@@ -29,6 +29,7 @@ export default function AdminUsersPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [impersonatingUserId, setImpersonatingUserId] = useState<string | null>(null);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   
   // Bulk selection state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -79,22 +80,47 @@ export default function AdminUsersPage() {
   };
 
   const handleDeleteUser = async (userId: string) => {
-    if (!confirm('Are you sure you want to delete this user?')) return;
+    // Find user details for confirmation message
+    const user = users.find(u => u.id === userId);
+    const userName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email : 'this user';
+    
+    if (!confirm(`Are you sure you want to delete ${userName}?\n\nThis action will:\n- Mark the account as deleted\n- Remove all personal information\n- Cannot be undone`)) {
+      return;
+    }
+
+    // Prevent multiple simultaneous deletions
+    if (deletingUserId) {
+      toast.error('Please wait for the current deletion to complete');
+      return;
+    }
+
+    setDeletingUserId(userId);
 
     try {
       const response = await fetch(`/api/admin/users/${userId}`, {
         method: 'DELETE',
+        credentials: 'include', // CRITICAL: Include session cookies
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
 
+      const data = await response.json();
+
       if (response.ok) {
-        toast.success('User deleted successfully');
-        fetchUsers();
+        toast.success(data.message || 'User deleted successfully');
+        // Refresh the user list
+        await fetchUsers();
       } else {
-        toast.error('Failed to delete user');
+        // Show specific error message from API
+        toast.error(data.error || 'Failed to delete user');
+        console.error('Delete error:', data);
       }
     } catch (error) {
       console.error('Failed to delete user:', error);
-      toast.error('Failed to delete user');
+      toast.error(error instanceof Error ? error.message : 'Network error. Please check your connection and try again.');
+    } finally {
+      setDeletingUserId(null);
     }
   };
 
@@ -378,8 +404,17 @@ export default function AdminUsersPage() {
                             {impersonatingUserId === user.id ? <span className="animate-spin">⏳</span> : <FiUserCheck />}
                           </button>
                         )}
-                        <button onClick={() => handleDeleteUser(user.id)} className="text-red-600 hover:text-red-800 p-2" title="Delete user">
-                          <FiTrash2 />
+                        <button 
+                          onClick={() => handleDeleteUser(user.id)} 
+                          disabled={deletingUserId === user.id}
+                          className={`p-2 ${deletingUserId === user.id ? 'text-red-400 cursor-not-allowed' : 'text-red-600 hover:text-red-800'}`} 
+                          title={deletingUserId === user.id ? 'Deleting...' : 'Delete user'}
+                        >
+                          {deletingUserId === user.id ? (
+                            <span className="animate-spin">⏳</span>
+                          ) : (
+                            <FiTrash2 />
+                          )}
                         </button>
                       </div>
                     </td>
