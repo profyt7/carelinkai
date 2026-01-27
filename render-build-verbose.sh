@@ -46,8 +46,10 @@ echo "========================================="
 echo "STEP 3: BUILD NEXT.JS APPLICATION"
 echo "========================================="
 # Increase Node.js memory limit to prevent OOM errors during build
-export NODE_OPTIONS="--max-old-space-size=4096"
+# Professional Render plan has 4GB+ RAM - use 8GB heap for build
+export NODE_OPTIONS="--max-old-space-size=8192"
 echo "NODE_OPTIONS set to: $NODE_OPTIONS"
+echo "Memory available for Node.js heap: 8192MB"
 npm run build
 EXIT_CODE=$?
 if [ $EXIT_CODE -ne 0 ]; then
