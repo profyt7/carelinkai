@@ -346,7 +346,7 @@ export default function AdminUsersPage() {
         />
 
         {/* Users Table */}
-        <div className="bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden">
+        <div className="bg-white rounded-lg shadow-sm border border-neutral-200 overflow-x-auto">
           <table className="min-w-full divide-y divide-neutral-200">
             <thead className="bg-neutral-50">
               <tr>
