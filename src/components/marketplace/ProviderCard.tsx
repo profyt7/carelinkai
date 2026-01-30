@@ -1,7 +1,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { getBlurDataURL } from '@/lib/imageBlur';
-import { FiUser, FiMapPin, FiCheckCircle, FiClock, FiDollarSign } from 'react-icons/fi';
+import { FiUser, FiMapPin, FiCheckCircle, FiClock, FiDollarSign, FiHeart } from 'react-icons/fi';
 import Link from 'next/link';
 
 interface ProviderCardProps {
@@ -26,9 +26,11 @@ interface ProviderCardProps {
     distanceMiles?: number;
   };
   serviceTypeOptions?: { value: string; label: string }[];
+  isFavorite?: boolean;
+  onToggleFavorite?: () => void;
 }
 
-const ProviderCard: React.FC<ProviderCardProps> = ({ provider, serviceTypeOptions = [] }) => {
+const ProviderCard: React.FC<ProviderCardProps> = ({ provider, serviceTypeOptions = [], isFavorite = false, onToggleFavorite }) => {
   // Format the location (city, state)
   const location = [provider.city, provider.state]
     .filter(Boolean)
@@ -71,7 +73,25 @@ const ProviderCard: React.FC<ProviderCardProps> = ({ provider, serviceTypeOption
   const hiddenServiceTypesCount = Math.max(0, provider.serviceTypes.length - 3);
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden relative">
+      {/* Favorite button */}
+      {onToggleFavorite && (
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onToggleFavorite();
+          }}
+          className="absolute top-3 right-3 z-10 p-2 rounded-full bg-white/90 hover:bg-white shadow-sm transition-colors"
+          aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+        >
+          <FiHeart
+            className={`h-5 w-5 transition-colors ${
+              isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-400 hover:text-red-400'
+            }`}
+          />
+        </button>
+      )}
       <div className="p-4">
         {/* Header with photo and name */}
         <div className="flex items-center mb-4">
