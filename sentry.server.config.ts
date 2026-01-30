@@ -17,8 +17,8 @@ if (SENTRY_DSN) {
     // Performance Monitoring - capture 10% of transactions in production
     tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
 
-    // Profiling - capture 10% of transactions for profiling
-    profilesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+    // Profiling disabled - nodeProfilingIntegration was causing deployment errors
+    // profilesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
 
     // Environment tracking
     environment: process.env.NODE_ENV || 'development',
@@ -33,10 +33,8 @@ if (SENTRY_DSN) {
     sendDefaultPii: true,
 
     // Integrations
-    integrations: [
-      // Node profiling integration for server-side profiling
-      Sentry.nodeProfilingIntegration(),
-    ],
+    // Note: nodeProfilingIntegration() removed - was causing deployment errors
+    // integrations: [],
 
     // Experimental features
     _experiments: {
@@ -49,7 +47,7 @@ if (SENTRY_DSN) {
   const client = Sentry.getClient();
   console.log('[Sentry Server] ✅ Initialized with features:');
   console.log('[Sentry Server]   - Performance Monitoring: enabled');
-  console.log('[Sentry Server]   - Profiling: enabled');
+  console.log('[Sentry Server]   - Profiling: disabled (integration removed)');
   console.log('[Sentry Server]   - Metrics: enabled');
   console.log('[Sentry Server]   - Client available:', !!client);
 } else {
