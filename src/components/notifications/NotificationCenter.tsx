@@ -63,83 +63,8 @@ interface ToastProps {
   duration?: number;
 }
 
-// Mock notifications for testing
-const MOCK_NOTIFICATIONS: Notification[] = [
-  {
-    id: 'notif-001',
-    type: 'MESSAGE',
-    title: 'New message from Sunshine Care Home',
-    message: 'Sarah Johnson: "Thank you for your inquiry. Would you like to schedule a tour?"',
-    timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(), // 5 minutes ago
-    isRead: false,
-    priority: 'MEDIUM',
-    link: '/dashboard/inquiries/inq-001/messages',
-    metadata: {
-      inquiryId: 'inq-001',
-      conversationId: 'conv-001',
-      homeName: 'Sunshine Care Home',
-      senderId: 'facility-001',
-      senderName: 'Sarah Johnson'
-    }
-  },
-  {
-    id: 'notif-002',
-    type: 'TOUR_REMINDER',
-    title: 'Upcoming Tour Reminder',
-    message: 'Your tour at Sunshine Care Home is scheduled for tomorrow at 10:00 AM',
-    timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 minutes ago
-    isRead: false,
-    priority: 'HIGH',
-    link: '/dashboard/inquiries/inq-001',
-    metadata: {
-      inquiryId: 'inq-001',
-      homeName: 'Sunshine Care Home',
-      tourDate: '2025-07-26',
-      tourTime: '10:00 AM'
-    }
-  },
-  {
-    id: 'notif-003',
-    type: 'DOCUMENT_SHARED',
-    title: 'New Document Shared',
-    message: 'Sunshine Care Home shared "Admission Forms" with you',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
-    isRead: true,
-    priority: 'MEDIUM',
-    link: '/dashboard/inquiries/inq-001/documents',
-    metadata: {
-      inquiryId: 'inq-001',
-      homeName: 'Sunshine Care Home',
-      documentId: 'doc-003',
-      documentName: 'Admission Forms'
-    }
-  },
-  {
-    id: 'notif-004',
-    type: 'STATUS_CHANGE',
-    title: 'Inquiry Status Updated',
-    message: 'Your inquiry for Golden Years Living has been updated from "Submitted" to "Contacted"',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(), // 5 hours ago
-    isRead: true,
-    priority: 'LOW',
-    link: '/dashboard/inquiries/inq-002',
-    metadata: {
-      inquiryId: 'inq-002',
-      homeName: 'Golden Years Living',
-      statusFrom: 'SUBMITTED',
-      statusTo: 'CONTACTED'
-    }
-  },
-  {
-    id: 'notif-005',
-    type: 'SYSTEM',
-    title: 'Welcome to CareLink AI',
-    message: 'Thank you for joining CareLink AI. Start your care home search today!',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), // 2 days ago
-    isRead: true,
-    priority: 'LOW'
-  }
-];
+// Mock notifications only used when mock mode is enabled (for testing)
+const MOCK_NOTIFICATIONS: Notification[] = [];
 
 // Toast Notification Component
 const Toast: React.FC<ToastProps> = ({ notification, onClose, autoClose = true, duration = 5000 }) => {
@@ -264,33 +189,52 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
   const [filter, setFilter] = useState<NotificationType | 'ALL'>('ALL');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Runtime mock toggle fetched from API
-  const [showMock, setShowMock] = useState(false);
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch('/api/runtime/mocks', { cache: 'no-store', credentials: 'include' as RequestCredentials });
-        if (!res.ok) return;
-        const j = await res.json();
-        if (!cancelled) setShowMock(!!j?.show);
-      } catch {
-        if (!cancelled) setShowMock(false);
+  // Loading state for API calls
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch notifications from API
+  const fetchNotifications = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const res = await fetch('/api/notifications', { 
+        cache: 'no-store', 
+        credentials: 'include' 
+      });
+      
+      if (!res.ok) {
+        if (res.status === 401) {
+          // User not logged in - show empty notifications
+          setNotifications([]);
+          return;
+        }
+        throw new Error('Failed to fetch notifications');
       }
-    })();
-    return () => { cancelled = true; };
+      
+      const data = await res.json();
+      setNotifications(data.notifications || []);
+    } catch (err) {
+      console.error('[NotificationCenter] Error fetching notifications:', err);
+      setError('Failed to load notifications');
+      setNotifications([]);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  // Seed notifications based on mock toggle
+  // Fetch notifications on mount and periodically
   useEffect(() => {
-    setNotifications(showMock ? MOCK_NOTIFICATIONS : []);
-  }, [showMock]);
+    fetchNotifications();
+    
+    // Poll for new notifications every 30 seconds
+    const interval = setInterval(fetchNotifications, 30000);
+    
+    return () => clearInterval(interval);
+  }, [fetchNotifications]);
   
-  // Get WebSocket context
-  // In a real implementation, we would use the WebSocket context
-  // For now, we'll just simulate it
+  // WebSocket context can be used for real-time updates
   // const { connectionState } = useWebSocket();
-  const connectionState = 'CONNECTED';
   
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -327,34 +271,72 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
   };
   
   // Toggle dropdown
-  const toggleDropdown = () => {
+  const toggleDropdown = async () => {
+    const wasOpen = isOpen;
     setIsOpen(!isOpen);
     
-    // Mark all as read when opening
-    if (!isOpen) {
-      setNotifications(prev => 
-        prev.map(n => ({ ...n, isRead: true }))
-      );
+    // Mark all as read when opening the dropdown
+    if (!wasOpen && unreadCount > 0) {
+      try {
+        await fetch('/api/notifications', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ markAll: true }),
+        });
+        // Update local state
+        setNotifications(prev => 
+          prev.map(n => ({ ...n, isRead: true }))
+        );
+      } catch (err) {
+        console.error('[NotificationCenter] Error marking as read:', err);
+      }
     }
   };
   
   // Mark notification as read
-  const markAsRead = (id: string) => {
-    setNotifications(prev =>
-      prev.map(n => (n.id === id ? { ...n, isRead: true } : n))
-    );
+  const markAsRead = async (id: string) => {
+    try {
+      await fetch('/api/notifications', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ notificationIds: [id] }),
+      });
+      setNotifications(prev =>
+        prev.map(n => (n.id === id ? { ...n, isRead: true } : n))
+      );
+    } catch (err) {
+      console.error('[NotificationCenter] Error marking notification as read:', err);
+    }
   };
   
   // Remove notification
-  const removeNotification = (id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
-    setActiveToasts(prev => prev.filter(n => n.id !== id));
+  const removeNotification = async (id: string) => {
+    try {
+      await fetch(`/api/notifications?id=${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      setNotifications(prev => prev.filter(n => n.id !== id));
+      setActiveToasts(prev => prev.filter(n => n.id !== id));
+    } catch (err) {
+      console.error('[NotificationCenter] Error removing notification:', err);
+    }
   };
   
   // Clear all notifications
-  const clearAllNotifications = () => {
-    setNotifications([]);
-    setActiveToasts([]);
+  const clearAllNotifications = async () => {
+    try {
+      await fetch('/api/notifications?clearAll=true', {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      setNotifications([]);
+      setActiveToasts([]);
+    } catch (err) {
+      console.error('[NotificationCenter] Error clearing notifications:', err);
+    }
   };
   
   // Show toast notification
@@ -407,52 +389,8 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
     }
   };
   
-  // Simulate receiving a new notification
-  useEffect(() => {
-    if (!showMock) return; // only simulate when mock mode is on
-    const interval = setInterval(() => {
-      // 10% chance of receiving a new notification every 30 seconds
-      if (Math.random() < 0.1 && connectionState === 'CONNECTED') {
-        const types: NotificationType[] = ['MESSAGE', 'INQUIRY_UPDATE', 'TOUR_REMINDER', 'DOCUMENT_SHARED', 'STATUS_CHANGE'];
-        const randomType = types[Math.floor(Math.random() * types.length)] as NotificationType;
-        
-        const newNotification: Notification = {
-          id: `notif-${Date.now()}`,
-          type: randomType,
-          title: `New ${randomType.toLowerCase().replace('_', ' ')}`,
-          message: `This is a simulated ${randomType.toLowerCase().replace('_', ' ')} notification.`,
-          timestamp: new Date().toISOString(),
-          isRead: false,
-          priority: Math.random() > 0.7 ? 'HIGH' : Math.random() > 0.4 ? 'MEDIUM' : 'LOW'
-        };
-        
-        showToast(newNotification);
-      }
-    }, 30000); // Check every 30 seconds
-    
-    return () => clearInterval(interval);
-  }, [connectionState, showToast, showMock]);
-  
-  // For testing: show a toast notification on mount
-  useEffect(() => {
-    if (!showMock) return; // only show test toast in mock mode
-    const testNotification: Notification = {
-      id: `notif-test-${Date.now()}`,
-      type: 'MESSAGE',
-      title: 'Welcome to Real-time Notifications',
-      message: 'You will now receive real-time updates about your inquiries and messages.',
-      timestamp: new Date().toISOString(),
-      isRead: false,
-      priority: 'MEDIUM'
-    };
-    
-    // Show test notification after 2 seconds
-    const timer = setTimeout(() => {
-      showToast(testNotification);
-    }, 2000);
-    
-    return () => clearTimeout(timer);
-  }, [showToast, showMock]);
+  // Note: Real-time notification updates are handled by the polling in fetchNotifications
+  // WebSocket integration can be added here for instant notifications when available
   
   return (
     <>
