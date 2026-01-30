@@ -289,7 +289,7 @@ export const authOptions: NextAuthOptions = {
   // Callbacks to customize session and JWT behavior
   callbacks: {
     // Add custom claims to JWT
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         token["id"] = (user as any).id;
         token["email"] = (user as any).email;
@@ -300,6 +300,36 @@ export const authOptions: NextAuthOptions = {
         token["emailVerified"] = (user as any).emailVerified as any;
         token["twoFactorEnabled"] = (user as any).twoFactorEnabled;
       }
+      
+      // On session update or refresh, fetch latest user data including profile image
+      if (trigger === "update" || !token["profileImageUrl"]) {
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token["id"] as string },
+            select: { profileImageUrl: true, firstName: true, lastName: true }
+          });
+          if (dbUser) {
+            // Extract the medium or thumbnail URL from the JSON structure
+            const imgUrl = dbUser.profileImageUrl;
+            if (imgUrl && typeof imgUrl === 'object') {
+              const imgData = imgUrl as { medium?: string; thumbnail?: string; original?: string };
+              token["profileImageUrl"] = imgData.medium || imgData.thumbnail || imgData.original || null;
+            } else if (typeof imgUrl === 'string') {
+              token["profileImageUrl"] = imgUrl;
+            } else {
+              token["profileImageUrl"] = null;
+            }
+            // Also update name in case it changed
+            token["firstName"] = dbUser.firstName;
+            token["lastName"] = dbUser.lastName;
+            token["name"] = `${dbUser.firstName} ${dbUser.lastName}`;
+          }
+        } catch (e) {
+          // Ignore errors - don't break the session
+          console.error('[auth] Error fetching profile image:', e);
+        }
+      }
+      
       return token;
     },
     
@@ -312,6 +342,9 @@ export const authOptions: NextAuthOptions = {
         session.user.firstName = token["firstName"] as string;
         session.user.lastName = token["lastName"] as string;
         session.user.role = token["role"] as UserRole;
+        // Include profile image URL in session
+        (session.user as any).image = token["profileImageUrl"] as string | null;
+        (session.user as any).profileImageUrl = token["profileImageUrl"] as string | null;
       }
       return session;
     },

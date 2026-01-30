@@ -324,17 +324,30 @@ export default function MarketplacePage() {
   const isInitialPageLoad = useRef(true);
   // Track if we should skip scroll restoration for this render cycle
   const skipScrollRestore = useRef(true);
+  // Reference to the main scrollable container (DashboardLayout's <main> element)
+  const mainContainerRef = useRef<HTMLElement | null>(null);
 
   // Scroll to top on initial page load - use useLayoutEffect to run synchronously
   // before other effects can restore scroll positions
   useLayoutEffect(() => {
+    // Find the main scrollable container (DashboardLayout's main element)
+    // This fixes the double scrollbar issue where both window and main container have overflow
+    const mainElement = document.querySelector('main.overflow-y-auto') as HTMLElement | null;
+    mainContainerRef.current = mainElement;
+    
     // Always scroll to top on initial page load
     if (isInitialPageLoad.current) {
       // Clear saved scroll positions to prevent restoration of stale positions
       Object.values(SCROLL_KEYS).forEach(key => {
         try { sessionStorage.removeItem(key); } catch {}
       });
+      
+      // Scroll both the window AND the main container to top
       window.scrollTo(0, 0);
+      if (mainElement) {
+        mainElement.scrollTo(0, 0);
+      }
+      
       sessionStorage.setItem('marketplace:visited', '1');
       isInitialPageLoad.current = false;
       // Keep skipScrollRestore true for this render cycle
@@ -357,22 +370,33 @@ export default function MarketplacePage() {
       const key = SCROLL_KEYS[activeTab];
       const y = Number(sessionStorage.getItem(key) || '0');
       if (!Number.isNaN(y) && y > 0) {
+        // Scroll both window and main container
         window.scrollTo({ top: y, behavior: 'auto' });
+        if (mainContainerRef.current) {
+          mainContainerRef.current.scrollTo({ top: y, behavior: 'auto' });
+        }
       }
     } catch {}
   }, [activeTab]);
 
   // Persist per-tab scroll position (throttled via rAF)
+  // Track scroll on the main container since that's the actual scrollable element in DashboardLayout
   useEffect(() => {
+    const mainEl = mainContainerRef.current;
     const onScroll = () => {
       if (scrollRaf.current) cancelAnimationFrame(scrollRaf.current);
       scrollRaf.current = requestAnimationFrame(() => {
-        try { sessionStorage.setItem(SCROLL_KEYS[activeTab], String(window.scrollY || 0)); } catch {}
+        // Use main container scroll position if available, otherwise window
+        const scrollY = mainEl?.scrollTop ?? window.scrollY ?? 0;
+        try { sessionStorage.setItem(SCROLL_KEYS[activeTab], String(scrollY)); } catch {}
       });
     };
+    // Listen on both window and main container
     window.addEventListener('scroll', onScroll, { passive: true } as any);
+    mainEl?.addEventListener('scroll', onScroll, { passive: true } as any);
     return () => {
       window.removeEventListener('scroll', onScroll as any);
+      mainEl?.removeEventListener('scroll', onScroll as any);
       if (scrollRaf.current) cancelAnimationFrame(scrollRaf.current);
     };
   }, [activeTab]);

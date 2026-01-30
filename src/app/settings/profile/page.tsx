@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useSession, getSession } from "next-auth/react";
+import { useSession, getSession, signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -106,7 +106,7 @@ const credentialSchema = z.object({
 });
 
 export default function ProfileSettings() {
-  const { data: session, status } = useSession();
+  const { data: session, status, update: updateSession } = useSession();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const credFileInputRef = useRef<HTMLInputElement>(null);
@@ -764,23 +764,17 @@ export default function ProfileSettings() {
           setPhotoPreview(photoUrl);
         }
         
-        // Force session refresh by calling the session endpoint
-        // This triggers the JWT callback to fetch fresh data from the database
-        await fetch("/api/auth/session", { 
-          method: "GET",
-          cache: "no-store"
-        });
-        
-        // Now get the updated session
-        await getSession();
+        // Trigger session update - this calls JWT callback with trigger: "update"
+        // which fetches fresh profileImageUrl from database
+        await updateSession();
         
         // Refresh profile data to ensure everything is in sync
         await fetchProfileData();
         
-        // Force a small delay to ensure session is fully updated
+        // Force page reload after a short delay to reflect session changes everywhere
         setTimeout(() => {
           window.location.reload();
-        }, 500);
+        }, 300);
       } else {
         // Handle error responses
         const errorMsg = data.error || data.message || "Failed to upload photo.";
@@ -835,22 +829,17 @@ export default function ProfileSettings() {
         // Clear preview immediately
         setPhotoPreview(null);
         
-        // Force session refresh by calling the session endpoint
-        await fetch("/api/auth/session", { 
-          method: "GET",
-          cache: "no-store"
-        });
-        
-        // Now get the updated session
-        await getSession();
+        // Trigger session update - this calls JWT callback with trigger: "update"
+        // which fetches fresh (null) profileImageUrl from database
+        await updateSession();
         
         // Refresh profile data to ensure everything is in sync
         await fetchProfileData();
         
-        // Force a small delay to ensure session is fully updated
+        // Force page reload after a short delay to reflect session changes everywhere
         setTimeout(() => {
           window.location.reload();
-        }, 500);
+        }, 300);
       } else {
         setMessage({
           type: "error",
