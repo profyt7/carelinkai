@@ -342,20 +342,36 @@ export default function MarketplacePage() {
         try { sessionStorage.removeItem(key); } catch {}
       });
       
-      // Scroll both the window AND the main container to top
-      window.scrollTo(0, 0);
+      // Use a more forceful scroll to position 0,0
+      // First, immediately scroll to top
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
       if (mainElement) {
-        mainElement.scrollTo(0, 0);
+        mainElement.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+        mainElement.scrollTop = 0;
       }
+      
+      // Then, after a short delay, ensure we're still at 0
+      // This handles any layout shifts that might occur after render
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+        if (mainElement) {
+          mainElement.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+          mainElement.scrollTop = 0;
+        }
+      });
       
       sessionStorage.setItem('marketplace:visited', '1');
       isInitialPageLoad.current = false;
       // Keep skipScrollRestore true for this render cycle
       skipScrollRestore.current = true;
       // Allow scroll restoration after a short delay (after other effects run)
-      requestAnimationFrame(() => {
+      setTimeout(() => {
         skipScrollRestore.current = false;
-      });
+      }, 100);
     }
   }, []);
 
@@ -401,24 +417,34 @@ export default function MarketplacePage() {
     };
   }, [activeTab]);
 
-  // Auto-scroll to results container when changing pages
+  // Track previous page numbers to only scroll on page changes (not tab switches)
+  const prevCgPage = useRef(cgPage);
+  const prevJobPage = useRef(jobPage);
+  const prevProviderPage = useRef(providerPage);
+
+  // Auto-scroll to results container when changing pages (NOT when switching tabs)
   useEffect(() => {
-    const scrollToResults = () => {
+    // Only scroll if the page actually changed (not just a tab switch)
+    if (activeTab === 'caregivers' && prevCgPage.current !== cgPage && cgPage > 1) {
       try { resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch {}
-    };
-    if (activeTab === 'caregivers') scrollToResults();
+    }
+    prevCgPage.current = cgPage;
   }, [activeTab, cgPage]);
+
   useEffect(() => {
-    const scrollToResults = () => {
+    // Only scroll if the page actually changed (not just a tab switch)
+    if (activeTab === 'jobs' && prevJobPage.current !== jobPage && jobPage > 1) {
       try { resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch {}
-    };
-    if (activeTab === 'jobs') scrollToResults();
+    }
+    prevJobPage.current = jobPage;
   }, [activeTab, jobPage]);
+
   useEffect(() => {
-    const scrollToResults = () => {
+    // Only scroll if the page actually changed (not just a tab switch)
+    if (activeTab === 'providers' && prevProviderPage.current !== providerPage && providerPage > 1) {
       try { resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch {}
-    };
-    if (activeTab === 'providers') scrollToResults();
+    }
+    prevProviderPage.current = providerPage;
   }, [activeTab, providerPage]);
 
   // Debounced inputs to reduce URL updates and fetch churn
@@ -618,16 +644,24 @@ export default function MarketplacePage() {
     if (!sp) return;
     
     const urlTab = sp.get("tab");
-    // Update activeTab when URL tab parameter changes
+    // Update activeTab ONLY when URL explicitly has a different tab parameter
+    // Don't reset to caregivers when tab param is missing - the state is authoritative
     if (urlTab === "jobs" && activeTab !== "jobs") {
       setActiveTab("jobs");
     } else if (urlTab === "providers" && activeTab !== "providers") {
       setActiveTab("providers");
-    } else if (!urlTab && activeTab !== "caregivers") {
-      // No tab parameter means caregivers (default)
+    } else if (urlTab === "caregivers" && activeTab !== "caregivers") {
       setActiveTab("caregivers");
     }
+    // Note: Don't reset to caregivers when urlTab is empty - allow state to persist
   }, [searchParams, activeTab]);
+
+  // Handle tab change from MarketplaceTabs component
+  const handleTabChange = useCallback((tab: "jobs" | "caregivers" | "providers") => {
+    setActiveTab(tab);
+    // Save to localStorage for persistence
+    try { localStorage.setItem(LAST_TAB_KEY, tab); } catch {}
+  }, []);
 
   // Keep URL in sync when on caregivers tab (debounced inputs)
   useEffect(() => {
@@ -1137,6 +1171,7 @@ export default function MarketplacePage() {
           caregiversCount={cgTotal}
           jobsCount={jobTotal}
           providersCount={providerTotal}
+          onTabChange={handleTabChange}
         />
 
         {/* Two-column layout */}

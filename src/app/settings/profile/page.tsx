@@ -1763,6 +1763,13 @@ export default function ProfileSettings() {
                   <FiUser className="h-16 w-16 text-neutral-400" />
                 </div>
               )}
+              {/* Upload overlay with progress indicator */}
+              {uploadingPhoto && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 rounded-full">
+                  <FiLoader className="h-8 w-8 text-white animate-spin mb-2" />
+                  <span className="text-white text-xs font-medium">Uploading...</span>
+                </div>
+              )}
             </div>
             
             <div className="ml-0 mt-4 flex flex-col sm:ml-6 sm:mt-0">

@@ -17,6 +17,32 @@ const nextConfig = {
   // Note: swcMinify removed - it's now the default in Next.js 15
   // Note: instrumentationHook removed - it's stable in Next.js 15 (no longer experimental)
   
+  // Image optimization configuration - allows loading images from Cloudinary
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.cloudinary.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'cloudinary.com',
+        pathname: '/**',
+      },
+    ],
+    // Increase timeout for slow connections
+    minimumCacheTTL: 60,
+    // Device sizes for responsive images
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+  },
+  
   // Skip ESLint during builds (we'll run it separately)
   eslint: {
     ignoreDuringBuilds: true,

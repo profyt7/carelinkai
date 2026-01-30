@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
 
 type MarketplaceTab = "caregivers" | "jobs" | "providers";
 
@@ -10,6 +10,7 @@ interface MarketplaceTabsProps {
   caregiversCount?: number;
   jobsCount?: number;
   providersCount?: number;
+  onTabChange?: (tab: MarketplaceTab) => void;
 }
 
 export default function MarketplaceTabs({
@@ -17,54 +18,68 @@ export default function MarketplaceTabs({
   caregiversCount,
   jobsCount,
   providersCount,
+  onTabChange,
 }: MarketplaceTabsProps) {
+  const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
 
-  // Determine if we're on a detail page (e.g., /marketplace/providers/[id])
-  const isDetailPage = pathname.includes("/marketplace/") && pathname.split("/").length > 3;
+  // Handle tab click - use callback if provided, otherwise navigate
+  const handleTabClick = (e: React.MouseEvent, tab: MarketplaceTab) => {
+    e.preventDefault();
+    
+    if (onTabChange) {
+      onTabChange(tab);
+    }
+    
+    // Build URL based on tab - use consistent URL pattern
+    let url = "/marketplace";
+    if (tab === "jobs") {
+      url = "/marketplace?tab=jobs";
+    } else if (tab === "providers") {
+      url = "/marketplace?tab=providers";
+    } else {
+      url = "/marketplace?tab=caregivers";
+    }
+    
+    // Use router.push with scroll: false to prevent scroll reset
+    router.push(url, { scroll: false });
+  };
+
+  const getTabClass = (tab: MarketplaceTab) =>
+    "whitespace-nowrap border-b-2 px-1 pb-2 text-sm font-medium transition-colors cursor-pointer " +
+    (activeTab === tab
+      ? "border-primary-600 text-primary-600"
+      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300");
 
   return (
     <div className="mb-4 border-b border-gray-200">
       <nav className="-mb-px flex space-x-6" aria-label="Marketplace Tabs">
         {/* Caregivers Tab */}
-        <Link
-          href="/marketplace"
-          className={
-            "whitespace-nowrap border-b-2 px-1 pb-2 text-sm font-medium transition-colors " +
-            (activeTab === "caregivers"
-              ? "border-primary-600 text-primary-600"
-              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300")
-          }
+        <a
+          href="/marketplace?tab=caregivers"
+          onClick={(e) => handleTabClick(e, "caregivers")}
+          className={getTabClass("caregivers")}
         >
           Caregivers{caregiversCount ? ` (${caregiversCount})` : ""}
-        </Link>
+        </a>
 
         {/* Jobs Tab */}
-        <Link
+        <a
           href="/marketplace?tab=jobs"
-          className={
-            "whitespace-nowrap border-b-2 px-1 pb-2 text-sm font-medium transition-colors " +
-            (activeTab === "jobs"
-              ? "border-primary-600 text-primary-600"
-              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300")
-          }
+          onClick={(e) => handleTabClick(e, "jobs")}
+          className={getTabClass("jobs")}
         >
           Jobs{jobsCount ? ` (${jobsCount})` : ""}
-        </Link>
+        </a>
 
         {/* Providers Tab */}
-        <Link
-          href="/marketplace/providers"
-          className={
-            "whitespace-nowrap border-b-2 px-1 pb-2 text-sm font-medium transition-colors " +
-            (activeTab === "providers"
-              ? "border-primary-600 text-primary-600"
-              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300")
-          }
+        <a
+          href="/marketplace?tab=providers"
+          onClick={(e) => handleTabClick(e, "providers")}
+          className={getTabClass("providers")}
         >
           Providers{providersCount ? ` (${providersCount})` : ""}
-        </Link>
+        </a>
       </nav>
     </div>
   );
