@@ -36,8 +36,21 @@ export async function GET() {
       })),
     });
   } catch (e) {
-    console.error('Fetch operator shifts failed', e);
-    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+    console.error('[OPERATOR SHIFTS API] Error fetching shifts:', e);
+    
+    // Provide more specific error messages
+    let errorMessage = "Failed to load shifts";
+    if (e instanceof Error) {
+      if (e.message.includes('timeout') || e.message.includes('ETIMEDOUT')) {
+        errorMessage = "Database query timed out. Please try again.";
+      } else if (e.message.includes('connect')) {
+        errorMessage = "Unable to connect to the database. Please try again later.";
+      } else {
+        console.error('[OPERATOR SHIFTS API] Full error:', e.stack);
+      }
+    }
+    
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   } finally {
     await prisma.$disconnect();
   }

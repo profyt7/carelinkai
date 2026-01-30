@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { 
@@ -11,9 +11,45 @@ import {
   FiArrowRight,
   FiAlertCircle,
   FiPlay,
-  FiSquare
+  FiSquare,
+  FiRefreshCw
 } from "react-icons/fi";
 import { getMockOpenShifts, getMockMyShifts } from "@/lib/mock/shifts";
+
+// Fetch with retry logic and timeout
+const fetchWithRetry = async (url: string, options: RequestInit = {}, maxRetries = 3, timeout = 10000): Promise<Response> => {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+    
+    try {
+      const response = await fetch(url, {
+        ...options,
+        credentials: 'include',
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      return response;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      lastError = error as Error;
+      
+      // Don't retry on abort or if it's the last attempt
+      if ((error as Error).name === 'AbortError') {
+        throw new Error('Request timed out. Please check your connection and try again.');
+      }
+      
+      if (attempt < maxRetries) {
+        // Exponential backoff: 1s, 2s, 4s
+        await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt - 1) * 1000));
+      }
+    }
+  }
+  
+  throw lastError || new Error('Failed to fetch after multiple retries');
+};
 
 // API response interfaces
 interface ApiShift {
@@ -100,117 +136,146 @@ export default function ShiftsPage() {
   const [isStartingShift, setIsStartingShift] = useState<string | null>(null);
   const [isEndingShift, setIsEndingShift] = useState<string | null>(null);
 
-  // Fetch open shifts
-  useEffect(() => {
+  // Helper to parse API error responses
+  const parseApiError = async (response: Response, defaultMsg: string): Promise<string> => {
+    try {
+      const data = await response.json();
+      if (data.error) {
+        // Provide user-friendly messages for common errors
+        if (response.status === 401) {
+          return 'Your session has expired. Please sign in again.';
+        }
+        if (response.status === 403) {
+          if (data.error.includes('not registered as a caregiver')) {
+            return 'You need to be registered as a caregiver to view shifts.';
+          }
+          return 'You do not have permission to view this content.';
+        }
+        return data.error;
+      }
+    } catch {
+      // JSON parse failed
+    }
+    return defaultMsg;
+  };
+
+  // Fetch open shifts with retry logic
+  const fetchOpenShiftsData = useCallback(async () => {
     if (authStatus !== 'authenticated') return;
     
-    const fetchOpenShifts = async () => {
-      setIsLoadingOpen(true);
-      setError(null);
-      
-      try {
-        if (showMock) {
-          const mock = getMockOpenShifts();
-          const formattedShifts = mock.map(shift => ({
-            id: shift.id,
-            homeId: shift.homeId,
-            homeName: shift.homeName,
-            address: shift.address,
-            startTime: new Date(shift.startTime),
-            endTime: new Date(shift.endTime),
-            hourlyRate: Number(shift.hourlyRate),
-            status: shift.status,
-          }));
-          setOpenShifts(formattedShifts);
-          return;
-        }
-        const response = await fetch('/api/shifts/open');
-        
-        if (!response.ok) {
-          throw new Error(`Failed to fetch open shifts: ${response.statusText}`);
-        }
-        
-        const data: ApiResponse = await response.json();
-        
-        // Convert API data to app state format
-        const formattedShifts = data.shifts.map(shift => ({
+    setIsLoadingOpen(true);
+    setError(null);
+    
+    try {
+      if (showMock) {
+        const mock = getMockOpenShifts();
+        const formattedShifts = mock.map(shift => ({
           id: shift.id,
           homeId: shift.homeId,
           homeName: shift.homeName,
           address: shift.address,
           startTime: new Date(shift.startTime),
           endTime: new Date(shift.endTime),
-          hourlyRate: parseFloat(shift.hourlyRate),
-          status: shift.status
+          hourlyRate: Number(shift.hourlyRate),
+          status: shift.status,
         }));
-        
         setOpenShifts(formattedShifts);
-      } catch (err) {
-        console.error('Error fetching open shifts:', err);
-        setError('Failed to load open shifts. Please try again later.');
-      } finally {
-        setIsLoadingOpen(false);
+        return;
       }
-    };
-    
-    fetchOpenShifts();
+      
+      const response = await fetchWithRetry('/api/shifts/open');
+      
+      if (!response.ok) {
+        const errorMsg = await parseApiError(response, 'Failed to load open shifts');
+        throw new Error(errorMsg);
+      }
+      
+      const data: ApiResponse = await response.json();
+      
+      // Convert API data to app state format
+      const formattedShifts = data.shifts.map(shift => ({
+        id: shift.id,
+        homeId: shift.homeId,
+        homeName: shift.homeName,
+        address: shift.address,
+        startTime: new Date(shift.startTime),
+        endTime: new Date(shift.endTime),
+        hourlyRate: parseFloat(shift.hourlyRate),
+        status: shift.status
+      }));
+      
+      setOpenShifts(formattedShifts);
+    } catch (err) {
+      console.error('Error fetching open shifts:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load open shifts. Please try again.');
+    } finally {
+      setIsLoadingOpen(false);
+    }
   }, [authStatus, showMock]);
 
-  // Fetch my shifts
   useEffect(() => {
+    fetchOpenShiftsData();
+  }, [fetchOpenShiftsData]);
+
+  // Fetch my shifts with retry logic
+  const fetchMyShiftsData = useCallback(async () => {
     if (authStatus !== 'authenticated') return;
     
-    const fetchMyShifts = async () => {
-      setIsLoadingMy(true);
-      setError(null);
-      
-      try {
-        if (showMock) {
-          const mock = getMockMyShifts();
-          const formattedShifts = mock.map(shift => ({
-            id: shift.id,
-            homeId: shift.homeId,
-            homeName: shift.homeName,
-            address: shift.address,
-            startTime: new Date(shift.startTime),
-            endTime: new Date(shift.endTime),
-            hourlyRate: Number(shift.hourlyRate),
-            status: shift.status,
-          }));
-          setMyShifts(formattedShifts);
-          return;
-        }
-        const response = await fetch('/api/shifts/my');
-        
-        if (!response.ok) {
-          throw new Error(`Failed to fetch my shifts: ${response.statusText}`);
-        }
-        
-        const data: ApiResponse = await response.json();
-        
-        // Convert API data to app state format
-        const formattedShifts = data.shifts.map(shift => ({
+    setIsLoadingMy(true);
+    
+    try {
+      if (showMock) {
+        const mock = getMockMyShifts();
+        const formattedShifts = mock.map(shift => ({
           id: shift.id,
           homeId: shift.homeId,
           homeName: shift.homeName,
           address: shift.address,
           startTime: new Date(shift.startTime),
           endTime: new Date(shift.endTime),
-          hourlyRate: parseFloat(shift.hourlyRate),
-          status: shift.status
+          hourlyRate: Number(shift.hourlyRate),
+          status: shift.status,
         }));
-        
         setMyShifts(formattedShifts);
-      } catch (err) {
-        console.error('Error fetching my shifts:', err);
-        setError('Failed to load your shifts. Please try again later.');
-      } finally {
-        setIsLoadingMy(false);
+        return;
       }
-    };
-    
-    fetchMyShifts();
-  }, [authStatus, showMock]);
+      
+      const response = await fetchWithRetry('/api/shifts/my');
+      
+      if (!response.ok) {
+        const errorMsg = await parseApiError(response, 'Failed to load your shifts');
+        throw new Error(errorMsg);
+      }
+      
+      const data: ApiResponse = await response.json();
+      
+      // Convert API data to app state format
+      const formattedShifts = data.shifts.map(shift => ({
+        id: shift.id,
+        homeId: shift.homeId,
+        homeName: shift.homeName,
+        address: shift.address,
+        startTime: new Date(shift.startTime),
+        endTime: new Date(shift.endTime),
+        hourlyRate: parseFloat(shift.hourlyRate),
+        status: shift.status
+      }));
+      
+      setMyShifts(formattedShifts);
+    } catch (err) {
+      console.error('Error fetching my shifts:', err);
+      // Only set error if we don't already have one from open shifts
+      if (!error) {
+        setError(err instanceof Error ? err.message : 'Failed to load your shifts. Please try again.');
+      }
+    } finally {
+      setIsLoadingMy(false);
+    }
+  }, [authStatus, showMock, error]);
+
+  useEffect(() => {
+    fetchMyShiftsData();
+  }, [fetchMyShiftsData]);
 
   // Handle claiming a shift
   const handleClaimShift = async (shiftId: string) => {
@@ -230,7 +295,8 @@ export default function ShiftsPage() {
         }
         return;
       }
-      const response = await fetch(`/api/shifts/${shiftId}/claim`, {
+      
+      const response = await fetchWithRetry(`/api/shifts/${shiftId}/claim`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -238,13 +304,15 @@ export default function ShiftsPage() {
       });
       
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `Failed to claim shift: ${response.statusText}`);
+        const errorMsg = await parseApiError(response, 'Failed to claim shift');
+        throw new Error(errorMsg);
       }
       
       // Refresh both lists after claiming a shift
-      const openResponse = await fetch('/api/shifts/open');
-      const myResponse = await fetch('/api/shifts/my');
+      const [openResponse, myResponse] = await Promise.all([
+        fetchWithRetry('/api/shifts/open'),
+        fetchWithRetry('/api/shifts/my')
+      ]);
       
       if (openResponse.ok && myResponse.ok) {
         const openData: ApiResponse = await openResponse.json();
@@ -278,7 +346,7 @@ export default function ShiftsPage() {
       }
     } catch (err) {
       console.error('Error claiming shift:', err);
-      setError(err instanceof Error ? err.message : 'Failed to claim shift. Please try again later.');
+      setError(err instanceof Error ? err.message : 'Failed to claim shift. Please try again.');
     } finally {
       setIsClaimingShift(null);
     }
@@ -296,7 +364,8 @@ export default function ShiftsPage() {
         setMyShifts(prev => prev.map(s => s.id === shiftId ? { ...s, status: 'IN_PROGRESS' } : s));
         return;
       }
-      const response = await fetch('/api/timesheets/start', {
+      
+      const response = await fetchWithRetry('/api/timesheets/start', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -305,12 +374,12 @@ export default function ShiftsPage() {
       });
       
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `Failed to start shift: ${response.statusText}`);
+        const errorMsg = await parseApiError(response, 'Failed to start shift');
+        throw new Error(errorMsg);
       }
       
       // Refresh my shifts after starting
-      const myResponse = await fetch('/api/shifts/my');
+      const myResponse = await fetchWithRetry('/api/shifts/my');
       
       if (myResponse.ok) {
         const myData: ApiResponse = await myResponse.json();
@@ -332,7 +401,7 @@ export default function ShiftsPage() {
       }
     } catch (err) {
       console.error('Error starting shift:', err);
-      setError(err instanceof Error ? err.message : 'Failed to start shift. Please try again later.');
+      setError(err instanceof Error ? err.message : 'Failed to start shift. Please try again.');
     } finally {
       setIsStartingShift(null);
     }
@@ -351,11 +420,13 @@ export default function ShiftsPage() {
         setMyShifts(prev => prev.map(s => s.id === shiftId ? { ...s, status: 'COMPLETED' } : s));
         return;
       }
+      
       // First, get the timesheet ID for this shift
-      const timesheetsResponse = await fetch('/api/timesheets');
+      const timesheetsResponse = await fetchWithRetry('/api/timesheets');
       
       if (!timesheetsResponse.ok) {
-        throw new Error(`Failed to fetch timesheets: ${timesheetsResponse.statusText}`);
+        const errorMsg = await parseApiError(timesheetsResponse, 'Failed to fetch timesheets');
+        throw new Error(errorMsg);
       }
       
       const timesheetsData = await timesheetsResponse.json();
@@ -381,7 +452,7 @@ export default function ShiftsPage() {
       const notes = window.prompt('Add any notes about this shift (optional):', '');
       
       // End the timesheet
-      const endResponse = await fetch('/api/timesheets/end', {
+      const endResponse = await fetchWithRetry('/api/timesheets/end', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -394,12 +465,12 @@ export default function ShiftsPage() {
       });
       
       if (!endResponse.ok) {
-        const errorData = await endResponse.json();
-        throw new Error(errorData.error || `Failed to end shift: ${endResponse.statusText}`);
+        const errorMsg = await parseApiError(endResponse, 'Failed to end shift');
+        throw new Error(errorMsg);
       }
       
       // Refresh my shifts after ending
-      const myResponse = await fetch('/api/shifts/my');
+      const myResponse = await fetchWithRetry('/api/shifts/my');
       
       if (myResponse.ok) {
         const myData: ApiResponse = await myResponse.json();
@@ -418,7 +489,7 @@ export default function ShiftsPage() {
       }
     } catch (err) {
       console.error('Error ending shift:', err);
-      setError(err instanceof Error ? err.message : 'Failed to end shift. Please try again later.');
+      setError(err instanceof Error ? err.message : 'Failed to end shift. Please try again.');
     } finally {
       setIsEndingShift(null);
     }
@@ -490,10 +561,24 @@ export default function ShiftsPage() {
           </button>
         </div>
 
-        {/* Error message */}
+        {/* Error message with retry */}
         {error && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md text-red-700">
-            {error}
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md flex items-center justify-between">
+            <div className="flex items-center text-red-700">
+              <FiAlertCircle className="mr-2 flex-shrink-0" />
+              <span>{error}</span>
+            </div>
+            <button
+              onClick={() => {
+                setError(null);
+                fetchOpenShiftsData();
+                fetchMyShiftsData();
+              }}
+              className="ml-4 px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded-md flex items-center text-sm"
+            >
+              <FiRefreshCw className="mr-1" />
+              Retry
+            </button>
           </div>
         )}
 

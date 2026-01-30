@@ -111,9 +111,23 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error("Error fetching caregiver shifts:", error);
+    console.error("[SHIFTS API] Error fetching caregiver shifts:", error);
+    
+    // Provide more specific error messages
+    let errorMessage = "Failed to fetch your shifts";
+    if (error instanceof Error) {
+      if (error.message.includes('timeout') || error.message.includes('ETIMEDOUT')) {
+        errorMessage = "Database query timed out. Please try again.";
+      } else if (error.message.includes('connect')) {
+        errorMessage = "Unable to connect to the database. Please try again later.";
+      } else {
+        // Log full error in development
+        console.error("[SHIFTS API] Full error:", error.stack);
+      }
+    }
+    
     return NextResponse.json(
-      { error: "Failed to fetch caregiver shifts" },
+      { error: errorMessage },
       { status: 500 }
     );
   }

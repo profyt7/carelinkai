@@ -118,9 +118,25 @@ export async function POST(
     });
 
   } catch (error) {
-    console.error("Error claiming shift:", error);
+    console.error("[SHIFTS API] Error claiming shift:", error);
+    
+    // Provide more specific error messages
+    let errorMessage = "Failed to claim shift";
+    if (error instanceof Error) {
+      if (error.message.includes('timeout') || error.message.includes('ETIMEDOUT')) {
+        errorMessage = "Request timed out. Please try again.";
+      } else if (error.message.includes('connect')) {
+        errorMessage = "Unable to connect to the database. Please try again later.";
+      } else if (error.message.includes('P2002')) {
+        // Unique constraint violation - shift may have been claimed by someone else
+        errorMessage = "This shift has already been claimed by another caregiver.";
+      } else {
+        console.error("[SHIFTS API] Full error:", error.stack);
+      }
+    }
+    
     return NextResponse.json(
-      { error: "Failed to claim shift" },
+      { error: errorMessage },
       { status: 500 }
     );
   }
