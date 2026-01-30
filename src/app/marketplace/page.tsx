@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback, useRef, forwardRef } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState, useCallback, useRef, forwardRef } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import CaregiverCard from "@/components/marketplace/CaregiverCard";
@@ -322,23 +322,34 @@ export default function MarketplacePage() {
 
   // Track if this is the initial page load (not just a tab switch)
   const isInitialPageLoad = useRef(true);
+  // Track if we should skip scroll restoration for this render cycle
+  const skipScrollRestore = useRef(true);
 
-  // Scroll to top on initial page load
-  useEffect(() => {
+  // Scroll to top on initial page load - use useLayoutEffect to run synchronously
+  // before other effects can restore scroll positions
+  useLayoutEffect(() => {
     // Always scroll to top on initial page load
     if (isInitialPageLoad.current) {
-      window.scrollTo({ top: 0, behavior: 'auto' });
-      // Clear the visited flag so we always start fresh
-      sessionStorage.removeItem('marketplace:visited');
+      // Clear saved scroll positions to prevent restoration of stale positions
+      Object.values(SCROLL_KEYS).forEach(key => {
+        try { sessionStorage.removeItem(key); } catch {}
+      });
+      window.scrollTo(0, 0);
       sessionStorage.setItem('marketplace:visited', '1');
       isInitialPageLoad.current = false;
+      // Keep skipScrollRestore true for this render cycle
+      skipScrollRestore.current = true;
+      // Allow scroll restoration after a short delay (after other effects run)
+      requestAnimationFrame(() => {
+        skipScrollRestore.current = false;
+      });
     }
   }, []);
 
   // Restore per-tab scroll position when switching tabs (but not on initial load)
   useEffect(() => {
-    // Skip scroll restoration on initial page load
-    if (isInitialPageLoad.current) {
+    // Skip scroll restoration on initial page load and during first render cycle
+    if (skipScrollRestore.current) {
       return;
     }
     
