@@ -716,13 +716,13 @@ export default function ProfileSettings() {
     if (!file) return;
     
     // Validate file type and size
-    const validTypes = ["image/jpeg", "image/png", "image/webp"];
+    const validTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
     const maxSize = 5 * 1024 * 1024; // 5MB
     
     if (!validTypes.includes(file.type)) {
       setMessage({
         type: "error",
-        text: "Invalid file type. Please upload a JPEG, PNG, or WebP image.",
+        text: "Invalid file type. Please upload a JPEG, PNG, WebP, or GIF image.",
       });
       return;
     }
@@ -740,27 +740,28 @@ export default function ProfileSettings() {
       
       // Create form data
       const formData = new FormData();
-      formData.append("photo", file);
+      formData.append("file", file);
       
-      // Upload to API
-      const res = await fetch("/api/profile/photo", {
+      // Upload to Cloudinary-based API endpoint
+      const res = await fetch("/api/profile/picture/upload", {
         method: "POST",
         body: formData,
       });
       
       const data = await res.json();
       
-      if (data.success) {
+      if (res.ok && data.profileImageUrl) {
         setMessage({
           type: "success",
           text: "Profile photo uploaded successfully!",
         });
         
-        // Set preview immediately
-        if (data.data.photoUrls.medium) {
-          setPhotoPreview(data.data.photoUrls.medium);
-        } else if (data.data.photoUrls.thumbnail) {
-          setPhotoPreview(data.data.photoUrls.thumbnail);
+        // Set preview immediately from the Cloudinary response
+        const photoUrl = data.profileImageUrl.medium || 
+                        data.profileImageUrl.thumbnail || 
+                        data.profileImageUrl.original;
+        if (photoUrl) {
+          setPhotoPreview(photoUrl);
         }
         
         // Force session refresh by calling the session endpoint
@@ -781,10 +782,19 @@ export default function ProfileSettings() {
           window.location.reload();
         }, 500);
       } else {
-        setMessage({
-          type: "error",
-          text: data.message || "Failed to upload photo.",
-        });
+        // Handle error responses
+        const errorMsg = data.error || data.message || "Failed to upload photo.";
+        if (data.code === 'CLOUDINARY_NOT_CONFIGURED') {
+          setMessage({
+            type: "error",
+            text: "File upload is temporarily unavailable. Please try again later or contact support.",
+          });
+        } else {
+          setMessage({
+            type: "error",
+            text: errorMsg,
+          });
+        }
       }
     } catch (error) {
       console.error("Error uploading photo:", error);
@@ -809,13 +819,14 @@ export default function ProfileSettings() {
     try {
       setUploadingPhoto(true);
       
-      const res = await fetch("/api/profile/photo", {
+      // Use Cloudinary-based delete endpoint
+      const res = await fetch("/api/profile/picture/upload", {
         method: "DELETE",
       });
       
       const data = await res.json();
       
-      if (data.success) {
+      if (res.ok) {
         setMessage({
           type: "success",
           text: "Profile photo removed successfully!",
@@ -843,7 +854,7 @@ export default function ProfileSettings() {
       } else {
         setMessage({
           type: "error",
-          text: data.message || "Failed to remove photo.",
+          text: data.error || data.message || "Failed to remove photo.",
         });
       }
     } catch (error) {
