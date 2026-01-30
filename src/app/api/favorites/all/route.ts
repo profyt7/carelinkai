@@ -15,11 +15,10 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient, UserRole } from '@prisma/client';
+import { UserRole } from '@prisma/client';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth-db-simple';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 /**
  * GET handler - Retrieve all favorites for the current user
@@ -277,7 +276,5 @@ export async function GET(request: NextRequest) {
       error: 'An error occurred while fetching favorites',
       details: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : String(error)) : undefined
     }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }

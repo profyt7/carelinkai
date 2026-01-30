@@ -20,9 +20,20 @@ if (SENTRY_DSN) {
 
     // Debug mode
     debug: process.env.NODE_ENV !== 'production',
+
+    // Enable sending default PII
+    sendDefaultPii: true,
+
+    // Experimental features
+    _experiments: {
+      // Enable metrics
+      metricsAggregator: true,
+    },
   });
 
-  console.log('[Sentry Edge] ✅ Initialized');
+  console.log('[Sentry Edge] ✅ Initialized with features:');
+  console.log('[Sentry Edge]   - Performance Monitoring: enabled');
+  console.log('[Sentry Edge]   - Metrics: enabled');
 } else {
   console.warn('[Sentry Edge] ⚠️ No DSN provided, Sentry disabled');
 }
