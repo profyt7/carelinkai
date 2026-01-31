@@ -741,6 +741,7 @@ export default function DashboardLayout({
         className={`flex-1 flex flex-col overflow-hidden ${
           isMobile ? 'pb-16' : ''
         }`}
+        {...((isMobile && sidebarOpen) && { inert: "" as any })}
       >
         {/* Header */}
         <header className="bg-white border-b border-neutral-200 h-header flex items-center px-4 md:px-6 shadow-sm">
@@ -1020,6 +1021,7 @@ export default function DashboardLayout({
           style={{
             paddingBottom: 'env(safe-area-inset-bottom, 0px)' // iOS safe area
           }}
+          {...(sidebarOpen && { inert: "" as any })}
         >
           {(() => {
             const normalizedRole = String(userRole || '').toUpperCase();
