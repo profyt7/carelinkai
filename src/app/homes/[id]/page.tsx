@@ -1862,7 +1862,7 @@ export default function HomeDetailPage() {
       </div>
       
       {/* Mobile sticky CTA bar */}
-      <div className="fixed bottom-0 inset-x-0 z-40 border-t border-neutral-200 bg-white p-3 shadow-[0_-2px_8px_rgba(0,0,0,0.06)] md:hidden">
+      <div className="fixed bottom-0 inset-x-0 z-20 border-t border-neutral-200 bg-white p-3 shadow-[0_-2px_8px_rgba(0,0,0,0.06)] md:hidden">
         <div className="flex gap-2 sm:flex-row flex-col">
           <button
             onClick={() => setShowTourModal(true)}
