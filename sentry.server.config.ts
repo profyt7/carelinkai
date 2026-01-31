@@ -14,6 +14,9 @@ if (SENTRY_DSN) {
   Sentry.init({
     dsn: SENTRY_DSN,
 
+    // Enable Logs feature
+    enableLogs: true,
+
     // Performance Monitoring - capture 10% of transactions in production
     tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
 
@@ -49,6 +52,7 @@ if (SENTRY_DSN) {
   console.log('[Sentry Server]   - Performance Monitoring: enabled');
   console.log('[Sentry Server]   - Profiling: disabled (integration removed)');
   console.log('[Sentry Server]   - Metrics: enabled');
+  console.log('[Sentry Server]   - Logs: enabled');
   console.log('[Sentry Server]   - Client available:', !!client);
 } else {
   console.warn('[Sentry Server] ⚠️ No DSN provided, Sentry disabled');

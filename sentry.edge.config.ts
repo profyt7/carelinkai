@@ -12,6 +12,9 @@ if (SENTRY_DSN) {
   Sentry.init({
     dsn: SENTRY_DSN,
 
+    // Enable Logs feature
+    enableLogs: true,
+
     // Performance Monitoring
     tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
 
@@ -34,6 +37,7 @@ if (SENTRY_DSN) {
   console.log('[Sentry Edge] ✅ Initialized with features:');
   console.log('[Sentry Edge]   - Performance Monitoring: enabled');
   console.log('[Sentry Edge]   - Metrics: enabled');
+  console.log('[Sentry Edge]   - Logs: enabled');
 } else {
   console.warn('[Sentry Edge] ⚠️ No DSN provided, Sentry disabled');
 }
