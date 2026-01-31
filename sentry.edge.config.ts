@@ -15,6 +15,9 @@ if (SENTRY_DSN) {
     // Enable Logs feature
     enableLogs: true,
 
+    // Enable Metrics (automatically enabled in v10.25.0+, but explicit for clarity)
+    enableMetrics: true,
+
     // Performance Monitoring
     tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
 
@@ -26,12 +29,6 @@ if (SENTRY_DSN) {
 
     // Enable sending default PII
     sendDefaultPii: true,
-
-    // Experimental features
-    _experiments: {
-      // Enable metrics
-      metricsAggregator: true,
-    },
   });
 
   console.log('[Sentry Edge] ✅ Initialized with features:');

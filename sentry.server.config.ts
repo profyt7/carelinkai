@@ -17,6 +17,9 @@ if (SENTRY_DSN) {
     // Enable Logs feature
     enableLogs: true,
 
+    // Enable Metrics (automatically enabled in v10.25.0+, but explicit for clarity)
+    enableMetrics: true,
+
     // Performance Monitoring - capture 10% of transactions in production
     tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
 
@@ -38,12 +41,6 @@ if (SENTRY_DSN) {
     // Integrations
     // Note: nodeProfilingIntegration() removed - was causing deployment errors
     // integrations: [],
-
-    // Experimental features
-    _experiments: {
-      // Enable metrics
-      metricsAggregator: true,
-    },
   });
 
   // Verify initialization

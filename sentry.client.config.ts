@@ -16,6 +16,9 @@ if (SENTRY_DSN && SENTRY_DSN.startsWith('https://')) {
     // Enable Logs feature
     enableLogs: true,
     
+    // Enable Metrics (automatically enabled in v10.25.0+, but explicit for clarity)
+    enableMetrics: true,
+    
     // Performance Monitoring
     tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
     
