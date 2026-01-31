@@ -531,7 +531,7 @@ export default function DashboardLayout({
           (isMobile || isTablet) && !sidebarOpen ? '-translate-x-full' : 'translate-x-0'
         }`}
         aria-label="Main navigation"
-        aria-hidden={isMobile && !sidebarOpen}
+        {...((isMobile && !sidebarOpen) && { inert: "" as any })}
       >
         {/* Logo */}
         <div className="sidebar-logo px-4 flex items-center justify-between">
