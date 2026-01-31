@@ -223,7 +223,7 @@ module.exports = {
         },
       },
       zIndex: {
-        sidebar: "40",
+        sidebar: "45",
         header: "30",
         modal: "50",
         dropdown: "20",
