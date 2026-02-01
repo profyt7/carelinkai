@@ -114,6 +114,7 @@ export default function NewHomePage() {
       const res = await fetch('/api/operator/homes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(payload),
       });
 

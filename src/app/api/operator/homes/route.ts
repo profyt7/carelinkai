@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     if (!operator) return NextResponse.json({ error: 'Operator profile missing' }, { status: 400 });
 
     const body = await req.json();
-    const { name, description, careLevel, capacity, priceMin, priceMax, address } = body || {};
+    const { name, description, careLevel, capacity, priceMin, priceMax, address, amenities, genderRestriction } = body || {};
     if (!name || !description || !Array.isArray(careLevel) || !capacity || !address?.city || !address?.state || !address?.street || !address?.zipCode) {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
     }
@@ -54,7 +54,8 @@ export async function POST(req: NextRequest) {
         currentOccupancy: 0,
         priceMin: priceMin ? Number(priceMin) : null,
         priceMax: priceMax ? Number(priceMax) : null,
-        amenities: [],
+        amenities: Array.isArray(amenities) ? amenities : [],
+        genderRestriction: genderRestriction || null,
         address: {
           create: {
             street: address.street,
