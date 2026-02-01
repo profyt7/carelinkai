@@ -27,25 +27,55 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const { session, error } = await requireAnyRole(["OPERATOR" as any]);
+    // Allow both OPERATOR and ADMIN roles to create homes
+    const { session, error } = await requireOperatorOrAdmin();
     if (error) return error;
 
     const user = await prisma.user.findUnique({ where: { email: session!.user!.email! } });
-    if (!user || user.role !== UserRole.OPERATOR) {
+    if (!user || (user.role !== UserRole.OPERATOR && user.role !== UserRole.ADMIN)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
-    const operator = await prisma.operator.findUnique({ where: { userId: user.id } });
-    if (!operator) return NextResponse.json({ error: 'Operator profile missing' }, { status: 400 });
 
     const body = await req.json();
-    const { name, description, careLevel, capacity, priceMin, priceMax, address, amenities, genderRestriction } = body || {};
+    const { name, description, careLevel, capacity, priceMin, priceMax, address, amenities, genderRestriction, operatorId: bodyOperatorId } = body || {};
     if (!name || !description || !Array.isArray(careLevel) || !capacity || !address?.city || !address?.state || !address?.street || !address?.zipCode) {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
     }
 
+    // Determine operatorId based on user role
+    let operatorId: string;
+    if (user.role === UserRole.ADMIN) {
+      // Admin can specify operatorId in body, or we find/create a default
+      if (bodyOperatorId) {
+        operatorId = bodyOperatorId;
+      } else {
+        // Find the first operator or create admin as pseudo-operator
+        const firstOperator = await prisma.operator.findFirst();
+        if (firstOperator) {
+          operatorId = firstOperator.id;
+        } else {
+          // Create an operator profile for admin if none exists
+          const adminOperator = await prisma.operator.create({
+            data: {
+              userId: user.id,
+              companyName: 'Admin Created Homes',
+              businessType: 'LICENSED_OPERATOR',
+              licenseNumber: 'ADMIN-' + Date.now(),
+            }
+          });
+          operatorId = adminOperator.id;
+        }
+      }
+    } else {
+      // Regular OPERATOR - use their operator profile
+      const operator = await prisma.operator.findUnique({ where: { userId: user.id } });
+      if (!operator) return NextResponse.json({ error: 'Operator profile missing' }, { status: 400 });
+      operatorId = operator.id;
+    }
+
     const home = await prisma.assistedLivingHome.create({
       data: {
-        operatorId: operator.id,
+        operatorId,
         name,
         description,
         status: 'ACTIVE',
