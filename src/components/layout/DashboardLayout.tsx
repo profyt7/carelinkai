@@ -661,7 +661,16 @@ export default function DashboardLayout({
                                     ? 'bg-primary-600 text-white font-medium'
                                     : 'text-neutral-400 hover:bg-neutral-700 hover:text-white'
                                 }`}
-                                onClick={() => isMobile && setSidebarOpen(false)}
+                                onClick={(e) => {
+                                  if (isMobile) setSidebarOpen(false);
+                                  // Workaround for Next.js router context bug on property pages
+                                  // Use hard navigation as fallback after a short delay
+                                  setTimeout(() => {
+                                    if (window.location.pathname === pathname) {
+                                      window.location.href = childHref;
+                                    }
+                                  }, 100);
+                                }}
                                 aria-current={isActive ? "page" : undefined}
                               >
                                 <span className="mr-2.5">{child.icon}</span>
@@ -688,7 +697,16 @@ export default function DashboardLayout({
                         ? 'bg-primary-500 text-white font-medium'
                         : 'text-neutral-300 hover:bg-neutral-700 hover:text-white'
                     }`}
-                    onClick={() => isMobile && setSidebarOpen(false)}
+                    onClick={(e) => {
+                      if (isMobile) setSidebarOpen(false);
+                      // Workaround for Next.js router context bug on property pages
+                      // Use hard navigation as fallback after a short delay
+                      setTimeout(() => {
+                        if (window.location.pathname === pathname) {
+                          window.location.href = itemHref;
+                        }
+                      }, 100);
+                    }}
                     aria-current={isActive ? "page" : undefined}
                   >
                     <span className="mr-3">{item.icon}</span>
@@ -1061,12 +1079,22 @@ export default function DashboardLayout({
 
             return mobileBarItems.slice(0, 4).map((item) => {
               const isActive = item.href === longestMatch || pathname === item.href;
+              const itemHref = item.href || '/dashboard';
               return (
               <Link 
                 key={item.name}
-                href={item.href || '/dashboard'}
+                href={itemHref}
                 className={`mobile-tab-item ${isActive ? 'mobile-tab-item-active' : ''}`}
                 aria-current={isActive ? "page" : undefined}
+                onClick={() => {
+                  // Workaround for Next.js router context bug on property pages
+                  // Use hard navigation as fallback after a short delay
+                  setTimeout(() => {
+                    if (window.location.pathname === pathname) {
+                      window.location.href = itemHref;
+                    }
+                  }, 100);
+                }}
               >
                 {item.icon}
                 <span className="mt-1">{item.name}</span>
