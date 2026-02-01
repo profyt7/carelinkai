@@ -45,12 +45,7 @@ if (SENTRY_DSN) {
       Sentry.browserTracingIntegration(),
       // Browser Profiling
       Sentry.browserProfilingIntegration(),
-      // Feedback widget for user bug reports
-      Sentry.feedbackIntegration({
-        colorScheme: 'system',
-        isNameRequired: false,
-        isEmailRequired: false,
-      }),
+      // Note: Sentry feedbackIntegration removed - using custom BugReportButton instead
     ],
 
     // Experimental features
@@ -74,7 +69,7 @@ if (SENTRY_DSN) {
   console.log('[Sentry Client]   - Session Replay: enabled');
   console.log('[Sentry Client]   - Profiling: enabled');
   console.log('[Sentry Client]   - Metrics: enabled');
-  console.log('[Sentry Client]   - Feedback: enabled');
+  console.log('[Sentry Client]   - Feedback: disabled (using custom BugReportButton)');
 } else {
   console.warn('[Sentry Client] ⚠️ No DSN provided, Sentry disabled');
 }
