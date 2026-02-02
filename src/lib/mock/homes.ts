@@ -2,12 +2,19 @@ import { CareLevel } from "@prisma/client";
 import type { SearchResultItem } from "@/lib/searchService";
 
 // Unified mock dataset for homes used across Search and Operator views
+// IMPORTANT: Each home MUST have coordinates for map functionality
 export const MOCK_HOMES: SearchResultItem[] = [
   {
     id: "home_1",
     name: "Sunrise Memory Care",
     description: "Specialized memory care community with secure gardens and art therapy.",
-    address: { street: "123 Maple St", city: "San Francisco", state: "CA", zipCode: "94109" },
+    address: { 
+      street: "123 Maple St", 
+      city: "San Francisco", 
+      state: "CA", 
+      zipCode: "94109",
+      coordinates: { lat: 37.7749, lng: -122.4194 }
+    },
     careLevel: [CareLevel.MEMORY_CARE],
     priceRange: { min: 5500, max: 7200, formattedMin: "$5,500", formattedMax: "$7,200" },
     capacity: 80,
@@ -24,7 +31,13 @@ export const MOCK_HOMES: SearchResultItem[] = [
     id: "home_2",
     name: "Bayview Assisted Living",
     description: "Waterfront views, transportation, and daily activities.",
-    address: { street: "200 Ocean Ave", city: "San Francisco", state: "CA", zipCode: "94112" },
+    address: { 
+      street: "200 Ocean Ave", 
+      city: "San Francisco", 
+      state: "CA", 
+      zipCode: "94112",
+      coordinates: { lat: 37.7249, lng: -122.4594 }
+    },
     careLevel: [CareLevel.ASSISTED, CareLevel.INDEPENDENT],
     priceRange: { min: 3800, max: 5200, formattedMin: "$3,800", formattedMax: "$5,200" },
     capacity: 120,
@@ -41,7 +54,13 @@ export const MOCK_HOMES: SearchResultItem[] = [
     id: "home_3",
     name: "Cedar Grove Senior Living",
     description: "Cozy community with private rooms and pet-friendly policy.",
-    address: { street: "50 Cedar Ln", city: "Oakland", state: "CA", zipCode: "94610" },
+    address: { 
+      street: "50 Cedar Ln", 
+      city: "Oakland", 
+      state: "CA", 
+      zipCode: "94610",
+      coordinates: { lat: 37.8044, lng: -122.2712 }
+    },
     careLevel: [CareLevel.INDEPENDENT, CareLevel.ASSISTED],
     priceRange: { min: 3200, max: 4600, formattedMin: "$3,200", formattedMax: "$4,600" },
     capacity: 60,
@@ -58,7 +77,13 @@ export const MOCK_HOMES: SearchResultItem[] = [
     id: "home_4",
     name: "Oak Meadow Lodge",
     description: "Quiet assisted living with nature trails and weekly outings.",
-    address: { street: "14 Oak Meadow", city: "Walnut Creek", state: "CA", zipCode: "94595" },
+    address: { 
+      street: "14 Oak Meadow", 
+      city: "Walnut Creek", 
+      state: "CA", 
+      zipCode: "94595",
+      coordinates: { lat: 37.9101, lng: -122.0652 }
+    },
     careLevel: [CareLevel.ASSISTED],
     priceRange: { min: 4200, max: 5600, formattedMin: "$4,200", formattedMax: "$5,600" },
     capacity: 72,
@@ -75,7 +100,13 @@ export const MOCK_HOMES: SearchResultItem[] = [
     id: "home_5",
     name: "Golden Gate Senior Residence",
     description: "Urban living with fitness center and rooftop garden.",
-    address: { street: "901 Market St", city: "San Francisco", state: "CA", zipCode: "94103" },
+    address: { 
+      street: "901 Market St", 
+      city: "San Francisco", 
+      state: "CA", 
+      zipCode: "94103",
+      coordinates: { lat: 37.7849, lng: -122.4094 }
+    },
     careLevel: [CareLevel.INDEPENDENT],
     priceRange: { min: 4500, max: 6000, formattedMin: "$4,500", formattedMax: "$6,000" },
     capacity: 150,
@@ -92,7 +123,13 @@ export const MOCK_HOMES: SearchResultItem[] = [
     id: "home_6",
     name: "Redwood Memory Haven",
     description: "Secure memory care with music therapy and sensory rooms.",
-    address: { street: "77 Redwood Rd", city: "San Mateo", state: "CA", zipCode: "94401" },
+    address: { 
+      street: "77 Redwood Rd", 
+      city: "San Mateo", 
+      state: "CA", 
+      zipCode: "94401",
+      coordinates: { lat: 37.5630, lng: -122.3255 }
+    },
     careLevel: [CareLevel.MEMORY_CARE],
     priceRange: { min: 5200, max: 6900, formattedMin: "$5,200", formattedMax: "$6,900" },
     capacity: 68,
@@ -109,7 +146,13 @@ export const MOCK_HOMES: SearchResultItem[] = [
     id: "home_7",
     name: "Harborview Assisted Living",
     description: "Waterfront assisted living with transportation and on-site PT.",
-    address: { street: "2 Harbor View", city: "Alameda", state: "CA", zipCode: "94501" },
+    address: { 
+      street: "2 Harbor View", 
+      city: "Alameda", 
+      state: "CA", 
+      zipCode: "94501",
+      coordinates: { lat: 37.7652, lng: -122.2416 }
+    },
     careLevel: [CareLevel.ASSISTED],
     priceRange: { min: 4100, max: 5400, formattedMin: "$4,100", formattedMax: "$5,400" },
     capacity: 90,
@@ -126,7 +169,13 @@ export const MOCK_HOMES: SearchResultItem[] = [
     id: "home_8",
     name: "Willow Creek Community",
     description: "Pet-friendly independent living with spacious grounds.",
-    address: { street: "600 Willow Ln", city: "Pleasanton", state: "CA", zipCode: "94566" },
+    address: { 
+      street: "600 Willow Ln", 
+      city: "Pleasanton", 
+      state: "CA", 
+      zipCode: "94566",
+      coordinates: { lat: 37.6624, lng: -121.8747 }
+    },
     careLevel: [CareLevel.INDEPENDENT],
     priceRange: { min: 3000, max: 4200, formattedMin: "$3,000", formattedMax: "$4,200" },
     capacity: 110,
@@ -143,7 +192,13 @@ export const MOCK_HOMES: SearchResultItem[] = [
     id: "home_9",
     name: "Silver Lake Skilled Nursing",
     description: "Skilled nursing with on-site medical staff and rehab services.",
-    address: { street: "45 Silver Lake Dr", city: "San Jose", state: "CA", zipCode: "95112" },
+    address: { 
+      street: "45 Silver Lake Dr", 
+      city: "San Jose", 
+      state: "CA", 
+      zipCode: "95112",
+      coordinates: { lat: 37.3382, lng: -121.8863 }
+    },
     careLevel: [CareLevel.SKILLED_NURSING],
     priceRange: { min: 6500, max: 8200, formattedMin: "$6,500", formattedMax: "$8,200" },
     capacity: 140,
@@ -160,7 +215,13 @@ export const MOCK_HOMES: SearchResultItem[] = [
     id: "home_10",
     name: "Maple Ridge Assisted Living",
     description: "Community events, gardens, and attentive staff.",
-    address: { street: "10 Ridge Rd", city: "Berkeley", state: "CA", zipCode: "94704" },
+    address: { 
+      street: "10 Ridge Rd", 
+      city: "Berkeley", 
+      state: "CA", 
+      zipCode: "94704",
+      coordinates: { lat: 37.8716, lng: -122.2727 }
+    },
     careLevel: [CareLevel.ASSISTED],
     priceRange: { min: 3900, max: 5100, formattedMin: "$3,900", formattedMax: "$5,100" },
     capacity: 85,
@@ -177,7 +238,13 @@ export const MOCK_HOMES: SearchResultItem[] = [
     id: "home_11",
     name: "Sequoia View Senior Living",
     description: "Large community with fitness and wellness programs.",
-    address: { street: "500 Sequoia Ave", city: "Redwood City", state: "CA", zipCode: "94061" },
+    address: { 
+      street: "500 Sequoia Ave", 
+      city: "Redwood City", 
+      state: "CA", 
+      zipCode: "94061",
+      coordinates: { lat: 37.4852, lng: -122.2364 }
+    },
     careLevel: [CareLevel.INDEPENDENT, CareLevel.ASSISTED],
     priceRange: { min: 3600, max: 5400, formattedMin: "$3,600", formattedMax: "$5,400" },
     capacity: 200,
@@ -194,7 +261,13 @@ export const MOCK_HOMES: SearchResultItem[] = [
     id: "home_12",
     name: "Pacifica Memory Care",
     description: "Coastal memory care with calming sensory gardens.",
-    address: { street: "350 Coast Rd", city: "Pacifica", state: "CA", zipCode: "94044" },
+    address: { 
+      street: "350 Coast Rd", 
+      city: "Pacifica", 
+      state: "CA", 
+      zipCode: "94044",
+      coordinates: { lat: 37.6138, lng: -122.4869 }
+    },
     careLevel: [CareLevel.MEMORY_CARE],
     priceRange: { min: 5100, max: 7000, formattedMin: "$5,100", formattedMax: "$7,000" },
     capacity: 64,

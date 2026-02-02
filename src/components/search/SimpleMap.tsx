@@ -45,20 +45,49 @@ interface SimpleMapProps {
 }
 
 // Helper functions outside component to avoid recreating
-const isValidCoord = (n: unknown) => typeof n === 'number' && !Number.isNaN(n) && Number.isFinite(n);
-
-const getLat = (home: HomeData) => {
-  if (typeof home.address !== 'string') {
-    return home.address.coordinates?.lat ?? home.address.latitude;
+const isValidCoord = (n: unknown): n is number => {
+  if (typeof n === 'number') return !Number.isNaN(n) && Number.isFinite(n);
+  // Also handle string numbers that might come from API
+  if (typeof n === 'string') {
+    const parsed = parseFloat(n);
+    return !Number.isNaN(parsed) && Number.isFinite(parsed);
   }
-  return home.coordinates?.lat;
+  return false;
 };
 
-const getLng = (home: HomeData) => {
-  if (typeof home.address !== 'string') {
-    return home.address.coordinates?.lng ?? home.address.longitude;
+const toNumber = (n: unknown): number | undefined => {
+  if (typeof n === 'number' && !Number.isNaN(n) && Number.isFinite(n)) return n;
+  if (typeof n === 'string') {
+    const parsed = parseFloat(n);
+    if (!Number.isNaN(parsed) && Number.isFinite(parsed)) return parsed;
   }
-  return home.coordinates?.lng;
+  return undefined;
+};
+
+const getLat = (home: HomeData): number | undefined => {
+  if (typeof home.address !== 'string' && home.address) {
+    // Check coordinates object first (most common from API)
+    const coordLat = home.address.coordinates?.lat;
+    if (coordLat !== undefined) return toNumber(coordLat);
+    // Then check legacy latitude field
+    const legacyLat = home.address.latitude;
+    if (legacyLat !== undefined) return toNumber(legacyLat);
+  }
+  // Check home-level coordinates as fallback
+  return toNumber(home.coordinates?.lat);
+};
+
+const getLng = (home: HomeData): number | undefined => {
+  if (typeof home.address !== 'string' && home.address) {
+    // Check coordinates object first (most common from API)
+    const coordLng = home.address.coordinates?.lng;
+    if (coordLng !== undefined) return toNumber(coordLng);
+    // Then check legacy longitude field
+    const legacyLng = home.address.longitude;
+    if (legacyLng !== undefined) return toNumber(legacyLng);
+  }
+  // Check home-level coordinates as fallback
+  return toNumber(home.coordinates?.lng);
 };
 
 const createCustomIcon = (price: number | null, isSelected: boolean = false) => {
@@ -102,16 +131,30 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
 
   // Create stable home ID string for dependency comparison
   const homeIdsKey = useMemo(() => {
-    return homes
-      .filter((h) => h.address && isValidCoord(getLat(h)) && isValidCoord(getLng(h)))
-      .map(h => `${h.id}:${getLat(h)}:${getLng(h)}:${h.priceRange.min}`)
-      .join('|');
+    const valid = homes.filter((h) => {
+      const lat = getLat(h);
+      const lng = getLng(h);
+      return h.address && lat !== undefined && lng !== undefined;
+    });
+    return valid.map(h => `${h.id}:${getLat(h)}:${getLng(h)}:${h.priceRange.min}`).join('|');
   }, [homes]);
 
-  const validHomes = useMemo(
-    () => homes.filter((h) => h.address && isValidCoord(getLat(h)) && isValidCoord(getLng(h))),
-    [homes]
-  );
+  const validHomes = useMemo(() => {
+    const filtered = homes.filter((h) => {
+      const lat = getLat(h);
+      const lng = getLng(h);
+      const hasValidCoords = h.address && lat !== undefined && lng !== undefined;
+      return hasValidCoords;
+    });
+    // Debug log for troubleshooting
+    if (typeof window !== 'undefined') {
+      console.log(`[SimpleMap] Homes with valid coords: ${filtered.length}/${homes.length}`);
+      if (filtered.length === 0 && homes.length > 0) {
+        console.log('[SimpleMap] Sample home address:', homes[0]?.address);
+      }
+    }
+    return filtered;
+  }, [homes]);
 
   // ONE-TIME map initialization with empty deps
   useEffect(() => {
@@ -197,9 +240,9 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
 
     // Add new markers
     validHomes.forEach(home => {
-      const lat = getLat(home) as number;
-      const lng = getLng(home) as number;
-      if (isValidCoord(lat) && isValidCoord(lng)) {
+      const lat = getLat(home);
+      const lng = getLng(home);
+      if (lat !== undefined && lng !== undefined) {
         const marker = L.marker([lat, lng], {
           icon: createCustomIcon(home.priceRange.min, selectedHome === home.id)
         }).addTo(map);
@@ -231,8 +274,8 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
 
     // Fit bounds if we have homes
     if (validHomes.length > 0) {
-      const centerLat = validHomes.reduce((sum, h) => sum + (getLat(h) as number), 0) / validHomes.length;
-      const centerLng = validHomes.reduce((sum, h) => sum + (getLng(h) as number), 0) / validHomes.length;
+      const centerLat = validHomes.reduce((sum, h) => sum + (getLat(h) ?? 0), 0) / validHomes.length;
+      const centerLng = validHomes.reduce((sum, h) => sum + (getLng(h) ?? 0), 0) / validHomes.length;
       map.setView([centerLat, centerLng], 8);
     }
   }, [isReady, homeIdsKey, selectedHome, validHomes]); // Stable deps: primitive values only
