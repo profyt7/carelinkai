@@ -580,23 +580,22 @@ export async function GET(request: NextRequest) {
       };
     }
     
-    // Filter by gender restriction if specified
+    // Filter by gender restriction if specified (use AND logic)
     if (gender !== 'ALL') {
-      whereClause.OR = [
-        { genderRestriction: gender },
-        { genderRestriction: null },
-        { genderRestriction: 'ALL' }
+      whereClause.AND = [
+        ...(whereClause.AND || []),
+        {
+          OR: [
+            { genderRestriction: gender },
+            { genderRestriction: null },
+            { genderRestriction: 'ALL' }
+          ]
+        }
       ];
     }
     
-    // Availability boolean deprecated – keep for backward-compat
-    if (availability === true) {
-      whereClause.currentOccupancy = {
-        lt: {
-          path: '$capacity'
-        }
-      };
-    }
+    // Note: availability filtering is done post-query since Prisma doesn't 
+    // support field-to-field comparisons (capacity vs currentOccupancy)
 
     // Placeholder for verified filter (requires additional schema support)
     if (verifiedOnly) {
@@ -610,34 +609,37 @@ export async function GET(request: NextRequest) {
       };
     }
     
-    // Location search - basic implementation
-    // In production, would use geocoding and radius search
+    // Location search - use AND logic with OR for city/state/zip
     if (location) {
-      whereClause.OR = [
-        ...(whereClause.OR || []),
+      whereClause.AND = [
+        ...(whereClause.AND || []),
         {
-          address: {
-            city: {
-              contains: location,
-              mode: 'insensitive'
+          OR: [
+            {
+              address: {
+                city: {
+                  contains: location,
+                  mode: 'insensitive'
+                }
+              }
+            },
+            {
+              address: {
+                state: {
+                  contains: location,
+                  mode: 'insensitive'
+                }
+              }
+            },
+            {
+              address: {
+                zipCode: {
+                  contains: location,
+                  mode: 'insensitive'
+                }
+              }
             }
-          }
-        },
-        {
-          address: {
-            state: {
-              contains: location,
-              mode: 'insensitive'
-            }
-          }
-        },
-        {
-          address: {
-            zipCode: {
-              contains: location,
-              mode: 'insensitive'
-            }
-          }
+          ]
         }
       ];
     }
@@ -808,8 +810,18 @@ export async function GET(request: NextRequest) {
         results.sort((a, b) => b.aiMatchScore - a.aiMatchScore);
     }
 
-    // Post-filter for numeric availability if provided
+    // Post-filter for availability (since Prisma doesn't support field-to-field comparisons)
     let filteredResults = results;
+    let filteredTotalCount = totalCount;
+    
+    // Boolean availability filter (has any available spots)
+    if (availability === true) {
+      filteredResults = results.filter((r) => r.availability > 0);
+      // Adjust count proportionally (approximation since we can't count in DB)
+      filteredTotalCount = Math.round((filteredResults.length / Math.max(results.length, 1)) * totalCount);
+    }
+    
+    // Numeric availability filter (minimum beds required)
     if (
       typeof availability === 'number' &&
       !Number.isNaN(availability) &&
@@ -818,6 +830,8 @@ export async function GET(request: NextRequest) {
       filteredResults = results.filter(
         (r) => r.availability >= availability
       );
+      // Adjust count proportionally
+      filteredTotalCount = Math.round((filteredResults.length / Math.max(results.length, 1)) * totalCount);
     }
     
     /* ------------------------------------------------------------------
@@ -826,11 +840,11 @@ export async function GET(request: NextRequest) {
     if (results.length === 0 && process.env['NODE_ENV'] !== 'production') {
       const mockHomes = generateMockHomes(limit);
       filteredResults = mockHomes;
-      totalCount = mockHomes.length;
+      filteredTotalCount = mockHomes.length;
     }
 
-    // Use the database totalCount for pagination (not current page length)
-    const totalResultsCount = totalCount;
+    // Use the filtered count for pagination
+    const totalResultsCount = filteredTotalCount;
 
     // Return response
     return NextResponse.json({

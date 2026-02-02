@@ -852,9 +852,7 @@ export default function HomeDetailPage() {
                   <h2 className="mb-4 text-xl font-semibold text-neutral-800">Location</h2>
                   <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white">
                     <div className="h-80 w-full">
-                      {realHome.address?.coordinates && (
-                        <SimpleMap homes={[realHome]} />
-                      )}
+                      <SimpleMap homes={[realHome]} />
                     </div>
                     <div className="p-6">
                       <div className="flex items-start">
@@ -1393,9 +1391,7 @@ export default function HomeDetailPage() {
               
               <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white">
                 <div className="h-80 w-full">
-                  {home.coordinates && (
-                    <SimpleMap homes={[home]} />
-                  )}
+                  <SimpleMap homes={[home]} />
                 </div>
                 <div className="p-6">
                   <div className="flex items-start">
