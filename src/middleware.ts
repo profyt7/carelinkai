@@ -77,15 +77,18 @@ export default function middleware(req: NextRequest) {
         const qsOn = ['1','true','yes','on'].includes(qsMock);
         const qsOff = ['0','false','no','off'].includes(qsMock);
 
-        // Runtime mock toggle: cookie takes precedence, then env
+        // Runtime mock toggle: cookie takes precedence, then SHOW_SITE_MOCKS env only
+        // NOTE: NEXT_PUBLIC_SHOW_MOCK_DASHBOARD is intentionally ignored to prevent accidental enablement
         const cookieRaw = req.cookies?.get?.('carelink_mock_mode')?.value?.toString().trim().toLowerCase() || '';
         const cookieOn = ['1', 'true', 'yes', 'on'].includes(cookieRaw);
-        const rawMock = (process.env['SHOW_SITE_MOCKS'] || process.env['NEXT_PUBLIC_SHOW_MOCK_DASHBOARD'] || '')
+        const cookieOff = ['0', 'false', 'no', 'off'].includes(cookieRaw);
+        const rawMock = (process.env['SHOW_SITE_MOCKS'] || '')
           .toString()
           .trim()
           .toLowerCase();
         const envOn = ['1', 'true', 'yes', 'on'].includes(rawMock);
-        let showMocks = cookieOn || envOn || qsOn;
+        // Cookie explicitly off overrides everything
+        let showMocks = cookieOff ? false : (cookieOn || envOn || qsOn);
 
         // If query string explicitly toggles mock, set cookie and strip the param
         if (qsOn || qsOff) {
@@ -163,16 +166,18 @@ export default function middleware(req: NextRequest) {
             }
 
             // Allow public access to selected routes when runtime mock mode is enabled
+            // NOTE: NEXT_PUBLIC_SHOW_MOCK_DASHBOARD intentionally ignored
             const cookieRaw = req?.cookies?.get?.('carelink_mock_mode')?.value?.toString().trim().toLowerCase() || '';
             const cookieOn = ['1', 'true', 'yes', 'on'].includes(cookieRaw);
+            const cookieOff = ['0', 'false', 'no', 'off'].includes(cookieRaw);
             const qsMock = req?.nextUrl?.searchParams?.get?.('mock')?.toString().trim().toLowerCase() || '';
             const qsOn = ['1','true','yes','on'].includes(qsMock);
-            const rawMock = (process.env['SHOW_SITE_MOCKS'] || process.env['NEXT_PUBLIC_SHOW_MOCK_DASHBOARD'] || '')
+            const rawMock = (process.env['SHOW_SITE_MOCKS'] || '')
               .toString()
               .trim()
               .toLowerCase();
             const envOn = ['1', 'true', 'yes', 'on'].includes(rawMock);
-            const showMocks = cookieOn || envOn || qsOn;
+            const showMocks = cookieOff ? false : (cookieOn || envOn || qsOn);
             if (showMocks) {
               if (pathname === '/' || pathname === '/search' || pathname.startsWith('/marketplace')) {
                 return true;

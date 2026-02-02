@@ -2,11 +2,15 @@
  * Mock Mode Utilities
  * 
  * Centralized utilities for checking if mock data should be shown.
- * Mock mode can be enabled via:
- * 1. Cookie: carelink_mock_mode=1 (set by /api/mock-mode or ?mock=1 query param)
- * 2. Environment variables: SHOW_SITE_MOCKS or NEXT_PUBLIC_SHOW_MOCK_DASHBOARD
  * 
- * Priority: Cookie > Environment > Default (false)
+ * PRODUCTION BEHAVIOR: Mock mode is OFF by default
+ * Mock mode can only be enabled via:
+ * 1. Cookie: carelink_mock_mode=1 (admin runtime toggle)
+ * 2. Environment variable: SHOW_SITE_MOCKS=1 (server-side only)
+ * 
+ * NOTE: NEXT_PUBLIC_SHOW_MOCK_DASHBOARD is IGNORED to prevent accidental enablement
+ * 
+ * Priority: Cookie > SHOW_SITE_MOCKS > Default (false)
  */
 
 /**
@@ -35,23 +39,23 @@ export function isMockModeEnabled(request: Request | { cookies?: any }): boolean
       cookieValue = request.cookies.get('carelink_mock_mode')?.value?.toString().trim().toLowerCase() || '';
     }
     
-    const cookieEnabled = ['1', 'true', 'yes', 'on'].includes(cookieValue);
-    if (cookieEnabled) {
+    // Cookie explicitly enables mock mode
+    if (['1', 'true', 'yes', 'on'].includes(cookieValue)) {
       return true;
     }
     
-    // 2) Fallback to environment variables
-    const envValue = (
-      process.env['SHOW_SITE_MOCKS'] ?? 
-      process.env['NEXT_PUBLIC_SHOW_MOCK_DASHBOARD'] ?? 
-      ''
-    ).toString().trim().toLowerCase();
+    // Cookie explicitly disables mock mode
+    if (['0', 'false', 'no', 'off'].includes(cookieValue)) {
+      return false;
+    }
     
-    const envEnabled = ['1', 'true', 'yes', 'on'].includes(envValue);
+    // 2) Fallback to SHOW_SITE_MOCKS environment variable only
+    // NOTE: NEXT_PUBLIC_SHOW_MOCK_DASHBOARD is intentionally ignored
+    const envValue = (process.env['SHOW_SITE_MOCKS'] ?? '').toString().trim().toLowerCase();
     
-    return envEnabled;
+    return ['1', 'true', 'yes', 'on'].includes(envValue);
   } catch (error) {
-    // If there's any error reading cookies/env, default to false
+    // If there's any error reading cookies/env, default to false (safe)
     console.error('Error checking mock mode:', error);
     return false;
   }
@@ -66,18 +70,19 @@ export function isMockModeEnabled(request: Request | { cookies?: any }): boolean
 export function isMockModeEnabledFromCookies(cookies: any): boolean {
   try {
     const mockCookie = cookies.get('carelink_mock_mode')?.value?.toString().trim().toLowerCase() || '';
-    const cookieEnabled = ['1', 'true', 'yes', 'on'].includes(mockCookie);
     
-    if (cookieEnabled) {
+    // Cookie explicitly enables mock mode
+    if (['1', 'true', 'yes', 'on'].includes(mockCookie)) {
       return true;
     }
     
-    // Fallback to environment variables
-    const envValue = (
-      process.env['SHOW_SITE_MOCKS'] ?? 
-      process.env['NEXT_PUBLIC_SHOW_MOCK_DASHBOARD'] ?? 
-      ''
-    ).toString().trim().toLowerCase();
+    // Cookie explicitly disables mock mode
+    if (['0', 'false', 'no', 'off'].includes(mockCookie)) {
+      return false;
+    }
+    
+    // Fallback to SHOW_SITE_MOCKS only
+    const envValue = (process.env['SHOW_SITE_MOCKS'] ?? '').toString().trim().toLowerCase();
     
     return ['1', 'true', 'yes', 'on'].includes(envValue);
   } catch (error) {
