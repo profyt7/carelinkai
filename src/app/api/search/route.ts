@@ -59,6 +59,76 @@ const HOME_IMAGES: string[] = [
 ];
 
 /**
+ * City coordinates lookup for homes without geo data
+ * Used to provide approximate map markers when addresses lack lat/lng
+ */
+const CITY_COORDINATES: Record<string, { lat: number; lng: number }> = {
+  // California
+  'san francisco, ca': { lat: 37.7749, lng: -122.4194 },
+  'los angeles, ca': { lat: 34.0522, lng: -118.2437 },
+  'san diego, ca': { lat: 32.7157, lng: -117.1611 },
+  'san jose, ca': { lat: 37.3382, lng: -121.8863 },
+  'oakland, ca': { lat: 37.8044, lng: -122.2712 },
+  'sacramento, ca': { lat: 38.5816, lng: -121.4944 },
+  'fresno, ca': { lat: 36.7378, lng: -119.7871 },
+  'palo alto, ca': { lat: 37.4419, lng: -122.1430 },
+  // Other states
+  'seattle, wa': { lat: 47.6062, lng: -122.3321 },
+  'portland, or': { lat: 45.5051, lng: -122.6750 },
+  'phoenix, az': { lat: 33.4484, lng: -112.0740 },
+  'denver, co': { lat: 39.7392, lng: -104.9903 },
+  'austin, tx': { lat: 30.2672, lng: -97.7431 },
+  'dallas, tx': { lat: 32.7767, lng: -96.7970 },
+  'miami, fl': { lat: 25.7617, lng: -80.1918 },
+  'new york, ny': { lat: 40.7128, lng: -74.0060 },
+  'chicago, il': { lat: 41.8781, lng: -87.6298 },
+  'boston, ma': { lat: 42.3601, lng: -71.0589 },
+  // State-level fallbacks
+  'ca': { lat: 36.7783, lng: -119.4179 },
+  'wa': { lat: 47.7511, lng: -120.7401 },
+  'or': { lat: 43.8041, lng: -120.5542 },
+  'az': { lat: 34.0489, lng: -111.0937 },
+  'tx': { lat: 31.9686, lng: -99.9018 },
+  'fl': { lat: 27.6648, lng: -81.5158 },
+  'ny': { lat: 40.7128, lng: -74.0060 },
+};
+
+/**
+ * Get approximate coordinates for an address without lat/lng
+ * Uses city lookup first, then state fallback
+ */
+function getApproximateCoordinates(city: string | null, state: string | null): { lat: number; lng: number } | null {
+  if (!city && !state) return null;
+  
+  // Try city + state first
+  if (city && state) {
+    const key = `${city.toLowerCase()}, ${state.toLowerCase()}`;
+    if (CITY_COORDINATES[key]) {
+      // Add small random offset to prevent markers from stacking exactly
+      const offset = () => (Math.random() - 0.5) * 0.02; // ~1-2km offset
+      return {
+        lat: CITY_COORDINATES[key].lat + offset(),
+        lng: CITY_COORDINATES[key].lng + offset()
+      };
+    }
+  }
+  
+  // Try state fallback
+  if (state) {
+    const stateKey = state.toLowerCase();
+    if (CITY_COORDINATES[stateKey]) {
+      const offset = () => (Math.random() - 0.5) * 0.5; // Larger offset for state-level
+      return {
+        lat: CITY_COORDINATES[stateKey].lat + offset(),
+        lng: CITY_COORDINATES[stateKey].lng + offset()
+      };
+    }
+  }
+  
+  return null;
+}
+
+/**
  * AI-based text similarity score between two strings
  * 
  * @param text1 First text to compare
@@ -674,7 +744,15 @@ export async function GET(request: NextRequest) {
       const fallback = HOME_IMAGES[i % HOME_IMAGES.length];
       const imageUrl = primary ?? fallback;
 
-      // 3. Build response object
+      // 3. Build response object - use fallback coordinates if address lacks lat/lng
+      const dbCoords = home.address?.latitude && home.address?.longitude 
+        ? { lat: home.address.latitude, lng: home.address.longitude }
+        : null;
+      const fallbackCoords = !dbCoords && home.address
+        ? getApproximateCoordinates(home.address.city, home.address.state)
+        : null;
+      const coordinates = dbCoords || fallbackCoords;
+
       return {
         id: home.id,
         name: home.name,
@@ -685,10 +763,7 @@ export async function GET(request: NextRequest) {
           city: home.address.city,
           state: home.address.state,
           zipCode: home.address.zipCode,
-          coordinates: home.address.latitude && home.address.longitude ? {
-            lat: home.address.latitude,
-            lng: home.address.longitude
-          } : null
+          coordinates
         } : null,
         careLevel: home.careLevel,
         priceRange: {
@@ -751,9 +826,11 @@ export async function GET(request: NextRequest) {
     if (results.length === 0 && process.env['NODE_ENV'] !== 'production') {
       const mockHomes = generateMockHomes(limit);
       filteredResults = mockHomes;
+      totalCount = mockHomes.length;
     }
 
-    const totalResultsCount = filteredResults.length;
+    // Use the database totalCount for pagination (not current page length)
+    const totalResultsCount = totalCount;
 
     // Return response
     return NextResponse.json({
