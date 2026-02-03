@@ -92,9 +92,17 @@ export default function MarketplacePage() {
   }, []);
 
   // Include "providers" as a valid tab option
-  const [activeTab, setActiveTab] = useState<"jobs" | "caregivers" | "providers">(
-    "caregivers"
-  );
+  // Initialize from URL immediately to prevent content flash on page load
+  const [activeTab, setActiveTab] = useState<"jobs" | "caregivers" | "providers">(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlTab = urlParams.get('tab');
+      if (urlTab === 'jobs' || urlTab === 'providers' || urlTab === 'caregivers') {
+        return urlTab;
+      }
+    }
+    return "caregivers";
+  });
   const [search, setSearch] = useState("");
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
