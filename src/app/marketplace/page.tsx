@@ -71,7 +71,9 @@ export default function MarketplacePage() {
   const didInitFromUrl = useRef(false);
 
   // Runtime mock toggle fetched from API (works in Docker/runtime envs)
-  const [showMock, setShowMock] = useState(false);
+  // Marketplace uses showMarketplace flag which defaults to true (since we don't have real caregivers yet)
+  // Start with true to prevent flicker while loading the API response
+  const [showMock, setShowMock] = useState(true);
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -79,9 +81,11 @@ export default function MarketplacePage() {
         const res = await fetch('/api/runtime/mocks', { cache: 'no-store', credentials: 'include' as RequestCredentials });
         if (!res.ok) return;
         const j = await res.json();
-        if (!cancelled) setShowMock(!!j?.show);
+        // Use showMarketplace for marketplace page (separate from homes mock mode)
+        if (!cancelled) setShowMock(!!j?.showMarketplace);
       } catch {
-        if (!cancelled) setShowMock(false);
+        // On error, default to showing mock data to prevent empty marketplace
+        if (!cancelled) setShowMock(true);
       }
     })();
     return () => { cancelled = true; };
