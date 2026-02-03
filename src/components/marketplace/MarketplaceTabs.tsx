@@ -25,18 +25,15 @@ export default function MarketplaceTabs({
 
   // Handle tab click - use callback if provided (parent manages state/URL), otherwise navigate
   const handleTabClick = (e: React.MouseEvent, tab: MarketplaceTab) => {
-    console.log('[MarketplaceTabs] handleTabClick called for tab:', tab);
     e.preventDefault();
     e.stopPropagation(); // Prevent any parent handlers from interfering
     
     if (onTabChange) {
-      console.log('[MarketplaceTabs] Calling onTabChange callback');
       // Parent component handles state management and URL sync
       onTabChange(tab);
       return;
     }
     
-    console.log('[MarketplaceTabs] No onTabChange callback, using router.push');
     // Only navigate when no callback - build URL based on tab
     let url = "/marketplace";
     if (tab === "jobs") {

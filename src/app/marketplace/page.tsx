@@ -673,7 +673,6 @@ export default function MarketplacePage() {
 
   // Handle tab change from MarketplaceTabs component
   const handleTabChange = useCallback((tab: "jobs" | "caregivers" | "providers") => {
-    console.log('[Marketplace] handleTabChange called with tab:', tab);
     setActiveTab(tab);
     // Save to localStorage for persistence
     try { localStorage.setItem(LAST_TAB_KEY, tab); } catch {}
@@ -682,7 +681,6 @@ export default function MarketplacePage() {
     // This prevents race conditions with the URL sync effects
     const params = new URLSearchParams(window.location.search);
     params.set("tab", tab);
-    console.log('[Marketplace] Updating URL to:', `${pathname}?${params.toString()}`);
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   }, [pathname, router]);
 
