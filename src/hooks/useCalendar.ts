@@ -257,11 +257,14 @@ export function useCalendar(): CalendarHook {
         : filter;
       
       // Check runtime mock mode first
+      // Calendar shows mock data if either:
+      // 1. General mock mode is enabled (show: true)
+      // 2. Marketplace mocks are enabled (showMarketplace: true) - since calendar shares similar mock data needs
       try {
         const mockRes = await fetch('/api/runtime/mocks', { cache: 'no-store', credentials: 'include' as RequestCredentials });
         if (mockRes.ok) {
           const mj = await mockRes.json();
-          if (mj?.show) {
+          if (mj?.show || mj?.showMarketplace) {
             const all = getMockAppointments();
             const filtered = filterMockAppointments(all, currentFilter);
             setState(prev => ({
