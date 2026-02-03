@@ -2074,11 +2074,11 @@ export default function MarketplacePage() {
                         <span className="text-gray-600">{p.ratingAverage.toFixed(1)} ({p.reviewCount})</span>
                       </div>
                       <div className="flex flex-wrap gap-2 mb-2">
-                        {p.services.slice(0, 4).map((s: string) => (
+                        {(p.services || []).slice(0, 4).map((s: string) => (
                           <span key={s} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">{s.replace(/-/g, " ")}</span>
                         ))}
-                        {p.services.length > 4 && (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">+{p.services.length - 4} more</span>
+                        {(p.services?.length || 0) > 4 && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">+{(p.services?.length || 0) - 4} more</span>
                         )}
                       </div>
                       {(p.hourlyRate !== null || p.perMileRate !== null) && (

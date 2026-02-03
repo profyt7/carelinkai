@@ -26,14 +26,12 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient, CareLevel } from '@prisma/client';
+import { CareLevel } from '@prisma/client';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { formatCurrency } from '@/lib/utils';
 import { calculateAIMatchScore, calculateAIMatchBreakdown } from '@/lib/ai-matching';
-
-// Initialize Prisma client
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 // Constants
 const DEFAULT_PAGE_SIZE = 10;
@@ -879,8 +877,6 @@ export async function GET(request: NextRequest) {
           ? ((error as any)?.message ?? String(error))
           : undefined
     }, { status: 500 });
-  } finally {
-    // Always disconnect from the database
-    await prisma.$disconnect();
   }
+  // Note: Using singleton prisma client from @/lib/prisma - no disconnect needed
 }
