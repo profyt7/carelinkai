@@ -649,24 +649,27 @@ export default function MarketplacePage() {
   }, [searchParams]);
 
   // Listen for URL parameter changes after initial mount and update activeTab accordingly
-  // This ensures tab switching via navigation updates the displayed content
+  // This ensures tab switching via external navigation (browser back/forward, direct URL) updates the displayed content
+  // IMPORTANT: Only depend on searchParams, NOT activeTab - to avoid fighting with handleTabChange
+  // When user clicks a tab, handleTabChange sets activeTab directly and URL is updated via other effects
+  // This effect should only handle external URL changes, not internal state changes
+  const prevUrlTab = useRef<string | null>(null);
   useEffect(() => {
     if (!didInitFromUrl.current) return; // Skip until initial URL read is complete
     const sp = searchParams;
     if (!sp) return;
     
     const urlTab = sp.get("tab");
-    // Update activeTab ONLY when URL explicitly has a different tab parameter
-    // Don't reset to caregivers when tab param is missing - the state is authoritative
-    if (urlTab === "jobs" && activeTab !== "jobs") {
-      setActiveTab("jobs");
-    } else if (urlTab === "providers" && activeTab !== "providers") {
-      setActiveTab("providers");
-    } else if (urlTab === "caregivers" && activeTab !== "caregivers") {
-      setActiveTab("caregivers");
+    
+    // Only update state if the URL tab actually changed (external navigation)
+    // and it's a valid tab value
+    if (urlTab !== prevUrlTab.current) {
+      prevUrlTab.current = urlTab;
+      if (urlTab === "jobs" || urlTab === "providers" || urlTab === "caregivers") {
+        setActiveTab(urlTab);
+      }
     }
-    // Note: Don't reset to caregivers when urlTab is empty - allow state to persist
-  }, [searchParams, activeTab]);
+  }, [searchParams]);
 
   // Handle tab change from MarketplaceTabs component
   const handleTabChange = useCallback((tab: "jobs" | "caregivers" | "providers") => {
