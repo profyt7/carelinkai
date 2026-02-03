@@ -1955,11 +1955,12 @@ export default function MarketplacePage() {
                   )}
                   <VirtuosoGrid
                     useWindowScroll
-                    totalCount={listings.length}
-                    data={listings}
-                    endReached={() => { if (jobHasMore && !listingsLoading) setJobPage((p) => p + 1); }}
+                    totalCount={jobsToRender.length}
+                    data={jobsToRender}
+                    initialItemCount={Math.min(jobsToRender.length, 20)}
+                    endReached={() => { if (jobHasMoreRender && !listingsLoading) setJobPage((p) => p + 1); }}
                     overscan={200}
-                    components={{ List: GridList as any, Item: GridItem as any }}
+                    components={{ List: GridList as any, Item: GridItem as any, Footer: () => (!jobHasMoreRender && jobsToRender.length > 0 ? <div className="py-6 text-center text-gray-400">End of results</div> : null) as any }}
                     itemContent={(_, job) => (
                       <Link href={`/marketplace/listings/${job.id}`} className={`relative block bg-white border rounded-md p-4 transition-shadow ${job.status === 'CLOSED' || job.status === 'HIRED' ? 'opacity-80' : 'hover:shadow-md'}`}>
                         {/* Status badge */}

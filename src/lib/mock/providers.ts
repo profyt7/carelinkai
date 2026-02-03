@@ -285,15 +285,27 @@ export interface MockProviderDetail {
  * Generate detailed mock provider data for a specific provider ID
  * Used for provider detail pages
  * 
- * @param providerId - The mock provider ID (e.g., "mock-provider-1")
+ * Supports both formats:
+ * - "mock-provider-1" (legacy format)
+ * - "pr_1" (marketplace mock format from MOCK_PROVIDERS)
+ * 
+ * @param providerId - The mock provider ID
  * @returns Detailed provider object or null if not found
  */
 export function getMockProviderDetail(providerId: string): MockProviderDetail | null {
-  // Extract provider number from ID
-  const match = providerId.match(/mock-provider-(\d+)/);
-  if (!match) return null;
+  // Support both "mock-provider-N" and "pr_N" formats
+  let providerIndex = -1;
   
-  const providerIndex = parseInt(match[1], 10) - 1;
+  const legacyMatch = providerId.match(/mock-provider-(\d+)/);
+  const marketplaceMatch = providerId.match(/pr_(\d+)/);
+  
+  if (legacyMatch) {
+    providerIndex = parseInt(legacyMatch[1], 10) - 1;
+  } else if (marketplaceMatch) {
+    providerIndex = parseInt(marketplaceMatch[1], 10) - 1;
+  } else {
+    return null;
+  }
   
   // Generate base mock providers
   const mockProviders = generateMockProviders(20);
@@ -369,9 +381,10 @@ export function getMockProviderDetail(providerId: string): MockProviderDetail | 
   const memberSince = new Date();
   memberSince.setFullYear(memberSince.getFullYear() - baseProvider.yearsInBusiness);
   
+  // Return with the original requested ID to maintain consistency
   return {
     id: providerId,
-    userId: baseProvider.userId,
+    userId: `mock-user-${providerIndex + 1}`,
     businessName: baseProvider.businessName,
     contactName: baseProvider.contactName,
     contactEmail,

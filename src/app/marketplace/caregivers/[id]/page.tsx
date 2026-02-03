@@ -145,13 +145,29 @@ export default async function CaregiverDetailPage({
 }: {
   params: { id: string };
 }) {
-  // Check mock mode first
+  // Check mock mode - support both general mock mode and marketplace-specific mock mode
   const cookieStore = cookies();
-  const isMockMode = isMockModeEnabledFromCookies(cookieStore);
+  const generalMockMode = isMockModeEnabledFromCookies(cookieStore);
+  
+  // Check marketplace-specific mock mode (defaults to true since we don't have real caregivers yet)
+  const marketplaceCookieValue = cookieStore.get('carelink_marketplace_mock')?.value?.toLowerCase() || '';
+  const marketplaceMockEnv = (process.env['SHOW_MARKETPLACE_MOCKS'] ?? '').toLowerCase();
+  const marketplaceEnvDisabled = ['0', 'false', 'no', 'off'].includes(marketplaceMockEnv);
+  
+  // Marketplace mock mode defaults to TRUE unless explicitly disabled
+  let showMarketplace = true;
+  if (['0', 'false', 'no', 'off'].includes(marketplaceCookieValue)) {
+    showMarketplace = false;
+  } else if (marketplaceEnvDisabled && !['1', 'true', 'yes', 'on'].includes(marketplaceCookieValue)) {
+    showMarketplace = false;
+  }
+  
+  // Check if this is a mock caregiver ID (starts with cg_)
+  const isMockCaregiverId = params.id?.startsWith('cg_');
   
   let caregiver;
   
-  if (isMockMode) {
+  if ((generalMockMode || showMarketplace) && isMockCaregiverId) {
     // Use mock data for testing/demo
     caregiver = getMockCaregiverDetail(params.id);
   } else {

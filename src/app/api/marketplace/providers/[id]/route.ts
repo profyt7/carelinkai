@@ -30,8 +30,24 @@ export async function GET(
     // Check if mock mode is enabled
     const mockMode = isMockModeEnabled(request);
     
-    // Handle mock provider requests
-    if (mockMode && id.startsWith('mock-')) {
+    // Handle mock provider requests (support both mock- and pr_ prefixes)
+    // Also check if marketplace mocks are enabled by default (for demo/testing)
+    const isMarketplaceMockId = id.startsWith('pr_') || id.startsWith('mock-');
+    
+    // Check marketplace-specific mock mode (defaults to true since we don't have real providers yet)
+    const marketplaceMockCookie = request.cookies.get('carelink_marketplace_mock')?.value?.toLowerCase() || '';
+    const marketplaceMockEnv = (process.env['SHOW_MARKETPLACE_MOCKS'] ?? '').toLowerCase();
+    const marketplaceEnvDisabled = ['0', 'false', 'no', 'off'].includes(marketplaceMockEnv);
+    
+    // Marketplace mock mode defaults to TRUE unless explicitly disabled
+    let showMarketplace = true;
+    if (['0', 'false', 'no', 'off'].includes(marketplaceMockCookie)) {
+      showMarketplace = false;
+    } else if (marketplaceEnvDisabled && !['1', 'true', 'yes', 'on'].includes(marketplaceMockCookie)) {
+      showMarketplace = false;
+    }
+    
+    if ((mockMode || showMarketplace) && isMarketplaceMockId) {
       const mockProvider = getMockProviderDetail(id);
       
       if (!mockProvider) {

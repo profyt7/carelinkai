@@ -45,15 +45,32 @@ export default async function ListingDetailPage({
 }: {
   params: { id: string };
 }) {
+  // Check mock mode - support both general mock mode and marketplace-specific mock mode
   const showMock = (() => {
     try {
+      // General mock mode
       const c = cookies().get('carelink_mock_mode')?.value?.toString().trim().toLowerCase() || '';
-      const cookieOn = ['1','true','yes','on'].includes(c);
-      const raw = (process.env['SHOW_SITE_MOCKS'] || process.env['NEXT_PUBLIC_SHOW_MOCK_DASHBOARD'] || '')
-        .toString().trim().toLowerCase();
-      const envOn = ['1','true','yes','on'].includes(raw);
-      return cookieOn || envOn;
-    } catch { return false; }
+      const generalMockOn = ['1','true','yes','on'].includes(c);
+      const generalMockOff = ['0','false','no','off'].includes(c);
+      
+      // Marketplace-specific mock mode (defaults to TRUE)
+      const marketplaceCookie = cookies().get('carelink_marketplace_mock')?.value?.toLowerCase() || '';
+      const marketplaceMockEnv = (process.env['SHOW_MARKETPLACE_MOCKS'] ?? '').toLowerCase();
+      const marketplaceEnvDisabled = ['0', 'false', 'no', 'off'].includes(marketplaceMockEnv);
+      
+      // If marketplace mock is explicitly disabled
+      if (['0', 'false', 'no', 'off'].includes(marketplaceCookie)) {
+        return generalMockOn; // Only use general mock mode
+      }
+      
+      // If marketplace env explicitly disabled and cookie doesn't enable it
+      if (marketplaceEnvDisabled && !['1', 'true', 'yes', 'on'].includes(marketplaceCookie)) {
+        return generalMockOn; // Only use general mock mode
+      }
+      
+      // Marketplace mock defaults to TRUE
+      return true;
+    } catch { return true; } // Default to true for marketplace
   })();
   const isMockId = params.id?.startsWith('job_');
 
