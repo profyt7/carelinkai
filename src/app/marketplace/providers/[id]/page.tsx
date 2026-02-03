@@ -194,10 +194,11 @@ export default function ProviderDetailPage() {
           <p className="text-red-800">{error || "Provider not found"}</p>
         </div>
         <Link
-          href="/marketplace/providers"
-          className="mt-4 inline-block text-primary-600 hover:text-primary-500"
+          href="/marketplace?tab=providers"
+          className="mt-4 inline-flex items-center gap-2 text-primary-600 hover:text-primary-500 font-medium transition-colors"
         >
-          ← Back to providers
+          <span aria-hidden="true">←</span>
+          <span>Back to Providers</span>
         </Link>
       </div>
     );
@@ -210,10 +211,11 @@ export default function ProviderDetailPage() {
       {/* Back Button */}
       <div className="mb-4">
         <Link
-          href="/marketplace/providers"
-          className="text-primary-600 hover:text-primary-500 font-medium"
+          href="/marketplace?tab=providers"
+          className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-500 font-medium transition-colors"
         >
-          ← Back to providers
+          <span aria-hidden="true">←</span>
+          <span>Back to Providers</span>
         </Link>
       </div>
 

@@ -203,6 +203,17 @@ export default async function CaregiverDetailPage({
 
   return (
     <div className="max-w-4xl mx-auto p-4 md:p-6">
+      {/* Back Button */}
+      <div className="mb-4">
+        <Link
+          href="/marketplace?tab=caregivers"
+          className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-500 font-medium transition-colors"
+        >
+          <span aria-hidden="true">←</span>
+          <span>Back to Caregivers</span>
+        </Link>
+      </div>
+
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         {/* Header */}
         <div className="p-6 border-b border-gray-200">
