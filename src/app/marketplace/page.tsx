@@ -823,14 +823,15 @@ export default function MarketplacePage() {
 
   // CAREGIVERS: Reset effect MUST run before fetch effect to avoid race condition
   // where fetch sets data, then reset clears it on initial load
+  // NOTE: Query key should NOT include activeTab - reset should only trigger when 
+  // filter values change within the caregivers tab, not when switching tabs
   const cgQueryKey = useMemo(() => JSON.stringify({
-    tab: activeTab,
     q: debouncedSearch, city: debouncedCity, state: debouncedState,
     specialties, settings, careTypes,
     minRate: debouncedMinRate, maxRate: debouncedMaxRate, minExp: debouncedMinExperience,
     availableDate, availableStartTime, availableEndTime,
     radius: cgRadius, lat: cgGeoLat, lng: cgGeoLng, sort: cgSort
-  }), [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, settings, careTypes, debouncedMinRate, debouncedMaxRate, debouncedMinExperience, availableDate, availableStartTime, availableEndTime, cgRadius, cgGeoLat, cgGeoLng, cgSort]);
+  }), [debouncedSearch, debouncedCity, debouncedState, specialties, settings, careTypes, debouncedMinRate, debouncedMaxRate, debouncedMinExperience, availableDate, availableStartTime, availableEndTime, cgRadius, cgGeoLat, cgGeoLng, cgSort]);
   const cgPrevKeyRef = useRef<string>(cgQueryKey);
   // Reset caregivers list when non-page filters change (runs BEFORE fetch)
   useEffect(() => {
@@ -903,12 +904,13 @@ export default function MarketplacePage() {
 
   // JOBS: Reset effect MUST run before fetch effect to avoid race condition
   // where fetch sets data, then reset clears it on initial load
+  // NOTE: Query key should NOT include activeTab - reset should only trigger when 
+  // filter values change within the jobs tab, not when switching tabs
   const jobQueryKey = useMemo(() => JSON.stringify({
-    tab: activeTab,
     q: debouncedSearch, city: debouncedCity, state: debouncedState,
     specialties, zip: debouncedZip, settings, careTypes, services,
     postedByMe, hideClosed, radius: jobRadius, lat: geoLat, lng: geoLng, sort: jobSort
-  }), [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, debouncedZip, settings, careTypes, services, postedByMe, hideClosed, jobRadius, geoLat, geoLng, jobSort]);
+  }), [debouncedSearch, debouncedCity, debouncedState, specialties, debouncedZip, settings, careTypes, services, postedByMe, hideClosed, jobRadius, geoLat, geoLng, jobSort]);
   const jobPrevKeyRef = useRef<string>(jobQueryKey);
   // Reset jobs list when non-page filters change (runs BEFORE fetch)
   useEffect(() => {
@@ -980,13 +982,14 @@ export default function MarketplacePage() {
   /* ----------------------------------------------------------------------
      PROVIDERS: Reset effect MUST run before fetch effect to avoid race condition
      where fetch sets data, then reset clears it on initial load
+     NOTE: Query key should NOT include activeTab - reset should only trigger when 
+     filter values change within the providers tab, not when switching tabs
   ----------------------------------------------------------------------*/
   const prQueryKey = useMemo(() => JSON.stringify({
-    tab: activeTab,
     q: debouncedSearch, city: debouncedCity, state: debouncedState,
     services: providerServices,
     radius: prRadius, lat: prGeoLat, lng: prGeoLng, sort: providerSort
-  }), [activeTab, debouncedSearch, debouncedCity, debouncedState, providerServices, prRadius, prGeoLat, prGeoLng, providerSort]);
+  }), [debouncedSearch, debouncedCity, debouncedState, providerServices, prRadius, prGeoLat, prGeoLng, providerSort]);
   const prPrevKeyRef = useRef<string>(prQueryKey);
   // Reset providers list when non-page filters change (runs BEFORE fetch)
   useEffect(() => {
