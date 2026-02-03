@@ -821,6 +821,30 @@ export default function MarketplacePage() {
     persistSaved(next);
   }, [persistSaved, saved]);
 
+  // CAREGIVERS: Reset effect MUST run before fetch effect to avoid race condition
+  // where fetch sets data, then reset clears it on initial load
+  const cgQueryKey = useMemo(() => JSON.stringify({
+    tab: activeTab,
+    q: debouncedSearch, city: debouncedCity, state: debouncedState,
+    specialties, settings, careTypes,
+    minRate: debouncedMinRate, maxRate: debouncedMaxRate, minExp: debouncedMinExperience,
+    availableDate, availableStartTime, availableEndTime,
+    radius: cgRadius, lat: cgGeoLat, lng: cgGeoLng, sort: cgSort
+  }), [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, settings, careTypes, debouncedMinRate, debouncedMaxRate, debouncedMinExperience, availableDate, availableStartTime, availableEndTime, cgRadius, cgGeoLat, cgGeoLng, cgSort]);
+  const cgPrevKeyRef = useRef<string>(cgQueryKey);
+  // Reset caregivers list when non-page filters change (runs BEFORE fetch)
+  useEffect(() => {
+    if (activeTab !== 'caregivers') return;
+    if (cgPrevKeyRef.current !== cgQueryKey) {
+      cgPrevKeyRef.current = cgQueryKey;
+      setCaregivers([]);
+      setCgPage(1);
+      setCgCursor(null);
+      setCgHasMoreSvr(null);
+    }
+  }, [cgQueryKey, activeTab]);
+
+  // Fetch caregivers (runs AFTER reset effect)
   useEffect(() => {
     if (activeTab !== "caregivers") return;
     const controller = new AbortController();
@@ -877,27 +901,28 @@ export default function MarketplacePage() {
     };
   }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, settings, careTypes, debouncedMinRate, debouncedMaxRate, debouncedMinExperience, availableDate, availableStartTime, availableEndTime, cgPage, cgSort, cgRadius, cgGeoLat, cgGeoLng, cgCursor, showMock, MOCK_CAREGIVERS]);
 
-  // Reset caregivers list when non-page filters change
-  const cgQueryKey = useMemo(() => JSON.stringify({
+  // JOBS: Reset effect MUST run before fetch effect to avoid race condition
+  // where fetch sets data, then reset clears it on initial load
+  const jobQueryKey = useMemo(() => JSON.stringify({
     tab: activeTab,
     q: debouncedSearch, city: debouncedCity, state: debouncedState,
-    specialties, settings, careTypes,
-    minRate: debouncedMinRate, maxRate: debouncedMaxRate, minExp: debouncedMinExperience,
-    availableDate, availableStartTime, availableEndTime,
-    radius: cgRadius, lat: cgGeoLat, lng: cgGeoLng, sort: cgSort
-  }), [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, settings, careTypes, debouncedMinRate, debouncedMaxRate, debouncedMinExperience, availableDate, availableStartTime, availableEndTime, cgRadius, cgGeoLat, cgGeoLng, cgSort]);
-  const cgPrevKeyRef = useRef<string>(cgQueryKey);
+    specialties, zip: debouncedZip, settings, careTypes, services,
+    postedByMe, hideClosed, radius: jobRadius, lat: geoLat, lng: geoLng, sort: jobSort
+  }), [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, debouncedZip, settings, careTypes, services, postedByMe, hideClosed, jobRadius, geoLat, geoLng, jobSort]);
+  const jobPrevKeyRef = useRef<string>(jobQueryKey);
+  // Reset jobs list when non-page filters change (runs BEFORE fetch)
   useEffect(() => {
-    if (activeTab !== 'caregivers') return;
-    if (cgPrevKeyRef.current !== cgQueryKey) {
-      cgPrevKeyRef.current = cgQueryKey;
-      setCaregivers([]);
-      setCgPage(1);
-      setCgCursor(null);
-      setCgHasMoreSvr(null);
+    if (activeTab !== 'jobs') return;
+    if (jobPrevKeyRef.current !== jobQueryKey) {
+      jobPrevKeyRef.current = jobQueryKey;
+      setListings([]);
+      setJobPage(1);
+      setJobCursor(null);
+      setJobHasMoreSvr(null);
     }
-  }, [cgQueryKey, activeTab]);
+  }, [jobQueryKey, activeTab]);
 
+  // Fetch jobs (runs AFTER reset effect)
   useEffect(() => {
     if (activeTab !== "jobs") return;
     const controller = new AbortController();
@@ -952,28 +977,30 @@ export default function MarketplacePage() {
     };
   }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, debouncedZip, settings, careTypes, services, postedByMe, hideClosed, session, jobPage, jobSort, jobRadius, geoLat, geoLng, jobCursor, showMock, MOCK_LISTINGS]);
 
-  // Reset jobs list when non-page filters change
-  const jobQueryKey = useMemo(() => JSON.stringify({
+  /* ----------------------------------------------------------------------
+     PROVIDERS: Reset effect MUST run before fetch effect to avoid race condition
+     where fetch sets data, then reset clears it on initial load
+  ----------------------------------------------------------------------*/
+  const prQueryKey = useMemo(() => JSON.stringify({
     tab: activeTab,
     q: debouncedSearch, city: debouncedCity, state: debouncedState,
-    specialties, zip: debouncedZip, settings, careTypes, services,
-    postedByMe, hideClosed, radius: jobRadius, lat: geoLat, lng: geoLng, sort: jobSort
-  }), [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, debouncedZip, settings, careTypes, services, postedByMe, hideClosed, jobRadius, geoLat, geoLng, jobSort]);
-  const jobPrevKeyRef = useRef<string>(jobQueryKey);
+    services: providerServices,
+    radius: prRadius, lat: prGeoLat, lng: prGeoLng, sort: providerSort
+  }), [activeTab, debouncedSearch, debouncedCity, debouncedState, providerServices, prRadius, prGeoLat, prGeoLng, providerSort]);
+  const prPrevKeyRef = useRef<string>(prQueryKey);
+  // Reset providers list when non-page filters change (runs BEFORE fetch)
   useEffect(() => {
-    if (activeTab !== 'jobs') return;
-    if (jobPrevKeyRef.current !== jobQueryKey) {
-      jobPrevKeyRef.current = jobQueryKey;
-      setListings([]);
-      setJobPage(1);
-      setJobCursor(null);
-      setJobHasMoreSvr(null);
+    if (activeTab !== 'providers') return;
+    if (prPrevKeyRef.current !== prQueryKey) {
+      prPrevKeyRef.current = prQueryKey;
+      setProviders([]);
+      setProviderPage(1);
+      setProviderCursor(null);
+      setProviderHasMoreSvr(null);
     }
-  }, [jobQueryKey, activeTab]);
+  }, [prQueryKey, activeTab]);
 
-  /* ----------------------------------------------------------------------
-     Fetch providers
-  ----------------------------------------------------------------------*/
+  // Fetch providers (runs AFTER reset effect)
   useEffect(() => {
     if (activeTab !== "providers") return;
     const controller = new AbortController();
@@ -1020,25 +1047,6 @@ export default function MarketplacePage() {
       controller.abort();
     };
   }, [activeTab, debouncedSearch, debouncedCity, debouncedState, providerServices, providerPage, providerSort, prRadius, prGeoLat, prGeoLng, providerCursor, showMock, MOCK_PROVIDERS]);
-
-  // Reset providers list when non-page filters change
-  const prQueryKey = useMemo(() => JSON.stringify({
-    tab: activeTab,
-    q: debouncedSearch, city: debouncedCity, state: debouncedState,
-    services: providerServices,
-    radius: prRadius, lat: prGeoLat, lng: prGeoLng, sort: providerSort
-  }), [activeTab, debouncedSearch, debouncedCity, debouncedState, providerServices, prRadius, prGeoLat, prGeoLng, providerSort]);
-  const prPrevKeyRef = useRef<string>(prQueryKey);
-  useEffect(() => {
-    if (activeTab !== 'providers') return;
-    if (prPrevKeyRef.current !== prQueryKey) {
-      prPrevKeyRef.current = prQueryKey;
-      setProviders([]);
-      setProviderPage(1);
-      setProviderCursor(null);
-      setProviderHasMoreSvr(null);
-    }
-  }, [prQueryKey, activeTab]);
 
   // Infinite scroll flags
   // Prefer server-provided hasMore when available (cursor pagination)
