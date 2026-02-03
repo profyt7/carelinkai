@@ -48,12 +48,6 @@ if (SENTRY_DSN) {
       // Note: Sentry feedbackIntegration removed - using custom BugReportButton instead
     ],
 
-    // Experimental features
-    _experiments: {
-      // Enable metrics
-      metricsAggregator: true,
-    },
-
     // Filter out noisy errors
     beforeSend(event) {
       // Don't send events for ignored errors

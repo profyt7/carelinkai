@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import * as Sentry from "@sentry/nextjs";
 
 export default function Error({
   error,
@@ -10,8 +11,7 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Log the error for observability; avoid crashing the render tree
-    // eslint-disable-next-line no-console
+    // Log the error for observability
     console.error("App Error:", error);
     console.error("Error Name:", error.name);
     console.error("Error Message:", error.message);
@@ -19,6 +19,17 @@ export default function Error({
     if (error.digest) {
       console.error("Error Digest:", error.digest);
     }
+    
+    // Send error to Sentry for monitoring
+    Sentry.captureException(error, {
+      tags: {
+        location: "error-boundary",
+        digest: error.digest || "unknown",
+      },
+      extra: {
+        componentStack: error.stack,
+      },
+    });
   }, [error]);
 
   const isDev = process.env.NODE_ENV === 'development';

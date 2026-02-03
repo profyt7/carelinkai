@@ -6,6 +6,34 @@ Connecting families, assisted-living operators, and caregivers through AI-powere
 
 ---
 
+## 🗺️ Geographic Launch Strategy
+
+CareLink AI is launching with a **Cleveland-first strategy**, followed by phased expansion across Ohio, the Midwest, and nationally.
+
+### Why Cleveland?
+- **Local Advantage**: Cleveland-based founders with deep market knowledge and community connections
+- **Contained Market**: 150-200 senior living facilities provide ideal testing ground for MVP validation
+- **Representative Demographics**: 55,288 seniors (65+), 15.04% of metro population - mirrors other mid-size markets
+- **Cost-Effective Launch**: In-person outreach reduces CAC by 50-60% vs. national digital-only approach
+
+### Phased Expansion Timeline
+
+| Phase | Timeline | Geography | Target Facilities | Target MRR |
+|-------|----------|-----------|-------------------|------------|
+| **Phase 1** | Month 1-6 | Cleveland Metro | 15 sign-ups, 6-10 paying | $720-$1,200 |
+| **Phase 2** | Month 7-12 | Ohio Statewide (Columbus, Cincinnati, Toledo, Akron, Dayton) | 100 sign-ups, 60-80 paying | $7,200-$9,600 |
+| **Phase 3** | Year 2 | Midwest (MI, IN, PA, KY, WV) | 200-400 sign-ups, 120-240 paying | $14,400-$28,800 |
+| **Phase 4** | Year 3+ | National | 3,000-5,000 sign-ups | $360,000-$600,000 |
+
+### Market Opportunity
+- **Cleveland Metro**: 55,288 seniors, 150-200 facilities
+- **Ohio**: 2.1 million seniors (19.58% of population), 2,511 senior living providers
+- **U.S. Total**: $907B market (2024), projected $1.3T by 2033
+
+**Learn more**: See `/docs` folder for detailed market analysis, launch strategy, and content/SEO plans.
+
+---
+
 ## 🌟 Key Capabilities
 
 | Module | Highlights |
