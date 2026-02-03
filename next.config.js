@@ -17,9 +17,14 @@ const nextConfig = {
   // Note: swcMinify removed - it's now the default in Next.js 15
   // Note: instrumentationHook removed - it's stable in Next.js 15 (no longer experimental)
   
-  // Image optimization configuration - allows loading images from Cloudinary
+  // Image optimization configuration - allows loading images from external domains
   images: {
     remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'randomuser.me',
+        pathname: '/api/portraits/**',
+      },
       {
         protocol: 'https',
         hostname: 'res.cloudinary.com',
