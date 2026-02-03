@@ -23,15 +23,18 @@ export default function MarketplaceTabs({
   const router = useRouter();
   const pathname = usePathname();
 
-  // Handle tab click - use callback if provided, otherwise navigate
+  // Handle tab click - use callback if provided (parent manages state/URL), otherwise navigate
   const handleTabClick = (e: React.MouseEvent, tab: MarketplaceTab) => {
     e.preventDefault();
     
     if (onTabChange) {
+      // Parent component handles state management and URL sync
+      // Don't call router.push here to avoid race condition with URL sync effects
       onTabChange(tab);
+      return;
     }
     
-    // Build URL based on tab - use consistent URL pattern
+    // Only navigate when no callback - build URL based on tab
     let url = "/marketplace";
     if (tab === "jobs") {
       url = "/marketplace?tab=jobs";
