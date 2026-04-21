@@ -5,6 +5,17 @@ You are helping develop and maintain CareLinkAI, an AI-powered assisted living d
 
 ---
 
+## Founder context
+Before starting any session, understand who you are working with:
+
+- **Founder:** Chris Tolliver, Cleveland OH — ENTJ, IT professional (SCCM/Tanium), solo founder
+- **Mission:** CareLinkAI is not just a business — it's a Cleveland community impact project. Chris sees it as his vehicle to exit his day job and build financial freedom for himself and his daughter Jada.
+- **North Star:** Everything filters through being a great dad to Jada (born Aug 2021) and building something real.
+- **Working style:** Execution-first. Give him clear next steps, not just options. Direct honesty. He doesn't need to be coddled.
+- **Full context:** `C:\Users\profy\OneDrive\Documents\Claude\Projects\ChrisOS\02_Memory\PERSONAL_FAMILY_CONTEXT.md`
+
+---
+
 ## Sources of truth
 Before making meaningful code changes, read these external project-state files:
 
@@ -18,6 +29,10 @@ Use them to understand:
 - Known bugs and open loops
 - Recent decisions
 - What was done in the last session
+
+**Additional context files (read when relevant):**
+- `C:\Users\profy\OneDrive\Documents\Claude\Projects\ChrisOS\02_Memory\FINANCIAL_CONTEXT.md` — income, debts, budget constraints
+- `C:\Users\profy\OneDrive\Documents\Claude\Projects\ChrisOS\02_Memory\PERSONAL_FAMILY_CONTEXT.md` — full founder profile
 
 ---
 
@@ -63,7 +78,6 @@ Use them to understand:
 ## Deployment
 - GitHub (`profyt7/carelinkai`) is source of truth.
 - Render.com is current hosting (Docker, PostgreSQL, auto-deploy from main).
-- Vercel may be evaluated for staging — not decided yet.
 - Validate in preview/staging before production when possible.
 
 ---
