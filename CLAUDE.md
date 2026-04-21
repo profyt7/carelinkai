@@ -1,0 +1,128 @@
+# CareLinkAI — Claude Code Instructions
+
+## Mission
+You are helping develop and maintain CareLinkAI, an AI-powered assisted living discovery, staffing, and operations platform. The founder is Chris Tolliver (profyt7@gmail.com), Cleveland, OH. This is a bootstrap startup targeting $10K–$15K MRR by Week 52 of the go-to-market plan.
+
+---
+
+## Sources of truth
+Before making meaningful code changes, read these external project-state files:
+
+- `C:\Users\profy\OneDrive\Documents\Claude\Projects\ChrisOS\02_Memory\CARELINKAI_TECHNICAL_STATE.md`
+- `C:\Users\profy\OneDrive\Documents\Claude\Projects\ChrisOS\03_Execution\CARELINKAI_TECH_OPEN_LOOPS.md`
+- `C:\Users\profy\OneDrive\Documents\Claude\Projects\ChrisOS\05_Agent_Logs\DEV_SESSION_SUMMARIES.md`
+
+Use them to understand:
+- Current architecture and deployment status
+- Active priorities
+- Known bugs and open loops
+- Recent decisions
+- What was done in the last session
+
+---
+
+## Tech stack (current)
+| Layer | Technology |
+|-------|-----------|
+| Framework | Next.js 14 (App Router) |
+| Language | TypeScript (91.7%), JavaScript (6.7%) |
+| ORM | Prisma |
+| Database | PostgreSQL (hosted on Render) |
+| Auth | NextAuth.js |
+| Images | Cloudinary |
+| Email | Resend |
+| Error monitoring | Sentry |
+| Styling | Tailwind CSS |
+| Real-time | SSE (Server-Sent Events) |
+| Payments | Stripe (configured, not yet live) |
+| Hosting | Render.com (Docker, auto-deploy from main) |
+
+---
+
+## Development workflow
+1. Read CLAUDE.md and ChrisOS state files before starting.
+2. Inspect the codebase before proposing major changes — understand before rewriting.
+3. For non-trivial work: explain the plan, identify affected files, note risks.
+4. Prefer feature branches and PR-ready changes.
+5. Do not make destructive changes without explicit confirmation.
+6. Summarize every meaningful change at end of session (see end-of-session requirements).
+
+---
+
+## Development rules
+- Preserve production stability — Render auto-deploys from main.
+- Prefer small, reviewable changes over large rewrites.
+- Keep comments concise and useful.
+- Document environment assumptions.
+- Flag missing secrets, env vars, or services explicitly.
+- If architecture is unclear, inspect first and ask second.
+- Budget is tight ($4,900 Year 1) — flag anything that adds recurring cost over $20/mo.
+
+---
+
+## Deployment
+- GitHub (`profyt7/carelinkai`) is source of truth.
+- Render.com is current hosting (Docker, PostgreSQL, auto-deploy from main).
+- Vercel may be evaluated for staging — not decided yet.
+- Validate in preview/staging before production when possible.
+
+---
+
+## Required environment variables
+```
+DATABASE_URL
+NEXTAUTH_SECRET
+NEXTAUTH_URL
+STRIPE_SECRET_KEY
+STRIPE_PUBLISHABLE_KEY
+STRIPE_WEBHOOK_SECRET
+CLOUDINARY_CLOUD_NAME
+CLOUDINARY_API_KEY
+CLOUDINARY_API_SECRET
+RESEND_API_KEY
+SENTRY_DSN
+```
+
+---
+
+## End-of-session requirements
+At the end of each dev session, update these three ChrisOS files:
+
+### 1. Append to DEV_SESSION_SUMMARIES.md
+Path: `C:\Users\profy\OneDrive\Documents\Claude\Projects\ChrisOS\05_Agent_Logs\DEV_SESSION_SUMMARIES.md`
+
+Use this format:
+```
+### YYYY-MM-DD — Session Title
+- **Objective:**
+- **Work completed:**
+- **Files changed:**
+- **Commands run:**
+- **Tests/build status:**
+- **Deployment impact:**
+- **New risks/blockers:**
+- **Recommended next step:**
+```
+
+### 2. Update CARELINKAI_TECHNICAL_STATE.md
+Path: `C:\Users\profy\OneDrive\Documents\Claude\Projects\ChrisOS\02_Memory\CARELINKAI_TECHNICAL_STATE.md`
+
+Keep current with: architecture changes, active branch/env, hosting status, known issues, recent decisions, immediate next priorities.
+
+### 3. Update CARELINKAI_TECH_OPEN_LOOPS.md
+Path: `C:\Users\profy\OneDrive\Documents\Claude\Projects\ChrisOS\03_Execution\CARELINKAI_TECH_OPEN_LOOPS.md`
+
+Close completed loops. Add any new ones discovered this session.
+
+---
+
+## Session-start audit prompt
+If given no specific task, run this audit first:
+
+1. Read CLAUDE.md and all three ChrisOS state files above.
+2. Report:
+   - Current technical state understanding
+   - What appears completed
+   - What appears unfinished
+   - Top 3 highest-leverage next technical tasks
+3. Do not change code yet. Audit first.
