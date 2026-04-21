@@ -12,16 +12,16 @@ Before starting any session, understand who you are working with:
 - **Mission:** CareLinkAI is not just a business — it's a Cleveland community impact project. Chris sees it as his vehicle to exit his day job and build financial freedom for himself and his daughter Jada.
 - **North Star:** Everything filters through being a great dad to Jada (born Aug 2021) and building something real.
 - **Working style:** Execution-first. Give him clear next steps, not just options. Direct honesty. He doesn't need to be coddled.
-- **Full context:** `C:\Users\profy\OneDrive\Documents\Claude\Projects\ChrisOS\02_Memory\PERSONAL_FAMILY_CONTEXT.md`
+- **Full personal/business context:** `./context/FOUNDER_CONTEXT.md`
 
 ---
 
 ## Sources of truth
-Before making meaningful code changes, read these external project-state files:
+Before making meaningful code changes, read these files:
 
-- `C:\Users\profy\OneDrive\Documents\Claude\Projects\ChrisOS\02_Memory\CARELINKAI_TECHNICAL_STATE.md`
-- `C:\Users\profy\OneDrive\Documents\Claude\Projects\ChrisOS\03_Execution\CARELINKAI_TECH_OPEN_LOOPS.md`
-- `C:\Users\profy\OneDrive\Documents\Claude\Projects\ChrisOS\05_Agent_Logs\DEV_SESSION_SUMMARIES.md`
+- `./context/CARELINKAI_TECHNICAL_STATE.md`
+- `./context/CARELINKAI_TECH_OPEN_LOOPS.md`
+- `./context/DEV_SESSION_SUMMARIES.md`
 
 Use them to understand:
 - Current architecture and deployment status
@@ -29,10 +29,6 @@ Use them to understand:
 - Known bugs and open loops
 - Recent decisions
 - What was done in the last session
-
-**Additional context files (read when relevant):**
-- `C:\Users\profy\OneDrive\Documents\Claude\Projects\ChrisOS\02_Memory\FINANCIAL_CONTEXT.md` — income, debts, budget constraints
-- `C:\Users\profy\OneDrive\Documents\Claude\Projects\ChrisOS\02_Memory\PERSONAL_FAMILY_CONTEXT.md` — full founder profile
 
 ---
 
@@ -55,7 +51,7 @@ Use them to understand:
 ---
 
 ## Development workflow
-1. Read CLAUDE.md and ChrisOS state files before starting.
+1. Read CLAUDE.md and context files before starting.
 2. Inspect the codebase before proposing major changes — understand before rewriting.
 3. For non-trivial work: explain the plan, identify affected files, note risks.
 4. Prefer feature branches and PR-ready changes.
@@ -78,6 +74,7 @@ Use them to understand:
 ## Deployment
 - GitHub (`profyt7/carelinkai`) is source of truth.
 - Render.com is current hosting (Docker, PostgreSQL, auto-deploy from main).
+- Vercel may be evaluated for staging — not decided yet.
 - Validate in preview/staging before production when possible.
 
 ---
@@ -100,11 +97,9 @@ SENTRY_DSN
 ---
 
 ## End-of-session requirements
-At the end of each dev session, update these three ChrisOS files:
+At the end of each dev session, update these three files in the repo:
 
-### 1. Append to DEV_SESSION_SUMMARIES.md
-Path: `C:\Users\profy\OneDrive\Documents\Claude\Projects\ChrisOS\05_Agent_Logs\DEV_SESSION_SUMMARIES.md`
-
+### 1. Append to context/DEV_SESSION_SUMMARIES.md
 Use this format:
 ```
 ### YYYY-MM-DD — Session Title
@@ -118,14 +113,10 @@ Use this format:
 - **Recommended next step:**
 ```
 
-### 2. Update CARELINKAI_TECHNICAL_STATE.md
-Path: `C:\Users\profy\OneDrive\Documents\Claude\Projects\ChrisOS\02_Memory\CARELINKAI_TECHNICAL_STATE.md`
-
+### 2. Update context/CARELINKAI_TECHNICAL_STATE.md
 Keep current with: architecture changes, active branch/env, hosting status, known issues, recent decisions, immediate next priorities.
 
-### 3. Update CARELINKAI_TECH_OPEN_LOOPS.md
-Path: `C:\Users\profy\OneDrive\Documents\Claude\Projects\ChrisOS\03_Execution\CARELINKAI_TECH_OPEN_LOOPS.md`
-
+### 3. Update context/CARELINKAI_TECH_OPEN_LOOPS.md
 Close completed loops. Add any new ones discovered this session.
 
 ---
@@ -133,7 +124,7 @@ Close completed loops. Add any new ones discovered this session.
 ## Session-start audit prompt
 If given no specific task, run this audit first:
 
-1. Read CLAUDE.md and all three ChrisOS state files above.
+1. Read CLAUDE.md and all three context files above.
 2. Report:
    - Current technical state understanding
    - What appears completed
