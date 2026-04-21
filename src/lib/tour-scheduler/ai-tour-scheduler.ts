@@ -109,7 +109,7 @@ export async function suggestOptimalTimes(
       requestedPreferences: requestedTimePreferences || [],
     };
 
-    // 5. Use OpenAI to generate intelligent suggestions
+    // 5. Use AI to generate intelligent suggestions
     const suggestions = await generateAISuggestions(analysisData, dateRange);
 
     // 6. Filter out conflicts and validate
@@ -147,20 +147,21 @@ export async function suggestOptimalTimes(
 }
 
 /**
- * Generate AI suggestions using OpenAI
+ * Generate AI suggestions using Claude
  */
 async function generateAISuggestions(
   analysisData: any,
   dateRange: DateRange
 ): Promise<SuggestedTimeSlot[]> {
-  const apiKey = process.env.OPENAI_API_KEY || process.env.NEXT_PUBLIC_OPENAI_API_KEY;
-
-  if (!apiKey) {
-    console.warn("[AI Tour Scheduler] OpenAI API key not found. Using fallback suggestions.");
+  if (!process.env.ANTHROPIC_API_KEY) {
+    console.warn("[AI Tour Scheduler] ANTHROPIC_API_KEY not found. Using fallback suggestions.");
     return generateFallbackSuggestions(dateRange);
   }
 
   try {
+    const { getAnthropicClient } = await import("@/lib/ai/claude");
+    const client = getAnthropicClient();
+
     const prompt = `You are an AI assistant helping to schedule facility tours for ${analysisData.homeName}, a ${analysisData.homeType} senior living home.
 
 Available Tour Slots:
@@ -176,67 +177,36 @@ Date Range: ${dateRange.startDate.toDateString()} to ${dateRange.endDate.toDateS
 
 Family Preferences: ${analysisData.requestedPreferences.join(", ") || "No specific preferences"}
 
-Please suggest 5-7 optimal tour times within the date range. For each suggestion, provide:
-1. Specific date and time
-2. Day of week
-3. Score (1-100) based on availability, historical performance, and preferences
-4. Brief reasoning (1-2 sentences)
-
-Format response as JSON array:
+Suggest 5-7 optimal tour times within the date range. Return a JSON array only (no markdown, no code blocks):
 [
   {
     "dateTime": "2025-01-15T10:00:00.000Z",
     "dayOfWeek": "Wednesday",
     "timeSlot": "10:00 AM - 11:00 AM",
     "score": 95,
-    "reasoning": "Wednesday mornings have highest conversion rate (85%) and aligns with family preferences."
+    "reasoning": "Wednesday mornings have highest conversion rate and aligns with family preferences."
   }
 ]`;
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are a senior care facility scheduling expert. Provide specific, actionable tour time suggestions in valid JSON format.",
-          },
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
-        temperature: 0.7,
-        max_tokens: 1500,
-      }),
+    const response = await client.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 1500,
+      system: "You are a senior care facility scheduling expert. Provide specific, actionable tour time suggestions. Return a JSON array only with no markdown or code blocks.",
+      messages: [{ role: "user", content: prompt }],
     });
 
-    if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.statusText}`);
-    }
+    const block = response.content[0];
+    const rawText = block.type === "text" ? block.text.trim() : "";
+    const jsonText = rawText.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim();
 
-    const data = await response.json();
-    const content = data.choices[0]?.message?.content;
-
-    if (!content) {
-      throw new Error("No content in OpenAI response");
-    }
-
-    // Parse JSON from response (handle markdown code blocks)
-    const jsonMatch = content.match(/\[[\s\S]*\]/);
+    // Extract JSON array from response
+    const jsonMatch = jsonText.match(/\[[\s\S]*\]/);
     if (!jsonMatch) {
       throw new Error("No JSON array found in response");
     }
 
     const suggestions = JSON.parse(jsonMatch[0]);
 
-    // Convert to our format
     return suggestions.map((s: any) => ({
       dateTime: new Date(s.dateTime),
       dayOfWeek: s.dayOfWeek,
@@ -245,7 +215,7 @@ Format response as JSON array:
       reasoning: s.reasoning,
     }));
   } catch (error) {
-    console.error("[AI Tour Scheduler] OpenAI error:", error);
+    console.error("[AI Tour Scheduler] Claude error:", error);
     return generateFallbackSuggestions(dateRange);
   }
 }

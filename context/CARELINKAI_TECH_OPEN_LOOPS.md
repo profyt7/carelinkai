@@ -15,17 +15,11 @@ Each loop: what it is, why it matters, what done looks like.
 - **Done when:** All 5 demo accounts can log in at carelinkai.onrender.com
 - **Accounts:** demo.admin / demo.operator / demo.family / demo.aide / demo.provider @ carelinkai.test / DemoUser123!
 
-### OL-002: OPENAI_API_KEY not confirmed in Render
-- **Status:** Open
-- **Impact:** AI inquiry response generation, document classification, AI matching, discharge planner search all fail silently (500 errors)
-- **Fix:** Set `OPENAI_API_KEY` in Render dashboard > Environment
-- **Done when:** `/api/inquiries/[id]/generate-response` returns a real AI response in production
-
-### OL-003: ABACUSAI_API_KEY not confirmed in Render
-- **Status:** Open
-- **Impact:** CareBot chatbot fails for all users
-- **Fix:** Set `ABACUSAI_API_KEY` in Render dashboard > Environment
-- **Done when:** CareBot chat widget responds in production
+### OL-002: ANTHROPIC_API_KEY not set in Render
+- **Status:** Open (was OPENAI_API_KEY + ABACUSAI_API_KEY — both replaced by single Anthropic key)
+- **Impact:** All AI features fail: CareBot, inquiry responses, document classification, discharge planner search, match explanations, tour scheduling, home profile generation
+- **Fix:** Set `ANTHROPIC_API_KEY` in Render dashboard > Environment. Get key from console.anthropic.com.
+- **Done when:** CareBot responds and `/api/inquiries/[id]/generate-response` returns AI text in production
 
 ### OL-004: Revenue model not finalized
 - **Status:** Open
@@ -99,3 +93,4 @@ Each loop: what it is, why it matters, what done looks like.
 | OpenAI build failure | Fixed Dec 19 — dummy key pattern | 2025-12-19 |
 | Migration failure (20251218) | Resolved with resolve script | 2025-12-19 |
 | CareBot implementation | Built and deployed | 2025-12-30 |
+| AI provider consolidation | Migrated all AI from OpenAI+AbacusAI → Anthropic Claude API | 2026-04-21 |

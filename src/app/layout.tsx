@@ -221,12 +221,6 @@ export default function RootLayout({
         */}
       </head>
       <body className="min-h-screen bg-neutral-50 antialiased font-sans">
-        {/* Abacus AI LLM Integration */}
-        <Script
-          src="https://apps.abacus.ai/chatllm/appllm-lib.js"
-          strategy="afterInteractive"
-        />
-        
         {/* Google Tag Manager */}
         {process.env.NEXT_PUBLIC_GTM_ID && (
           <>

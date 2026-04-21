@@ -28,8 +28,7 @@ https://carelinkai.onrender.com (also: https://getcarelinkai.com)
 | Styling | Tailwind CSS |
 | Real-time | SSE (Server-Sent Events) |
 | Payments | Stripe (configured, not yet live with real keys confirmed) |
-| AI — Inquiry | OpenAI GPT-4 |
-| AI — CareBot | AbacusAI |
+| AI — All features | Anthropic Claude API (`claude-sonnet-4-6`, `claude-haiku-4-5-20251001`) |
 
 ## Schema Summary
 56 Prisma models covering: users/auth, families, operators, caregivers, residents, homes, inquiries/leads, marketplace, payments/wallet, documents, messaging, notifications, shifts/timesheets, tours, reports, audit logs, discharge planner, AI matching.
@@ -51,15 +50,17 @@ FAMILY, OPERATOR, CAREGIVER, ADMIN, STAFF, PROVIDER, AFFILIATE, DISCHARGE_PLANNE
 - Cloudinary: image uploads
 - Sentry: error monitoring + session replay
 - Analytics: GA4, GTM, FB Pixel, Clarity
+- Anthropic Claude API: CareBot (Haiku 4.5 + prompt caching), inquiry responses, document classification, discharge planner search, match explanations, tour scheduling, home profile generation (all Sonnet 4.6)
 
 ## Known Issues (as of 2026-04-21)
 1. ~~Email FROM address was `noreply@applyedge.co`~~ — **FIXED** (now `noreply@getcarelinkai.com`)
 2. Demo accounts not seeded in production — run `npm run seed:demo` in Render shell
-3. OPENAI_API_KEY likely not set in Render — AI inquiry responses will fail silently
-4. ABACUSAI_API_KEY needed in Render — CareBot will fail without it
+3. ~~OPENAI_API_KEY needed~~ — **MIGRATED TO ANTHROPIC** — set `ANTHROPIC_API_KEY` in Render
+4. ~~ABACUSAI_API_KEY needed for CareBot~~ — **MIGRATED TO ANTHROPIC Claude Haiku 4.5**
 5. 274 TypeScript strict mode errors — CI type-check step is disabled (non-blocking at runtime)
 6. `.env.example` was missing 12 required vars — **FIXED**
-7. `context/` directory was missing from repo — **FIXED** (created this session)
+7. `context/` directory was missing from repo — **FIXED**
+8. 2 pre-existing test failures: `calendar.appointments.api` and `emergency.api` — unrelated to AI migration
 
 ## Environment Variables — Render Dashboard Checklist
 These MUST be set on Render for production to work:
@@ -74,8 +75,7 @@ These MUST be set on Render for production to work:
 - [ ] `CLOUDINARY_CLOUD_NAME`
 - [ ] `CLOUDINARY_API_KEY`
 - [ ] `CLOUDINARY_API_SECRET`
-- [ ] `OPENAI_API_KEY`
-- [ ] `ABACUSAI_API_KEY`
+- [ ] `ANTHROPIC_API_KEY`
 - [ ] `SENTRY_DSN`
 - [ ] `NEXT_PUBLIC_SENTRY_DSN`
 - [ ] `ALLOW_DEV_ENDPOINTS` = NOT SET (must not exist in production)

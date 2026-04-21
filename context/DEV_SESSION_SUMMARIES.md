@@ -2,6 +2,53 @@
 
 ---
 
+### 2026-04-21 — AI Provider Consolidation: OpenAI + AbacusAI → Anthropic Claude API
+
+- **Objective:** Migrate all AI integrations from OpenAI GPT-4 and AbacusAI to a single Anthropic Claude API key. Simpler ops, better writing quality, prompt caching for cost savings.
+
+- **Work completed:**
+  - Installed `@anthropic-ai/sdk` (v0.90.0), removed `openai` package
+  - Created `src/lib/ai/claude.ts` — shared lazy Anthropic client + `requireAnthropicKey()` helper
+  - Migrated CareBot (`src/app/api/carebot/chat/route.ts`): AbacusAI → Claude Haiku 4.5 with prompt caching on ~2500-token system prompt (saves ~90% on cached calls). Output formatted as OpenAI-compatible SSE so client code needed no changes.
+  - Migrated inquiry response generator (`src/lib/ai/inquiry-response-generator.ts`): OpenAI GPT-4 → Claude Sonnet 4.6
+  - Migrated document classification (`src/lib/documents/classification.ts`): OpenAI GPT-4o → Claude Sonnet 4.6
+  - Migrated discharge planner search (`src/app/api/discharge-planner/search/route.ts`): AbacusAI → Claude Sonnet 4.6. Simplified from streaming to standard messages.create calls.
+  - Migrated match explainer (`src/lib/matching/openai-explainer.ts`): OpenAI → Claude Sonnet 4.6
+  - Migrated home profile generator (`src/lib/profile-generator/home-profile-generator.ts`): OpenAI → Claude Sonnet 4.6
+  - Migrated tour scheduler (`src/lib/tour-scheduler/ai-tour-scheduler.ts`): OpenAI fetch → Claude Haiku 4.5
+  - Updated `src/lib/ai/provider.ts`: removed OpenAI embedding (Anthropic has no embeddings API); always uses hash-based fallback. Resident matching structural scoring unaffected.
+  - Removed AbacusAI `<Script>` tag from `src/app/layout.tsx`
+  - Updated `.env.example`: removed `OPENAI_API_KEY` + `ABACUSAI_API_KEY`, added `ANTHROPIC_API_KEY`
+  - Updated `CLAUDE.md` env vars list
+  - Updated all three context/ state files
+
+- **Files changed:**
+  - `src/lib/ai/claude.ts` — new shared client
+  - `src/app/api/carebot/chat/route.ts`
+  - `src/lib/ai/inquiry-response-generator.ts`
+  - `src/lib/documents/classification.ts`
+  - `src/app/api/discharge-planner/search/route.ts`
+  - `src/lib/matching/openai-explainer.ts`
+  - `src/lib/profile-generator/home-profile-generator.ts`
+  - `src/lib/tour-scheduler/ai-tour-scheduler.ts`
+  - `src/lib/ai/provider.ts`
+  - `src/app/layout.tsx`
+  - `.env.example`
+  - `CLAUDE.md`
+  - `package.json` / `package-lock.json`
+
+- **Tests/build status:** Build ✅ passes. Tests: 287/299 passing. 12 failures in `calendar.appointments.api` and `emergency.api` are pre-existing and unrelated to AI migration.
+
+- **Deployment impact:** All AI features will be down until `ANTHROPIC_API_KEY` is set in Render. This is expected — the key just needs to be configured once. All features have graceful fallbacks (fallback profiles, fallback scheduling suggestions) so the app won't crash.
+
+- **New risks/blockers:**
+  - **ACTION REQUIRED:** Chris must set `ANTHROPIC_API_KEY` in Render dashboard before AI features work in production. Get key at console.anthropic.com.
+  - Anthropic doesn't provide text embeddings — semantic resident matching disabled, structural scoring only (was already the fallback behavior)
+
+- **Recommended next step:** Set `ANTHROPIC_API_KEY` in Render, then test CareBot and inquiry response generation manually in production.
+
+---
+
 ### 2026-04-21 — Full Codebase Audit + Critical Fixes
 
 - **Objective:** Audit the live codebase, identify what's broken, fix the highest-impact issues, set up context files for future sessions.

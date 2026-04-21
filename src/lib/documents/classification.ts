@@ -3,27 +3,12 @@
  * Phase 3: Smart Document Processing
  */
 
-import OpenAI from 'openai';
+import { getAnthropicClient, requireAnthropicKey } from '@/lib/ai/claude';
 import {
   DocumentType,
   ClassificationResult,
   ReviewStatus,
 } from '@/lib/types/documents';
-
-// Lazy initialize OpenAI client
-let openaiClient: OpenAI | null = null;
-
-function getOpenAIClient(): OpenAI {
-  if (!openaiClient) {
-    if (!process.env.OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY environment variable is not set');
-    }
-    openaiClient = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
-  }
-  return openaiClient;
-}
 
 // Confidence thresholds
 export const CONFIDENCE_THRESHOLDS = {
@@ -40,13 +25,14 @@ export async function classifyDocument(
   fileName: string
 ): Promise<ClassificationResult> {
   try {
-    // Validate inputs
     if (!extractedText || extractedText.trim().length < 10) {
       return {
         success: false,
         error: 'Insufficient text content for classification',
       };
     }
+
+    requireAnthropicKey();
 
     const prompt = `You are an expert document classifier for a senior care management system. Analyze the following document and classify it into one of these types:
 
@@ -64,42 +50,35 @@ File name: ${fileName}
 Document text (first 1000 characters):
 ${extractedText.substring(0, 1000)}
 
-Provide a JSON response with:
+Provide a JSON response with exactly these fields:
 - "type": The document type (one of the 8 types above)
-- "confidence": Confidence score from 0 to 100
-- "reasoning": Brief explanation (2-3 sentences) of why you classified it this way, including specific keywords or patterns you identified
+- "confidence": Confidence score from 0 to 100 (integer)
+- "reasoning": Brief explanation (2-3 sentences) of why you classified it this way
 
-Be very careful to ensure the confidence score accurately reflects your certainty. Only use high confidence (>85) when you're very sure.`;
+Only use high confidence (>85) when you are very sure. Return raw JSON only with no markdown or code blocks.`;
 
-    const openai = getOpenAIClient();
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are an expert at classifying documents for healthcare and senior care facilities. Provide accurate classifications with confidence scores and reasoning.',
-        },
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      response_format: { type: 'json_object' },
-      temperature: 0.1, // Low temperature for consistent results
+    const client = getAnthropicClient();
+    const response = await client.messages.create({
+      model: 'claude-sonnet-4-6',
       max_tokens: 500,
+      system: 'You are an expert at classifying documents for healthcare and senior care facilities. Always respond with raw JSON only — no markdown, no code blocks.',
+      messages: [{ role: 'user', content: prompt }],
     });
 
-    const result = JSON.parse(response.choices[0].message.content || '{}');
+    const block = response.content[0];
+    const rawText = block.type === 'text' ? block.text.trim() : '';
 
-    // Validate the response
-    if (!result.type || !result.confidence || !result.reasoning) {
+    // Strip any accidental markdown fences
+    const jsonText = rawText.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
+    const result = JSON.parse(jsonText);
+
+    if (!result.type || result.confidence === undefined || !result.reasoning) {
       return {
         success: false,
         error: 'Invalid response from classification service',
       };
     }
 
-    // Ensure confidence is a valid number between 0-100
     const confidence = Math.max(0, Math.min(100, Number(result.confidence)));
 
     return {
@@ -123,12 +102,9 @@ Be very careful to ensure the confidence score accurately reflects your certaint
  */
 export function determineReviewStatus(confidence: number): ReviewStatus {
   if (confidence >= CONFIDENCE_THRESHOLDS.HIGH) {
-    return 'NOT_REQUIRED'; // High confidence - auto-classify
-  } else if (confidence >= CONFIDENCE_THRESHOLDS.MEDIUM) {
-    return 'PENDING_REVIEW'; // Medium confidence - suggest with review
-  } else {
-    return 'PENDING_REVIEW'; // Low confidence - manual classification required
+    return 'NOT_REQUIRED';
   }
+  return 'PENDING_REVIEW';
 }
 
 /**
@@ -165,23 +141,11 @@ export function getConfidenceLevel(confidence: number): {
   color: string;
 } {
   if (confidence >= CONFIDENCE_THRESHOLDS.HIGH) {
-    return {
-      level: 'high',
-      label: 'High Confidence',
-      color: 'text-green-600',
-    };
+    return { level: 'high', label: 'High Confidence', color: 'text-green-600' };
   } else if (confidence >= CONFIDENCE_THRESHOLDS.MEDIUM) {
-    return {
-      level: 'medium',
-      label: 'Medium Confidence',
-      color: 'text-yellow-600',
-    };
+    return { level: 'medium', label: 'Medium Confidence', color: 'text-yellow-600' };
   } else {
-    return {
-      level: 'low',
-      label: 'Low Confidence',
-      color: 'text-red-600',
-    };
+    return { level: 'low', label: 'Low Confidence', color: 'text-red-600' };
   }
 }
 
