@@ -9,11 +9,15 @@ Each loop: what it is, why it matters, what done looks like.
 ## 🔴 Critical (Blocking Revenue / Demos)
 
 ### OL-001: Demo accounts not seeded in production
-- **Status:** Open
-- **Impact:** Cannot demo the product to any prospect
-- **Fix:** SSH into Render shell → `npm run seed:demo`
-- **Done when:** All 5 demo accounts can log in at carelinkai.onrender.com
-- **Accounts:** demo.admin / demo.operator / demo.family / demo.aide / demo.provider @ carelinkai.test / DemoUser123!
+- **Status:** ✅ FIXED (2026-04-22)
+- **All 7 accounts active in production (Password: DemoUser123!):**
+  - demo.family@carelinkai.test (FAMILY)
+  - demo.operator@carelinkai.test (OPERATOR)
+  - demo.aide@carelinkai.test (CAREGIVER)
+  - demo.provider@carelinkai.test (PROVIDER)
+  - demo.admin@carelinkai.test (ADMIN)
+  - demo.healthcare@carelinkai.test (DISCHARGE_PLANNER)
+  - demo.affiliate@carelinkai.test (AFFILIATE)
 
 ### OL-002: ANTHROPIC_API_KEY not set in Render
 - **Status:** ✅ FIXED (2026-04-22) — Chris confirmed key is set in Render dashboard
@@ -94,3 +98,4 @@ Each loop: what it is, why it matters, what done looks like.
 | CareBot implementation | Built and deployed | 2025-12-30 |
 | AI provider consolidation | Migrated all AI from OpenAI+AbacusAI → Anthropic Claude API | 2026-04-21 |
 | OL-002: ANTHROPIC_API_KEY | Set in Render dashboard by Chris | 2026-04-22 |
+| OL-001: Demo accounts | All 7 accounts seeded in production | 2026-04-22 |
