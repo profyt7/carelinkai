@@ -1,5 +1,5 @@
 # CareLinkAI — Technical State
-_Last updated: 2026-04-21_
+_Last updated: 2026-04-22_
 
 ## Active Branch
 `claude/review-carelink-docs-49Ycv` (feature/fix branch — merge to main when ready)
@@ -52,15 +52,17 @@ FAMILY, OPERATOR, CAREGIVER, ADMIN, STAFF, PROVIDER, AFFILIATE, DISCHARGE_PLANNE
 - Analytics: GA4, GTM, FB Pixel, Clarity
 - Anthropic Claude API: CareBot (Haiku 4.5 + prompt caching), inquiry responses, document classification, discharge planner search, match explanations, tour scheduling, home profile generation (all Sonnet 4.6)
 
-## Known Issues (as of 2026-04-21)
+## Known Issues (as of 2026-04-22)
 1. ~~Email FROM address was `noreply@applyedge.co`~~ — **FIXED** (now `noreply@getcarelinkai.com`)
-2. Demo accounts not seeded in production — run `npm run seed:demo` in Render shell
-3. ~~OPENAI_API_KEY needed~~ — **MIGRATED TO ANTHROPIC** — set `ANTHROPIC_API_KEY` in Render
+2. ~~Demo accounts not seeded~~ — **FIXED** — All 7 accounts active in production (see OL-001)
+3. ~~OPENAI_API_KEY needed~~ — **MIGRATED TO ANTHROPIC** — `ANTHROPIC_API_KEY` set in Render (OL-002 ✅)
 4. ~~ABACUSAI_API_KEY needed for CareBot~~ — **MIGRATED TO ANTHROPIC Claude Haiku 4.5**
 5. 274 TypeScript strict mode errors — CI type-check step is disabled (non-blocking at runtime)
-6. `.env.example` was missing 12 required vars — **FIXED**
-7. `context/` directory was missing from repo — **FIXED**
+6. ~~`.env.example` was missing 12 required vars~~ — **FIXED**
+7. ~~`context/` directory was missing from repo~~ — **FIXED**
 8. 2 pre-existing test failures: `calendar.appointments.api` and `emergency.api` — unrelated to AI migration
+9. ~~Cloudinary 403 on profile picture upload~~ — **FIXED** — `CLOUDINARY_URL` was missing `@dygtsnu8z` suffix in Render; corrected by Chris
+10. ~~AI matching returning 500~~ — **FIXED** — was missing ANTHROPIC key (OL-002). Now returns 200 with empty array when no matching homes exist
 
 ## Environment Variables — Render Dashboard Checklist
 These MUST be set on Render for production to work:
@@ -92,9 +94,18 @@ See `REVENUE_MODEL.md` for the full breakdown. Key streams being considered:
 3. Caregiver marketplace placement fee (per-hire)
 4. Discharge Planner SaaS (per-seat hospital/facility subscription)
 
+## Playwright E2E Test Suite
+- Config: `playwright.config.ts` — auto-starts dev server, 1 worker, retries on failure
+- Auth helpers: `tests/helpers/auth.ts` — login with 3-attempt retry, cookie consent pre-set
+- Bug verification: `tests/bug-verification.spec.ts` — covers Bugs 1-3 (profile pic, AI match, settings)
+- Operator onboarding: `tests/operator-onboarding.spec.ts` — 10 steps covering full operator journey
+- Run: `PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers npx playwright test --workers=1`
+- **Local limitation:** Prisma binary engine in sandbox dies after ~7 tests due to thread limits. Steps 6-8 of operator-onboarding require fresh server or production testing. This is NOT a production issue.
+- **Production ANTHROPIC_API_KEY required** for Step 6 (AI response generation) and all AI features
+
 ## Immediate Next Priorities
-1. Seed demo accounts in production Render shell
-2. Verify all env vars are set in Render dashboard (especially OPENAI_API_KEY)
-3. Walk the full operator onboarding loop end-to-end as a real user
-4. Fix TypeScript strict mode errors (274 remaining)
-5. Build out and validate revenue model
+1. ~~Seed demo accounts in production Render shell~~ — **DONE** (OL-001 ✅)
+2. ~~Set ANTHROPIC_API_KEY in Render~~ — **DONE** (OL-002 ✅)
+3. Verify operator onboarding Steps 6-8 in production (AI response, conversion, residents)
+4. Wire Stripe subscription billing for operators (OL-008)
+5. Fix TypeScript strict mode errors (274 remaining) (OL-005)
