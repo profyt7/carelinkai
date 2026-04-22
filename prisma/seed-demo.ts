@@ -183,7 +183,53 @@ async function main() {
       emailVerified: new Date(),
     },
   });
-  console.log('  ✓ Admin account created: demo.admin@carelinkai.test\n');
+  console.log('  ✓ Admin account created: demo.admin@carelinkai.test');
+
+  // 6. Demo Healthcare Professional / Discharge Planner Account
+  await prisma.user.upsert({
+    where: { email: 'demo.healthcare@carelinkai.test' },
+    update: {},
+    create: {
+      email: 'demo.healthcare@carelinkai.test',
+      passwordHash: hashedPassword,
+      firstName: 'Dr. Angela',
+      lastName: 'Foster',
+      phone: '(555) 678-9012',
+      role: UserRole.DISCHARGE_PLANNER,
+      status: 'ACTIVE',
+      emailVerified: new Date(),
+    },
+  });
+  console.log('  ✓ Healthcare Professional account created: demo.healthcare@carelinkai.test');
+
+  // 7. Demo Affiliate Partner Account
+  await prisma.user.upsert({
+    where: { email: 'demo.affiliate@carelinkai.test' },
+    update: {},
+    create: {
+      email: 'demo.affiliate@carelinkai.test',
+      passwordHash: hashedPassword,
+      firstName: 'Marcus',
+      lastName: 'Reed',
+      phone: '(555) 789-0123',
+      role: UserRole.AFFILIATE,
+      status: 'ACTIVE',
+      emailVerified: new Date(),
+      affiliate: {
+        create: {
+          affiliateCode: 'DEMO-AFF-001',
+          organization: 'Senior Care Referral Partners',
+          commissionRate: 15.00,
+          paymentDetails: {
+            method: 'ACH',
+            bankName: 'Demo Bank',
+            accountType: 'checking',
+          },
+        },
+      },
+    },
+  });
+  console.log('  ✓ Affiliate Partner account created: demo.affiliate@carelinkai.test\n');
 
   // ==================== ADDITIONAL CAREGIVERS ====================
   
@@ -655,14 +701,16 @@ async function main() {
   console.log('═══════════════════════════════════════════════════════════');
   console.log('📧 DEMO ACCOUNTS (Password: DemoUser123!)');
   console.log('═══════════════════════════════════════════════════════════');
-  console.log('1. Family:   demo.family@carelinkai.test');
-  console.log('2. Operator: demo.operator@carelinkai.test');
-  console.log('3. Aide:     demo.aide@carelinkai.test');
-  console.log('4. Provider: demo.provider@carelinkai.test');
-  console.log('5. Admin:    demo.admin@carelinkai.test');
+  console.log('1. Family:        demo.family@carelinkai.test');
+  console.log('2. Operator:      demo.operator@carelinkai.test');
+  console.log('3. Caregiver:     demo.aide@carelinkai.test');
+  console.log('4. Provider:      demo.provider@carelinkai.test');
+  console.log('5. Admin:         demo.admin@carelinkai.test');
+  console.log('6. Healthcare:    demo.healthcare@carelinkai.test');
+  console.log('7. Affiliate:     demo.affiliate@carelinkai.test');
   console.log('═══════════════════════════════════════════════════════════');
   console.log(`\n📊 Created:`);
-  console.log(`   • 5 demo accounts with realistic profiles`);
+  console.log(`   • 7 demo accounts with realistic profiles`);
   console.log(`   • 6 additional caregivers (various cities)`);
   console.log(`   • 5 additional providers (various cities)`);
   console.log(`   • 4 leads (various statuses)`);
