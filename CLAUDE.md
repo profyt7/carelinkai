@@ -17,11 +17,12 @@ Before starting any session, understand who you are working with:
 ---
 
 ## Sources of truth
-Before making meaningful code changes, read these files:
+Before making meaningful code changes, read these project-state files (committed to the repo):
 
 - `./context/CARELINKAI_TECHNICAL_STATE.md`
 - `./context/CARELINKAI_TECH_OPEN_LOOPS.md`
 - `./context/DEV_SESSION_SUMMARIES.md`
+- `./context/FOUNDER_CONTEXT.md`
 
 Use them to understand:
 - Current architecture and deployment status
@@ -74,7 +75,6 @@ Use them to understand:
 ## Deployment
 - GitHub (`profyt7/carelinkai`) is source of truth.
 - Render.com is current hosting (Docker, PostgreSQL, auto-deploy from main).
-- Vercel may be evaluated for staging — not decided yet.
 - Validate in preview/staging before production when possible.
 
 ---
@@ -91,15 +91,21 @@ CLOUDINARY_CLOUD_NAME
 CLOUDINARY_API_KEY
 CLOUDINARY_API_SECRET
 RESEND_API_KEY
+EMAIL_FROM
+ANTHROPIC_API_KEY
 SENTRY_DSN
+NEXT_PUBLIC_SENTRY_DSN
 ```
+See `.env.example` for the full documented list with descriptions.
 
 ---
 
 ## End-of-session requirements
-At the end of each dev session, update these three files in the repo:
+At the end of each dev session, update these three files in `./context/`:
 
-### 1. Append to context/DEV_SESSION_SUMMARIES.md
+### 1. Append to DEV_SESSION_SUMMARIES.md
+Path: `./context/DEV_SESSION_SUMMARIES.md`
+
 Use this format:
 ```
 ### YYYY-MM-DD — Session Title
@@ -113,10 +119,14 @@ Use this format:
 - **Recommended next step:**
 ```
 
-### 2. Update context/CARELINKAI_TECHNICAL_STATE.md
+### 2. Update CARELINKAI_TECHNICAL_STATE.md
+Path: `./context/CARELINKAI_TECHNICAL_STATE.md`
+
 Keep current with: architecture changes, active branch/env, hosting status, known issues, recent decisions, immediate next priorities.
 
-### 3. Update context/CARELINKAI_TECH_OPEN_LOOPS.md
+### 3. Update CARELINKAI_TECH_OPEN_LOOPS.md
+Path: `./context/CARELINKAI_TECH_OPEN_LOOPS.md`
+
 Close completed loops. Add any new ones discovered this session.
 
 ---
@@ -124,7 +134,7 @@ Close completed loops. Add any new ones discovered this session.
 ## Session-start audit prompt
 If given no specific task, run this audit first:
 
-1. Read CLAUDE.md and all three context files above.
+1. Read CLAUDE.md and all four `./context/` files above.
 2. Report:
    - Current technical state understanding
    - What appears completed

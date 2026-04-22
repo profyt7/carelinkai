@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { getAnthropicClient, requireAnthropicKey } from "@/lib/ai/claude";
 
 const chatRequestSchema = z.object({
   messages: z.array(
@@ -26,6 +27,8 @@ const chatRequestSchema = z.object({
 });
 
 // Comprehensive system prompt with senior care knowledge
+// Marked for prompt caching — this ~2500-token prompt is cached after the first request,
+// saving ~90% of input token costs on repeated calls.
 const SYSTEM_PROMPT = `You are CareBot, a knowledgeable, empathetic, and professional AI assistant for CareLinkAI - a platform connecting families, assisted living operators, and caregivers.
 
 ## Your Role
@@ -155,83 +158,71 @@ export async function POST(request: NextRequest) {
   console.log("🤖 [CAREBOT] Chat request received");
 
   try {
-    // Validate request body
-    const body = await request?.json?.();
-    const validatedData = chatRequestSchema?.parse?.(body);
-    const { messages, userContext } = validatedData ?? {};
+    requireAnthropicKey();
 
-    // Check for API key
-    const apiKey = process.env?.ABACUSAI_API_KEY;
-    if (!apiKey) {
-      console.error("🤖 [CAREBOT] ❌ ABACUSAI_API_KEY not found");
-      return NextResponse?.json?.({
-        error: "Service configuration error",
-      }, { status: 500 });
-    }
+    const body = await request.json();
+    const validatedData = chatRequestSchema.parse(body);
+    const { messages, userContext } = validatedData;
 
-    console.log("🤖 [CAREBOT] Processing ${messages?.length ?? 0} messages");
-    console.log("🤖 [CAREBOT] User context:", userContext);
+    console.log(`🤖 [CAREBOT] Processing ${messages.length} messages`);
 
-    // Build messages array with system prompt
-    const fullMessages = [
-      { role: "system", content: SYSTEM_PROMPT },
-      ...(messages ?? []),
-    ];
-
-    // Add user context to system message if available
+    // Build user context suffix for system prompt
+    let systemSuffix = "";
     if (userContext?.isAuthenticated) {
-      fullMessages?.push?.({
-        role: "system",
-        content: `User is authenticated. Role: ${userContext?.userRole ?? "FAMILY"}. Name: ${userContext?.userName ?? "User"}.`,
-      });
+      systemSuffix = `\n\nUser is authenticated. Role: ${userContext.userRole ?? "FAMILY"}. Name: ${userContext.userName ?? "User"}.`;
     }
 
-    // Call LLM API with streaming
-    console.log("🤖 [CAREBOT] Calling LLM API...");
-    const response = await fetch("https://apps.abacus.ai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON?.stringify?.({
-        model: "gpt-4.1-mini",
-        messages: fullMessages,
-        stream: true,
-        max_tokens: 2000,
-        temperature: 0.7,
-      }),
-    });
+    // Filter to only user/assistant messages (Anthropic doesn't accept system role in messages)
+    const anthropicMessages = messages
+      .filter((m) => m.role === "user" || m.role === "assistant")
+      .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
 
-    if (!response?.ok) {
-      console.error("🤖 [CAREBOT] ❌ LLM API error:", response?.status);
-      return NextResponse?.json?.({
-        error: "AI service error",
-      }, { status: 500 });
+    // Ensure conversation starts with a user message
+    if (anthropicMessages.length === 0 || anthropicMessages[0]?.role !== "user") {
+      return NextResponse.json({ error: "Conversation must start with a user message" }, { status: 400 });
     }
 
-    console.log("🤖 [CAREBOT] ✅ Streaming response from LLM API");
+    const client = getAnthropicClient();
 
-    // Stream the response back to the client
+    // Stream response formatted as OpenAI-compatible SSE so the client doesn't need changes
     const stream = new ReadableStream({
       async start(controller) {
-        const reader = response?.body?.getReader?.();
-        const decoder = new TextDecoder();
         const encoder = new TextEncoder();
 
         try {
-          while (true) {
-            const { done, value } = (await reader?.read?.()) ?? { done: true, value: undefined };
-            if (done) break;
+          const anthropicStream = client.messages.stream({
+            model: "claude-haiku-4-5-20251001",
+            max_tokens: 2000,
+            // Cache the static system prompt — saves ~90% on repeated calls
+            system: [
+              {
+                type: "text",
+                text: SYSTEM_PROMPT + systemSuffix,
+                cache_control: { type: "ephemeral" },
+              },
+            ],
+            messages: anthropicMessages,
+          });
 
-            const chunk = decoder?.decode?.(value);
-            controller?.enqueue?.(encoder?.encode?.(chunk));
+          for await (const event of anthropicStream) {
+            if (
+              event.type === "content_block_delta" &&
+              event.delta.type === "text_delta"
+            ) {
+              const ssePayload = JSON.stringify({
+                choices: [{ delta: { content: event.delta.text } }],
+              });
+              controller.enqueue(encoder.encode(`data: ${ssePayload}\n\n`));
+            }
           }
-        } catch (error) {
-          console.error("🤖 [CAREBOT] Stream error:", error);
-          controller?.error?.(error);
+
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          console.log("🤖 [CAREBOT] ✅ Stream complete");
+        } catch (err) {
+          console.error("🤖 [CAREBOT] Stream error:", err);
+          controller.error(err);
         } finally {
-          controller?.close?.();
+          controller.close();
         }
       },
     });
@@ -245,8 +236,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error("🤖 [CAREBOT] ❌ Error:", error);
-    return NextResponse?.json?.({
-      error: error?.message ?? "Failed to process chat request",
-    }, { status: 500 });
+    return NextResponse.json(
+      { error: error?.message ?? "Failed to process chat request" },
+      { status: 500 }
+    );
   }
 }
