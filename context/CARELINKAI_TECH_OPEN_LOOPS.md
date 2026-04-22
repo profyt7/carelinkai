@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-04-21_
+_Last updated: 2026-04-22_
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -99,3 +99,6 @@ Each loop: what it is, why it matters, what done looks like.
 | AI provider consolidation | Migrated all AI from OpenAI+AbacusAI → Anthropic Claude API | 2026-04-21 |
 | OL-002: ANTHROPIC_API_KEY | Set in Render dashboard by Chris | 2026-04-22 |
 | OL-001: Demo accounts | All 7 accounts seeded in production | 2026-04-22 |
+| Profile picture upload (Bug 1) | Fixed CLOUDINARY_URL missing @dygtsnu8z in Render | 2026-04-22 |
+| AI matching error (Bug 2) | Was missing OpenAI key — resolved with Anthropic migration | 2026-04-22 |
+| Settings routing (Bug 3) | Not a bug — /settings index page works correctly | 2026-04-22 |
