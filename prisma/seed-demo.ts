@@ -54,22 +54,20 @@ async function main() {
   });
 
   if (demoFamilyRecord) {
-    await prisma.familyMember.upsert({
-      where: {
-        familyId_userId: {
+    const existing = await prisma.familyMember.findFirst({
+      where: { familyId: demoFamilyRecord.id, userId: demoFamily.id },
+    });
+    if (!existing) {
+      await prisma.familyMember.create({
+        data: {
           familyId: demoFamilyRecord.id,
           userId: demoFamily.id,
+          role: 'OWNER',
+          status: 'ACTIVE',
+          joinedAt: new Date(),
         },
-      },
-      update: {},
-      create: {
-        familyId: demoFamilyRecord.id,
-        userId: demoFamily.id,
-        role: 'OWNER',
-        status: 'ACTIVE',
-        joinedAt: new Date(),
-      },
-    });
+      });
+    }
     console.log('  ✓ FamilyMember record created for demo.family@carelinkai.test');
   }
 
