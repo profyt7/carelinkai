@@ -17,6 +17,19 @@ import { loginAsOperator, loginAsFamily, waitForPageReady } from './helpers/auth
 let createdHomeId: string;
 let createdInquiryId: string;
 
+// Pre-accept cookie consent so modals never block UI interactions
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('carelinkai_cookie_consent', JSON.stringify({
+      necessary: true,
+      analytics: false,
+      marketing: false,
+      accepted: true,
+      timestamp: new Date().toISOString(),
+    }));
+  });
+});
+
 // ─── Step 1: Operator dashboard loads ───────────────────────────────────────
 
 test('Step 1: Operator can access their dashboard', async ({ page }) => {
@@ -38,7 +51,7 @@ test('Step 2: Operator can navigate to homes list', async ({ page }) => {
   await expect(page.locator('body')).not.toContainText('Unauthorized');
   await expect(page.locator('body')).not.toContainText('Internal Server Error');
   // Page should load — either empty state or existing homes
-  await expect(page.locator('main, [role="main"]')).toBeVisible();
+  await expect(page.locator('main').first()).toBeVisible();
 });
 
 test('Step 2b: Operator can create a home via API', async ({ page }) => {
@@ -100,7 +113,7 @@ test('Step 3: Created home appears in operator homes list', async ({ page }) => 
 // ─── Step 4: Family submits inquiry for the home ─────────────────────────────
 
 test('Step 4: Family can submit an inquiry for the home', async ({ page }) => {
-  // Get the home ID first
+  // Get the home ID as operator first
   await loginAsOperator(page);
   const homesRes = await page.request.get('/api/operator/homes');
   const homesBody = await homesRes.json();
@@ -113,7 +126,10 @@ test('Step 4: Family can submit an inquiry for the home', async ({ page }) => {
   }
   createdHomeId = testHome.id;
 
-  // Now login as family and submit inquiry
+  // Clear session before switching to family user
+  await page.context().clearCookies();
+
+  // Login as family and submit inquiry
   await loginAsFamily(page);
 
   const res = await page.request.post('/api/inquiries', {
@@ -152,7 +168,7 @@ test('Step 5: Operator can view inquiries list', async ({ page }) => {
 
   await expect(page.locator('body')).not.toContainText('Unauthorized');
   await expect(page.locator('body')).not.toContainText('Internal Server Error');
-  await expect(page.locator('main, [role="main"]')).toBeVisible();
+  await expect(page.locator('main').first()).toBeVisible();
   console.log('✅ Inquiries page loads without errors');
 });
 
@@ -290,6 +306,6 @@ test('Step 8: Residents list loads without errors', async ({ page }) => {
 
   await expect(page.locator('body')).not.toContainText('Unauthorized');
   await expect(page.locator('body')).not.toContainText('Internal Server Error');
-  await expect(page.locator('main, [role="main"]')).toBeVisible();
+  await expect(page.locator('main').first()).toBeVisible();
   console.log('✅ Residents page loads without errors');
 });
