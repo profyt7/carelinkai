@@ -16,10 +16,9 @@ Each loop: what it is, why it matters, what done looks like.
 - **Accounts:** demo.admin / demo.operator / demo.family / demo.aide / demo.provider @ carelinkai.test / DemoUser123!
 
 ### OL-002: ANTHROPIC_API_KEY not set in Render
-- **Status:** Open (was OPENAI_API_KEY + ABACUSAI_API_KEY — both replaced by single Anthropic key)
-- **Impact:** All AI features fail: CareBot, inquiry responses, document classification, discharge planner search, match explanations, tour scheduling, home profile generation
-- **Fix:** Set `ANTHROPIC_API_KEY` in Render dashboard > Environment. Get key from console.anthropic.com.
-- **Done when:** CareBot responds and `/api/inquiries/[id]/generate-response` returns AI text in production
+- **Status:** ✅ FIXED (2026-04-22) — Chris confirmed key is set in Render dashboard
+- **Impact was:** All AI features failing in production
+- **Done:** CareBot, inquiry AI, document classification, discharge planner, match explainer all live
 
 ### OL-004: Revenue model not finalized
 - **Status:** Open
@@ -94,3 +93,4 @@ Each loop: what it is, why it matters, what done looks like.
 | Migration failure (20251218) | Resolved with resolve script | 2025-12-19 |
 | CareBot implementation | Built and deployed | 2025-12-30 |
 | AI provider consolidation | Migrated all AI from OpenAI+AbacusAI → Anthropic Claude API | 2026-04-21 |
+| OL-002: ANTHROPIC_API_KEY | Set in Render dashboard by Chris | 2026-04-22 |
