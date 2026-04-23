@@ -10,6 +10,7 @@
  *   2. Creates recurring monthly Prices for each Product
  *   3. Registers the webhook endpoint with all required subscription events
  *   4. Configures the Stripe Customer Portal
+ *   5. Creates the early adopter coupon + promo code (FOUNDERS49 — $50/mo off Starter forever)
  *
  * After running, copy the Price IDs printed at the end into Render env vars:
  *   STRIPE_PRICE_STARTER
@@ -131,6 +132,52 @@ async function getOrCreateWebhook() {
   console.log(`     ${webhook.secret}`);
 }
 
+async function getOrCreateEarlyAdopterCoupon() {
+  const COUPON_ID = 'carelinkai_founders_rate';
+  const PROMO_CODE = 'FOUNDERS49';
+
+  // Check if coupon already exists
+  try {
+    const existing = await stripe.coupons.retrieve(COUPON_ID);
+    console.log(`  ✓ Early adopter coupon already exists: ${existing.id}`);
+    // Check if promo code already exists
+    const existingCodes = await stripe.promotionCodes.list({ code: PROMO_CODE, limit: 1 });
+    if (existingCodes.data.length > 0) {
+      console.log(`  ✓ Promo code already exists: ${PROMO_CODE}`);
+    } else {
+      const promoCode = await stripe.promotionCodes.create({
+        coupon: COUPON_ID,
+        code: PROMO_CODE,
+        max_redemptions: 50,
+      });
+      console.log(`  ✅ Promo code created: ${promoCode.code} (max 50 redemptions)`);
+    }
+    return;
+  } catch (err) {
+    if (err.statusCode !== 404) throw err;
+  }
+
+  // Create coupon — $50/mo off forever (brings Starter from $99 → $49)
+  console.log(`  Creating early adopter coupon...`);
+  const coupon = await stripe.coupons.create({
+    id: COUPON_ID,
+    name: 'Early Adopter — Founders Rate',
+    amount_off: 5000, // $50.00 off per month
+    currency: 'usd',
+    duration: 'forever',
+    metadata: { type: 'early_adopter', description: 'Brings Starter plan to $49/mo locked for life' },
+  });
+  console.log(`  ✅ Coupon created: ${coupon.id} ($${coupon.amount_off / 100} off/mo, forever)`);
+
+  const promoCode = await stripe.promotionCodes.create({
+    coupon: coupon.id,
+    code: PROMO_CODE,
+    max_redemptions: 50,
+  });
+  console.log(`  ✅ Promo code created: ${promoCode.code} (max 50 redemptions)`);
+  console.log(`\n  👉 Share this with early operators: enter "${PROMO_CODE}" at checkout for $49/mo locked forever.`);
+}
+
 async function configureCustomerPortal() {
   console.log('  Configuring Stripe Customer Portal...');
   try {
@@ -194,6 +241,10 @@ async function main() {
 
   console.log('⚙️  Step 3: Configuring Customer Portal\n');
   await configureCustomerPortal();
+  console.log('');
+
+  console.log('🎉 Step 4: Early Adopter Coupon & Promo Code\n');
+  await getOrCreateEarlyAdopterCoupon();
   console.log('');
 
   console.log('='.repeat(60));
