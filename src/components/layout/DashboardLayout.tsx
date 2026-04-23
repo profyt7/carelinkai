@@ -27,7 +27,10 @@ import {
   FiArrowUp,
   FiMoreHorizontal,
   FiHeart,
-  FiZap
+  FiZap,
+  FiClipboard,
+  FiPieChart,
+  FiFolder
 } from "react-icons/fi";
 import { MessageSquare, Stethoscope } from "lucide-react";
 // Real-time notification center
@@ -135,10 +138,12 @@ const navItems: NavItem[] = [
     children: [
       { name: "Calendar", icon: <FiCalendar size={18} />, href: "/calendar", showInMobileBar: true },
       { name: "Shifts", icon: <FiCalendar size={18} />, href: "/shifts", showInMobileBar: true },
+      { name: "Documents", icon: <FiFolder size={18} />, href: "/operator/documents", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
+      { name: "Compliance", icon: <FiClipboard size={18} />, href: "/operator/compliance", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
       { name: "Finances", icon: <FiDollarSign size={18} />, href: "/settings/payouts", showInMobileBar: true },
     ]
   },
-  
+
   // 7. Reports (standalone)
   {
     name: "Reports",
@@ -146,6 +151,15 @@ const navItems: NavItem[] = [
     href: "/reports",
     showInMobileBar: false,
     roleRestriction: ["OPERATOR", "ADMIN"]
+  },
+
+  // 7b. Analytics (operator-specific)
+  {
+    name: "Analytics",
+    icon: <FiPieChart size={20} />,
+    href: "/operator/analytics",
+    showInMobileBar: false,
+    roleRestriction: ["OPERATOR", "ADMIN"],
   },
 
   // 8. Billing (standalone — operator subscription management)

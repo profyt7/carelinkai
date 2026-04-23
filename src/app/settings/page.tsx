@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { FiUser, FiShield, FiBell, FiDollarSign, FiFileText, FiSmartphone } from "react-icons/fi";
+import { FiUser, FiShield, FiBell, FiDollarSign, FiFileText, FiSmartphone, FiCreditCard } from "react-icons/fi";
 
 export default function SettingsIndexPage() {
   const { data: session } = useSession();
@@ -18,6 +18,7 @@ export default function SettingsIndexPage() {
     ] : []),
     ...(role === "OPERATOR" ? [
       { href: "/settings/operator", title: "Operator Profile", desc: "Company & business info", icon: <FiUser className="h-5 w-5" /> },
+      { href: "/operator/billing", title: "Billing & Subscription", desc: "Plan, trial, invoices", icon: <FiCreditCard className="h-5 w-5" /> },
     ] : []),
     { href: "/settings/account", title: "Account", desc: "Password, security", icon: <FiShield className="h-5 w-5" /> },
     { href: "/settings/notifications", title: "Notifications", desc: "Email & in-app", icon: <FiBell className="h-5 w-5" /> },
