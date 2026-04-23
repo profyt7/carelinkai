@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { FiEdit, FiFileText, FiEye } from 'react-icons/fi';
 import { PermissionGuard, RoleGuard, useUserRole } from '@/hooks/usePermissions';
 import { PERMISSIONS } from '@/lib/permissions';
+import { ArchiveButton } from './ArchiveButton';
 
 interface ResidentDetailActionsProps {
   residentId: string;
@@ -91,7 +92,7 @@ export function ResidentDetailActionsBar({ residentId, residentName, showArchive
       <SummaryPDFButton residentId={residentId} />
       {showArchiveButton && (
         <PermissionGuard permission={PERMISSIONS.RESIDENTS_DELETE}>
-          <span className="text-gray-400 text-sm">Archive button</span>
+          <ArchiveButton residentId={residentId} residentName={residentName} />
         </PermissionGuard>
       )}
     </div>

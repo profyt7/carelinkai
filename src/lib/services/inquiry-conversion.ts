@@ -146,13 +146,6 @@ export async function convertInquiryToResident(
         },
       });
 
-      // Update resident status to INQUIRY initially
-      await tx.resident.update({
-        where: { id: resident.id },
-        data: {
-          status: ResidentStatus.INQUIRY,
-        },
-      });
 
       return resident;
     });
