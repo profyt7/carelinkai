@@ -140,15 +140,24 @@ const navItems: NavItem[] = [
   },
   
   // 7. Reports (standalone)
-  { 
-    name: "Reports", 
-    icon: <FiBarChart2 size={20} />, 
-    href: "/reports", 
-    showInMobileBar: false, 
-    roleRestriction: ["OPERATOR", "ADMIN"] 
+  {
+    name: "Reports",
+    icon: <FiBarChart2 size={20} />,
+    href: "/reports",
+    showInMobileBar: false,
+    roleRestriction: ["OPERATOR", "ADMIN"]
   },
-  
-  // 8. Settings (collapsible)
+
+  // 8. Billing (standalone — operator subscription management)
+  {
+    name: "Billing",
+    icon: <FiDollarSign size={20} />,
+    href: "/operator/billing",
+    showInMobileBar: false,
+    roleRestriction: ["OPERATOR", "ADMIN"],
+  },
+
+  // 9. Settings (collapsible)
   {
     name: "Settings",
     icon: <FiSettings size={20} />,
