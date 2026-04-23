@@ -229,41 +229,31 @@ async function triggerPlacementFee(
   }
 
   try {
-    // Find an attached card payment method
-    const pms = await stripe.paymentMethods.list({
+    // Queue as an invoice line item — collected automatically on next billing cycle
+    const invoiceItem = await stripe.invoiceItems.create({
       customer: operator.stripeCustomerId,
-      type: 'card',
-      limit: 1,
-    });
-
-    if (pms.data.length === 0) {
-      console.warn('[PLACEMENT_FEE] No card on file — fee stays PENDING', { paymentId: payment.id });
-      return;
-    }
-
-    const intent = await stripe.paymentIntents.create({
       amount: placementFeeCents,
       currency: 'usd',
-      customer: operator.stripeCustomerId,
-      payment_method: pms.data[0].id,
-      off_session: true,
-      confirm: true,
       description: `Placement fee — ${residentName}`,
       metadata: { inquiryId, residentId: resident.id, type: 'PLACEMENT_FEE' },
     });
 
     await prisma.payment.update({
       where: { id: payment.id },
-      data: { status: 'COMPLETED', stripePaymentId: intent.id },
+      data: {
+        status: 'PROCESSING',
+        stripePaymentId: invoiceItem.id,
+        description: `Placement fee — ${residentName} (queued for next invoice)`,
+      },
     });
 
-    console.log(`[PLACEMENT_FEE] ✅ Charged $${placementFeeCents / 100} for ${residentName}`, { intentId: intent.id });
+    console.log(`[PLACEMENT_FEE] ✅ Queued $${placementFeeCents / 100} for ${residentName} on next invoice`, { invoiceItemId: invoiceItem.id });
   } catch (err: any) {
     await prisma.payment.update({
       where: { id: payment.id },
       data: { status: 'FAILED' },
     }).catch(() => {});
-    console.error('[PLACEMENT_FEE] Charge failed — fee marked FAILED:', err?.message ?? err);
+    console.error('[PLACEMENT_FEE] Failed to queue invoice item — fee marked FAILED:', err?.message ?? err);
   }
 }
 

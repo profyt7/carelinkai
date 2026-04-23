@@ -232,7 +232,13 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      logger.info("Operator invoice payment succeeded", { operatorId: operator.id, invoiceId: invoice.id });
+      // Settle any placement fees that were queued on this billing cycle
+      const settled = await prisma.payment.updateMany({
+        where: { userId: operator.userId, type: "PLACEMENT_FEE", status: "PROCESSING" },
+        data: { status: "COMPLETED" },
+      });
+
+      logger.info("Operator invoice payment succeeded", { operatorId: operator.id, invoiceId: invoice.id, placementFeesSettled: settled.count });
       return NextResponse.json({ received: true }, { status: 200 });
     }
 
