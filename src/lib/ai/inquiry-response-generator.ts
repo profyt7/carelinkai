@@ -62,8 +62,8 @@ export class InquiryResponseGenerator {
     let prompt = `Generate a personalized response to the following inquiry:\n\n`;
 
     prompt += `**Inquiry Details:**\n`;
-    prompt += `- Contact: ${inquiry.contactName}\n`;
-    prompt += `- Care Recipient: ${inquiry.careRecipientName}`;
+    prompt += `- Contact: ${inquiry.contactName || 'the family'}\n`;
+    prompt += `- Care Recipient: ${inquiry.careRecipientName || 'their loved one'}`;
     if (inquiry.careRecipientAge) {
       prompt += `, Age ${inquiry.careRecipientAge}`;
     }
@@ -140,7 +140,7 @@ export class InquiryResponseGenerator {
     }
 
     prompt += `\n**Tone:** ${tone}\n\n`;
-    prompt += `Generate a complete, professional email response (200-400 words).`;
+    prompt += `Generate a complete, professional email response (200-400 words). Write in plain text only — do not use markdown formatting, asterisks, pound signs, or bullet dashes. Use simple line breaks to separate paragraphs.`;
 
     return prompt;
   }

@@ -222,6 +222,7 @@ export interface GenerateResponseInput {
   responseType: 'INITIAL' | 'URGENT' | 'FOLLOW_UP' | 'TOUR_CONFIRMATION' | 'ADDITIONAL_INFO';
   sendEmail: boolean;
   customInstructions?: string;
+  content?: string; // pre-generated content; skips AI when provided
 }
 
 export interface ScheduleFollowUpInput {

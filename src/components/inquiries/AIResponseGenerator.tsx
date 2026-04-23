@@ -19,6 +19,7 @@ export function AIResponseGenerator({ inquiryId, onClose }: AIResponseGeneratorP
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [step, setStep] = useState<'select' | 'preview'>('select');
+  const [generatedResponseId, setGeneratedResponseId] = useState<string | null>(null);
 
   const responseTypes: { value: ResponseType; label: string; description: string }[] = [
     {
@@ -56,7 +57,7 @@ export function AIResponseGenerator({ inquiryId, onClose }: AIResponseGeneratorP
         sendEmail: false,
         customInstructions: customInstructions || undefined,
       });
-      // API returns InquiryResponse directly with content field
+      setGeneratedResponseId(response.id);
       setGeneratedResponse(response.content);
       setStep('preview');
       toast.success('Response generated successfully');
@@ -74,7 +75,7 @@ export function AIResponseGenerator({ inquiryId, onClose }: AIResponseGeneratorP
       await generateResponse(inquiryId, {
         responseType,
         sendEmail: true,
-        customInstructions: generatedResponse, // Use the edited response
+        content: generatedResponse, // send the (possibly edited) previewed content
       });
       toast.success('Response sent successfully');
       onClose();

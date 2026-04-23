@@ -210,13 +210,13 @@ export async function generateResponse(
     throw new Error(error.detail || error.error || 'Failed to generate response');
   }
 
-  const response = await res.json();
-  
+  const json = await res.json();
+
   // Revalidate responses list
   mutate(`/api/inquiries/${inquiryId}/responses`);
   mutate(`/api/inquiries/${inquiryId}`);
-  
-  return response;
+
+  return json.response;
 }
 
 /**

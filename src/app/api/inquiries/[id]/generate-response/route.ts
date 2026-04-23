@@ -33,13 +33,14 @@ export async function POST(
       includeNextSteps = true,
       includeHomeDetails = true,
       sendEmail = false,
+      content: providedContent, // pre-generated content; skips AI when set
     } = body;
 
     // Support both field names from different callers
     const resolvedType = (type || responseType || 'INITIAL') as 'INITIAL' | 'FOLLOW_UP' | 'TOUR_CONFIRMATION' | 'GENERAL';
-    
-    // Generate AI response
-    const content = await inquiryResponseGenerator.generateResponseForInquiry(
+
+    // Use provided content or generate via AI
+    const content = providedContent || await inquiryResponseGenerator.generateResponseForInquiry(
       params.id,
       {
         type: resolvedType,
