@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { X, User, Mail, Phone, MapPin, Calendar, Clock, FileText } from 'lucide-react';
-import { Inquiry } from '@/types/inquiry';
+import { X, User, Mail, Phone, MapPin, Calendar, Clock, FileText, UserPlus } from 'lucide-react';
+import { Inquiry, InquiryStatus } from '@/types/inquiry';
 import { format } from 'date-fns';
 import { CommunicationHistory } from './CommunicationHistory';
 import { FollowUpsTab } from './FollowUpsTab';
+import ConvertInquiryModal from '@/components/operator/inquiries/ConvertInquiryModal';
 
 interface InquiryDetailModalProps {
   inquiry: Inquiry;
@@ -14,6 +15,7 @@ interface InquiryDetailModalProps {
 
 export function InquiryDetailModal({ inquiry, onClose }: InquiryDetailModalProps) {
   const [activeTab, setActiveTab] = useState<'overview' | 'communication' | 'followups' | 'activity'>('overview');
+  const [showConvert, setShowConvert] = useState(false);
 
   const tabs = [
     { id: 'overview', label: 'Overview' },
@@ -35,12 +37,23 @@ export function InquiryDetailModal({ inquiry, onClose }: InquiryDetailModalProps
               for {inquiry.careRecipientName || 'Care Recipient'}
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-3">
+            {inquiry.status !== InquiryStatus.CONVERTED && (
+              <button
+                onClick={() => setShowConvert(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
+              >
+                <UserPlus className="w-4 h-4" />
+                Convert to Resident
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Tabs */}
@@ -253,6 +266,31 @@ export function InquiryDetailModal({ inquiry, onClose }: InquiryDetailModalProps
           )}
         </div>
       </div>
+
+      {showConvert && (
+        <ConvertInquiryModal
+          inquiry={{
+            id: inquiry.id,
+            family: {
+              user: {
+                firstName: inquiry.family?.firstName || inquiry.contactName?.split(' ')[0] || '',
+                lastName: inquiry.family?.lastName || inquiry.contactName?.split(' ').slice(1).join(' ') || '',
+                email: inquiry.family?.email || inquiry.contactEmail || '',
+                phone: inquiry.family?.phone || inquiry.contactPhone || undefined,
+              },
+            },
+            home: {
+              name: inquiry.home?.name || '',
+            },
+            message: inquiry.message || undefined,
+          }}
+          onClose={() => setShowConvert(false)}
+          onSuccess={(residentId) => {
+            setShowConvert(false);
+            onClose();
+          }}
+        />
+      )}
     </div>
   );
 }
