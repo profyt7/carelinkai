@@ -137,21 +137,28 @@ model Family {
 }
 
 model Operator {
-  id              String                @id @default(cuid())
-  userId          String                @unique
-  companyName     String
-  taxId           String?
-  businessLicense String?
-  preferences     Json?
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
-  homes           AssistedLivingHome[]
-  caregivers      CaregiverEmployment[]
-  user            User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tourRequests    TourRequest[]
+  id                   String              @id @default(cuid())
+  userId               String              @unique
+  companyName          String
+  taxId                String?
+  businessLicense      String?
+  preferences          Json?
+  stripeCustomerId     String?             @unique
+  stripeSubscriptionId String?             @unique
+  subscriptionPlan     SubscriptionPlan?
+  subscriptionStatus   SubscriptionStatus?
+  trialEndsAt          DateTime?
+  currentPeriodEndsAt  DateTime?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  homes                AssistedLivingHome[]
+  caregivers           CaregiverEmployment[]
+  user                 User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tourRequests         TourRequest[]
 
   @@index([userId])
   @@index([companyName])
+  @@index([stripeCustomerId])
 }
 
 model Caregiver {
@@ -2422,4 +2429,21 @@ enum ExportStatus {
   PENDING
   COMPLETED
   FAILED
+}
+
+enum SubscriptionPlan {
+  STARTER
+  PROFESSIONAL
+  GROWTH
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  INCOMPLETE
+  INCOMPLETE_EXPIRED
+  PAUSED
 }
