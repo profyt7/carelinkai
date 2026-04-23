@@ -203,10 +203,7 @@ async function configureCustomerPortal() {
           },
         },
         subscription_update: {
-          enabled: true,
-          default_allowed_updates: ['price'],
-          proration_behavior: 'create_prorations',
-          products: [], // Will be populated with product IDs after we have them
+          enabled: false, // Plan upgrades via portal require product IDs — configure manually in Stripe dashboard
         },
       },
     });
