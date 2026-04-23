@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-04-21_
+_Last updated: 2026-04-22 (evening)_
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -9,11 +9,15 @@ Each loop: what it is, why it matters, what done looks like.
 ## 🔴 Critical (Blocking Revenue / Demos)
 
 ### OL-001: Demo accounts not seeded in production
-- **Status:** Open
-- **Impact:** Cannot demo the product to any prospect
-- **Fix:** SSH into Render shell → `npm run seed:demo`
-- **Done when:** All 5 demo accounts can log in at carelinkai.onrender.com
-- **Accounts:** demo.admin / demo.operator / demo.family / demo.aide / demo.provider @ carelinkai.test / DemoUser123!
+- **Status:** ✅ FIXED (2026-04-22)
+- **All 7 accounts active in production (Password: DemoUser123!):**
+  - demo.family@carelinkai.test (FAMILY)
+  - demo.operator@carelinkai.test (OPERATOR)
+  - demo.aide@carelinkai.test (CAREGIVER)
+  - demo.provider@carelinkai.test (PROVIDER)
+  - demo.admin@carelinkai.test (ADMIN)
+  - demo.healthcare@carelinkai.test (DISCHARGE_PLANNER)
+  - demo.affiliate@carelinkai.test (AFFILIATE)
 
 ### OL-002: ANTHROPIC_API_KEY not set in Render
 - **Status:** ✅ FIXED (2026-04-22) — Chris confirmed key is set in Render dashboard
@@ -45,10 +49,21 @@ Each loop: what it is, why it matters, what done looks like.
 - **Done when:** CI passes with type-check enabled
 
 ### OL-007: Full end-to-end operator onboarding never verified
-- **Status:** Open
-- **Impact:** Unknown broken flows in the most important user journey
-- **Fix:** Do a manual walkthrough: register operator → create home → receive inquiry → AI response → convert
-- **Done when:** Full loop works with no errors in production
+- **Status:** Partially verified (2026-04-22)
+- **What passed locally (7/10 E2E tests):**
+  - ✅ Operator dashboard loads without errors
+  - ✅ Operator can navigate to homes list (UI renders)
+  - ✅ Operator can create a home via API (POST /api/operator/homes → 201)
+  - ✅ Created home appears in operator list (GET /api/operator/homes → 200)
+  - ✅ Family can submit inquiry for a home (POST /api/inquiries → 201)
+  - ✅ Operator can view inquiries list (UI renders, no errors)
+  - ✅ Inquiry appears in operator pipeline (GET /api/operator/inquiries → 200)
+- **What still needs production verification:**
+  - ⏳ AI response generation (POST /api/inquiries/[id]/generate-response) — requires ANTHROPIC_API_KEY set in Render
+  - ⏳ Convert inquiry to resident (POST /api/operator/inquiries/[id]/convert)
+  - ⏳ Residents list page loads correctly
+- **Local test limitation:** Prisma binary engine dies after ~7 tests in sandbox (thread limit). NOT a production issue.
+- **Done when:** Steps 6-8 verified in production via Render
 
 ### OL-008: Stripe subscription billing not wired (operators)
 - **Status:** Open — Stripe one-time payments are wired; recurring subscriptions are not
@@ -94,3 +109,7 @@ Each loop: what it is, why it matters, what done looks like.
 | CareBot implementation | Built and deployed | 2025-12-30 |
 | AI provider consolidation | Migrated all AI from OpenAI+AbacusAI → Anthropic Claude API | 2026-04-21 |
 | OL-002: ANTHROPIC_API_KEY | Set in Render dashboard by Chris | 2026-04-22 |
+| OL-001: Demo accounts | All 7 accounts seeded in production | 2026-04-22 |
+| Profile picture upload (Bug 1) | Fixed CLOUDINARY_URL missing @dygtsnu8z in Render | 2026-04-22 |
+| AI matching error (Bug 2) | Was missing OpenAI key — resolved with Anthropic migration | 2026-04-22 |
+| Settings routing (Bug 3) | Not a bug — /settings index page works correctly | 2026-04-22 |

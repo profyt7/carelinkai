@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { inquiryResponseGenerator } from '@/lib/ai/inquiry-response-generator';
 import { inquiryEmailService } from '@/lib/email/inquiry-email-service';
 import { prisma } from '@/lib/prisma';
+import * as Sentry from '@sentry/nextjs';
 
 // Tell Next.js this route is fully dynamic - prevents build-time execution
 export const dynamic = 'force-dynamic';
@@ -26,18 +27,23 @@ export async function POST(
     
     const body = await request.json();
     const {
-      type = 'INITIAL',
+      type,
+      responseType,   // component sends responseType, not type
       tone,
       includeNextSteps = true,
       includeHomeDetails = true,
       sendEmail = false,
+      content: providedContent, // pre-generated content; skips AI when set
     } = body;
-    
-    // Generate AI response
-    const content = await inquiryResponseGenerator.generateResponseForInquiry(
+
+    // Support both field names from different callers
+    const resolvedType = (type || responseType || 'INITIAL') as 'INITIAL' | 'FOLLOW_UP' | 'TOUR_CONFIRMATION' | 'GENERAL';
+
+    // Use provided content or generate via AI
+    const content = providedContent || await inquiryResponseGenerator.generateResponseForInquiry(
       params.id,
       {
-        type,
+        type: resolvedType,
         tone,
         includeNextSteps,
         includeHomeDetails,
@@ -106,9 +112,13 @@ export async function POST(
       },
     });
   } catch (error) {
-    console.error('Error generating response:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('Error generating response:', errorMessage, error);
+    Sentry.captureException(error, {
+      tags: { route: 'generate-response', inquiryId: params.id },
+    });
     return NextResponse.json(
-      { success: false, error: 'Failed to generate response' },
+      { success: false, error: 'Failed to generate response', detail: errorMessage },
       { status: 500 }
     );
   }

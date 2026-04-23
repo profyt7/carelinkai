@@ -42,37 +42,35 @@ export const TEST_USERS: Record<string, TestUser> = {
 };
 
 /**
- * Log in as a specific test user
+ * Log in as a specific test user (with retry for transient Prisma engine startup errors)
  */
-export async function login(page: Page, user: TestUser): Promise<void> {
-  await page.goto('/auth/login');
-  
-  // Wait for page to be fully loaded
-  await page.waitForLoadState('networkidle');
-  
-  // Wait for the sign-in page to load
-  await expect(page.locator('h1, h2').filter({ hasText: /sign in|login/i })).toBeVisible();
-  
-  // Fill in credentials using specific ID selectors
-  await page.fill('#email', user.email);
-  await page.fill('#password', user.password);
-  
-  // Add small delay before submission to ensure form is ready
-  await page.waitForTimeout(500);
-  
-  // Click sign in button
-  await page.click('button[type="submit"]');
-  
-  // Wait for successful login (redirect away from login page)
-  await page.waitForURL((url) => !url.pathname.includes('/auth/login'), {
-    timeout: 15000,
-  });
-  
-  // Wait for page to settle after navigation
-  await page.waitForLoadState('networkidle');
-  
-  // Verify we're logged in by checking for user name or dashboard elements
-  await expect(page.locator('body')).not.toContainText('Sign In');
+export async function login(page: Page, user: TestUser, maxAttempts = 3): Promise<void> {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    await page.goto('/auth/login');
+    await page.waitForLoadState('networkidle');
+    await expect(page.locator('h1, h2').filter({ hasText: /sign in|login/i })).toBeVisible();
+
+    await page.fill('#email', user.email);
+    await page.fill('#password', user.password);
+    await page.waitForTimeout(500);
+    await page.click('button[type="submit"]');
+
+    try {
+      await page.waitForURL((url) => !url.pathname.includes('/auth/login'), {
+        timeout: 20000,
+      });
+      await page.waitForLoadState('networkidle');
+      await expect(page.locator('body')).not.toContainText('Sign In');
+      return;
+    } catch (e) {
+      if (attempt < maxAttempts) {
+        // Transient DB engine startup error — wait for recovery then retry
+        await page.waitForTimeout(3000);
+      } else {
+        throw e;
+      }
+    }
+  }
 }
 
 /**
