@@ -2166,6 +2166,7 @@ enum PaymentType {
   INCIDENTAL
   CAREGIVER_PAYMENT
   AFFILIATE_COMMISSION
+  PLACEMENT_FEE
 }
 
 enum TransactionType {
