@@ -2,6 +2,48 @@
 
 ---
 
+### 2026-04-23 — OL-007 Production Verification Complete + AI Response Generator Fixes
+
+- **Objective:** Verify remaining OL-007 steps (6-8) in production; fix any broken flows discovered.
+
+- **Work completed:**
+  - **OL-007 CLOSED:** All 10 steps verified in production on getcarelinkai.com:
+    - Step 6 (AI response generation): Fixed Anthropic credit balance issue (was $0, Chris added $20). Fixed blank preview box (hook was returning response wrapper instead of `response.response`). Fixed send sending fresh AI content instead of previewed content (added `content` field to API route). Fixed markdown formatting in AI output (added plain text instruction to prompt). Fixed null contact/recipient name placeholders.
+    - Step 7 (Convert to Resident): Wired `ConvertInquiryModal` into `InquiryDetailModal` (button was completely missing). Fixed Zod date validation (`z.string().datetime()` → `z.coerce.date()` to accept HTML date input format). Fixed scroll-to-error so validation failures are visible.
+    - Step 8 (Residents list): Confirmed — Jason Bourne appears in `/operator/residents` list after conversion.
+  - **Resident profile fixes:** Replaced "Archive button" placeholder text with real `ArchiveButton` component. Removed spurious status overwrite that set resident to `INQUIRY` after conversion (should stay `PENDING`).
+  - **Merged feature branch** `claude/review-carelink-docs-49Ycv` → `main`, triggering Render deploys throughout session.
+
+- **Files changed:**
+  - `src/hooks/useInquiries.ts` — return `json.response` not full wrapper in `generateResponse`
+  - `src/app/api/inquiries/[id]/generate-response/route.ts` — accept `content` field to skip AI generation on send; improved Sentry error logging; support both `type` and `responseType` fields
+  - `src/components/inquiries/AIResponseGenerator.tsx` — store response ID; pass edited content on Send Email instead of regenerating; add `generatedResponseId` state
+  - `src/lib/ai/inquiry-response-generator.ts` — plain text prompt (no markdown); null-safe contactName/careRecipientName fallbacks
+  - `src/types/inquiry.ts` — added `content?: string` to `GenerateResponseInput`
+  - `src/components/inquiries/InquiryDetailModal.tsx` — wired Convert to Resident button + `ConvertInquiryModal`
+  - `src/components/operator/inquiries/ConvertInquiryModal.tsx` — scroll-to-error on submit failure; added `scrollRef`
+  - `src/lib/services/inquiry-conversion.ts` — `z.coerce.date()` for dateOfBirth/moveInDate; removed spurious INQUIRY status overwrite
+  - `src/components/operator/residents/ResidentDetailActions.tsx` — replaced placeholder with real `ArchiveButton`
+  - `context/CARELINKAI_TECH_OPEN_LOOPS.md` — updated OL-007 status
+  - `prisma/seed-inquiries.ts` — fixed missing contactName/careRecipientName in seed data
+
+- **Commands run:**
+  - `git merge claude/review-carelink-docs-49Ycv` (with conflict resolution in context file)
+  - `git push origin main` (×6 deploys throughout session)
+  - `npx tsc --noEmit` (type-check after each change)
+
+- **Tests/build status:** TypeScript clean on all changed files. Production deploys succeeded. End-to-end flow manually verified in production browser.
+
+- **Deployment impact:** All fixes are live on `main` → Render auto-deployed. No schema changes. No migrations required.
+
+- **New risks/blockers:**
+  - Existing residents from before this fix have `INQUIRY` status in DB — would need a one-time migration if any were created in testing. (Low priority — test data only.)
+  - CareBot also outputs markdown formatting (`**bold**`) — same root cause as AI response generator. Not fixed this session.
+
+- **Recommended next step:** Wire Stripe subscription billing for operators (OL-008) — this is the next revenue-critical gap. Stripe keys are configured; need Products/Prices in Stripe dashboard + subscription checkout + webhook handler.
+
+---
+
 ### 2026-04-22 — OL-007 Operator Onboarding E2E Tests + Bug Verification
 
 - **Objective:** Tackle OL-001 (demo accounts), OL-002 (ANTHROPIC_API_KEY), fix 3 OneNote bugs, and run end-to-end operator onboarding walkthrough (OL-007).

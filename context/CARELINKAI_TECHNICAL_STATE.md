@@ -1,8 +1,8 @@
 # CareLinkAI — Technical State
-_Last updated: 2026-04-22_
+_Last updated: 2026-04-23_
 
 ## Active Branch
-`claude/review-carelink-docs-49Ycv` (feature/fix branch — merge to main when ready)
+`main` (all session fixes merged and deployed)
 
 ## Production URL
 https://carelinkai.onrender.com (also: https://getcarelinkai.com)
@@ -52,7 +52,7 @@ FAMILY, OPERATOR, CAREGIVER, ADMIN, STAFF, PROVIDER, AFFILIATE, DISCHARGE_PLANNE
 - Analytics: GA4, GTM, FB Pixel, Clarity
 - Anthropic Claude API: CareBot (Haiku 4.5 + prompt caching), inquiry responses, document classification, discharge planner search, match explanations, tour scheduling, home profile generation (all Sonnet 4.6)
 
-## Known Issues (as of 2026-04-22)
+## Known Issues (as of 2026-04-23)
 1. ~~Email FROM address was `noreply@applyedge.co`~~ — **FIXED** (now `noreply@getcarelinkai.com`)
 2. ~~Demo accounts not seeded~~ — **FIXED** — All 7 accounts active in production (see OL-001)
 3. ~~OPENAI_API_KEY needed~~ — **MIGRATED TO ANTHROPIC** — `ANTHROPIC_API_KEY` set in Render (OL-002 ✅)
@@ -63,6 +63,11 @@ FAMILY, OPERATOR, CAREGIVER, ADMIN, STAFF, PROVIDER, AFFILIATE, DISCHARGE_PLANNE
 8. 2 pre-existing test failures: `calendar.appointments.api` and `emergency.api` — unrelated to AI migration
 9. ~~Cloudinary 403 on profile picture upload~~ — **FIXED** — `CLOUDINARY_URL` was missing `@dygtsnu8z` suffix in Render; corrected by Chris
 10. ~~AI matching returning 500~~ — **FIXED** — was missing ANTHROPIC key (OL-002). Now returns 200 with empty array when no matching homes exist
+11. ~~AI Response Generator blank preview box~~ — **FIXED** (2026-04-23) — hook was returning response wrapper instead of inner object
+12. ~~Convert to Resident button missing from pipeline~~ — **FIXED** (2026-04-23) — wired ConvertInquiryModal into InquiryDetailModal
+13. ~~Resident status set to INQUIRY after conversion~~ — **FIXED** (2026-04-23) — removed spurious status overwrite; now stays PENDING
+14. CareBot outputs raw markdown (`**bold**`) in chat — same root cause as AI response generator; not yet fixed
+15. "Archive button" placeholder text in resident profile — **FIXED** (2026-04-23) — wired real ArchiveButton component
 
 ## Environment Variables — Render Dashboard Checklist
 These MUST be set on Render for production to work:
@@ -106,6 +111,7 @@ See `REVENUE_MODEL.md` for the full breakdown. Key streams being considered:
 ## Immediate Next Priorities
 1. ~~Seed demo accounts in production Render shell~~ — **DONE** (OL-001 ✅)
 2. ~~Set ANTHROPIC_API_KEY in Render~~ — **DONE** (OL-002 ✅)
-3. Verify operator onboarding Steps 6-8 in production (AI response, conversion, residents)
-4. Wire Stripe subscription billing for operators (OL-008)
-5. Fix TypeScript strict mode errors (274 remaining) (OL-005)
+3. ~~Verify full operator onboarding end-to-end~~ — **DONE** (OL-007 ✅) — all 10 steps verified in production
+4. Wire Stripe subscription billing for operators (OL-008) — **next priority**
+5. Fix CareBot markdown output in chat widget
+6. Fix TypeScript strict mode errors (274 remaining) (OL-005)
