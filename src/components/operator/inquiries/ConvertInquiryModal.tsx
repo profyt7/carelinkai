@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { FiX, FiUser, FiHome, FiCalendar, FiAlertCircle } from 'react-icons/fi';
 
@@ -38,6 +38,7 @@ export default function ConvertInquiryModal({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const [formData, setFormData] = useState({
     firstName: inquiry.family.user.firstName || '',
@@ -93,6 +94,7 @@ export default function ConvertInquiryModal({
         throw new Error(data.error || 'Failed to convert inquiry');
       }
 
+
       // Success!
       if (onSuccess) {
         onSuccess(data.residentId);
@@ -103,6 +105,7 @@ export default function ConvertInquiryModal({
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
+      scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setIsLoading(false);
     }
@@ -110,7 +113,7 @@ export default function ConvertInquiryModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-      <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded-lg shadow-xl">
+      <div ref={scrollRef} className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded-lg shadow-xl">
         {/* Header */}
         <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
           <div>

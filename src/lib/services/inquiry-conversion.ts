@@ -21,9 +21,9 @@ export const ConversionDataSchema = z.object({
   // Resident-specific data (some may come from inquiry, others from form)
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
-  dateOfBirth: z.string().datetime().or(z.date()),
+  dateOfBirth: z.coerce.date(),
   gender: z.enum(['MALE', 'FEMALE', 'OTHER', 'PREFER_NOT_TO_SAY']),
-  
+
   // Optional fields
   careNeeds: z.any().optional(), // JSON field
   medicalConditions: z.string().optional(),
@@ -31,9 +31,9 @@ export const ConversionDataSchema = z.object({
   allergies: z.string().optional(),
   dietaryRestrictions: z.string().optional(),
   notes: z.string().optional(),
-  
+
   // Move-in details
-  moveInDate: z.string().datetime().or(z.date()).optional(),
+  moveInDate: z.coerce.date().optional(),
 });
 
 export type ConversionData = z.infer<typeof ConversionDataSchema>;
