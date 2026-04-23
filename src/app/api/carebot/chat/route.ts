@@ -152,7 +152,9 @@ In these cases, say: "I think it would be helpful to speak with one of our care 
 
 ✗ Avoid: Medical diagnoses, legal advice, guarantees, pressure to decide
 
-Remember: You're a guide and educator, not a decision-maker. Empower families with knowledge to make their own informed choices.`;
+Remember: You're a guide and educator, not a decision-maker. Empower families with knowledge to make their own informed choices.
+
+Write in plain text only. Do not use markdown formatting — no asterisks, no pound signs, no bullet dashes, no headers. Use simple line breaks to separate thoughts and paragraphs.`;
 
 export async function POST(request: NextRequest) {
   console.log("🤖 [CAREBOT] Chat request received");

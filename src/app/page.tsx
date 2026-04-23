@@ -95,13 +95,13 @@ export default function HomePage() {
               How It Works
             </Link>
             <Link href="#benefits" className="text-[#63666A] hover:text-[#3978FC] font-medium transition-colors">
-              Benefits
+              Who It Serves
+            </Link>
+            <Link href="#pricing" className="text-[#63666A] hover:text-[#3978FC] font-medium transition-colors">
+              Pricing
             </Link>
             <Link href="#roadmap" className="text-[#63666A] hover:text-[#3978FC] font-medium transition-colors">
               Roadmap
-            </Link>
-            <Link href="#testimonials" className="text-[#63666A] hover:text-[#3978FC] font-medium transition-colors">
-              Testimonials
             </Link>
           </div>
           
@@ -659,54 +659,74 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 md:px-6">
           <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-bold text-[#1A1A1A] mb-4">
-              Benefits for Everyone
+              Built for Everyone in Senior Care
             </h2>
             <p className="text-xl text-[#63666A] max-w-3xl mx-auto">
-              Tailored solutions for each user type
+              CareLinkAI serves 6 different user types — each with a dedicated portal and tailored features
             </p>
           </div>
-          
+
           {/* Tab Buttons */}
-          <div className="flex flex-wrap justify-center gap-4 mb-12">
+          <div className="flex flex-wrap justify-center gap-3 mb-12">
             <button
               onClick={() => setActiveBenefitTab('families')}
-              className={`px-6 py-3 rounded-lg font-semibold transition-all ${
+              className={`px-5 py-2.5 rounded-lg font-semibold transition-all text-sm ${
                 activeBenefitTab === 'families'
                   ? 'bg-gradient-to-r from-[#3978FC] to-[#5a8ffc] text-white shadow-lg'
                   : 'bg-white text-[#63666A] border-2 border-neutral-200 hover:border-[#3978FC]'
               }`}
             >
-              For Families
+              🏠 Families
             </button>
             <button
               onClick={() => setActiveBenefitTab('operators')}
-              className={`px-6 py-3 rounded-lg font-semibold transition-all ${
+              className={`px-5 py-2.5 rounded-lg font-semibold transition-all text-sm ${
                 activeBenefitTab === 'operators'
                   ? 'bg-gradient-to-r from-[#7253B7] to-[#8f6dd1] text-white shadow-lg'
                   : 'bg-white text-[#63666A] border-2 border-neutral-200 hover:border-[#7253B7]'
               }`}
             >
-              For Care Homes
+              🏢 Care Home Operators
             </button>
             <button
               onClick={() => setActiveBenefitTab('caregivers')}
-              className={`px-6 py-3 rounded-lg font-semibold transition-all ${
+              className={`px-5 py-2.5 rounded-lg font-semibold transition-all text-sm ${
                 activeBenefitTab === 'caregivers'
                   ? 'bg-gradient-to-r from-[#3978FC] to-[#7253B7] text-white shadow-lg'
                   : 'bg-white text-[#63666A] border-2 border-neutral-200 hover:border-[#3978FC]'
               }`}
             >
-              For Caregivers
+              🩺 Caregivers
             </button>
             <button
               onClick={() => setActiveBenefitTab('healthcare')}
-              className={`px-6 py-3 rounded-lg font-semibold transition-all ${
+              className={`px-5 py-2.5 rounded-lg font-semibold transition-all text-sm ${
                 activeBenefitTab === 'healthcare'
                   ? 'bg-gradient-to-r from-[#7253B7] to-[#3978FC] text-white shadow-lg'
                   : 'bg-white text-[#63666A] border-2 border-neutral-200 hover:border-[#7253B7]'
               }`}
             >
-              For Healthcare Professionals
+              🏥 Discharge Planners
+            </button>
+            <button
+              onClick={() => setActiveBenefitTab('providers')}
+              className={`px-5 py-2.5 rounded-lg font-semibold transition-all text-sm ${
+                activeBenefitTab === 'providers'
+                  ? 'bg-gradient-to-r from-[#3978FC] to-[#7253B7] text-white shadow-lg'
+                  : 'bg-white text-[#63666A] border-2 border-neutral-200 hover:border-[#3978FC]'
+              }`}
+            >
+              🚐 Service Providers
+            </button>
+            <button
+              onClick={() => setActiveBenefitTab('affiliates')}
+              className={`px-5 py-2.5 rounded-lg font-semibold transition-all text-sm ${
+                activeBenefitTab === 'affiliates'
+                  ? 'bg-gradient-to-r from-[#7253B7] to-[#3978FC] text-white shadow-lg'
+                  : 'bg-white text-[#63666A] border-2 border-neutral-200 hover:border-[#7253B7]'
+              }`}
+            >
+              🤝 Affiliates
             </button>
           </div>
           
@@ -763,51 +783,38 @@ export default function HomePage() {
             )}
             
             {activeBenefitTab === 'operators' && (
-              <div className="grid md:grid-cols-2 gap-8">
-                <div className="flex items-start space-x-4">
-                  <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-br from-[#7253B7] to-[#8f6dd1] flex items-center justify-center">
-                    <FiTrendingUp className="text-white text-xl" />
-                  </div>
-                  <div>
-                    <h4 className="text-lg font-bold text-[#1A1A1A] mb-2">Increase Occupancy</h4>
-                    <p className="text-[#63666A]">Get matched with qualified families actively seeking care, filling your beds faster.</p>
-                  </div>
+              <div>
+                <div className="grid md:grid-cols-3 gap-6 mb-8">
+                  {[
+                    { icon: <FiTrendingUp />, title: 'Inquiry Pipeline', desc: 'Manage every inquiry from first contact to move-in. AI ranks leads by urgency and fit.' },
+                    { icon: <FiZap />, title: 'AI Inquiry Responses', desc: 'Generate professional, personalized email responses in one click — sent directly to families.' },
+                    { icon: <FiActivity />, title: 'Resident Management', desc: 'Track health, medications, assessments, documents, and family communication in one place.' },
+                    { icon: <FiUsers />, title: 'Caregiver Staffing', desc: 'Post shifts, manage applications, track timesheets, and process caregiver payments.' },
+                    { icon: <FiCalendar />, title: 'Tour Scheduling', desc: 'AI-optimized tour scheduling. Families book online; your calendar stays organized.' },
+                    { icon: <FiBarChart />, title: 'Analytics & Reporting', desc: 'Occupancy trends, inquiry conversion rates, revenue tracking, and compliance reports.' },
+                    { icon: <FiFileText />, title: 'Document Management', desc: 'Store and classify resident documents with AI. No more lost paperwork.' },
+                    { icon: <FiShield />, title: 'Compliance Tracking', desc: 'Track certifications, background checks, and regulatory requirements automatically.' },
+                    { icon: <FiMessageCircle />, title: 'Messaging & Notifications', desc: 'In-platform messaging with families. Real-time notifications for new inquiries and tours.' },
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-start space-x-3">
+                      <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-gradient-to-br from-[#7253B7] to-[#8f6dd1] flex items-center justify-center text-white">
+                        {item.icon}
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-[#1A1A1A] mb-1">{item.title}</h4>
+                        <p className="text-sm text-[#63666A]">{item.desc}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div className="flex items-start space-x-4">
-                  <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-br from-[#7253B7] to-[#8f6dd1] flex items-center justify-center">
-                    <FiZap className="text-white text-xl" />
-                  </div>
+                <div className="bg-gradient-to-r from-[#7253B7]/10 to-[#3978FC]/10 rounded-xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4 border border-[#7253B7]/20">
                   <div>
-                    <h4 className="text-lg font-bold text-[#1A1A1A] mb-2">Automated Marketing</h4>
-                    <p className="text-[#63666A]">AI creates compelling profiles and handles inquiry responses automatically.</p>
+                    <div className="font-bold text-[#1A1A1A] text-lg">Plans from $99/mo · 14-day free trial</div>
+                    <div className="text-sm text-[#63666A] mt-1">No credit card required to start. Cancel anytime.</div>
                   </div>
-                </div>
-                <div className="flex items-start space-x-4">
-                  <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-br from-[#7253B7] to-[#8f6dd1] flex items-center justify-center">
-                    <FiActivity className="text-white text-xl" />
-                  </div>
-                  <div>
-                    <h4 className="text-lg font-bold text-[#1A1A1A] mb-2">Resident Management</h4>
-                    <p className="text-[#63666A]">Comprehensive tools to track health, medications, assessments, and family communication.</p>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-4">
-                  <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-br from-[#7253B7] to-[#8f6dd1] flex items-center justify-center">
-                    <FiBarChart className="text-white text-xl" />
-                  </div>
-                  <div>
-                    <h4 className="text-lg font-bold text-[#1A1A1A] mb-2">Analytics & Insights</h4>
-                    <p className="text-[#63666A]">Track inquiry sources, conversion rates, and optimize your facility's performance.</p>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-4">
-                  <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-br from-[#7253B7] to-[#8f6dd1] flex items-center justify-center">
-                    <FiClock className="text-white text-xl" />
-                  </div>
-                  <div>
-                    <h4 className="text-lg font-bold text-[#1A1A1A] mb-2">Save Staff Time</h4>
-                    <p className="text-[#63666A]">Automation handles follow-ups, scheduling, and documentation, freeing your team.</p>
-                  </div>
+                  <Link href="/auth/register?role=operator" className="bg-gradient-to-r from-[#7253B7] to-[#3978FC] text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity whitespace-nowrap shadow-lg">
+                    Start Free Trial →
+                  </Link>
                 </div>
               </div>
             )}
@@ -900,14 +907,239 @@ export default function HomePage() {
                     <p className="text-[#63666A]">All patient information is securely handled with full HIPAA compliance.</p>
                   </div>
                 </div>
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-br from-[#7253B7] to-[#3978FC] flex items-center justify-center">
+                    <FiBarChart className="text-white text-xl" />
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-bold text-[#1A1A1A] mb-2">Placement History & Analytics</h4>
+                    <p className="text-[#63666A]">Track every placement request, response time, and outcome in one dashboard.</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeBenefitTab === 'providers' && (
+              <div>
+                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-3">
+                  <FiZap className="text-[#3978FC] mt-0.5 flex-shrink-0" />
+                  <div>
+                    <div className="font-semibold text-[#1A1A1A]">Senior Service Provider Marketplace</div>
+                    <p className="text-sm text-[#63666A] mt-1">
+                      CareLinkAI connects senior service providers — transportation companies, housekeepers, meal services, home health aides, and more — directly with care homes and families in their area. Starting in Cleveland, expanding nationwide.
+                    </p>
+                  </div>
+                </div>
+                <div className="grid md:grid-cols-2 gap-8 mb-8">
+                  <div className="flex items-start space-x-4">
+                    <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-br from-[#3978FC] to-[#7253B7] flex items-center justify-center">
+                      <FiSearch className="text-white text-xl" />
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-bold text-[#1A1A1A] mb-2">Marketplace Listing</h4>
+                      <p className="text-[#63666A]">List your services where care homes and families are already searching. Get discovered by clients who need exactly what you offer.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-4">
+                    <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-br from-[#3978FC] to-[#7253B7] flex items-center justify-center">
+                      <FiTarget className="text-white text-xl" />
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-bold text-[#1A1A1A] mb-2">Qualified Referrals</h4>
+                      <p className="text-[#63666A]">Receive referrals from operators and families who have verified needs — no cold prospecting required.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-4">
+                    <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-br from-[#3978FC] to-[#7253B7] flex items-center justify-center">
+                      <FiShield className="text-white text-xl" />
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-bold text-[#1A1A1A] mb-2">Verified Provider Profile</h4>
+                      <p className="text-[#63666A]">Build trust with a verified business profile including certifications, service area, and client reviews.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-4">
+                    <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-br from-[#3978FC] to-[#7253B7] flex items-center justify-center">
+                      <FiMessageCircle className="text-white text-xl" />
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-bold text-[#1A1A1A] mb-2">Direct Messaging</h4>
+                      <p className="text-[#63666A]">Communicate directly with care homes and families through the platform. All in one place.</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                  {['Transportation', 'Housekeeping', 'Meal Delivery', 'Home Health', 'Personal Care', 'Companionship', 'Medical Equipment', 'Physical Therapy'].map((s) => (
+                    <div key={s} className="bg-neutral-50 border border-neutral-200 rounded-lg px-3 py-2 text-sm text-center text-[#63666A] font-medium">{s}</div>
+                  ))}
+                </div>
+                <div className="bg-gradient-to-r from-[#3978FC]/10 to-[#7253B7]/10 rounded-xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 border border-[#3978FC]/20">
+                  <div>
+                    <div className="font-bold text-[#1A1A1A]">Provider portal coming soon</div>
+                    <div className="text-sm text-[#63666A] mt-1">Register early to be listed when we launch in your area.</div>
+                  </div>
+                  <Link href="/auth/register?role=provider" className="bg-gradient-to-r from-[#3978FC] to-[#7253B7] text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity whitespace-nowrap shadow-lg">
+                    Join the Waitlist →
+                  </Link>
+                </div>
+              </div>
+            )}
+
+            {activeBenefitTab === 'affiliates' && (
+              <div>
+                <div className="mb-6 p-4 bg-purple-50 border border-purple-200 rounded-xl flex items-start gap-3">
+                  <FiHeart className="text-[#7253B7] mt-0.5 flex-shrink-0" />
+                  <div>
+                    <div className="font-semibold text-[#1A1A1A]">Earn by Referring Care Homes and Families</div>
+                    <p className="text-sm text-[#63666A] mt-1">
+                      Senior care advocates, social workers, geriatric care managers, and community organizations can earn recurring commissions by referring operators and families to CareLinkAI.
+                    </p>
+                  </div>
+                </div>
+                <div className="grid md:grid-cols-2 gap-8 mb-8">
+                  <div className="flex items-start space-x-4">
+                    <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-br from-[#7253B7] to-[#3978FC] flex items-center justify-center">
+                      <FiTrendingUp className="text-white text-xl" />
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-bold text-[#1A1A1A] mb-2">Recurring Commission</h4>
+                      <p className="text-[#63666A]">Earn a percentage of every subscription payment from operators you refer — for as long as they remain active.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-4">
+                    <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-br from-[#7253B7] to-[#3978FC] flex items-center justify-center">
+                      <FiBarChart className="text-white text-xl" />
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-bold text-[#1A1A1A] mb-2">Affiliate Dashboard</h4>
+                      <p className="text-[#63666A]">Track your referrals, conversions, and earnings in real time. See exactly what you've earned and when you'll be paid.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-4">
+                    <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-br from-[#7253B7] to-[#3978FC] flex items-center justify-center">
+                      <FiGlobe className="text-white text-xl" />
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-bold text-[#1A1A1A] mb-2">Unique Referral Link</h4>
+                      <p className="text-[#63666A]">Share your personal link anywhere — email, social media, your website — and get credited for every signup.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-4">
+                    <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-br from-[#7253B7] to-[#3978FC] flex items-center justify-center">
+                      <FiBriefcase className="text-white text-xl" />
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-bold text-[#1A1A1A] mb-2">Marketing Materials</h4>
+                      <p className="text-[#63666A]">Access ready-made flyers, email templates, and talking points to share CareLinkAI with your network.</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-gradient-to-r from-[#7253B7]/10 to-[#3978FC]/10 rounded-xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 border border-[#7253B7]/20">
+                  <div>
+                    <div className="font-bold text-[#1A1A1A]">Affiliate program — apply now</div>
+                    <div className="text-sm text-[#63666A] mt-1">Best fit for social workers, care managers, senior advocates, and community organizations.</div>
+                  </div>
+                  <Link href="/auth/register?role=affiliate" className="bg-gradient-to-r from-[#7253B7] to-[#3978FC] text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity whitespace-nowrap shadow-lg">
+                    Apply as Affiliate →
+                  </Link>
+                </div>
               </div>
             )}
           </div>
         </div>
       </section>
 
-      {/* 6. COMING SOON FEATURES (ROADMAP) */}
-      <section id="roadmap" className="py-20 bg-white">
+      {/* 6. PRICING SECTION */}
+      <section id="pricing" className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 md:px-6">
+          <div className="text-center mb-14">
+            <div className="inline-flex items-center bg-green-100 text-green-800 rounded-full px-4 py-2 mb-6 text-sm font-semibold">
+              <FiCheck className="mr-2" /> 14-day free trial · No credit card required
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold text-[#1A1A1A] mb-4">
+              Simple, Transparent Pricing
+            </h2>
+            <p className="text-xl text-[#63666A] max-w-3xl mx-auto">
+              For care home operators. Families, caregivers, and discharge planners are always free.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {/* Starter */}
+            <div className="border-2 border-neutral-200 rounded-2xl p-8 flex flex-col hover:border-[#3978FC] hover:shadow-lg transition-all">
+              <div className="mb-6">
+                <div className="text-sm font-semibold text-[#63666A] uppercase tracking-wide mb-2">Starter</div>
+                <div className="text-4xl font-bold text-[#1A1A1A]">$99<span className="text-lg font-normal text-[#63666A]">/mo</span></div>
+                <div className="text-sm text-[#63666A] mt-1">1 home · Billed monthly</div>
+              </div>
+              <ul className="space-y-3 mb-8 flex-1">
+                {['Inquiry pipeline', 'Resident management', 'Caregiver basic management', 'Document storage', 'Email support'].map((f) => (
+                  <li key={f} className="flex items-center gap-2 text-sm text-[#63666A]">
+                    <FiCheck className="text-green-500 flex-shrink-0" /> {f}
+                  </li>
+                ))}
+              </ul>
+              <Link href="/auth/register?role=operator&plan=starter" className="w-full text-center border-2 border-[#3978FC] text-[#3978FC] px-6 py-3 rounded-lg font-semibold hover:bg-[#3978FC] hover:text-white transition-all">
+                Start Free Trial
+              </Link>
+            </div>
+
+            {/* Professional — highlighted */}
+            <div className="border-2 border-[#7253B7] rounded-2xl p-8 flex flex-col shadow-xl relative bg-gradient-to-b from-[#f3f0f9] to-white">
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                <span className="bg-gradient-to-r from-[#7253B7] to-[#3978FC] text-white text-xs font-bold px-4 py-1.5 rounded-full shadow">MOST POPULAR</span>
+              </div>
+              <div className="mb-6">
+                <div className="text-sm font-semibold text-[#7253B7] uppercase tracking-wide mb-2">Professional</div>
+                <div className="text-4xl font-bold text-[#1A1A1A]">$249<span className="text-lg font-normal text-[#63666A]">/mo</span></div>
+                <div className="text-sm text-[#63666A] mt-1">Up to 3 homes · Billed monthly</div>
+              </div>
+              <ul className="space-y-3 mb-8 flex-1">
+                {['Everything in Starter', 'AI inquiry responses', 'Full caregiver management', 'Tour scheduling', 'Analytics dashboard', 'Priority email support'].map((f) => (
+                  <li key={f} className="flex items-center gap-2 text-sm text-[#63666A]">
+                    <FiCheck className="text-[#7253B7] flex-shrink-0" /> {f}
+                  </li>
+                ))}
+              </ul>
+              <Link href="/auth/register?role=operator&plan=professional" className="w-full text-center bg-gradient-to-r from-[#7253B7] to-[#3978FC] text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity shadow-lg">
+                Start Free Trial
+              </Link>
+            </div>
+
+            {/* Growth */}
+            <div className="border-2 border-neutral-200 rounded-2xl p-8 flex flex-col hover:border-[#3978FC] hover:shadow-lg transition-all">
+              <div className="mb-6">
+                <div className="text-sm font-semibold text-[#63666A] uppercase tracking-wide mb-2">Growth</div>
+                <div className="text-4xl font-bold text-[#1A1A1A]">$499<span className="text-lg font-normal text-[#63666A]">/mo</span></div>
+                <div className="text-sm text-[#63666A] mt-1">Up to 10 homes · Billed monthly</div>
+              </div>
+              <ul className="space-y-3 mb-8 flex-1">
+                {['Everything in Professional', 'Discharge planner integration', 'Advanced analytics & reports', 'Compliance tracking', 'Priority phone support'].map((f) => (
+                  <li key={f} className="flex items-center gap-2 text-sm text-[#63666A]">
+                    <FiCheck className="text-green-500 flex-shrink-0" /> {f}
+                  </li>
+                ))}
+              </ul>
+              <Link href="/auth/register?role=operator&plan=growth" className="w-full text-center border-2 border-[#3978FC] text-[#3978FC] px-6 py-3 rounded-lg font-semibold hover:bg-[#3978FC] hover:text-white transition-all">
+                Start Free Trial
+              </Link>
+            </div>
+          </div>
+
+          <div className="text-center mt-10">
+            <p className="text-[#63666A]">
+              Need more than 10 homes or want white-label?{' '}
+              <a href="mailto:hello@getcarelinkai.com" className="text-[#3978FC] font-semibold hover:underline">Contact us for Enterprise pricing.</a>
+            </p>
+            <p className="text-sm text-[#63666A] mt-3">
+              Families · Caregivers · Discharge Planners — always free to use CareLinkAI
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* 7. COMING SOON FEATURES (ROADMAP) */}
+      <section id="roadmap" className="py-20 bg-gradient-to-br from-neutral-50 to-white">
         <div className="max-w-7xl mx-auto px-4 md:px-6">
           <div className="text-center mb-16">
             <div className="inline-flex items-center bg-gradient-to-r from-[#3978FC] to-[#7253B7] rounded-full px-4 py-2 shadow-lg mb-6">
