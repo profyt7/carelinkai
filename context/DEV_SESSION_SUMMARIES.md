@@ -2,6 +2,93 @@
 
 ---
 
+### 2026-04-24 — OL-008: Stripe Subscription Billing for Operators
+
+- **Objective:** Wire complete Stripe subscription billing for operators — checkout, webhooks, feature gating, and UI. Also finalized 12-stream revenue model with Chris.
+
+- **Work completed:**
+  - **OL-008 CLOSED:** Full Stripe SaaS subscription system built end-to-end:
+    - Schema: Added `SubscriptionPlan` (STARTER/PROFESSIONAL/GROWTH/ENTERPRISE) and `SubscriptionStatus` (TRIALING/ACTIVE/PAST_DUE/CANCELED/INCOMPLETE/INCOMPLETE_EXPIRED/PAUSED) enums. Added 6 fields to `Operator` model: `stripeCustomerId`, `stripeSubscriptionId`, `subscriptionPlan`, `subscriptionStatus`, `trialEndsAt`, `currentPeriodEndsAt`.
+    - Migration: `20260424000000_add_operator_subscription_fields` — manual SQL migration (local DB had drift; applied on Render in production).
+    - New API routes: `GET /api/operator/billing/subscription` (current status), `POST /api/operator/billing/subscribe` (Stripe Checkout Session, 14-day free trial), `POST /api/operator/billing/portal` (Stripe Customer Portal).
+    - Extended webhook handler (`/api/webhooks/stripe/route.ts`) to process: `customer.subscription.created/updated`, `customer.subscription.deleted`, `invoice.payment_succeeded`, `invoice.payment_failed`. Existing family wallet + caregiver payout logic preserved.
+    - Built `SubscriptionManager` client component — shows current plan/status badge, trial countdown, next billing date, past-due warning. Shows plan picker (Starter/Professional/Growth cards with feature lists) when no active plan.
+    - Updated operator billing page to render `SubscriptionManager` at top.
+    - Created `src/lib/subscription.ts` — `FEATURES` map, `planHasFeature()`, `isSubscriptionActive()`, `operatorCanUseFeature()` for runtime feature gating.
+    - Added `STRIPE_PRICE_STARTER/PROFESSIONAL/GROWTH` to `.env.example` — Price IDs in env vars so swapping Stripe accounts only requires updating env vars in Render, no code changes.
+  - **Revenue model finalized:** Confirmed 12-stream model with Chris. Key decisions: flat subscription OR per-resident (operator's choice), early adopter pricing ($49/mo locked), Care Wallet 2-3% transaction fee identified as highest-potential stream. Providers = senior services marketplace (transportation, housekeeping, etc.).
+  - **Stripe key swappability confirmed:** Architecture already env-var-only. Swapping accounts = update `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`, and 3 `STRIPE_PRICE_*` vars in Render. Zero code changes.
+
+- **Files changed:**
+  - `prisma/schema.prisma` — SubscriptionPlan/Status enums + 6 Operator fields
+  - `prisma/migrations/20260424000000_add_operator_subscription_fields/migration.sql` — new
+  - `src/app/api/operator/billing/subscription/route.ts` — new
+  - `src/app/api/operator/billing/subscribe/route.ts` — new
+  - `src/app/api/operator/billing/portal/route.ts` — new
+  - `src/app/api/webhooks/stripe/route.ts` — extended with subscription lifecycle handlers
+  - `src/components/operator/billing/SubscriptionManager.tsx` — new
+  - `src/app/operator/billing/page.tsx` — added SubscriptionManager at top
+  - `src/lib/subscription.ts` — new feature gating utility
+  - `.env.example` — added STRIPE_PRICE_* vars
+
+- **Commands run:**
+  - `npx prisma generate` — regenerated client after schema changes
+  - `npx tsc --noEmit` — 0 errors in all new/changed files (pre-existing errors in nextjs_space/ and src/unused/ unchanged)
+  - `git push -u origin claude/review-carelink-docs-49Ycv`
+
+- **Tests/build status:** TypeScript clean on all 10 changed files. No new errors introduced. Pre-existing 274 strict mode errors unaffected.
+
+- **Deployment impact:**
+  - **REQUIRES ACTION before merge to main:** Run `npx prisma migrate deploy` in Render shell (or it will auto-run on Render deploy if configured). Migration adds 6 columns + 2 enums — safe, all columns nullable, no data loss.
+  - **REQUIRES ACTION after merge:** In Stripe dashboard, create Products/Prices for Starter ($99/mo), Professional ($249/mo), Growth ($499/mo). Set `STRIPE_PRICE_STARTER`, `STRIPE_PRICE_PROFESSIONAL`, `STRIPE_PRICE_GROWTH` in Render environment. Register webhook endpoint in Stripe dashboard pointing to `https://getcarelinkai.com/api/webhooks/stripe` — add subscription events: `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_succeeded`, `invoice.payment_failed`.
+
+- **New risks/blockers:**
+  - Stripe Customer Portal requires configuration in Stripe dashboard (enable/disable features: cancel subscription, update payment method, etc.).
+  - Early adopter pricing not yet in Stripe — current plan is to create Stripe coupons for $50/mo discount locked at checkout.
+
+- **Recommended next step:** Merge branch to main → apply migration in Render → create Stripe Products/Prices → set Price ID env vars in Render → register webhook. Then test the full checkout flow with the demo operator account. After that: fix CareBot markdown (OL-013) or address landing page revamp.
+
+---
+
+### 2026-04-23 — OL-007 Production Verification Complete + AI Response Generator Fixes
+
+- **Objective:** Verify remaining OL-007 steps (6-8) in production; fix any broken flows discovered.
+
+- **Work completed:**
+  - **OL-007 CLOSED:** All 10 steps verified in production on getcarelinkai.com:
+    - Step 6 (AI response generation): Fixed Anthropic credit balance issue (was $0, Chris added $20). Fixed blank preview box (hook was returning response wrapper instead of `response.response`). Fixed send sending fresh AI content instead of previewed content (added `content` field to API route). Fixed markdown formatting in AI output (added plain text instruction to prompt). Fixed null contact/recipient name placeholders.
+    - Step 7 (Convert to Resident): Wired `ConvertInquiryModal` into `InquiryDetailModal` (button was completely missing). Fixed Zod date validation (`z.string().datetime()` → `z.coerce.date()` to accept HTML date input format). Fixed scroll-to-error so validation failures are visible.
+    - Step 8 (Residents list): Confirmed — Jason Bourne appears in `/operator/residents` list after conversion.
+  - **Resident profile fixes:** Replaced "Archive button" placeholder text with real `ArchiveButton` component. Removed spurious status overwrite that set resident to `INQUIRY` after conversion (should stay `PENDING`).
+  - **Merged feature branch** `claude/review-carelink-docs-49Ycv` → `main`, triggering Render deploys throughout session.
+
+- **Files changed:**
+  - `src/hooks/useInquiries.ts` — return `json.response` not full wrapper in `generateResponse`
+  - `src/app/api/inquiries/[id]/generate-response/route.ts` — accept `content` field to skip AI generation on send; improved Sentry error logging; support both `type` and `responseType` fields
+  - `src/components/inquiries/AIResponseGenerator.tsx` — store response ID; pass edited content on Send Email instead of regenerating
+  - `src/lib/ai/inquiry-response-generator.ts` — plain text prompt (no markdown); null-safe contactName/careRecipientName fallbacks
+  - `src/types/inquiry.ts` — added `content?: string` to `GenerateResponseInput`
+  - `src/components/inquiries/InquiryDetailModal.tsx` — wired Convert to Resident button + `ConvertInquiryModal`
+  - `src/components/operator/inquiries/ConvertInquiryModal.tsx` — scroll-to-error on submit failure
+  - `src/lib/services/inquiry-conversion.ts` — `z.coerce.date()` for dateOfBirth/moveInDate; removed spurious INQUIRY status overwrite
+  - `src/components/operator/residents/ResidentDetailActions.tsx` — replaced placeholder with real `ArchiveButton`
+  - `prisma/seed-inquiries.ts` — fixed missing contactName/careRecipientName in seed data
+
+- **Commands run:**
+  - `git merge claude/review-carelink-docs-49Ycv` (conflict resolution in context file)
+  - `git push origin main` (×6 deploys)
+
+- **Tests/build status:** TypeScript clean on all changed files. Production deploys succeeded. End-to-end flow manually verified in production browser.
+
+- **Deployment impact:** All fixes live on `main`. No schema changes. No migrations required.
+
+- **New risks/blockers:**
+  - CareBot outputs raw markdown (`**bold**`) in chat — same root cause as AI response generator, not yet fixed (OL-013).
+
+- **Recommended next step:** Wire Stripe subscription billing for operators (OL-008) — done in 2026-04-24 session above.
+
+---
+
 ### 2026-04-22 — OL-007 Operator Onboarding E2E Tests + Bug Verification
 
 - **Objective:** Tackle OL-001 (demo accounts), OL-002 (ANTHROPIC_API_KEY), fix 3 OneNote bugs, and run end-to-end operator onboarding walkthrough (OL-007).
