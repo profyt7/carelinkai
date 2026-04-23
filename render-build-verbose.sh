@@ -43,7 +43,19 @@ echo "✅ prisma generate completed successfully"
 echo ""
 
 echo "========================================="
-echo "STEP 3: BUILD NEXT.JS APPLICATION"
+echo "STEP 3: RUN DATABASE MIGRATIONS"
+echo "========================================="
+npx prisma migrate deploy
+EXIT_CODE=$?
+if [ $EXIT_CODE -ne 0 ]; then
+  echo "❌ prisma migrate deploy failed with exit code: $EXIT_CODE"
+  exit $EXIT_CODE
+fi
+echo "✅ prisma migrate deploy completed successfully"
+echo ""
+
+echo "========================================="
+echo "STEP 4: BUILD NEXT.JS APPLICATION"
 echo "========================================="
 # Increase Node.js memory limit to prevent OOM errors during build
 # Professional Render plan has 4GB+ RAM - use 8GB heap for build
@@ -60,7 +72,7 @@ echo "✅ npm run build completed successfully"
 echo ""
 
 echo "========================================="
-echo "STEP 4: COPY STATIC ASSETS FOR STANDALONE"
+echo "STEP 5: COPY STATIC ASSETS FOR STANDALONE"
 echo "========================================="
 # Standalone mode requires copying static files manually
 echo "Copying public folder to standalone..."
