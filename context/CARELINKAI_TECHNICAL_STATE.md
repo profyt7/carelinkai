@@ -45,13 +45,14 @@ FAMILY, OPERATOR, CAREGIVER, ADMIN, STAFF, PROVIDER, AFFILIATE, DISCHARGE_PLANNE
 - Discharge Planner: AI placement search, placement requests
 - CareBot: floating AI chat widget (Claude Haiku 4.5 + prompt caching)
 - Inquiry AI: Claude Sonnet 4.6 response generation + email delivery
-- Stripe: PaymentIntents, webhooks, wallet, Stripe Connect, **SaaS subscriptions (new)**
+- Stripe: PaymentIntents, webhooks, wallet, Stripe Connect, SaaS subscriptions
+- **Placement fee (Revenue Stream 2):** Auto-charges operator $500 on inquiry → resident conversion; non-blocking, PENDING/COMPLETED/FAILED payment trail
 - Resend: verification + password reset emails
 - Cloudinary: image uploads
 - Sentry: error monitoring + session replay
 - Analytics: GA4, GTM, FB Pixel, Clarity
 - Anthropic Claude API: CareBot, inquiry responses, document classification, discharge planner search, match explanations, tour scheduling, home profile generation
-- **Operator subscription billing (new):** Checkout (14-day trial), Customer Portal, webhook lifecycle handlers, feature gating utility
+- Operator subscription billing: Checkout (14-day trial), Customer Portal, webhook lifecycle handlers, feature gating utility
 
 ## Known Issues (as of 2026-04-24)
 1. 274 TypeScript strict mode errors — CI type-check step is disabled (non-blocking at runtime)

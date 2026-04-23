@@ -2,6 +2,49 @@
 
 ---
 
+### 2026-04-23 — OL-014: Placement Fee Auto-Trigger on Convert to Resident
+
+- **Objective:** Wire Revenue Stream 2 — auto-charge operator $500 when an inquiry converts to a resident.
+
+- **Work completed:**
+  - Added `PLACEMENT_FEE` variant to `PaymentType` enum in `prisma/schema.prisma`
+  - Created migration `20260424000001_add_placement_fee_payment_type` (single SQL: `ALTER TYPE "PaymentType" ADD VALUE 'PLACEMENT_FEE'`)
+  - Updated `convertInquiryToResident()` in `inquiry-conversion.ts`:
+    - Inquiry fetch now includes `home.operator { id, userId, stripeCustomerId }`
+    - After successful `$transaction`, fires `triggerPlacementFee()` as non-blocking (`.catch` prevents uncaught rejection)
+  - Added `triggerPlacementFee()` private helper:
+    - Creates `Payment` record (type: PLACEMENT_FEE, status: PENDING) regardless of Stripe outcome
+    - If no `stripeCustomerId`: logs warning, leaves payment as PENDING for manual collection
+    - If no card on file: same — PENDING
+    - If Stripe off-session PaymentIntent succeeds: updates Payment to COMPLETED with `stripePaymentId`
+    - If Stripe fails: updates Payment to FAILED, logs error
+    - Never throws — conversion always succeeds
+  - Added `PLACEMENT_FEE_CENTS=50000` to `.env.example` (default $500, fully configurable)
+  - Committed and pushed to `claude/review-carelink-docs-49Ycv`
+
+- **Files changed:**
+  - `prisma/schema.prisma` — added `PLACEMENT_FEE` to `PaymentType` enum
+  - `prisma/migrations/20260424000001_add_placement_fee_payment_type/migration.sql` — new
+  - `src/lib/services/inquiry-conversion.ts` — placement fee trigger wired
+  - `.env.example` — added `PLACEMENT_FEE_CENTS`
+
+- **Commands run:**
+  - `git stash && git checkout claude/review-carelink-docs-49Ycv && git stash pop`
+  - `npx tsc --noEmit` (0 errors in changed files)
+  - `git commit && git push`
+
+- **Tests/build status:** TypeScript clean in changed files. Existing 274 strict mode errors unrelated (pre-existing).
+
+- **Deployment impact:** Migration `20260424000001` will run on next `prisma migrate deploy` (auto-run in build script). No env var required — defaults to $500 if `PLACEMENT_FEE_CENTS` not set. No Stripe dashboard changes needed.
+
+- **New risks/blockers:**
+  - Off-session charge requires operator to have a card attached to their Stripe customer. If operator is in trial with no payment method yet, fee stays PENDING — needs manual follow-up. Acceptable for now.
+  - `PLACEMENT_FEE_CENTS` not yet added to Render env vars (not required — defaults to 50000).
+
+- **Recommended next step:** Add `PLACEMENT_FEE_CENTS` to Render env vars if non-default amount desired. Then merge `claude/review-carelink-docs-49Ycv` to main. After that: either OL-005 (TypeScript strict mode) or OL-009 (SMS) or early adopter discount Stripe coupon.
+
+---
+
 ### 2026-04-24 — OL-008: Stripe Subscription Billing for Operators
 
 - **Objective:** Wire complete Stripe subscription billing for operators — checkout, webhooks, feature gating, and UI. Also finalized 12-stream revenue model with Chris.

@@ -64,11 +64,7 @@ Each loop: what it is, why it matters, what done looks like.
 ## 🟢 Low Priority / Future
 
 ### OL-013: CareBot outputs raw markdown in chat
-- **Status:** Open
-- **Impact:** Chat responses show `**bold**` and `---` separators as literal text instead of rendered formatting
-- **Fix:** Update CareBot system prompt to write plain text only — same fix applied to inquiry response generator on 2026-04-23
-- **File:** `src/app/api/carebot/chat/route.ts` — update system prompt
-- **Done when:** CareBot responses display clean prose in the chat widget
+- **Status:** ✅ CLOSED (2026-04-24) — added plain text instruction to SYSTEM_PROMPT in `src/app/api/carebot/chat/route.ts`
 
 ### OL-009: SMS (Twilio) not implemented
 - **Status:** Dependency in package.json but no routes
@@ -89,16 +85,13 @@ Each loop: what it is, why it matters, what done looks like.
 - **Status:** ✅ FIXED (2026-04-21)
 
 ### OL-014: Placement fee not auto-triggered on Convert to Resident
-- **Status:** Open — Revenue Stream 2 not yet wired
-- **Impact:** No automatic referral fee charged when family converts to resident
-- **Fix:** Add Stripe charge trigger in `inquiry-conversion.ts` when source = CareLinkAI referral
-- **Done when:** Operator is automatically charged $500-$2,000 on confirmed placement
+- **Status:** ✅ CLOSED (2026-04-23) — non-blocking Stripe PaymentIntent fired after `$transaction`
+- Creates PENDING Payment record; updates to COMPLETED/FAILED based on Stripe outcome
+- Defaults to $500 (`PLACEMENT_FEE_CENTS=50000`); configurable per Render env var
+- Falls back to PENDING for manual collection if no card on file
 
 ### OL-015: Landing page does not showcase all products by user type
-- **Status:** Open
-- **Impact:** Visitors can't see the full value proposition for each user type (operators, families, caregivers, discharge planners, providers)
-- **Fix:** Revamp landing page with user-type sections, feature lists, pricing preview, and "coming soon" callouts
-- **Done when:** Each of the 6 user types has a dedicated section with clear value prop and CTA
+- **Status:** ✅ CLOSED (2026-04-24) — full landing page revamp with 6-tab user-type sections, pricing cards, roadmap
 
 ---
 

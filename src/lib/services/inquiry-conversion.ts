@@ -1,12 +1,13 @@
 /**
  * Inquiry to Resident Conversion Service
- * 
+ *
  * Handles the conversion of inquiries to residents with proper data mapping
  * and validation.
  */
 
 import { PrismaClient, ResidentStatus } from '@prisma/client';
 import { z } from 'zod';
+import { stripe } from '@/lib/stripe';
 
 const prisma = new PrismaClient();
 
@@ -65,7 +66,13 @@ export async function convertInquiryToResident(
             user: true,
           },
         },
-        home: true,
+        home: {
+          include: {
+            operator: {
+              select: { id: true, userId: true, stripeCustomerId: true },
+            },
+          },
+        },
       },
     });
 
@@ -150,6 +157,13 @@ export async function convertInquiryToResident(
       return resident;
     });
 
+    // Fire placement fee charge — non-blocking, never fails the conversion
+    triggerPlacementFee(
+      inquiry.home.operator,
+      { id: result.id, firstName: validated.firstName, lastName: validated.lastName },
+      validated.inquiryId
+    ).catch((err) => console.error('[PLACEMENT_FEE] Unexpected error in fire-and-forget:', err));
+
     return {
       success: true,
       residentId: result.id,
@@ -172,6 +186,84 @@ export async function convertInquiryToResident(
       inquiryId: data.inquiryId,
       error: error instanceof Error ? error.message : 'Unknown error occurred',
     };
+  }
+}
+
+/**
+ * Attempt to charge the operator a placement fee after a successful conversion.
+ * Never throws — conversion must always succeed regardless of billing outcome.
+ */
+async function triggerPlacementFee(
+  operator: { id: string; userId: string; stripeCustomerId: string | null } | null,
+  resident: { id: string; firstName: string; lastName: string },
+  inquiryId: string
+): Promise<void> {
+  const placementFeeCents = parseInt(process.env.PLACEMENT_FEE_CENTS ?? '50000', 10);
+  const residentName = `${resident.firstName} ${resident.lastName}`;
+
+  if (!operator) {
+    console.error('[PLACEMENT_FEE] No operator found for inquiry', inquiryId);
+    return;
+  }
+
+  // Create a PENDING payment record regardless of Stripe outcome
+  let payment: { id: string } | null = null;
+  try {
+    payment = await prisma.payment.create({
+      data: {
+        userId: operator.userId,
+        amount: placementFeeCents / 100,
+        status: 'PENDING',
+        type: 'PLACEMENT_FEE',
+        description: `Placement fee — ${residentName}`,
+      },
+    });
+  } catch (err) {
+    console.error('[PLACEMENT_FEE] Could not create payment record:', err);
+    return;
+  }
+
+  if (!operator.stripeCustomerId) {
+    console.warn('[PLACEMENT_FEE] No Stripe customer — fee recorded as PENDING for manual collection', { paymentId: payment.id, inquiryId });
+    return;
+  }
+
+  try {
+    // Find an attached card payment method
+    const pms = await stripe.paymentMethods.list({
+      customer: operator.stripeCustomerId,
+      type: 'card',
+      limit: 1,
+    });
+
+    if (pms.data.length === 0) {
+      console.warn('[PLACEMENT_FEE] No card on file — fee stays PENDING', { paymentId: payment.id });
+      return;
+    }
+
+    const intent = await stripe.paymentIntents.create({
+      amount: placementFeeCents,
+      currency: 'usd',
+      customer: operator.stripeCustomerId,
+      payment_method: pms.data[0].id,
+      off_session: true,
+      confirm: true,
+      description: `Placement fee — ${residentName}`,
+      metadata: { inquiryId, residentId: resident.id, type: 'PLACEMENT_FEE' },
+    });
+
+    await prisma.payment.update({
+      where: { id: payment.id },
+      data: { status: 'COMPLETED', stripePaymentId: intent.id },
+    });
+
+    console.log(`[PLACEMENT_FEE] ✅ Charged $${placementFeeCents / 100} for ${residentName}`, { intentId: intent.id });
+  } catch (err: any) {
+    await prisma.payment.update({
+      where: { id: payment.id },
+      data: { status: 'FAILED' },
+    }).catch(() => {});
+    console.error('[PLACEMENT_FEE] Charge failed — fee marked FAILED:', err?.message ?? err);
   }
 }
 
