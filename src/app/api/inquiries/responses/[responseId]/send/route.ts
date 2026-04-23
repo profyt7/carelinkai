@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { smsService } from '@/lib/sms/sms-service';
 
 /**
  * Helper function to check if user has access to the response's inquiry
@@ -90,10 +91,12 @@ export async function POST(
                   select: {
                     email: true,
                     phone: true,
+                    firstName: true,
                   },
                 },
               },
             },
+            home: { select: { name: true } },
           },
         },
       },
@@ -143,6 +146,16 @@ export async function POST(
         where: { id: response.inquiryId },
         data: { status: 'CONTACTED' },
       });
+    }
+
+    // SMS to family — notify them a response arrived (non-blocking)
+    const familyPhone = response.inquiry.family?.user?.phone;
+    if (familyPhone) {
+      smsService.sendInquiryResponseReceived(
+        familyPhone,
+        response.inquiry.family.user!.firstName,
+        response.inquiry.home?.name ?? 'an assisted living home'
+      ).catch(() => {});
     }
 
     return NextResponse.json({

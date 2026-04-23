@@ -8,6 +8,7 @@ import { stripe } from "@/lib/stripe";
 import Stripe from "stripe";
 import { bindRequestLogger } from "@/lib/logger";
 import { SubscriptionPlan, SubscriptionStatus } from "@prisma/client";
+import { smsService } from "@/lib/sms/sms-service";
 
 /**
  * Utility: maps Stripe Transfer status strings to internal PaymentStatus values
@@ -258,6 +259,15 @@ export async function POST(request: NextRequest) {
         where: { id: operator.id },
         data: { subscriptionStatus: SubscriptionStatus.PAST_DUE },
       });
+
+      // SMS alert to operator (non-blocking)
+      const operatorUser = await prisma.user.findUnique({
+        where: { id: operator.userId },
+        select: { firstName: true, phone: true },
+      });
+      if (operatorUser?.phone) {
+        smsService.sendPaymentFailedAlert(operatorUser.phone, operatorUser.firstName).catch(() => {});
+      }
 
       logger.info("Operator invoice payment failed", { operatorId: operator.id, invoiceId: invoice.id });
       return NextResponse.json({ received: true }, { status: 200 });

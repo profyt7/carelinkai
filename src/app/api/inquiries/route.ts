@@ -8,6 +8,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { z } from 'zod';
 import { afterInquiryCreated } from '@/lib/hooks/inquiry-hooks';
+import { smsService } from '@/lib/sms/sms-service';
 
 // Validation schema for creating inquiries
 const createInquirySchema = z.object({
@@ -104,6 +105,7 @@ export async function POST(request: NextRequest) {
               select: {
                 id: true,
                 companyName: true,
+                user: { select: { firstName: true, phone: true } },
               },
             },
           },
@@ -115,6 +117,18 @@ export async function POST(request: NextRequest) {
     afterInquiryCreated(inquiry.id).catch(err => {
       console.error('Failed to schedule follow-ups:', err);
     });
+
+    // SMS alert to operator (non-blocking)
+    const operatorPhone = inquiry.home?.operator?.user?.phone;
+    if (operatorPhone) {
+      smsService.sendNewInquiryAlert(
+        operatorPhone,
+        inquiry.home.operator!.user!.firstName,
+        inquiry.contactName,
+        inquiry.careRecipientName || 'your loved one',
+        inquiry.home.name
+      ).catch(() => {});
+    }
     
     return NextResponse.json(
       { success: true, inquiry },

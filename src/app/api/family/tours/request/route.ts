@@ -13,6 +13,7 @@ import { authOptions } from "@/lib/auth";
 import { PERMISSIONS } from "@/lib/permissions";
 import { hasPermission } from "@/lib/permissions";
 import { z } from "zod";
+import { smsService } from "@/lib/sms/sms-service";
 import { sendTourConfirmationEmail } from "@/lib/notifications/tour-notifications";
 
 const tourRequestSchema = z.object({
@@ -419,8 +420,18 @@ export async function POST(request: NextRequest) {
 
     // === STEP 9: Send Notification ===
     console.log('🟢 [TOUR API] Step 9: Notification');
-    console.log('🟢 [TOUR API] Tour Request ID:', tourRequest.id);
-    console.log('🟢 [TOUR API] Notification logged (email integration pending)');
+    const operatorPhone = tourRequest.operator?.user?.phone;
+    if (operatorPhone) {
+      const familyName = tourRequest.family?.user
+        ? `${tourRequest.family.user.firstName} ${tourRequest.family.user.lastName}`
+        : 'A family';
+      smsService.sendTourBookedAlert(
+        operatorPhone,
+        tourRequest.operator!.user!.firstName,
+        familyName,
+        tourRequest.home.name
+      ).catch(() => {});
+    }
 
     // === STEP 10: Prepare Response ===
     console.log('🟢 [TOUR API] Step 10: Sending Response');
