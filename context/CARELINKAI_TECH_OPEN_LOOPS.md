@@ -67,9 +67,10 @@ Each loop: what it is, why it matters, what done looks like.
 - **Status:** ✅ CLOSED (2026-04-24) — added plain text instruction to SYSTEM_PROMPT in `src/app/api/carebot/chat/route.ts`
 
 ### OL-009: SMS (Twilio) not implemented
-- **Status:** Dependency in package.json but no routes
-- **Impact:** No SMS notifications to operators/families
-- **Fix:** Implement SMS notification triggers for key events (new inquiry, tour reminder)
+- **Status:** ✅ CLOSED (2026-04-24) — 5 triggers live via SMSService
+- Operator: new inquiry, tour booked, payment failed
+- Family: inquiry response received, tour reminder 24hr (Render cron daily 9am)
+- All calls non-blocking; gracefully no-ops if Twilio not configured
 
 ### OL-010: Invoice model missing from schema
 - **Status:** No Prisma model for invoices
