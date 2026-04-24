@@ -61,50 +61,49 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Find the active subscription on the Stripe customer
-  const subscriptions = await stripe.subscriptions.list({
-    customer: operator.stripeCustomerId,
-    status: 'all',
-    limit: 5,
-  });
+  try {
+    // Find the active subscription on the Stripe customer
+    const subscriptions = await stripe.subscriptions.list({
+      customer: operator.stripeCustomerId,
+      status: 'all',
+      limit: 5,
+    });
 
-  const activeSub = subscriptions.data.find(
-    (s) => s.status === 'active' || s.status === 'trialing'
-  );
-
-  if (!activeSub) {
-    return NextResponse.json(
-      { error: 'No active subscription found. Please subscribe first.' },
-      { status: 400 }
+    const activeSub = subscriptions.data.find(
+      (s) => s.status === 'active' || s.status === 'trialing'
     );
+
+    if (!activeSub) {
+      return NextResponse.json(
+        { error: 'No active subscription found. Please subscribe first.' },
+        { status: 400 }
+      );
+    }
+
+    if (plan === operator.subscriptionPlan) {
+      return NextResponse.json({ error: 'You are already on this plan.' }, { status: 400 });
+    }
+
+    const subscriptionItemId = activeSub.items.data[0]?.id;
+    if (!subscriptionItemId) {
+      return NextResponse.json({ error: 'Subscription item not found.' }, { status: 500 });
+    }
+
+    await stripe.subscriptions.update(activeSub.id, {
+      items: [{ id: subscriptionItemId, price: priceId }],
+      proration_behavior: 'create_prorations',
+      metadata: { plan },
+    });
+
+    await prisma.operator.update({
+      where: { id: operator.id },
+      data: { subscriptionPlan: plan as any },
+    });
+
+    return NextResponse.json({ success: true, plan, label: PLAN_LABEL[plan] });
+  } catch (err: any) {
+    console.error('[switch-plan] Stripe error:', err);
+    const message = err?.raw?.message || err?.message || 'Stripe error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
-
-  if (plan === operator.subscriptionPlan) {
-    return NextResponse.json({ error: 'You are already on this plan.' }, { status: 400 });
-  }
-
-  // Update the subscription with the new price
-  const subscriptionItemId = activeSub.items.data[0]?.id;
-  if (!subscriptionItemId) {
-    return NextResponse.json({ error: 'Subscription item not found.' }, { status: 500 });
-  }
-
-  await stripe.subscriptions.update(activeSub.id, {
-    items: [{ id: subscriptionItemId, price: priceId }],
-    proration_behavior: 'create_prorations',
-    metadata: { plan },
-  });
-
-  // Update operator record immediately (webhook will also fire but this ensures
-  // the UI reflects the change without waiting for the webhook round-trip)
-  await prisma.operator.update({
-    where: { id: operator.id },
-    data: { subscriptionPlan: plan as any },
-  });
-
-  return NextResponse.json({
-    success: true,
-    plan,
-    label: PLAN_LABEL[plan],
-  });
 }
