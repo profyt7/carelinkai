@@ -25,6 +25,9 @@ import {
   FiActivity,
   FiPercent,
   FiRefreshCw,
+  FiDollarSign,
+  FiCreditCard,
+  FiLink,
 } from 'react-icons/fi';
 
 interface KPIs {
@@ -50,8 +53,38 @@ interface GrowthData {
   count: number;
 }
 
+interface RevenuePayment {
+  id: string;
+  amount: number;
+  type: string;
+  status: string;
+  description: string | null;
+  createdAt: string;
+  user: { firstName: string | null; lastName: string | null; email: string } | null;
+}
+
+interface SubscriptionBreakdownItem {
+  plan: string | null;
+  status: string | null;
+  count: number;
+}
+
+interface Revenue {
+  mrr: number;
+  activeSubscribers: number;
+  planCounts: Record<string, number>;
+  placementFeesCollected: number;
+  placementFeesPending: number;
+  placementFeesCollectedCount: number;
+  affiliateCommissionsOwed: number;
+  affiliateCommissionsOwedCount: number;
+  recentPayments: RevenuePayment[];
+  subscriptionBreakdown: SubscriptionBreakdownItem[];
+}
+
 interface AnalyticsData {
   kpis: KPIs;
+  revenue: Revenue;
   charts: {
     userRoleDistribution: ChartData[];
     userStatusDistribution: ChartData[];
@@ -169,7 +202,31 @@ export default function AnalyticsPage() {
 
   if (!data) return null;
 
-  const { kpis, charts } = data;
+  const { kpis, revenue, charts } = data;
+
+  const fmt$ = (n: number) =>
+    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
+
+  const PLAN_ORDER = ['STARTER', 'PROFESSIONAL', 'GROWTH', 'ENTERPRISE'];
+  const PLAN_COLORS: Record<string, string> = {
+    STARTER: 'bg-blue-100 text-blue-800',
+    PROFESSIONAL: 'bg-purple-100 text-purple-800',
+    GROWTH: 'bg-emerald-100 text-emerald-800',
+    ENTERPRISE: 'bg-amber-100 text-amber-800',
+  };
+  const PAYMENT_TYPE_LABELS: Record<string, string> = {
+    PLACEMENT_FEE: 'Placement Fee',
+    AFFILIATE_COMMISSION: 'Affiliate Commission',
+    DEPOSIT: 'Deposit',
+    MONTHLY_FEE: 'Monthly Fee',
+  };
+  const PAYMENT_STATUS_COLORS: Record<string, string> = {
+    COMPLETED: 'text-emerald-700 bg-emerald-50',
+    PENDING: 'text-amber-700 bg-amber-50',
+    PROCESSING: 'text-blue-700 bg-blue-50',
+    FAILED: 'text-red-700 bg-red-50',
+    REFUNDED: 'text-gray-700 bg-gray-100',
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -232,6 +289,118 @@ export default function AnalyticsPage() {
             icon={FiPercent}
             color="bg-amber-500"
           />
+        </div>
+
+        {/* Revenue Section */}
+        <div className="mb-8">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <FiDollarSign className="text-emerald-500" />
+            Revenue
+          </h2>
+
+          {/* Revenue KPI Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <KPICard
+              title="Monthly Recurring Revenue"
+              value={fmt$(revenue.mrr)}
+              subValue={`${revenue.activeSubscribers} active subscribers`}
+              icon={FiDollarSign}
+              color="bg-emerald-500"
+            />
+            <KPICard
+              title="Placement Fees Collected"
+              value={fmt$(revenue.placementFeesCollected)}
+              subValue={`${revenue.placementFeesCollectedCount} completed`}
+              icon={FiCreditCard}
+              color="bg-blue-500"
+            />
+            <KPICard
+              title="Placement Fees Pending"
+              value={fmt$(revenue.placementFeesPending)}
+              subValue="In processing"
+              icon={FiCreditCard}
+              color="bg-amber-500"
+            />
+            <KPICard
+              title="Affiliate Commissions Owed"
+              value={fmt$(revenue.affiliateCommissionsOwed)}
+              subValue={`${revenue.affiliateCommissionsOwedCount} pending payouts`}
+              icon={FiLink}
+              color="bg-purple-500"
+            />
+          </div>
+
+          {/* Subscription plan breakdown + recent payments */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Plan breakdown */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h3 className="text-base font-semibold text-gray-900 mb-4">Subscriptions by Plan</h3>
+              <div className="space-y-3">
+                {PLAN_ORDER.map((plan) => {
+                  const count = revenue.planCounts[plan] || 0;
+                  return (
+                    <div key={plan} className="flex items-center justify-between">
+                      <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${PLAN_COLORS[plan] || 'bg-gray-100 text-gray-700'}`}>
+                        {plan}
+                      </span>
+                      <span className="text-sm font-semibold text-gray-900">{count}</span>
+                    </div>
+                  );
+                })}
+                {revenue.subscriptionBreakdown
+                  .filter(r => r.status === 'TRIALING')
+                  .map(r => (
+                    <div key={`trial-${r.plan}`} className="flex items-center justify-between text-gray-500">
+                      <span className="text-xs">{r.plan} (trial)</span>
+                      <span className="text-sm font-medium">{r.count}</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+
+            {/* Recent payments table */}
+            <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h3 className="text-base font-semibold text-gray-900 mb-4">Recent Payments</h3>
+              {revenue.recentPayments.length === 0 ? (
+                <p className="text-sm text-gray-500 text-center py-8">No payments recorded yet</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-gray-500 border-b border-gray-100">
+                        <th className="pb-2 font-medium">Type</th>
+                        <th className="pb-2 font-medium">Amount</th>
+                        <th className="pb-2 font-medium">Status</th>
+                        <th className="pb-2 font-medium">User</th>
+                        <th className="pb-2 font-medium">Date</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {revenue.recentPayments.map((p) => (
+                        <tr key={p.id} className="hover:bg-gray-50">
+                          <td className="py-2 text-gray-700">
+                            {PAYMENT_TYPE_LABELS[p.type] || p.type}
+                          </td>
+                          <td className="py-2 font-medium text-gray-900">{fmt$(p.amount)}</td>
+                          <td className="py-2">
+                            <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${PAYMENT_STATUS_COLORS[p.status] || 'bg-gray-100 text-gray-700'}`}>
+                              {p.status}
+                            </span>
+                          </td>
+                          <td className="py-2 text-gray-600 truncate max-w-[120px]">
+                            {p.user ? `${p.user.firstName || ''} ${p.user.lastName || ''}`.trim() || p.user.email : '—'}
+                          </td>
+                          <td className="py-2 text-gray-500">
+                            {new Date(p.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Charts Row 1 */}
