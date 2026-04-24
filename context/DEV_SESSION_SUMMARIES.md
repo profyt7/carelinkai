@@ -2,6 +2,40 @@
 
 ---
 
+### 2026-04-24 — Admin Revenue Dashboard + Operator Onboarding Wizard
+
+- **Objective:** Build admin revenue visibility (MRR, placement fees, affiliate commissions) and guided first-time operator onboarding.
+
+- **Work completed:**
+  1. **Admin analytics API rewrite** (`/api/admin/analytics`): Added revenue block with MRR calc (active/trialing operators × plan price), placement fees collected/pending aggregates, affiliate commissions owed, recent 15 payments with user info, subscription breakdown by plan+status.
+  2. **Admin analytics page revenue UI**: Added Revenue section above existing KPI cards — 4 stat cards (MRR, Placement Fees Collected, Placement Fees Pending, Affiliate Commissions Owed), subscription plan breakdown grid, recent payments table with type/amount/status/user/date columns.
+  3. **Operator onboarding wizard** (`/operator/onboarding`): 3-step client wizard — Step 1 company/phone, Step 2 first home (with care-level checkboxes), Step 3 plan selection (Starter/Professional/Growth) with FOUNDERS49 reminder + "Skip for now". No schema changes needed; uses `homes === 0` as onboarding signal.
+  4. **Operator dashboard redirect**: Added `homes === 0` check after dashboard data loads; new operators are immediately redirected to `/operator/onboarding`.
+  5. **Stripe setup runbook** (`context/STRIPE_SETUP_RUNBOOK.md`): CoWork-ready 6-step guide for creating Products/Prices, webhook, Customer Portal, env vars — reusable when Chris swaps Stripe accounts.
+  6. **Affiliate nav item**: Added "Affiliate Dashboard" to sidebar (AFFILIATE + ADMIN roles only).
+  7. **PR #497 merge**: Rebased and squash-merged to main after 3 rounds of conflict resolution on `.env.example`, `DashboardLayout.tsx`, `CARELINKAI_TECH_OPEN_LOOPS.md`.
+  8. **Analytics crash fix** (`/operator/analytics`): Extracted chart.js renders to `"use client"` `AnalyticsCharts.tsx` component; created proper export API route.
+
+- **Files changed:**
+  - `src/app/api/admin/analytics/route.ts` — revenue queries + MRR calc
+  - `src/app/admin/analytics/page.tsx` — revenue section UI
+  - `src/app/operator/onboarding/page.tsx` — new 3-step wizard
+  - `src/components/operator/OperatorDashboardPage.tsx` — redirect on homes === 0
+  - `src/app/operator/analytics/AnalyticsCharts.tsx` — new client chart component
+  - `src/app/operator/analytics/page.tsx` — server component with chart props
+  - `src/app/api/operator/analytics/export/route.ts` — new CSV export route
+  - `src/components/layout/DashboardLayout.tsx` — affiliate nav item
+  - `.env.example` — DEFAULT_AFFILIATE_COMMISSION_PCT, CRON_SECRET
+  - `context/STRIPE_SETUP_RUNBOOK.md` — new CoWork runbook
+
+- **Commands run:** `git rebase origin/main`, `git push --force-with-lease`, `npx tsc --noEmit` (0 errors on analytics files)
+- **Tests/build status:** TypeScript clean on changed files; CI type-check step still disabled (OL-005/OL-006)
+- **Deployment impact:** Admin analytics page now includes revenue section; operator onboarding wizard is live on branch. Needs merge to main to deploy.
+- **New risks/blockers:** None new. Revenue data will show $0 until Stripe is live (OL-004).
+- **Recommended next step:** Merge `claude/review-carelink-docs-49Ycv` to main so revenue dashboard and onboarding wizard deploy to production. Then work OL-005 (TypeScript strict errors) to re-enable CI type-check.
+
+---
+
 ### 2026-04-24 — Revenue Streams: Billing Switch, SMS, Care Wallet, Affiliate Commission
 
 - **Objective:** Close 5 revenue and notification features: placement fee billing model switch, FOUNDERS49 promo code, Twilio SMS (OL-009), Care Wallet spending, and affiliate commission auto-trigger.
