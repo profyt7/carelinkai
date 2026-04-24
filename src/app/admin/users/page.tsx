@@ -386,12 +386,12 @@ export default function AdminUsersPage() {
                         className="rounded border-neutral-300 text-[#3978FC] focus:ring-[#3978FC]"
                       />
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="text-sm font-medium text-neutral-900">
+                    <td className="px-6 py-4 max-w-[260px]">
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium text-neutral-900 truncate">
                           {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email}
                         </div>
-                        <div className="text-sm text-neutral-500">{user.email}</div>
+                        <div className="text-sm text-neutral-500 truncate">{user.email}</div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
