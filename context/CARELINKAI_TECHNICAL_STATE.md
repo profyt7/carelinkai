@@ -2,7 +2,7 @@
 _Last updated: 2026-04-24_
 
 ## Active Branch
-`claude/review-carelink-docs-49Ycv` (Stripe subscription billing — ready to merge to main)
+`claude/review-carelink-docs-49Ycv` (admin revenue dashboard + operator onboarding wizard — ready to merge to main)
 
 ## Production URL
 https://carelinkai.onrender.com (also: https://getcarelinkai.com)
@@ -57,11 +57,13 @@ FAMILY, OPERATOR, CAREGIVER, ADMIN, STAFF, PROVIDER, AFFILIATE, DISCHARGE_PLANNE
 - Analytics: GA4, GTM, FB Pixel, Clarity
 - Anthropic Claude API: CareBot, inquiry responses, document classification, discharge planner search, match explanations, tour scheduling, home profile generation
 - Operator subscription billing: Checkout (14-day trial), Customer Portal, webhook lifecycle handlers, feature gating utility
+- **Admin revenue dashboard:** MRR, placement fees collected/pending, affiliate commissions owed, recent payments table, subscription breakdown by plan
+- **Operator onboarding wizard:** 3-step guided flow (company → first home → plan selection); new operators auto-redirected on first login
 
 ## Known Issues (as of 2026-04-24)
 1. 274 TypeScript strict mode errors — CI type-check step is disabled (non-blocking at runtime)
 2. 2 pre-existing test failures: `calendar.appointments.api` and `emergency.api`
-3. CareBot outputs raw markdown (`**bold**`) in chat widget (OL-013) — needs plain text prompt fix, same as inquiry response generator fix applied 2026-04-23
+3. ~~CareBot outputs raw markdown~~ — FIXED (OL-013 closed 2026-04-24)
 4. Stripe Products/Prices not yet created in Stripe dashboard — subscription checkout will fail until `STRIPE_PRICE_*` env vars are set
 
 ## Pending Deployment Actions (before subscription billing goes live)

@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-04-24_
+_Last updated: 2026-04-24 (session 2)_
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
