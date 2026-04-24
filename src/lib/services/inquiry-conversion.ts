@@ -76,6 +76,8 @@ export async function convertInquiryToResident(
       },
     });
 
+    // affiliateCode is a scalar on the inquiry record — included automatically
+
     if (!inquiry) {
       return {
         success: false,
@@ -157,12 +159,21 @@ export async function convertInquiryToResident(
       return resident;
     });
 
-    // Fire placement fee charge — non-blocking, never fails the conversion
+    // Fire placement fee charge — non-blocking
     triggerPlacementFee(
       inquiry.home.operator,
       { id: result.id, firstName: validated.firstName, lastName: validated.lastName },
       validated.inquiryId
-    ).catch((err) => console.error('[PLACEMENT_FEE] Unexpected error in fire-and-forget:', err));
+    ).catch((err) => console.error('[PLACEMENT_FEE] Unexpected error:', err));
+
+    // Fire affiliate commission — non-blocking
+    if (inquiry.affiliateCode) {
+      triggerAffiliateCommission(
+        inquiry.affiliateCode,
+        inquiry.contactEmail || inquiry.family.user?.email || null,
+        validated.inquiryId
+      ).catch((err) => console.error('[AFFILIATE] Unexpected error:', err));
+    }
 
     return {
       success: true,
@@ -254,6 +265,80 @@ async function triggerPlacementFee(
       data: { status: 'FAILED' },
     }).catch(() => {});
     console.error('[PLACEMENT_FEE] Failed to queue invoice item — fee marked FAILED:', err?.message ?? err);
+  }
+}
+
+/**
+ * Record an affiliate commission after a successful inquiry → resident conversion.
+ * Never throws — conversion must always succeed regardless of commission outcome.
+ */
+async function triggerAffiliateCommission(
+  affiliateCode: string,
+  referredEmail: string | null,
+  inquiryId: string
+): Promise<void> {
+  const defaultPct = parseFloat(process.env.DEFAULT_AFFILIATE_COMMISSION_PCT ?? '20');
+  const placementFeeCents = parseInt(process.env.PLACEMENT_FEE_CENTS ?? '50000', 10);
+
+  try {
+    const affiliate = await prisma.affiliate.findUnique({
+      where: { affiliateCode },
+      select: { id: true, userId: true, commissionRate: true },
+    });
+
+    if (!affiliate) {
+      console.warn('[AFFILIATE] Unknown affiliate code:', affiliateCode);
+      return;
+    }
+
+    const commissionPct = affiliate.commissionRate
+      ? parseFloat(affiliate.commissionRate.toString())
+      : defaultPct;
+    const commissionAmount = (placementFeeCents * commissionPct) / 100 / 100; // dollars
+
+    // Upsert AffiliateReferral — create or update to CONVERTED
+    const existingReferral = referredEmail
+      ? await prisma.affiliateReferral.findFirst({
+          where: { affiliateId: affiliate.id, referredEmail },
+        })
+      : null;
+
+    if (existingReferral) {
+      await prisma.affiliateReferral.update({
+        where: { id: existingReferral.id },
+        data: {
+          status: 'CONVERTED',
+          conversionDate: new Date(),
+          commissionAmount,
+        },
+      });
+    } else {
+      await prisma.affiliateReferral.create({
+        data: {
+          affiliateId: affiliate.id,
+          referredEmail: referredEmail ?? `inquiry:${inquiryId}`,
+          status: 'CONVERTED',
+          conversionDate: new Date(),
+          commissionAmount,
+          commissionPaid: false,
+        },
+      });
+    }
+
+    // Create a PENDING payment record for the affiliate
+    await prisma.payment.create({
+      data: {
+        userId: affiliate.userId,
+        amount: commissionAmount,
+        status: 'PENDING',
+        type: 'AFFILIATE_COMMISSION',
+        description: `Affiliate commission (${commissionPct}%) — inquiry ${inquiryId.slice(0, 8)}`,
+      },
+    });
+
+    console.log(`[AFFILIATE] ✅ Commission $${commissionAmount.toFixed(2)} recorded for affiliate ${affiliateCode}`);
+  } catch (err: any) {
+    console.error('[AFFILIATE] Failed to record commission:', err?.message ?? err);
   }
 }
 

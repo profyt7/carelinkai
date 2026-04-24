@@ -30,7 +30,8 @@ import {
   FiZap,
   FiClipboard,
   FiPieChart,
-  FiFolder
+  FiFolder,
+  FiLink
 } from "react-icons/fi";
 import { MessageSquare, Stethoscope } from "lucide-react";
 // Real-time notification center
@@ -169,6 +170,15 @@ const navItems: NavItem[] = [
     href: "/operator/billing",
     showInMobileBar: false,
     roleRestriction: ["OPERATOR", "ADMIN"],
+  },
+
+  // 8b. Affiliate Dashboard (affiliate-only)
+  {
+    name: "Affiliate Dashboard",
+    icon: <FiLink size={20} />,
+    href: "/affiliate/dashboard",
+    showInMobileBar: false,
+    roleRestriction: ["AFFILIATE", "ADMIN"],
   },
 
   // 9. Settings (collapsible)
