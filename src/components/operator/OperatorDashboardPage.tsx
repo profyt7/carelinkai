@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { FiHome, FiUsers, FiTrendingUp, FiFileText, FiCreditCard, FiPlus, FiAlertCircle, FiClock } from "react-icons/fi";
 import { PermissionGuard, RoleGuard, useHasPermission } from '@/hooks/usePermissions';
@@ -25,6 +25,7 @@ interface Operator {
 
 export default function OperatorDashboardPage() {
   const { data: session } = useSession();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const operatorId = searchParams?.get('operatorId') || null;
 
@@ -54,6 +55,12 @@ export default function OperatorDashboardPage() {
         }
         const summaryData = await summaryRes.json();
         setSummary(summaryData);
+
+        // Redirect new operators (no homes yet) to the onboarding wizard
+        if (session?.user?.role === 'OPERATOR' && summaryData.homes === 0) {
+          router.push('/operator/onboarding');
+          return;
+        }
 
         // Fetch operators list (for admin users)
         if (session?.user?.role === 'ADMIN') {
