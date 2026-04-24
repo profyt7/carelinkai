@@ -25,6 +25,7 @@ const createInquirySchema = z.object({
   urgency: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).optional().default('MEDIUM'),
   source: z.enum(['WEBSITE', 'PHONE', 'EMAIL', 'REFERRAL', 'SOCIAL_MEDIA', 'WALK_IN', 'OTHER']).optional().default('WEBSITE'),
   preferredContactMethod: z.enum(['EMAIL', 'PHONE', 'SMS', 'ANY']).optional().default('EMAIL'),
+  affiliateCode: z.string().optional(), // referral code from ?ref= URL param
 });
 
 /**
@@ -82,6 +83,7 @@ export async function POST(request: NextRequest) {
         urgency: data.urgency,
         source: data.source,
         preferredContactMethod: data.preferredContactMethod,
+        affiliateCode: data.affiliateCode || null,
         status: 'NEW',
       },
       include: {

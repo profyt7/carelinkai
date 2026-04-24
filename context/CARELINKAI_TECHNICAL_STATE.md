@@ -45,8 +45,12 @@ FAMILY, OPERATOR, CAREGIVER, ADMIN, STAFF, PROVIDER, AFFILIATE, DISCHARGE_PLANNE
 - Discharge Planner: AI placement search, placement requests
 - CareBot: floating AI chat widget (Claude Haiku 4.5 + prompt caching)
 - Inquiry AI: Claude Sonnet 4.6 response generation + email delivery
-- Stripe: PaymentIntents, webhooks, wallet, Stripe Connect, SaaS subscriptions
-- **Placement fee (Revenue Stream 2):** Auto-charges operator $500 on inquiry → resident conversion; non-blocking, PENDING/COMPLETED/FAILED payment trail
+- Stripe: invoice items, webhooks, wallet, Stripe Connect, SaaS subscriptions
+- **Placement fee (Revenue Stream 2):** Queued as Stripe invoice item on conversion; collected on next billing cycle; PENDING→PROCESSING→COMPLETED trail
+- **Care Wallet spending (Revenue Stream 6):** Families pay monthly fee + deposit from wallet balance; 2.5% CareLinkAI fee; atomic balance deduction + Payment record
+- **Affiliate commission (Revenue Stream 8):** affiliateCode captured on Inquiry at creation; commission auto-recorded on conversion; affiliate dashboard with referral link, stats, payout history
+- **SMS notifications (Twilio):** operator: new inquiry, tour booked, payment failed; family: inquiry response received; cron: 24h tour reminders
+- **FOUNDERS49 promo code:** Stripe coupon $50/mo off forever, max 50 redemptions; banner in billing UI
 - Resend: verification + password reset emails
 - Cloudinary: image uploads
 - Sentry: error monitoring + session replay
@@ -79,9 +83,16 @@ These MUST be set on Render for production to work:
 - [ ] `STRIPE_SECRET_KEY`
 - [ ] `STRIPE_PUBLISHABLE_KEY`
 - [ ] `STRIPE_WEBHOOK_SECRET`
-- [ ] `STRIPE_PRICE_STARTER` ← **NEW — required for subscription checkout**
-- [ ] `STRIPE_PRICE_PROFESSIONAL` ← **NEW — required for subscription checkout**
-- [ ] `STRIPE_PRICE_GROWTH` ← **NEW — required for subscription checkout**
+- [ ] `STRIPE_PRICE_STARTER` ← required for subscription checkout
+- [ ] `STRIPE_PRICE_PROFESSIONAL` ← required for subscription checkout
+- [ ] `STRIPE_PRICE_GROWTH` ← required for subscription checkout
+- [ ] `PLACEMENT_FEE_CENTS` = `50000` (default $500)
+- [ ] `WALLET_FEE_PCT` = `2.5` ← **NEW — Care Wallet service fee**
+- [ ] `DEFAULT_AFFILIATE_COMMISSION_PCT` = `20` ← **NEW — affiliate commission %**
+- [ ] `TWILIO_ACCOUNT_SID` ← **NEW — SMS notifications**
+- [ ] `TWILIO_AUTH_TOKEN` ← **NEW — SMS notifications**
+- [ ] `TWILIO_PHONE_NUMBER` ← **NEW — SMS notifications**
+- [ ] `CRON_SECRET` ← **NEW — secures tour-reminders cron endpoint**
 - [ ] `RESEND_API_KEY`
 - [ ] `EMAIL_FROM` = `noreply@getcarelinkai.com`
 - [ ] `CLOUDINARY_CLOUD_NAME`
@@ -124,8 +135,8 @@ See `REVENUE_MODEL.md` for the full breakdown. 12 streams finalized:
 - Local limitation: Prisma binary engine in sandbox dies after ~7 tests due to thread limits. NOT a production issue.
 
 ## Immediate Next Priorities
-1. **Merge branch + apply migration + create Stripe Products** — activate subscription checkout (see Pending Deployment Actions above)
-2. Fix CareBot markdown output in chat (OL-013) — plain text prompt, same fix applied to inquiry response generator
-3. Revamp landing page to showcase all products/features by user type with "coming soon" sections
-4. Fix TypeScript strict mode errors (274 remaining) (OL-005)
-5. Wire placement fee auto-trigger on Convert to Resident (Revenue Stream 2)
+1. **Merge branch + apply migration + set new env vars** — migration `20260424000002` must run; set WALLET_FEE_PCT, DEFAULT_AFFILIATE_COMMISSION_PCT, CRON_SECRET, Twilio vars; add tour-reminders cron job in Render
+2. **Create Stripe Products + register webhook** — Starter $99, Professional $249, Growth $499; register `/api/webhooks/stripe` endpoint (see Pending Deployment Actions above)
+3. Fix TypeScript strict mode errors (274 remaining) (OL-005) — re-enable CI type-check
+4. Fix CareBot markdown output in chat (OL-013) — plain text prompt fix
+5. Revamp landing page to showcase all products/features by user type

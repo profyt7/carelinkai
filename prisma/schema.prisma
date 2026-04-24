@@ -666,6 +666,7 @@ model Inquiry {
   source                 InquirySource?     @default(WEBSITE)
   preferredContactMethod ContactMethod?     @default(EMAIL)
   assignedToId           String?
+  affiliateCode          String?            // referral code of the affiliate who referred this inquiry
   booking                Booking?
   uploadedDocuments      Document[]         @relation("uploadedDocuments")
   followUps              FollowUp[]
@@ -688,6 +689,7 @@ model Inquiry {
   @@index([urgency])
   @@index([source])
   @@index([createdAt])
+  @@index([affiliateCode])
 }
 
 /// Documents associated with an inquiry (applications, IDs, medical records, etc.)
