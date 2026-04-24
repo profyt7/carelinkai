@@ -86,10 +86,9 @@ Each loop: what it is, why it matters, what done looks like.
 - **Status:** ✅ FIXED (2026-04-21)
 
 ### OL-014: Placement fee not auto-triggered on Convert to Resident
-- **Status:** ✅ CLOSED (2026-04-23) — non-blocking Stripe PaymentIntent fired after `$transaction`
-- Creates PENDING Payment record; updates to COMPLETED/FAILED based on Stripe outcome
+- **Status:** ✅ CLOSED + IMPROVED (2026-04-24) — switched from PaymentIntent (blocks if card fails) to Stripe invoice item (collected on next billing cycle); never blocks conversion
+- Payment status: PENDING → PROCESSING (invoice queued) → COMPLETED (invoice paid via webhook)
 - Defaults to $500 (`PLACEMENT_FEE_CENTS=50000`); configurable per Render env var
-- Falls back to PENDING for manual collection if no card on file
 
 ### OL-015: Landing page does not showcase all products by user type
 - **Status:** ✅ CLOSED (2026-04-24) — full landing page revamp with 6-tab user-type sections, pricing cards, roadmap
@@ -119,3 +118,8 @@ Each loop: what it is, why it matters, what done looks like.
 | Resident INQUIRY status after convert | Removed spurious status overwrite in conversion service | 2026-04-23 |
 | Archive button placeholder text | Wired real ArchiveButton component | 2026-04-23 |
 | OL-008: Stripe subscription billing | Code complete — checkout, portal, webhooks, feature gating built | 2026-04-24 |
+| OL-009: SMS / Twilio | 5 triggers wired: new inquiry, tour booked, payment failed, response received, 24h tour reminder cron | 2026-04-24 |
+| Care Wallet spending | Families pay care costs from wallet; 2.5% fee; atomic deduction; payment trail | 2026-04-24 |
+| Affiliate commission auto-trigger | affiliateCode on Inquiry; commission recorded on conversion; affiliate dashboard built | 2026-04-24 |
+| FOUNDERS49 promo | Stripe coupon $50/mo off forever (max 50); banner in billing UI | 2026-04-24 |
+| Placement fee billing switch | Switched from PaymentIntent → invoice item; collected on next billing cycle | 2026-04-24 |

@@ -2,6 +2,54 @@
 
 ---
 
+### 2026-04-24 — Revenue Streams: Billing Switch, SMS, Care Wallet, Affiliate Commission
+
+- **Objective:** Close 5 revenue and notification features: placement fee billing model switch, FOUNDERS49 promo code, Twilio SMS (OL-009), Care Wallet spending, and affiliate commission auto-trigger.
+
+- **Work completed:**
+  1. **Placement fee → invoice item**: Switched `triggerPlacementFee()` from `stripe.paymentIntents.create` (blocked on card) to `stripe.invoiceItems.create` (collected on next billing cycle). Payment status set to PROCESSING (not FAILED) when queued. Webhook `invoice.payment_succeeded` now settles all PROCESSING PLACEMENT_FEE payments → COMPLETED.
+  2. **FOUNDERS49 promo code**: Added `getOrCreateEarlyAdopterCoupon()` to `scripts/stripe-setup.js` — creates coupon `carelinkai_founders_rate` ($50/mo off forever, max 50 redemptions) + promo code `FOUNDERS49`. Added amber founders-rate banner to `SubscriptionManager.tsx` above plan picker.
+  3. **SMS notifications (OL-009 closed)**: Rewrote `src/lib/sms/sms-service.ts` with lazy Twilio init and 5 methods: `sendNewInquiryAlert`, `sendTourBookedAlert`, `sendInquiryResponseReceived`, `sendTourReminder`, `sendPaymentFailedAlert`. Wired into: inquiries POST, tour request POST, inquiry response send, Stripe webhook `invoice.payment_failed`. Created cron endpoint `/api/cron/tour-reminders` (CRON_SECRET Bearer auth) for 24h tour reminders.
+  4. **Care Wallet spending**: Created `/api/billing/bookings` (GET family bookings) and `/api/billing/pay-from-wallet` (POST: validates balance, deducts atomically in `$transaction`, applies 2.5% fee, creates Payment record). Rewrote `BillingTab.tsx` to show care payment buttons for each booking.
+  5. **Affiliate commission auto-trigger**: Added `affiliateCode String?` to Inquiry Prisma model + index + migration. Inquiry creation API now stores `affiliateCode` from request body. `convertInquiryToResident()` fires `triggerAffiliateCommission()` after conversion — upserts AffiliateReferral to CONVERTED, creates PENDING AFFILIATE_COMMISSION Payment. Built `/api/affiliate/dashboard` GET route and `/affiliate/dashboard` UI page (referral link, 4 stat cards, referral history table). Added "Affiliate Dashboard" nav item to DashboardLayout (AFFILIATE/ADMIN only).
+
+- **Files changed:**
+  - `src/lib/services/inquiry-conversion.ts` — billing switch + affiliate commission trigger
+  - `src/app/api/webhooks/stripe/route.ts` — settle placement fees on invoice paid + SMS on payment failed
+  - `src/lib/sms/sms-service.ts` — full rewrite with 5 SMS methods
+  - `src/app/api/inquiries/route.ts` — affiliateCode field + SMS alert
+  - `src/app/api/family/tours/request/route.ts` — tour booked SMS
+  - `src/app/api/inquiries/responses/[responseId]/send/route.ts` — response received SMS
+  - `src/app/api/cron/tour-reminders/route.ts` — new (24h tour reminder cron)
+  - `src/components/operator/billing/SubscriptionManager.tsx` — FOUNDERS49 banner
+  - `scripts/stripe-setup.js` — FOUNDERS49 coupon + promo code creation
+  - `src/app/api/billing/bookings/route.ts` — new (family bookings list)
+  - `src/app/api/billing/pay-from-wallet/route.ts` — new (wallet care payment)
+  - `src/components/family/BillingTab.tsx` — full rewrite with care payment UI
+  - `prisma/schema.prisma` — affiliateCode on Inquiry
+  - `prisma/migrations/20260424000002_add_affiliate_code_to_inquiry/migration.sql` — new
+  - `src/app/api/affiliate/dashboard/route.ts` — new
+  - `src/app/affiliate/dashboard/page.tsx` — new
+  - `src/components/layout/DashboardLayout.tsx` — FiLink import + Affiliate Dashboard nav item
+  - `.env.example` — WALLET_FEE_PCT, DEFAULT_AFFILIATE_COMMISSION_PCT, CRON_SECRET, Twilio uncommented
+
+- **Commands run:**
+  - `npx tsc --noEmit` (0 errors in changed files)
+  - `git commit && git push origin claude/review-carelink-docs-49Ycv`
+
+- **Tests/build status:** TypeScript clean in changed files. 274 pre-existing strict mode errors in other files (unrelated, CI disabled).
+
+- **Deployment impact:** Migration `20260424000002` must run on next deploy (`npx prisma migrate deploy`). New env vars needed in Render: `WALLET_FEE_PCT`, `DEFAULT_AFFILIATE_COMMISSION_PCT`, `CRON_SECRET`, `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER`. Existing Render cron job for follow-ups — add a new cron job calling `/api/cron/tour-reminders` hourly with `Authorization: Bearer <CRON_SECRET>`.
+
+- **New risks/blockers:**
+  - Care Wallet spending requires `WALLET_FEE_PCT` set in Render (defaults to 2.5% if unset)
+  - Affiliate commission requires `DEFAULT_AFFILIATE_COMMISSION_PCT` set in Render (defaults to 20%)
+  - SMS is fully no-op if Twilio vars not set — won't break anything
+
+- **Recommended next step:** Merge branch to main → deploy → apply migration `20260424000002` → set new env vars → add tour-reminders cron job in Render. Then: fix CareBot markdown (OL-013) or tackle TypeScript strict errors (OL-005).
+
+---
+
 ### 2026-04-23 — OL-014: Placement Fee Auto-Trigger on Convert to Resident
 
 - **Objective:** Wire Revenue Stream 2 — auto-charge operator $500 when an inquiry converts to a resident.
