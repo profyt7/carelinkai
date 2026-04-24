@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { CheckCircle, Clock, AlertTriangle, XCircle, CreditCard, ArrowUpRight, Zap } from 'lucide-react';
+import { CheckCircle, Clock, AlertTriangle, XCircle, CreditCard, ArrowUpRight, Zap, RefreshCw } from 'lucide-react';
 
 interface SubscriptionData {
   id: string;
@@ -12,13 +12,15 @@ interface SubscriptionData {
 }
 
 const PLAN_DETAILS = {
-  STARTER:      { label: 'Starter',      price: '$99/mo',  color: 'blue',   homes: '1 home' },
-  PROFESSIONAL: { label: 'Professional', price: '$249/mo', color: 'purple', homes: 'Up to 3 homes' },
-  GROWTH:       { label: 'Growth',       price: '$499/mo', color: 'green',  homes: 'Up to 10 homes' },
-  ENTERPRISE:   { label: 'Enterprise',   price: 'Custom',  color: 'orange', homes: 'Unlimited homes' },
+  STARTER:      { label: 'Starter',      price: '$99/mo',  homes: '1 home',          features: ['Inquiry pipeline', 'Resident management', 'Email support'] },
+  PROFESSIONAL: { label: 'Professional', price: '$249/mo', homes: 'Up to 3 homes',   features: ['Everything in Starter', 'AI inquiry responses', 'Caregiver management', 'Tour scheduling + analytics'] },
+  GROWTH:       { label: 'Growth',       price: '$499/mo', homes: 'Up to 10 homes',  features: ['Everything in Professional', 'Discharge planner integration', 'Advanced analytics', 'Priority support'] },
+  ENTERPRISE:   { label: 'Enterprise',   price: 'Custom',  homes: 'Unlimited homes', features: ['Everything in Growth', 'White-label', 'Dedicated support'] },
 };
 
-const PLAN_ORDER = ['STARTER', 'PROFESSIONAL', 'GROWTH'];
+const PLAN_ORDER: Array<'STARTER' | 'PROFESSIONAL' | 'GROWTH'> = ['STARTER', 'PROFESSIONAL', 'GROWTH'];
+
+const PLAN_RANK: Record<string, number> = { STARTER: 1, PROFESSIONAL: 2, GROWTH: 3, ENTERPRISE: 4 };
 
 function StatusBadge({ status }: { status: SubscriptionData['subscriptionStatus'] }) {
   switch (status) {
@@ -41,6 +43,8 @@ export default function SubscriptionManager() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [showPlanChange, setShowPlanChange] = useState(false);
 
   useEffect(() => {
     fetch('/api/operator/billing/subscription')
@@ -60,13 +64,32 @@ export default function SubscriptionManager() {
         body: JSON.stringify({ plan }),
       });
       const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || 'Failed to start checkout.');
-        return;
-      }
+      if (!res.ok) { setError(data.error || 'Failed to start checkout.'); return; }
       window.location.href = data.url;
     } catch {
       setError('Failed to start checkout. Please try again.');
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleSwitchPlan(plan: string) {
+    setActionLoading(plan);
+    setError(null);
+    setSuccess(null);
+    try {
+      const res = await fetch('/api/operator/billing/switch-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || 'Failed to switch plan.'); return; }
+      setSubscription((prev) => prev ? { ...prev, subscriptionPlan: plan as any } : prev);
+      setSuccess(`Switched to ${data.label} plan successfully.`);
+      setShowPlanChange(false);
+    } catch {
+      setError('Failed to switch plan. Please try again.');
     } finally {
       setActionLoading(null);
     }
@@ -78,10 +101,7 @@ export default function SubscriptionManager() {
     try {
       const res = await fetch('/api/operator/billing/portal', { method: 'POST' });
       const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || 'Failed to open billing portal.');
-        return;
-      }
+      if (!res.ok) { setError(data.error || 'Failed to open billing portal.'); return; }
       window.location.href = data.url;
     } catch {
       setError('Failed to open billing portal. Please try again.');
@@ -100,13 +120,18 @@ export default function SubscriptionManager() {
   }
 
   const hasActivePlan = subscription?.subscriptionStatus === 'ACTIVE' || subscription?.subscriptionStatus === 'TRIALING';
-  const planDetails = subscription?.subscriptionPlan ? PLAN_DETAILS[subscription.subscriptionPlan] : null;
+  const currentPlan = subscription?.subscriptionPlan;
+  const planDetails = currentPlan ? PLAN_DETAILS[currentPlan] : null;
+  const currentRank = currentPlan ? (PLAN_RANK[currentPlan] ?? 0) : 0;
 
   return (
     <div className="space-y-4">
       {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-          {error}
+        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{error}</div>
+      )}
+      {success && (
+        <div className="rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700 flex items-center gap-2">
+          <CheckCircle className="w-4 h-4 flex-shrink-0" />{success}
         </div>
       )}
 
@@ -142,23 +167,81 @@ export default function SubscriptionManager() {
           </div>
 
           {hasActivePlan && (
-            <button
-              onClick={handleManage}
-              disabled={actionLoading === 'portal'}
-              className="btn btn-secondary flex items-center gap-2 self-start sm:self-auto"
-            >
-              <CreditCard className="w-4 h-4" />
-              {actionLoading === 'portal' ? 'Opening...' : 'Manage Billing'}
-              <ArrowUpRight className="w-3 h-3" />
-            </button>
+            <div className="flex flex-col sm:flex-row gap-2 self-start sm:self-auto">
+              <button
+                onClick={() => { setShowPlanChange(!showPlanChange); setError(null); setSuccess(null); }}
+                className="btn btn-secondary flex items-center gap-2 text-sm"
+              >
+                <RefreshCw className="w-4 h-4" />
+                {showPlanChange ? 'Cancel' : 'Change Plan'}
+              </button>
+              <button
+                onClick={handleManage}
+                disabled={actionLoading === 'portal'}
+                className="btn btn-secondary flex items-center gap-2 text-sm"
+              >
+                <CreditCard className="w-4 h-4" />
+                {actionLoading === 'portal' ? 'Opening...' : 'Manage Billing'}
+                <ArrowUpRight className="w-3 h-3" />
+              </button>
+            </div>
           )}
         </div>
       </div>
 
+      {/* In-app plan switcher */}
+      {hasActivePlan && showPlanChange && (
+        <div>
+          <div className="text-sm font-medium text-neutral-700 mb-3">
+            Select a new plan — changes take effect immediately with prorated billing.
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {PLAN_ORDER.map((plan) => {
+              const details = PLAN_DETAILS[plan];
+              const isCurrent = plan === currentPlan;
+              const isUpgrade = PLAN_RANK[plan] > currentRank;
+              const isLoading = actionLoading === plan;
+              return (
+                <div
+                  key={plan}
+                  className={`border-2 rounded-xl p-4 flex flex-col gap-3 transition-all ${
+                    isCurrent ? 'border-blue-400 bg-blue-50' : 'border-neutral-200 hover:border-blue-300 hover:shadow-sm'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="font-semibold text-base">{details.label}</div>
+                      {isCurrent && <span className="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">Current</span>}
+                      {!isCurrent && isUpgrade && <span className="text-xs font-medium text-green-600 bg-green-100 px-2 py-0.5 rounded-full">Upgrade</span>}
+                      {!isCurrent && !isUpgrade && <span className="text-xs font-medium text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">Downgrade</span>}
+                    </div>
+                    <div className="text-2xl font-bold">{details.price}</div>
+                    <div className="text-xs text-neutral-500">{details.homes}</div>
+                  </div>
+                  <ul className="text-xs text-neutral-600 space-y-1 flex-1">
+                    {details.features.map((f) => <li key={f}>✓ {f}</li>)}
+                  </ul>
+                  <button
+                    onClick={() => handleSwitchPlan(plan)}
+                    disabled={isCurrent || !!actionLoading}
+                    className={`btn text-sm mt-auto ${isCurrent ? 'btn-secondary opacity-50 cursor-not-allowed' : 'btn-primary'}`}
+                  >
+                    {isLoading ? 'Switching...' : isCurrent ? 'Current Plan' : isUpgrade ? 'Upgrade' : 'Downgrade'}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-xs text-neutral-400 mt-3">
+            Need unlimited homes?{' '}
+            <a href="mailto:hello@getcarelinkai.com" className="underline">Contact us for Enterprise pricing.</a>
+          </p>
+        </div>
+      )}
+
       {/* Plan selection (shown when no active plan) */}
       {!hasActivePlan && (
         <div>
-          {/* Early adopter offer banner */}
           <div className="mb-4 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 flex items-start gap-3">
             <span className="text-lg leading-none mt-0.5">🎉</span>
             <div className="text-sm">
@@ -174,7 +257,7 @@ export default function SubscriptionManager() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {PLAN_ORDER.map((plan) => {
-              const details = PLAN_DETAILS[plan as keyof typeof PLAN_DETAILS];
+              const details = PLAN_DETAILS[plan];
               const isLoading = actionLoading === plan;
               return (
                 <div
@@ -186,29 +269,9 @@ export default function SubscriptionManager() {
                     <div className="text-2xl font-bold mt-0.5">{details.price}</div>
                     <div className="text-xs text-neutral-500">{details.homes}</div>
                   </div>
-                  {plan === 'STARTER' && (
-                    <ul className="text-xs text-neutral-600 space-y-1">
-                      <li>✓ Inquiry pipeline</li>
-                      <li>✓ Resident management</li>
-                      <li>✓ Email support</li>
-                    </ul>
-                  )}
-                  {plan === 'PROFESSIONAL' && (
-                    <ul className="text-xs text-neutral-600 space-y-1">
-                      <li>✓ Everything in Starter</li>
-                      <li>✓ AI inquiry responses</li>
-                      <li>✓ Caregiver management</li>
-                      <li>✓ Tour scheduling + analytics</li>
-                    </ul>
-                  )}
-                  {plan === 'GROWTH' && (
-                    <ul className="text-xs text-neutral-600 space-y-1">
-                      <li>✓ Everything in Professional</li>
-                      <li>✓ Discharge planner integration</li>
-                      <li>✓ Advanced analytics</li>
-                      <li>✓ Priority support</li>
-                    </ul>
-                  )}
+                  <ul className="text-xs text-neutral-600 space-y-1 flex-1">
+                    {details.features.map((f) => <li key={f}>✓ {f}</li>)}
+                  </ul>
                   <button
                     onClick={() => handleSubscribe(plan)}
                     disabled={!!actionLoading}
