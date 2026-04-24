@@ -23,7 +23,7 @@ async function main() {
   // 1. Demo Family Account
   const demoFamily = await prisma.user.upsert({
     where: { email: 'demo.family@carelinkai.test' },
-    update: {},
+    update: { passwordHash: hashedPassword, status: 'ACTIVE', emailVerified: new Date() },
     create: {
       email: 'demo.family@carelinkai.test',
       passwordHash: hashedPassword,
@@ -74,7 +74,7 @@ async function main() {
   // 2. Demo Operator Account
   const demoOperator = await prisma.user.upsert({
     where: { email: 'demo.operator@carelinkai.test' },
-    update: {},
+    update: { passwordHash: hashedPassword, status: 'ACTIVE', emailVerified: new Date() },
     create: {
       email: 'demo.operator@carelinkai.test',
       passwordHash: hashedPassword,
@@ -97,7 +97,7 @@ async function main() {
   // 3. Demo Aide/Caregiver Account
   const demoAide = await prisma.user.upsert({
     where: { email: 'demo.aide@carelinkai.test' },
-    update: {},
+    update: { passwordHash: hashedPassword, status: 'ACTIVE', emailVerified: new Date() },
     create: {
       email: 'demo.aide@carelinkai.test',
       passwordHash: hashedPassword,
@@ -133,7 +133,7 @@ async function main() {
   // 4. Demo Provider Account
   const demoProvider = await prisma.user.upsert({
     where: { email: 'demo.provider@carelinkai.test' },
-    update: {},
+    update: { passwordHash: hashedPassword, status: 'ACTIVE', emailVerified: new Date() },
     create: {
       email: 'demo.provider@carelinkai.test',
       passwordHash: hashedPassword,
@@ -171,7 +171,7 @@ async function main() {
   // 5. Demo Admin Account
   const demoAdmin = await prisma.user.upsert({
     where: { email: 'demo.admin@carelinkai.test' },
-    update: {},
+    update: { passwordHash: hashedPassword, status: 'ACTIVE', emailVerified: new Date() },
     create: {
       email: 'demo.admin@carelinkai.test',
       passwordHash: hashedPassword,
@@ -188,7 +188,7 @@ async function main() {
   // 6. Demo Healthcare Professional / Discharge Planner Account
   await prisma.user.upsert({
     where: { email: 'demo.healthcare@carelinkai.test' },
-    update: {},
+    update: { passwordHash: hashedPassword, status: 'ACTIVE', emailVerified: new Date() },
     create: {
       email: 'demo.healthcare@carelinkai.test',
       passwordHash: hashedPassword,
@@ -205,7 +205,7 @@ async function main() {
   // 7. Demo Affiliate Partner Account
   await prisma.user.upsert({
     where: { email: 'demo.affiliate@carelinkai.test' },
-    update: {},
+    update: { passwordHash: hashedPassword, status: 'ACTIVE', emailVerified: new Date() },
     create: {
       email: 'demo.affiliate@carelinkai.test',
       passwordHash: hashedPassword,
