@@ -72,6 +72,20 @@ export default async function AdminDashboard() {
       color: 'from-pink-500 to-pink-600',
     },
     {
+      title: 'Operator Management',
+      description: 'View operators, subscription plans, billing status, and MRR',
+      icon: FiHome,
+      href: '/admin/operators',
+      color: 'from-indigo-500 to-indigo-600',
+    },
+    {
+      title: 'Discharge Planners',
+      description: 'Manage hospital discharge planner subscriptions and seat billing',
+      icon: FiActivity,
+      href: '/admin/discharge-planners',
+      color: 'from-teal-500 to-teal-600',
+    },
+    {
       title: 'System Analytics',
       description: 'View platform metrics and insights',
       icon: FiTrendingUp,
