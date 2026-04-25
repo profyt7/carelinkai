@@ -740,7 +740,7 @@ export default function HomeDetailPage() {
     return (
       <DashboardLayout title={`Home Details - ${realHome.name}`}>
         <div className="min-h-screen bg-neutral-50 pb-28">
-          {/* Back */}
+          {/* Sticky top nav */}
           <div className="sticky top-0 z-20 bg-white shadow-sm">
             <div className="container mx-auto px-4 py-4">
               <div className="flex items-center justify-between">
@@ -748,6 +748,23 @@ export default function HomeDetailPage() {
                   <FiArrowLeft className="mr-1 h-4 w-4" />
                   Back to Search
                 </button>
+                <div className="flex items-center space-x-3">
+                  <button
+                    onClick={toggleFavorite}
+                    className={`flex items-center rounded-md border px-3 py-1.5 text-sm font-medium transition-colors ${
+                      isFavorite
+                        ? 'border-primary-200 bg-primary-50 text-primary-600'
+                        : 'border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50'
+                    }`}
+                  >
+                    <FiHeart className={`mr-1 h-4 w-4 ${isFavorite ? 'fill-current' : ''}`} />
+                    {isFavorite ? 'Saved' : 'Save'}
+                  </button>
+                  <button className="flex items-center rounded-md border border-neutral-200 bg-white px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-50">
+                    <FiShare2 className="mr-1 h-4 w-4" />
+                    Share
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -763,83 +780,149 @@ export default function HomeDetailPage() {
               <div className="flex-1">
                 {/* Header */}
                 <div className="mb-6">
-                  <div className="flex flex-wrap items-start justify-between">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <h1 className="text-2xl font-bold text-neutral-800 md:text-3xl">{realHome.name}</h1>
                       <div className="mt-1 flex items-center">
                         <FiMapPin className="mr-1 h-4 w-4 text-neutral-500" />
                         <span className="text-sm text-neutral-600">{addrText}</span>
                       </div>
+                      {/* Care level badges */}
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {(realHome.careLevel || []).map((level: string) => (
+                          <span key={level} className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-700">
+                            {CARE_LEVELS.find(l => l.id === level)?.label || level.replace(/_/g, ' ')}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                    <div className="mt-2 flex items-center md:mt-0">
-                      {realHome.rating != null && (
-                        <>
-                          <div className="flex items-center text-amber-500">
-                            <FiStar className="fill-current" />
-                            <span className="ml-1 font-medium text-neutral-800">{realHome.rating.toFixed(1)}</span>
-                          </div>
-                          <span className="ml-1 text-sm text-neutral-500">({realHome.reviewCount} reviews)</span>
-                        </>
-                      )}
-                    </div>
+                    {realHome.rating != null && (
+                      <div className="flex items-center rounded-lg bg-amber-50 border border-amber-200 px-3 py-2">
+                        <FiStar className="fill-current text-amber-500 h-4 w-4" />
+                        <span className="ml-1 font-semibold text-neutral-800">{realHome.rating.toFixed(1)}</span>
+                        <span className="ml-1 text-sm text-neutral-500">({realHome.reviewCount})</span>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Key details */}
+                  {/* Key stats */}
                   <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
                     <div className="rounded-lg border border-neutral-200 bg-white p-3">
                       <div className="flex items-center text-neutral-600">
-                        <FiUsers className="mr-2 h-5 w-5" />
+                        <FiUsers className="mr-2 h-5 w-5 flex-shrink-0" />
                         <div>
-                          <p className="text-xs">Capacity</p>
+                          <p className="text-xs text-neutral-500">Capacity</p>
                           <p className="font-medium">{realHome.capacity} Residents</p>
                         </div>
                       </div>
                     </div>
                     <div className="rounded-lg border border-neutral-200 bg-white p-3">
                       <div className="flex items-center text-neutral-600">
-                        <FiHome className="mr-2 h-5 w-5" />
+                        <FiHome className="mr-2 h-5 w-5 flex-shrink-0" />
                         <div>
-                          <p className="text-xs">Availability</p>
+                          <p className="text-xs text-neutral-500">Availability</p>
                           <p className="font-medium">{realHome.availability > 0 ? `${realHome.availability} Spots` : 'Waitlist'}</p>
                         </div>
                       </div>
                     </div>
                     <div className="rounded-lg border border-neutral-200 bg-white p-3">
                       <div className="flex items-center text-neutral-600">
-                        <FiDollarSign className="mr-2 h-5 w-5" />
+                        <FiDollarSign className="mr-2 h-5 w-5 flex-shrink-0" />
                         <div>
-                          <p className="text-xs">Starting At</p>
-                          <p className="font-medium">{realHome.priceRange?.formattedMin || (realHome.priceRange?.min ? formatCurrency(realHome.priceRange.min) : '—')}/mo</p>
+                          <p className="text-xs text-neutral-500">Monthly Cost</p>
+                          {realHome.priceRange?.min && realHome.priceRange?.max ? (
+                            <p className="font-medium text-sm">{formatCurrency(realHome.priceRange.min)}–{formatCurrency(realHome.priceRange.max)}</p>
+                          ) : realHome.priceRange?.min ? (
+                            <p className="font-medium">From {formatCurrency(realHome.priceRange.min)}</p>
+                          ) : (
+                            <p className="font-medium text-neutral-400">Contact for pricing</p>
+                          )}
                         </div>
                       </div>
                     </div>
                     <div className="rounded-lg border border-neutral-200 bg-white p-3">
                       <div className="flex items-center text-neutral-600">
-                        <FiAward className="mr-2 h-5 w-5" />
+                        <FiClock className="mr-2 h-5 w-5 flex-shrink-0" />
                         <div>
-                          <p className="text-xs">Care Levels</p>
-                          <p className="text-sm">{(realHome.careLevel || []).join(', ').replaceAll('_', ' ')}</p>
+                          <p className="text-xs text-neutral-500">Staffing</p>
+                          <p className="font-medium text-sm">24/7 On-Site Care</p>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Description */}
-                <div className="mb-6 rounded-lg border border-neutral-200 bg-white p-6">
-                  <p className="text-neutral-700 whitespace-pre-line">{realHome.description}</p>
+                {/* About */}
+                <div className="mb-6">
+                  <h2 className="mb-3 text-xl font-semibold text-neutral-800">About {realHome.name}</h2>
+                  <div className="rounded-lg border border-neutral-200 bg-white p-6">
+                    <p className="text-neutral-700 whitespace-pre-line leading-relaxed">
+                      {realHome.description || 'No description available for this facility.'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Quick Facts */}
+                <div className="mb-6">
+                  <h2 className="mb-3 text-xl font-semibold text-neutral-800">Quick Facts</h2>
+                  <div className="rounded-lg border border-neutral-200 bg-white p-6">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <div className="flex items-start">
+                        <div className="mr-3 rounded-full bg-primary-100 p-2 text-primary-600 flex-shrink-0">
+                          <FiUsers className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-neutral-800">Resident Gender</p>
+                          <p className="text-sm text-neutral-600">
+                            {!realHome.gender || realHome.gender === 'ALL' ? 'All genders welcome' : `${realHome.gender} residents only`}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-start">
+                        <div className="mr-3 rounded-full bg-primary-100 p-2 text-primary-600 flex-shrink-0">
+                          <FiHome className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-neutral-800">Facility Size</p>
+                          <p className="text-sm text-neutral-600">{realHome.capacity} bed capacity · {realHome.availability > 0 ? `${realHome.availability} beds available` : 'Waitlist only'}</p>
+                        </div>
+                      </div>
+                      {realHome.operator && (
+                        <div className="flex items-start">
+                          <div className="mr-3 rounded-full bg-primary-100 p-2 text-primary-600 flex-shrink-0">
+                            <FiShield className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-neutral-800">Operator</p>
+                            <p className="text-sm text-neutral-600">{realHome.operator.company || realHome.operator.name}</p>
+                          </div>
+                        </div>
+                      )}
+                      <div className="flex items-start">
+                        <div className="mr-3 rounded-full bg-primary-100 p-2 text-primary-600 flex-shrink-0">
+                          <FiAward className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-neutral-800">Care Types</p>
+                          <p className="text-sm text-neutral-600">
+                            {(realHome.careLevel || []).map((l: string) => CARE_LEVELS.find(x => x.id === l)?.label || l.replace(/_/g, ' ')).join(', ')}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Amenities */}
                 {Array.isArray(realHome.amenities) && realHome.amenities.length > 0 && (
                   <div className="mb-8">
-                    <h2 className="mb-4 text-xl font-semibold text-neutral-800">Amenities & Services</h2>
+                    <h2 className="mb-3 text-xl font-semibold text-neutral-800">Amenities & Services</h2>
                     <div className="rounded-lg border border-neutral-200 bg-white p-6">
                       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
                         {realHome.amenities.map((a: string) => (
-                          <div key={a} className="flex items-center">
-                            <FiCheck className="mr-2 h-5 w-5 text-success-500" />
-                            <span className="text-neutral-700">{a}</span>
+                          <div key={a} className="flex items-center gap-2">
+                            <FiCheck className="h-4 w-4 text-green-500 flex-shrink-0" />
+                            <span className="text-sm text-neutral-700">{a}</span>
                           </div>
                         ))}
                       </div>
@@ -849,17 +932,17 @@ export default function HomeDetailPage() {
 
                 {/* Location */}
                 <div className="mb-8">
-                  <h2 className="mb-4 text-xl font-semibold text-neutral-800">Location</h2>
+                  <h2 className="mb-3 text-xl font-semibold text-neutral-800">Location</h2>
                   <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white">
                     <div className="h-80 w-full">
                       <SimpleMap homes={[realHome]} />
                     </div>
-                    <div className="p-6">
+                    <div className="p-5">
                       <div className="flex items-start">
-                        <FiMapPinOutline className="mr-3 h-5 w-5 text-neutral-500" />
+                        <FiMapPinOutline className="mr-3 h-5 w-5 text-neutral-500 flex-shrink-0 mt-0.5" />
                         <div>
                           <h3 className="font-medium text-neutral-800">Address</h3>
-                          <p className="text-neutral-600">{addrText}</p>
+                          <p className="text-neutral-600 text-sm">{addrText}</p>
                         </div>
                       </div>
                     </div>
@@ -867,25 +950,70 @@ export default function HomeDetailPage() {
                 </div>
               </div>
 
-              {/* Sidebar (reuse inquiry CTA) */}
-              <div className="mt-8 w-full lg:mt-0 lg:w-80">
-                <div className="sticky top-20">
-                  <div className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
-                    <h3 className="mb-3 text-lg font-semibold text-neutral-800">Interested in {realHome.name}?</h3>
+              {/* Sidebar */}
+              <div className="mt-8 w-full lg:mt-0 lg:w-80 space-y-4">
+                <div className="sticky top-20 space-y-4">
+                  {/* Pricing summary */}
+                  {(realHome.priceRange?.min || realHome.priceRange?.max) && (
+                    <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
+                      <h3 className="mb-2 font-semibold text-neutral-800">Pricing</h3>
+                      <div className="text-2xl font-bold text-primary-600">
+                        {realHome.priceRange?.min && realHome.priceRange?.max
+                          ? `${formatCurrency(realHome.priceRange.min)} – ${formatCurrency(realHome.priceRange.max)}`
+                          : realHome.priceRange?.min
+                          ? `From ${formatCurrency(realHome.priceRange.min)}`
+                          : `Up to ${formatCurrency(realHome.priceRange.max)}`}
+                      </div>
+                      <p className="text-xs text-neutral-500 mt-1">per month · contact for exact quote</p>
+                    </div>
+                  )}
+
+                  {/* Inquiry CTA */}
+                  <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
+                    <h3 className="mb-2 text-lg font-semibold text-neutral-800">Interested?</h3>
                     <p className="mb-4 text-sm text-neutral-600">
-                      {realHome.availability > 0 ? `${realHome.availability} spots available. Schedule a tour or send an inquiry.` : 'Currently on waitlist. Send an inquiry to learn more.'}
+                      {realHome.availability > 0
+                        ? `${realHome.availability} spot${realHome.availability > 1 ? 's' : ''} available now.`
+                        : 'Join the waitlist to be notified when a spot opens.'}
                     </p>
-                    <div className="space-y-3">
-                      <Link href={`/inquiry?homeId=${realHome.id}`} className="flex w-full items-center justify-center rounded-md bg-primary-500 px-4 py-2 font-medium text-white hover:bg-primary-600">
-                        <FiCalendar className="mr-2 h-5 w-5" />
+                    <div className="space-y-2">
+                      <Link href={`/inquiry?homeId=${realHome.id}`} className="flex w-full items-center justify-center rounded-md bg-primary-500 px-4 py-2.5 font-medium text-white hover:bg-primary-600 transition-colors">
+                        <FiCalendar className="mr-2 h-4 w-4" />
                         Schedule a Tour
                       </Link>
-                      <Link href={`/inquiry?homeId=${realHome.id}`} className="flex w-full items-center justify-center rounded-md border border-neutral-300 bg-white px-4 py-2 font-medium text-neutral-700 hover:bg-neutral-50">
-                        <MessageSquare className="mr-2 h-5 w-5" />
+                      <Link href={`/inquiry?homeId=${realHome.id}`} className="flex w-full items-center justify-center rounded-md border border-neutral-300 bg-white px-4 py-2.5 font-medium text-neutral-700 hover:bg-neutral-50 transition-colors">
+                        <MessageSquare className="mr-2 h-4 w-4" />
                         Send Inquiry
                       </Link>
                     </div>
                   </div>
+
+                  {/* Operator contact */}
+                  {realHome.operator && (
+                    <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
+                      <h3 className="mb-3 font-semibold text-neutral-800">Contact</h3>
+                      <div className="space-y-2">
+                        {realHome.operator.company && (
+                          <div className="flex items-center gap-2 text-sm text-neutral-700">
+                            <FiHome className="h-4 w-4 text-neutral-400 flex-shrink-0" />
+                            <span>{realHome.operator.company}</span>
+                          </div>
+                        )}
+                        {realHome.operator.name && (
+                          <div className="flex items-center gap-2 text-sm text-neutral-700">
+                            <FiUsers className="h-4 w-4 text-neutral-400 flex-shrink-0" />
+                            <span>{realHome.operator.name}</span>
+                          </div>
+                        )}
+                        {realHome.operator.email && (
+                          <a href={`mailto:${realHome.operator.email}`} className="flex items-center gap-2 text-sm text-primary-600 hover:underline">
+                            <FiMail className="h-4 w-4 flex-shrink-0" />
+                            <span>{realHome.operator.email}</span>
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

@@ -33,6 +33,19 @@ const CITY_COORDINATES: Record<string, { lat: number; lng: number }> = {
   'new york, ny': { lat: 40.7128, lng: -74.0060 },
   'chicago, il': { lat: 41.8781, lng: -87.6298 },
   'boston, ma': { lat: 42.3601, lng: -71.0589 },
+  // Ohio
+  'cleveland, oh': { lat: 41.4993, lng: -81.6944 },
+  'columbus, oh': { lat: 39.9612, lng: -82.9988 },
+  'cincinnati, oh': { lat: 39.1031, lng: -84.5120 },
+  'akron, oh': { lat: 41.0814, lng: -81.5190 },
+  'toledo, oh': { lat: 41.6528, lng: -83.5379 },
+  'dayton, oh': { lat: 39.7589, lng: -84.1916 },
+  'youngstown, oh': { lat: 41.0998, lng: -80.6495 },
+  'canton, oh': { lat: 40.7989, lng: -81.3784 },
+  'lorain, oh': { lat: 41.4523, lng: -82.1824 },
+  'parma, oh': { lat: 41.3845, lng: -81.7290 },
+  'euclid, oh': { lat: 41.5931, lng: -81.5268 },
+  'mentor, oh': { lat: 41.6661, lng: -81.3396 },
   // State-level fallbacks
   'ca': { lat: 36.7783, lng: -119.4179 },
   'wa': { lat: 47.7511, lng: -120.7401 },
@@ -41,6 +54,15 @@ const CITY_COORDINATES: Record<string, { lat: number; lng: number }> = {
   'tx': { lat: 31.9686, lng: -99.9018 },
   'fl': { lat: 27.6648, lng: -81.5158 },
   'ny': { lat: 40.7128, lng: -74.0060 },
+  'oh': { lat: 40.4173, lng: -82.9071 },
+  'il': { lat: 40.6331, lng: -89.3985 },
+  'co': { lat: 39.5501, lng: -105.7821 },
+  'ma': { lat: 42.4072, lng: -71.3824 },
+  'pa': { lat: 41.2033, lng: -77.1945 },
+  'mi': { lat: 44.3148, lng: -85.6024 },
+  'ga': { lat: 32.1656, lng: -82.9001 },
+  'nc': { lat: 35.7596, lng: -79.0193 },
+  'va': { lat: 37.4316, lng: -78.6569 },
 };
 
 /**
