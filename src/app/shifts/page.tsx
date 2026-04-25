@@ -106,6 +106,39 @@ const formatDate = (date: Date | string) => {
   return dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 };
 
+function BidButton({ shiftId }: { shiftId: string }) {
+  const [state, setState] = useState<'idle' | 'loading' | 'done' | 'withdrawn'>('idle');
+
+  const handleBid = async () => {
+    if (state === 'done') {
+      setState('loading');
+      await fetch(`/api/shifts/${shiftId}/bid`, { method: 'DELETE' });
+      setState('withdrawn');
+      return;
+    }
+    setState('loading');
+    const res = await fetch(`/api/shifts/${shiftId}/bid`, { method: 'POST' });
+    setState(res.ok ? 'done' : 'idle');
+  };
+
+  if (state === 'withdrawn') return null;
+
+  return (
+    <button
+      onClick={handleBid}
+      disabled={state === 'loading'}
+      title={state === 'done' ? 'Withdraw bid' : 'Place a bid — operator will review'}
+      className={`px-3 py-2 rounded-md border text-sm font-medium transition-colors ${
+        state === 'done'
+          ? 'bg-green-50 text-green-700 border-green-300 hover:bg-red-50 hover:text-red-600 hover:border-red-300'
+          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+      }`}
+    >
+      {state === 'loading' ? '...' : state === 'done' ? 'Bid ✓' : 'Bid'}
+    </button>
+  );
+}
+
 export default function ShiftsPage() {
   const { data: session, status: authStatus } = useSession();
   const [activeTab, setActiveTab] = useState<'open' | 'my'>('open');
@@ -630,23 +663,26 @@ export default function ShiftsPage() {
                         <span>${shift.hourlyRate.toFixed(2)}/hr</span>
                       </div>
                       
-                      <button 
-                        className="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md transition-colors flex items-center justify-center disabled:bg-primary-400"
-                        onClick={() => handleClaimShift(shift.id)}
-                        disabled={isClaimingShift === shift.id}
-                      >
-                        {isClaimingShift === shift.id ? (
-                          <>
-                            <span className="mr-2 h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin"></span>
-                            Applying...
-                          </>
-                        ) : (
-                          <>
-                            Apply for Shift
-                            <FiArrowRight className="ml-2" />
-                          </>
-                        )}
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          className="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md transition-colors flex items-center justify-center disabled:bg-primary-400"
+                          onClick={() => handleClaimShift(shift.id)}
+                          disabled={isClaimingShift === shift.id}
+                        >
+                          {isClaimingShift === shift.id ? (
+                            <>
+                              <span className="mr-2 h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin"></span>
+                              Applying...
+                            </>
+                          ) : (
+                            <>
+                              Claim
+                              <FiArrowRight className="ml-2" />
+                            </>
+                          )}
+                        </button>
+                        <BidButton shiftId={shift.id} />
+                      </div>
                     </div>
                   </div>
                 ))}

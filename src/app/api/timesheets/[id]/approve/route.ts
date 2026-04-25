@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { computeAndSaveReliabilityScore } from "@/lib/services/caregiver-reliability";
+import { awardTimesheetPoints } from "@/lib/services/caregiver-points";
 
 // Force dynamic rendering to avoid static optimization
 export const dynamic = "force-dynamic";
@@ -144,15 +145,19 @@ export async function POST(
       console.error("Payroll creation error:", payErr);
     }
 
-    // Update caregiver reliability score in background — non-blocking
+    // Update reliability score + award points — non-blocking
     try {
       if (timesheet.caregiverId) {
         prisma.caregiver.findUnique({ where: { userId: timesheet.caregiverId }, select: { id: true } })
-          .then((c) => c && computeAndSaveReliabilityScore(c.id))
+          .then(async (c) => {
+            if (!c) return;
+            await computeAndSaveReliabilityScore(c.id);
+            await awardTimesheetPoints(c.id, timesheet.shiftId ?? '');
+          })
           .catch(() => {});
       }
     } catch {
-      // ignore — reliability score update is best-effort
+      // ignore — best-effort
     }
 
     // Return success response with the updated timesheet

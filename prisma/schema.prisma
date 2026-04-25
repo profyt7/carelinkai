@@ -208,6 +208,9 @@ model Caregiver {
   timesheets               Timesheet[]
   coverageAttempts         CoverageAttempt[]
   filledShiftNeeds         ShiftNeed[]              @relation("FilledByCaregiver")
+  callOffs                 CallOff[]
+  pointsAccount            CaregiverPoints?
+  shiftBids                ShiftBid[]
 
   @@index([userId])
   @@index([hourlyRate])
@@ -890,6 +893,8 @@ model CaregiverShift {
   marketplaceHire MarketplaceHire?   @relation("ShiftHire")
   timesheet       Timesheet?         @relation("ShiftTimesheet")
   shiftNeed       ShiftNeed?
+  callOffs        CallOff[]
+  bids            ShiftBid[]
 
   @@index([homeId])
   @@index([caregiverId])
@@ -2627,4 +2632,105 @@ model CoverageAttempt {
   @@index([caregiverId])
   @@index([messageSid])
   @@index([outcome])
+}
+
+enum CallOffType {
+  NO_SHOW
+  LATE_ARRIVAL
+  EARLY_DEPARTURE
+  CALLED_OFF
+}
+
+enum PointsTier {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+}
+
+enum PointsEventType {
+  ON_TIME_SHIFT
+  STREAK_5_SHIFTS
+  NO_CALLOFF_30_DAYS
+  POSITIVE_REVIEW
+  SHIFT_COMPLETED
+  REDEMPTION
+  BONUS
+  CALL_OFF_PENALTY
+}
+
+enum BidStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  WITHDRAWN
+}
+
+/// Recorded incident when a caregiver calls off, no-shows, or arrives late
+model CallOff {
+  id          String      @id @default(cuid())
+  caregiverId String
+  shiftId     String?
+  type        CallOffType
+  notes       String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  caregiver   Caregiver      @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+  shift       CaregiverShift? @relation(fields: [shiftId], references: [id], onDelete: SetNull)
+
+  @@index([caregiverId])
+  @@index([shiftId])
+  @@index([createdAt])
+}
+
+/// Running points balance and tier for a caregiver
+model CaregiverPoints {
+  id             String     @id @default(cuid())
+  caregiverId    String     @unique
+  totalPoints    Int        @default(0)
+  lifetimePoints Int        @default(0)
+  tier           PointsTier @default(BRONZE)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  caregiver    Caregiver          @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+  transactions PointTransaction[]
+
+  @@index([caregiverId])
+  @@index([tier])
+}
+
+/// Individual point earn/spend events
+model PointTransaction {
+  id          String          @id @default(cuid())
+  accountId   String
+  points      Int
+  type        PointsEventType
+  description String
+  createdAt   DateTime        @default(now())
+
+  account CaregiverPoints @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId])
+  @@index([createdAt])
+}
+
+/// Caregiver request to pick up an open shift
+model ShiftBid {
+  id          String    @id @default(cuid())
+  shiftId     String
+  caregiverId String
+  message     String?
+  status      BidStatus @default(PENDING)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  shift     CaregiverShift @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  caregiver Caregiver      @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+
+  @@unique([shiftId, caregiverId])
+  @@index([shiftId])
+  @@index([caregiverId])
+  @@index([status])
 }

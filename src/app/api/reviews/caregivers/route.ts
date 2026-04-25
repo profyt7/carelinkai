@@ -8,6 +8,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { computeAndSaveReliabilityScore } from "@/lib/services/caregiver-reliability";
+import { awardReviewPoints } from "@/lib/services/caregiver-points";
 
 // Validate review creation input
 const reviewCreateSchema = z.object({
@@ -228,6 +229,7 @@ export async function POST(request: NextRequest) {
 
     // Update reliability score in background — non-blocking
     computeAndSaveReliabilityScore(caregiverId).catch(() => {});
+    awardReviewPoints(caregiverId, validationResult.data.rating).catch(() => {});
 
     // Return created review
     return NextResponse.json({
