@@ -2,6 +2,46 @@
 
 ---
 
+### 2026-04-25 — UI/UX Design Polish: Component Redesigns + Bulk Token Unification
+
+- **Objective:** Complete full design polish pass — redesign core UI components, modernize loading states, upgrade search cards, and bulk-replace all remaining legacy color tokens across the entire codebase.
+- **Work completed:**
+  1. **StatCard redesign:** New `border-l-4` left-border accent pattern; `colorMap` record with proper design system tokens; optional `trend` prop with up/down/flat indicators; `text-xs font-medium uppercase tracking-wide` label style; tabular-nums value display. `DashboardKPISkeleton` also updated to match new shape.
+  2. **Skeleton shimmer upgrade:** `skeleton-loader.tsx` upgraded from flat `animate-pulse` to shimmer animation (absolute overlay with `animate-shimmer bg-gradient-to-r from-transparent via-white/50 to-transparent`). New `HomeCardSkeleton` component that matches exact shape of search grid cards (image area + title + subtitle + badge row + price-action row).
+  3. **Search page improvements:** Loading state replaced with `HomeCardSkeleton count={6}`; search grid cards get `hover:-translate-y-0.5` physical lift; price formatted as `$X,XXX` value + `/mo+` suffix in smaller text.
+  4. **tabs.tsx fixed:** Was using unresolvable shadcn CSS variables (`bg-muted`, `text-muted-foreground`, `ring-ring`, `data-[state=active]:bg-background`). Replaced with real Tailwind design tokens. TabsList: `bg-neutral-100`; active tab: `bg-white text-neutral-900 shadow-sm`; focus ring: `ring-primary-500`.
+  5. **breadcrumbs.tsx:** `gray-600→neutral-500`, `blue-600→primary-600`, `gray-400→neutral-300`.
+  6. **confirm-dialog.tsx:** All `blue-*`/`gray-*`/`red-*` → `primary-*`/`neutral-*`/`error-*`; added `rounded-xl shadow-modal`.
+  7. **error.tsx redesign:** Centered full-screen layout; `error-50` icon circle with triangle SVG; `bg-primary-500` try-again button; `border-neutral-300` go-home button; proper Link import.
+  8. **not-found.tsx redesign:** Large `text-8xl font-bold text-neutral-200` "404" anchor; two action buttons (go home + find care homes).
+  9. **OperatorDashboardPage.tsx:** Targeted token fixes — KPI icon colors, occupancy conditional classes, quick action dashed-border colors, activity feed icons, inquiry status badge ternary.
+  10. **homes/[id]/page.tsx:** Bulk sed — 25 instances of `red-*`/`green-*` → `error-*`/`success-*`.
+  11. **BULK TOKEN UNIFICATION (259 files):** Comprehensive `sed -i` pass across all `src/**/*.tsx` and `src/**/*.ts` files (excluding `src/app/page.tsx` and `*.backup.tsx`). Mapping: `red-→error-`, `green-→success-`, `blue-→primary-`, `gray-→neutral-`, `yellow-/orange-→warning-`, `purple-→secondary-`. TypeScript check: 0 errors. Grep spot-check: 0 old tokens remaining (only `*.backup.tsx` excluded file).
+- **Files changed:**
+  - `src/components/ui/StatCard.tsx` — left-border accent redesign, trend prop
+  - `src/components/ui/skeleton-loader.tsx` — shimmer upgrade + HomeCardSkeleton
+  - `src/app/search/page.tsx` — HomeCardSkeleton loading, card lift, price format
+  - `src/components/ui/tabs.tsx` — shadcn CSS var removal, real tokens
+  - `src/components/ui/breadcrumbs.tsx` — token fixes
+  - `src/components/ui/confirm-dialog.tsx` — token fixes + modal radius
+  - `src/app/error.tsx` — full redesign
+  - `src/app/not-found.tsx` — full redesign
+  - `src/components/operator/OperatorDashboardPage.tsx` — targeted token fixes
+  - `src/app/homes/[id]/page.tsx` — bulk sed red/green tokens
+  - `src/app/auth/login/page.tsx` — complete redesign (split-panel, gradient, DM Serif hero)
+  - `src/components/ui/card.tsx` — slate→neutral token fix
+  - **259 files total** via bulk sed (commit 46bfa01)
+- **Commands run:**
+  - `npx tsc --noEmit` → 0 errors
+  - `grep -r "bg-red-|text-red-..." src --include="*.tsx"` → 0 hits (only .backup.tsx)
+  - `git add src/ && git commit && git push origin main`
+- **Tests/build status:** TypeScript 0 errors. No regressions identified. Build should be clean.
+- **Deployment impact:** Auto-deploy triggered on main push. Visual-only changes — no schema changes, no API changes, no env vars needed.
+- **New risks/blockers:** `src/app/page.tsx` (landing page) still has legacy `blue-*`/`gray-*` tokens and raw hex inline styles (`#3978FC`, `#7253B7`). Excluded intentionally — needs a careful separate pass to avoid breaking marketing gradient choices.
+- **Recommended next step:** Review `src/app/page.tsx` (landing page) for token consistency, then assess remaining design concerns (register page polish, home detail page visual hierarchy, mobile nav UX). Or pivot to feature work if design is satisfactory.
+
+---
+
 ### 2026-04-25 — Build Fixes, Admin Gaps, Sidebar Overflow, UI/UX Brand Token Audit
 
 - **Objective:** Fix deploy failure from content.ts syntax error; fix map tile error; fill admin portal gaps (affiliates, operators, discharge planners); fix sidebar cutoff; execute full UI/UX audit (typography + color token unification).

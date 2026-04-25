@@ -62,6 +62,13 @@ Each loop: what it is, why it matters, what done looks like.
 
 ---
 
+### OL-020: Landing page (src/app/page.tsx) still has legacy color tokens
+- **Status:** 🟡 OPEN
+- **What:** `src/app/page.tsx` was excluded from the bulk sed pass to avoid breaking intentional marketing gradient choices. Still contains `blue-*`, `gray-*`, and raw hex inline styles (`#3978FC`, `#7253B7`).
+- **Done when:** Careful manual review of page.tsx replaces remaining raw tokens with design system equivalents without changing marketing copy or gradient intent.
+
+---
+
 ## 🟡 Important (Quality / Stability)
 
 ### OL-005: TypeScript strict mode errors
@@ -153,3 +160,5 @@ Each loop: what it is, why it matters, what done looks like.
 | Sidebar nav cutoff (can't scroll to Admin Tools/Help) | Sidebar refactored to flex column; nav section independently scrolls | 2026-04-25 |
 | UI/UX brand token fragmentation | Unified: Inter + DM Serif Display fonts; primary-*/neutral-*/error-*/success-* tokens throughout button.tsx, card.tsx, login page; CSS vars fixed to match Tailwind config | 2026-04-25 |
 | Login page using wrong brand colors | Complete redesign: gradient panel primary-600→secondary-600, DM Serif hero headline, all tokens corrected | 2026-04-25 |
+| Bulk token unification across codebase | 259 files bulk-updated via sed: red→error, green→success, blue→primary, gray→neutral, yellow/orange→warning, purple→secondary. TypeScript 0 errors. 0 old tokens remain (except src/app/page.tsx deferred). | 2026-04-25 |
+| Component design polish pass | StatCard left-border accent + trend prop; skeleton shimmer animation + HomeCardSkeleton; search card hover lift; tabs fixed; error/not-found redesigned; operator dashboard token fixes | 2026-04-25 |

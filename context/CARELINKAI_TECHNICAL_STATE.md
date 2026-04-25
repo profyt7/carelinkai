@@ -155,9 +155,14 @@ See `REVENUE_MODEL.md` for the full breakdown. 12 streams finalized:
 - Run: `PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers npx playwright test --workers=1`
 - Local limitation: Prisma binary engine in sandbox dies after ~7 tests due to thread limits. NOT a production issue.
 
+## Design System (as of 2026-04-25)
+- **Fonts:** Inter (sans/display/heading via `--font-inter`), DM Serif Display (serif/hero via `--font-dm-serif`)
+- **Color tokens:** Fully unified across all 259 source files. Design system tokens only: `primary-*`, `neutral-*`, `error-*`, `success-*`, `warning-*`, `secondary-*`. No raw `red-*`/`green-*`/`blue-*`/`gray-*`/`purple-*` in any component (except `src/app/page.tsx` landing page, intentionally deferred).
+- **Components polished:** StatCard (left-border accent + trend), skeleton-loader (shimmer + HomeCardSkeleton), tabs (real tokens), breadcrumbs, confirm-dialog, error, not-found, login page, search page.
+
 ## Immediate Next Priorities
 1. **One-time production DB fix:** Click "Fix Demo Caregiver Employment" in `/admin/tools` on production — links demo caregivers to demo operator
-2. **Verify on production after Render deploy:** login page redesign, sidebar scroll, admin affiliates/operators/discharge-planners pages
-3. **Switch Stripe to live mode** — follow runbook in `context/STRIPE_SETUP_RUNBOOK.md`
-4. **Text to Place (roadmap):** Twilio integration already exists; family texts to inquire about a home
-5. **CareCredit affiliate account** — sign up at carecredit.com/partners to get a tracked affiliate link
+2. **Verify on production after Render deploy:** bulk token unification visual check (no style regressions), StatCard new design, skeleton shimmer, search card lift
+3. **Landing page token pass:** `src/app/page.tsx` still uses `blue-*`/`gray-*` and raw hex inline styles; needs a careful pass
+4. **Switch Stripe to live mode** — follow runbook in `context/STRIPE_SETUP_RUNBOOK.md`
+5. **Text to Place (roadmap):** Twilio integration already exists; family texts to inquire about a home
