@@ -72,10 +72,10 @@ const calculatePasswordStrength = (password: string): { score: number; label: st
   // Calculate percentage and label
   const percentage = Math.min((score / 6) * 100, 100);
   
-  if (percentage <= 25) return { score: percentage, label: "Weak", color: "bg-red-500" };
-  if (percentage <= 50) return { score: percentage, label: "Fair", color: "bg-orange-500" };
-  if (percentage <= 75) return { score: percentage, label: "Good", color: "bg-yellow-500" };
-  return { score: percentage, label: "Strong", color: "bg-green-500" };
+  if (percentage <= 25) return { score: percentage, label: "Weak", color: "bg-error-500" };
+  if (percentage <= 50) return { score: percentage, label: "Fair", color: "bg-warning-500" };
+  if (percentage <= 75) return { score: percentage, label: "Good", color: "bg-warning-300" };
+  return { score: percentage, label: "Strong", color: "bg-success-500" };
 };
 
 // Password requirement checker
@@ -500,9 +500,9 @@ export default function RegisterPage() {
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-xs text-neutral-500">Password strength:</span>
                       <span className={`text-xs font-medium ${
-                        passwordStrength.label === "Strong" ? "text-green-600" :
-                        passwordStrength.label === "Good" ? "text-yellow-600" :
-                        passwordStrength.label === "Fair" ? "text-orange-600" : "text-red-600"
+                        passwordStrength.label === "Strong" ? "text-success-600" :
+                        passwordStrength.label === "Good" ? "text-warning-700" :
+                        passwordStrength.label === "Fair" ? "text-warning-600" : "text-error-600"
                       }`}>
                         {passwordStrength.label}
                       </span>
@@ -566,23 +566,23 @@ export default function RegisterPage() {
               <div className="bg-neutral-50 p-3 rounded-md">
                 <p className="text-xs text-neutral-600 font-medium mb-2">Password requirements:</p>
                 <ul className="text-xs space-y-1">
-                  <li className={`flex items-center ${passwordRequirements.minLength ? "text-green-600" : "text-neutral-500"}`}>
+                  <li className={`flex items-center ${passwordRequirements.minLength ? "text-success-600" : "text-neutral-500"}`}>
                     {passwordRequirements.minLength ? <FiCheck className="h-3 w-3 mr-1.5" /> : <FiX className="h-3 w-3 mr-1.5" />}
                     At least 8 characters long
                   </li>
-                  <li className={`flex items-center ${passwordRequirements.hasUppercase ? "text-green-600" : "text-neutral-500"}`}>
+                  <li className={`flex items-center ${passwordRequirements.hasUppercase ? "text-success-600" : "text-neutral-500"}`}>
                     {passwordRequirements.hasUppercase ? <FiCheck className="h-3 w-3 mr-1.5" /> : <FiX className="h-3 w-3 mr-1.5" />}
                     At least one uppercase letter (A-Z)
                   </li>
-                  <li className={`flex items-center ${passwordRequirements.hasLowercase ? "text-green-600" : "text-neutral-500"}`}>
+                  <li className={`flex items-center ${passwordRequirements.hasLowercase ? "text-success-600" : "text-neutral-500"}`}>
                     {passwordRequirements.hasLowercase ? <FiCheck className="h-3 w-3 mr-1.5" /> : <FiX className="h-3 w-3 mr-1.5" />}
                     At least one lowercase letter (a-z)
                   </li>
-                  <li className={`flex items-center ${passwordRequirements.hasNumber ? "text-green-600" : "text-neutral-500"}`}>
+                  <li className={`flex items-center ${passwordRequirements.hasNumber ? "text-success-600" : "text-neutral-500"}`}>
                     {passwordRequirements.hasNumber ? <FiCheck className="h-3 w-3 mr-1.5" /> : <FiX className="h-3 w-3 mr-1.5" />}
                     At least one number (0-9)
                   </li>
-                  <li className={`flex items-center ${passwordRequirements.hasSpecial ? "text-green-600" : "text-neutral-500"}`}>
+                  <li className={`flex items-center ${passwordRequirements.hasSpecial ? "text-success-600" : "text-neutral-500"}`}>
                     {passwordRequirements.hasSpecial ? <FiCheck className="h-3 w-3 mr-1.5" /> : <FiX className="h-3 w-3 mr-1.5" />}
                     At least one special character (@$!%*?&)
                   </li>

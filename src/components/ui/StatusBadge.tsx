@@ -21,13 +21,13 @@ interface StatusBadgeProps {
 }
 
 const colorClasses: Record<BadgeColor, string> = {
-  green: 'bg-green-50 text-green-700 border-green-200',
-  red: 'bg-red-50 text-red-700 border-red-200',
-  yellow: 'bg-yellow-50 text-yellow-700 border-yellow-200',
-  blue: 'bg-blue-50 text-blue-700 border-blue-200',
-  gray: 'bg-gray-50 text-gray-700 border-gray-200',
-  purple: 'bg-purple-50 text-purple-700 border-purple-200',
-  orange: 'bg-orange-50 text-orange-700 border-orange-200',
+  green: 'bg-success-50 text-success-700 border-success-200',
+  red: 'bg-error-50 text-error-700 border-error-200',
+  yellow: 'bg-warning-50 text-warning-700 border-warning-200',
+  blue: 'bg-primary-50 text-primary-700 border-primary-200',
+  gray: 'bg-neutral-100 text-neutral-600 border-neutral-200',
+  purple: 'bg-secondary-100 text-secondary-700 border-secondary-200',
+  orange: 'bg-warning-100 text-warning-800 border-warning-300',
 };
 
 const sizeClasses: Record<BadgeSize, { badge: string; icon: string; text: string }> = {
