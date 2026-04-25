@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { triggerMarketplaceHireFee } from "@/lib/services/marketplace-hire-fee";
 
 /**
  * POST /api/shifts/[id]/claim
@@ -99,6 +100,20 @@ export async function POST(
       const { street, city, state } = updatedShift.home.address;
       address = `${street ? street + ', ' : ''}${city}, ${state}`;
     }
+
+    // Queue hire fee against the operator — fully non-blocking
+    Promise.resolve()
+      .then(async () => {
+        const caregiverUser = await prisma.user.findUnique({
+          where: { id: session.user.id },
+          select: { firstName: true, lastName: true },
+        });
+        const caregiverName = caregiverUser
+          ? `${caregiverUser.firstName} ${caregiverUser.lastName}`
+          : 'Caregiver';
+        await triggerMarketplaceHireFee(newHire.id, id, caregiverName);
+      })
+      .catch((err) => console.error('[CLAIM] hire fee error:', err));
 
     // Return success response with updated shift
     return NextResponse.json({

@@ -78,6 +78,13 @@ async function findOperatorByCustomer(customerId: string) {
 }
 
 /**
+ * Finds a DischargePlannerProfile by Stripe customer ID.
+ */
+async function findDischargePlannerByCustomer(customerId: string) {
+  return prisma.dischargePlannerProfile.findUnique({ where: { stripeCustomerId: customerId } });
+}
+
+/**
  * POST /api/webhooks/stripe
  *
  * Handles Stripe webhook events:
@@ -164,50 +171,74 @@ export async function POST(request: NextRequest) {
     if (event.type === "customer.subscription.created" || event.type === "customer.subscription.updated") {
       const sub = event.data.object as Stripe.Subscription;
       const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer.id;
-      const operator = await findOperatorByCustomer(customerId);
 
-      if (!operator) {
-        // Customer may belong to the family wallet system — ignore gracefully
-        logger.info("Subscription event for unknown operator customer", { customerId, subscriptionId: sub.id });
-        return NextResponse.json({ received: true }, { status: 200 });
-      }
-
-      const plan = resolvePlan(sub.metadata, sub.items);
       const status = mapSubscriptionStatus(sub.status);
       const trialEndsAt = sub.trial_end ? new Date(sub.trial_end * 1000) : null;
       const currentPeriodEndsAt = sub.current_period_end ? new Date(sub.current_period_end * 1000) : null;
 
-      await prisma.operator.update({
-        where: { id: operator.id },
-        data: {
-          stripeSubscriptionId: sub.id,
-          subscriptionStatus: status,
-          ...(plan && { subscriptionPlan: plan }),
-          ...(trialEndsAt !== null && { trialEndsAt }),
-          ...(currentPeriodEndsAt !== null && { currentPeriodEndsAt }),
-        },
-      });
+      // Check operator first
+      const operator = await findOperatorByCustomer(customerId);
+      if (operator) {
+        const plan = resolvePlan(sub.metadata, sub.items);
+        await prisma.operator.update({
+          where: { id: operator.id },
+          data: {
+            stripeSubscriptionId: sub.id,
+            subscriptionStatus: status,
+            ...(plan && { subscriptionPlan: plan }),
+            ...(trialEndsAt !== null && { trialEndsAt }),
+            ...(currentPeriodEndsAt !== null && { currentPeriodEndsAt }),
+          },
+        });
+        logger.info("Operator subscription updated", { operatorId: operator.id, status, plan, subscriptionId: sub.id });
+        return NextResponse.json({ received: true }, { status: 200 });
+      }
 
-      logger.info("Operator subscription updated", { operatorId: operator.id, status, plan, subscriptionId: sub.id });
+      // Check discharge planner
+      const dpProfile = await findDischargePlannerByCustomer(customerId);
+      if (dpProfile) {
+        await prisma.dischargePlannerProfile.update({
+          where: { id: dpProfile.id },
+          data: {
+            stripeSubscriptionId: sub.id,
+            subscriptionStatus: status,
+            ...(trialEndsAt !== null && { trialEndsAt }),
+            ...(currentPeriodEndsAt !== null && { currentPeriodEndsAt }),
+          },
+        });
+        logger.info("Discharge planner subscription updated", { profileId: dpProfile.id, status, subscriptionId: sub.id });
+        return NextResponse.json({ received: true }, { status: 200 });
+      }
+
+      logger.info("Subscription event for unknown customer", { customerId, subscriptionId: sub.id });
       return NextResponse.json({ received: true }, { status: 200 });
     }
 
     if (event.type === "customer.subscription.deleted") {
       const sub = event.data.object as Stripe.Subscription;
       const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer.id;
-      const operator = await findOperatorByCustomer(customerId);
 
-      if (!operator) {
-        logger.info("Subscription deletion for unknown operator customer", { customerId });
+      const operator = await findOperatorByCustomer(customerId);
+      if (operator) {
+        await prisma.operator.update({
+          where: { id: operator.id },
+          data: { subscriptionStatus: SubscriptionStatus.CANCELED },
+        });
+        logger.info("Operator subscription canceled", { operatorId: operator.id });
         return NextResponse.json({ received: true }, { status: 200 });
       }
 
-      await prisma.operator.update({
-        where: { id: operator.id },
-        data: { subscriptionStatus: SubscriptionStatus.CANCELED },
-      });
+      const dpProfile = await findDischargePlannerByCustomer(customerId);
+      if (dpProfile) {
+        await prisma.dischargePlannerProfile.update({
+          where: { id: dpProfile.id },
+          data: { subscriptionStatus: SubscriptionStatus.CANCELED },
+        });
+        logger.info("Discharge planner subscription canceled", { profileId: dpProfile.id });
+        return NextResponse.json({ received: true }, { status: 200 });
+      }
 
-      logger.info("Operator subscription canceled", { operatorId: operator.id });
+      logger.info("Subscription deletion for unknown customer", { customerId });
       return NextResponse.json({ received: true }, { status: 200 });
     }
 
@@ -261,13 +292,17 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // Settle any placement fees that were queued on this billing cycle
+      // Settle any queued fees (placement, hire, featured listing) for this billing cycle
       const settled = await prisma.payment.updateMany({
-        where: { userId: operator.userId, type: "PLACEMENT_FEE", status: "PROCESSING" },
+        where: {
+          userId: operator.userId,
+          type: { in: ["PLACEMENT_FEE", "MARKETPLACE_HIRE_FEE", "FEATURED_LISTING_FEE"] },
+          status: "PROCESSING",
+        },
         data: { status: "COMPLETED" },
       });
 
-      logger.info("Operator invoice payment succeeded", { operatorId: operator.id, invoiceId: invoice.id, placementFeesSettled: settled.count });
+      logger.info("Operator invoice payment succeeded", { operatorId: operator.id, invoiceId: invoice.id, feesSettled: settled.count });
       return NextResponse.json({ received: true }, { status: 200 });
     }
 
@@ -323,6 +358,24 @@ export async function POST(request: NextRequest) {
 
       logger.info("Operator invoice payment failed", { operatorId: operator.id, invoiceId: invoice.id });
       return NextResponse.json({ received: true }, { status: 200 });
+    }
+
+    // ─── checkout.session.completed: compliance kit one-time purchases ────────
+    if (event.type === "checkout.session.completed") {
+      const cs = event.data.object as Stripe.Checkout.Session;
+      const purchaseId = cs.metadata?.["purchaseId"];
+      if (purchaseId) {
+        await prisma.complianceKitPurchase.update({
+          where: { id: purchaseId },
+          data: {
+            status: 'COMPLETED',
+            // downloadUrl set manually or via a future document generation step
+          },
+        }).catch((err: any) => logger.error("Failed to mark compliance kit COMPLETED", { err: err?.message }));
+        logger.info("Compliance kit purchase completed", { purchaseId });
+        return NextResponse.json({ received: true }, { status: 200 });
+      }
+      return NextResponse.json({ received: true, message: "Checkout session without purchaseId" }, { status: 200 });
     }
 
     // ─── payment_intent.succeeded: family wallet deposits ───────────────────

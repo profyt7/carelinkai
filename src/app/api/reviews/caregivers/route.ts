@@ -7,6 +7,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { computeAndSaveReliabilityScore } from "@/lib/services/caregiver-reliability";
 
 // Validate review creation input
 const reviewCreateSchema = z.object({
@@ -224,6 +225,9 @@ export async function POST(request: NextRequest) {
         isPublic
       }
     });
+
+    // Update reliability score in background — non-blocking
+    computeAndSaveReliabilityScore(caregiverId).catch(() => {});
 
     // Return created review
     return NextResponse.json({

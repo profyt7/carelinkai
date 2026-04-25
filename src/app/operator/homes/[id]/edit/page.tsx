@@ -40,6 +40,11 @@ export default function EditHomePage() {
   const [saving, setSaving] = useState(false);
   const [photos, setPhotos] = useState<any[]>([]);
   
+  // Featured listing state
+  const [isFeatured, setIsFeatured] = useState(false);
+  const [featuredUntil, setFeaturedUntil] = useState<Date | null>(null);
+  const [featuringListing, setFeaturingListing] = useState(false);
+
   // AI Profile Generation State
   const [generatingProfile, setGeneratingProfile] = useState(false);
   const [showAIPreview, setShowAIPreview] = useState(false);
@@ -91,7 +96,9 @@ export default function EditHomePage() {
             zipCode: data.address?.zipCode || '',
           });
           setPhotos(data.photos || []);
-          
+          setIsFeatured(data.isFeatured ?? false);
+          setFeaturedUntil(data.featuredUntil ? new Date(data.featuredUntil) : null);
+
           // Load AI-generated profile data if exists
           if (data.aiGeneratedDescription || data.highlights) {
             setAiGeneratedData({
@@ -149,6 +156,28 @@ export default function EditHomePage() {
       handleInputChange('description', aiGeneratedData.description);
       toast.success('AI-generated content applied to description');
       setShowAIPreview(false);
+    }
+  };
+
+  const handleToggleFeatured = async () => {
+    if (featuringListing) return;
+    setFeaturingListing(true);
+    const action = isFeatured ? 'disable' : 'enable';
+    try {
+      const res = await fetch(`/api/operator/homes/${id}/featured`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update featured status');
+      setIsFeatured(data.isFeatured);
+      setFeaturedUntil(data.featuredUntil ? new Date(data.featuredUntil) : null);
+      toast.success(action === 'enable' ? 'Listing featured! $79 will appear on your next invoice.' : 'Featured listing disabled.');
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to update featured status');
+    } finally {
+      setFeaturingListing(false);
     }
   };
 
@@ -632,6 +661,43 @@ export default function EditHomePage() {
               photos={photos}
               onPhotosChange={loadHomeData}
             />
+
+            {/* Featured Listing */}
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-5">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-lg">⭐</span>
+                    <h3 className="font-semibold text-neutral-900">Featured Listing</h3>
+                    {isFeatured && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 border border-amber-300">
+                        Active
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-neutral-600">
+                    Appear at the top of family search results for 30 days. <strong>$79/month add-on</strong> — billed on your next invoice.
+                  </p>
+                  {isFeatured && featuredUntil && (
+                    <p className="text-xs text-amber-700 mt-1">
+                      Featured until {featuredUntil.toLocaleDateString()}
+                    </p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleToggleFeatured}
+                  disabled={featuringListing}
+                  className={`flex-shrink-0 px-4 py-2 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:opacity-50 ${
+                    isFeatured
+                      ? 'bg-white border border-neutral-300 text-neutral-700 hover:bg-neutral-50'
+                      : 'bg-amber-500 text-white hover:bg-amber-600'
+                  }`}
+                >
+                  {featuringListing ? 'Updating...' : isFeatured ? 'Disable Featured' : 'Enable Featured — $79/mo'}
+                </button>
+              </div>
+            </div>
 
             {/* Form Actions */}
             <div className="flex items-center justify-end gap-3 pt-4 border-t">

@@ -266,6 +266,8 @@ export async function GET(req: NextRequest) {
           genderRestriction: true,
           amenities: true,
           status: true,
+          isFeatured: true,
+          featuredUntil: true,
           createdAt: true,
           address: {
             select: {
@@ -427,6 +429,16 @@ export async function GET(req: NextRequest) {
       }
     }
     
+    // Bubble active featured listings to the top (expire check)
+    const now = new Date();
+    processedHomes.sort((a: any, b: any) => {
+      const aFeatured = a.isFeatured && (!a.featuredUntil || new Date(a.featuredUntil) > now);
+      const bFeatured = b.isFeatured && (!b.featuredUntil || new Date(b.featuredUntil) > now);
+      if (aFeatured && !bFeatured) return -1;
+      if (!aFeatured && bFeatured) return 1;
+      return 0;
+    });
+
     // Format homes for response (remove sensitive data)
     const formattedHomes = processedHomes.map((home: any) => ({
       id: home.id,
@@ -455,6 +467,7 @@ export async function GET(req: NextRequest) {
       distance: home.distance,
       primaryPhoto: home.photos[0]?.url || null,
       amenities: home.amenities,
+      isFeatured: home.isFeatured && (!home.featuredUntil || new Date(home.featuredUntil) > now),
       operator: {
         id: home.operator.id,
         name: home.operator.companyName,

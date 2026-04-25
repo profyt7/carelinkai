@@ -76,6 +76,7 @@ model User {
   approvedTimesheets        Timesheet[]
   placementSearches         PlacementSearch[]
   exports                   ExportHistory[]          @relation("UserExports")
+  dischargePlannerProfile   DischargePlannerProfile?
 
   @@index([email])
   @@index([role])
@@ -132,6 +133,7 @@ model Family {
   residents               Resident[]
   galleries               SharedGallery[]
   tourRequests            TourRequest[]
+  waitlistEntries         WaitlistEntry[]
 
   @@index([userId])
 }
@@ -151,11 +153,12 @@ model Operator {
   currentPeriodEndsAt  DateTime?
   createdAt            DateTime            @default(now())
   updatedAt            DateTime            @updatedAt
-  homes                AssistedLivingHome[]
-  caregivers           CaregiverEmployment[]
-  user                 User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tourRequests         TourRequest[]
-  invoices             Invoice[]
+  homes                    AssistedLivingHome[]
+  caregivers               CaregiverEmployment[]
+  user                     User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tourRequests             TourRequest[]
+  invoices                 Invoice[]
+  complianceKitPurchases   ComplianceKitPurchase[]
 
   @@index([userId])
   @@index([companyName])
@@ -179,6 +182,8 @@ model Caregiver {
   settings                 String[]                 @default([])
   /// Whether the caregiver profile is visible in the public marketplace search
   isVisibleInMarketplace   Boolean                  @default(true)
+  /// Computed reliability score 0-100 based on shift completion, reviews, and tenure
+  reliabilityScore         Float?
   languages                String[]                 @default([])
   employmentType           EmploymentType?
   employmentStatus         EmploymentStatus?        @default(ACTIVE)
@@ -360,6 +365,8 @@ model AssistedLivingHome {
   highlights             String[]         @default([])
   lastProfileGenerated   DateTime?
   slug                   String?          @unique
+  isFeatured             Boolean          @default(false)
+  featuredUntil          DateTime?
   address                Address?
   operator               Operator         @relation(fields: [operatorId], references: [id], onDelete: Cascade)
   bookings               Booking[]
@@ -376,12 +383,14 @@ model AssistedLivingHome {
   tourRequests           TourRequest[]
   tourSlots              TourSlot[]
   placementRequests      PlacementRequest[]
+  waitlistEntries        WaitlistEntry[]
 
   @@index([operatorId])
   @@index([status])
   @@index([priceMin, priceMax])
   @@index([careLevel])
   @@index([lastProfileGenerated])
+  @@index([isFeatured])
 }
 
 model HomePhoto {
@@ -2170,6 +2179,9 @@ enum PaymentType {
   CAREGIVER_PAYMENT
   AFFILIATE_COMMISSION
   PLACEMENT_FEE
+  MARKETPLACE_HIRE_FEE
+  FEATURED_LISTING_FEE
+  COMPLIANCE_KIT
 }
 
 enum TransactionType {
@@ -2481,4 +2493,61 @@ model Invoice {
 
   @@index([operatorId])
   @@index([stripeInvoiceId])
+}
+
+/// Per-seat subscription profile for hospital discharge planners
+model DischargePlannerProfile {
+  id                   String              @id @default(cuid())
+  userId               String              @unique
+  organization         String?
+  title                String?
+  stripeCustomerId     String?             @unique
+  stripeSubscriptionId String?             @unique
+  subscriptionStatus   SubscriptionStatus?
+  trialEndsAt          DateTime?
+  currentPeriodEndsAt  DateTime?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  user                 User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([stripeCustomerId])
+}
+
+/// Families or prospects waiting for a bed at a specific home
+model WaitlistEntry {
+  id          String             @id @default(cuid())
+  homeId      String
+  familyId    String?
+  name        String
+  email       String
+  phone       String?
+  notes       String?
+  priority    Int                @default(0)
+  notified    Boolean            @default(false)
+  notifiedAt  DateTime?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  home        AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
+  family      Family?            @relation(fields: [familyId], references: [id], onDelete: SetNull)
+
+  @@index([homeId])
+  @@index([familyId])
+  @@index([createdAt])
+}
+
+/// Compliance document kits that operators can purchase
+model ComplianceKitPurchase {
+  id              String   @id @default(cuid())
+  operatorId      String
+  kitType         String
+  amountCents     Int
+  stripePaymentId String?
+  status          String   @default("PENDING")
+  downloadUrl     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  operator        Operator @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+
+  @@index([operatorId])
 }

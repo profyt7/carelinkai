@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { computeAndSaveReliabilityScore } from "@/lib/services/caregiver-reliability";
 
 // Force dynamic rendering to avoid static optimization
 export const dynamic = "force-dynamic";
@@ -45,14 +46,13 @@ export async function POST(
       where: { id },
       include: {
         shift: {
-          include: {
-            home: {
-              select: {
-                operatorId: true
-              }
-            }
-          }
-        }
+          select: {
+            id: true,
+            caregiverId: true,
+            hourlyRate: true,
+            home: { select: { operatorId: true } },
+          },
+        },
       }
     });
 
@@ -142,6 +142,17 @@ export async function POST(
     } catch (payErr) {
       // Log but do not fail approval if payment creation fails
       console.error("Payroll creation error:", payErr);
+    }
+
+    // Update caregiver reliability score in background — non-blocking
+    try {
+      if (timesheet.caregiverId) {
+        prisma.caregiver.findUnique({ where: { userId: timesheet.caregiverId }, select: { id: true } })
+          .then((c) => c && computeAndSaveReliabilityScore(c.id))
+          .catch(() => {});
+      }
+    } catch {
+      // ignore — reliability score update is best-effort
     }
 
     // Return success response with the updated timesheet
