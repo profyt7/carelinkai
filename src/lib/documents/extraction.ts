@@ -46,8 +46,8 @@ export async function extractDocumentText(
     const { extractTextFromPDF, isPDF, downloadFile } = await import('./pdf-extractor');
 
     // Extract based on file type
-    if (isPDF(document.mimeType)) {
-      console.log(`Extracting text from PDF: ${document.fileName}`);
+    if (isPDF(document.mimeType ?? '')) {
+      console.log(`Extracting text from PDF: ${document.fileName ?? ""}`);
       
       // Download PDF file
       const pdfBuffer = await downloadFile(document.fileUrl);
@@ -56,8 +56,8 @@ export async function extractDocumentText(
       const result = await extractTextFromPDF(pdfBuffer);
       extractedText = result.text;
       
-    } else if (isImage(document.mimeType)) {
-      console.log(`Extracting text from image: ${document.fileName}`);
+    } else if (isImage(document.mimeType ?? '')) {
+      console.log(`Extracting text from image: ${document.fileName ?? ""}`);
       
       // Run OCR
       const result = await extractTextFromImage(document.fileUrl);

@@ -5,8 +5,8 @@ import { getBaseUrl } from '@/lib/http';
 import { EditResidentForm } from '@/components/operator/residents/EditResidentForm';
 
 async function fetchResident(id: string) {
-  const cookieHeader = cookies().toString();
-  const h = headers();
+  const cookieHeader = (await cookies()).toString();
+  const h = await headers();
   const base = getBaseUrl(h);
   const res = await fetch(`${base}/api/residents/${id}`, {
     cache: 'no-store',

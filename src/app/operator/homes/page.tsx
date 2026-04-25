@@ -21,7 +21,7 @@ export default async function OperatorHomesPage({ searchParams }: { searchParams
   const operatorOverrideId = user?.role === UserRole.ADMIN ? (searchParams?.operatorId || null) : null;
 
   // Runtime mock toggle via cookie (set by /api/mock-mode or ?mock=1)
-  const mockCookie = cookies().get("carelink_mock_mode")?.value?.toString().trim().toLowerCase() || "";
+  const mockCookie = (await cookies()).get("carelink_mock_mode")?.value?.toString().trim().toLowerCase() || "";
   const showMock = ["1","true","yes","on"].includes(mockCookie);
 
   const homes = showMock

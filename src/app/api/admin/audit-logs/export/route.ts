@@ -75,13 +75,14 @@ export async function GET(request: NextRequest) {
     });
 
     // Create audit log for export action
-    await createAuditLogFromRequest(request, {
-      action: AuditAction.EXPORT,
-      resourceType: 'AUDIT_LOG',
-      resourceId: 'export',
-      description: `Exported ${logs.length} audit logs`,
-      metadata: { filters: { action, userId, resourceType, startDate, endDate } },
-    });
+    await createAuditLogFromRequest(
+      request,
+      AuditAction.EXPORT,
+      'AUDIT_LOG',
+      'export',
+      `Exported ${logs.length} audit logs`,
+      { filters: { action, userId, resourceType, startDate, endDate } }
+    );
 
     // Convert to CSV
     const csvHeader = 'ID,Action,User Email,User Name,User Role,Resource Type,Resource ID,Description,IP Address,Created At,Actioned By Email,Actioned By Name\n';

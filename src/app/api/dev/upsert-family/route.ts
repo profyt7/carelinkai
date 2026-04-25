@@ -54,8 +54,8 @@ export async function POST(request: NextRequest) {
     });
 
     // Ensure FamilyMember entry exists and ACTIVE (avoid ON CONFLICT in CI by manual upsert)
-    const existingMember = await prisma.familyMember.findUnique({
-      where: { familyId_userId: { familyId: family.id, userId: user.id } },
+    const existingMember = await prisma.familyMember.findFirst({
+      where: { familyId: family.id, userId: user.id },
       select: { id: true },
     }).catch(() => null);
 

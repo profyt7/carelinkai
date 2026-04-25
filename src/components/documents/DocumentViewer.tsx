@@ -3,7 +3,8 @@
 import { X, Download, ExternalLink, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Document, DOCUMENT_TYPE_LABELS, formatFileSize } from '@/lib/types/documents';
+import { Document } from '@prisma/client';
+import { DocumentType, DOCUMENT_TYPE_LABELS, formatFileSize } from '@/lib/types/documents';
 import { ExtractedTextViewer } from './ExtractedTextViewer';
 
 interface DocumentViewerProps {
@@ -13,7 +14,7 @@ interface DocumentViewerProps {
 
 export function DocumentViewer({ document, onClose }: DocumentViewerProps) {
   const isPDF = document.mimeType === 'application/pdf';
-  const isImage = document.mimeType.startsWith('image/');
+  const isImage = (document.mimeType ?? '').startsWith('image/');
   const hasExtractedText = document.extractedText && document.extractedText.length > 0;
 
   const handleDownload = () => {
@@ -30,7 +31,7 @@ export function DocumentViewer({ document, onClose }: DocumentViewerProps) {
               {document.fileName}
             </h2>
             <div className="flex items-center gap-3 text-sm text-gray-500 mt-1">
-              <span>{DOCUMENT_TYPE_LABELS[document.type]}</span>
+              <span>{DOCUMENT_TYPE_LABELS[document.type as DocumentType]}</span>
               <span>•</span>
               <span>{formatFileSize(document.fileSize)}</span>
               <span>•</span>
@@ -68,13 +69,13 @@ export function DocumentViewer({ document, onClose }: DocumentViewerProps) {
                   <iframe
                     src={document.fileUrl}
                     className="w-full h-full min-h-[600px] border rounded"
-                    title={document.fileName}
+                    title={document.fileName ?? undefined}
                   />
                 )}
                 {isImage && (
                   <img
                     src={document.fileUrl}
-                    alt={document.fileName}
+                    alt={document.fileName ?? ''}
                     className="max-w-full h-auto mx-auto"
                   />
                 )}
@@ -93,7 +94,7 @@ export function DocumentViewer({ document, onClose }: DocumentViewerProps) {
               <TabsContent value="text" className="mt-4">
                 <ExtractedTextViewer
                   text={document.extractedText || ''}
-                  fileName={document.fileName}
+                  fileName={document.fileName ?? ''}
                 />
               </TabsContent>
             </Tabs>
@@ -103,13 +104,13 @@ export function DocumentViewer({ document, onClose }: DocumentViewerProps) {
                 <iframe
                   src={document.fileUrl}
                   className="w-full h-full min-h-[600px] border rounded"
-                  title={document.fileName}
+                  title={document.fileName ?? undefined}
                 />
               )}
               {isImage && (
                 <img
                   src={document.fileUrl}
-                  alt={document.fileName}
+                  alt={document.fileName ?? ''}
                   className="max-w-full h-auto mx-auto"
                 />
               )}

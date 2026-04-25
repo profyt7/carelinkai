@@ -86,12 +86,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     const doc = await prisma.document.create({
       data: {
         residentId: resident.id,
+        title: data.fileName,
         fileName: data.fileName,
         fileUrl: data.fileUrl,
+        fileType: data.mimeType,
         mimeType: data.mimeType,
         fileSize: data.fileSize,
         uploadedById: session!.user.id,
-        // Default to GENERAL for operator-managed documents
         type: (data.type as any) || 'GENERAL',
       },
     });

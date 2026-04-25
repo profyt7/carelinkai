@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-04-25_
+_Last updated: 2026-04-24_
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -42,19 +42,11 @@ Each loop: what it is, why it matters, what done looks like.
 
 ## 🟡 Important (Quality / Stability)
 
-### OL-005: 274 TypeScript strict mode errors
-- **Status:** Open (CI type-check step disabled as workaround)
-- **Impact:** CI pipeline is broken; type safety is unverified
-- **Categories:** noPropertyAccessFromIndexSignature (237), noUncheckedIndexedAccess (71), other (65+)
-- **Fix:** Systematic pass fixing strict mode violations — can be done in batches
-- **Done when:** `npm run type-check` passes with 0 errors and CI step is re-enabled
+### OL-005: TypeScript strict mode errors
+- **Status:** ✅ CLOSED (2026-04-24) — 0 errors, `npm run type-check` passes clean
 
 ### OL-006: CI quality workflow type-check step disabled
-- **Status:** Workaround in place (type-check commented out in quality.yml)
-- **Impact:** CI doesn't catch type errors
-- **Fix:** Fix OL-005 first, then re-enable the step
-- **File:** `.github/workflows/quality.yml` lines 43-45
-- **Done when:** CI passes with type-check enabled
+- **Status:** ✅ CLOSED (2026-04-24) — type-check step re-enabled in `.github/workflows/quality.yml`
 
 ---
 
@@ -120,3 +112,5 @@ Each loop: what it is, why it matters, what done looks like.
 | Affiliate commission auto-trigger | affiliateCode on Inquiry; commission recorded on conversion; affiliate dashboard built | 2026-04-24 |
 | FOUNDERS49 promo | Stripe coupon $50/mo off forever (max 50); banner in billing UI | 2026-04-24 |
 | Placement fee billing switch | Switched from PaymentIntent → invoice item; collected on next billing cycle | 2026-04-24 |
+| OL-005: TypeScript strict mode errors | 147 errors fixed across 73 files; `npm run type-check` passes 0 errors | 2026-04-24 |
+| OL-006: CI type-check step disabled | Re-enabled in `.github/workflows/quality.yml` | 2026-04-24 |

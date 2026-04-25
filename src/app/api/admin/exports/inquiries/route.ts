@@ -43,14 +43,10 @@ export async function GET(req: NextRequest) {
       contactName: i.contactName,
       contactEmail: i.contactEmail,
       contactPhone: i.contactPhone,
-      residentName: i.residentName,
-      relationship: i.relationship,
+      residentName: i.careRecipientName,
       status: i.status,
       source: i.source,
       urgency: i.urgency,
-      careLevel: i.careLevel,
-      budget: i.budget,
-      notes: i.notes,
       'home.name': i.home?.name || '',
       createdAt: formatExportDateTime(i.createdAt),
     }));
@@ -78,8 +74,7 @@ export async function GET(req: NextRequest) {
     // Create audit log
     await createAuditLogFromRequest(
       req,
-      user.id,
-      AuditAction.EXPORT,
+            AuditAction.EXPORT,
       'INQUIRY',
       null,
       `Exported ${formattedData.length} inquiries`

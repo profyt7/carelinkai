@@ -38,7 +38,7 @@ export async function PATCH(
     // Update the user's status
     await prisma.user.update({
       where: { id: caregiver.userId },
-      data: { status },
+      data: { status: status as any },
     });
 
     return NextResponse.json({ success: true, status });

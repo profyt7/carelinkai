@@ -73,8 +73,7 @@ export async function GET(req: NextRequest) {
     // Create audit log
     await createAuditLogFromRequest(
       req,
-      user.id,
-      AuditAction.EXPORT,
+            AuditAction.EXPORT,
       'USER',
       null,
       `Exported ${users.length} users`

@@ -43,7 +43,7 @@ const limiter = createRateLimiter(60 * 60 * 1000, 3);
 export async function POST(req: NextRequest) {
   try {
     // Apply rate limiting
-    const identifier = req.ip || "unknown";
+    const identifier = req.headers.get("x-forwarded-for") ?? "unknown";
     try {
       await limiter.check(identifier); // 3 requests per hour per IP
     } catch (error) {
@@ -116,7 +116,7 @@ export async function POST(req: NextRequest) {
         resourceType: "Account",
         resourceId: user.id,
         description: `User deactivated their account (${user.email})`,
-        ipAddress: req.headers.get("x-forwarded-for") || req.ip || "unknown",
+        ipAddress: req.headers.get("x-forwarded-for") || "unknown",
         userAgent: req.headers.get("user-agent") || "unknown",
         metadata: {
           previousStatus: user.status,

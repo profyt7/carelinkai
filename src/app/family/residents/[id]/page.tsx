@@ -13,7 +13,7 @@ type Props = { params: { id: string } };
 
 export default async function FamilyResidentPage({ params }: Props) {
   // Check mock mode from cookie
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const mockCookie = cookieStore.get('carelink_mock_mode')?.value?.toString().trim().toLowerCase() || '';
   const showMock = ['1', 'true', 'yes', 'on'].includes(mockCookie);
   

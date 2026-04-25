@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { DocumentUpload } from '@/components/documents/DocumentUpload';
 import { DocumentList } from '@/components/documents/DocumentList';
 import { DocumentViewer } from '@/components/documents/DocumentViewer';
-import { Document } from '@/lib/types/documents';
+import { Document } from '@prisma/client';
 
 interface DocumentsTabProps {
   inquiryId: string;

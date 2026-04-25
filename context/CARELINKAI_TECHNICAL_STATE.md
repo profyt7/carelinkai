@@ -60,9 +60,8 @@ FAMILY, OPERATOR, CAREGIVER, ADMIN, STAFF, PROVIDER, AFFILIATE, DISCHARGE_PLANNE
 - **Admin revenue dashboard:** MRR, placement fees collected/pending, affiliate commissions owed, recent payments table, subscription breakdown by plan
 - **Operator onboarding wizard:** 3-step guided flow (company → first home → plan selection); new operators auto-redirected on first login
 
-## Known Issues (as of 2026-04-25)
-1. 274 TypeScript strict mode errors — CI type-check step is disabled (non-blocking at runtime)
-2. 2 pre-existing test failures: `calendar.appointments.api` and `emergency.api`
+## Known Issues (as of 2026-04-24)
+1. 2 pre-existing test failures: `calendar.appointments.api` and `emergency.api`
 3. Demo accounts use test Stripe data — when switching to live Stripe, all operator `stripeCustomerId` fields must be cleared and operators re-subscribed
 4. seed-demo.ts `update:{}` bug fixed for all 7 top-level user accounts; nested operator/caregiver/etc upserts still use `update:{}`
 
@@ -139,6 +138,5 @@ See `REVENUE_MODEL.md` for the full breakdown. 12 streams finalized:
 ## Immediate Next Priorities
 1. **Merge branch + apply migration + set new env vars** — migration `20260424000002` must run; set WALLET_FEE_PCT, DEFAULT_AFFILIATE_COMMISSION_PCT, CRON_SECRET, Twilio vars; add tour-reminders cron job in Render
 2. **Create Stripe Products + register webhook** — Starter $99, Professional $249, Growth $499; register `/api/webhooks/stripe` endpoint (see Pending Deployment Actions above)
-3. Fix TypeScript strict mode errors (274 remaining) (OL-005) — re-enable CI type-check
-4. Fix CareBot markdown output in chat (OL-013) — plain text prompt fix
-5. Revamp landing page to showcase all products/features by user type
+3. Fix 2 pre-existing test failures (`calendar.appointments.api`, `emergency.api`)
+4. Fix Invoice model (OL-010) — add Prisma Invoice model; generate on Stripe `invoice.payment_succeeded`

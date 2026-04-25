@@ -109,7 +109,7 @@ export default function DocumentCard({
 
         {/* File info */}
         <div>
-          <h3 className="text-base font-semibold text-gray-900 truncate" title={document.fileName}>
+          <h3 className="text-base font-semibold text-gray-900 truncate" title={document.fileName ?? undefined}>
             {document.fileName}
           </h3>
           <p className="text-sm text-gray-500 mt-1">

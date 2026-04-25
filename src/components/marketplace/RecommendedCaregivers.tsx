@@ -32,7 +32,7 @@ export default async function RecommendedCaregivers({ listingId }: { listingId: 
   let applicationStatusByCaregiver: Record<string, string> = {};
   
   try {
-    const hdrs = headers();
+    const hdrs = await headers();
     const cookie = hdrs.get("cookie") ?? "";
     const origin = getOriginFromHeaders(hdrs as any);
 

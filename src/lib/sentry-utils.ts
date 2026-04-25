@@ -80,7 +80,7 @@ export function incrementMetric(
   value: number = 1,
   tags?: Record<string, string>
 ) {
-  Sentry.metrics.increment(name, value, { tags });
+  Sentry.metrics.count(name, value, { attributes: tags });
 }
 
 /**
@@ -94,7 +94,7 @@ export function setGauge(
   value: number,
   tags?: Record<string, string>
 ) {
-  Sentry.metrics.gauge(name, value, { tags });
+  Sentry.metrics.gauge(name, value, { attributes: tags });
 }
 
 /**
@@ -110,7 +110,7 @@ export function recordDistribution(
   unit: 'millisecond' | 'second' | 'minute' | 'hour' | 'day' | 'byte' | 'kilobyte' | 'megabyte' | 'none' = 'none',
   tags?: Record<string, string>
 ) {
-  Sentry.metrics.distribution(name, value, { tags, unit });
+  Sentry.metrics.distribution(name, value, { attributes: tags, unit });
 }
 
 /**

@@ -88,8 +88,10 @@ export async function POST(request: NextRequest) {
     const document = await prisma.document.create({
       data: {
         type: type,
+        title: file.name,
         fileName: file.name,
         fileUrl: uploadResult.url,
+        fileType: file.type,
         fileSize: file.size,
         mimeType: file.type,
         residentId: residentId || undefined,
@@ -97,8 +99,6 @@ export async function POST(request: NextRequest) {
         uploadedById: session.user.id,
         tags: tags ? JSON.parse(tags) : [],
         notes: notes || undefined,
-        extractionStatus: 'PENDING',
-        complianceStatus: 'PENDING',
       },
       include: {
         uploadedBy: {

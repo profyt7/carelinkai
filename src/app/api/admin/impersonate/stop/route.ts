@@ -48,16 +48,14 @@ export async function POST(request: NextRequest) {
     });
 
     // Create audit log
-    await createAuditLogFromRequest(request, {
-      action: AuditAction.IMPERSONATION_STOPPED,
-      userId: user.id,
-      details: {
-        sessionId: session.id,
-        targetUserId: session.targetUser.id,
-        targetUserEmail: session.targetUser.email,
-        duration: Date.now() - session.startedAt.getTime(),
-      },
-    });
+    await createAuditLogFromRequest(
+      request,
+      AuditAction.IMPERSONATION_STOPPED,
+      'User',
+      session.targetUser.id,
+      `Admin stopped impersonating ${session.targetUser.email}`,
+      { sessionId: session.id, targetUserId: session.targetUser.id, targetUserEmail: session.targetUser.email, duration: Date.now() - session.startedAt.getTime() }
+    );
 
     return NextResponse.json({
       success: true,

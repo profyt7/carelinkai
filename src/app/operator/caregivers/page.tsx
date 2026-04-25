@@ -258,7 +258,7 @@ export default function CaregiversPage() {
       const csv = exportCaregiversToCSV(dataToExport);
       
       // Generate filename and download
-      const filename = generateExportFilename('caregivers-export');
+      const filename = generateExportFilename('caregivers-export', 'csv');
       downloadCSV(csv, filename);
       
       toast.success(`Exported ${dataToExport.length} caregiver${dataToExport.length !== 1 ? 's' : ''} successfully`);

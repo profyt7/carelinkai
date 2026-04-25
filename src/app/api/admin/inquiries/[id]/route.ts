@@ -135,13 +135,14 @@ export async function PATCH(
     });
 
     // Create audit log
-    await createAuditLogFromRequest(request, {
-      userId: user.id,
-      action: AuditAction.UPDATE,
-      resourceType: 'INQUIRY',
-      resourceId: id,
-      details: { changes: data, homeName: inquiry.home.name },
-    });
+    await createAuditLogFromRequest(
+      request,
+      AuditAction.UPDATE,
+      'INQUIRY',
+      id,
+      `Admin updated inquiry ${id} at ${inquiry.home?.name ?? 'unknown home'}`,
+      { changes: data }
+    );
 
     return NextResponse.json({ inquiry });
   } catch (error) {

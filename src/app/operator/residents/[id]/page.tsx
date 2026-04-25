@@ -37,8 +37,8 @@ import { FiEdit, FiFileText, FiUser, FiClipboard, FiAlertTriangle, FiShield, FiU
 import { getDaysSinceAdmission } from '@/lib/resident-analytics';
 
 async function fetchResident(id: string) {
-  const cookieHeader = cookies().toString();
-  const h = headers();
+  const cookieHeader = (await cookies()).toString();
+  const h = await headers();
   const base = getBaseUrl(h);
   const res = await fetch(`${base}/api/residents/${id}`, {
     cache: 'no-store',
@@ -50,8 +50,8 @@ async function fetchResident(id: string) {
 }
 
 async function fetchContacts(id: string) {
-  const cookieHeader = cookies().toString();
-  const h = headers();
+  const cookieHeader = (await cookies()).toString();
+  const h = await headers();
   const base = getBaseUrl(h);
   const res = await fetch(`${base}/api/residents/${id}/contacts`, {
     cache: 'no-store',
@@ -62,8 +62,8 @@ async function fetchContacts(id: string) {
 }
 
 async function fetchTimeline(id: string) {
-  const cookieHeader = cookies().toString();
-  const h = headers();
+  const cookieHeader = (await cookies()).toString();
+  const h = await headers();
   const base = getBaseUrl(h);
   const res = await fetch(`${base}/api/residents/${id}/timeline?limit=10`, {
     cache: 'no-store',
@@ -74,8 +74,8 @@ async function fetchTimeline(id: string) {
 }
 
 async function fetchSection(id: string, section: 'assessments' | 'incidents' | 'notes') {
-  const cookieHeader = cookies().toString();
-  const h = headers();
+  const cookieHeader = (await cookies()).toString();
+  const h = await headers();
   const base = getBaseUrl(h);
   const res = await fetch(`${base}/api/residents/${id}/${section}?limit=5`, {
     cache: 'no-store',
@@ -101,7 +101,7 @@ export default async function ResidentDetail({ params, searchParams }: { params:
     currentUserId = user?.id;
   }
   
-  const mockCookie = cookies().get('carelink_mock_mode')?.value?.toString().trim().toLowerCase() || '';
+  const mockCookie = (await cookies()).get('carelink_mock_mode')?.value?.toString().trim().toLowerCase() || '';
   const showMock = ['1','true','yes','on'].includes(mockCookie);
   let resident: any = null;
   let contacts: any = { items: [] };

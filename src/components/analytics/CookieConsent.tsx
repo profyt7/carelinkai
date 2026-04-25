@@ -37,6 +37,7 @@ export default function CookieConsent() {
       } catch (e) {
         console.error('Failed to parse cookie consent:', e);
       }
+      return undefined;
     }
   }, []);
 

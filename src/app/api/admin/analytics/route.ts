@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { PaymentType, PaymentStatus } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
 
@@ -70,25 +71,25 @@ export async function GET(request: NextRequest) {
       }),
       // Completed placement fees (total collected)
       prisma.payment.aggregate({
-        where: { type: 'PLACEMENT_FEE', status: 'COMPLETED' },
+        where: { type: PaymentType.PLACEMENT_FEE, status: PaymentStatus.COMPLETED },
         _sum: { amount: true },
         _count: { id: true },
       }),
       // Pending/processing placement fees
       prisma.payment.aggregate({
-        where: { type: 'PLACEMENT_FEE', status: { in: ['PENDING', 'PROCESSING'] } },
+        where: { type: PaymentType.PLACEMENT_FEE, status: { in: [PaymentStatus.PENDING, PaymentStatus.PROCESSING] } },
         _sum: { amount: true },
         _count: { id: true },
       }),
       // Affiliate commissions owed (pending)
       prisma.payment.aggregate({
-        where: { type: 'AFFILIATE_COMMISSION', status: 'PENDING' },
+        where: { type: PaymentType.AFFILIATE_COMMISSION, status: PaymentStatus.PENDING },
         _sum: { amount: true },
         _count: { id: true },
       }),
       // Recent revenue payments
       prisma.payment.findMany({
-        where: { type: { in: ['PLACEMENT_FEE', 'AFFILIATE_COMMISSION', 'DEPOSIT', 'MONTHLY_FEE'] } },
+        where: { type: { in: [PaymentType.PLACEMENT_FEE, PaymentType.AFFILIATE_COMMISSION, PaymentType.DEPOSIT, PaymentType.MONTHLY_FEE] } },
         orderBy: { createdAt: 'desc' },
         take: 15,
         select: {

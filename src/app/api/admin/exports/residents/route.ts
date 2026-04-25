@@ -45,8 +45,6 @@ export async function GET(req: NextRequest) {
       dateOfBirth: formatExportDate(r.dateOfBirth),
       gender: r.gender,
       status: r.status,
-      careLevel: r.careLevel,
-      roomNumber: r.roomNumber,
       admissionDate: formatExportDate(r.admissionDate),
       'home.name': r.home?.name || '',
       createdAt: formatExportDateTime(r.createdAt),
@@ -75,8 +73,7 @@ export async function GET(req: NextRequest) {
     // Create audit log
     await createAuditLogFromRequest(
       req,
-      user.id,
-      AuditAction.EXPORT,
+            AuditAction.EXPORT,
       'RESIDENT',
       null,
       `Exported ${formattedData.length} residents`

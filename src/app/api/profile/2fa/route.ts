@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
         resourceType: "Security",
         resourceId: user.id,
         description: `User ${enabled ? "enabled" : "disabled"} two-factor authentication`,
-        ipAddress: req.headers.get("x-forwarded-for") || req.ip || "unknown",
+        ipAddress: req.headers.get("x-forwarded-for") || "unknown",
         userAgent: req.headers.get("user-agent") || "unknown",
       },
     });

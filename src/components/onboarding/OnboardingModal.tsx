@@ -136,6 +136,7 @@ export default function OnboardingModal() {
       const timer = setTimeout(() => setShowOnboarding(true), 500);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [isClient, session, userRole]);
 
   const handleClose = () => {

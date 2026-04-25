@@ -64,10 +64,9 @@ export async function GET(req: NextRequest) {
       'user.lastName': c.user?.lastName || '',
       'user.email': c.user?.email || '',
       'user.phone': c.user?.phone || '',
-      status: c.status,
-      yearsOfExperience: c.yearsOfExperience,
       hourlyRate: c.hourlyRate,
-      specializations: Array.isArray(c.specializations) ? (c.specializations as string[]).join(', ') : '',
+      yearsOfExperience: c.yearsExperience,
+      specializations: Array.isArray(c.specialties) ? (c.specialties as string[]).join(', ') : '',
       languages: Array.isArray(c.languages) ? (c.languages as string[]).join(', ') : '',
       createdAt: formatExportDateTime(c.createdAt),
     }));
@@ -95,8 +94,7 @@ export async function GET(req: NextRequest) {
     // Create audit log
     await createAuditLogFromRequest(
       req,
-      user.id,
-      AuditAction.EXPORT,
+            AuditAction.EXPORT,
       'CAREGIVER',
       null,
       `Exported ${formattedData.length} caregivers`

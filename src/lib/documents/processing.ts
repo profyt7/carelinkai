@@ -59,8 +59,8 @@ export async function processDocument(documentId: string): Promise<ProcessingRes
     // Step 1: Classify the document
     console.log(`Classifying document ${documentId}...`);
     const classificationResult = await classifyDocument(
-      document.extractedText,
-      document.fileName
+      document.extractedText ?? '',
+      document.fileName ?? ''
     );
 
     if (!classificationResult.success) {

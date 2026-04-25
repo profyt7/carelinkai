@@ -109,6 +109,8 @@
     "prisma/seed*.ts",
     "prisma/**/*.seed.ts",
     "scripts",
-    "scripts/**/*"
+    "scripts/**/*",
+    "nextjs_space",
+    "nextjs_space/**/*"
   ]
 }

@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     // Create audit log
     await createAuditLog({
       userId: session.user.id,
-      action: AuditAction.ADMIN_ACTION,
+      action: AuditAction.OTHER,
       resourceType: 'Home',
       resourceId: null,
       description: `Bulk ${action} on ${homeIds.length} homes: ${result.success} succeeded, ${result.failed} failed`,
@@ -109,7 +109,7 @@ async function handleBulkStatusUpdate(homeIds: string[], status: string, adminId
     try {
       await prisma.assistedLivingHome.update({
         where: { id: homeId },
-        data: { status },
+        data: { status: status as any },
       });
       success++;
     } catch (error) {

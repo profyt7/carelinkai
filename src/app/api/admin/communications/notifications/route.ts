@@ -162,8 +162,7 @@ export async function POST(request: NextRequest) {
     // Create audit log
     await createAuditLogFromRequest(
       request,
-      session.user.id,
-      AuditAction.CREATE,
+            AuditAction.CREATE,
       'NOTIFICATION',
       notification.id,
       `Admin created ${type} notification for ${user.firstName} ${user.lastName}: ${title}`
@@ -223,8 +222,7 @@ export async function DELETE(request: NextRequest) {
     // Create audit log
     await createAuditLogFromRequest(
       request,
-      session.user.id,
-      AuditAction.DELETE,
+            AuditAction.DELETE,
       'NOTIFICATION',
       id || 'bulk',
       `Admin deleted ${deleteCount} notification(s)`

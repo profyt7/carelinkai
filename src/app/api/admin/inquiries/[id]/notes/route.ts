@@ -61,13 +61,14 @@ export async function POST(
       data: { internalNotes: newNotes },
     });
 
-    await createAuditLogFromRequest(request, {
-      userId: user.id,
-      action: AuditAction.UPDATE,
-      resourceType: 'INQUIRY',
-      resourceId: id,
-      details: { action: 'add_note', notePreview: note.substring(0, 100) },
-    });
+    await createAuditLogFromRequest(
+      request,
+      AuditAction.UPDATE,
+      'INQUIRY',
+      id,
+      `Admin added note to inquiry ${id}`,
+      { notePreview: note.substring(0, 100) }
+    );
 
     return NextResponse.json({ inquiry });
   } catch (error) {

@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { FiAlertTriangle, FiAlertCircle, FiInfo } from 'react-icons/fi';
 import { format } from 'date-fns';
 
@@ -20,7 +21,7 @@ export function RecentIncidentsWidget({ incidents }: RecentIncidentsWidgetProps)
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 5);
 
-  const severityConfig: Record<string, { color: string; bg: string; icon: JSX.Element }> = {
+  const severityConfig: Record<string, { color: string; bg: string; icon: React.ReactElement }> = {
     HIGH: { color: 'text-red-600', bg: 'bg-red-50', icon: <FiAlertTriangle className="w-4 h-4" /> },
     MEDIUM: { color: 'text-orange-600', bg: 'bg-orange-50', icon: <FiAlertCircle className="w-4 h-4" /> },
     LOW: { color: 'text-blue-600', bg: 'bg-blue-50', icon: <FiInfo className="w-4 h-4" /> },

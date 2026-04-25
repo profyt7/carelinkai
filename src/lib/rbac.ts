@@ -39,7 +39,7 @@ export async function requireAnyRole(
     // Dev/e2e fallback: when explicitly allowed, decode JWT from cookie to emulate session
     if (process.env['ALLOW_DEV_ENDPOINTS'] === '1') {
       try {
-        const jar = cookies();
+        const jar = await cookies();
         // Align with auth cookie name logic
         const cookieName = (process.env.NODE_ENV === 'production' && process.env['ALLOW_INSECURE_AUTH_COOKIE'] !== '1')
           ? '__Secure-next-auth.session-token'

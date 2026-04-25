@@ -148,8 +148,7 @@ export async function POST(request: NextRequest) {
     const targetRoleLabel = targetRole === 'ALL' ? 'all users' : `${targetRole} users`;
     await createAuditLogFromRequest(
       request,
-      session.user.id,
-      AuditAction.CREATE,
+            AuditAction.CREATE,
       'BROADCAST',
       broadcast.id,
       `Admin sent broadcast to ${targetUsers.length} ${targetRoleLabel}: ${subject}`

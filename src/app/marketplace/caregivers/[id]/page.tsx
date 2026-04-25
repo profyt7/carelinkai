@@ -146,7 +146,7 @@ export default async function CaregiverDetailPage({
   params: { id: string };
 }) {
   // Check mock mode - support both general mock mode and marketplace-specific mock mode
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const generalMockMode = isMockModeEnabledFromCookies(cookieStore);
   
   // Check marketplace-specific mock mode (defaults to true since we don't have real caregivers yet)

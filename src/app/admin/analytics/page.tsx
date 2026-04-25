@@ -46,6 +46,7 @@ interface KPIs {
 interface ChartData {
   name: string;
   value: number;
+  [key: string]: unknown;
 }
 
 interface GrowthData {
@@ -476,7 +477,7 @@ export default function AnalyticsPage() {
                   outerRadius={90}
                   paddingAngle={2}
                   dataKey="value"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
                   labelLine={false}
                 >
                   {charts.userRoleDistribution.map((entry, index) => (
@@ -504,7 +505,7 @@ export default function AnalyticsPage() {
                   outerRadius={90}
                   paddingAngle={2}
                   dataKey="value"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
                   labelLine={false}
                 >
                   {charts.inquiryStatusDistribution.map((entry, index) => (
@@ -535,7 +536,7 @@ export default function AnalyticsPage() {
                   outerRadius={90}
                   paddingAngle={2}
                   dataKey="value"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
                   labelLine={false}
                 >
                   {charts.homeStatusDistribution.map((entry, index) => (

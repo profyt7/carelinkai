@@ -59,8 +59,6 @@ export async function POST(req: NextRequest) {
             data: {
               userId: user.id,
               companyName: 'Admin Created Homes',
-              businessType: 'LICENSED_OPERATOR',
-              licenseNumber: 'ADMIN-' + Date.now(),
             }
           });
           operatorId = adminOperator.id;

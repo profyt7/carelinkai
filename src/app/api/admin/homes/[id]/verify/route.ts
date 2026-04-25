@@ -85,25 +85,17 @@ export async function POST(
           ? `Your home "${home.name}" has been approved and is now active.`
           : `Your home "${home.name}" verification has been rejected. ${reason || 'Please contact support for more information.'}`,
         link: `/operator/homes/${home.id}`,
-        read: false,
       },
     });
 
     // Create audit log
     await createAuditLogFromRequest(
       request,
-      action === 'APPROVE' ? AuditAction.APPROVE : AuditAction.REJECT,
-      session.user.id,
+      AuditAction.UPDATE,
       'AssistedLivingHome',
       params.id,
-      { status: home.status },
-      { status: newStatus },
-      { 
-        adminAction: true, 
-        action,
-        reason,
-        notes,
-      }
+      `Admin ${action.toLowerCase()}d home ${params.id}`,
+      { adminAction: true, action, reason, notes, newStatus }
     );
 
     return NextResponse.json({

@@ -18,7 +18,7 @@ export async function GET(_req: NextRequest) {
     // Try to read from dev JWT cookie when allowed
     if (process.env['ALLOW_DEV_ENDPOINTS'] === '1') {
       try {
-        const jar = cookies();
+        const jar = await cookies();
         const cookieName = (process.env.NODE_ENV === 'production' && process.env['ALLOW_INSECURE_AUTH_COOKIE'] !== '1')
           ? '__Secure-next-auth.session-token'
           : 'next-auth.session-token';

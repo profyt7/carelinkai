@@ -73,7 +73,7 @@ export async function DELETE(req: NextRequest) {
         resourceType: "Session",
         resourceId: user.id,
         description: `User logged out from all other devices (${deletedSessions.count} sessions deleted)`,
-        ipAddress: req.headers.get("x-forwarded-for") || req.ip || "unknown",
+        ipAddress: req.headers.get("x-forwarded-for") || "unknown",
         userAgent: req.headers.get("user-agent") || "unknown",
       },
     });

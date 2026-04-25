@@ -190,7 +190,7 @@ export async function POST(request: NextRequest) {
             html: emailHtml,
           });
 
-          console.log("📧 [PLACEMENT-REQUEST] ✅ Email sent to:", operatorEmail, "ID:", emailResponse?.id);
+          console.log("📧 [PLACEMENT-REQUEST] ✅ Email sent to:", operatorEmail, "ID:", emailResponse?.data?.id);
 
           // Create placement request record
           const placementRequest = await prisma.placementRequest.create({
@@ -200,7 +200,7 @@ export async function POST(request: NextRequest) {
               patientInfo,
               status: "SENT",
               emailSentAt: new Date(),
-              emailDeliveryStatus: emailResponse?.id ? "DELIVERED" : "PENDING",
+              emailDeliveryStatus: emailResponse?.data?.id ? "DELIVERED" : "PENDING",
             },
           });
 
@@ -209,7 +209,7 @@ export async function POST(request: NextRequest) {
             homeName: home.name,
             status: "SUCCESS",
             placementRequestId: placementRequest.id,
-            emailId: emailResponse?.id,
+            emailId: emailResponse?.data?.id,
           };
         } catch (error: any) {
           console.error("📧 [PLACEMENT-REQUEST] ❌ Failed to send to:", home.id, error);

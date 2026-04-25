@@ -304,10 +304,10 @@ export async function GET(req: NextRequest) {
     
     // Get average ratings using aggregate query (memory efficient)
     const homeIds = homes.map(home => home.id);
-    const ratingAggregates = await prisma.review.groupBy({
-      by: ['assistedLivingHomeId'],
+    const ratingAggregates = await prisma.homeReview.groupBy({
+      by: ['homeId'],
       where: {
-        assistedLivingHomeId: {
+        homeId: {
           in: homeIds,
         },
       },
@@ -321,8 +321,8 @@ export async function GET(req: NextRequest) {
     
     // Create a map of ratings for quick lookup
     const ratingsMap = new Map(
-      ratingAggregates.map(agg => [
-        agg.assistedLivingHomeId,
+      ratingAggregates.map((agg: any) => [
+        agg.homeId,
         {
           averageRating: agg._avg.rating,
           reviewCount: agg._count.rating,

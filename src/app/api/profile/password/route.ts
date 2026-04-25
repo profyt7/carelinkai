@@ -56,7 +56,7 @@ const passwordChangeSchema = z.object({
 export async function POST(req: NextRequest) {
   try {
     // Apply rate limiting
-    const identifier = req.ip || "unknown";
+    const identifier = req.headers.get("x-forwarded-for") ?? "unknown";
     try {
       // 10 requests per minute per IP
       await limiter.check(identifier);
@@ -133,7 +133,7 @@ export async function POST(req: NextRequest) {
           resourceType: "Password",
           resourceId: user.id,
           description: "Failed password change attempt - incorrect current password",
-          ipAddress: req.headers.get("x-forwarded-for") || req.ip || "unknown",
+          ipAddress: req.headers.get("x-forwarded-for") || "unknown",
           userAgent: req.headers.get("user-agent") || "unknown",
         },
       });
@@ -165,7 +165,7 @@ export async function POST(req: NextRequest) {
         resourceType: "Password",
         resourceId: user.id,
         description: "User changed their password",
-        ipAddress: req.headers.get("x-forwarded-for") || req.ip || "unknown",
+        ipAddress: req.headers.get("x-forwarded-for") || "unknown",
         userAgent: req.headers.get("user-agent") || "unknown",
       },
     });

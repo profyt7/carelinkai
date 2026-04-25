@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     // Create audit log
     await createAuditLog({
       userId: session.user.id,
-      action: AuditAction.ADMIN_ACTION,
+      action: AuditAction.OTHER,
       resourceType: 'Inquiry',
       resourceId: null,
       description: `Bulk ${action} on ${inquiryIds.length} inquiries: ${result.success} succeeded, ${result.failed} failed`,
@@ -106,7 +106,7 @@ async function handleBulkStatusUpdate(inquiryIds: string[], status: string, admi
       await prisma.inquiry.update({
         where: { id: inquiryId },
         data: { 
-          status,
+          status: status as any,
           updatedAt: new Date(),
         },
       });

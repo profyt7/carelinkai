@@ -59,8 +59,8 @@ export async function checkResidentCompliance(
       )
       .map((d) => ({
         id: d.id,
-        type: d.type,
-        fileName: d.fileName,
+        type: d.type as string,
+        fileName: d.fileName ?? '',
         expirationDate: d.expirationDate!,
         daysUntilExpiration: Math.ceil(
           (d.expirationDate!.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)

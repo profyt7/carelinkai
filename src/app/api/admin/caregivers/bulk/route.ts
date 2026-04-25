@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     // Create audit log
     await createAuditLog({
       userId: session.user.id,
-      action: AuditAction.ADMIN_ACTION,
+      action: AuditAction.OTHER,
       resourceType: 'Caregiver',
       resourceId: null,
       description: `Bulk ${action} on ${caregiverIds.length} caregivers: ${result.success} succeeded, ${result.failed} failed`,
@@ -113,8 +113,7 @@ async function handleBulkBackgroundCheck(caregiverIds: string[], status: string,
       await prisma.caregiver.update({
         where: { id: caregiverId },
         data: {
-          backgroundCheckStatus: status,
-          backgroundCheckDate: new Date(),
+          backgroundCheckStatus: status as any,
         },
       });
       success++;
@@ -140,7 +139,7 @@ async function handleBulkEmploymentStatus(caregiverIds: string[], status: string
     try {
       await prisma.caregiver.update({
         where: { id: caregiverId },
-        data: { employmentStatus: status },
+        data: { employmentStatus: status as any },
       });
       success++;
     } catch (error) {

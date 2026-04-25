@@ -187,8 +187,7 @@ export async function DELETE(
     // Create audit log
     await createAuditLogFromRequest(
       request,
-      session.user.id,
-      AuditAction.DELETE,
+            AuditAction.DELETE,
       'MESSAGE',
       params.id,
       `Admin deleted message: ${message.subject || 'No subject'}`

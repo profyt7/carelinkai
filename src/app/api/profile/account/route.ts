@@ -85,7 +85,7 @@ export async function GET(req: NextRequest) {
         resourceType: "Account",
         resourceId: user.id,
         description: "User viewed account settings",
-        ipAddress: req.headers.get("x-forwarded-for") || req.ip || "unknown",
+        ipAddress: req.headers.get("x-forwarded-for") || "unknown",
         userAgent: req.headers.get("user-agent") || "unknown",
       },
     });

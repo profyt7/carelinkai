@@ -261,7 +261,7 @@ export default function InquiriesListClient({
       const csv = exportInquiriesToCSV(inquiriesToExport);
 
       // Download CSV
-      const filename = generateExportFilename('inquiries-export');
+      const filename = generateExportFilename('inquiries-export', 'csv');
       downloadCSV(csv, filename);
 
     } catch (err: any) {

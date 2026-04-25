@@ -52,8 +52,8 @@ export async function POST(
 
     // Classify the document
     const result = await classifyDocument(
-      document.extractedText,
-      document.fileName
+      document.extractedText ?? '',
+      document.fileName ?? ''
     );
 
     if (!result.success) {

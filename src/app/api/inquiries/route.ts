@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
       smsService.sendNewInquiryAlert(
         operatorPhone,
         inquiry.home.operator!.user!.firstName,
-        inquiry.contactName,
+        inquiry.contactName ?? '',
         inquiry.careRecipientName || 'your loved one',
         inquiry.home.name
       ).catch(() => {});

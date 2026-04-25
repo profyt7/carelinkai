@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     // Create audit log for bulk operation
     await createAuditLog({
       userId: session.user.id,
-      action: AuditAction.ADMIN_ACTION,
+      action: AuditAction.OTHER,
       resourceType: 'User',
       resourceId: null,
       description: `Bulk ${action} on ${nonAdminUserIds.length} users: ${result.success} succeeded, ${result.failed} failed`,
@@ -115,7 +115,7 @@ async function handleBulkStatusUpdate(userIds: string[], status: string, adminId
     try {
       await prisma.user.update({
         where: { id: userId },
-        data: { status },
+        data: { status: status as any },
       });
       success++;
     } catch (error) {

@@ -12,14 +12,14 @@ import { NewResidentButton, ExportResidentsButton, ResidentRowActions } from '@/
 import { ResidentsPageContent } from '@/components/operator/residents/ResidentsPageContent';
 
 async function fetchResidents(params: { q?: string; status?: string; homeId?: string; familyId?: string; cursor?: string; showArchived?: string }) {
-  const cookieHeader = cookies().toString();
+  const cookieHeader = (await cookies()).toString();
   const qParam = params.q ? `&q=${encodeURIComponent(params.q)}` : '';
   const sParam = params.status ? `&status=${encodeURIComponent(params.status)}` : '';
   const hParam = params.homeId ? `&homeId=${encodeURIComponent(params.homeId)}` : '';
   const fParam = params.familyId ? `&familyId=${encodeURIComponent(params.familyId)}` : '';
   const cParam = params.cursor ? `&cursor=${encodeURIComponent(params.cursor)}` : '';
   const aParam = params.showArchived === 'true' ? '&showArchived=true' : '';
-  const h = headers();
+  const h = await headers();
   const base = getBaseUrl(h);
   const res = await fetch(`${base}/api/residents?limit=50${qParam}${sParam}${hParam}${fParam}${cParam}${aParam}`, {
     cache: 'no-store',
@@ -31,8 +31,8 @@ async function fetchResidents(params: { q?: string; status?: string; homeId?: st
 
 async function fetchHomes() {
   // Server-side same-origin fetch with cookies for RBAC scoping to operator homes
-  const cookieHeader = cookies().toString();
-  const h = headers();
+  const cookieHeader = (await cookies()).toString();
+  const h = await headers();
   const base = getBaseUrl(h);
   const res = await fetch(`${base}/api/operator/homes`, { cache: 'no-store', headers: { cookie: cookieHeader } });
   if (!res.ok) return { homes: [] as Array<{ id: string; name: string }> };
@@ -54,9 +54,9 @@ type ResidentItem = {
 
 export default async function ResidentsPage({ searchParams }: { searchParams?: { q?: string; status?: string; homeId?: string; familyId?: string; cursor?: string; live?: string; showArchived?: string } }) {
   if (process.env['NEXT_PUBLIC_RESIDENTS_ENABLED'] === 'false') return notFound();
-  const mockCookie = cookies().get('carelink_mock_mode')?.value?.toString().trim().toLowerCase() || '';
+  const mockCookie = (await cookies()).get('carelink_mock_mode')?.value?.toString().trim().toLowerCase() || '';
   const showMock = ['1','true','yes','on'].includes(mockCookie);
-  const liveCookie = cookies().get('carelink_show_live')?.value?.toString().trim().toLowerCase() || '';
+  const liveCookie = (await cookies()).get('carelink_show_live')?.value?.toString().trim().toLowerCase() || '';
   const forceLive = ['1','true','yes','on'].includes(liveCookie) || ['1','true','yes','on'].includes((searchParams?.live ?? '').toString().trim().toLowerCase());
   const q = searchParams?.q?.toString() || '';
   const status = searchParams?.status?.toString() || '';
@@ -157,7 +157,7 @@ export default async function ResidentsPage({ searchParams }: { searchParams?: {
                   className="btn btn-sm border border-neutral-300 hover:bg-neutral-50 text-neutral-700 px-4 py-2 rounded-lg"
                   formAction={(async () => {
                     'use server';
-                    const cookieStore = cookies();
+                    const cookieStore = await cookies();
                     try { cookieStore.set('carelink_show_live', forceLive ? '0' : '1', { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', path: '/', maxAge: 60*60*6 }); } catch {}
                   })}
                   type="submit"

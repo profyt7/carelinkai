@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { deleteFromCloudinary } from '@/lib/cloudinary';
 
 export const dynamic = 'force-dynamic';
@@ -137,7 +138,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
         email: `deleted_${Date.now()}_${userExists.email}`, // Prevent email reuse
         firstName: '[DELETED]',
         lastName: 'User',
-        profileImageUrl: null, // Clear the profile image reference
+        profileImageUrl: Prisma.JsonNull,
       },
     });
 

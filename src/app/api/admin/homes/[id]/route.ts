@@ -174,7 +174,7 @@ export async function GET(
       l.expirationDate && new Date(l.expirationDate) < new Date()
     ).length;
 
-    const pendingInquiries = home.inquiries.filter(i => i.status === 'NEW' || i.status === 'IN_PROGRESS').length;
+    const pendingInquiries = home.inquiries.filter(i => i.status === 'NEW').length;
 
     // Convert Prisma Decimal types to numbers for proper JSON serialization
     return NextResponse.json({
@@ -300,11 +300,9 @@ export async function PATCH(
     await createAuditLogFromRequest(
       request,
       AuditAction.UPDATE,
-      session.user.id,
       'AssistedLivingHome',
       id,
-      existingHome,
-      updatedHome,
+      `Admin updated home ${id}`,
       { adminAction: true }
     );
 
@@ -396,11 +394,9 @@ export async function DELETE(
     await createAuditLogFromRequest(
       request,
       AuditAction.DELETE,
-      session.user.id,
       'AssistedLivingHome',
       id,
-      home,
-      null,
+      `Admin deleted home ${id}`,
       { adminAction: true, reason: 'Admin deletion' }
     );
 

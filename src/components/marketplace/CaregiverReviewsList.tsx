@@ -8,7 +8,7 @@ type Props = {
 
 export default async function CaregiverReviewsList({ caregiverId, limit = 5 }: Props) {
   try {
-    const cookie = headers().get("cookie") ?? "";
+    const cookie = (await headers()).get("cookie") ?? "";
     const res = await fetch(
       `/api/reviews/caregivers?caregiverId=${encodeURIComponent(caregiverId)}&limit=${limit}`,
       { headers: { cookie }, cache: "no-store" }

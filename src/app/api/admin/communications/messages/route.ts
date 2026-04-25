@@ -206,8 +206,7 @@ export async function POST(request: NextRequest) {
     // Create audit log
     await createAuditLogFromRequest(
       request,
-      session.user.id,
-      AuditAction.CREATE,
+            AuditAction.CREATE,
       'MESSAGE',
       message.id,
       `Admin sent message to ${recipient.firstName} ${recipient.lastName}: ${subject}`

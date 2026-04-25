@@ -81,7 +81,7 @@ export default function DocumentLibraryPage() {
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(doc =>
-        doc.fileName.toLowerCase().includes(query) ||
+        (doc.fileName ?? '').toLowerCase().includes(query) ||
         doc.type.toLowerCase().includes(query)
       );
     }
@@ -133,7 +133,7 @@ export default function DocumentLibraryPage() {
       if (sortBy === 'date') {
         compareValue = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
       } else if (sortBy === 'name') {
-        compareValue = a.fileName.localeCompare(b.fileName);
+        compareValue = (a.fileName ?? '').localeCompare(b.fileName ?? '');
       } else if (sortBy === 'confidence') {
         compareValue = (a.classificationConfidence || 0) - (b.classificationConfidence || 0);
       }

@@ -54,16 +54,13 @@ export async function POST(
       },
     });
 
-    await createAuditLogFromRequest(request, {
-      userId: user.id,
-      action: AuditAction.UPDATE,
-      resourceType: 'INQUIRY',
-      resourceId: id,
-      details: {
-        action: 'assign',
-        assignedTo: assignedToId ? `${inquiry.assignedTo?.firstName} ${inquiry.assignedTo?.lastName}` : 'Unassigned',
-      },
-    });
+    await createAuditLogFromRequest(
+      request,
+      AuditAction.UPDATE,
+      'INQUIRY',
+      id,
+      `Admin assigned inquiry ${id} to ${assignedToId ? `${inquiry.assignedTo?.firstName} ${inquiry.assignedTo?.lastName}` : 'Unassigned'}`
+    );
 
     return NextResponse.json({ inquiry });
   } catch (error) {

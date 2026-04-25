@@ -52,10 +52,7 @@ export async function GET(req: NextRequest) {
     const formattedData = filteredHomes.map(h => ({
       id: h.id,
       name: h.name,
-      phone: h.phone,
-      email: h.email,
       status: h.status,
-      licenseNumber: h.licenseNumber,
       capacity: h.capacity,
       currentOccupancy: h.currentOccupancy,
       'address.street': h.address?.street || '',
@@ -89,8 +86,7 @@ export async function GET(req: NextRequest) {
     // Create audit log
     await createAuditLogFromRequest(
       req,
-      user.id,
-      AuditAction.EXPORT,
+            AuditAction.EXPORT,
       'HOME',
       null,
       `Exported ${formattedData.length} homes`
