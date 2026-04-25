@@ -340,6 +340,24 @@ async function main() {
     });
     console.log(`  ✓ Created caregiver: ${cg.firstName} ${cg.lastName} (${cg.city})`);
   }
+
+  // Link all caregivers to demo operator so they appear in the Operator > Caregivers tab
+  console.log('  Linking caregivers to demo operator...');
+  const demoOp = await prisma.operator.findUnique({ where: { userId: demoOperator.id } });
+  if (demoOp) {
+    const allCaregivers = await prisma.caregiver.findMany({ select: { id: true } });
+    for (const cg of allCaregivers) {
+      const exists = await prisma.caregiverEmployment.findFirst({
+        where: { caregiverId: cg.id, operatorId: demoOp.id, isActive: true },
+      });
+      if (!exists) {
+        await prisma.caregiverEmployment.create({
+          data: { caregiverId: cg.id, operatorId: demoOp.id, position: 'Caregiver', startDate: new Date('2024-01-01'), isActive: true },
+        });
+      }
+    }
+    console.log(`  ✓ Employment records created for ${allCaregivers.length} caregivers`);
+  }
   console.log('');
 
   // ==================== ADDITIONAL PROVIDERS ====================
