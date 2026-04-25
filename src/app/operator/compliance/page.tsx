@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import Breadcrumbs from "@/components/ui/breadcrumbs";
 import ComplianceQuickActions from "@/components/operator/ComplianceQuickActions";
+import ComplianceScanWidget from "@/components/operator/compliance/ComplianceScanWidget";
 import { PrismaClient, UserRole } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -52,6 +53,9 @@ export default async function OperatorCompliancePage({ searchParams }: { searchP
           { label: 'Operator', href: '/operator' },
           { label: 'Compliance' }
         ]} />
+        {/* AI Compliance Scanner */}
+        <ComplianceScanWidget />
+
         {/* Quick create forms for licenses and inspections with Home selection */}
         <ComplianceQuickActions homes={homes} />
         {isAdmin && (
