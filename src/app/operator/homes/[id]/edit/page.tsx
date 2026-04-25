@@ -58,6 +58,7 @@ export default function EditHomePage() {
     name: '',
     description: '',
     capacity: 0,
+    currentOccupancy: 0,
     careLevel: [] as string[],
     status: 'ACTIVE',
     genderRestriction: '',
@@ -83,6 +84,7 @@ export default function EditHomePage() {
             name: data.name || '',
             description: data.description || '',
             capacity: data.capacity || 0,
+            currentOccupancy: data.currentOccupancy ?? 0,
             careLevel: Array.isArray(data.careLevel) ? data.careLevel : [],
             status: data.status || 'ACTIVE',
             genderRestriction: data.genderRestriction || '',
@@ -222,6 +224,7 @@ export default function EditHomePage() {
         name: form.name || undefined,
         description: form.description || undefined,
         capacity: Number(form.capacity) || undefined,
+        currentOccupancy: Number(form.currentOccupancy),
         careLevel: form.careLevel.length > 0 ? form.careLevel : undefined,
         status: form.status || undefined,
         genderRestriction: form.genderRestriction || null,
@@ -446,7 +449,7 @@ export default function EditHomePage() {
                 </div>
               )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-1">
                     Capacity <span className="text-red-500">*</span>
@@ -461,6 +464,23 @@ export default function EditHomePage() {
                     onChange={(e) => handleInputChange('capacity', Number(e.target.value))}
                   />
                   {errors.capacity && <p className="mt-1 text-sm text-red-600">{errors.capacity}</p>}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-1">
+                    Current Residents
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max={form.capacity}
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    value={form.currentOccupancy}
+                    onChange={(e) => handleInputChange('currentOccupancy', Number(e.target.value))}
+                  />
+                  <p className="mt-1 text-xs text-neutral-500">
+                    {form.capacity - form.currentOccupancy} spot{form.capacity - form.currentOccupancy !== 1 ? 's' : ''} available
+                  </p>
                 </div>
 
                 <div>

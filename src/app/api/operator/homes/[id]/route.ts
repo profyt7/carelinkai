@@ -15,10 +15,19 @@ const updateSchema = z.object({
   description: z.string().optional(),
   capacity: z.number().int().min(0).optional(),
   currentOccupancy: z.number().int().min(0).optional(),
+  careLevel: z.array(z.string()).optional(),
+  genderRestriction: z.string().nullable().optional(),
   amenities: z.array(z.string()).optional(),
   priceMin: z.number().optional(),
   priceMax: z.number().optional(),
   status: z.string().optional(),
+  address: z.object({
+    street: z.string().optional(),
+    street2: z.string().nullable().optional(),
+    city: z.string().optional(),
+    state: z.string().optional(),
+    zipCode: z.string().optional(),
+  }).optional(),
 });
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
@@ -42,7 +51,29 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (!parsed.success) {
       return NextResponse.json({ error: 'Invalid payload', details: parsed.error.flatten() }, { status: 400 });
     }
-    const data: any = { ...parsed.data };
+    const { address, ...homeFields } = parsed.data;
+    const data: any = { ...homeFields };
+
+    if (address) {
+      data.address = {
+        upsert: {
+          create: {
+            street: address.street ?? '',
+            street2: address.street2 ?? null,
+            city: address.city ?? '',
+            state: address.state ?? '',
+            zipCode: address.zipCode ?? '',
+          },
+          update: {
+            ...(address.street !== undefined && { street: address.street }),
+            ...(address.street2 !== undefined && { street2: address.street2 }),
+            ...(address.city !== undefined && { city: address.city }),
+            ...(address.state !== undefined && { state: address.state }),
+            ...(address.zipCode !== undefined && { zipCode: address.zipCode }),
+          },
+        },
+      };
+    }
 
     const updated = await prisma.assistedLivingHome.update({ where: { id: home.id }, data });
     return NextResponse.json({ id: updated.id });
