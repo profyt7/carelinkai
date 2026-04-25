@@ -2,6 +2,32 @@
 
 ---
 
+### 2026-04-25 — Test Failures Fixed + OL-011 Production Playwright Config
+
+- **Objective:** Fix 2 pre-existing failing test suites; add Playwright production smoke test config (OL-011).
+- **Work completed:**
+  1. **calendar.appointments.api** — added missing `prisma.family` mock. FAMILY-role branch in the GET handler calls `prisma.family.findUnique` to scope appointments; the test mock was missing that model.
+  2. **emergency.api** — full test rewrite + route fix. Route had been refactored after tests were written. Tests now mock `@/lib/auth-utils` (correct module) instead of `next-auth` (wrong module). Updated all assertions to match current route: `preferences` plural, `findFirst+update/create` not `upsert`, 403 for non-members in PUT. Added `error.name === 'UnauthenticatedError'` check in both route catch blocks to return 401.
+  3. **playwright.production.config.ts** — new config: no webServer, baseURL from `PROD_URL` env var (defaults to `https://getcarelinkai.com`), 1 worker, longer timeouts, only runs `tests/smoke.spec.ts`.
+  4. **tests/smoke.spec.ts** — new smoke test suite: infrastructure (health API + homepage), auth (login page, invalid creds, redirect guards), operator portal (dashboard, billing, homes), family portal (dashboard, search), admin portal (dashboard, users). All read-only — no data mutations.
+  5. Added `test:e2e:prod` and `test:e2e:prod:report` scripts to `package.json`.
+  6. Full test suite: 298 tests passing, 0 failing.
+- **Files changed:**
+  - `__tests__/calendar.appointments.api.test.ts` — add prisma.family mock
+  - `__tests__/emergency.api.test.ts` — full rewrite
+  - `src/app/api/family/emergency/route.ts` — 401 handling for UnauthenticatedError
+  - `playwright.production.config.ts` — new
+  - `tests/smoke.spec.ts` — new
+  - `package.json` — 2 new scripts
+  - `context/` — all 3 state files updated
+- **Commands run:** `npx jest`, `npx tsc --noEmit`, `git push origin main`
+- **Tests/build status:** 298 Jest tests passing. 0 TS errors.
+- **Deployment impact:** None — test infrastructure only. Smoke tests run against production, not in it.
+- **New risks/blockers:** None — all known open loops closed.
+- **Recommended next step:** Run `npm run test:e2e:prod` after next deploy to verify smoke tests pass against production.
+
+---
+
 ### 2026-04-25 — Invoice Model + OL-010 + Merge to Main
 
 - **Objective:** Merge TypeScript cleanup branch to main, then implement OL-010 (Invoice model for operator billing).

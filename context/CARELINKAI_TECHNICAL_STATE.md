@@ -136,6 +136,5 @@ See `REVENUE_MODEL.md` for the full breakdown. 12 streams finalized:
 - Local limitation: Prisma binary engine in sandbox dies after ~7 tests due to thread limits. NOT a production issue.
 
 ## Immediate Next Priorities
-1. **Apply migration in Render shell** — run `npx prisma migrate deploy` to apply `20260424000003_add_invoice_model`
-2. Fix 2 pre-existing test failures (`calendar.appointments.api`, `emergency.api`)
-3. OL-011: Playwright config for production environment
+1. **Run production smoke tests** — `npm run test:e2e:prod` after each deploy to verify production health
+2. Plan next revenue/product milestone — all known open loops are closed
