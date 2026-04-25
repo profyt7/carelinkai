@@ -256,8 +256,6 @@ export const GUIDES: Guide[] = [
     ],
     cta: { text: 'Browse Caregivers on CareLinkAI', href: '/marketplace' },
   },
-];
-
   {
     slug: 'signs-parent-needs-more-care',
     title: 'Signs Your Parent Needs More Care Than You Can Provide',
