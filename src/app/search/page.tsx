@@ -41,6 +41,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import SearchFilters from "@/components/search/SearchFilters";
 import dynamic from "next/dynamic";
 import { getCloudinaryThumbnail, isCloudinaryUrl } from "@/lib/cloudinaryUrl";
+import { HomeCardSkeleton } from "@/components/ui/skeleton-loader";
 
 // Dynamically import the map (Leaflet) to avoid SSR issues
 const SimpleMap = dynamic(
@@ -885,12 +886,8 @@ export default function SearchPage() {
               </div>
             </div>
             
-            {/* Loading state */}
-            {isLoading && (
-              <div className="flex h-64 items-center justify-center">
-                <div className="h-8 w-8 animate-spin rounded-full border-4 border-neutral-200 border-t-primary-500"></div>
-              </div>
-            )}
+            {/* Loading state — skeleton cards matching the grid layout */}
+            {isLoading && <HomeCardSkeleton count={6} />}
             
             {/* No results state */}
             {!isLoading && searchResults.length === 0 && (
@@ -918,7 +915,7 @@ export default function SearchPage() {
                   {searchResults.map((home) => (
                     <div
                       key={home.id}
-                      className="overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm transition-shadow hover:shadow-md"
+                      className="overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm transition-all duration-200 hover:shadow-card-hover hover:-translate-y-0.5"
                     >
                       <Link href={`/homes/${home.id}`} className="block">
                         <div className="relative h-48 w-full">
@@ -993,8 +990,8 @@ export default function SearchPage() {
                           </div>
                           
                           <div className="mt-auto flex items-center justify-between">
-                            <span className="text-xs font-medium text-neutral-700">
-                              {home.priceRange.formattedMin}+
+                            <span className="text-sm font-semibold text-neutral-900">
+                              {home.priceRange.formattedMin}<span className="text-xs font-normal text-neutral-500">/mo+</span>
                             </span>
                             <div className="flex items-center gap-2">
                               <button
