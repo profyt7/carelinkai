@@ -31,7 +31,7 @@ https://carelinkai.onrender.com (also: https://getcarelinkai.com)
 | AI — All features | Anthropic Claude API (`claude-sonnet-4-6`, `claude-haiku-4-5-20251001`) |
 
 ## Schema Summary
-56 Prisma models + 2 new enums (SubscriptionPlan, SubscriptionStatus). Covers: users/auth, families, operators, caregivers, residents, homes, inquiries/leads, marketplace, payments/wallet, documents, messaging, notifications, shifts/timesheets, tours, reports, audit logs, discharge planner, AI matching. Operator model now has subscription billing fields.
+60 Prisma models + 4 enums (SubscriptionPlan, SubscriptionStatus, InvoiceStatus, + expanded PaymentType). New models: DischargePlannerProfile (discharge planner Stripe subscription), WaitlistEntry (family waitlist per home), ComplianceKitPurchase (one-time kit purchase). New fields: AssistedLivingHome.isFeatured/featuredUntil, Caregiver.reliabilityScore. PaymentType enum: + MARKETPLACE_HIRE_FEE, FEATURED_LISTING_FEE, COMPLIANCE_KIT.
 
 ## User Roles
 FAMILY, OPERATOR, CAREGIVER, ADMIN, STAFF, PROVIDER, AFFILIATE, DISCHARGE_PLANNER
@@ -59,10 +59,18 @@ FAMILY, OPERATOR, CAREGIVER, ADMIN, STAFF, PROVIDER, AFFILIATE, DISCHARGE_PLANNE
 - Operator subscription billing: Checkout (14-day trial), Customer Portal, webhook lifecycle handlers, feature gating utility
 - **Admin revenue dashboard:** MRR, placement fees collected/pending, affiliate commissions owed, recent payments table, subscription breakdown by plan
 - **Operator onboarding wizard:** 3-step guided flow (company → first home → plan selection); new operators auto-redirected on first login
+- **Caregiver marketplace hire fee:** $250 Stripe invoice item queued on shift claim; MARKETPLACE_HIRE_FEE PaymentType
+- **Featured listings:** isFeatured/featuredUntil on homes; $79/mo billed as invoice item; search results sorted featured-first; operator toggle in home edit page
+- **Discharge planner subscription:** DischargePlannerProfile model; $99/seat/mo Stripe checkout at /discharge-planner/billing; webhook handler synced
+- **AI Shift Auto-fill:** POST /api/operator/shifts/autofill — Claude Haiku matches available caregivers to free-text shift description; ShiftAutoFill component
+- **Caregiver reliability score:** 0-100 computed from reviews (40%) + shift completion (40%) + BG check (20%); updates on review create and timesheet approval
+- **Waitlist management:** WaitlistEntry model; /api/operator/homes/[id]/waitlist + /api/family/waitlist
+- **Education hub:** 7 long-form guides at /learn and /learn/guides/[slug] (SEO-optimized, no CMS needed)
+- **Compliance document kits:** 3 Ohio ALF kits ($149-$199); one-time Stripe checkout; ComplianceKitPurchase model; /operator/compliance-kits
 
-## Known Issues (as of 2026-04-24)
-1. 2 pre-existing test failures: `calendar.appointments.api` and `emergency.api`
-3. Demo accounts use test Stripe data — when switching to live Stripe, all operator `stripeCustomerId` fields must be cleared and operators re-subscribed
+## Known Issues (as of 2026-04-25)
+1. 2 pre-existing test failures RESOLVED — calendar and emergency tests both fixed
+2. Demo accounts use test Stripe data — when switching to live Stripe, all operator `stripeCustomerId` fields must be cleared and operators re-subscribed
 4. seed-demo.ts `update:{}` bug fixed for all 7 top-level user accounts; nested operator/caregiver/etc upserts still use `update:{}`
 
 ## Pending Deployment Actions (before subscription billing goes live)

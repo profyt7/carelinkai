@@ -6,6 +6,7 @@ import Link from 'next/link';
 import UnassignShiftButton from '@/components/operator/UnassignShiftButton';
 import EmptyState from '@/components/ui/empty-state';
 import { FiCalendar } from 'react-icons/fi';
+import ShiftAutoFillPanel from '@/components/operator/shifts/ShiftAutoFillPanel';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -15,6 +16,14 @@ export default async function OperatorShiftsPage() {
   const email = session?.user?.email ?? null;
   const user = email ? await prisma.user.findUnique({ where: { email } }) : null;
   const op = user?.role === 'OPERATOR' ? await prisma.operator.findUnique({ where: { userId: user.id } }) : null;
+
+  const homes = op
+    ? await prisma.assistedLivingHome.findMany({
+        where: { operatorId: op.id },
+        select: { id: true, name: true },
+        orderBy: { name: 'asc' },
+      })
+    : [];
 
   const where = op ? { home: { operatorId: op.id } } : {};
 
@@ -37,6 +46,11 @@ export default async function OperatorShiftsPage() {
             <Link href="/operator/shifts/new" className="btn btn-primary">Create Shift</Link>
           </div>
         </div>
+        {homes.length > 0 && (
+          <div className="mb-6">
+            <ShiftAutoFillPanel homes={homes} />
+          </div>
+        )}
         {shifts.length === 0 ? (
           <EmptyState
             icon={FiCalendar}
