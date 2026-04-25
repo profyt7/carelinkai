@@ -976,6 +976,22 @@ export default function HomeDetailPage() {
                     ) : (
                       <p className="text-neutral-600">Contact the facility directly for current pricing.</p>
                     )}
+                    {/* Financing CTA */}
+                    <div className="mt-4 rounded-lg bg-amber-50 border border-amber-200 p-4 flex items-start gap-3">
+                      <span className="text-xl">💳</span>
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-neutral-800">Need help affording care?</p>
+                        <p className="text-xs text-neutral-600 mt-0.5">CareLinkAI has partnered with CareCredit — fast decisions, accepted at thousands of senior care providers.</p>
+                      </div>
+                      <a
+                        href="https://www.carecredit.com/apply/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-shrink-0 text-xs px-3 py-1.5 bg-amber-500 text-white rounded-md font-semibold hover:bg-amber-600 transition-colors"
+                      >
+                        Apply →
+                      </a>
+                    </div>
                     <div className="mt-4">
                       <button
                         onClick={() => setShowTourModal(true)}

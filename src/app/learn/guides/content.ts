@@ -258,6 +258,264 @@ export const GUIDES: Guide[] = [
   },
 ];
 
+  {
+    slug: 'signs-parent-needs-more-care',
+    title: 'Signs Your Parent Needs More Care Than You Can Provide',
+    description: 'How to recognize when home care is no longer safe — and what to do when you reach that moment.',
+    readTime: '5 min read',
+    category: 'Getting Started',
+    icon: '🔍',
+    intro: 'One of the hardest parts of being an adult child is recognizing the line between "I can manage this" and "this is no longer safe." This guide helps you see that line clearly — without guilt, without denial.',
+    sections: [
+      {
+        heading: 'Physical safety warning signs',
+        body: 'Unexplained bruises or injuries that suggest falls. Burns on hands from cooking mishaps. Expired medication or missed doses piling up. Noticeable weight loss from missed meals. A home that has become unsafe — cluttered pathways, broken appliances, spoiled food in the refrigerator. Any one of these is a signal. Several together mean act now.',
+      },
+      {
+        heading: 'Cognitive warning signs',
+        body: 'Getting lost in a familiar neighborhood. Forgetting recent conversations but remembering decades-old ones clearly. Leaving the stove on or doors unlocked at night. Confusion about time — believing it is a different year or that a deceased spouse is still living. Difficulty managing finances — unpaid bills, duplicate purchases, susceptibility to scams.',
+      },
+      {
+        heading: 'Social and emotional warning signs',
+        body: 'Withdrawal from activities and friends they previously enjoyed. Increasing irritability, paranoia, or emotional volatility that is new. Signs of depression — persistent sadness, hopelessness, loss of interest in food or hygiene. These changes are often early indicators of cognitive decline or undertreated depression.',
+      },
+      {
+        heading: 'When the caregiver is the warning sign',
+        body: 'If you are the primary caregiver and you are exhausted, resentful, missing work, or your own health is declining — that is a signal too. Caregiver burnout is a medical reality. When a caregiver breaks down, the person receiving care is also at risk. Getting help is not giving up.',
+      },
+      {
+        heading: 'What to do next',
+        body: 'Schedule a physician visit and share your observations — physicians can trigger formal cognitive and physical assessments. Contact your local Area Agency on Aging for a free needs assessment. Use CareLinkAI to explore assisted living options before a crisis forces a rushed decision. Having a plan gives everyone more control.',
+      },
+    ],
+    cta: { text: 'Start Your Home Search', href: '/search' },
+  },
+  {
+    slug: 'power-of-attorney-guide',
+    title: 'Power of Attorney: What Every Family Needs to Know',
+    description: 'The legal document that gives you the authority to make decisions for a parent who can no longer make them alone — and why you must get it while they still can.',
+    readTime: '6 min read',
+    category: 'Legal & Planning',
+    icon: '⚖️',
+    intro: 'Power of attorney is one of the most important legal documents an aging parent can create — and one of the most commonly delayed. Families often wait until a crisis to think about it. By then, it is sometimes too late.',
+    sections: [
+      {
+        heading: 'What is a power of attorney?',
+        body: 'A power of attorney (POA) is a legal document that authorizes another person (the "agent") to make decisions on behalf of the person who signs it (the "principal"). A financial POA covers banking, bills, and asset management. A healthcare POA (also called a healthcare proxy or medical POA) covers medical decisions. Both are essential.',
+      },
+      {
+        heading: 'What is a durable power of attorney?',
+        body: 'A standard POA becomes void if the principal loses mental capacity. A durable POA remains in effect even if the principal becomes incapacitated — which is precisely when you need it most. Always use a durable POA for aging parents. Ohio law governs durable POAs and requires specific language to make them legally valid.',
+      },
+      {
+        heading: 'Why timing matters',
+        body: 'To sign a valid POA, your parent must have legal capacity — meaning they understand what they are signing and its consequences. Once dementia or another condition has progressed to the point of incapacity, it is too late to create a POA. At that point, families must pursue guardianship through a court — a lengthy, expensive, and stressful process. Get the POA done while your parent is still cognitively able.',
+      },
+      {
+        heading: 'What a healthcare POA covers',
+        body: 'A healthcare POA allows your agent to make medical decisions — including treatment decisions, surgery consents, and end-of-life choices — when you cannot. It is different from a living will (advance directive), which expresses your own wishes directly. Ideally, your parent has both: a healthcare POA naming an agent AND a living will documenting their specific wishes.',
+      },
+      {
+        heading: 'How to get it done',
+        body: 'Contact an elder law attorney in Ohio — this is not a DIY situation. A qualified attorney ensures the document is properly executed, witnessed, and notarized, and will flag issues specific to your parent\'s situation. Many elder law attorneys offer flat-fee estate planning packages ($300–$800) that include POA, living will, and basic will. It is one of the highest-ROI legal investments a family can make.',
+      },
+    ],
+    cta: { text: 'Find Assisted Living Near You', href: '/search' },
+  },
+  {
+    slug: 'understanding-dementia-family-guide',
+    title: 'Understanding Dementia: A Practical Family Guide',
+    description: 'What dementia actually is, how it progresses, and what care your loved one will need at each stage.',
+    readTime: '8 min read',
+    category: 'Care Conditions',
+    icon: '🧬',
+    intro: 'Dementia is not a single disease — it is an umbrella term for a group of conditions that cause cognitive decline severe enough to interfere with daily life. Alzheimer\'s disease accounts for 60–80% of cases. Understanding what you are dealing with changes how you plan for care.',
+    sections: [
+      {
+        heading: 'Early stage: mild impairment',
+        body: 'In early-stage dementia, your loved one can still function independently in most areas. Symptoms include forgetting recent events or conversations, difficulty with complex tasks like managing finances, some personality changes, and getting lost in unfamiliar places. At this stage, home care or standard assisted living is often appropriate. Focus on legal planning (POA, advance directives) while your loved one still has capacity.',
+      },
+      {
+        heading: 'Middle stage: moderate impairment',
+        body: 'The middle stage is typically the longest and most demanding. Increasing memory loss and confusion, difficulty recognizing family members, need for help with daily activities (bathing, dressing, toileting), significant personality and behavioral changes — agitation, paranoia, sleep disturbances, wandering. This stage often marks the transition point where memory care becomes necessary for safety.',
+      },
+      {
+        heading: 'Late stage: severe impairment',
+        body: 'In late-stage dementia, individuals lose the ability to respond to their environment, communicate verbally, or control movement. They require round-the-clock assistance with all personal care. Swallowing difficulties and susceptibility to infections are common. Care focuses on comfort, dignity, and quality of remaining time. Hospice care is appropriate and underutilized in late-stage dementia.',
+      },
+      {
+        heading: 'What good memory care looks like',
+        body: 'Enclosed, secure environment to prevent wandering. High staff-to-resident ratio (1:5 or better, 24/7). Staff trained specifically in dementia care techniques. Structured daily routines that reduce confusion and agitation. Activities designed for cognitive engagement at each stage. Family communication and education programs. A calm, low-stimulation physical environment.',
+      },
+      {
+        heading: 'Taking care of yourself as a caregiver',
+        body: 'Dementia caregiving is a marathon with no clear finish line. Caregiver depression and burnout rates among dementia caregivers are among the highest of any caregiver population. The Alzheimer\'s Association 24/7 helpline (800-272-3900) is a genuine resource. Respite care — short breaks for caregivers — is available through most assisted living communities and should be used regularly, not saved for emergencies.',
+      },
+    ],
+    cta: { text: 'Find Memory Care Near Cleveland', href: '/search?careLevel=MEMORY_CARE' },
+  },
+  {
+    slug: 'veterans-benefits-assisted-living',
+    title: "Veterans Benefits for Assisted Living: What You're Missing",
+    description: 'The VA Aid & Attendance benefit pays up to $2,200/month for eligible veterans in assisted living. Most families never apply.',
+    readTime: '5 min read',
+    category: 'Finances',
+    icon: '🎖️',
+    intro: 'If your parent or loved one is a veteran — or a surviving spouse of a veteran — there may be significant VA benefits available to help pay for assisted living. The Aid & Attendance pension benefit is one of the most underutilized senior care resources in the country.',
+    sections: [
+      {
+        heading: 'What is Aid & Attendance?',
+        body: 'Aid & Attendance (A&A) is a VA pension benefit for wartime veterans (and surviving spouses) who need help with activities of daily living due to a disability, age, or illness. It is paid monthly on top of the basic VA pension. In 2026, the maximum monthly amounts are approximately $2,300 for a veteran, $1,478 for a surviving spouse, and $2,727 for a veteran with a sick spouse. These figures adjust annually.',
+      },
+      {
+        heading: 'Basic eligibility requirements',
+        body: 'The veteran must have served at least 90 days of active duty with at least one day during a wartime period (WWII, Korea, Vietnam, Gulf War are the common ones). The veteran or surviving spouse must need regular assistance with daily activities. There are income and asset limits — net worth generally must be below approximately $155,000 (adjusted annually), though a primary residence and vehicle are excluded.',
+      },
+      {
+        heading: 'How to apply',
+        body: 'Apply through a VA-accredited claims agent or attorney (never pay anyone a percentage of your benefit — that is illegal). The Ohio Department of Veterans Services and county veterans service offices provide free assistance with applications. The application process typically takes 3–6 months, so apply as soon as eligibility is established — benefits do not backdate to before the application date.',
+      },
+      {
+        heading: 'What it can pay for',
+        body: 'Aid & Attendance can be used to pay for assisted living, memory care, in-home care, or adult day programs. It is not facility-specific — the money goes to the veteran or their family to use for qualified care expenses. Combined with Social Security and any pension income, A&A can meaningfully close the gap between what a family can afford and what quality care actually costs.',
+      },
+      {
+        heading: 'Other VA benefits to explore',
+        body: 'The VA Community Living Centers (VA nursing homes) provide free care for eligible veterans. Home-based primary care brings VA physicians and nurses to the home. Homemaker/Home Health Aide services can be provided through the VA. Each benefit has its own eligibility criteria — contact your local VA regional office or county veterans service office to get a full picture.',
+      },
+    ],
+    cta: { text: 'Search Veteran-Friendly Homes', href: '/search' },
+  },
+  {
+    slug: 'talking-to-parent-about-assisted-living',
+    title: 'How to Talk to Your Parent About Moving to Assisted Living',
+    description: 'The conversation most families dread — and how to have it in a way that preserves dignity and keeps the relationship intact.',
+    readTime: '6 min read',
+    category: 'Family Support',
+    icon: '💬',
+    intro: 'There is no perfect script for this conversation. But there are approaches that work better than others — that keep the door open, preserve dignity, and give your parent a genuine role in what happens next.',
+    sections: [
+      {
+        heading: 'Do not have the conversation after a crisis',
+        body: 'The worst time to introduce assisted living is in the emergency room, or the week after a fall, or when your parent is at their most frightened and vulnerable. Crises create urgency that feels like attack. If at all possible, start the conversation when things are relatively stable — when it can be a discussion rather than a directive.',
+      },
+      {
+        heading: 'Lead with observation, not conclusion',
+        body: 'Say what you have noticed rather than what you have decided. "I noticed the refrigerator had spoiled food last time I visited" is different from "You can\'t take care of yourself anymore." The first invites a conversation. The second triggers defensiveness. Describe specific things you have seen. Ask your parent what they have noticed.',
+      },
+      {
+        heading: 'Ask about their fears',
+        body: 'Most resistance to assisted living is rooted in specific fears: losing independence, dying alone, being forgotten, losing a familiar home. Ask directly: "What worries you most about this?" Then listen without interrupting or reassuring too quickly. When people feel their fears are understood, they are more able to engage with practical options.',
+      },
+      {
+        heading: 'Involve them in the research',
+        body: 'Invite your parent to look at homes with you — virtually or in person. Even if cognitive decline limits how much they can participate, the act of being included changes the dynamic. "I found a few places I\'d like us to look at together" is a very different invitation than presenting a decision that has already been made.',
+      },
+      {
+        heading: 'When your parent refuses',
+        body: 'Some parents will refuse any conversation about assisted living. If the situation is still safe, you may not be able to force the issue — and forcing it damages trust. Keep visiting. Keep the door open. Get your own legal and clinical support in place (POA, physician documentation of needs). When a crisis eventually makes action necessary, you will be better prepared to move quickly with authority.',
+      },
+    ],
+    cta: { text: 'Tour a Home Together', href: '/search' },
+  },
+  {
+    slug: 'avoiding-caregiver-burnout',
+    title: 'Caregiver Burnout Is Real — And It Affects Your Loved One',
+    description: 'Recognizing the signs of burnout and why getting help is not giving up.',
+    readTime: '5 min read',
+    category: 'Family Support',
+    icon: '🌿',
+    intro: 'Family caregiving is one of the most meaningful things a person can do. It is also one of the most exhausting — and one of the least supported. Burnout among family caregivers is common, serious, and often goes unrecognized until a crisis forces a change.',
+    sections: [
+      {
+        heading: 'What caregiver burnout looks like',
+        body: 'Persistent exhaustion that sleep does not fix. Increasing resentment or irritability — toward the person you care for, toward siblings who are not helping, toward anyone who does not understand. Withdrawing from your own life: friends, hobbies, your own health appointments. A growing sense of hopelessness, or feeling that nothing you do is ever enough. Physical symptoms: headaches, frequent illness, changes in appetite or sleep.',
+      },
+      {
+        heading: 'Why it happens',
+        body: 'Caregiving is often invisible and unpaid work that expands without clear limits. There is no performance review, no vacation, no sick days. Family caregivers frequently report feeling isolated — others around them cannot relate to the complexity of what they are managing. And there is usually grief layered into the caregiving: watching someone you love lose themselves gradually.',
+      },
+      {
+        heading: 'What actually helps',
+        body: 'Respite care: time off, provided by another person or facility, while you recover. Even a few hours a week makes a measurable difference. Support groups for caregivers — in-person or online — reduce isolation and provide practical strategies. Therapy, particularly with a therapist who has experience with grief and family systems. And honest conversations with siblings or other family members about sharing responsibility.',
+      },
+      {
+        heading: 'Getting help is not abandonment',
+        body: 'The most common obstacle to getting help is guilt. "I should be able to handle this." "What kind of child puts their parent in a home?" These feelings are normal — and they are not accurate. A caregiver who is burned out is less able to provide good care. Moving a parent to assisted living is often an act of love, not abandonment — it provides professional care, community, activities, and safety that a lone family caregiver cannot replicate.',
+      },
+      {
+        heading: 'Resources in Ohio',
+        body: 'The Area Agency on Aging (AAA) serves every county in Ohio and provides free care coordination, respite options, and support group referrals. Call 1-866-243-5678 (Ohio Senior Helpline) to reach your local AAA. The Caregiver Action Network (caregiveraction.org) offers online community and resources. AARP has a caregiving resource center at aarp.org/caregiving.',
+      },
+    ],
+    cta: { text: 'Explore Assisted Living Options', href: '/search' },
+  },
+  {
+    slug: 'what-medicare-covers',
+    title: 'What Medicare Covers in Senior Care (And What It Does Not)',
+    description: 'Medicare pays for far less senior care than most families expect. Here is the actual breakdown.',
+    readTime: '5 min read',
+    category: 'Finances',
+    icon: '🏦',
+    intro: 'Medicare is the most misunderstood program in senior care. Most families assume it covers assisted living. It does not. Understanding exactly what Medicare does and does not cover prevents devastating financial surprises.',
+    sections: [
+      {
+        heading: 'What Medicare Part A covers in senior care',
+        body: 'Medicare Part A covers inpatient hospital stays and, in limited circumstances, skilled nursing facility (SNF) care. SNF coverage requires a 3-day qualifying hospital stay and covers up to 100 days — but only for skilled care (physical therapy, wound care, IV medications). It does NOT cover custodial care: help with bathing, dressing, eating, toileting. Days 1–20 are fully covered; days 21–100 require a daily copay ($200/day in 2026); days 101+ are not covered at all.',
+      },
+      {
+        heading: 'What Medicare does not cover',
+        body: 'Medicare does not cover assisted living, memory care, or any type of residential care where the primary need is help with daily activities rather than skilled medical treatment. It also does not cover 24-hour home care, adult day care, or most in-home custodial services. This surprises nearly every family navigating senior care for the first time.',
+      },
+      {
+        heading: 'What Medicare Advantage (Part C) might cover',
+        body: 'Some Medicare Advantage plans include limited home care, adult day services, or respite care benefits — but coverage varies widely by plan. Check your specific plan\'s Evidence of Coverage document. Do not assume because you have Medicare Advantage that assisted living is covered — it almost never is.',
+      },
+      {
+        heading: 'What actually pays for long-term care',
+        body: 'Private pay (personal savings and income) funds 52% of assisted living nationwide. Long-term care insurance covers another significant portion for those who have it. Medicaid pays for those who qualify based on income and assets — but has waitlists in Ohio. Veterans\' benefits (Aid & Attendance) are available for eligible veterans. Social Security income can partially offset costs but rarely covers them fully.',
+      },
+      {
+        heading: 'Planning ahead: the only real protection',
+        body: 'The families who navigate senior care costs most successfully are the ones who planned before a crisis: they purchased long-term care insurance while still insurable, explored VA benefits before they were needed, established proper legal documents (POA, advance directives), and had honest conversations about finances and preferences before cognitive decline made those conversations impossible.',
+      },
+    ],
+    cta: { text: 'Compare Affordable Homes Near You', href: '/search' },
+  },
+  {
+    slug: 'fall-prevention-senior-safety',
+    title: 'Fall Prevention and Senior Safety: What Good Facilities Do Differently',
+    description: 'Falls are the leading cause of injury death in adults over 65. Here is what separates safe homes from dangerous ones.',
+    readTime: '4 min read',
+    category: 'Safety',
+    icon: '🛡️',
+    intro: 'One in four adults over 65 falls each year. Falls are the leading cause of both fatal and nonfatal injuries in older Americans. Choosing a facility with strong fall prevention practices is one of the most important decisions a family can make.',
+    sections: [
+      {
+        heading: 'What causes falls in senior care settings',
+        body: 'Medication side effects — particularly blood pressure medications, sedatives, and certain antidepressants — are the single largest preventable cause of falls. Poor lighting, slippery floors, and cluttered pathways are environmental factors. Dehydration and urinary urgency (rushing to the bathroom) cause a significant share of nighttime falls. Muscle weakness, poor balance, and vision problems compound all of these.',
+      },
+      {
+        heading: 'What a good facility does proactively',
+        body: 'Falls risk assessments at admission and after any health change. Personalized care plans that address individual risk factors. Non-slip flooring throughout, grab bars in bathrooms, adequate lighting in hallways at night. Regular medication reviews by a pharmacist or physician to identify high-risk drug combinations. Fall prevention exercise programs (balance training, strength work).',
+      },
+      {
+        heading: 'Questions to ask during a tour',
+        body: 'What is your falls rate per 1,000 resident-days? (Ask for the number — do not accept "we have a great program.") What is your protocol after a fall — who is notified, what is assessed, and what changes are made to prevent recurrence? Do you have a falls prevention committee? What is your policy on bed and chair alarms?',
+      },
+      {
+        heading: 'What to look for during the visit',
+        body: 'Clean, dry floors in common areas and bathrooms. Call lights within easy reach of every bed and toilet. Adequate lighting in hallways, especially at night. No clutter or tripping hazards in resident rooms and corridors. Staff who walk alongside residents rather than rushing ahead.',
+      },
+      {
+        heading: 'After a fall: what to expect',
+        body: 'Any fall in an assisted living facility should trigger a written incident report, a physician notification, a reassessment of the resident\'s care plan, and a family notification within 24 hours. If a facility minimizes falls, dismisses your concerns, or cannot produce incident documentation — that is a serious red flag about how they manage risk and transparency.',
+      },
+    ],
+    cta: { text: 'Find Safe, Well-Staffed Homes', href: '/search' },
+  },
+];
+
 export function getGuide(slug: string): Guide | undefined {
   return GUIDES.find((g) => g.slug === slug);
 }

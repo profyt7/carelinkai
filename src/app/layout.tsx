@@ -16,8 +16,8 @@ export const fetchCache = "force-no-store";
 // PWA Manager & notifications
 import PWAManager from "../components/pwa/PWAManager";
 import { ToastProvider } from "../components/ui/toast-provider";
-// CareBot - 24/7 AI assistance
-import FloatingChatButton from "../components/carebot/FloatingChatButton";
+// Care Concierge - family-facing AI care advisor
+import CareConcierge from "../components/CareConcierge";
 // Bug Report Button
 import { BugReportButton } from "../components/bug-report/BugReportButton";
 // Cookie consent banner
@@ -344,8 +344,8 @@ export default function RootLayout({
                 {/* Global toaster for notifications */}
                 <ToastProvider />
                 
-                {/* CareBot - 24/7 AI Chat Assistant */}
-                <FloatingChatButton />
+                {/* Care Concierge - family care advisor */}
+                <CareConcierge />
                 
                 {/* Bug Report Button - Beta Testing */}
                 <BugReportButton />

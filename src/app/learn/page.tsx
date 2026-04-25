@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { GUIDES } from './guides/content';
 
 export const metadata: Metadata = {
   title: 'Family Education Hub | CareLinkAI',
@@ -7,73 +8,6 @@ export const metadata: Metadata = {
     'Free guides and resources to help families find the right assisted living home, understand care costs, and navigate senior care with confidence.',
 };
 
-const GUIDES = [
-  {
-    slug: 'how-to-choose-assisted-living',
-    title: 'How to Choose an Assisted Living Home',
-    description:
-      'A step-by-step guide to evaluating homes, asking the right questions, and making a confident decision for your loved one.',
-    readTime: '8 min read',
-    category: 'Getting Started',
-    icon: '🏠',
-  },
-  {
-    slug: 'assisted-living-cost-guide',
-    title: 'Understanding Assisted Living Costs in 2026',
-    description:
-      'What you will actually pay, what is covered, and how to use Medicare, Medicaid, and long-term care insurance to offset costs.',
-    readTime: '6 min read',
-    category: 'Finances',
-    icon: '💰',
-  },
-  {
-    slug: 'memory-care-vs-assisted-living',
-    title: 'Memory Care vs. Assisted Living: What is the Difference?',
-    description:
-      'How to tell when a loved one with dementia needs memory care, and what to look for in a specialized facility.',
-    readTime: '5 min read',
-    category: 'Care Types',
-    icon: '🧠',
-  },
-  {
-    slug: 'assisted-living-tour-checklist',
-    title: 'The Assisted Living Tour Checklist',
-    description:
-      'Print this before your visit. 30 questions to ask, 10 red flags to watch for, and what to observe when nobody is guiding you.',
-    readTime: '4 min read',
-    category: 'Touring',
-    icon: '✅',
-  },
-  {
-    slug: 'transitioning-parent-to-assisted-living',
-    title: 'How to Help a Parent Transition to Assisted Living',
-    description:
-      'The emotional, logistical, and practical steps to make the move as smooth as possible — for them and for you.',
-    readTime: '7 min read',
-    category: 'Transitions',
-    icon: '❤️',
-  },
-  {
-    slug: 'discharge-planning-hospital-guide',
-    title: 'Hospital to Assisted Living: A Discharge Planning Guide',
-    description:
-      'What happens when a family member is discharged from a hospital or rehab facility and needs ongoing care. Who pays, and how fast do you need to move?',
-    readTime: '6 min read',
-    category: 'Discharge Planning',
-    icon: '🏥',
-  },
-  {
-    slug: 'caregiver-hiring-guide',
-    title: 'How to Hire a Home Caregiver in Cleveland',
-    description:
-      'When an assisted living home is not the right fit yet, hiring an in-home caregiver can bridge the gap. Here is what to know.',
-    readTime: '5 min read',
-    category: 'Caregivers',
-    icon: '👩‍⚕️',
-  },
-];
-
-const CATEGORIES = [...new Set(GUIDES.map((g) => g.category))];
 
 export default function LearnPage() {
   return (
@@ -121,11 +55,28 @@ export default function LearnPage() {
           ))}
         </div>
 
+        {/* Financing CTA */}
+        <div className="mt-8 bg-amber-50 border border-amber-200 rounded-xl p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <div className="text-2xl">💳</div>
+          <div className="flex-1">
+            <p className="font-semibold text-neutral-900">Need help affording care?</p>
+            <p className="text-sm text-neutral-600">CareLinkAI has partnered with CareCredit — a healthcare credit card accepted at thousands of senior care providers. Apply in minutes, decisions are fast.</p>
+          </div>
+          <a
+            href="https://www.carecredit.com/apply/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-shrink-0 px-4 py-2 bg-amber-500 text-white rounded-lg text-sm font-semibold hover:bg-amber-600 transition-colors"
+          >
+            Apply for CareCredit →
+          </a>
+        </div>
+
         {/* Lead magnet CTA */}
-        <div className="mt-12 bg-primary-600 rounded-2xl p-8 text-center text-white">
-          <h2 className="text-2xl font-bold mb-2">Get the Complete Senior Care Toolkit</h2>
+        <div className="mt-8 bg-primary-600 rounded-2xl p-8 text-center text-white">
+          <h2 className="text-2xl font-bold mb-2">Ready to Find a Home?</h2>
           <p className="text-primary-100 mb-6">
-            All 7 guides + a printable tour checklist + a cost comparison worksheet — free as a PDF.
+            Browse {GUIDES.length} free guides, then search homes near you — no email required.
           </p>
           <Link
             href="/search"
