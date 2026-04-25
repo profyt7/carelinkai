@@ -758,7 +758,7 @@ export default function DashboardLayout({
         
         {/* User info in sidebar (mobile only) */}
         {isMobile && (
-          <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-neutral-700">
+          <div className="flex-shrink-0 p-4 border-t border-neutral-700">
             <div className="flex items-center">
               {profileImage ? (
                 <Image

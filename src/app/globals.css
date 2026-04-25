@@ -208,15 +208,15 @@
 
   /* Navigation styles like QuickBooks sidebar */
   .sidebar {
-    @apply fixed bottom-0 left-0 top-0 z-sidebar w-sidebar bg-neutral-800 text-white transition-transform duration-300 ease-in-out;
+    @apply fixed bottom-0 left-0 top-0 z-sidebar w-sidebar bg-neutral-800 text-white transition-transform duration-300 ease-in-out flex flex-col;
   }
 
   .sidebar-logo {
-    @apply flex h-header items-center px-4;
+    @apply flex h-header items-center px-4 flex-shrink-0;
   }
 
   .sidebar-nav {
-    @apply mt-2 space-y-1 px-2;
+    @apply mt-2 space-y-1 px-2 overflow-y-auto flex-1 pb-4;
   }
 
   .sidebar-nav-item {
