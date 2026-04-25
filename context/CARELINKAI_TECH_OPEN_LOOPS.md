@@ -40,6 +40,21 @@ Each loop: what it is, why it matters, what done looks like.
 
 ---
 
+### OL-016: Aide reliability migration not yet deployed to production
+- **Status:** 🔴 OPEN
+- **What:** Migration `20260425200000_aide_reliability` creates CallOff, CaregiverPoints, PointTransaction, ShiftBid, ShiftNeed, CoverageAttempt tables + enums
+- **Done when:** `npx prisma migrate deploy` runs clean in Render shell
+
+### OL-017: Twilio webhook URLs not registered for On-Call AI
+- **Status:** 🟡 OPEN
+- **What:** On-Call AI dispatcher sends SMS/voice via Twilio but incoming replies go nowhere until webhooks are set
+- **Done when:** Twilio console → Phone Number → set Messaging webhook to `https://getcarelinkai.com/api/webhooks/twilio/sms` and Voice webhook to `https://getcarelinkai.com/api/webhooks/twilio/voice`
+
+### OL-018: Render cron not set up for On-Call AI wave dispatch
+- **Status:** 🟡 OPEN
+- **What:** Wave cooldowns are checked by `/api/cron/oncall-waves` but nothing calls it
+- **Done when:** Render cron job created: POST `https://getcarelinkai.com/api/cron/oncall-waves` every 10 min with `x-cron-secret` header
+
 ## 🟡 Important (Quality / Stability)
 
 ### OL-005: TypeScript strict mode errors
@@ -117,6 +132,7 @@ Each loop: what it is, why it matters, what done looks like.
 | Discharge planner not monetized | DischargePlannerProfile model; Stripe checkout; billing UI; webhook handler | 2026-04-25 |
 | AI Shift Auto-fill missing | Claude Haiku matches available caregivers to shift descriptions; /api/operator/shifts/autofill | 2026-04-25 |
 | Caregiver reliability score missing | reliabilityScore field; computed on review + timesheet approval; 0-100 scale | 2026-04-25 |
+| Aide ghosting/no-show problem | Call-off tracking + gamification points + shift bidding + On-Call AI outreach all built | 2026-04-25 |
 | Waitlist management missing | WaitlistEntry model; operator + family API routes | 2026-04-25 |
 | Education hub missing | 7 long-form guides at /learn and /learn/guides/[slug] | 2026-04-25 |
 | Compliance document kits not built | ComplianceKitPurchase model; 3 Ohio kits at $149-$199; Stripe one-time checkout | 2026-04-25 |

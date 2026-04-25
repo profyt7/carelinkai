@@ -2,6 +2,46 @@
 
 ---
 
+### 2026-04-25 — Aide Reliability System: Call-Offs, Gamification Points, Shift Bidding
+
+- **Objective:** Solve aide ghosting/no-show problem with a reliability tracking + gamification system. Also build On-Call AI outreach (auto-fills open shifts via SMS/voice).
+- **Work completed:**
+  1. **On-Call AI (auto-outreach):** Wave-based SMS/voice dispatch system. ShiftNeed model, CoverageAttempt, dispatcher.ts (ranks by proximity/reliability/certs), Twilio SMS + IVR webhooks, Render cron for wave cooldowns, operator On-Call AI page at /operator/oncall.
+  2. **Settings nav fix:** 4 settings pages (notifications, account, credentials, pwa) missing DashboardLayout — added wrapper to each.
+  3. **Aide reliability:** New schema models: CallOff, CaregiverPoints, PointTransaction, ShiftBid + enums. Migration: `20260425200000_aide_reliability`.
+  4. **Reliability score formula updated:** Now factors call-offs at 25% weight (NO_SHOW=-25, CALLED_OFF=-12, EARLY_DEPARTURE=-10, LATE_ARRIVAL=-5 from score), reviews 30%, shifts 25%, BG check 20%.
+  5. **Points/gamification service:** `src/lib/services/caregiver-points.ts` — auto-award on timesheet approval (+5 on-time, +10 streak at 5-shift milestones, +3 completed, +20 no-calloff-30-days) and reviews (+15 for 4+ stars). Penalize on call-off recording. Tier system: BRONZE/SILVER/GOLD/PLATINUM.
+  6. **Call-off API:** POST `/api/operator/shifts/[id]/calloff` records CallOff, updates shift, triggers reliability recompute + point penalty. GET returns history.
+  7. **Shift bidding API:** POST/DELETE `/api/shifts/[id]/bid` (caregiver bids/withdraws). GET `/api/operator/shifts/[id]/bids` (operator sees all bids). POST `/api/operator/shifts/[id]/bids/[bidId]` accept/decline (accept: atomic assign + hire + decline others + trigger hire fee).
+  8. **Caregiver points API:** GET `/api/caregiver/points` returns summary with tier + transactions.
+  9. **Operator UI:** `ShiftsTable` client component with "Call-Off" button per assigned shift. `RecordCallOffModal` with type selector showing penalty preview.
+  10. **Caregiver UI:** `PointsDashboard` component (tier card + progress bar + earn guide + transaction history). `/caregiver/points` page. "Bid" button on open shifts (toggle — click again to withdraw). "My Points" nav link for CAREGIVER role.
+- **Files changed:**
+  - `prisma/schema.prisma` — CallOff, CaregiverPoints, PointTransaction, ShiftBid models + enums
+  - `prisma/migrations/20260425200000_aide_reliability/migration.sql` — new
+  - `src/lib/services/caregiver-reliability.ts` — call-off weight added
+  - `src/lib/services/caregiver-points.ts` — new
+  - `src/app/api/caregiver/points/route.ts` — new
+  - `src/app/api/operator/shifts/[id]/calloff/route.ts` — new
+  - `src/app/api/operator/caregivers/[id]/calloffs/route.ts` — new
+  - `src/app/api/operator/shifts/[id]/bids/route.ts` — new
+  - `src/app/api/operator/shifts/[id]/bids/[bidId]/route.ts` — new
+  - `src/app/api/shifts/[id]/bid/route.ts` — new
+  - `src/app/api/timesheets/[id]/approve/route.ts` — wire awardTimesheetPoints
+  - `src/app/api/reviews/caregivers/route.ts` — wire awardReviewPoints
+  - `src/app/caregiver/points/page.tsx` — new
+  - `src/app/operator/shifts/page.tsx` — use ShiftsTable
+  - `src/app/shifts/page.tsx` — BidButton added to open shifts
+  - `src/components/caregiver/PointsDashboard.tsx` — new
+  - `src/components/operator/shifts/ShiftsTable.tsx` — new
+  - `src/components/operator/shifts/RecordCallOffModal.tsx` — new
+  - `src/components/layout/DashboardLayout.tsx` — My Points nav link, On-Call AI nav link
+- **Commands run:** `npx prisma generate`, `npm run type-check` (0 errors)
+- **Tests/build status:** type-check passes clean; no test suite run this session
+- **Deployment impact:** Requires `npx prisma migrate deploy` in Render shell for `20260425200000_aide_reliability` migration before going live.
+- **New risks/blockers:** Twilio webhook URLs need registering in Twilio console. Render cron for oncall waves not yet created.
+- **Recommended next step:** Run `npx prisma migrate deploy` in Render shell, configure Twilio webhook URLs, add Render cron for `/api/cron/oncall-waves` every 10 min.
+
 ### 2026-04-25 — Test Failures Fixed + OL-011 Production Playwright Config
 
 - **Objective:** Fix 2 pre-existing failing test suites; add Playwright production smoke test config (OL-011).

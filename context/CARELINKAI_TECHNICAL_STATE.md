@@ -31,7 +31,7 @@ https://carelinkai.onrender.com (also: https://getcarelinkai.com)
 | AI — All features | Anthropic Claude API (`claude-sonnet-4-6`, `claude-haiku-4-5-20251001`) |
 
 ## Schema Summary
-60 Prisma models + 4 enums (SubscriptionPlan, SubscriptionStatus, InvoiceStatus, + expanded PaymentType). New models: DischargePlannerProfile (discharge planner Stripe subscription), WaitlistEntry (family waitlist per home), ComplianceKitPurchase (one-time kit purchase). New fields: AssistedLivingHome.isFeatured/featuredUntil, Caregiver.reliabilityScore. PaymentType enum: + MARKETPLACE_HIRE_FEE, FEATURED_LISTING_FEE, COMPLIANCE_KIT.
+67 Prisma models + enums. New since 2026-04-25: CallOff, CaregiverPoints, PointTransaction, ShiftBid, ShiftNeed, CoverageAttempt. New enums: CallOffType, PointsTier, PointsEventType, BidStatus, ShiftNeedStatus, CoverageChannel, CoverageOutcome. New caregiver fields: homeLat/homeLng, reliabilityScore (now includes call-off weight). PaymentType enum: + MARKETPLACE_HIRE_FEE, FEATURED_LISTING_FEE, COMPLIANCE_KIT.
 
 ## User Roles
 FAMILY, OPERATOR, CAREGIVER, ADMIN, STAFF, PROVIDER, AFFILIATE, DISCHARGE_PLANNER
@@ -63,7 +63,10 @@ FAMILY, OPERATOR, CAREGIVER, ADMIN, STAFF, PROVIDER, AFFILIATE, DISCHARGE_PLANNE
 - **Featured listings:** isFeatured/featuredUntil on homes; $79/mo billed as invoice item; search results sorted featured-first; operator toggle in home edit page
 - **Discharge planner subscription:** DischargePlannerProfile model; $99/seat/mo Stripe checkout at /discharge-planner/billing; webhook handler synced
 - **AI Shift Auto-fill:** POST /api/operator/shifts/autofill — Claude Haiku matches available caregivers to free-text shift description; ShiftAutoFill component
-- **Caregiver reliability score:** 0-100 computed from reviews (40%) + shift completion (40%) + BG check (20%); updates on review create and timesheet approval
+- **On-Call AI (active outreach):** Wave-based SMS/voice dispatch; ShiftNeed model; CoverageAttempt tracking; haversine distance ranking; Twilio SMS + IVR webhooks; Render cron `/api/cron/oncall-waves`; operator On-Call AI page at /operator/oncall
+- **Caregiver reliability score:** 0-100 computed from reviews (30%) + shifts (25%) + BG check (20%) + call-offs (25%); updates on review create, timesheet approval, and call-off record
+- **Aide gamification (points/tiers):** BRONZE/SILVER/GOLD/PLATINUM tiers; points auto-awarded on timesheet approval and reviews; penalized on call-off; PointsDashboard at /caregiver/points
+- **Shift bidding:** Caregivers bid on open shifts; operators accept/decline; on accept: shift assigned + MarketplaceHire + hire fee triggered atomically
 - **Waitlist management:** WaitlistEntry model; /api/operator/homes/[id]/waitlist + /api/family/waitlist
 - **Education hub:** 7 long-form guides at /learn and /learn/guides/[slug] (SEO-optimized, no CMS needed)
 - **Compliance document kits:** 3 Ohio ALF kits ($149-$199); one-time Stripe checkout; ComplianceKitPurchase model; /operator/compliance-kits
