@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -435,34 +436,39 @@ export default function AccountSettings() {
   // If loading, show loading state
   if (loading) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center p-4">
-        <div className="flex items-center space-x-2">
-          <FiLoader className="h-6 w-6 animate-spin text-primary-600" />
-          <span className="text-lg font-medium text-neutral-700">Loading account settings...</span>
+      <DashboardLayout title="Account Settings" showSearch={false}>
+        <div className="flex min-h-[60vh] flex-col items-center justify-center p-4">
+          <div className="flex items-center space-x-2">
+            <FiLoader className="h-6 w-6 animate-spin text-primary-600" />
+            <span className="text-lg font-medium text-neutral-700">Loading account settings...</span>
+          </div>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
-  
+
   // If not authenticated, show message
   if (status !== "authenticated") {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center p-4">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-neutral-800">Authentication Required</h1>
-          <p className="mt-2 text-neutral-600">
-            Please{" "}
-            <Link href="/auth/login?callbackUrl=/settings/account" className="text-primary-600 hover:underline">
-              sign in
-            </Link>{" "}
-            to view your account settings.
-          </p>
+      <DashboardLayout title="Account Settings" showSearch={false}>
+        <div className="flex min-h-[60vh] flex-col items-center justify-center p-4">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-neutral-800">Authentication Required</h1>
+            <p className="mt-2 text-neutral-600">
+              Please{" "}
+              <Link href="/auth/login?callbackUrl=/settings/account" className="text-primary-600 hover:underline">
+                sign in
+              </Link>{" "}
+              to view your account settings.
+            </p>
+          </div>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
   
   return (
+    <DashboardLayout title="Account Settings" showSearch={false}>
     <div className="container mx-auto max-w-4xl px-4 py-8">
       <div className="mb-8 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-neutral-800">Account Settings</h1>
@@ -998,5 +1004,6 @@ export default function AccountSettings() {
         </Link>
       </div>
     </div>
+    </DashboardLayout>
   );
 }

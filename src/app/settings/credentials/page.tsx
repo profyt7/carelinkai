@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
+import DashboardLayout from "@/components/layout/DashboardLayout";
 import { z } from "zod";
 import {
   FiLoader,
@@ -201,24 +202,27 @@ export default function CredentialsSettingsPage() {
 
   if (status !== "authenticated") {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center p-4">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-neutral-800">Authentication Required</h1>
-          <p className="mt-2 text-neutral-600">
-            Please sign in to manage your credentials.
-          </p>
-          <Link
-            href="/auth/login?callbackUrl=/settings/credentials"
-            className="mt-4 inline-block rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
-          >
-            Sign in
-          </Link>
+      <DashboardLayout title="Credentials" showSearch={false}>
+        <div className="flex min-h-[60vh] flex-col items-center justify-center p-4">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-neutral-800">Authentication Required</h1>
+            <p className="mt-2 text-neutral-600">
+              Please sign in to manage your credentials.
+            </p>
+            <Link
+              href="/auth/login?callbackUrl=/settings/credentials"
+              className="mt-4 inline-block rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
+            >
+              Sign in
+            </Link>
+          </div>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
   return (
+    <DashboardLayout title="Credentials" showSearch={false}>
     <div className="container mx-auto max-w-4xl px-4 py-8">
       <div className="mb-8 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-neutral-800">Credentials</h1>
@@ -435,5 +439,6 @@ export default function CredentialsSettingsPage() {
         )}
       </div>
     </div>
+    </DashboardLayout>
   );
 }

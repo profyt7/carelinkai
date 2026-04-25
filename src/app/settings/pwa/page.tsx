@@ -6,12 +6,14 @@ import PWAStatus from "@/components/pwa/PWAStatus";
 import PWAPushTest from "@/components/pwa/PWAPushTest";
 import PWAInstallButton from "@/components/pwa/PWAInstallButton";
 import { usePWA } from "@/components/pwa/PWAManager";
+import DashboardLayout from "@/components/layout/DashboardLayout";
 
 export default function PWASettingsPage() {
   const { isPWA, isOnline, isUpdateAvailable, updateApp } = usePWA();
   const [activeTab, setActiveTab] = useState("status");
 
   return (
+    <DashboardLayout title="App Settings" showSearch={false}>
     <div className="container mx-auto px-4 py-8 max-w-5xl">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-neutral-800 mb-2">
@@ -200,5 +202,6 @@ export default function PWASettingsPage() {
         )}
       </div>
     </div>
+    </DashboardLayout>
   );
 }
