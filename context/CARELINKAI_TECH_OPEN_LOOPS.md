@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-04-25_
+_Last updated: 2026-04-25 (session 2)_
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -54,6 +54,13 @@ Each loop: what it is, why it matters, what done looks like.
 - **Status:** 🟡 OPEN
 - **What:** Wave cooldowns are checked by `/api/cron/oncall-waves` but nothing calls it
 - **Done when:** Render cron job created: POST `https://getcarelinkai.com/api/cron/oncall-waves` every 10 min with `x-cron-secret` header
+
+### OL-019: Demo caregiver employment not linked in production DB
+- **Status:** 🔴 OPEN (one-time manual action needed)
+- **What:** Operator caregiver tab shows blank because demo caregivers have no `CaregiverEmployment` records linking them to the demo operator. The fix endpoint + UI button exist at `/admin/tools`.
+- **Done when:** Admin clicks "Fix Demo Caregiver Employment" in Admin Tools on production (`https://getcarelinkai.com/admin/tools`). Takes <5 seconds.
+
+---
 
 ## 🟡 Important (Quality / Stability)
 
@@ -140,3 +147,9 @@ Each loop: what it is, why it matters, what done looks like.
 | Family onboarding missing | /get-started 3-step wizard routes by role + need + timeline | 2026-04-25 |
 | Financing CTA missing | CareCredit affiliate banners on /learn and home listing pricing tab | 2026-04-25 |
 | Compliance document kits not built | ComplianceKitPurchase model; 3 Ohio kits at $149-$199; Stripe one-time checkout | 2026-04-25 |
+| Build failure (content.ts premature array close) | Premature `];` at line 259 removed; all 15 guides now inside GUIDES array | 2026-04-25 |
+| Map tile error (OSM Referer policy) | Switched SimpleMap.tsx to CARTO voyager tiles — no Referer restriction | 2026-04-25 |
+| Admin portal gaps (affiliates/operators/discharge-planners) | Three new admin pages built with full data tables and stat cards | 2026-04-25 |
+| Sidebar nav cutoff (can't scroll to Admin Tools/Help) | Sidebar refactored to flex column; nav section independently scrolls | 2026-04-25 |
+| UI/UX brand token fragmentation | Unified: Inter + DM Serif Display fonts; primary-*/neutral-*/error-*/success-* tokens throughout button.tsx, card.tsx, login page; CSS vars fixed to match Tailwind config | 2026-04-25 |
+| Login page using wrong brand colors | Complete redesign: gradient panel primary-600→secondary-600, DM Serif hero headline, all tokens corrected | 2026-04-25 |

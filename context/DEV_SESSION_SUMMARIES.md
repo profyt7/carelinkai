@@ -2,6 +2,50 @@
 
 ---
 
+### 2026-04-25 — Build Fixes, Admin Gaps, Sidebar Overflow, UI/UX Brand Token Audit
+
+- **Objective:** Fix deploy failure from content.ts syntax error; fix map tile error; fill admin portal gaps (affiliates, operators, discharge planners); fix sidebar cutoff; execute full UI/UX audit (typography + color token unification).
+- **Work completed:**
+  1. **Build failure fixed:** `src/app/learn/guides/content.ts` had a premature `];` at line 259 closing GUIDES after 7 articles; 8 new articles were orphaned outside the array causing TS1005/TS1128. Removed premature close — all 15 articles now inside array.
+  2. **Map tile error fixed:** OSM tiles blocked by Referer policy; switched `SimpleMap.tsx` to CARTO voyager tiles (`https://{s}.basemaps.cartocdn.com/rastertiles/voyager/...`, subdomains: 'abcd'). No Referer restriction, free, OSM data.
+  3. **Admin Affiliates page built:** `/admin/affiliates` — stat cards (total/active affiliates, total referrals, commissions owed), affiliates table with earned/unpaid/conversions, all-referrals detail table. Queries `prisma.affiliate.findMany` with user+referrals.
+  4. **Blank operator caregivers tab fixed:** Root cause was missing `CaregiverEmployment` records for demo caregivers. Built `/api/admin/fix-demo-employment` POST endpoint + Admin Tools UI button. Also updated `prisma/seed-demo.ts` to auto-create employment records on future reseeds.
+  5. **Admin Operators page built:** `/admin/operators` — 9-column table with plan, MRR, bed occupancy, past-due highlights. MRR calculated from active plan tiers ($99/$249/$499). Queries operator with user/homes/_count.
+  6. **Admin Discharge Planners page built:** `/admin/discharge-planners` — active planner table + MRR at $99/seat. Empty state when none exist.
+  7. **Admin quick links fixed:** Dead `/admin/listings` → `/admin/homes`; dead "Content Moderation" → "Affiliate Management" → `/admin/affiliates`; added Operator Management + Discharge Planners quick action cards.
+  8. **Sidebar overflow fixed:** Changed `.sidebar` to `flex flex-col`, `.sidebar-logo` to `flex-shrink-0`, `.sidebar-nav` to `overflow-y-auto flex-1 pb-4` in `globals.css`. Also fixed mobile user footer from `absolute bottom-0` to `flex-shrink-0` in `DashboardLayout.tsx`.
+  9. **UI/UX brand token audit (senior designer pass):**
+     - `layout.tsx`: swapped Roboto → `DM_Serif_Display` from `next/font/google`; html className includes `${dmSerif.variable}`
+     - `tailwind.config.js`: `sans`/`display`/`heading` → Inter (`var(--font-inter)`); new `serif` → DM Serif Display (`var(--font-dm-serif)`)
+     - `globals.css`: removed duplicate Google Fonts `@import`; fixed CSS primary vars from wrong `#0099e6` → correct `#3978FC` matching Tailwind config; added secondary-500 + font-serif CSS vars; sidebar flex layout
+     - `button.tsx`: replaced all `blue-*` → `primary-*`, `slate-*` → `neutral-*`, `red-*` → `error-*`
+     - `card.tsx`: `border-slate-200` → `border-neutral-200`, `text-slate-600` → `text-neutral-600`
+     - `login/page.tsx`: complete redesign — split-panel with `from-primary-600 to-secondary-600` gradient, DM Serif Display hero headline ("Care that connects. Trust that lasts."), all `gray-*`/`blue-*`/`red-*`/`green-*` replaced with `neutral-*`/`primary-*`/`error-*`/`success-*`; FiCheckCircle imported for success alerts; FiCheckCircle benefit list in left panel
+- **Files changed:**
+  - `src/app/learn/guides/content.ts` — premature array close removed
+  - `src/components/search/SimpleMap.tsx` — CARTO tile URL
+  - `src/app/admin/affiliates/page.tsx` — **NEW**
+  - `src/app/admin/operators/page.tsx` — **NEW**
+  - `src/app/admin/discharge-planners/page.tsx` — **NEW**
+  - `src/app/api/admin/fix-demo-employment/route.ts` — **NEW**
+  - `prisma/seed-demo.ts` — employment records auto-created for demo operator
+  - `src/app/admin/tools/page.tsx` — fix-demo-employment UI button added
+  - `src/app/admin/page.tsx` — dead links fixed, new quick action cards
+  - `src/components/layout/DashboardLayout.tsx` — Affiliates/Operators/Discharge Planners nav links; mobile footer flex-shrink-0
+  - `src/app/globals.css` — sidebar flex layout; fixed primary CSS vars; removed dupe @import
+  - `src/app/layout.tsx` — DM Serif Display font added
+  - `tailwind.config.js` — font families updated (Inter sans, DM Serif Display serif)
+  - `src/components/ui/button.tsx` — brand token unification
+  - `src/components/ui/card.tsx` — slate → neutral tokens
+  - `src/app/auth/login/page.tsx` — complete redesign with brand tokens + gradient panel
+- **Commands run:** `npx tsc --noEmit` (0 errors), `git add`, `git commit`, `git push -u origin main`
+- **Tests/build status:** TypeScript: 0 errors. All changes committed and pushed.
+- **Deployment impact:** All pushed to main — Render will auto-deploy. No new migrations or env vars needed. One-time action needed: admin must click "Fix Demo Caregiver Employment" button in Admin Tools to link demo caregivers to demo operator in production DB.
+- **New risks/blockers:** Landing page still uses some raw hex literals (`#3978FC` etc.) instead of Tailwind tokens — acceptable but not ideal. Not worth a full-pass refactor now.
+- **Recommended next step:** (1) Click "Fix Demo Caregiver Employment" in Admin Tools on production to fix operator caregiver tab. (2) Verify login page redesign and sidebar scroll on production after Render deploys. (3) Next feature: Text to Place (Twilio SMS-to-inquire for families).
+
+---
+
 ### 2026-04-25 — Family UX Layer: Education Hub Expansion, Care Concierge, Onboarding Wizard, Financing CTAs
 
 - **Objective:** Build the family-facing experience layer: expand education hub to 15 articles, replace global CareBot with a family-specific Care Concierge AI widget, build a 3-step onboarding wizard at /get-started, and add CareCredit financing CTAs.

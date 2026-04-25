@@ -1,5 +1,5 @@
 # CareLinkAI — Technical State
-_Last updated: 2026-04-24_
+_Last updated: 2026-04-25_
 
 ## Active Branch
 `main` (all features merged — Stripe billing fully verified end-to-end in test mode)
@@ -58,6 +58,10 @@ FAMILY, OPERATOR, CAREGIVER, ADMIN, STAFF, PROVIDER, AFFILIATE, DISCHARGE_PLANNE
 - Anthropic Claude API: CareBot, inquiry responses, document classification, discharge planner search, match explanations, tour scheduling, home profile generation
 - Operator subscription billing: Checkout (14-day trial), Customer Portal, webhook lifecycle handlers, feature gating utility
 - **Admin revenue dashboard:** MRR, placement fees collected/pending, affiliate commissions owed, recent payments table, subscription breakdown by plan
+- **Admin portal — Affiliates page:** `/admin/affiliates` — stat cards, affiliates table with earned/unpaid/conversions, all-referrals detail table
+- **Admin portal — Operators page:** `/admin/operators` — 9-column table, MRR by plan tier, bed occupancy, past-due highlights
+- **Admin portal — Discharge Planners page:** `/admin/discharge-planners` — active planners table, MRR at $99/seat
+- **Fix Demo Caregiver Employment:** `/api/admin/fix-demo-employment` POST endpoint + Admin Tools UI button; auto-creates `CaregiverEmployment` records for demo operator's caregivers
 - **Operator onboarding wizard:** 3-step guided flow (company → first home → plan selection); new operators auto-redirected on first login
 - **Caregiver marketplace hire fee:** $250 Stripe invoice item queued on shift claim; MARKETPLACE_HIRE_FEE PaymentType
 - **Featured listings:** isFeatured/featuredUntil on homes; $79/mo billed as invoice item; search results sorted featured-first; operator toggle in home edit page
@@ -77,7 +81,9 @@ FAMILY, OPERATOR, CAREGIVER, ADMIN, STAFF, PROVIDER, AFFILIATE, DISCHARGE_PLANNE
 ## Known Issues (as of 2026-04-25)
 1. 2 pre-existing test failures RESOLVED — calendar and emergency tests both fixed
 2. Demo accounts use test Stripe data — when switching to live Stripe, all operator `stripeCustomerId` fields must be cleared and operators re-subscribed
-4. seed-demo.ts `update:{}` bug fixed for all 7 top-level user accounts; nested operator/caregiver/etc upserts still use `update:{}`
+3. seed-demo.ts `update:{}` bug fixed for all 7 top-level user accounts; nested operator/caregiver/etc upserts still use `update:{}`
+4. **One-time production action needed:** Admin must click "Fix Demo Caregiver Employment" in Admin Tools (`/admin/tools`) on production to link demo caregivers to the demo operator in the production DB — otherwise Operator caregiver tab shows blank
+5. Landing page still uses some raw hex literals (`#3978FC`, `#7253B7`) in inline styles — acceptable but not ideal; Tailwind tokens preferred
 
 ## Pending Deployment Actions (before subscription billing goes live)
 1. **Merge branch to main** — triggers Render auto-deploy
@@ -150,7 +156,8 @@ See `REVENUE_MODEL.md` for the full breakdown. 12 streams finalized:
 - Local limitation: Prisma binary engine in sandbox dies after ~7 tests due to thread limits. NOT a production issue.
 
 ## Immediate Next Priorities
-1. **Merge feature branch to main** — triggers Render auto-deploy for all family-facing features
-2. **Verify on production:** /get-started wizard, /learn (15 articles), Care Concierge chat widget
-3. **Text to Place (roadmap):** Twilio integration already exists; family texts to inquire about a home
-4. **CareCredit affiliate account** — sign up at carecredit.com/partners to get a tracked affiliate link and earn commission on referrals
+1. **One-time production DB fix:** Click "Fix Demo Caregiver Employment" in `/admin/tools` on production — links demo caregivers to demo operator
+2. **Verify on production after Render deploy:** login page redesign, sidebar scroll, admin affiliates/operators/discharge-planners pages
+3. **Switch Stripe to live mode** — follow runbook in `context/STRIPE_SETUP_RUNBOOK.md`
+4. **Text to Place (roadmap):** Twilio integration already exists; family texts to inquire about a home
+5. **CareCredit affiliate account** — sign up at carecredit.com/partners to get a tracked affiliate link
