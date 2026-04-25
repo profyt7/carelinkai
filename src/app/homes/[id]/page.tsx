@@ -740,7 +740,7 @@ export default function HomeDetailPage() {
     return (
       <DashboardLayout title={`Home Details - ${realHome.name}`}>
         <div className="min-h-screen bg-neutral-50 pb-28">
-          {/* Back */}
+          {/* Sticky top nav */}
           <div className="sticky top-0 z-20 bg-white shadow-sm">
             <div className="container mx-auto px-4 py-4">
               <div className="flex items-center justify-between">
@@ -748,6 +748,21 @@ export default function HomeDetailPage() {
                   <FiArrowLeft className="mr-1 h-4 w-4" />
                   Back to Search
                 </button>
+                <div className="flex items-center space-x-3">
+                  <button
+                    onClick={toggleFavorite}
+                    className={`flex items-center rounded-md border px-3 py-1.5 text-sm font-medium transition-colors ${
+                      isFavorite ? 'border-primary-200 bg-primary-50 text-primary-600' : 'border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50'
+                    }`}
+                  >
+                    <FiHeart className={`mr-1 h-4 w-4 ${isFavorite ? 'fill-current' : ''}`} />
+                    {isFavorite ? 'Saved' : 'Save'}
+                  </button>
+                  <button className="flex items-center rounded-md border border-neutral-200 bg-white px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-50">
+                    <FiShare2 className="mr-1 h-4 w-4" />
+                    Share
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -757,98 +772,224 @@ export default function HomeDetailPage() {
             <PhotoGallery photos={photos} />
           </div>
 
-          {/* Content */}
+          {/* Main content */}
           <div className="container mx-auto px-4 py-6">
             <div className="flex flex-col lg:flex-row lg:space-x-8">
+              {/* Left column */}
               <div className="flex-1">
                 {/* Header */}
                 <div className="mb-6">
-                  <div className="flex flex-wrap items-start justify-between">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <h1 className="text-2xl font-bold text-neutral-800 md:text-3xl">{realHome.name}</h1>
                       <div className="mt-1 flex items-center">
                         <FiMapPin className="mr-1 h-4 w-4 text-neutral-500" />
                         <span className="text-sm text-neutral-600">{addrText}</span>
                       </div>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {(realHome.careLevel || []).map((level: string) => (
+                          <span key={level} className="rounded-full bg-neutral-100 px-3 py-1 text-sm font-medium text-neutral-700">
+                            {CARE_LEVELS.find(l => l.id === level)?.label || level.replace(/_/g, ' ')}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                    <div className="mt-2 flex items-center md:mt-0">
-                      {realHome.rating != null && (
-                        <>
-                          <div className="flex items-center text-amber-500">
-                            <FiStar className="fill-current" />
-                            <span className="ml-1 font-medium text-neutral-800">{realHome.rating.toFixed(1)}</span>
-                          </div>
-                          <span className="ml-1 text-sm text-neutral-500">({realHome.reviewCount} reviews)</span>
-                        </>
-                      )}
-                    </div>
+                    {realHome.rating != null && (
+                      <div className="flex items-center rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 mt-2 md:mt-0">
+                        <FiStar className="fill-current text-amber-500 h-4 w-4" />
+                        <span className="ml-1 font-semibold text-neutral-800">{realHome.rating.toFixed(1)}</span>
+                        <span className="ml-1 text-sm text-neutral-500">({realHome.reviewCount} reviews)</span>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Key details */}
+                  {/* Key stats */}
                   <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
                     <div className="rounded-lg border border-neutral-200 bg-white p-3">
                       <div className="flex items-center text-neutral-600">
-                        <FiUsers className="mr-2 h-5 w-5" />
+                        <FiUsers className="mr-2 h-5 w-5 flex-shrink-0" />
                         <div>
-                          <p className="text-xs">Capacity</p>
+                          <p className="text-xs text-neutral-500">Capacity</p>
                           <p className="font-medium">{realHome.capacity} Residents</p>
                         </div>
                       </div>
                     </div>
                     <div className="rounded-lg border border-neutral-200 bg-white p-3">
                       <div className="flex items-center text-neutral-600">
-                        <FiHome className="mr-2 h-5 w-5" />
+                        <FiHome className="mr-2 h-5 w-5 flex-shrink-0" />
                         <div>
-                          <p className="text-xs">Availability</p>
+                          <p className="text-xs text-neutral-500">Availability</p>
                           <p className="font-medium">{realHome.availability > 0 ? `${realHome.availability} Spots` : 'Waitlist'}</p>
                         </div>
                       </div>
                     </div>
                     <div className="rounded-lg border border-neutral-200 bg-white p-3">
                       <div className="flex items-center text-neutral-600">
-                        <FiDollarSign className="mr-2 h-5 w-5" />
+                        <FiDollarSign className="mr-2 h-5 w-5 flex-shrink-0" />
                         <div>
-                          <p className="text-xs">Starting At</p>
-                          <p className="font-medium">{realHome.priceRange?.formattedMin || (realHome.priceRange?.min ? formatCurrency(realHome.priceRange.min) : '—')}/mo</p>
+                          <p className="text-xs text-neutral-500">Monthly Cost</p>
+                          {realHome.priceRange?.min && realHome.priceRange?.max ? (
+                            <p className="font-medium text-sm">{formatCurrency(realHome.priceRange.min)}–{formatCurrency(realHome.priceRange.max)}</p>
+                          ) : realHome.priceRange?.min ? (
+                            <p className="font-medium">From {formatCurrency(realHome.priceRange.min)}</p>
+                          ) : (
+                            <p className="font-medium text-neutral-400">Contact us</p>
+                          )}
                         </div>
                       </div>
                     </div>
                     <div className="rounded-lg border border-neutral-200 bg-white p-3">
                       <div className="flex items-center text-neutral-600">
-                        <FiAward className="mr-2 h-5 w-5" />
+                        <FiClock className="mr-2 h-5 w-5 flex-shrink-0" />
                         <div>
-                          <p className="text-xs">Care Levels</p>
-                          <p className="text-sm">{(realHome.careLevel || []).join(', ').replaceAll('_', ' ')}</p>
+                          <p className="text-xs text-neutral-500">Staffing</p>
+                          <p className="font-medium text-sm">24/7 On-Site</p>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Description */}
-                <div className="mb-6 rounded-lg border border-neutral-200 bg-white p-6">
-                  <p className="text-neutral-700 whitespace-pre-line">{realHome.description}</p>
+                {/* Tab navigation */}
+                <div className="mb-6 -mx-4 overflow-x-auto border-b border-neutral-200 px-4">
+                  <div className="flex min-w-max space-x-6">
+                    {(['overview','amenities','pricing','location','contact'] as const).map((tab) => (
+                      <button
+                        key={tab}
+                        onClick={() => handleTabChange(tab)}
+                        className={`border-b-2 px-1 pb-3 pt-1 text-sm font-medium capitalize ${
+                          activeTab === tab ? 'border-primary-500 text-primary-600' : 'border-transparent text-neutral-600 hover:text-neutral-800'
+                        }`}
+                      >
+                        {tab === 'overview' ? 'Overview' : tab === 'amenities' ? 'Amenities' : tab === 'pricing' ? 'Pricing' : tab === 'location' ? 'Location' : 'Contact'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Overview */}
+                <div ref={overviewRef} className="mb-8 scroll-mt-20">
+                  <h2 className="mb-4 text-xl font-semibold text-neutral-800">About {realHome.name}</h2>
+                  <div className="mb-6 rounded-lg border border-neutral-200 bg-white p-6">
+                    <p className="text-neutral-700 whitespace-pre-line leading-relaxed">
+                      {realHome.description || 'No description available for this facility.'}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-neutral-200 bg-white p-6">
+                    <h3 className="mb-4 text-lg font-medium text-neutral-800">Quick Facts</h3>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <div className="flex items-start">
+                        <div className="mr-3 rounded-full bg-primary-100 p-2 text-primary-600 flex-shrink-0"><FiUsers className="h-5 w-5" /></div>
+                        <div>
+                          <p className="font-medium text-neutral-800">Resident Gender</p>
+                          <p className="text-sm text-neutral-600">{!realHome.gender || realHome.gender === 'ALL' ? 'All genders welcome' : `${realHome.gender} residents only`}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start">
+                        <div className="mr-3 rounded-full bg-primary-100 p-2 text-primary-600 flex-shrink-0"><FiHome className="h-5 w-5" /></div>
+                        <div>
+                          <p className="font-medium text-neutral-800">Facility Size</p>
+                          <p className="text-sm text-neutral-600">{realHome.capacity} beds · {realHome.availability > 0 ? `${realHome.availability} available` : 'Waitlist only'}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start">
+                        <div className="mr-3 rounded-full bg-primary-100 p-2 text-primary-600 flex-shrink-0"><FiShield className="h-5 w-5" /></div>
+                        <div>
+                          <p className="font-medium text-neutral-800">Care Types Offered</p>
+                          <p className="text-sm text-neutral-600">
+                            {(realHome.careLevel || []).map((l: string) => CARE_LEVELS.find(x => x.id === l)?.label || l.replace(/_/g, ' ')).join(', ')}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-start">
+                        <div className="mr-3 rounded-full bg-primary-100 p-2 text-primary-600 flex-shrink-0"><FiClock className="h-5 w-5" /></div>
+                        <div>
+                          <p className="font-medium text-neutral-800">Staff Availability</p>
+                          <p className="text-sm text-neutral-600">24/7 care staff on-site</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Amenities */}
-                {Array.isArray(realHome.amenities) && realHome.amenities.length > 0 && (
-                  <div className="mb-8">
-                    <h2 className="mb-4 text-xl font-semibold text-neutral-800">Amenities & Services</h2>
+                <div ref={amenitiesRef} className="mb-8 scroll-mt-20">
+                  <h2 className="mb-4 text-xl font-semibold text-neutral-800">Amenities & Services</h2>
+                  {Array.isArray(realHome.amenities) && realHome.amenities.length > 0 ? (
                     <div className="rounded-lg border border-neutral-200 bg-white p-6">
                       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
-                        {realHome.amenities.map((a: string) => (
+                        {(amenitiesExpanded['all'] ? realHome.amenities : realHome.amenities.slice(0, 12)).map((a: string) => (
                           <div key={a} className="flex items-center">
-                            <FiCheck className="mr-2 h-5 w-5 text-success-500" />
+                            <FiCheck className="mr-2 h-5 w-5 text-success-500 flex-shrink-0" />
                             <span className="text-neutral-700">{a}</span>
                           </div>
                         ))}
                       </div>
+                      {realHome.amenities.length > 12 && (
+                        <button
+                          onClick={() => toggleAmenityCategory('all')}
+                          className="mt-4 flex items-center text-sm font-medium text-primary-600 hover:text-primary-700"
+                        >
+                          {amenitiesExpanded['all'] ? (
+                            <><FiChevronUp className="mr-1 h-4 w-4" />Show less</>
+                          ) : (
+                            <><FiChevronDown className="mr-1 h-4 w-4" />Show all {realHome.amenities.length} amenities</>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="rounded-lg border border-neutral-200 bg-white p-6 text-neutral-500">No amenities listed.</div>
+                  )}
+                </div>
+
+                {/* Pricing */}
+                <div ref={pricingRef} className="mb-8 scroll-mt-20">
+                  <h2 className="mb-4 text-xl font-semibold text-neutral-800">Pricing & Fees</h2>
+                  <div className="rounded-lg border border-neutral-200 bg-white p-6">
+                    {realHome.priceRange?.min || realHome.priceRange?.max ? (
+                      <>
+                        <div className="mb-4">
+                          <p className="text-sm text-neutral-500 mb-1">Monthly rate range</p>
+                          <p className="text-3xl font-bold text-primary-600">
+                            {realHome.priceRange?.min && realHome.priceRange?.max
+                              ? `${formatCurrency(realHome.priceRange.min)} – ${formatCurrency(realHome.priceRange.max)}`
+                              : realHome.priceRange?.min
+                              ? `From ${formatCurrency(realHome.priceRange.min)}`
+                              : `Up to ${formatCurrency(realHome.priceRange.max)}`}
+                          </p>
+                          <p className="text-sm text-neutral-500 mt-1">per month</p>
+                        </div>
+                        <p className="text-sm text-neutral-600 mb-4">
+                          Actual costs vary based on care level, room type, and additional services required. Contact the facility for a personalized quote.
+                        </p>
+                        <div className="rounded-lg bg-neutral-50 border border-neutral-200 p-4 text-sm text-neutral-600">
+                          <p className="font-medium text-neutral-800 mb-1">What's typically included:</p>
+                          <ul className="space-y-1 list-disc list-inside">
+                            <li>Room and board</li>
+                            <li>Meals and snacks</li>
+                            <li>Basic care services</li>
+                            <li>Activities and programs</li>
+                          </ul>
+                        </div>
+                      </>
+                    ) : (
+                      <p className="text-neutral-600">Contact the facility directly for current pricing.</p>
+                    )}
+                    <div className="mt-4">
+                      <button
+                        onClick={() => setShowTourModal(true)}
+                        className="flex items-center rounded-md bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600"
+                      >
+                        <FiCalendar className="mr-2 h-4 w-4" />
+                        Schedule a Tour to Discuss Pricing
+                      </button>
                     </div>
                   </div>
-                )}
+                </div>
 
                 {/* Location */}
-                <div className="mb-8">
+                <div ref={locationRef} className="mb-8 scroll-mt-20">
                   <h2 className="mb-4 text-xl font-semibold text-neutral-800">Location</h2>
                   <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white">
                     <div className="h-80 w-full">
@@ -856,35 +997,238 @@ export default function HomeDetailPage() {
                     </div>
                     <div className="p-6">
                       <div className="flex items-start">
-                        <FiMapPinOutline className="mr-3 h-5 w-5 text-neutral-500" />
+                        <FiMapPinOutline className="mr-3 h-5 w-5 text-neutral-500 mt-0.5 flex-shrink-0" />
                         <div>
                           <h3 className="font-medium text-neutral-800">Address</h3>
                           <p className="text-neutral-600">{addrText}</p>
                         </div>
                       </div>
+                      <div className="mt-4 flex">
+                        <a
+                          href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(addrText)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+                        >
+                          <FiMapPin className="mr-1.5 h-4 w-4" />
+                          Get Directions
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Contact */}
+                <div ref={contactRef} className="mb-8 scroll-mt-20">
+                  <h2 className="mb-4 text-xl font-semibold text-neutral-800">Contact Information</h2>
+                  <div className="rounded-lg border border-neutral-200 bg-white p-6">
+                    {realHome.operator ? (
+                      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                        <div>
+                          <h3 className="mb-3 text-lg font-medium text-neutral-800">Facility Contact</h3>
+                          <div className="space-y-3">
+                            {realHome.operator.company && (
+                              <div className="flex items-center">
+                                <FiHome className="mr-3 h-5 w-5 text-neutral-500 flex-shrink-0" />
+                                <span className="text-neutral-700">{realHome.operator.company}</span>
+                              </div>
+                            )}
+                            {realHome.operator.name && (
+                              <div className="flex items-center">
+                                <FiUsers className="mr-3 h-5 w-5 text-neutral-500 flex-shrink-0" />
+                                <span className="text-neutral-700">{realHome.operator.name}</span>
+                              </div>
+                            )}
+                            {realHome.operator.email && (
+                              <div className="flex items-center">
+                                <FiMail className="mr-3 h-5 w-5 text-neutral-500 flex-shrink-0" />
+                                <a href={`mailto:${realHome.operator.email}`} className="text-primary-600 hover:underline">
+                                  {realHome.operator.email}
+                                </a>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <h3 className="mb-3 text-lg font-medium text-neutral-800">Get in Touch</h3>
+                          <p className="text-sm text-neutral-600 mb-3">Reach out to schedule a tour, ask questions about care services, or get a personalized pricing quote.</p>
+                          <button
+                            onClick={() => setBookingStep(1)}
+                            className="flex items-center rounded-md bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600"
+                          >
+                            <MessageSquare className="mr-2 h-4 w-4" />
+                            Send a Message
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-neutral-600">Contact information not available.</p>
+                    )}
+                    <div className="mt-6 rounded-lg bg-neutral-100 p-4">
+                      <h3 className="mb-2 text-base font-medium text-neutral-800">Need Help?</h3>
+                      <p className="mb-3 text-sm text-neutral-600">Our CareLinkAI care advisors can help you navigate your options and find the right home.</p>
+                      <button
+                        onClick={() => setShowTourModal(true)}
+                        className="flex items-center rounded-md bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600"
+                      >
+                        <MessageSquare className="mr-2 h-4 w-4" />
+                        Chat with a Care Advisor
+                      </button>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Sidebar (reuse inquiry CTA) */}
+              {/* Sidebar */}
               <div className="mt-8 w-full lg:mt-0 lg:w-80">
-                <div className="sticky top-20">
+                <div ref={bookingRef} className="sticky top-20">
                   <div className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
-                    <h3 className="mb-3 text-lg font-semibold text-neutral-800">Interested in {realHome.name}?</h3>
-                    <p className="mb-4 text-sm text-neutral-600">
-                      {realHome.availability > 0 ? `${realHome.availability} spots available. Schedule a tour or send an inquiry.` : 'Currently on waitlist. Send an inquiry to learn more.'}
-                    </p>
-                    <div className="space-y-3">
-                      <Link href={`/inquiry?homeId=${realHome.id}`} className="flex w-full items-center justify-center rounded-md bg-primary-500 px-4 py-2 font-medium text-white hover:bg-primary-600">
-                        <FiCalendar className="mr-2 h-5 w-5" />
-                        Schedule a Tour
-                      </Link>
-                      <Link href={`/inquiry?homeId=${realHome.id}`} className="flex w-full items-center justify-center rounded-md border border-neutral-300 bg-white px-4 py-2 font-medium text-neutral-700 hover:bg-neutral-50">
-                        <MessageSquare className="mr-2 h-5 w-5" />
-                        Send Inquiry
-                      </Link>
-                    </div>
+                    {bookingStep === 0 && (
+                      <>
+                        <h3 className="mb-3 text-lg font-semibold text-neutral-800">Interested in {realHome.name}?</h3>
+                        <p className="mb-4 text-sm text-neutral-600">
+                          {realHome.availability > 0
+                            ? `${realHome.availability} spot${realHome.availability > 1 ? 's' : ''} available. Schedule a tour or send an inquiry.`
+                            : 'Currently on waitlist. Send an inquiry to learn more.'}
+                        </p>
+                        <div className="space-y-3">
+                          <button
+                            onClick={() => setShowTourModal(true)}
+                            className="flex w-full items-center justify-center rounded-md bg-primary-500 px-4 py-2 font-medium text-white hover:bg-primary-600"
+                          >
+                            <FiCalendar className="mr-2 h-5 w-5" />
+                            Schedule a Tour
+                          </button>
+                          <button
+                            onClick={() => setBookingStep(1)}
+                            className="flex w-full items-center justify-center rounded-md border border-neutral-300 bg-white px-4 py-2 font-medium text-neutral-700 hover:bg-neutral-50"
+                          >
+                            <MessageSquare className="mr-2 h-5 w-5" />
+                            Send Inquiry
+                          </button>
+                        </div>
+                        <div className="mt-4 text-center text-xs text-neutral-500">No obligation or fees to inquire</div>
+                      </>
+                    )}
+
+                    {bookingStep === 1 && (
+                      <>
+                        <h3 className="mb-3 text-lg font-semibold text-neutral-800">Contact {realHome.name}</h3>
+                        <p className="mb-4 text-sm text-neutral-600">Fill out this form and a representative will contact you shortly.</p>
+                        <form onSubmit={handleInquirySubmit}>
+                          <div className="mb-3">
+                            <label htmlFor="name" className="mb-1 block text-sm font-medium text-neutral-700">Your Name*</label>
+                            <input type="text" id="name" name="name" value={inquiryForm.name} onChange={handleInquiryChange}
+                              className={`form-input w-full rounded-md shadow-sm focus:border-primary-500 focus:ring-primary-500 ${formErrors['name'] ? 'border-red-400' : 'border-neutral-300'}`} />
+                            {formErrors['name'] && <p className="mt-1 text-xs text-red-600">{formErrors['name']}</p>}
+                          </div>
+                          <div className="mb-3">
+                            <label htmlFor="email" className="mb-1 block text-sm font-medium text-neutral-700">Email Address*</label>
+                            <input type="email" id="email" name="email" value={inquiryForm.email} onChange={handleInquiryChange}
+                              className={`form-input w-full rounded-md shadow-sm focus:border-primary-500 focus:ring-primary-500 ${formErrors['email'] ? 'border-red-400' : 'border-neutral-300'}`} />
+                            {formErrors['email'] && <p className="mt-1 text-xs text-red-600">{formErrors['email']}</p>}
+                          </div>
+                          <div className="mb-3">
+                            <label htmlFor="phone" className="mb-1 block text-sm font-medium text-neutral-700">Phone (optional)</label>
+                            <input type="tel" id="phone" name="phone" value={inquiryForm.phone} onChange={handleInquiryChange}
+                              className="form-input w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500" />
+                          </div>
+                          <div className="mb-3">
+                            <label htmlFor="residentName" className="mb-1 block text-sm font-medium text-neutral-700">Resident Name</label>
+                            <input type="text" id="residentName" name="residentName" value={inquiryForm.residentName} onChange={handleInquiryChange}
+                              className="form-input w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500" />
+                          </div>
+                          <div className="mb-3">
+                            <label htmlFor="moveInTimeframe" className="mb-1 block text-sm font-medium text-neutral-700">Move-in Timeframe</label>
+                            <select id="moveInTimeframe" name="moveInTimeframe" value={inquiryForm.moveInTimeframe} onChange={handleInquiryChange}
+                              className="form-select w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                              <option value="Immediately">Immediately</option>
+                              <option value="1-3 months">1-3 months</option>
+                              <option value="3-6 months">3-6 months</option>
+                              <option value="6+ months">6+ months</option>
+                              <option value="Just researching">Just researching</option>
+                            </select>
+                          </div>
+                          <div className="mb-3">
+                            <label className={`mb-1 block text-sm font-medium ${formErrors['careNeeded'] ? 'text-red-700' : 'text-neutral-700'}`}>Care Services Needed*</label>
+                            <div className={`space-y-2 rounded-md p-3 ${formErrors['careNeeded'] ? 'border-2 border-red-400 bg-red-50' : 'border border-neutral-200'}`}>
+                              {['Assisted Living','Memory Care','Medication Management'].map((care) => (
+                                <div key={care} className="flex items-center">
+                                  <input type="checkbox" id={`care-${care}`} checked={inquiryForm.careNeeded.includes(care)} onChange={() => handleCareNeededChange(care)}
+                                    className="form-checkbox h-4 w-4 rounded border-neutral-300 text-primary-500" />
+                                  <label htmlFor={`care-${care}`} className="ml-2 text-sm text-neutral-600">{care}</label>
+                                </div>
+                              ))}
+                            </div>
+                            {formErrors['careNeeded'] && (
+                              <div className="mt-2 flex items-center rounded-md bg-red-100 border border-red-300 p-2">
+                                <FiAlertCircle className="mr-2 h-5 w-5 text-red-600" />
+                                <p className="text-sm font-medium text-red-700">{formErrors['careNeeded']}</p>
+                              </div>
+                            )}
+                          </div>
+                          <div className="mb-4">
+                            <label htmlFor="message" className="mb-1 block text-sm font-medium text-neutral-700">Message</label>
+                            <textarea id="message" name="message" rows={3} value={inquiryForm.message} onChange={handleInquiryChange}
+                              className="form-textarea w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                              placeholder="Tell us about your specific needs..." />
+                          </div>
+                          {submitError && <div className="mb-3 rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-700">{submitError}</div>}
+                          <div className="flex gap-2">
+                            <button type="button" onClick={() => setBookingStep(0)} className="flex-1 rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50">
+                              Back
+                            </button>
+                            <button type="submit" disabled={submitting} className="flex-1 rounded-md bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600 disabled:opacity-60">
+                              {submitting ? 'Sending...' : 'Continue →'}
+                            </button>
+                          </div>
+                        </form>
+                      </>
+                    )}
+
+                    {bookingStep === 2 && (
+                      <>
+                        <h3 className="mb-3 text-lg font-semibold text-neutral-800">Schedule Your Tour</h3>
+                        <form onSubmit={handleTourSchedule}>
+                          <div className="mb-3">
+                            <label htmlFor="tourDate" className="mb-1 block text-sm font-medium text-neutral-700">Preferred Date</label>
+                            <input type="date" id="tourDate" name="tourDate" value={inquiryForm.tourDate} onChange={handleInquiryChange}
+                              min={new Date().toISOString().split('T')[0]}
+                              className="form-input w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500" />
+                          </div>
+                          <div className="mb-4">
+                            <label htmlFor="tourTime" className="mb-1 block text-sm font-medium text-neutral-700">Preferred Time</label>
+                            <select id="tourTime" name="tourTime" value={inquiryForm.tourTime} onChange={handleInquiryChange}
+                              className="form-select w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                              <option value="">Select a time</option>
+                              {['9:00 AM','10:00 AM','11:00 AM','1:00 PM','2:00 PM','3:00 PM','4:00 PM'].map(t => (
+                                <option key={t} value={t}>{t}</option>
+                              ))}
+                            </select>
+                          </div>
+                          {submitError && <div className="mb-3 rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-700">{submitError}</div>}
+                          <div className="flex gap-2">
+                            <button type="button" onClick={() => setBookingStep(1)} className="flex-1 rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50">
+                              Back
+                            </button>
+                            <button type="submit" disabled={submitting} className="flex-1 rounded-md bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600 disabled:opacity-60">
+                              {submitting ? 'Submitting...' : 'Submit Request'}
+                            </button>
+                          </div>
+                        </form>
+                      </>
+                    )}
+
+                    {bookingStep === 3 && (
+                      <div className="text-center py-4">
+                        <div className="mb-3 flex justify-center">
+                          <div className="rounded-full bg-green-100 p-4"><FiCheck className="h-8 w-8 text-green-600" /></div>
+                        </div>
+                        <h3 className="mb-2 text-lg font-semibold text-neutral-800">Request Submitted!</h3>
+                        <p className="mb-4 text-sm text-neutral-600">We've received your inquiry for {realHome.name}. A representative will contact you within 24 hours.</p>
+                        <button onClick={() => setBookingStep(0)} className="text-sm text-primary-600 hover:underline">Submit another inquiry</button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
