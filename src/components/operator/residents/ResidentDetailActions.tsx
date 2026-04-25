@@ -1,7 +1,8 @@
 "use client";
 
 import Link from 'next/link';
-import { FiEdit, FiFileText, FiEye } from 'react-icons/fi';
+import { useState } from 'react';
+import { FiEdit, FiFileText, FiEye, FiDownload, FiLoader } from 'react-icons/fi';
 import { PermissionGuard, RoleGuard, useUserRole } from '@/hooks/usePermissions';
 import { PERMISSIONS } from '@/lib/permissions';
 import { ArchiveButton } from './ArchiveButton';
@@ -64,6 +65,41 @@ export function SummaryPDFButton({ residentId }: { residentId: string }) {
 }
 
 /**
+ * AI Intake PDF button — generates a full intake packet PDF
+ */
+export function IntakePDFButton({ residentId }: { residentId: string }) {
+  const [loading, setLoading] = useState(false);
+
+  const generate = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/operator/residents/${residentId}/intake-pdf`, { method: 'POST' });
+      if (!res.ok) return;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `intake-${residentId}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={generate}
+      disabled={loading}
+      className="inline-flex items-center gap-2 px-4 py-2 border border-indigo-300 rounded-lg text-sm font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-60"
+    >
+      {loading ? <FiLoader className="w-4 h-4 animate-spin" /> : <FiDownload className="w-4 h-4" />}
+      <span>{loading ? 'Generating...' : 'Intake PDF'}</span>
+    </button>
+  );
+}
+
+/**
  * Read-only badge for family members
  */
 export function ReadOnlyBadge() {
@@ -90,6 +126,7 @@ export function ResidentDetailActionsBar({ residentId, residentName, showArchive
       <ReadOnlyBadge />
       <EditResidentDetailButton residentId={residentId} />
       <SummaryPDFButton residentId={residentId} />
+      <IntakePDFButton residentId={residentId} />
       {showArchiveButton && (
         <PermissionGuard permission={PERMISSIONS.RESIDENTS_DELETE}>
           <ArchiveButton residentId={residentId} residentName={residentName} />

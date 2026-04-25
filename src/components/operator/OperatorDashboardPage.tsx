@@ -7,6 +7,8 @@ import Link from "next/link";
 import { FiHome, FiUsers, FiTrendingUp, FiFileText, FiCreditCard, FiPlus, FiAlertCircle, FiClock } from "react-icons/fi";
 import { PermissionGuard, RoleGuard, useHasPermission } from '@/hooks/usePermissions';
 import { PERMISSIONS } from '@/lib/permissions';
+import AskAIWidget from '@/components/operator/dashboard/AskAIWidget';
+import AtRiskAidesWidget from '@/components/operator/dashboard/AtRiskAidesWidget';
 
 interface DashboardSummary {
   homes: number;
@@ -156,6 +158,12 @@ export default function OperatorDashboardPage() {
               <FiTrendingUp className={`h-8 w-8 ${summary.occupancyRate < 50 ? 'text-red-500' : summary.occupancyRate < 80 ? 'text-yellow-500' : 'text-green-500'}`} />
             </div>
           </div>
+        </div>
+
+        {/* AI Widgets */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <AskAIWidget />
+          <AtRiskAidesWidget />
         </div>
 
         {/* Critical Alerts */}

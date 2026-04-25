@@ -23,6 +23,7 @@ import { CaregiverModal } from '@/components/operator/caregivers/CaregiverModal'
 import { CaregiverFilters, CaregiverFilterState } from '@/components/operator/caregivers/CaregiverFilters';
 import { CaregiverAnalytics } from '@/components/operator/caregivers/CaregiverAnalytics';
 import { ExpiringCertificationsWidget } from '@/components/operator/caregivers/ExpiringCertificationsWidget';
+import SmartSearchBar from '@/components/operator/caregivers/SmartSearchBar';
 import { exportCaregiversToCSV, downloadCSV, generateExportFilename } from '@/lib/export-utils';
 
 type Caregiver = {
@@ -278,6 +279,9 @@ export default function CaregiversPage() {
           { label: 'Caregivers' },
         ]}
       />
+
+      {/* AI Smart Search */}
+      <SmartSearchBar />
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
