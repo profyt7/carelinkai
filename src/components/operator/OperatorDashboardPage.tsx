@@ -100,12 +100,12 @@ export default function OperatorDashboardPage() {
             </div>
           </div>
         ) : error ? (
-          <div className="rounded-lg border-2 border-red-300 bg-red-50 p-6">
+          <div className="rounded-lg border-2 border-error-300 bg-error-50 p-6">
             <div className="flex items-start gap-3">
-              <FiAlertCircle className="h-6 w-6 text-red-600 flex-shrink-0 mt-0.5" />
+              <FiAlertCircle className="h-6 w-6 text-error-600 flex-shrink-0 mt-0.5" />
               <div>
-                <h3 className="text-lg font-semibold text-red-900 mb-2">Error Loading Dashboard</h3>
-                <p className="text-sm text-red-800">{error}</p>
+                <h3 className="text-lg font-semibold text-error-900 mb-2">Error Loading Dashboard</h3>
+                <p className="text-sm text-error-800">{error}</p>
                 <button 
                   onClick={() => window.location.reload()}
                   className="mt-4 btn btn-secondary text-sm"
@@ -134,10 +134,10 @@ export default function OperatorDashboardPage() {
                 <div className="text-sm text-neutral-500">Open Inquiries</div>
                 <div className="mt-1 text-2xl font-semibold">{summary.inquiries}</div>
                 {summary.newInquiriesCount > 0 && (
-                  <div className="mt-1 text-xs text-red-600 font-medium">{summary.newInquiriesCount} new</div>
+                  <div className="mt-1 text-xs text-error-600 font-medium">{summary.newInquiriesCount} new</div>
                 )}
               </div>
-              <FiFileText className="h-8 w-8 text-blue-500" />
+              <FiFileText className="h-8 w-8 text-primary-500" />
             </div>
           </Link>
           <Link href="/operator/residents" className="card hover:shadow-lg transition-shadow cursor-pointer">
@@ -146,16 +146,16 @@ export default function OperatorDashboardPage() {
                 <div className="text-sm text-neutral-500">Active Residents</div>
                 <div className="mt-1 text-2xl font-semibold">{summary.activeResidents}</div>
               </div>
-              <FiUsers className="h-8 w-8 text-green-500" />
+              <FiUsers className="h-8 w-8 text-success-500" />
             </div>
           </Link>
-          <div className={`card ${summary.occupancyRate < 50 ? 'border-red-200 bg-red-50' : summary.occupancyRate < 80 ? 'border-yellow-200 bg-yellow-50' : ''}`}>
+          <div className={`card ${summary.occupancyRate < 50 ? 'border-error-200 bg-error-50' : summary.occupancyRate < 80 ? 'border-warning-200 bg-warning-50' : ''}`}>
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-sm text-neutral-500">Occupancy Rate</div>
                 <div className="mt-1 text-2xl font-semibold">{summary.occupancyRate}%</div>
               </div>
-              <FiTrendingUp className={`h-8 w-8 ${summary.occupancyRate < 50 ? 'text-red-500' : summary.occupancyRate < 80 ? 'text-yellow-500' : 'text-green-500'}`} />
+              <FiTrendingUp className={`h-8 w-8 ${summary.occupancyRate < 50 ? 'text-error-500' : summary.occupancyRate < 80 ? 'text-warning-500' : 'text-success-500'}`} />
             </div>
           </div>
         </div>
@@ -221,10 +221,10 @@ export default function OperatorDashboardPage() {
             <PermissionGuard permission={PERMISSIONS.RESIDENTS_CREATE}>
               <Link 
                 href="/operator/residents/new"
-                className="flex items-center gap-3 p-3 rounded-lg border-2 border-dashed border-green-300 hover:border-green-500 hover:bg-green-50 transition-colors"
+                className="flex items-center gap-3 p-3 rounded-lg border-2 border-dashed border-success-300 hover:border-success-500 hover:bg-success-50 transition-colors"
               >
-                <div className="rounded-full bg-green-100 p-2">
-                  <FiPlus className="h-5 w-5 text-green-600" />
+                <div className="rounded-full bg-success-100 p-2">
+                  <FiPlus className="h-5 w-5 text-success-600" />
                 </div>
                 <div>
                   <div className="font-medium text-neutral-800">Add Resident</div>
@@ -235,10 +235,10 @@ export default function OperatorDashboardPage() {
             <PermissionGuard permission={PERMISSIONS.INQUIRIES_VIEW}>
               <Link 
                 href="/operator/inquiries"
-                className="flex items-center gap-3 p-3 rounded-lg border-2 border-dashed border-blue-300 hover:border-blue-500 hover:bg-blue-50 transition-colors"
+                className="flex items-center gap-3 p-3 rounded-lg border-2 border-dashed border-primary-300 hover:border-primary-500 hover:bg-primary-50 transition-colors"
               >
-                <div className="rounded-full bg-blue-100 p-2">
-                  <FiFileText className="h-5 w-5 text-blue-600" />
+                <div className="rounded-full bg-primary-100 p-2">
+                  <FiFileText className="h-5 w-5 text-primary-600" />
                 </div>
                 <div>
                   <div className="font-medium text-neutral-800">View Inquiries</div>
@@ -265,8 +265,8 @@ export default function OperatorDashboardPage() {
                   href={`/operator/inquiries/${inquiry.id}`}
                   className="flex items-start gap-3 p-3 rounded-lg hover:bg-neutral-50 transition-colors border border-transparent hover:border-neutral-200"
                 >
-                  <div className="rounded-full bg-blue-100 p-2 mt-1">
-                    <FiFileText className="h-4 w-4 text-blue-600" />
+                  <div className="rounded-full bg-primary-100 p-2 mt-1">
+                    <FiFileText className="h-4 w-4 text-primary-600" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
@@ -281,10 +281,10 @@ export default function OperatorDashboardPage() {
                     <div className="text-sm text-neutral-600 truncate">{inquiry.home?.name}</div>
                     <div className="mt-1">
                       <span className={`inline-block px-2 py-0.5 text-xs rounded-full ${
-                        inquiry.status === 'NEW' ? 'bg-red-100 text-red-700' :
-                        inquiry.status === 'CONTACTED' ? 'bg-blue-100 text-blue-700' :
-                        inquiry.status === 'TOUR_SCHEDULED' ? 'bg-yellow-100 text-yellow-700' :
-                        inquiry.status === 'PLACEMENT_ACCEPTED' ? 'bg-green-100 text-green-700' :
+                        inquiry.status === 'NEW' ? 'bg-error-100 text-error-700' :
+                        inquiry.status === 'CONTACTED' ? 'bg-primary-100 text-primary-700' :
+                        inquiry.status === 'TOUR_SCHEDULED' ? 'bg-warning-100 text-warning-700' :
+                        inquiry.status === 'PLACEMENT_ACCEPTED' ? 'bg-success-100 text-success-700' :
                         'bg-neutral-100 text-neutral-700'
                       }`}>
                         {inquiry.status.replace(/_/g, ' ')}

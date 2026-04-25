@@ -711,9 +711,9 @@ export default function HomeDetailPage() {
       return (
         <DashboardLayout title="Home Details">
           <div className="p-4 md:p-6">
-            <div className="rounded-lg border border-red-200 bg-red-50 p-6">
-              <h2 className="text-lg font-semibold text-red-700 mb-2">Could not load listing</h2>
-              <p className="text-red-700">{loadError}</p>
+            <div className="rounded-lg border border-error-200 bg-error-50 p-6">
+              <h2 className="text-lg font-semibold text-error-700 mb-2">Could not load listing</h2>
+              <p className="text-error-700">{loadError}</p>
             </div>
           </div>
         </DashboardLayout>
@@ -1135,14 +1135,14 @@ export default function HomeDetailPage() {
                           <div className="mb-3">
                             <label htmlFor="name" className="mb-1 block text-sm font-medium text-neutral-700">Your Name*</label>
                             <input type="text" id="name" name="name" value={inquiryForm.name} onChange={handleInquiryChange}
-                              className={`form-input w-full rounded-md shadow-sm focus:border-primary-500 focus:ring-primary-500 ${formErrors['name'] ? 'border-red-400' : 'border-neutral-300'}`} />
-                            {formErrors['name'] && <p className="mt-1 text-xs text-red-600">{formErrors['name']}</p>}
+                              className={`form-input w-full rounded-md shadow-sm focus:border-primary-500 focus:ring-primary-500 ${formErrors['name'] ? 'border-error-400' : 'border-neutral-300'}`} />
+                            {formErrors['name'] && <p className="mt-1 text-xs text-error-600">{formErrors['name']}</p>}
                           </div>
                           <div className="mb-3">
                             <label htmlFor="email" className="mb-1 block text-sm font-medium text-neutral-700">Email Address*</label>
                             <input type="email" id="email" name="email" value={inquiryForm.email} onChange={handleInquiryChange}
-                              className={`form-input w-full rounded-md shadow-sm focus:border-primary-500 focus:ring-primary-500 ${formErrors['email'] ? 'border-red-400' : 'border-neutral-300'}`} />
-                            {formErrors['email'] && <p className="mt-1 text-xs text-red-600">{formErrors['email']}</p>}
+                              className={`form-input w-full rounded-md shadow-sm focus:border-primary-500 focus:ring-primary-500 ${formErrors['email'] ? 'border-error-400' : 'border-neutral-300'}`} />
+                            {formErrors['email'] && <p className="mt-1 text-xs text-error-600">{formErrors['email']}</p>}
                           </div>
                           <div className="mb-3">
                             <label htmlFor="phone" className="mb-1 block text-sm font-medium text-neutral-700">Phone (optional)</label>
@@ -1166,8 +1166,8 @@ export default function HomeDetailPage() {
                             </select>
                           </div>
                           <div className="mb-3">
-                            <label className={`mb-1 block text-sm font-medium ${formErrors['careNeeded'] ? 'text-red-700' : 'text-neutral-700'}`}>Care Services Needed*</label>
-                            <div className={`space-y-2 rounded-md p-3 ${formErrors['careNeeded'] ? 'border-2 border-red-400 bg-red-50' : 'border border-neutral-200'}`}>
+                            <label className={`mb-1 block text-sm font-medium ${formErrors['careNeeded'] ? 'text-error-700' : 'text-neutral-700'}`}>Care Services Needed*</label>
+                            <div className={`space-y-2 rounded-md p-3 ${formErrors['careNeeded'] ? 'border-2 border-error-400 bg-error-50' : 'border border-neutral-200'}`}>
                               {['Assisted Living','Memory Care','Medication Management'].map((care) => (
                                 <div key={care} className="flex items-center">
                                   <input type="checkbox" id={`care-${care}`} checked={inquiryForm.careNeeded.includes(care)} onChange={() => handleCareNeededChange(care)}
@@ -1177,9 +1177,9 @@ export default function HomeDetailPage() {
                               ))}
                             </div>
                             {formErrors['careNeeded'] && (
-                              <div className="mt-2 flex items-center rounded-md bg-red-100 border border-red-300 p-2">
-                                <FiAlertCircle className="mr-2 h-5 w-5 text-red-600" />
-                                <p className="text-sm font-medium text-red-700">{formErrors['careNeeded']}</p>
+                              <div className="mt-2 flex items-center rounded-md bg-error-100 border border-error-300 p-2">
+                                <FiAlertCircle className="mr-2 h-5 w-5 text-error-600" />
+                                <p className="text-sm font-medium text-error-700">{formErrors['careNeeded']}</p>
                               </div>
                             )}
                           </div>
@@ -1189,7 +1189,7 @@ export default function HomeDetailPage() {
                               className="form-textarea w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
                               placeholder="Tell us about your specific needs..." />
                           </div>
-                          {submitError && <div className="mb-3 rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-700">{submitError}</div>}
+                          {submitError && <div className="mb-3 rounded-md bg-error-50 border border-error-200 p-3 text-sm text-error-700">{submitError}</div>}
                           <div className="flex gap-2">
                             <button type="button" onClick={() => setBookingStep(0)} className="flex-1 rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50">
                               Back
@@ -1222,7 +1222,7 @@ export default function HomeDetailPage() {
                               ))}
                             </select>
                           </div>
-                          {submitError && <div className="mb-3 rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-700">{submitError}</div>}
+                          {submitError && <div className="mb-3 rounded-md bg-error-50 border border-error-200 p-3 text-sm text-error-700">{submitError}</div>}
                           <div className="flex gap-2">
                             <button type="button" onClick={() => setBookingStep(1)} className="flex-1 rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50">
                               Back
@@ -1238,7 +1238,7 @@ export default function HomeDetailPage() {
                     {bookingStep === 3 && (
                       <div className="text-center py-4">
                         <div className="mb-3 flex justify-center">
-                          <div className="rounded-full bg-green-100 p-4"><FiCheck className="h-8 w-8 text-green-600" /></div>
+                          <div className="rounded-full bg-success-100 p-4"><FiCheck className="h-8 w-8 text-success-600" /></div>
                         </div>
                         <h3 className="mb-2 text-lg font-semibold text-neutral-800">Request Submitted!</h3>
                         <p className="mb-4 text-sm text-neutral-600">We've received your inquiry for {realHome.name}. A representative will contact you within 24 hours.</p>
@@ -1903,10 +1903,10 @@ export default function HomeDetailPage() {
                           name="name"
                           value={inquiryForm.name}
                           onChange={handleInquiryChange}
-                          className={`form-input w-full rounded-md shadow-sm focus:border-primary-500 focus:ring-primary-500 ${formErrors['name'] ? 'border-red-400' : 'border-neutral-300'}`}
+                          className={`form-input w-full rounded-md shadow-sm focus:border-primary-500 focus:ring-primary-500 ${formErrors['name'] ? 'border-error-400' : 'border-neutral-300'}`}
                         />
                         {formErrors['name'] && (
-                          <p className="mt-1 text-xs text-red-600">{formErrors['name']}</p>
+                          <p className="mt-1 text-xs text-error-600">{formErrors['name']}</p>
                         )}
                       </div>
                       
@@ -1920,10 +1920,10 @@ export default function HomeDetailPage() {
                           name="email"
                           value={inquiryForm.email}
                           onChange={handleInquiryChange}
-                          className={`form-input w-full rounded-md shadow-sm focus:border-primary-500 focus:ring-primary-500 ${formErrors['email'] ? 'border-red-400' : 'border-neutral-300'}`}
+                          className={`form-input w-full rounded-md shadow-sm focus:border-primary-500 focus:ring-primary-500 ${formErrors['email'] ? 'border-error-400' : 'border-neutral-300'}`}
                         />
                         {formErrors['email'] && (
-                          <p className="mt-1 text-xs text-red-600">{formErrors['email']}</p>
+                          <p className="mt-1 text-xs text-error-600">{formErrors['email']}</p>
                         )}
                       </div>
                       
@@ -1975,10 +1975,10 @@ export default function HomeDetailPage() {
                       </div>
                       
                       <div className="mb-3">
-                        <label className={`mb-1 block text-sm font-medium ${formErrors['careNeeded'] ? 'text-red-700' : 'text-neutral-700'}`}>
+                        <label className={`mb-1 block text-sm font-medium ${formErrors['careNeeded'] ? 'text-error-700' : 'text-neutral-700'}`}>
                           Care Services Needed*
                         </label>
-                        <div className={`space-y-2 rounded-md p-3 ${formErrors['careNeeded'] ? 'border-2 border-red-400 bg-red-50' : 'border border-neutral-200'}`}>
+                        <div className={`space-y-2 rounded-md p-3 ${formErrors['careNeeded'] ? 'border-2 border-error-400 bg-error-50' : 'border border-neutral-200'}`}>
                           <div className="flex items-center">
                             <input
                               type="checkbox"
@@ -2017,9 +2017,9 @@ export default function HomeDetailPage() {
                           </div>
                         </div>
                         {formErrors['careNeeded'] && (
-                          <div className="mt-2 flex items-center rounded-md bg-red-100 border border-red-300 p-2">
-                            <FiAlertCircle className="mr-2 h-5 w-5 text-red-600" />
-                            <p className="text-sm font-medium text-red-700">{formErrors['careNeeded']}</p>
+                          <div className="mt-2 flex items-center rounded-md bg-error-100 border border-error-300 p-2">
+                            <FiAlertCircle className="mr-2 h-5 w-5 text-error-600" />
+                            <p className="text-sm font-medium text-error-700">{formErrors['careNeeded']}</p>
                           </div>
                         )}
                       </div>
@@ -2064,7 +2064,7 @@ export default function HomeDetailPage() {
                     
                     <form onSubmit={handleTourSchedule}>
                       {submitError && (
-                        <div className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                        <div className="mb-4 rounded-md border border-error-200 bg-error-50 p-3 text-sm text-error-700">
                           {submitError}
                         </div>
                       )}

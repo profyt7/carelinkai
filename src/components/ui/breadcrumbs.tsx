@@ -24,7 +24,7 @@ export default function Breadcrumbs({ items, showHomeIcon = true }: BreadcrumbsP
             <li>
               <Link
                 href="/operator"
-                className="flex items-center text-gray-600 hover:text-blue-600 transition-colors duration-200"
+                className="flex items-center text-neutral-500 hover:text-primary-600 transition-colors duration-200"
                 aria-label="Dashboard Home"
               >
                 <FiHome className="w-4 h-4" />
@@ -32,39 +32,37 @@ export default function Breadcrumbs({ items, showHomeIcon = true }: BreadcrumbsP
             </li>
             {items.length > 0 && (
               <li aria-hidden="true">
-                <FiChevronRight className="w-4 h-4 text-gray-400" />
+                <FiChevronRight className="w-4 h-4 text-neutral-300" />
               </li>
             )}
           </>
         )}
-        
+
         {items.map((item, index) => {
           const isLast = index === items.length - 1;
-          
+
           return (
             <li key={index} className="flex items-center gap-2">
               {item.href && !isLast ? (
                 <Link
                   href={item.href}
-                  className="text-gray-600 hover:text-blue-600 transition-colors duration-200 truncate max-w-[200px] sm:max-w-none"
+                  className="text-neutral-500 hover:text-primary-600 transition-colors duration-200 truncate max-w-[200px] sm:max-w-none"
                 >
                   {item.label}
                 </Link>
               ) : (
-                <span 
-                  className={`${
-                    isLast 
-                      ? "text-gray-900 font-medium" 
-                      : "text-gray-600"
-                  } truncate max-w-[200px] sm:max-w-none`}
+                <span
+                  className={`truncate max-w-[200px] sm:max-w-none ${
+                    isLast ? "text-neutral-900 font-medium" : "text-neutral-500"
+                  }`}
                   aria-current={isLast ? "page" : undefined}
                 >
                   {item.label}
                 </span>
               )}
-              
+
               {!isLast && (
-                <FiChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" aria-hidden="true" />
+                <FiChevronRight className="w-4 h-4 text-neutral-300 flex-shrink-0" aria-hidden="true" />
               )}
             </li>
           );
