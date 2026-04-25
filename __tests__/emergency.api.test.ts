@@ -1,11 +1,11 @@
 /**
  * Unit tests for Emergency Preferences API
- * 
+ *
  * Tests the GET and PUT handlers for /api/family/emergency
  */
 
 import { jest } from '@jest/globals';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { GET, PUT } from '@/app/api/family/emergency/route';
 
 // Mock environment variables
@@ -20,72 +20,74 @@ afterEach(() => {
   jest.clearAllMocks();
 });
 
-// Mock Next Auth
-jest.mock('next-auth', () => ({
-  getServerSession: jest.fn(),
+// Mock auth-utils — the route uses requireAuth(), not getServerSession() directly
+jest.mock('@/lib/auth-utils', () => ({
+  requireAuth: jest.fn(),
+  UnauthenticatedError: class UnauthenticatedError extends Error {
+    constructor(message = 'Not authenticated') {
+      super(message);
+      this.name = 'UnauthenticatedError';
+    }
+  },
 }));
 
-// Mock auth options
-jest.mock('@/lib/auth', () => ({
-  authOptions: {},
+// Mock audit log so it doesn't call prisma
+jest.mock('@/lib/audit', () => ({
+  createAuditLogFromRequest: jest.fn().mockResolvedValue(undefined),
 }));
 
 // Mock Prisma
 jest.mock('@/lib/prisma', () => {
   return {
     prisma: {
-      emergencyPreference: {
-        findUnique: jest.fn(),
-        upsert: jest.fn(),
-      },
       familyMember: {
         findFirst: jest.fn(),
+        create: jest.fn(),
       },
-      resident: {
+      family: {
+        findUnique: jest.fn(),
+      },
+      emergencyPreference: {
         findFirst: jest.fn(),
+        update: jest.fn(),
+        create: jest.fn(),
       },
-    }
+    },
   };
 });
 
-// Mock family service
-jest.mock('@/lib/services/family', () => ({
-  checkFamilyMembership: jest.fn().mockResolvedValue(true),
-}));
-
-// Import mocks after they're defined
-import { getServerSession } from 'next-auth';
+import { requireAuth } from '@/lib/auth-utils';
 import { prisma } from '@/lib/prisma';
-import { checkFamilyMembership } from '@/lib/services/family';
 
 // Helper to create a mock NextRequest
-function createMockRequest(params = {}, method = 'GET', body = null) {
+function createMockRequest(params = {}, method = 'GET', body: object | null = null) {
   const url = new URL('https://example.com/api/family/emergency');
-  
-  // Add query parameters
+
   Object.entries(params).forEach(([key, value]) => {
     url.searchParams.append(key, String(value));
   });
-  
+
   const request = {
+    url: url.toString(),
     nextUrl: url,
     method,
     json: jest.fn().mockResolvedValue(body),
   } as unknown as NextRequest;
-  
+
   return request;
 }
 
 describe('Emergency Preferences API', () => {
-  // Common test data
   const mockUser = {
     id: 'user-123',
     email: 'test@example.com',
-    name: 'Test User',
+    firstName: 'Test',
+    lastName: 'User',
+    role: 'FAMILY' as const,
   };
-  
-  const mockFamilyId = 'family-123';
-  
+
+  const mockFamilyId = 'claaaaaaaaaaaaaaaaaaaaaaaaa'; // valid cuid
+
   const mockPreference = {
     id: 'pref-123',
     familyId: mockFamilyId,
@@ -97,209 +99,153 @@ describe('Emergency Preferences API', () => {
     createdAt: new Date(),
     updatedAt: new Date(),
   };
-  
+
   beforeEach(() => {
-    // Setup default mocks
-    (getServerSession as jest.Mock).mockResolvedValue({
-      user: mockUser,
-    });
-    
-    (prisma.familyMember.findFirst as jest.Mock).mockResolvedValue({
-      familyId: mockFamilyId,
-    });
+    (requireAuth as jest.Mock).mockResolvedValue(mockUser);
+    (prisma.familyMember.findFirst as jest.Mock).mockResolvedValue({ familyId: mockFamilyId });
+    (prisma.family.findUnique as jest.Mock).mockResolvedValue({ id: mockFamilyId, userId: 'other-user' });
+    (prisma.familyMember.create as jest.Mock).mockResolvedValue({ familyId: mockFamilyId });
   });
-  
+
   describe('GET handler', () => {
     test('returns 401 when user is not authenticated', async () => {
-      (getServerSession as jest.Mock).mockResolvedValueOnce(null);
-      
-      const request = createMockRequest();
+      const { UnauthenticatedError } = jest.requireMock('@/lib/auth-utils') as any;
+      (requireAuth as jest.Mock).mockRejectedValueOnce(new UnauthenticatedError());
+
+      const request = createMockRequest({ familyId: mockFamilyId });
       const response = await GET(request);
-      
+
       expect(response.status).toBe(401);
-      expect(await response.json()).toEqual({ error: 'Unauthorized' });
     });
-    
-    test('returns 404 when no family is found for user', async () => {
-      (prisma.familyMember.findFirst as jest.Mock).mockResolvedValueOnce(null);
-      
+
+    test('returns 400 when familyId is missing', async () => {
       const request = createMockRequest();
       const response = await GET(request);
-      
+
+      expect(response.status).toBe(400);
+      expect(await response.json()).toEqual({ error: 'familyId required' });
+    });
+
+    test('returns 404 when family does not exist', async () => {
+      // No existing FamilyMember → triggers family lookup → family not found
+      (prisma.familyMember.findFirst as jest.Mock).mockResolvedValueOnce(null);
+      (prisma.family.findUnique as jest.Mock).mockResolvedValueOnce(null);
+
+      const request = createMockRequest({ familyId: mockFamilyId });
+      const response = await GET(request);
+
       expect(response.status).toBe(404);
-      expect(await response.json()).toEqual({ error: 'No family found for user' });
+      expect(await response.json()).toEqual({ error: 'Family not found' });
     });
-    
-    test('returns 403 when user is not a member of the family', async () => {
-      (checkFamilyMembership as jest.Mock).mockResolvedValueOnce(false);
-      
-      const request = createMockRequest({ familyId: 'wrong-family' });
-      const response = await GET(request);
-      
-      expect(response.status).toBe(403);
-      expect(await response.json()).toEqual({ error: 'Not a member of this family' });
-    });
-    
-    test('returns default values when no preference exists', async () => {
-      (prisma.emergencyPreference.findUnique as jest.Mock).mockResolvedValueOnce(null);
-      
+
+    test('returns preferences: null when no preference exists', async () => {
+      (prisma.emergencyPreference.findFirst as jest.Mock).mockResolvedValueOnce(null);
+
       const request = createMockRequest({ familyId: mockFamilyId });
       const response = await GET(request);
-      
+
       expect(response.status).toBe(200);
-      
       const data = await response.json();
-      expect(data).toEqual({
-        preference: {
-          escalationChain: [],
-          notifyMethods: ['EMAIL'],
-          careInstructions: '',
-        }
-      });
+      expect(data).toHaveProperty('preferences', null);
     });
-    
+
     test('returns existing preference when found', async () => {
-      (prisma.emergencyPreference.findUnique as jest.Mock).mockResolvedValueOnce(mockPreference);
-      
+      (prisma.emergencyPreference.findFirst as jest.Mock).mockResolvedValueOnce(mockPreference);
+
       const request = createMockRequest({ familyId: mockFamilyId });
       const response = await GET(request);
-      
+
       expect(response.status).toBe(200);
-      
       const data = await response.json();
-      expect(data).toEqual({
-        preference: expect.objectContaining({
-          id: mockPreference.id,
-          familyId: mockPreference.familyId,
-          residentId: mockPreference.residentId,
-          escalationChain: mockPreference.escalationChain,
-          notifyMethods: mockPreference.notifyMethods,
-          careInstructions: mockPreference.careInstructions,
-          // Dates returned by the API are serialized to ISO strings
-          createdAt: expect.any(String),
-          updatedAt: expect.any(String),
-          lastConfirmedAt: expect.any(String),
-        }),
+      expect(data).toHaveProperty('preferences');
+      expect(data.preferences).toMatchObject({
+        id: mockPreference.id,
+        familyId: mockPreference.familyId,
+        escalationChain: mockPreference.escalationChain,
+        notifyMethods: mockPreference.notifyMethods,
+        careInstructions: mockPreference.careInstructions,
       });
     });
   });
-  
+
   describe('PUT handler', () => {
-    const mockRequestBody = {
+    const validBody = {
+      familyId: mockFamilyId,
       escalationChain: [{ name: 'New Contact', phone: '+9876543210' }],
       notifyMethods: ['SMS', 'CALL'],
       careInstructions: 'Updated instructions',
     };
-    
+
     test('returns 401 when user is not authenticated', async () => {
-      (getServerSession as jest.Mock).mockResolvedValueOnce(null);
-      
-      const request = createMockRequest({}, 'PUT', mockRequestBody);
+      const { UnauthenticatedError } = jest.requireMock('@/lib/auth-utils') as any;
+      (requireAuth as jest.Mock).mockRejectedValueOnce(new UnauthenticatedError());
+
+      const request = createMockRequest({}, 'PUT', validBody);
       const response = await PUT(request);
-      
+
       expect(response.status).toBe(401);
-      expect(await response.json()).toEqual({ error: 'Unauthorized' });
     });
-    
+
     test('returns 400 when request body is invalid', async () => {
       const invalidBody = {
-        escalationChain: 'not-an-array', // Should be an array
-        notifyMethods: ['SMS', 'CALL'],
+        familyId: mockFamilyId,
+        escalationChain: 'not-an-array', // must be array
+        notifyMethods: ['SMS'],
       };
-      
+
       const request = createMockRequest({}, 'PUT', invalidBody);
       const response = await PUT(request);
-      
+
       expect(response.status).toBe(400);
-      expect(await response.json()).toHaveProperty('error', 'Invalid request parameters');
     });
-    
-    test('returns 404 when no family is found for user', async () => {
-      (prisma.familyMember.findFirst as jest.Mock).mockResolvedValueOnce(null);
-      
-      const request = createMockRequest({}, 'PUT', mockRequestBody);
-      const response = await PUT(request);
-      
-      expect(response.status).toBe(404);
-      expect(await response.json()).toEqual({ error: 'No family found for user' });
-    });
-    
+
     test('returns 403 when user is not a member of the family', async () => {
-      (checkFamilyMembership as jest.Mock).mockResolvedValueOnce(false);
-      
-      const request = createMockRequest({ familyId: 'wrong-family' }, 'PUT', mockRequestBody);
+      (prisma.familyMember.findFirst as jest.Mock).mockResolvedValueOnce(null);
+
+      const request = createMockRequest({}, 'PUT', validBody);
       const response = await PUT(request);
-      
+
       expect(response.status).toBe(403);
-      expect(await response.json()).toEqual({ error: 'Not a member of this family' });
     });
-    
-    test('returns 404 when resident is not found or not part of family', async () => {
-      const bodyWithResident = {
-        ...mockRequestBody,
-        residentId: 'resident-123',
-      };
-      
-      (prisma.resident.findFirst as jest.Mock).mockResolvedValueOnce(null);
-      
-      const request = createMockRequest({}, 'PUT', bodyWithResident);
+
+    test('creates preference when none exists and returns it', async () => {
+      // First findFirst (member check) → found; second findFirst (existing pref) → null → create
+      (prisma.familyMember.findFirst as jest.Mock).mockResolvedValueOnce({ familyId: mockFamilyId });
+      (prisma.emergencyPreference.findFirst as jest.Mock).mockResolvedValueOnce(null);
+      (prisma.emergencyPreference.create as jest.Mock).mockResolvedValueOnce(mockPreference);
+
+      const request = createMockRequest({}, 'PUT', validBody);
       const response = await PUT(request);
-      
-      expect(response.status).toBe(404);
-      expect(await response.json()).toEqual({ error: 'Resident not found or not part of this family' });
-    });
-    
-    test('successfully creates/updates preference and returns it', async () => {
-      const updatedPreference = {
-        ...mockPreference,
-        escalationChain: mockRequestBody.escalationChain,
-        notifyMethods: mockRequestBody.notifyMethods,
-        careInstructions: mockRequestBody.careInstructions,
-      };
-      
-      (prisma.emergencyPreference.upsert as jest.Mock).mockResolvedValueOnce(updatedPreference);
-      
-      const request = createMockRequest({ familyId: mockFamilyId }, 'PUT', mockRequestBody);
-      const response = await PUT(request);
-      
+
       expect(response.status).toBe(200);
-      
       const data = await response.json();
-      expect(data).toEqual({
-        preference: expect.objectContaining({
-          id: updatedPreference.id,
-          familyId: updatedPreference.familyId,
-          residentId: updatedPreference.residentId,
-          escalationChain: updatedPreference.escalationChain,
-          notifyMethods: updatedPreference.notifyMethods,
-          careInstructions: updatedPreference.careInstructions,
-          createdAt: expect.any(String),
-          updatedAt: expect.any(String),
-          lastConfirmedAt: expect.any(String),
-        }),
-      });
-      
-      // Verify upsert was called with correct parameters
-      expect(prisma.emergencyPreference.upsert).toHaveBeenCalledWith(
+      expect(data).toHaveProperty('preferences');
+      expect(data.preferences).toMatchObject({ id: mockPreference.id });
+      expect(prisma.emergencyPreference.create).toHaveBeenCalled();
+    });
+
+    test('updates existing preference and returns it', async () => {
+      const updatedPreference = { ...mockPreference, careInstructions: validBody.careInstructions };
+
+      (prisma.familyMember.findFirst as jest.Mock).mockResolvedValueOnce({ familyId: mockFamilyId });
+      (prisma.emergencyPreference.findFirst as jest.Mock).mockResolvedValueOnce(mockPreference);
+      (prisma.emergencyPreference.update as jest.Mock).mockResolvedValueOnce(updatedPreference);
+
+      const request = createMockRequest({}, 'PUT', validBody);
+      const response = await PUT(request);
+
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data).toHaveProperty('preferences');
+      expect(data.preferences).toMatchObject({ id: mockPreference.id });
+      expect(prisma.emergencyPreference.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: {
-            familyId_residentId: {
-              familyId: mockFamilyId,
-              residentId: null,
-            }
-          },
-          update: expect.objectContaining({
-            escalationChain: mockRequestBody.escalationChain,
-            notifyMethods: mockRequestBody.notifyMethods,
-            careInstructions: mockRequestBody.careInstructions,
+          where: { id: mockPreference.id },
+          data: expect.objectContaining({
+            escalationChain: validBody.escalationChain,
+            notifyMethods: validBody.notifyMethods,
+            careInstructions: validBody.careInstructions,
           }),
-          create: expect.objectContaining({
-            familyId: mockFamilyId,
-            residentId: null,
-            escalationChain: mockRequestBody.escalationChain,
-            notifyMethods: mockRequestBody.notifyMethods,
-            careInstructions: mockRequestBody.careInstructions,
-          })
         })
       );
     });

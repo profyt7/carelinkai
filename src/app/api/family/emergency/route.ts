@@ -86,14 +86,11 @@ export async function GET(request: NextRequest) {
     console.log(`[EMERGENCY] Found preferences: ${preferences ? 'YES' : 'NO'}`);
     return NextResponse.json({ preferences });
   } catch (error: any) {
+    if (error?.name === 'UnauthenticatedError') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('[EMERGENCY] Error fetching emergency preferences:', error);
-    
-    // Return null gracefully instead of error
-    // This handles cases where the table exists but is empty
-    return NextResponse.json({ 
-      preferences: null,
-      message: 'No emergency preferences set yet'
-    });
+    return NextResponse.json({ preferences: null, message: 'No emergency preferences set yet' });
   }
 }
 
@@ -166,6 +163,9 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ preferences });
   } catch (error: any) {
+    if (error?.name === 'UnauthenticatedError') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('Error updating emergency preferences:', error);
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.errors }, { status: 400 });

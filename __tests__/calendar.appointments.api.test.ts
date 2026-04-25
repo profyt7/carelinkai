@@ -48,7 +48,10 @@ jest.mock('@/lib/prisma', () => {
       appointmentParticipant: {
         createMany: jest.fn(),
         deleteMany: jest.fn(),
-      }
+      },
+      family: {
+        findUnique: jest.fn(),
+      },
     }
   };
 });
@@ -171,6 +174,8 @@ describe('Calendar Appointments API', () => {
       ...mockAppointment,
       participants: []
     });
+    // FAMILY role triggers prisma.family.findUnique to scope appointments by residents
+    (prisma.family.findUnique as jest.Mock).mockResolvedValue(null);
   });
   
   describe('GET /api/calendar/appointments', () => {
