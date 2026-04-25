@@ -190,8 +190,8 @@ export default function ProviderDetailPage() {
   if (error || !provider) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
-        <div className="bg-red-50 border border-red-200 rounded-md p-4">
-          <p className="text-red-800">{error || "Provider not found"}</p>
+        <div className="bg-error-50 border border-error-200 rounded-md p-4">
+          <p className="text-error-800">{error || "Provider not found"}</p>
         </div>
         <Link
           href="/marketplace?tab=providers"
@@ -232,7 +232,7 @@ export default function ProviderDetailPage() {
                       {provider.businessName}
                     </h1>
                     {provider.isVerified && (
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-success-100 text-success-800">
                         <FiCheckCircle className="mr-1 h-4 w-4" />
                         Verified
                       </span>
@@ -245,12 +245,12 @@ export default function ProviderDetailPage() {
                 {/* Favorite Button */}
                 <button
                   onClick={toggleFavorite}
-                  className="text-gray-400 hover:text-red-500 transition-colors p-2"
+                  className="text-neutral-400 hover:text-error-500 transition-colors p-2"
                   title={isFavorite ? "Remove from favorites" : "Add to favorites"}
                 >
                   <FiHeart
                     className={`h-7 w-7 ${
-                      isFavorite ? "fill-red-500 text-red-500" : ""
+                      isFavorite ? "fill-error-500 text-error-500" : ""
                     }`}
                   />
                 </button>
@@ -417,7 +417,7 @@ export default function ProviderDetailPage() {
                       className="flex items-center justify-between p-3 bg-neutral-50 rounded-md"
                     >
                       <div className="flex items-center">
-                        <FiCheckCircle className="h-5 w-5 text-green-500 mr-3" />
+                        <FiCheckCircle className="h-5 w-5 text-success-500 mr-3" />
                         <div>
                           <p className="font-medium text-neutral-900">{credential.type}</p>
                           {credential.expiresAt && (
@@ -507,18 +507,18 @@ export default function ProviderDetailPage() {
               </h3>
               <ul className="space-y-2 text-sm text-neutral-600">
                 <li className="flex items-center">
-                  <FiCheckCircle className="h-4 w-4 mr-2 text-green-500" />
+                  <FiCheckCircle className="h-4 w-4 mr-2 text-success-500" />
                   {verifiedCredentials.length} verified credential
                   {verifiedCredentials.length !== 1 ? "s" : ""}
                 </li>
                 <li className="flex items-center">
-                  <FiCheckCircle className="h-4 w-4 mr-2 text-green-500" />
+                  <FiCheckCircle className="h-4 w-4 mr-2 text-success-500" />
                   {provider.serviceTypes.length} service
                   {provider.serviceTypes.length !== 1 ? "s" : ""} offered
                 </li>
                 {provider.isActive && (
                   <li className="flex items-center">
-                    <FiCheckCircle className="h-4 w-4 mr-2 text-green-500" />
+                    <FiCheckCircle className="h-4 w-4 mr-2 text-success-500" />
                     Currently accepting clients
                   </li>
                 )}

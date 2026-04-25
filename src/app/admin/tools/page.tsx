@@ -227,7 +227,7 @@ export default function AdminToolsPage() {
           {/* 1. Admin Metrics & Analytics - PROMINENT */}
           <Link
             href="/admin/metrics"
-            className="group rounded-lg border-2 border-primary-200 bg-gradient-to-br from-primary-50 to-blue-50 p-6 shadow-md transition-all hover:border-primary-400 hover:shadow-lg"
+            className="group rounded-lg border-2 border-primary-200 bg-gradient-to-br from-primary-50 to-primary-50 p-6 shadow-md transition-all hover:border-primary-400 hover:shadow-lg"
           >
             <div className="flex items-start justify-between">
               <div className="flex items-start">
@@ -335,17 +335,17 @@ export default function AdminToolsPage() {
                 </div>
 
                 {/* Fix demo caregiver employment */}
-                <div className="rounded-md border border-blue-200 bg-blue-50 p-4">
-                  <p className="text-sm font-medium text-blue-900 mb-1">Fix Demo Caregiver Employment</p>
-                  <p className="text-xs text-blue-700 mb-3">Links all existing caregivers to the demo operator account so they appear in the operator Caregivers tab. Safe to run multiple times.</p>
+                <div className="rounded-md border border-primary-200 bg-primary-50 p-4">
+                  <p className="text-sm font-medium text-primary-900 mb-1">Fix Demo Caregiver Employment</p>
+                  <p className="text-xs text-primary-700 mb-3">Links all existing caregivers to the demo operator account so they appear in the operator Caregivers tab. Safe to run multiple times.</p>
                   <button
                     onClick={fixDemoEmployment}
                     disabled={!isAdmin || empLoading}
-                    className="rounded-md bg-blue-600 px-3 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+                    className="rounded-md bg-primary-600 px-3 py-2 text-sm text-white hover:bg-primary-700 disabled:opacity-50"
                   >
                     {empLoading ? 'Fixing…' : 'Link Caregivers to Demo Operator'}
                   </button>
-                  {empError && <p className="mt-2 text-xs text-red-700">{empError}</p>}
+                  {empError && <p className="mt-2 text-xs text-error-700">{empError}</p>}
                   {empResult && <p className="mt-2 text-xs text-emerald-700">{empResult}</p>}
                 </div>
               </div>
@@ -393,7 +393,7 @@ export default function AdminToolsPage() {
                   </button>
                 </div>
                 {emailError && (
-                  <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+                  <div className="rounded-md border border-error-200 bg-error-50 p-3 text-sm text-error-800">
                     {emailError}
                   </div>
                 )}

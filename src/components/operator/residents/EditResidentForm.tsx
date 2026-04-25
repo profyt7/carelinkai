@@ -94,7 +94,7 @@ export function EditResidentForm({ resident }: { resident: Resident }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1">
-                First Name <span className="text-red-500">*</span>
+                First Name <span className="text-error-500">*</span>
               </label>
               <input 
                 className="w-full border border-neutral-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500" 
@@ -106,7 +106,7 @@ export function EditResidentForm({ resident }: { resident: Resident }) {
             </div>
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1">
-                Last Name <span className="text-red-500">*</span>
+                Last Name <span className="text-error-500">*</span>
               </label>
               <input 
                 className="w-full border border-neutral-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500" 
@@ -120,7 +120,7 @@ export function EditResidentForm({ resident }: { resident: Resident }) {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1">
-                Date of Birth <span className="text-red-500">*</span>
+                Date of Birth <span className="text-error-500">*</span>
               </label>
               <input 
                 type="date" 

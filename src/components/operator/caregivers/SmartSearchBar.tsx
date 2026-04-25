@@ -56,7 +56,7 @@ export default function SmartSearchBar() {
   };
 
   const bgBadge = (status: string) =>
-    status === 'CLEAR' ? 'bg-green-100 text-green-700' :
+    status === 'CLEAR' ? 'bg-success-100 text-success-700' :
     status === 'PENDING' ? 'bg-amber-100 text-amber-700' :
     'bg-neutral-100 text-neutral-500';
 
@@ -113,7 +113,7 @@ export default function SmartSearchBar() {
         )}
       </div>
 
-      {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
+      {error && <p className="mt-2 text-sm text-error-500">{error}</p>}
 
       {searched && (
         <div className="mt-4">

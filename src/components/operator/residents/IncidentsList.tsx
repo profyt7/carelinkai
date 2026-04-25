@@ -44,7 +44,7 @@ export function IncidentsList({ residentId, items }: { residentId: string; items
             <>
               <span>{i.type} (severity: {i.severity})</span>
               <button className="text-primary-600 hover:underline" onClick={() => { setEditing(i.id); setForm({ type: i.type, severity: i.severity }); }}>Edit</button>
-              <button className="text-red-600 hover:underline" onClick={() => onDelete(i.id)}>Delete</button>
+              <button className="text-error-600 hover:underline" onClick={() => onDelete(i.id)}>Delete</button>
             </>
           )}
         </li>

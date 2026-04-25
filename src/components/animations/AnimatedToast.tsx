@@ -16,16 +16,16 @@ export interface ToastProps {
 
 const typeStyles = {
   success: {
-    bg: 'bg-green-50 border-green-200',
-    text: 'text-green-800',
+    bg: 'bg-success-50 border-success-200',
+    text: 'text-success-800',
     icon: FiCheckCircle,
-    iconColor: 'text-green-500',
+    iconColor: 'text-success-500',
   },
   error: {
-    bg: 'bg-red-50 border-red-200',
-    text: 'text-red-800',
+    bg: 'bg-error-50 border-error-200',
+    text: 'text-error-800',
     icon: FiAlertCircle,
-    iconColor: 'text-red-500',
+    iconColor: 'text-error-500',
   },
   warning: {
     bg: 'bg-amber-50 border-amber-200',
@@ -34,10 +34,10 @@ const typeStyles = {
     iconColor: 'text-amber-500',
   },
   info: {
-    bg: 'bg-blue-50 border-blue-200',
-    text: 'text-blue-800',
+    bg: 'bg-primary-50 border-primary-200',
+    text: 'text-primary-800',
     icon: FiInfo,
-    iconColor: 'text-blue-500',
+    iconColor: 'text-primary-500',
   },
 };
 

@@ -99,7 +99,7 @@ export default function AskAIWidget() {
         </div>
       )}
 
-      {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
+      {error && <p className="mt-2 text-sm text-error-500">{error}</p>}
     </div>
   );
 }

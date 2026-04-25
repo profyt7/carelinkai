@@ -16,9 +16,9 @@ export function ResidentAnalytics({ residents, totalCapacity = 100 }: ResidentAn
 
   if (residents.length === 0) {
     return (
-      <div className="bg-gray-50 rounded-lg p-8 text-center">
-        <FiUsers className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-        <p className="text-gray-600">No resident data available for analytics</p>
+      <div className="bg-neutral-50 rounded-lg p-8 text-center">
+        <FiUsers className="w-12 h-12 text-neutral-400 mx-auto mb-3" />
+        <p className="text-neutral-600">No resident data available for analytics</p>
       </div>
     );
   }
@@ -61,7 +61,7 @@ export function ResidentAnalytics({ residents, totalCapacity = 100 }: ResidentAn
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Care Level Distribution */}
         {analytics.byCareLevelData.length > 0 && (
-          <div className="bg-white p-6 rounded-lg border border-gray-200">
+          <div className="bg-white p-6 rounded-lg border border-neutral-200">
             <h3 className="text-lg font-semibold mb-4">Care Level Distribution</h3>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
@@ -86,7 +86,7 @@ export function ResidentAnalytics({ residents, totalCapacity = 100 }: ResidentAn
         )}
 
         {/* Age Distribution */}
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <div className="bg-white p-6 rounded-lg border border-neutral-200">
           <h3 className="text-lg font-semibold mb-4">Age Distribution</h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={analytics.ageDistributionData}>
@@ -101,7 +101,7 @@ export function ResidentAnalytics({ residents, totalCapacity = 100 }: ResidentAn
       </div>
 
       {/* Admission Trends */}
-      <div className="bg-white p-6 rounded-lg border border-gray-200">
+      <div className="bg-white p-6 rounded-lg border border-neutral-200">
         <h3 className="text-lg font-semibold mb-4">Admission Trends (Last 6 Months)</h3>
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={analytics.admissionTrendsData}>
@@ -117,16 +117,16 @@ export function ResidentAnalytics({ residents, totalCapacity = 100 }: ResidentAn
 
       {/* Status Breakdown */}
       {analytics.byStatusData.length > 0 && (
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <div className="bg-white p-6 rounded-lg border border-neutral-200">
           <h3 className="text-lg font-semibold mb-4">Resident Status</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {analytics.byStatusData.map((item) => (
-              <div key={item.status} className="text-center p-4 bg-gray-50 rounded-lg">
+              <div key={item.status} className="text-center p-4 bg-neutral-50 rounded-lg">
                 <div className="text-2xl font-bold" style={{ color: item.fill }}>
                   {item.count}
                 </div>
-                <div className="text-sm text-gray-600 mt-1">{item.status}</div>
-                <div className="text-xs text-gray-500 mt-1">{item.percentage}%</div>
+                <div className="text-sm text-neutral-600 mt-1">{item.status}</div>
+                <div className="text-xs text-neutral-500 mt-1">{item.percentage}%</div>
               </div>
             ))}
           </div>

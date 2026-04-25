@@ -169,7 +169,7 @@ export default function EmergencyTab({ familyId, showMock = false, isGuest = fal
 
   if (error) {
     return (
-      <div className="rounded-lg border-2 border-red-200 bg-red-50 p-6 text-red-700">
+      <div className="rounded-lg border-2 border-error-200 bg-error-50 p-6 text-error-700">
         <p className="font-medium">Error loading emergency preferences</p>
         <p className="text-sm mt-1">{error}</p>
       </div>
@@ -181,18 +181,18 @@ export default function EmergencyTab({ familyId, showMock = false, isGuest = fal
   return (
     <div>
       {/* Emergency Instructions */}
-      <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-xl border-2 border-red-200 p-6 mb-6 shadow-md">
+      <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-xl border-2 border-error-200 p-6 mb-6 shadow-md">
         <div className="flex items-start gap-4">
           <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-orange-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg">
             <AlertCircle className="w-6 h-6 text-white" />
           </div>
           <div className="flex-1">
-            <h3 className="text-lg font-bold text-red-900 mb-2">Emergency Contact List</h3>
-            <p className="text-sm text-red-700 leading-relaxed">
+            <h3 className="text-lg font-bold text-error-900 mb-2">Emergency Contact List</h3>
+            <p className="text-sm text-error-700 leading-relaxed">
               {prefs?.careInstructions || 'These contacts will be notified in order of priority in case of emergencies.'}
             </p>
             {prefs?.lastConfirmedAt && (
-              <p className="text-xs text-red-600 mt-2">
+              <p className="text-xs text-error-600 mt-2">
                 Last confirmed: {new Date(prefs.lastConfirmedAt).toLocaleDateString()}
               </p>
             )}
@@ -205,7 +205,7 @@ export default function EmergencyTab({ familyId, showMock = false, isGuest = fal
         <div className="mb-6">
           <button
             onClick={handleAddContact}
-            className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white px-5 py-2.5 rounded-xl hover:from-blue-700 hover:to-cyan-600 hover:shadow-lg transition-all duration-200 transform hover:scale-105 font-semibold"
+            className="inline-flex items-center gap-2 bg-gradient-to-r from-primary-600 to-cyan-500 text-white px-5 py-2.5 rounded-xl hover:from-primary-700 hover:to-cyan-600 hover:shadow-lg transition-all duration-200 transform hover:scale-105 font-semibold"
           >
             <FiPlus className="w-5 h-5" />
             Add Emergency Contact
@@ -218,13 +218,13 @@ export default function EmergencyTab({ familyId, showMock = false, isGuest = fal
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                <AlertCircle className="w-6 h-6 text-red-600" />
+              <h3 className="text-2xl font-bold text-neutral-900 flex items-center gap-2">
+                <AlertCircle className="w-6 h-6 text-error-600" />
                 {editIndex !== null ? 'Edit' : 'Add'} Emergency Contact
               </h3>
               <button
                 onClick={() => setIsEditing(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
               >
                 <FiX className="w-6 h-6" />
               </button>
@@ -232,7 +232,7 @@ export default function EmergencyTab({ familyId, showMock = false, isGuest = fal
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-semibold text-neutral-700 mb-2">
                   Full Name *
                 </label>
                 <input
@@ -240,12 +240,12 @@ export default function EmergencyTab({ familyId, showMock = false, isGuest = fal
                   value={editForm.name}
                   onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
                   placeholder="John Doe"
-                  className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full border-2 border-neutral-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-semibold text-neutral-700 mb-2">
                   Relationship *
                 </label>
                 <input
@@ -253,12 +253,12 @@ export default function EmergencyTab({ familyId, showMock = false, isGuest = fal
                   value={editForm.relationship}
                   onChange={(e) => setEditForm({ ...editForm, relationship: e.target.value })}
                   placeholder="Son, Daughter, Spouse, etc."
-                  className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full border-2 border-neutral-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-semibold text-neutral-700 mb-2">
                   Phone Number *
                 </label>
                 <input
@@ -266,12 +266,12 @@ export default function EmergencyTab({ familyId, showMock = false, isGuest = fal
                   value={editForm.phone}
                   onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
                   placeholder="+1-555-0100"
-                  className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full border-2 border-neutral-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-semibold text-neutral-700 mb-2">
                   Email (optional)
                 </label>
                 <input
@@ -279,21 +279,21 @@ export default function EmergencyTab({ familyId, showMock = false, isGuest = fal
                   value={editForm.email}
                   onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
                   placeholder="john@example.com"
-                  className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full border-2 border-neutral-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 />
               </div>
 
               <div className="flex gap-3 pt-4">
                 <button
                   onClick={handleSaveContact}
-                  className="flex-1 inline-flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-cyan-600 hover:shadow-lg transition-all duration-200 font-semibold"
+                  className="flex-1 inline-flex items-center justify-center gap-2 bg-gradient-to-r from-primary-600 to-cyan-500 text-white px-6 py-3 rounded-xl hover:from-primary-700 hover:to-cyan-600 hover:shadow-lg transition-all duration-200 font-semibold"
                 >
                   <FiSave className="w-5 h-5" />
                   Save Contact
                 </button>
                 <button
                   onClick={() => setIsEditing(false)}
-                  className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200 font-semibold"
+                  className="px-6 py-3 border-2 border-neutral-300 text-neutral-700 rounded-xl hover:bg-neutral-50 transition-all duration-200 font-semibold"
                 >
                   Cancel
                 </button>
@@ -317,7 +317,7 @@ export default function EmergencyTab({ familyId, showMock = false, isGuest = fal
           {contacts.map((contact, index) => (
             <div
               key={index}
-              className="bg-white rounded-xl border border-gray-200 p-6 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 hover:border-red-300"
+              className="bg-white rounded-xl border border-neutral-200 p-6 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 hover:border-error-300"
             >
               <div className="flex items-start gap-4">
                 {/* Priority Badge */}
@@ -327,13 +327,13 @@ export default function EmergencyTab({ familyId, showMock = false, isGuest = fal
 
                 {/* Contact Info */}
                 <div className="flex-1">
-                  <h4 className="font-bold text-lg text-gray-900 mb-1">{contact.name}</h4>
-                  <p className="text-sm text-gray-600 mb-3">{contact.relationship}</p>
+                  <h4 className="font-bold text-lg text-neutral-900 mb-1">{contact.name}</h4>
+                  <p className="text-sm text-neutral-600 mb-3">{contact.relationship}</p>
                   
                   <div className="flex flex-wrap gap-3">
                     <a
                       href={`tel:${contact.phone}`}
-                      className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                      className="inline-flex items-center gap-2 text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors"
                     >
                       <FiPhone className="w-4 h-4" />
                       {contact.phone}
@@ -341,7 +341,7 @@ export default function EmergencyTab({ familyId, showMock = false, isGuest = fal
                     {contact.email && (
                       <a
                         href={`mailto:${contact.email}`}
-                        className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                        className="inline-flex items-center gap-2 text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors"
                       >
                         <FiMail className="w-4 h-4" />
                         {contact.email}
@@ -355,13 +355,13 @@ export default function EmergencyTab({ familyId, showMock = false, isGuest = fal
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleEditContact(index)}
-                      className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
+                      className="p-2 text-neutral-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-all duration-200"
                     >
                       <FiEdit2 className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => handleDeleteContact(index)}
-                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
+                      className="p-2 text-neutral-400 hover:text-error-600 hover:bg-error-50 rounded-lg transition-all duration-200"
                     >
                       <FiTrash2 className="w-4 h-4" />
                     </button>
@@ -375,7 +375,7 @@ export default function EmergencyTab({ familyId, showMock = false, isGuest = fal
 
       {/* Guest Notice */}
       {isGuest && contacts.length > 0 && (
-        <div className="mt-6 rounded-xl bg-gradient-to-r from-gray-50 to-gray-100 p-4 text-sm text-gray-600 border border-gray-200">
+        <div className="mt-6 rounded-xl bg-gradient-to-r from-gray-50 to-gray-100 p-4 text-sm text-neutral-600 border border-neutral-200">
           <div className="flex items-center gap-2">
             <span className="text-lg">🚫</span>
             <p className="font-medium">

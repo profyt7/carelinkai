@@ -76,7 +76,7 @@ export default function DischargePlannerDashboard() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="text-red-600 mb-4">
+          <div className="text-error-600 mb-4">
             <FiFileText size={48} className="mx-auto mb-2" />
             <p className="font-medium">Failed to load dashboard</p>
             <p className="text-sm text-neutral-600 mt-1">{error}</p>
@@ -100,15 +100,15 @@ export default function DischargePlannerDashboard() {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg shadow-lg p-8 text-white"
+        className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-lg shadow-lg p-8 text-white"
       >
         <h1 className="text-3xl font-bold mb-2">Discharge Planning Assistant</h1>
-        <p className="text-blue-100 mb-6">
+        <p className="text-primary-100 mb-6">
           AI-powered placement search for senior care facilities. Find the perfect match in seconds.
         </p>
         <button
           onClick={() => router.push("/discharge-planner/search")}
-          className="bg-white text-blue-600 px-6 py-3 rounded-lg font-medium hover:bg-blue-50 transition-colors inline-flex items-center shadow-md"
+          className="bg-white text-primary-600 px-6 py-3 rounded-lg font-medium hover:bg-primary-50 transition-colors inline-flex items-center shadow-md"
         >
           <FiSearch className="mr-2" size={20} />
           Start New Search
@@ -121,7 +121,7 @@ export default function DischargePlannerDashboard() {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.1 }}
-          className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500"
+          className="bg-white rounded-lg shadow p-6 border-l-4 border-primary-500"
         >
           <div className="flex items-center justify-between">
             <div>
@@ -131,8 +131,8 @@ export default function DischargePlannerDashboard() {
                 {stats?.searchesLast30Days ?? 0} this month
               </p>
             </div>
-            <div className="p-3 bg-blue-100 rounded-full">
-              <FiSearch className="text-blue-600" size={24} />
+            <div className="p-3 bg-primary-100 rounded-full">
+              <FiSearch className="text-primary-600" size={24} />
             </div>
           </div>
         </motion.div>
@@ -141,7 +141,7 @@ export default function DischargePlannerDashboard() {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.2 }}
-          className="bg-white rounded-lg shadow p-6 border-l-4 border-green-500"
+          className="bg-white rounded-lg shadow p-6 border-l-4 border-success-500"
         >
           <div className="flex items-center justify-between">
             <div>
@@ -151,8 +151,8 @@ export default function DischargePlannerDashboard() {
                 {stats?.placementsLast30Days ?? 0} this month
               </p>
             </div>
-            <div className="p-3 bg-green-100 rounded-full">
-              <FiSend className="text-green-600" size={24} />
+            <div className="p-3 bg-success-100 rounded-full">
+              <FiSend className="text-success-600" size={24} />
             </div>
           </div>
         </motion.div>
@@ -238,9 +238,9 @@ export default function DischargePlannerDashboard() {
                     </div>
                     <span className={`px-2 py-1 text-xs rounded-full ${
                       search?.status === "COMPLETED" 
-                        ? "bg-green-100 text-green-700"
+                        ? "bg-success-100 text-success-700"
                         : search?.status === "SEARCHING"
-                        ? "bg-blue-100 text-blue-700"
+                        ? "bg-primary-100 text-primary-700"
                         : "bg-neutral-100 text-neutral-700"
                     }`}>
                       {search?.status ?? ""}
@@ -254,7 +254,7 @@ export default function DischargePlannerDashboard() {
             <div className="p-4 bg-neutral-50 border-t border-neutral-200">
               <button
                 onClick={() => router.push("/discharge-planner/history")}
-                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                className="text-sm text-primary-600 hover:text-primary-700 font-medium"
               >
                 View all searches →
               </button>
@@ -299,7 +299,7 @@ export default function DischargePlannerDashboard() {
                     </div>
                     <span className={`px-2 py-1 text-xs rounded-full whitespace-nowrap ml-2 ${
                       request?.status === "VIEWED"
-                        ? "bg-blue-100 text-blue-700"
+                        ? "bg-primary-100 text-primary-700"
                         : request?.status === "SENT"
                         ? "bg-amber-100 text-amber-700"
                         : "bg-neutral-100 text-neutral-700"
@@ -315,7 +315,7 @@ export default function DischargePlannerDashboard() {
             <div className="p-4 bg-neutral-50 border-t border-neutral-200">
               <button
                 onClick={() => router.push("/discharge-planner/requests")}
-                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                className="text-sm text-primary-600 hover:text-primary-700 font-medium"
               >
                 View all requests →
               </button>
@@ -335,18 +335,18 @@ export default function DischargePlannerDashboard() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Link
             href="/discharge-planner/search"
-            className="p-4 border-2 border-neutral-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors group"
+            className="p-4 border-2 border-neutral-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors group"
           >
-            <FiSearch className="text-blue-600 mb-2 group-hover:scale-110 transition-transform" size={24} />
+            <FiSearch className="text-primary-600 mb-2 group-hover:scale-110 transition-transform" size={24} />
             <p className="font-medium text-neutral-900">New Search</p>
             <p className="text-xs text-neutral-600 mt-1">Find placement options</p>
           </Link>
 
           <Link
             href="/discharge-planner/history"
-            className="p-4 border-2 border-neutral-200 rounded-lg hover:border-green-500 hover:bg-green-50 transition-colors group"
+            className="p-4 border-2 border-neutral-200 rounded-lg hover:border-success-500 hover:bg-success-50 transition-colors group"
           >
-            <FiFileText className="text-green-600 mb-2 group-hover:scale-110 transition-transform" size={24} />
+            <FiFileText className="text-success-600 mb-2 group-hover:scale-110 transition-transform" size={24} />
             <p className="font-medium text-neutral-900">Search History</p>
             <p className="text-xs text-neutral-600 mt-1">View past searches</p>
           </Link>
@@ -362,9 +362,9 @@ export default function DischargePlannerDashboard() {
 
           <Link
             href="/discharge-planner/analytics"
-            className="p-4 border-2 border-neutral-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-colors group"
+            className="p-4 border-2 border-neutral-200 rounded-lg hover:border-secondary-500 hover:bg-secondary-50 transition-colors group"
           >
-            <FiTrendingUp className="text-purple-600 mb-2 group-hover:scale-110 transition-transform" size={24} />
+            <FiTrendingUp className="text-secondary-600 mb-2 group-hover:scale-110 transition-transform" size={24} />
             <p className="font-medium text-neutral-900">Analytics</p>
             <p className="text-xs text-neutral-600 mt-1">View performance</p>
           </Link>

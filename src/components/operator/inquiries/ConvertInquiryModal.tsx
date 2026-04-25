@@ -117,14 +117,14 @@ export default function ConvertInquiryModal({
         {/* Header */}
         <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900">Convert Inquiry to Resident</h2>
-            <p className="text-sm text-gray-600 mt-1">
+            <h2 className="text-xl font-semibold text-neutral-900">Convert Inquiry to Resident</h2>
+            <p className="text-sm text-neutral-600 mt-1">
               Create a new resident profile from this inquiry
             </p>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-neutral-400 hover:text-neutral-600 transition-colors"
           >
             <FiX className="w-6 h-6" />
           </button>
@@ -134,39 +134,39 @@ export default function ConvertInquiryModal({
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Error Display */}
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
-              <FiAlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div className="bg-error-50 border border-error-200 rounded-lg p-4 flex items-start gap-3">
+              <FiAlertCircle className="w-5 h-5 text-error-600 flex-shrink-0 mt-0.5" />
               <div>
-                <h4 className="text-sm font-medium text-red-800">Conversion Failed</h4>
-                <p className="text-sm text-red-600 mt-1">{error}</p>
+                <h4 className="text-sm font-medium text-error-800">Conversion Failed</h4>
+                <p className="text-sm text-error-600 mt-1">{error}</p>
               </div>
             </div>
           )}
 
           {/* Inquiry Summary */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-blue-900 mb-3">Inquiry Information</h3>
+          <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
+            <h3 className="text-sm font-medium text-primary-900 mb-3">Inquiry Information</h3>
             <div className="space-y-2 text-sm">
               <div className="flex items-start gap-2">
-                <FiUser className="w-4 h-4 text-blue-600 mt-0.5" />
+                <FiUser className="w-4 h-4 text-primary-600 mt-0.5" />
                 <div>
                   <span className="font-medium">Family Contact:</span>
-                  <p className="text-gray-700">
+                  <p className="text-neutral-700">
                     {inquiry.family.user.firstName} {inquiry.family.user.lastName}
                   </p>
-                  <p className="text-gray-600">{inquiry.family.user.email}</p>
+                  <p className="text-neutral-600">{inquiry.family.user.email}</p>
                   {inquiry.family.user.phone && (
-                    <p className="text-gray-600">{inquiry.family.user.phone}</p>
+                    <p className="text-neutral-600">{inquiry.family.user.phone}</p>
                   )}
                 </div>
               </div>
               <div className="flex items-start gap-2">
-                <FiHome className="w-4 h-4 text-blue-600 mt-0.5" />
+                <FiHome className="w-4 h-4 text-primary-600 mt-0.5" />
                 <div>
                   <span className="font-medium">Home:</span>
-                  <p className="text-gray-700">{inquiry.home.name}</p>
+                  <p className="text-neutral-700">{inquiry.home.name}</p>
                   {inquiry.home.address && (
-                    <p className="text-gray-600">
+                    <p className="text-neutral-600">
                       {inquiry.home.address.street}, {inquiry.home.address.city},{' '}
                       {inquiry.home.address.state}
                     </p>
@@ -178,11 +178,11 @@ export default function ConvertInquiryModal({
 
           {/* Resident Information */}
           <div className="space-y-4">
-            <h3 className="text-sm font-medium text-gray-900">Resident Information</h3>
+            <h3 className="text-sm font-medium text-neutral-900">Resident Information</h3>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-neutral-700 mb-1">
                   First Name *
                 </label>
                 <input
@@ -191,17 +191,17 @@ export default function ConvertInquiryModal({
                   value={formData.firstName}
                   onChange={handleInputChange}
                   required
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                    validationErrors.firstName ? 'border-red-300' : 'border-gray-300'
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 ${
+                    validationErrors.firstName ? 'border-error-300' : 'border-neutral-300'
                   }`}
                 />
                 {validationErrors.firstName && (
-                  <p className="text-xs text-red-600 mt-1">{validationErrors.firstName[0]}</p>
+                  <p className="text-xs text-error-600 mt-1">{validationErrors.firstName[0]}</p>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-neutral-700 mb-1">
                   Last Name *
                 </label>
                 <input
@@ -210,19 +210,19 @@ export default function ConvertInquiryModal({
                   value={formData.lastName}
                   onChange={handleInputChange}
                   required
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                    validationErrors.lastName ? 'border-red-300' : 'border-gray-300'
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 ${
+                    validationErrors.lastName ? 'border-error-300' : 'border-neutral-300'
                   }`}
                 />
                 {validationErrors.lastName && (
-                  <p className="text-xs text-red-600 mt-1">{validationErrors.lastName[0]}</p>
+                  <p className="text-xs text-error-600 mt-1">{validationErrors.lastName[0]}</p>
                 )}
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-neutral-700 mb-1">
                   Date of Birth *
                 </label>
                 <input
@@ -231,17 +231,17 @@ export default function ConvertInquiryModal({
                   value={formData.dateOfBirth}
                   onChange={handleInputChange}
                   required
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                    validationErrors.dateOfBirth ? 'border-red-300' : 'border-gray-300'
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 ${
+                    validationErrors.dateOfBirth ? 'border-error-300' : 'border-neutral-300'
                   }`}
                 />
                 {validationErrors.dateOfBirth && (
-                  <p className="text-xs text-red-600 mt-1">{validationErrors.dateOfBirth[0]}</p>
+                  <p className="text-xs text-error-600 mt-1">{validationErrors.dateOfBirth[0]}</p>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-neutral-700 mb-1">
                   Gender *
                 </label>
                 <select
@@ -249,7 +249,7 @@ export default function ConvertInquiryModal({
                   value={formData.gender}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                 >
                   <option value="MALE">Male</option>
                   <option value="FEMALE">Female</option>
@@ -260,7 +260,7 @@ export default function ConvertInquiryModal({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-neutral-700 mb-1">
                 Expected Move-In Date
               </label>
               <input
@@ -268,12 +268,12 @@ export default function ConvertInquiryModal({
                 name="moveInDate"
                 value={formData.moveInDate}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-neutral-700 mb-1">
                 Medical Conditions
               </label>
               <textarea
@@ -281,13 +281,13 @@ export default function ConvertInquiryModal({
                 value={formData.medicalConditions}
                 onChange={handleInputChange}
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                 placeholder="List any known medical conditions..."
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-neutral-700 mb-1">
                 Medications
               </label>
               <textarea
@@ -295,13 +295,13 @@ export default function ConvertInquiryModal({
                 value={formData.medications}
                 onChange={handleInputChange}
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                 placeholder="List current medications..."
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-neutral-700 mb-1">
                 Allergies
               </label>
               <input
@@ -309,13 +309,13 @@ export default function ConvertInquiryModal({
                 name="allergies"
                 value={formData.allergies}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                 placeholder="Food, medication, or environmental allergies..."
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-neutral-700 mb-1">
                 Dietary Restrictions
               </label>
               <input
@@ -323,13 +323,13 @@ export default function ConvertInquiryModal({
                 name="dietaryRestrictions"
                 value={formData.dietaryRestrictions}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                 placeholder="Special diet requirements..."
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-neutral-700 mb-1">
                 Additional Notes
               </label>
               <textarea
@@ -337,13 +337,13 @@ export default function ConvertInquiryModal({
                 value={formData.notes}
                 onChange={handleInputChange}
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                 placeholder="Any additional information about the resident..."
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-neutral-700 mb-1">
                 Conversion Notes (Internal)
               </label>
               <textarea
@@ -351,7 +351,7 @@ export default function ConvertInquiryModal({
                 value={formData.conversionNotes}
                 onChange={handleInputChange}
                 rows={2}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                 placeholder="Internal notes about this conversion..."
               />
             </div>
@@ -363,14 +363,14 @@ export default function ConvertInquiryModal({
               type="button"
               onClick={onClose}
               disabled={isLoading}
-              className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium text-neutral-700 hover:text-neutral-900 disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {isLoading ? (
                 <>

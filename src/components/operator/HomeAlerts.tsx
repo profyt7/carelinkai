@@ -83,7 +83,7 @@ export default function HomeAlerts({ homeId, maxAlerts = 5 }: HomeAlertsProps) {
   if (visibleAlerts.length === 0) {
     return (
       <div className="bg-white rounded-lg border border-neutral-200 p-6">
-        <div className="flex items-center gap-2 text-green-700">
+        <div className="flex items-center gap-2 text-success-700">
           <Info className="h-5 w-5" />
           <span className="font-medium">No alerts</span>
         </div>
@@ -97,22 +97,22 @@ export default function HomeAlerts({ homeId, maxAlerts = 5 }: HomeAlertsProps) {
   const getSeverityIcon = (severity: Alert['severity']) => {
     switch (severity) {
       case 'critical':
-        return <AlertCircle className="h-5 w-5 text-red-600" />;
+        return <AlertCircle className="h-5 w-5 text-error-600" />;
       case 'warning':
-        return <AlertTriangle className="h-5 w-5 text-yellow-600" />;
+        return <AlertTriangle className="h-5 w-5 text-warning-600" />;
       case 'info':
-        return <Info className="h-5 w-5 text-blue-600" />;
+        return <Info className="h-5 w-5 text-primary-600" />;
     }
   };
 
   const getSeverityStyles = (severity: Alert['severity']) => {
     switch (severity) {
       case 'critical':
-        return 'bg-red-50 border-red-200';
+        return 'bg-error-50 border-error-200';
       case 'warning':
-        return 'bg-yellow-50 border-yellow-200';
+        return 'bg-warning-50 border-warning-200';
       case 'info':
-        return 'bg-blue-50 border-blue-200';
+        return 'bg-primary-50 border-primary-200';
     }
   };
 
@@ -125,17 +125,17 @@ export default function HomeAlerts({ homeId, maxAlerts = 5 }: HomeAlertsProps) {
         </div>
         <div className="flex items-center gap-2 text-sm">
           {summary.critical > 0 && (
-            <span className="px-2 py-1 bg-red-100 text-red-700 rounded-md font-medium">
+            <span className="px-2 py-1 bg-error-100 text-error-700 rounded-md font-medium">
               {summary.critical} Critical
             </span>
           )}
           {summary.warning > 0 && (
-            <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-md font-medium">
+            <span className="px-2 py-1 bg-warning-100 text-warning-700 rounded-md font-medium">
               {summary.warning} Warning
             </span>
           )}
           {summary.info > 0 && (
-            <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-md font-medium">
+            <span className="px-2 py-1 bg-primary-100 text-primary-700 rounded-md font-medium">
               {summary.info} Info
             </span>
           )}

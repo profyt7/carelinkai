@@ -358,11 +358,11 @@ export default function ProvidersPage() {
 
   // Filter sidebar component (reused for desktop and mobile)
   const FilterSidebar = ({ isMobile = false }: { isMobile?: boolean }) => (
-    <div className={`rounded-md border border-gray-200 bg-white p-4 space-y-3 ${isMobile ? '' : ''}`}>
+    <div className={`rounded-md border border-neutral-200 bg-white p-4 space-y-3 ${isMobile ? '' : ''}`}>
       {isMobile && (
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-lg">Filters</h3>
-          <button onClick={() => setShowMobileFilters(false)} className="p-2 hover:bg-gray-100 rounded-md">
+          <button onClick={() => setShowMobileFilters(false)} className="p-2 hover:bg-neutral-100 rounded-md">
             <FiX className="h-5 w-5" />
           </button>
         </div>
@@ -374,7 +374,7 @@ export default function ProvidersPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+          className="w-full px-3 py-2 border border-neutral-300 rounded-md text-sm"
         />
       </div>
 
@@ -384,7 +384,7 @@ export default function ProvidersPage() {
           value={city}
           onChange={(e) => setCity(e.target.value)}
           placeholder="City"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+          className="w-full px-3 py-2 border border-neutral-300 rounded-md text-sm"
         />
       </div>
 
@@ -395,17 +395,17 @@ export default function ProvidersPage() {
           onChange={(e) => setState(e.target.value.toUpperCase())}
           placeholder="State"
           maxLength={2}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+          className="w-full px-3 py-2 border border-neutral-300 rounded-md text-sm"
         />
       </div>
 
       {/* Sort by */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Sort by</label>
+        <label className="block text-sm font-medium text-neutral-700 mb-1">Sort by</label>
         <select
           value={sortBy}
           onChange={(e) => { setSortBy(e.target.value as any); setPage(1); }}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+          className="w-full px-3 py-2 border border-neutral-300 rounded-md text-sm"
         >
           <option value="ratingDesc">Rating: High to Low</option>
           <option value="recency">Most Recent</option>
@@ -424,7 +424,7 @@ export default function ProvidersPage() {
             type="checkbox"
             checked={verifiedOnly}
             onChange={(e) => setVerifiedOnly(e.target.checked)}
-            className="h-4 w-4 text-primary-600 border-gray-300 rounded"
+            className="h-4 w-4 text-primary-600 border-neutral-300 rounded"
           />
           <span>Verified only</span>
         </label>
@@ -437,7 +437,7 @@ export default function ProvidersPage() {
             type="checkbox"
             checked={favoritesOnly}
             onChange={(e) => setFavoritesOnly(e.target.checked)}
-            className="h-4 w-4 text-primary-600 border-gray-300 rounded"
+            className="h-4 w-4 text-primary-600 border-neutral-300 rounded"
           />
           <span>Favorites only</span>
         </label>
@@ -445,7 +445,7 @@ export default function ProvidersPage() {
 
       {/* Radius */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Radius (miles)</label>
+        <label className="block text-sm font-medium text-neutral-700 mb-1">Radius (miles)</label>
         <div className="flex gap-2">
           <input
             type="number"
@@ -454,11 +454,11 @@ export default function ProvidersPage() {
             value={radius}
             onChange={(e) => setRadius(e.target.value)}
             placeholder="e.g. 10"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+            className="w-full px-3 py-2 border border-neutral-300 rounded-md text-sm"
           />
           <button
             type="button"
-            className="shrink-0 rounded-md border px-3 py-2 text-sm hover:bg-gray-50"
+            className="shrink-0 rounded-md border px-3 py-2 text-sm hover:bg-neutral-50"
             onClick={() => {
               if (navigator?.geolocation) {
                 navigator.geolocation.getCurrentPosition(
@@ -477,42 +477,42 @@ export default function ProvidersPage() {
 
       {/* Minimum Hourly Rate */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Minimum Hourly Rate ($)</label>
+        <label className="block text-sm font-medium text-neutral-700 mb-1">Minimum Hourly Rate ($)</label>
         <input
           type="number"
           value={minRate}
           onChange={(e) => setMinRate(e.target.value)}
           placeholder="Min Rate"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+          className="w-full px-3 py-2 border border-neutral-300 rounded-md text-sm"
         />
       </div>
 
       {/* Maximum Hourly Rate */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Maximum Hourly Rate ($)</label>
+        <label className="block text-sm font-medium text-neutral-700 mb-1">Maximum Hourly Rate ($)</label>
         <input
           type="number"
           value={maxRate}
           onChange={(e) => setMaxRate(e.target.value)}
           placeholder="Max Rate"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+          className="w-full px-3 py-2 border border-neutral-300 rounded-md text-sm"
         />
       </div>
 
       {/* Minimum Years in Business */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Minimum Years in Business</label>
+        <label className="block text-sm font-medium text-neutral-700 mb-1">Minimum Years in Business</label>
         <input
           type="number"
           value={minYearsInBusiness}
           onChange={(e) => setMinYearsInBusiness(e.target.value)}
           placeholder="Min Years"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+          className="w-full px-3 py-2 border border-neutral-300 rounded-md text-sm"
         />
       </div>
 
       {/* Service Types */}
-      <div className="mt-4 pt-4 border-t border-gray-200">
+      <div className="mt-4 pt-4 border-t border-neutral-200">
         <h4 className="font-medium text-sm mb-2">Service Types</h4>
         {serviceTypeOptions.map((option) => (
           <label key={option.value} className="flex items-center gap-2 text-sm whitespace-nowrap mb-1">
@@ -520,7 +520,7 @@ export default function ProvidersPage() {
               type="checkbox"
               checked={selectedServiceTypes.includes(option.value)}
               onChange={() => toggleServiceType(option.value)}
-              className="h-4 w-4 text-primary-600 border-gray-300 rounded"
+              className="h-4 w-4 text-primary-600 border-neutral-300 rounded"
             />
             <span>{option.label}</span>
           </label>
@@ -530,7 +530,7 @@ export default function ProvidersPage() {
       {/* Clear Filters */}
       <button
         onClick={clearAllFilters}
-        className="w-full rounded-md bg-gray-100 px-3 py-2 text-sm text-gray-700 hover:bg-gray-200 mt-4"
+        className="w-full rounded-md bg-neutral-100 px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-200 mt-4"
       >
         Clear Filters
       </button>
@@ -556,7 +556,7 @@ export default function ProvidersPage() {
         <div className="md:hidden mb-4 w-full">
           <button
             onClick={() => setShowMobileFilters(true)}
-            className="w-full inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+            className="w-full inline-flex items-center justify-center px-4 py-2 border border-neutral-300 rounded-md shadow-sm text-sm font-medium text-neutral-700 bg-white hover:bg-neutral-50"
           >
             <FiFilter className="mr-2 h-4 w-4" />
             Filters {chips.length > 0 && `(${chips.length})`}
@@ -584,15 +584,15 @@ export default function ProvidersPage() {
                 <button
                   key={c.key}
                   onClick={c.remove}
-                  className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-sm bg-white hover:bg-gray-50"
+                  className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-sm bg-white hover:bg-neutral-50"
                 >
                   <span>{c.label}</span>
-                  <span className="text-gray-500">×</span>
+                  <span className="text-neutral-500">×</span>
                 </button>
               ))}
               <button
                 onClick={clearAllFilters}
-                className="ml-auto inline-flex items-center rounded-md bg-gray-100 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-200"
+                className="ml-auto inline-flex items-center rounded-md bg-neutral-100 px-3 py-1.5 text-sm text-neutral-700 hover:bg-neutral-200"
               >
                 Clear all
               </button>
@@ -600,7 +600,7 @@ export default function ProvidersPage() {
           )}
 
           {/* Results count */}
-          <div className="mb-4 text-sm text-gray-600">
+          <div className="mb-4 text-sm text-neutral-600">
             {loading ? 'Loading...' : `${totalCount} provider${totalCount !== 1 ? 's' : ''} found`}
           </div>
 
@@ -614,8 +614,8 @@ export default function ProvidersPage() {
 
           {/* Error State */}
           {error && !loading && (
-            <div className="bg-red-50 border border-red-200 rounded-md p-4">
-              <p className="text-red-800">{error}</p>
+            <div className="bg-error-50 border border-error-200 rounded-md p-4">
+              <p className="text-error-800">{error}</p>
             </div>
           )}
 
@@ -654,17 +654,17 @@ export default function ProvidersPage() {
                     <button
                       onClick={() => setPage(Math.max(1, page - 1))}
                       disabled={page === 1}
-                      className="relative inline-flex items-center px-3 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="relative inline-flex items-center px-3 py-2 rounded-l-md border border-neutral-300 bg-white text-sm font-medium text-neutral-500 hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Previous
                     </button>
-                    <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                    <span className="relative inline-flex items-center px-4 py-2 border border-neutral-300 bg-white text-sm font-medium text-neutral-700">
                       Page {page} of {totalPages}
                     </span>
                     <button
                       onClick={() => setPage(Math.min(totalPages, page + 1))}
                       disabled={page === totalPages}
-                      className="relative inline-flex items-center px-3 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="relative inline-flex items-center px-3 py-2 rounded-r-md border border-neutral-300 bg-white text-sm font-medium text-neutral-500 hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Next
                     </button>

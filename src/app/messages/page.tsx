@@ -645,7 +645,7 @@ export default function MessagesPage() {
         
         {/* Error Toast */}
         {error && (
-          <div className="fixed bottom-4 left-1/2 -translate-x-1/2 rounded-md bg-red-100 px-4 py-2 text-red-800 shadow-md">
+          <div className="fixed bottom-4 left-1/2 -translate-x-1/2 rounded-md bg-error-100 px-4 py-2 text-error-800 shadow-md">
             {error}
           </div>
         )}

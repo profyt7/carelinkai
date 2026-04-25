@@ -22,8 +22,8 @@ export function ExpiringCertificationsWidget({ caregivers }: ExpiringCertificati
           Expiring Certifications
         </h3>
         <div className="text-center py-8">
-          <FiCheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
-          <p className="text-green-700 font-medium">All certifications are up to date</p>
+          <FiCheckCircle className="w-12 h-12 text-success-500 mx-auto mb-3" />
+          <p className="text-success-700 font-medium">All certifications are up to date</p>
           <p className="text-sm text-neutral-600 mt-1">
             No certifications expiring in the next 30 days
           </p>
@@ -38,7 +38,7 @@ export function ExpiringCertificationsWidget({ caregivers }: ExpiringCertificati
         <h3 className="text-lg font-semibold text-neutral-900">
           Expiring Certifications
         </h3>
-        <span className="px-3 py-1 rounded-full text-sm font-semibold bg-yellow-100 text-yellow-700">
+        <span className="px-3 py-1 rounded-full text-sm font-semibold bg-warning-100 text-warning-700">
           {expiringCertifications.length} expiring soon
         </span>
       </div>
@@ -50,10 +50,10 @@ export function ExpiringCertificationsWidget({ caregivers }: ExpiringCertificati
             href={`/operator/caregivers/${item.caregiver.id}?tab=certifications`}
             className="block"
           >
-            <div className="flex items-start justify-between p-4 bg-yellow-50 hover:bg-yellow-100 rounded-lg border border-yellow-200 transition-colors">
+            <div className="flex items-start justify-between p-4 bg-warning-50 hover:bg-warning-100 rounded-lg border border-warning-200 transition-colors">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <FiAlertCircle className="w-4 h-4 text-yellow-600 flex-shrink-0" />
+                  <FiAlertCircle className="w-4 h-4 text-warning-600 flex-shrink-0" />
                   <p className="font-medium text-neutral-900 truncate">
                     {item.caregiver.user.firstName} {item.caregiver.user.lastName}
                   </p>
@@ -64,10 +64,10 @@ export function ExpiringCertificationsWidget({ caregivers }: ExpiringCertificati
                 <div className="flex items-center gap-2">
                   <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
                     item.daysUntilExpiry <= 7
-                      ? 'bg-red-100 text-red-700'
+                      ? 'bg-error-100 text-error-700'
                       : item.daysUntilExpiry <= 14
-                      ? 'bg-orange-100 text-orange-700'
-                      : 'bg-yellow-100 text-yellow-700'
+                      ? 'bg-warning-100 text-warning-700'
+                      : 'bg-warning-100 text-warning-700'
                   }`}>
                     {item.daysUntilExpiry} day{item.daysUntilExpiry !== 1 ? 's' : ''} remaining
                   </span>

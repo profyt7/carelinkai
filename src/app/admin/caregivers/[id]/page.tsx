@@ -207,11 +207,11 @@ export default function AdminCaregiverDetailPage() {
 
   const getBackgroundCheckBadge = (status: string) => {
     const badges: Record<string, { color: string; icon: React.ReactNode; label: string }> = {
-      NOT_STARTED: { color: 'bg-gray-100 text-gray-800', icon: <FiClock size={16} />, label: 'Not Started' },
-      PENDING: { color: 'bg-yellow-100 text-yellow-800', icon: <FiClock size={16} />, label: 'Pending' },
-      CLEAR: { color: 'bg-green-100 text-green-800', icon: <FiCheck size={16} />, label: 'Clear' },
-      CONSIDER: { color: 'bg-orange-100 text-orange-800', icon: <FiAlertTriangle size={16} />, label: 'Consider' },
-      EXPIRED: { color: 'bg-red-100 text-red-800', icon: <FiX size={16} />, label: 'Expired' },
+      NOT_STARTED: { color: 'bg-neutral-100 text-neutral-800', icon: <FiClock size={16} />, label: 'Not Started' },
+      PENDING: { color: 'bg-warning-100 text-warning-800', icon: <FiClock size={16} />, label: 'Pending' },
+      CLEAR: { color: 'bg-success-100 text-success-800', icon: <FiCheck size={16} />, label: 'Clear' },
+      CONSIDER: { color: 'bg-warning-100 text-warning-800', icon: <FiAlertTriangle size={16} />, label: 'Consider' },
+      EXPIRED: { color: 'bg-error-100 text-error-800', icon: <FiX size={16} />, label: 'Expired' },
     };
     const badge = badges[status] || badges.NOT_STARTED;
     return (
@@ -226,7 +226,7 @@ export default function AdminCaregiverDetailPage() {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
         </div>
       </div>
     );
@@ -236,8 +236,8 @@ export default function AdminCaregiverDetailPage() {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="text-center">
-          <p className="text-gray-500">Caregiver not found</p>
-          <Link href="/admin/caregivers" className="text-blue-600 hover:text-blue-800 mt-4 inline-block">
+          <p className="text-neutral-500">Caregiver not found</p>
+          <Link href="/admin/caregivers" className="text-primary-600 hover:text-primary-800 mt-4 inline-block">
             Back to Caregivers
           </Link>
         </div>
@@ -252,15 +252,15 @@ export default function AdminCaregiverDetailPage() {
         <div className="flex items-center gap-4">
           <Link
             href="/admin/caregivers"
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            className="p-2 hover:bg-neutral-100 rounded-full transition-colors"
           >
             <FiArrowLeft size={20} />
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-3xl font-bold text-neutral-900">
               {caregiver.user.firstName} {caregiver.user.lastName}
             </h1>
-            <p className="text-sm text-gray-600 mt-1">Caregiver ID: {caregiver.id}</p>
+            <p className="text-sm text-neutral-600 mt-1">Caregiver ID: {caregiver.id}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -268,7 +268,7 @@ export default function AdminCaregiverDetailPage() {
             <>
               <button
                 onClick={() => setEditing(false)}
-                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                className="px-4 py-2 text-neutral-700 bg-neutral-100 rounded-md hover:bg-neutral-200"
               >
                 <FiX className="inline mr-2" />
                 Cancel
@@ -276,7 +276,7 @@ export default function AdminCaregiverDetailPage() {
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
+                className="px-4 py-2 text-white bg-primary-600 rounded-md hover:bg-primary-700 disabled:opacity-50"
               >
                 <FiSave className="inline mr-2" />
                 {saving ? 'Saving...' : 'Save Changes'}
@@ -285,7 +285,7 @@ export default function AdminCaregiverDetailPage() {
           ) : (
             <button
               onClick={() => setEditing(true)}
-              className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700"
+              className="px-4 py-2 text-white bg-primary-600 rounded-md hover:bg-primary-700"
             >
               <FiEdit className="inline mr-2" />
               Edit
@@ -301,21 +301,21 @@ export default function AdminCaregiverDetailPage() {
           {/* Profile Info */}
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex flex-col items-center">
-              <div className="h-24 w-24 rounded-full bg-blue-100 flex items-center justify-center mb-4">
-                <span className="text-3xl text-blue-600 font-bold">
+              <div className="h-24 w-24 rounded-full bg-primary-100 flex items-center justify-center mb-4">
+                <span className="text-3xl text-primary-600 font-bold">
                   {caregiver.user.firstName?.[0]}{caregiver.user.lastName?.[0]}
                 </span>
               </div>
-              <h2 className="text-xl font-bold text-gray-900">
+              <h2 className="text-xl font-bold text-neutral-900">
                 {caregiver.user.firstName} {caregiver.user.lastName}
               </h2>
               <div className="mt-3 space-y-2 w-full">
-                <div className="flex items-center gap-2 text-sm text-gray-600">
+                <div className="flex items-center gap-2 text-sm text-neutral-600">
                   <FiMail size={16} />
                   {caregiver.user.email}
                 </div>
                 {caregiver.user.phone && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <div className="flex items-center gap-2 text-sm text-neutral-600">
                     <FiPhone size={16} />
                     {caregiver.user.phone}
                   </div>
@@ -323,15 +323,15 @@ export default function AdminCaregiverDetailPage() {
               </div>
             </div>
 
-            <div className="mt-6 pt-6 border-t border-gray-200 space-y-4">
+            <div className="mt-6 pt-6 border-t border-neutral-200 space-y-4">
               <div>
-                <label className="text-xs font-medium text-gray-500 uppercase">Account Status</label>
+                <label className="text-xs font-medium text-neutral-500 uppercase">Account Status</label>
                 <div className="mt-1">
                   {editing ? (
                     <select
                       value={caregiver.user.status}
                       onChange={(e) => handleChangeUserStatus(e.target.value)}
-                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      className="w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
                     >
                       <option value="ACTIVE">Active</option>
                       <option value="PENDING">Pending</option>
@@ -340,10 +340,10 @@ export default function AdminCaregiverDetailPage() {
                     </select>
                   ) : (
                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                      caregiver.user.status === 'ACTIVE' ? 'bg-green-100 text-green-800' :
-                      caregiver.user.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
-                      caregiver.user.status === 'SUSPENDED' ? 'bg-red-100 text-red-800' :
-                      'bg-gray-100 text-gray-800'
+                      caregiver.user.status === 'ACTIVE' ? 'bg-success-100 text-success-800' :
+                      caregiver.user.status === 'PENDING' ? 'bg-warning-100 text-warning-800' :
+                      caregiver.user.status === 'SUSPENDED' ? 'bg-error-100 text-error-800' :
+                      'bg-neutral-100 text-neutral-800'
                     }`}>
                       {caregiver.user.status}
                     </span>
@@ -352,13 +352,13 @@ export default function AdminCaregiverDetailPage() {
               </div>
 
               <div>
-                <label className="text-xs font-medium text-gray-500 uppercase">Background Check</label>
+                <label className="text-xs font-medium text-neutral-500 uppercase">Background Check</label>
                 <div className="mt-1">
                   {editing ? (
                     <select
                       value={formData.backgroundCheckStatus}
                       onChange={(e) => setFormData({ ...formData, backgroundCheckStatus: e.target.value })}
-                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      className="w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
                     >
                       <option value="NOT_STARTED">Not Started</option>
                       <option value="PENDING">Pending</option>
@@ -373,13 +373,13 @@ export default function AdminCaregiverDetailPage() {
               </div>
 
               <div>
-                <label className="text-xs font-medium text-gray-500 uppercase">Employment Status</label>
+                <label className="text-xs font-medium text-neutral-500 uppercase">Employment Status</label>
                 <div className="mt-1">
                   {editing ? (
                     <select
                       value={formData.employmentStatus}
                       onChange={(e) => setFormData({ ...formData, employmentStatus: e.target.value })}
-                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      className="w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
                     >
                       <option value="">Not Set</option>
                       <option value="ACTIVE">Active</option>
@@ -389,11 +389,11 @@ export default function AdminCaregiverDetailPage() {
                     </select>
                   ) : (
                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                      caregiver.employmentStatus === 'ACTIVE' ? 'bg-green-100 text-green-800' :
-                      caregiver.employmentStatus === 'INACTIVE' ? 'bg-gray-100 text-gray-800' :
-                      caregiver.employmentStatus === 'ON_LEAVE' ? 'bg-yellow-100 text-yellow-800' :
-                      caregiver.employmentStatus === 'TERMINATED' ? 'bg-red-100 text-red-800' :
-                      'bg-gray-100 text-gray-800'
+                      caregiver.employmentStatus === 'ACTIVE' ? 'bg-success-100 text-success-800' :
+                      caregiver.employmentStatus === 'INACTIVE' ? 'bg-neutral-100 text-neutral-800' :
+                      caregiver.employmentStatus === 'ON_LEAVE' ? 'bg-warning-100 text-warning-800' :
+                      caregiver.employmentStatus === 'TERMINATED' ? 'bg-error-100 text-error-800' :
+                      'bg-neutral-100 text-neutral-800'
                     }`}>
                       {caregiver.employmentStatus || 'Not Set'}
                     </span>
@@ -402,13 +402,13 @@ export default function AdminCaregiverDetailPage() {
               </div>
 
               <div>
-                <label className="text-xs font-medium text-gray-500 uppercase">Employment Type</label>
+                <label className="text-xs font-medium text-neutral-500 uppercase">Employment Type</label>
                 <div className="mt-1">
                   {editing ? (
                     <select
                       value={formData.employmentType}
                       onChange={(e) => setFormData({ ...formData, employmentType: e.target.value })}
-                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      className="w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
                     >
                       <option value="">Not Set</option>
                       <option value="FULL_TIME">Full Time</option>
@@ -417,7 +417,7 @@ export default function AdminCaregiverDetailPage() {
                       <option value="CONTRACT">Contract</option>
                     </select>
                   ) : (
-                    <div className="text-sm text-gray-900">
+                    <div className="text-sm text-neutral-900">
                       {caregiver.employmentType?.replace('_', ' ') || 'Not Set'}
                     </div>
                   )}
@@ -425,7 +425,7 @@ export default function AdminCaregiverDetailPage() {
               </div>
 
               <div>
-                <label className="text-xs font-medium text-gray-500 uppercase">Marketplace Visibility</label>
+                <label className="text-xs font-medium text-neutral-500 uppercase">Marketplace Visibility</label>
                 <div className="mt-1">
                   {editing ? (
                     <label className="flex items-center gap-2 cursor-pointer">
@@ -433,13 +433,13 @@ export default function AdminCaregiverDetailPage() {
                         type="checkbox"
                         checked={formData.isVisibleInMarketplace}
                         onChange={(e) => setFormData({ ...formData, isVisibleInMarketplace: e.target.checked })}
-                        className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        className="rounded border-neutral-300 text-primary-600 shadow-sm focus:border-primary-500 focus:ring-primary-500"
                       />
-                      <span className="text-sm text-gray-700">Visible in marketplace</span>
+                      <span className="text-sm text-neutral-700">Visible in marketplace</span>
                     </label>
                   ) : (
                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                      caregiver.isVisibleInMarketplace ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                      caregiver.isVisibleInMarketplace ? 'bg-success-100 text-success-800' : 'bg-neutral-100 text-neutral-800'
                     }`}>
                       {caregiver.isVisibleInMarketplace ? 'Visible' : 'Hidden'}
                     </span>
@@ -451,40 +451,40 @@ export default function AdminCaregiverDetailPage() {
 
           {/* Quick Stats */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Stats</h3>
+            <h3 className="text-lg font-semibold text-neutral-900 mb-4">Quick Stats</h3>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Rating</span>
-                <span className="text-sm font-medium text-gray-900">
+                <span className="text-sm text-neutral-600">Rating</span>
+                <span className="text-sm font-medium text-neutral-900">
                   {caregiver.averageRating ? `⭐ ${caregiver.averageRating.toFixed(1)}` : 'No rating'}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Reviews</span>
-                <span className="text-sm font-medium text-gray-900">{caregiver.reviewCount}</span>
+                <span className="text-sm text-neutral-600">Reviews</span>
+                <span className="text-sm font-medium text-neutral-900">{caregiver.reviewCount}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Assignments</span>
-                <span className="text-sm font-medium text-gray-900">{caregiver.assignmentCount}</span>
+                <span className="text-sm text-neutral-600">Assignments</span>
+                <span className="text-sm font-medium text-neutral-900">{caregiver.assignmentCount}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Certifications</span>
-                <span className="text-sm font-medium text-gray-900">{caregiver.certificationCount}</span>
+                <span className="text-sm text-neutral-600">Certifications</span>
+                <span className="text-sm font-medium text-neutral-900">{caregiver.certificationCount}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Documents</span>
-                <span className="text-sm font-medium text-gray-900">{caregiver.documents.length}</span>
+                <span className="text-sm text-neutral-600">Documents</span>
+                <span className="text-sm font-medium text-neutral-900">{caregiver.documents.length}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Joined</span>
-                <span className="text-sm font-medium text-gray-900">
+                <span className="text-sm text-neutral-600">Joined</span>
+                <span className="text-sm font-medium text-neutral-900">
                   {new Date(caregiver.user.createdAt).toLocaleDateString()}
                 </span>
               </div>
               {caregiver.user.lastLoginAt && (
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Last Login</span>
-                  <span className="text-sm font-medium text-gray-900">
+                  <span className="text-sm text-neutral-600">Last Login</span>
+                  <span className="text-sm font-medium text-neutral-900">
                     {new Date(caregiver.user.lastLoginAt).toLocaleDateString()}
                   </span>
                 </div>
@@ -497,7 +497,7 @@ export default function AdminCaregiverDetailPage() {
         <div className="lg:col-span-2">
           {/* Tabs */}
           <div className="bg-white rounded-t-lg shadow">
-            <div className="border-b border-gray-200">
+            <div className="border-b border-neutral-200">
               <nav className="flex -mb-px">
                 {[
                   { id: 'overview', label: 'Overview', icon: <FiUser size={16} /> },
@@ -511,15 +511,15 @@ export default function AdminCaregiverDetailPage() {
                     onClick={() => setActiveTab(tab.id as any)}
                     className={`flex items-center gap-2 px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
                       activeTab === tab.id
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        ? 'border-primary-500 text-primary-600'
+                        : 'border-transparent text-neutral-500 hover:text-neutral-700 hover:border-neutral-300'
                     }`}
                   >
                     {tab.icon}
                     {tab.label}
                     {tab.count !== undefined && (
                       <span className={`ml-1 px-2 py-0.5 rounded-full text-xs ${
-                        activeTab === tab.id ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'
+                        activeTab === tab.id ? 'bg-primary-100 text-primary-600' : 'bg-neutral-100 text-neutral-600'
                       }`}>
                         {tab.count}
                       </span>
@@ -535,7 +535,7 @@ export default function AdminCaregiverDetailPage() {
             {activeTab === 'overview' && (
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
                     Bio
                   </label>
                   {editing ? (
@@ -543,17 +543,17 @@ export default function AdminCaregiverDetailPage() {
                       value={formData.bio}
                       onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
                       rows={4}
-                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      className="w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
                       placeholder="Tell us about yourself..."
                     />
                   ) : (
-                    <p className="text-gray-700">{caregiver.bio || 'No bio provided'}</p>
+                    <p className="text-neutral-700">{caregiver.bio || 'No bio provided'}</p>
                   )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-neutral-700 mb-2">
                       Years of Experience
                     </label>
                     {editing ? (
@@ -561,32 +561,32 @@ export default function AdminCaregiverDetailPage() {
                         type="number"
                         value={formData.yearsExperience}
                         onChange={(e) => setFormData({ ...formData, yearsExperience: e.target.value })}
-                        className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        className="w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
                         placeholder="0"
                       />
                     ) : (
-                      <p className="text-gray-700">{caregiver.yearsExperience || 'Not specified'}</p>
+                      <p className="text-neutral-700">{caregiver.yearsExperience || 'Not specified'}</p>
                     )}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-neutral-700 mb-2">
                       Hourly Rate
                     </label>
                     {editing ? (
                       <div className="relative">
-                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-500">$</span>
                         <input
                           type="number"
                           step="0.01"
                           value={formData.hourlyRate}
                           onChange={(e) => setFormData({ ...formData, hourlyRate: e.target.value })}
-                          className="w-full pl-7 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                          className="w-full pl-7 rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
                           placeholder="0.00"
                         />
                       </div>
                     ) : (
-                      <p className="text-gray-700">
+                      <p className="text-neutral-700">
                         {caregiver.hourlyRate ? `$${caregiver.hourlyRate}/hr` : 'Not specified'}
                       </p>
                     )}
@@ -594,7 +594,7 @@ export default function AdminCaregiverDetailPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
                     Specialties
                   </label>
                   <div className="flex flex-wrap gap-2">
@@ -602,19 +602,19 @@ export default function AdminCaregiverDetailPage() {
                       caregiver.specialties.map((specialty, index) => (
                         <span
                           key={index}
-                          className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+                          className="px-3 py-1 bg-primary-100 text-primary-800 rounded-full text-sm"
                         >
                           {specialty}
                         </span>
                       ))
                     ) : (
-                      <p className="text-gray-500">No specialties listed</p>
+                      <p className="text-neutral-500">No specialties listed</p>
                     )}
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
                     Care Types
                   </label>
                   <div className="flex flex-wrap gap-2">
@@ -622,19 +622,19 @@ export default function AdminCaregiverDetailPage() {
                       caregiver.careTypes.map((type, index) => (
                         <span
                           key={index}
-                          className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm"
+                          className="px-3 py-1 bg-success-100 text-success-800 rounded-full text-sm"
                         >
                           {type}
                         </span>
                       ))
                     ) : (
-                      <p className="text-gray-500">No care types specified</p>
+                      <p className="text-neutral-500">No care types specified</p>
                     )}
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
                     Languages
                   </label>
                   <div className="flex flex-wrap gap-2">
@@ -642,23 +642,23 @@ export default function AdminCaregiverDetailPage() {
                       caregiver.languages.map((language, index) => (
                         <span
                           key={index}
-                          className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm"
+                          className="px-3 py-1 bg-secondary-100 text-secondary-800 rounded-full text-sm"
                         >
                           {language}
                         </span>
                       ))
                     ) : (
-                      <p className="text-gray-500">No languages listed</p>
+                      <p className="text-neutral-500">No languages listed</p>
                     )}
                   </div>
                 </div>
 
                 {caregiver.hireDate && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-neutral-700 mb-2">
                       Hire Date
                     </label>
-                    <p className="text-gray-700">
+                    <p className="text-neutral-700">
                       {new Date(caregiver.hireDate).toLocaleDateString()}
                     </p>
                   </div>
@@ -669,17 +669,17 @@ export default function AdminCaregiverDetailPage() {
             {activeTab === 'certifications' && (
               <div className="space-y-4">
                 {caregiver.certifications.length === 0 ? (
-                  <p className="text-center text-gray-500 py-8">No certifications found</p>
+                  <p className="text-center text-neutral-500 py-8">No certifications found</p>
                 ) : (
                   caregiver.certifications.map((cert) => (
                     <div key={cert.id} className="border rounded-lg p-4">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <h4 className="text-lg font-medium text-gray-900">
+                          <h4 className="text-lg font-medium text-neutral-900">
                             {cert.certificationName || cert.certificationType}
                           </h4>
-                          <p className="text-sm text-gray-600 mt-1">{cert.certificationType}</p>
-                          <div className="mt-2 flex items-center gap-4 text-sm text-gray-600">
+                          <p className="text-sm text-neutral-600 mt-1">{cert.certificationType}</p>
+                          <div className="mt-2 flex items-center gap-4 text-sm text-neutral-600">
                             <span>
                               Issued: {new Date(cert.issueDate).toLocaleDateString()}
                             </span>
@@ -691,9 +691,9 @@ export default function AdminCaregiverDetailPage() {
                           </div>
                         </div>
                         <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          cert.status === 'CURRENT' ? 'bg-green-100 text-green-800' :
-                          cert.status === 'EXPIRED' ? 'bg-red-100 text-red-800' :
-                          'bg-yellow-100 text-yellow-800'
+                          cert.status === 'CURRENT' ? 'bg-success-100 text-success-800' :
+                          cert.status === 'EXPIRED' ? 'bg-error-100 text-error-800' :
+                          'bg-warning-100 text-warning-800'
                         }`}>
                           {cert.status}
                         </span>
@@ -707,15 +707,15 @@ export default function AdminCaregiverDetailPage() {
             {activeTab === 'documents' && (
               <div className="space-y-4">
                 {caregiver.documents.length === 0 ? (
-                  <p className="text-center text-gray-500 py-8">No documents found</p>
+                  <p className="text-center text-neutral-500 py-8">No documents found</p>
                 ) : (
                   caregiver.documents.map((doc) => (
                     <div key={doc.id} className="border rounded-lg p-4">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <h4 className="text-lg font-medium text-gray-900">{doc.title}</h4>
-                          <p className="text-sm text-gray-600 mt-1">{doc.documentType}</p>
-                          <div className="mt-2 flex items-center gap-4 text-sm text-gray-600">
+                          <h4 className="text-lg font-medium text-neutral-900">{doc.title}</h4>
+                          <p className="text-sm text-neutral-600 mt-1">{doc.documentType}</p>
+                          <div className="mt-2 flex items-center gap-4 text-sm text-neutral-600">
                             <span>
                               Uploaded: {new Date(doc.uploadDate).toLocaleDateString()}
                             </span>
@@ -726,7 +726,7 @@ export default function AdminCaregiverDetailPage() {
                             )}
                           </div>
                         </div>
-                        <FiFileText size={24} className="text-gray-400" />
+                        <FiFileText size={24} className="text-neutral-400" />
                       </div>
                     </div>
                   ))
@@ -737,16 +737,16 @@ export default function AdminCaregiverDetailPage() {
             {activeTab === 'assignments' && (
               <div className="space-y-4">
                 {caregiver.assignments.length === 0 ? (
-                  <p className="text-center text-gray-500 py-8">No assignments found</p>
+                  <p className="text-center text-neutral-500 py-8">No assignments found</p>
                 ) : (
                   caregiver.assignments.map((assignment) => (
                     <div key={assignment.id} className="border rounded-lg p-4">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <h4 className="text-lg font-medium text-gray-900">
+                          <h4 className="text-lg font-medium text-neutral-900">
                             {assignment.resident.firstName} {assignment.resident.lastName}
                           </h4>
-                          <div className="mt-2 flex items-center gap-4 text-sm text-gray-600">
+                          <div className="mt-2 flex items-center gap-4 text-sm text-neutral-600">
                             <span>
                               Started: {new Date(assignment.startDate).toLocaleDateString()}
                             </span>
@@ -758,7 +758,7 @@ export default function AdminCaregiverDetailPage() {
                           </div>
                         </div>
                         {assignment.isPrimary && (
-                          <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                          <span className="px-3 py-1 bg-primary-100 text-primary-800 rounded-full text-sm font-medium">
                             Primary
                           </span>
                         )}
@@ -772,7 +772,7 @@ export default function AdminCaregiverDetailPage() {
             {activeTab === 'reviews' && (
               <div className="space-y-4">
                 {caregiver.reviews.length === 0 ? (
-                  <p className="text-center text-gray-500 py-8">No reviews found</p>
+                  <p className="text-center text-neutral-500 py-8">No reviews found</p>
                 ) : (
                   caregiver.reviews.map((review) => (
                     <div key={review.id} className="border rounded-lg p-4">
@@ -783,23 +783,23 @@ export default function AdminCaregiverDetailPage() {
                               <FiStar
                                 key={i}
                                 size={16}
-                                className={i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}
+                                className={i < review.rating ? 'text-warning-400 fill-current' : 'text-neutral-300'}
                               />
                             ))}
                           </div>
-                          <span className="text-sm font-medium text-gray-900">
+                          <span className="text-sm font-medium text-neutral-900">
                             {review.rating}/5
                           </span>
                         </div>
-                        <span className="text-sm text-gray-500">
+                        <span className="text-sm text-neutral-500">
                           {new Date(review.createdAt).toLocaleDateString()}
                         </span>
                       </div>
                       {review.title && (
-                        <h4 className="font-medium text-gray-900 mb-2">{review.title}</h4>
+                        <h4 className="font-medium text-neutral-900 mb-2">{review.title}</h4>
                       )}
                       {review.content && (
-                        <p className="text-gray-700 text-sm">{review.content}</p>
+                        <p className="text-neutral-700 text-sm">{review.content}</p>
                       )}
                     </div>
                   ))

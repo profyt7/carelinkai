@@ -132,13 +132,13 @@ export default function EditListingForm({ listing }: EditListingFormProps) {
     <div>
       {/* Status badge */}
       <div className="mb-6">
-        <span className="text-sm font-medium text-gray-500 mr-2">Current Status:</span>
+        <span className="text-sm font-medium text-neutral-500 mr-2">Current Status:</span>
         {status === "OPEN" ? (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-success-100 text-success-800">
             Open
           </span>
         ) : (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-800">
             Closed
           </span>
         )}
@@ -151,7 +151,7 @@ export default function EditListingForm({ listing }: EditListingFormProps) {
             type="button"
             onClick={() => updateListingStatus("CLOSED")}
             disabled={isSubmitting}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
+            className="inline-flex items-center px-4 py-2 border border-neutral-300 rounded-md shadow-sm text-sm font-medium text-neutral-700 bg-white hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
           >
             <FiLock className="mr-2" />
             Close Listing
@@ -171,13 +171,13 @@ export default function EditListingForm({ listing }: EditListingFormProps) {
       
       {/* Error and success messages */}
       {error && (
-        <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-md">
+        <div className="mb-4 p-3 bg-error-50 text-error-700 rounded-md">
           {error}
         </div>
       )}
       
       {success && (
-        <div className="mb-4 p-3 bg-green-50 text-green-700 rounded-md">
+        <div className="mb-4 p-3 bg-success-50 text-success-700 rounded-md">
           {success}
         </div>
       )}
@@ -187,7 +187,7 @@ export default function EditListingForm({ listing }: EditListingFormProps) {
         <div className="space-y-6">
           {/* Title */}
           <div>
-            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="title" className="block text-sm font-medium text-neutral-700 mb-1">
               Title *
             </label>
             <input
@@ -196,14 +196,14 @@ export default function EditListingForm({ listing }: EditListingFormProps) {
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+              className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
               disabled={isSubmitting}
             />
           </div>
           
           {/* Description */}
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="description" className="block text-sm font-medium text-neutral-700 mb-1">
               Description *
             </label>
             <textarea
@@ -212,7 +212,7 @@ export default function EditListingForm({ listing }: EditListingFormProps) {
               required
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+              className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
               disabled={isSubmitting}
             ></textarea>
           </div>
@@ -220,7 +220,7 @@ export default function EditListingForm({ listing }: EditListingFormProps) {
           {/* Location */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="city" className="block text-sm font-medium text-neutral-700 mb-1">
                 City
               </label>
               <input
@@ -228,13 +228,13 @@ export default function EditListingForm({ listing }: EditListingFormProps) {
                 id="city"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
                 disabled={isSubmitting}
               />
             </div>
             
             <div>
-              <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="state" className="block text-sm font-medium text-neutral-700 mb-1">
                 State
               </label>
               <input
@@ -242,13 +242,13 @@ export default function EditListingForm({ listing }: EditListingFormProps) {
                 id="state"
                 value={state}
                 onChange={(e) => setState(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
                 disabled={isSubmitting}
               />
             </div>
             
             <div>
-              <label htmlFor="zipCode" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="zipCode" className="block text-sm font-medium text-neutral-700 mb-1">
                 ZIP Code
               </label>
               <input
@@ -256,7 +256,7 @@ export default function EditListingForm({ listing }: EditListingFormProps) {
                 id="zipCode"
                 value={zipCode}
                 onChange={(e) => setZipCode(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
                 disabled={isSubmitting}
               />
             </div>
@@ -264,7 +264,7 @@ export default function EditListingForm({ listing }: EditListingFormProps) {
           
           {/* Setting */}
           <div>
-            <label htmlFor="setting" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="setting" className="block text-sm font-medium text-neutral-700 mb-1">
               Care Setting
             </label>
             <input
@@ -272,7 +272,7 @@ export default function EditListingForm({ listing }: EditListingFormProps) {
               id="setting"
               value={setting}
               onChange={(e) => setSetting(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+              className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
               disabled={isSubmitting}
             />
           </div>
@@ -280,7 +280,7 @@ export default function EditListingForm({ listing }: EditListingFormProps) {
           {/* Categories */}
           <div className="space-y-4">
             <div>
-              <label htmlFor="careTypes" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="careTypes" className="block text-sm font-medium text-neutral-700 mb-1">
                 Care Types (comma-separated)
               </label>
               <input
@@ -289,13 +289,13 @@ export default function EditListingForm({ listing }: EditListingFormProps) {
                 value={careTypes}
                 onChange={(e) => setCareTypes(e.target.value)}
                 placeholder="Type 1, Type 2, Type 3"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
                 disabled={isSubmitting}
               />
             </div>
             
             <div>
-              <label htmlFor="services" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="services" className="block text-sm font-medium text-neutral-700 mb-1">
                 Services (comma-separated)
               </label>
               <input
@@ -304,13 +304,13 @@ export default function EditListingForm({ listing }: EditListingFormProps) {
                 value={services}
                 onChange={(e) => setServices(e.target.value)}
                 placeholder="Service 1, Service 2, Service 3"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
                 disabled={isSubmitting}
               />
             </div>
             
             <div>
-              <label htmlFor="specialties" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="specialties" className="block text-sm font-medium text-neutral-700 mb-1">
                 Specialties (comma-separated)
               </label>
               <input
@@ -319,7 +319,7 @@ export default function EditListingForm({ listing }: EditListingFormProps) {
                 value={specialties}
                 onChange={(e) => setSpecialties(e.target.value)}
                 placeholder="Specialty 1, Specialty 2, Specialty 3"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
                 disabled={isSubmitting}
               />
             </div>
@@ -328,7 +328,7 @@ export default function EditListingForm({ listing }: EditListingFormProps) {
           {/* Rates */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="hourlyRateMin" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="hourlyRateMin" className="block text-sm font-medium text-neutral-700 mb-1">
                 Minimum Hourly Rate ($)
               </label>
               <input
@@ -338,13 +338,13 @@ export default function EditListingForm({ listing }: EditListingFormProps) {
                 step="0.01"
                 value={hourlyRateMin}
                 onChange={(e) => setHourlyRateMin(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
                 disabled={isSubmitting}
               />
             </div>
             
             <div>
-              <label htmlFor="hourlyRateMax" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="hourlyRateMax" className="block text-sm font-medium text-neutral-700 mb-1">
                 Maximum Hourly Rate ($)
               </label>
               <input
@@ -354,7 +354,7 @@ export default function EditListingForm({ listing }: EditListingFormProps) {
                 step="0.01"
                 value={hourlyRateMax}
                 onChange={(e) => setHourlyRateMax(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
                 disabled={isSubmitting}
               />
             </div>
@@ -363,7 +363,7 @@ export default function EditListingForm({ listing }: EditListingFormProps) {
           {/* Dates */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="startTime" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="startTime" className="block text-sm font-medium text-neutral-700 mb-1">
                 Start Date
               </label>
               <input
@@ -371,13 +371,13 @@ export default function EditListingForm({ listing }: EditListingFormProps) {
                 id="startTime"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
                 disabled={isSubmitting}
               />
             </div>
             
             <div>
-              <label htmlFor="endTime" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="endTime" className="block text-sm font-medium text-neutral-700 mb-1">
                 End Date
               </label>
               <input
@@ -385,7 +385,7 @@ export default function EditListingForm({ listing }: EditListingFormProps) {
                 id="endTime"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
                 disabled={isSubmitting}
               />
             </div>
@@ -393,14 +393,14 @@ export default function EditListingForm({ listing }: EditListingFormProps) {
           
           {/* Status */}
           <div>
-            <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="status" className="block text-sm font-medium text-neutral-700 mb-1">
               Listing Status
             </label>
             <select
               id="status"
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+              className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
               disabled={isSubmitting}
             >
               <option value="OPEN">Open</option>

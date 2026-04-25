@@ -65,9 +65,9 @@ export default function RecommendedListings() {
     return (
       <div className="py-8">
         <h2 className="text-xl font-semibold mb-4">Recommended Jobs</h2>
-        <div className="py-12 text-center text-gray-500">
+        <div className="py-12 text-center text-neutral-500">
           <div className="animate-pulse flex justify-center">
-            <div className="h-8 w-8 bg-gray-200 rounded-full"></div>
+            <div className="h-8 w-8 bg-neutral-200 rounded-full"></div>
           </div>
           <p className="mt-2">Loading recommendations...</p>
         </div>
@@ -79,7 +79,7 @@ export default function RecommendedListings() {
     return (
       <div className="py-8">
         <h2 className="text-xl font-semibold mb-4">Recommended Jobs</h2>
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+        <div className="bg-error-50 border border-error-200 text-error-700 px-4 py-3 rounded-md">
           <p>Unable to load recommendations. Please try again later.</p>
           <p className="text-sm">{error}</p>
         </div>
@@ -98,7 +98,7 @@ export default function RecommendedListings() {
         {items.map((item) => (
           <div key={item.id} className="bg-white border rounded-md p-4 flex flex-col">
             <div className="flex items-start mb-2">
-              <div className="h-12 w-12 rounded-md overflow-hidden bg-gray-100 flex-shrink-0 mr-3">
+              <div className="h-12 w-12 rounded-md overflow-hidden bg-neutral-100 flex-shrink-0 mr-3">
                 <Image 
                   src={`https://ui-avatars.com/api/?name=${encodeURIComponent(item.data.title)}&background=random&size=128`} 
                   alt={item.data.title} 
@@ -107,8 +107,8 @@ export default function RecommendedListings() {
                 />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">{item.data.title}</h3>
-                <div className="text-sm text-gray-600">
+                <h3 className="font-semibold text-neutral-900">{item.data.title}</h3>
+                <div className="text-sm text-neutral-600">
                   {item.data.city || item.data.state ? (
                     <div className="flex items-center">
                       <FiMapPin className="mr-1" size={14} />
@@ -120,7 +120,7 @@ export default function RecommendedListings() {
             </div>
             
             {(item.data.hourlyRateMin || item.data.hourlyRateMax) && (
-              <div className="text-sm text-gray-800 mb-2 flex items-center">
+              <div className="text-sm text-neutral-800 mb-2 flex items-center">
                 <FiDollarSign className="mr-1" size={14} />
                 {item.data.hourlyRateMin && item.data.hourlyRateMax 
                   ? `$${item.data.hourlyRateMin} - $${item.data.hourlyRateMax}/hr` 
@@ -130,10 +130,10 @@ export default function RecommendedListings() {
               </div>
             )}
             
-            <p className="text-sm text-gray-700 line-clamp-2 mb-3 flex-grow">{item.data.description}</p>
+            <p className="text-sm text-neutral-700 line-clamp-2 mb-3 flex-grow">{item.data.description}</p>
             
             {item.score > 0 && (
-              <div className="text-xs text-gray-500 mb-3 flex items-center justify-between">
+              <div className="text-xs text-neutral-500 mb-3 flex items-center justify-between">
                 <span className="font-medium">{item.score}% match</span>
                 <ExplainMatchTrigger
                   title={item.data.title}

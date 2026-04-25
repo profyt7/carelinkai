@@ -44,9 +44,9 @@ export default function PrivacyPolicyPage() {
           </div>
 
           {/* HIPAA Compliance Badge */}
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-10 flex items-center justify-center">
-            <FiShield className="text-green-600 mr-3 w-6 h-6" />
-            <span className="text-green-800 font-medium">
+          <div className="bg-success-50 border border-success-200 rounded-lg p-4 mb-10 flex items-center justify-center">
+            <FiShield className="text-success-600 mr-3 w-6 h-6" />
+            <span className="text-success-800 font-medium">
               HIPAA Compliant • SOC 2 Certified • GDPR & CCPA Aware
             </span>
           </div>
@@ -93,8 +93,8 @@ export default function PrivacyPolicyPage() {
               </ul>
 
               <h3 className="text-lg font-medium text-slate-800 mt-6 mb-3">Sensitive Health Information</h3>
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
-                <p className="text-blue-800 text-sm">
+              <div className="bg-primary-50 border border-primary-200 rounded-lg p-4 mt-4">
+                <p className="text-primary-800 text-sm">
                   <strong>Protected Health Information (PHI):</strong> We may collect health-related information 
                   necessary to match families with appropriate care facilities. This information is handled in 
                   compliance with HIPAA regulations and is only shared with your explicit consent.

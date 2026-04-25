@@ -590,17 +590,17 @@ export default function TourRequestModal({
                 {/* Header */}
                 <Dialog.Title
                   as="div"
-                  className="flex items-center justify-between border-b border-gray-200 pb-4"
+                  className="flex items-center justify-between border-b border-neutral-200 pb-4"
                 >
                   <div>
-                    <h3 className="text-lg font-medium leading-6 text-gray-900">
+                    <h3 className="text-lg font-medium leading-6 text-neutral-900">
                       Schedule a Tour
                     </h3>
-                    <p className="mt-1 text-sm text-gray-600">{homeName}</p>
+                    <p className="mt-1 text-sm text-neutral-600">{homeName}</p>
                   </div>
                   <button
                     type="button"
-                    className="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                    className="rounded-md bg-white text-neutral-400 hover:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                     onClick={isLoading ? undefined : handleClose}
                     disabled={isLoading}
                     aria-label="Close"
@@ -626,7 +626,7 @@ export default function TourRequestModal({
                                 className={`flex h-8 w-8 items-center justify-center rounded-full border-2 ${
                                   index <= currentStepIndex
                                     ? "border-primary-600 bg-primary-600"
-                                    : "border-gray-300 bg-white"
+                                    : "border-neutral-300 bg-white"
                                 }`}
                               >
                                 {index < currentStepIndex ? (
@@ -636,7 +636,7 @@ export default function TourRequestModal({
                                     className={`text-sm font-medium ${
                                       index === currentStepIndex
                                         ? "text-white"
-                                        : "text-gray-500"
+                                        : "text-neutral-500"
                                     }`}
                                   >
                                     {step.number}
@@ -647,7 +647,7 @@ export default function TourRequestModal({
                                 className={`ml-2 text-sm font-medium ${
                                   index <= currentStepIndex
                                     ? "text-primary-600"
-                                    : "text-gray-500"
+                                    : "text-neutral-500"
                                 }`}
                               >
                                 {step.label}
@@ -657,7 +657,7 @@ export default function TourRequestModal({
                                   className={`ml-4 h-0.5 flex-1 ${
                                     index < currentStepIndex
                                       ? "bg-primary-600"
-                                      : "bg-gray-300"
+                                      : "bg-neutral-300"
                                   }`}
                                 />
                               )}
@@ -675,16 +675,16 @@ export default function TourRequestModal({
                   {currentStep === "date-range" && (
                     <div className="space-y-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">
+                        <label className="block text-sm font-medium text-neutral-700">
                           <FiCalendar className="mr-1 inline h-4 w-4" />
                           Select Date Range
                         </label>
-                        <p className="mt-1 text-xs text-gray-500">
+                        <p className="mt-1 text-xs text-neutral-500">
                           Choose the date range you'd like to visit (next 30 days)
                         </p>
                         <div className="mt-3 grid grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-xs text-gray-600">
+                            <label className="block text-xs text-neutral-600">
                               Start Date
                             </label>
                             <input
@@ -693,12 +693,12 @@ export default function TourRequestModal({
                               onChange={(e) => setStartDate(e.target.value)}
                               min={format(new Date(), "yyyy-MM-dd")}
                               max={format(addDays(new Date(), 30), "yyyy-MM-dd")}
-                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                              className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
                               disabled={isLoading}
                             />
                           </div>
                           <div>
-                            <label className="block text-xs text-gray-600">
+                            <label className="block text-xs text-neutral-600">
                               End Date
                             </label>
                             <input
@@ -707,7 +707,7 @@ export default function TourRequestModal({
                               onChange={(e) => setEndDate(e.target.value)}
                               min={startDate || format(new Date(), "yyyy-MM-dd")}
                               max={format(addDays(new Date(), 30), "yyyy-MM-dd")}
-                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                              className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
                               disabled={isLoading}
                             />
                           </div>
@@ -720,17 +720,17 @@ export default function TourRequestModal({
                   {currentStep === "time-slots" && (
                     <div className="space-y-4">
                       {/* AI Branding Section */}
-                      <div className="rounded-lg border-2 border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 p-4">
+                      <div className="rounded-lg border-2 border-success-200 bg-gradient-to-r from-success-50 to-emerald-50 p-4">
                         <div className="flex items-start">
-                          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-green-600">
+                          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-success-600">
                             <FiZap className="h-5 w-5 text-white" />
                           </div>
                           <div className="ml-4">
-                            <h4 className="flex items-center text-base font-semibold text-green-900">
+                            <h4 className="flex items-center text-base font-semibold text-success-900">
                               <FiStar className="mr-2 h-4 w-4" />
                               AI-Powered Tour Recommendations
                             </h4>
-                            <p className="mt-1 text-sm text-green-800">
+                            <p className="mt-1 text-sm text-success-800">
                               Our intelligent system has analyzed home availability, tour duration, and optimal scheduling patterns to suggest the best times for your visit. Times are ranked by confidence level.
                             </p>
                           </div>
@@ -738,11 +738,11 @@ export default function TourRequestModal({
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">
+                        <label className="block text-sm font-medium text-neutral-700">
                           <FiClock className="mr-1 inline h-4 w-4" />
                           Select a Time Slot
                         </label>
-                        <p className="mt-1 text-xs text-gray-500">
+                        <p className="mt-1 text-xs text-neutral-500">
                           Choose from AI-recommended times sorted by best match
                         </p>
                       </div>
@@ -753,11 +753,11 @@ export default function TourRequestModal({
                           onSelect={setSelectedSlot}
                         />
                       ) : (
-                        <div className="rounded-md bg-yellow-50 p-4">
+                        <div className="rounded-md bg-warning-50 p-4">
                           <div className="flex">
-                            <FiAlertCircle className="h-5 w-5 text-yellow-400" />
+                            <FiAlertCircle className="h-5 w-5 text-warning-400" />
                             <div className="ml-3">
-                              <p className="text-sm text-yellow-700">
+                              <p className="text-sm text-warning-700">
                                 No available time slots found for the selected date
                                 range. Please try a different date range.
                               </p>
@@ -772,11 +772,11 @@ export default function TourRequestModal({
                   {currentStep === "notes" && (
                     <div className="space-y-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">
+                        <label className="block text-sm font-medium text-neutral-700">
                           <MessageSquare className="mr-1 inline h-4 w-4" />
                           Add Notes or Questions (Optional)
                         </label>
-                        <p className="mt-1 text-xs text-gray-500">
+                        <p className="mt-1 text-xs text-neutral-500">
                           Let us know if you have any specific questions or requirements
                         </p>
                         <textarea
@@ -784,24 +784,24 @@ export default function TourRequestModal({
                           onChange={(e) => setFamilyNotes(e.target.value)}
                           rows={5}
                           placeholder="e.g., I'd like to see the dining area and meet some residents..."
-                          className="mt-3 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                          className="mt-3 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
                           disabled={isLoading}
                         />
                       </div>
                       
                       {/* Summary */}
-                      <div className="rounded-md bg-gray-50 p-4">
-                        <h4 className="text-sm font-medium text-gray-900">
+                      <div className="rounded-md bg-neutral-50 p-4">
+                        <h4 className="text-sm font-medium text-neutral-900">
                           Tour Summary
                         </h4>
                         <dl className="mt-2 space-y-1 text-sm">
                           <div className="flex justify-between">
-                            <dt className="text-gray-600">Home:</dt>
-                            <dd className="font-medium text-gray-900">{homeName}</dd>
+                            <dt className="text-neutral-600">Home:</dt>
+                            <dd className="font-medium text-neutral-900">{homeName}</dd>
                           </div>
                           <div className="flex justify-between">
-                            <dt className="text-gray-600">Requested Time:</dt>
-                            <dd className="font-medium text-gray-900">
+                            <dt className="text-neutral-600">Requested Time:</dt>
+                            <dd className="font-medium text-neutral-900">
                               {selectedSlot
                                 ? format(
                                     new Date(selectedSlot),
@@ -818,17 +818,17 @@ export default function TourRequestModal({
                   {/* Confirmation */}
                   {currentStep === "confirmation" && success && (
                     <div className="py-8 text-center">
-                      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-                        <FiCheckCircle className="h-10 w-10 text-green-600" />
+                      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-success-100">
+                        <FiCheckCircle className="h-10 w-10 text-success-600" />
                       </div>
-                      <h3 className="mt-4 text-lg font-medium text-gray-900">
+                      <h3 className="mt-4 text-lg font-medium text-neutral-900">
                         Tour Request Submitted!
                       </h3>
-                      <p className="mt-2 text-sm text-gray-600">
+                      <p className="mt-2 text-sm text-neutral-600">
                         Your tour request has been sent to {homeName}. They will
                         confirm your appointment shortly.
                       </p>
-                      <p className="mt-4 text-xs text-gray-500">
+                      <p className="mt-4 text-xs text-neutral-500">
                         You'll receive an email confirmation once the tour is confirmed.
                       </p>
                     </div>
@@ -836,11 +836,11 @@ export default function TourRequestModal({
 
                   {/* Error Message */}
                   {error && (
-                    <div className="mt-4 rounded-md bg-red-50 p-4">
+                    <div className="mt-4 rounded-md bg-error-50 p-4">
                       <div className="flex">
-                        <FiAlertCircle className="h-5 w-5 text-red-400" />
+                        <FiAlertCircle className="h-5 w-5 text-error-400" />
                         <div className="ml-3">
-                          <p className="text-sm text-red-700">{error}</p>
+                          <p className="text-sm text-error-700">{error}</p>
                         </div>
                       </div>
                     </div>
@@ -854,7 +854,7 @@ export default function TourRequestModal({
                       type="button"
                       onClick={handleBack}
                       disabled={currentStep === "date-range" || isLoading}
-                      className="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="inline-flex items-center rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 shadow-sm hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <FiArrowLeft className="mr-2 h-4 w-4" />
                       Back

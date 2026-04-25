@@ -44,7 +44,7 @@ export function AssessmentsList({ residentId, items }: { residentId: string; ite
             <>
               <span>{a.type} {a.score != null ? `(score: ${a.score})` : ''}</span>
               <button className="text-primary-600 hover:underline" onClick={() => { setEditing(a.id); setForm({ type: a.type, score: String(a.score ?? '') }); }}>Edit</button>
-              <button className="text-red-600 hover:underline" onClick={() => onDelete(a.id)}>Delete</button>
+              <button className="text-error-600 hover:underline" onClick={() => onDelete(a.id)}>Delete</button>
             </>
           )}
         </li>

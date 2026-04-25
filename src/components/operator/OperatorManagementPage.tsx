@@ -131,8 +131,8 @@ export default function OperatorManagementPage() {
 
       {/* Error State */}
       {error && (
-        <div className="rounded-lg border-2 border-red-300 bg-red-50 p-4">
-          <div className="text-sm text-red-800">{error}</div>
+        <div className="rounded-lg border-2 border-error-300 bg-error-50 p-4">
+          <div className="text-sm text-error-800">{error}</div>
         </div>
       )}
 
@@ -222,7 +222,7 @@ export default function OperatorManagementPage() {
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap text-center">
                           <div className="flex items-center justify-center gap-1">
-                            <FiUsers className="h-4 w-4 text-green-500" />
+                            <FiUsers className="h-4 w-4 text-success-500" />
                             <span className="text-sm font-semibold text-neutral-900">
                               {op.residentsCount}
                             </span>
@@ -230,7 +230,7 @@ export default function OperatorManagementPage() {
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap text-center">
                           <div className="flex items-center justify-center gap-1">
-                            <FiFileText className="h-4 w-4 text-blue-500" />
+                            <FiFileText className="h-4 w-4 text-primary-500" />
                             <span className="text-sm font-semibold text-neutral-900">
                               {op.inquiriesCount}
                             </span>
@@ -238,7 +238,7 @@ export default function OperatorManagementPage() {
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap text-center">
                           <div className="flex items-center justify-center gap-1">
-                            <FiUsers className="h-4 w-4 text-purple-500" />
+                            <FiUsers className="h-4 w-4 text-secondary-500" />
                             <span className="text-sm font-semibold text-neutral-900">
                               {op.caregiversCount}
                             </span>
@@ -312,7 +312,7 @@ export default function OperatorManagementPage() {
                   {data.items.reduce((sum, op) => sum + op.residentsCount, 0)}
                 </div>
               </div>
-              <FiUsers className="h-8 w-8 text-green-500" />
+              <FiUsers className="h-8 w-8 text-success-500" />
             </div>
           </div>
           <div className="card">
@@ -323,7 +323,7 @@ export default function OperatorManagementPage() {
                   {data.items.reduce((sum, op) => sum + op.inquiriesCount, 0)}
                 </div>
               </div>
-              <FiFileText className="h-8 w-8 text-blue-500" />
+              <FiFileText className="h-8 w-8 text-primary-500" />
             </div>
           </div>
           <div className="card">
@@ -334,7 +334,7 @@ export default function OperatorManagementPage() {
                   {data.items.reduce((sum, op) => sum + op.caregiversCount, 0)}
                 </div>
               </div>
-              <FiUsers className="h-8 w-8 text-purple-500" />
+              <FiUsers className="h-8 w-8 text-secondary-500" />
             </div>
           </div>
         </div>

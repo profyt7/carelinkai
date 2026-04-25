@@ -106,7 +106,7 @@ export default function ReportHistoryPage() {
                 setTypeFilter(e.target.value);
                 setPage(1);
               }}
-              className="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
+              className="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-600"
             >
               <option value="all">All Types</option>
               <option value="OCCUPANCY">Occupancy</option>
@@ -124,7 +124,7 @@ export default function ReportHistoryPage() {
                 setFormatFilter(e.target.value);
                 setPage(1);
               }}
-              className="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
+              className="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-600"
             >
               <option value="all">All Formats</option>
               <option value="PDF">PDF</option>
@@ -137,7 +137,7 @@ export default function ReportHistoryPage() {
         {/* Reports List */}
         {loading ? (
           <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
             <p className="mt-2 text-slate-600">Loading reports...</p>
           </div>
         ) : reports?.length === 0 ? (
@@ -163,7 +163,7 @@ export default function ReportHistoryPage() {
                 <Card key={report?.id} className="p-6 hover:shadow-lg transition-shadow">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4 flex-1">
-                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center">
+                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary-500 to-indigo-500 flex items-center justify-center">
                         <FileText className="h-6 w-6 text-white" />
                       </div>
                       <div className="flex-1">
@@ -171,7 +171,7 @@ export default function ReportHistoryPage() {
                           {report?.title}
                         </h3>
                         <div className="flex items-center gap-3 text-sm text-slate-600 mt-1">
-                          <span className="capitalize bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                          <span className="capitalize bg-primary-100 text-primary-700 px-2 py-0.5 rounded">
                             {report?.type?.replace?.(/_/g, ' ')?.toLowerCase?.()}
                           </span>
                           <span className="capitalize bg-slate-100 text-slate-700 px-2 py-0.5 rounded">
@@ -205,7 +205,7 @@ export default function ReportHistoryPage() {
                         onClick={() => handleDelete(report?.id)}
                         title="Delete"
                       >
-                        <Trash2 className="h-4 w-4 text-red-600" />
+                        <Trash2 className="h-4 w-4 text-error-600" />
                       </Button>
                     </div>
                   </div>

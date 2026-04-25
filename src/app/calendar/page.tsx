@@ -165,7 +165,7 @@ export default function CalendarPage() {
               <p className="text-sm font-medium text-neutral-500">Total Appointments</p>
               <p className="mt-1 text-2xl font-semibold text-neutral-800">{stats.total}</p>
             </div>
-            <div className="rounded-full bg-blue-50 p-3 text-blue-500">
+            <div className="rounded-full bg-primary-50 p-3 text-primary-500">
               <FiCalendar size={24} />
             </div>
           </div>
@@ -189,7 +189,7 @@ export default function CalendarPage() {
               <p className="text-sm font-medium text-neutral-500">Completed</p>
               <p className="mt-1 text-2xl font-semibold text-neutral-800">{stats.completed}</p>
             </div>
-            <div className="rounded-full bg-green-50 p-3 text-green-500">
+            <div className="rounded-full bg-success-50 p-3 text-success-500">
               <FiCheckCircle size={24} />
             </div>
           </div>
@@ -201,7 +201,7 @@ export default function CalendarPage() {
               <p className="text-sm font-medium text-neutral-500">Cancelled</p>
               <p className="mt-1 text-2xl font-semibold text-neutral-800">{stats.cancelled}</p>
             </div>
-            <div className="rounded-full bg-red-50 p-3 text-red-500">
+            <div className="rounded-full bg-error-50 p-3 text-error-500">
               <FiXCircle size={24} />
             </div>
           </div>

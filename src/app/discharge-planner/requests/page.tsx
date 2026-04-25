@@ -141,11 +141,11 @@ export default function RequestsPage() {
   const getStatusBadge = (status: string) => {
     const styles: Record<string, { bg: string; text: string; icon: any }> = {
       PENDING: { bg: "bg-neutral-100", text: "text-neutral-700", icon: FiClock },
-      SENT: { bg: "bg-blue-100", text: "text-blue-700", icon: FiSend },
+      SENT: { bg: "bg-primary-100", text: "text-primary-700", icon: FiSend },
       VIEWED: { bg: "bg-amber-100", text: "text-amber-700", icon: FiEye },
-      RESPONDED: { bg: "bg-purple-100", text: "text-purple-700", icon: FiMail },
-      ACCEPTED: { bg: "bg-green-100", text: "text-green-700", icon: FiCheck },
-      DECLINED: { bg: "bg-red-100", text: "text-red-700", icon: FiX },
+      RESPONDED: { bg: "bg-secondary-100", text: "text-secondary-700", icon: FiMail },
+      ACCEPTED: { bg: "bg-success-100", text: "text-success-700", icon: FiCheck },
+      DECLINED: { bg: "bg-error-100", text: "text-error-700", icon: FiX },
     };
     return styles[status] || styles.PENDING;
   };
@@ -194,7 +194,7 @@ export default function RequestsPage() {
       <DashboardLayout title="Placement Requests" showSearch={false}>
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <div className="text-red-600 mb-4">
+            <div className="text-error-600 mb-4">
               <FiFileText size={48} className="mx-auto mb-2" />
               <p className="font-medium">Failed to load placement requests</p>
               <p className="text-sm text-neutral-600 mt-1">{error}</p>
@@ -220,7 +220,7 @@ export default function RequestsPage() {
               {searchId && (
                 <button
                   onClick={() => router.push("/discharge-planner/requests")}
-                  className="text-sm text-blue-600 hover:text-blue-700 mt-2"
+                  className="text-sm text-primary-600 hover:text-primary-700 mt-2"
                 >
                   ← View all requests
                 </button>
@@ -244,14 +244,14 @@ export default function RequestsPage() {
                 placeholder="Search by home or patient..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
 
             <select
               value={filter}
               onChange={(e) => setFilter(e.target.value as FilterType)}
-              className="px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
               <option value="all">All Statuses</option>
               <option value="PENDING">Pending</option>
@@ -265,7 +265,7 @@ export default function RequestsPage() {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as SortType)}
-              className="px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
               <option value="date_desc">Newest First</option>
               <option value="date_asc">Oldest First</option>

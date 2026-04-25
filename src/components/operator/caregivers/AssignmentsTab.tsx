@@ -189,7 +189,7 @@ export function AssignmentsTab({ caregiverId }: AssignmentsTabProps) {
                         </div>
                       )}
                       {assignment.endDate && (
-                        <div className="flex items-center gap-2 text-xs text-red-600">
+                        <div className="flex items-center gap-2 text-xs text-error-600">
                           <FiCalendar className="w-3 h-3" />
                           <span>Ended: {new Date(assignment.endDate).toLocaleDateString()}</span>
                         </div>
@@ -208,7 +208,7 @@ export function AssignmentsTab({ caregiverId }: AssignmentsTabProps) {
                       <PermissionGuard permission={PERMISSIONS.CAREGIVERS_ASSIGN}>
                         <button
                           onClick={() => handleRemove(assignment.id)}
-                          className="text-xs text-red-600 hover:text-red-700 font-medium flex items-center gap-1"
+                          className="text-xs text-error-600 hover:text-error-700 font-medium flex items-center gap-1"
                         >
                           <FiTrash2 className="w-3 h-3" />
                           Remove Assignment

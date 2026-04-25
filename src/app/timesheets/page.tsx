@@ -241,15 +241,15 @@ export default function TimesheetsPage() {
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
       case 'DRAFT':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-primary-100 text-primary-800';
       case 'SUBMITTED':
         return 'bg-amber-100 text-amber-800';
       case 'APPROVED':
-        return 'bg-green-100 text-green-800';
+        return 'bg-success-100 text-success-800';
       case 'REJECTED':
-        return 'bg-red-100 text-red-800';
+        return 'bg-error-100 text-error-800';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-neutral-100 text-neutral-800';
     }
   };
 
@@ -259,9 +259,9 @@ export default function TimesheetsPage() {
       case 'PROCESSING':
         return 'bg-amber-100 text-amber-800';
       case 'COMPLETED':
-        return 'bg-green-100 text-green-800';
+        return 'bg-success-100 text-success-800';
       case 'FAILED':
-        return 'bg-red-100 text-red-800';
+        return 'bg-error-100 text-error-800';
       default:
         return 'hidden';
     }
@@ -277,8 +277,8 @@ export default function TimesheetsPage() {
   // Error component
   const ErrorState = ({ message }: { message: string }) => (
     <div className="flex flex-col items-center justify-center p-8 text-center">
-      <FiAlertCircle className="text-red-500 text-3xl mb-2" />
-      <p className="text-gray-700">{message}</p>
+      <FiAlertCircle className="text-error-500 text-3xl mb-2" />
+      <p className="text-neutral-700">{message}</p>
       <button 
         onClick={() => window.location.reload()}
         className="mt-4 px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
@@ -292,15 +292,15 @@ export default function TimesheetsPage() {
     <DashboardLayout title="Timesheets">
       <div className="p-4 md:p-6">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">Timesheets</h1>
+          <h1 className="text-2xl font-bold text-neutral-800">Timesheets</h1>
           {!isLoading && (
-            <div className="text-sm text-gray-500">{timesheets.length} timesheets</div>
+            <div className="text-sm text-neutral-500">{timesheets.length} timesheets</div>
           )}
         </div>
 
         {/* Error message */}
         {error && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md text-red-700">
+          <div className="mb-4 p-4 bg-error-50 border border-error-200 rounded-md text-error-700">
             {error}
           </div>
         )}
@@ -310,7 +310,7 @@ export default function TimesheetsPage() {
           <LoadingState />
         ) : timesheets.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-gray-500">No timesheets found.</p>
+            <p className="text-neutral-500">No timesheets found.</p>
             <a 
               href="/shifts"
               className="mt-4 px-4 py-2 inline-block bg-primary-600 text-white rounded-md hover:bg-primary-700"
@@ -321,10 +321,10 @@ export default function TimesheetsPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {timesheets.map((timesheet) => (
-              <div key={timesheet.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              <div key={timesheet.id} className="bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden">
                 <div className="p-4">
                   <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-medium text-gray-900">
+                    <h3 className="font-medium text-neutral-900">
                       {timesheet.homeName || 'Unknown Location'}
                     </h3>
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeColor(timesheet.status)}`}>
@@ -347,35 +347,35 @@ export default function TimesheetsPage() {
                     </div>
                   )}
                   {timesheet.transferId && (
-                    <div className="mt-1 text-[11px] font-mono text-gray-500 truncate">
+                    <div className="mt-1 text-[11px] font-mono text-neutral-500 truncate">
                       Transfer: {timesheet.transferId}
                     </div>
                   )}
                   
-                  <div className="flex items-start space-x-2 text-sm text-gray-500 mb-2">
+                  <div className="flex items-start space-x-2 text-sm text-neutral-500 mb-2">
                     <FiHome className="mt-0.5 flex-shrink-0" />
                     <span>{timesheet.homeName || 'Unknown Location'}</span>
                   </div>
                   
-                  <div className="flex items-start space-x-2 text-sm text-gray-500 mb-2">
+                  <div className="flex items-start space-x-2 text-sm text-neutral-500 mb-2">
                     <FiCalendar className="mt-0.5 flex-shrink-0" />
                     <span>{formatDate(timesheet.startTime)}</span>
                   </div>
                   
-                  <div className="flex items-start space-x-2 text-sm text-gray-500 mb-2">
+                  <div className="flex items-start space-x-2 text-sm text-neutral-500 mb-2">
                     <FiClock className="mt-0.5 flex-shrink-0" />
                     <span>
                       {formatDateTime(timesheet.startTime)} - {formatDateTime(timesheet.endTime)}
                     </span>
                   </div>
                   
-                  <div className="flex items-start space-x-2 text-sm text-gray-500 mb-2">
+                  <div className="flex items-start space-x-2 text-sm text-neutral-500 mb-2">
                     <FiCoffee className="mt-0.5 flex-shrink-0" />
                     <span>Break: {timesheet.breakMinutes} minutes</span>
                   </div>
                   
                   {timesheet.notes && (
-                    <div className="flex items-start space-x-2 text-sm text-gray-500 mb-4">
+                    <div className="flex items-start space-x-2 text-sm text-neutral-500 mb-4">
                       <FiFileText className="mt-0.5 flex-shrink-0" />
                       <span>{timesheet.notes}</span>
                     </div>
@@ -420,7 +420,7 @@ export default function TimesheetsPage() {
                   )}
                   
                   {timesheet.status === 'APPROVED' && (
-                    <div className="text-sm text-gray-500 mt-2">
+                    <div className="text-sm text-neutral-500 mt-2">
                       Approved: {formatDate(timesheet.approvedAt)} at {formatDateTime(timesheet.approvedAt)}
                     </div>
                   )}

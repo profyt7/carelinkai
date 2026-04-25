@@ -117,14 +117,14 @@ export function DocumentsPanel({ residentId }: { residentId: string }) {
         <div className="flex items-center gap-3">
           <h2 className="font-semibold text-neutral-800">Documents</h2>
           {needsReviewCount > 0 && (
-            <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-medium">
+            <span className="px-2 py-0.5 bg-error-100 text-error-700 rounded-full text-xs font-medium">
               {needsReviewCount} need review
             </span>
           )}
         </div>
         <button
           onClick={() => router.push('/operator/documents')}
-          className="text-sm text-blue-600 hover:text-blue-700 hover:underline"
+          className="text-sm text-primary-600 hover:text-primary-700 hover:underline"
         >
           View All Documents →
         </button>
@@ -183,27 +183,27 @@ export function DocumentsPanel({ residentId }: { residentId: string }) {
                         size="sm"
                       />
                     ) : (
-                      <span className="text-gray-500 text-xs">Not classified</span>
+                      <span className="text-neutral-500 text-xs">Not classified</span>
                     )}
                   </td>
                   <td className="p-2">{d.fileType}</td>
                   <td className="p-2">{d.fileSize?.toLocaleString?.() ?? d.fileSize}</td>
                   <td className="p-2">
                     {d.reviewStatus === 'PENDING_REVIEW' || d.validationStatus === 'NEEDS_REVIEW' ? (
-                      <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">
+                      <span className="px-2 py-0.5 bg-warning-100 text-warning-700 rounded-full text-xs font-medium">
                         Review
                       </span>
                     ) : d.reviewStatus === 'REVIEWED' ? (
-                      <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+                      <span className="px-2 py-0.5 bg-success-100 text-success-700 rounded-full text-xs font-medium">
                         ✓ Reviewed
                       </span>
                     ) : (
-                      <span className="text-gray-500 text-xs">-</span>
+                      <span className="text-neutral-500 text-xs">-</span>
                     )}
                   </td>
                   <td className="p-2 flex items-center gap-2">
                     <a className="text-primary-600 hover:underline" href={d.fileUrl} target="_blank" rel="noreferrer">Open</a>
-                    <button type="button" className="text-red-600 hover:underline" onClick={() => onDelete(d.id)}>Delete</button>
+                    <button type="button" className="text-error-600 hover:underline" onClick={() => onDelete(d.id)}>Delete</button>
                   </td>
                 </tr>
               ))}

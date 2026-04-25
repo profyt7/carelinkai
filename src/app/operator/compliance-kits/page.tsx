@@ -97,7 +97,7 @@ export default function ComplianceKitsPage() {
             <div
               key={kit.id}
               className={`rounded-xl border p-6 ${
-                purchased ? 'border-green-200 bg-green-50' : 'border-neutral-200 bg-white'
+                purchased ? 'border-success-200 bg-success-50' : 'border-neutral-200 bg-white'
               }`}
             >
               <div className="flex items-start justify-between gap-4">
@@ -105,7 +105,7 @@ export default function ComplianceKitsPage() {
                   <div className="flex items-center gap-3 mb-1">
                     <h2 className="font-semibold text-neutral-900">{kit.name}</h2>
                     {purchased && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-success-100 text-success-800">
                         Purchased
                       </span>
                     )}
@@ -115,7 +115,7 @@ export default function ComplianceKitsPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
                     {kit.items.map((item) => (
                       <div key={item} className="flex items-center gap-1.5 text-xs text-neutral-600">
-                        <svg className="w-3.5 h-3.5 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="w-3.5 h-3.5 text-success-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
                         {item}
@@ -132,7 +132,7 @@ export default function ComplianceKitsPage() {
                         href={purchase.downloadUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 px-4 py-2 border border-green-300 text-green-700 rounded-lg text-sm font-medium hover:bg-green-50"
+                        className="inline-flex items-center gap-1 px-4 py-2 border border-success-300 text-success-700 rounded-lg text-sm font-medium hover:bg-success-50"
                       >
                         Download
                       </a>

@@ -52,16 +52,16 @@ export default function PipelineDashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-neutral-50">
       <Toaster position="top-right" />
       
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <div className="bg-white border-b border-neutral-200 sticky top-0 z-10">
         <div className="px-6 py-4">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Pipeline Dashboard</h1>
-              <p className="text-sm text-gray-600 mt-1">
+              <h1 className="text-2xl font-bold text-neutral-900">Pipeline Dashboard</h1>
+              <p className="text-sm text-neutral-600 mt-1">
                 Manage inquiries through your sales pipeline
               </p>
             </div>
@@ -70,7 +70,7 @@ export default function PipelineDashboardPage() {
               {/* Analytics Toggle */}
               <button
                 onClick={() => setShowAnalytics(!showAnalytics)}
-                className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 border border-neutral-300 rounded-lg text-neutral-700 hover:bg-neutral-50 transition-colors"
                 title={showAnalytics ? 'Hide Analytics' : 'Show Analytics'}
               >
                 <TrendingUp className="w-4 h-4" />
@@ -82,8 +82,8 @@ export default function PipelineDashboardPage() {
                 onClick={() => setShowFilters(!showFilters)}
                 className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-colors ${
                   showFilters
-                    ? 'border-blue-500 bg-blue-50 text-blue-700'
-                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                    ? 'border-primary-500 bg-primary-50 text-primary-700'
+                    : 'border-neutral-300 text-neutral-700 hover:bg-neutral-50'
                 }`}
               >
                 <Filter className="w-4 h-4" />
@@ -91,13 +91,13 @@ export default function PipelineDashboardPage() {
               </button>
 
               {/* View Mode Toggle */}
-              <div className="flex items-center border border-gray-300 rounded-lg">
+              <div className="flex items-center border border-neutral-300 rounded-lg">
                 <button
                   onClick={() => setViewMode('kanban')}
                   className={`flex items-center gap-2 px-4 py-2 rounded-l-lg transition-colors ${
                     viewMode === 'kanban'
-                      ? 'bg-blue-600 text-white'
-                      : 'text-gray-700 hover:bg-gray-50'
+                      ? 'bg-primary-600 text-white'
+                      : 'text-neutral-700 hover:bg-neutral-50'
                   }`}
                 >
                   <LayoutGrid className="w-4 h-4" />
@@ -107,8 +107,8 @@ export default function PipelineDashboardPage() {
                   onClick={() => setViewMode('list')}
                   className={`flex items-center gap-2 px-4 py-2 rounded-r-lg transition-colors ${
                     viewMode === 'list'
-                      ? 'bg-blue-600 text-white'
-                      : 'text-gray-700 hover:bg-gray-50'
+                      ? 'bg-primary-600 text-white'
+                      : 'text-neutral-700 hover:bg-neutral-50'
                   }`}
                 >
                   <List className="w-4 h-4" />
@@ -120,7 +120,7 @@ export default function PipelineDashboardPage() {
               <button
                 onClick={handleRefresh}
                 disabled={isLoading}
-                className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="flex items-center gap-2 px-4 py-2 border border-neutral-300 rounded-lg text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 title="Refresh"
               >
                 <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
@@ -129,7 +129,7 @@ export default function PipelineDashboardPage() {
               {/* New Inquiry Button */}
               <button
                 onClick={handleNewInquiry}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
               >
                 <Plus className="w-4 h-4" />
                 <span className="hidden sm:inline">New Inquiry</span>
@@ -157,17 +157,17 @@ export default function PipelineDashboardPage() {
 
         {/* Error State */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <p className="text-red-800 font-medium">Error loading inquiries</p>
-            <p className="text-red-600 text-sm mt-1">{error.message || 'Please try again'}</p>
+          <div className="bg-error-50 border border-error-200 rounded-lg p-4">
+            <p className="text-error-800 font-medium">Error loading inquiries</p>
+            <p className="text-error-600 text-sm mt-1">{error.message || 'Please try again'}</p>
           </div>
         )}
 
         {/* Loading State */}
         {isLoading && (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            <p className="ml-4 text-gray-600">Loading inquiries...</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+            <p className="ml-4 text-neutral-600">Loading inquiries...</p>
           </div>
         )}
 
@@ -185,74 +185,74 @@ export default function PipelineDashboardPage() {
           <div className="bg-white rounded-lg shadow">
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
+                <thead className="bg-neutral-50 border-b border-neutral-200">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
                       Contact
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
                       Care Recipient
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
                       Urgency
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
                       Stage
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
                       Source
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
                       Assigned To
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
                       Last Updated
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white divide-y divide-neutral-200">
                   {inquiries.map((inquiry) => (
                     <tr
                       key={inquiry.id}
                       onClick={() => handleInquiryClick(inquiry)}
-                      className="hover:bg-gray-50 cursor-pointer"
+                      className="hover:bg-neutral-50 cursor-pointer"
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{inquiry.contactName}</div>
-                        <div className="text-sm text-gray-500">{inquiry.contactEmail}</div>
+                        <div className="text-sm font-medium text-neutral-900">{inquiry.contactName}</div>
+                        <div className="text-sm text-neutral-500">{inquiry.contactEmail}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{inquiry.careRecipientName}</div>
+                        <div className="text-sm text-neutral-900">{inquiry.careRecipientName}</div>
                         {inquiry.careRecipientAge && (
-                          <div className="text-sm text-gray-500">Age {inquiry.careRecipientAge}</div>
+                          <div className="text-sm text-neutral-500">Age {inquiry.careRecipientAge}</div>
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                          inquiry.urgency === 'URGENT' ? 'bg-red-100 text-red-800' :
-                          inquiry.urgency === 'HIGH' ? 'bg-orange-100 text-orange-800' :
-                          inquiry.urgency === 'MEDIUM' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-green-100 text-green-800'
+                          inquiry.urgency === 'URGENT' ? 'bg-error-100 text-error-800' :
+                          inquiry.urgency === 'HIGH' ? 'bg-warning-100 text-warning-800' :
+                          inquiry.urgency === 'MEDIUM' ? 'bg-warning-100 text-warning-800' :
+                          'bg-success-100 text-success-800'
                         }`}>
                           {inquiry.urgency}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm text-gray-900">{inquiry.status.replace(/_/g, ' ')}</span>
+                        <span className="text-sm text-neutral-900">{inquiry.status.replace(/_/g, ' ')}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm text-gray-500">{inquiry.source}</span>
+                        <span className="text-sm text-neutral-500">{inquiry.source}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {inquiry.assignedTo ? (
-                          <span className="text-sm text-gray-900">
+                          <span className="text-sm text-neutral-900">
                             {inquiry.assignedTo.firstName} {inquiry.assignedTo.lastName}
                           </span>
                         ) : (
-                          <span className="text-sm text-gray-400">Unassigned</span>
+                          <span className="text-sm text-neutral-400">Unassigned</span>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
                         {new Date(inquiry.updatedAt).toLocaleDateString()}
                       </td>
                     </tr>
@@ -263,7 +263,7 @@ export default function PipelineDashboardPage() {
 
             {inquiries.length === 0 && (
               <div className="text-center py-12">
-                <p className="text-gray-500">No inquiries found</p>
+                <p className="text-neutral-500">No inquiries found</p>
               </div>
             )}
           </div>
@@ -272,18 +272,18 @@ export default function PipelineDashboardPage() {
         {/* Empty State */}
         {!isLoading && !error && inquiries && inquiries.length === 0 && (
           <div className="text-center py-12 bg-white rounded-lg shadow">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
-              <LayoutGrid className="w-8 h-8 text-gray-400" />
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-neutral-100 rounded-full mb-4">
+              <LayoutGrid className="w-8 h-8 text-neutral-400" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            <h3 className="text-lg font-semibold text-neutral-900 mb-2">
               No inquiries yet
             </h3>
-            <p className="text-gray-600 mb-4">
+            <p className="text-neutral-600 mb-4">
               Get started by creating your first inquiry
             </p>
             <button
               onClick={handleNewInquiry}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
             >
               <Plus className="w-4 h-4" />
               New Inquiry

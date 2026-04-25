@@ -9,12 +9,12 @@ export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Discharge Planner Management | Admin' };
 
 const STATUS_STYLES: Record<string, string> = {
-  ACTIVE: 'bg-green-100 text-green-700',
-  TRIALING: 'bg-blue-100 text-blue-700',
-  PAST_DUE: 'bg-red-100 text-red-700',
+  ACTIVE: 'bg-success-100 text-success-700',
+  TRIALING: 'bg-primary-100 text-primary-700',
+  PAST_DUE: 'bg-error-100 text-error-700',
   CANCELED: 'bg-neutral-100 text-neutral-600',
   INCOMPLETE: 'bg-amber-100 text-amber-700',
-  INCOMPLETE_EXPIRED: 'bg-red-100 text-red-700',
+  INCOMPLETE_EXPIRED: 'bg-error-100 text-error-700',
   PAUSED: 'bg-amber-100 text-amber-700',
 };
 
@@ -59,10 +59,10 @@ export default async function AdminDischargePlannersPage() {
         {/* Summary cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {[
-            { label: 'Total Planners', value: planners.length, icon: FiUsers, color: 'bg-blue-100 text-blue-600' },
-            { label: 'Active Seats', value: activeCount, icon: FiCheckCircle, color: 'bg-green-100 text-green-600' },
-            { label: 'In Trial', value: trialingCount, icon: FiDollarSign, color: 'bg-purple-100 text-purple-600' },
-            { label: 'Past Due', value: pastDueCount, icon: FiAlertCircle, color: 'bg-red-100 text-red-600' },
+            { label: 'Total Planners', value: planners.length, icon: FiUsers, color: 'bg-primary-100 text-primary-600' },
+            { label: 'Active Seats', value: activeCount, icon: FiCheckCircle, color: 'bg-success-100 text-success-600' },
+            { label: 'In Trial', value: trialingCount, icon: FiDollarSign, color: 'bg-secondary-100 text-secondary-600' },
+            { label: 'Past Due', value: pastDueCount, icon: FiAlertCircle, color: 'bg-error-100 text-error-600' },
           ].map((s) => (
             <div key={s.label} className="bg-white rounded-lg border border-neutral-200 p-5 flex items-center gap-3">
               <div className={`p-2.5 rounded-lg ${s.color}`}><s.icon size={18} /></div>
@@ -115,7 +115,7 @@ export default async function AdminDischargePlannersPage() {
                     const expiryDate = p.trialEndsAt ?? p.currentPeriodEndsAt;
                     const expired = expiryDate && new Date(expiryDate) < new Date() && p.subscriptionStatus !== 'ACTIVE';
                     return (
-                      <tr key={p.id} className={`hover:bg-neutral-50 transition-colors ${p.subscriptionStatus === 'PAST_DUE' ? 'bg-red-50' : ''}`}>
+                      <tr key={p.id} className={`hover:bg-neutral-50 transition-colors ${p.subscriptionStatus === 'PAST_DUE' ? 'bg-error-50' : ''}`}>
                         <td className="px-4 py-3 font-medium text-neutral-900">
                           {p.user.firstName} {p.user.lastName}
                         </td>
@@ -133,7 +133,7 @@ export default async function AdminDischargePlannersPage() {
                         </td>
                         <td className="px-4 py-3 text-xs">
                           {expiryDate ? (
-                            <span className={expired ? 'text-red-600 font-medium' : 'text-neutral-500'}>
+                            <span className={expired ? 'text-error-600 font-medium' : 'text-neutral-500'}>
                               {new Date(expiryDate).toLocaleDateString()}
                             </span>
                           ) : <span className="text-neutral-400">—</span>}

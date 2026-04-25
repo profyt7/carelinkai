@@ -22,7 +22,7 @@ const variantStyles = {
   outline:
     'border-2 border-neutral-300 bg-white text-neutral-900 hover:border-[#3978FC] hover:bg-neutral-50',
   ghost: 'bg-transparent text-neutral-700 hover:bg-neutral-100',
-  danger: 'bg-red-600 text-white hover:bg-red-700 shadow-sm hover:shadow-md',
+  danger: 'bg-error-600 text-white hover:bg-error-700 shadow-sm hover:shadow-md',
 };
 
 const sizeStyles = {

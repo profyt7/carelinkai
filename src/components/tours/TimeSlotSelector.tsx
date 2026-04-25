@@ -93,10 +93,10 @@ export default function TimeSlotSelector({
               isSelected
                 ? "border-primary-600 bg-primary-50"
                 : isDisabled
-                ? "border-gray-200 bg-gray-50 cursor-not-allowed opacity-60"
+                ? "border-neutral-200 bg-neutral-50 cursor-not-allowed opacity-60"
                 : isHighScore
-                ? "border-green-300 bg-green-50 hover:border-green-400 hover:bg-green-100"
-                : "border-gray-300 bg-white hover:border-primary-300 hover:bg-primary-50"
+                ? "border-success-300 bg-success-50 hover:border-success-400 hover:bg-success-100"
+                : "border-neutral-300 bg-white hover:border-primary-300 hover:bg-primary-50"
             }`}
           >
             <div className="flex items-start justify-between">
@@ -108,10 +108,10 @@ export default function TimeSlotSelector({
                         isSelected
                           ? "text-primary-600"
                           : isDisabled
-                          ? "text-gray-400"
+                          ? "text-neutral-400"
                           : isHighScore
-                          ? "text-green-600"
-                          : "text-gray-600"
+                          ? "text-success-600"
+                          : "text-neutral-600"
                       }`}
                     />
                     <div>
@@ -120,10 +120,10 @@ export default function TimeSlotSelector({
                           isSelected
                             ? "text-primary-900"
                             : isDisabled
-                            ? "text-gray-500"
+                            ? "text-neutral-500"
                             : isHighScore
-                            ? "text-green-900"
-                            : "text-gray-900"
+                            ? "text-success-900"
+                            : "text-neutral-900"
                         }`}
                       >
                         {date}
@@ -133,10 +133,10 @@ export default function TimeSlotSelector({
                           isSelected
                             ? "text-primary-700"
                             : isDisabled
-                            ? "text-gray-400"
+                            ? "text-neutral-400"
                             : isHighScore
-                            ? "text-green-700"
-                            : "text-gray-600"
+                            ? "text-success-700"
+                            : "text-neutral-600"
                         }`}
                       >
                         {time}
@@ -147,14 +147,14 @@ export default function TimeSlotSelector({
                   {/* AI Badge and Score */}
                   {!isSelected && isHighScore && (
                     <div className="flex flex-col items-end">
-                      <div className="flex items-center rounded-full bg-green-600 px-3 py-1">
+                      <div className="flex items-center rounded-full bg-success-600 px-3 py-1">
                         <FiStar className="mr-1 h-3 w-3 text-white" />
                         <span className="text-xs font-semibold text-white">
                           AI Recommended
                         </span>
                       </div>
                       {slot.score && (
-                        <span className="mt-1 text-xs font-medium text-green-700">
+                        <span className="mt-1 text-xs font-medium text-success-700">
                           {slot.score}% match
                         </span>
                       )}
@@ -164,7 +164,7 @@ export default function TimeSlotSelector({
                   {/* Show score for non-high-score slots */}
                   {!isSelected && !isHighScore && slot.score && (
                     <div className="flex flex-col items-end">
-                      <span className="text-xs font-medium text-gray-500">
+                      <span className="text-xs font-medium text-neutral-500">
                         {slot.score}% match
                       </span>
                     </div>
@@ -175,12 +175,12 @@ export default function TimeSlotSelector({
                 {slot.reason && (
                   <div className="mt-3 flex items-start rounded-md bg-white/70 p-2">
                     <FiStar className={`mr-2 mt-0.5 h-4 w-4 flex-shrink-0 ${
-                      isHighScore ? "text-green-600" : "text-gray-400"
+                      isHighScore ? "text-success-600" : "text-neutral-400"
                     }`} />
                     <p className={`text-sm leading-relaxed ${
                       isHighScore 
-                        ? "font-medium text-green-800" 
-                        : "text-gray-600"
+                        ? "font-medium text-success-800" 
+                        : "text-neutral-600"
                     }`}>
                       {slot.reason}
                     </p>

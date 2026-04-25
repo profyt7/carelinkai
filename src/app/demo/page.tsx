@@ -28,8 +28,8 @@ const personas: PersonaCard[] = [
       { label: 'View Favorites', url: '/favorites' },
       { label: 'Messages', url: '/messages' },
     ],
-    bgColor: 'bg-blue-50',
-    textColor: 'text-blue-700',
+    bgColor: 'bg-primary-50',
+    textColor: 'text-primary-700',
   },
   {
     name: 'Operator',
@@ -42,8 +42,8 @@ const personas: PersonaCard[] = [
       { label: 'Messages & Conversations', url: '/messages' },
       { label: 'Dashboard Overview', url: '/dashboard' },
     ],
-    bgColor: 'bg-purple-50',
-    textColor: 'text-purple-700',
+    bgColor: 'bg-secondary-50',
+    textColor: 'text-secondary-700',
   },
   {
     name: 'Aide/Caregiver',
@@ -57,8 +57,8 @@ const personas: PersonaCard[] = [
       { label: 'Messages & Inquiries', url: '/messages' },
       { label: 'Dashboard', url: '/dashboard' },
     ],
-    bgColor: 'bg-green-50',
-    textColor: 'text-green-700',
+    bgColor: 'bg-success-50',
+    textColor: 'text-success-700',
   },
   {
     name: 'Provider',
@@ -86,8 +86,8 @@ const personas: PersonaCard[] = [
       { label: 'Caregiver Management', url: '/admin/aides' },
       { label: 'Dashboard', url: '/dashboard' },
     ],
-    bgColor: 'bg-red-50',
-    textColor: 'text-red-700',
+    bgColor: 'bg-error-50',
+    textColor: 'text-error-700',
   },
 ];
 
@@ -97,16 +97,16 @@ export default function DemoPortalPage() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+          <h1 className="text-4xl font-bold text-neutral-900 mb-4">
             CareLinkAI Demo Portal
           </h1>
-          <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+          <p className="text-lg text-neutral-600 max-w-3xl mx-auto">
             Internal demo portal - use these accounts for live walkthroughs with ALFs, agencies, and investors.
           </p>
-          <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-blue-100 border border-blue-300 rounded-lg">
-            <FiLock className="text-blue-700" />
-            <span className="text-sm text-blue-700 font-medium">
-              All accounts use password: <code className="font-mono bg-blue-200 px-2 py-1 rounded">DemoUser123!</code>
+          <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-primary-100 border border-primary-300 rounded-lg">
+            <FiLock className="text-primary-700" />
+            <span className="text-sm text-primary-700 font-medium">
+              All accounts use password: <code className="font-mono bg-primary-200 px-2 py-1 rounded">DemoUser123!</code>
             </span>
           </div>
         </div>
@@ -116,22 +116,22 @@ export default function DemoPortalPage() {
           {personas.map((persona) => (
             <div
               key={persona.email}
-              className={`${persona.bgColor} border-2 border-gray-200 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden`}
+              className={`${persona.bgColor} border-2 border-neutral-200 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden`}
             >
               {/* Card Header */}
-              <div className="px-6 py-5 border-b border-gray-200 bg-white">
+              <div className="px-6 py-5 border-b border-neutral-200 bg-white">
                 <div className="flex items-center gap-3 mb-2">
-                  <div className={`${persona.textColor} p-2 rounded-lg bg-white border border-gray-200`}>
+                  <div className={`${persona.textColor} p-2 rounded-lg bg-white border border-neutral-200`}>
                     <FiUser className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-gray-900">{persona.name}</h3>
+                    <h3 className="text-xl font-bold text-neutral-900">{persona.name}</h3>
                     <span className={`inline-block px-2 py-1 text-xs font-semibold rounded ${persona.textColor} ${persona.bgColor}`}>
                       {persona.role}
                     </span>
                   </div>
                 </div>
-                <p className="text-sm text-gray-600 mt-2">{persona.description}</p>
+                <p className="text-sm text-neutral-600 mt-2">{persona.description}</p>
               </div>
 
               {/* Card Body */}
@@ -139,17 +139,17 @@ export default function DemoPortalPage() {
                 {/* Credentials */}
                 <div className="space-y-2">
                   <div className="flex items-start gap-2">
-                    <FiMail className="w-4 h-4 text-gray-500 mt-1 flex-shrink-0" />
+                    <FiMail className="w-4 h-4 text-neutral-500 mt-1 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs text-gray-500 font-medium mb-1">Email</p>
-                      <p className="text-sm text-gray-900 font-mono break-all">{persona.email}</p>
+                      <p className="text-xs text-neutral-500 font-medium mb-1">Email</p>
+                      <p className="text-sm text-neutral-900 font-mono break-all">{persona.email}</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
-                    <FiLock className="w-4 h-4 text-gray-500 mt-1 flex-shrink-0" />
+                    <FiLock className="w-4 h-4 text-neutral-500 mt-1 flex-shrink-0" />
                     <div className="flex-1">
-                      <p className="text-xs text-gray-500 font-medium mb-1">Password</p>
-                      <p className="text-sm text-gray-900 font-mono">{persona.password}</p>
+                      <p className="text-xs text-neutral-500 font-medium mb-1">Password</p>
+                      <p className="text-sm text-neutral-900 font-mono">{persona.password}</p>
                     </div>
                   </div>
                 </div>
@@ -164,13 +164,13 @@ export default function DemoPortalPage() {
 
                 {/* Key URLs */}
                 <div>
-                  <h4 className="text-sm font-semibold text-gray-700 mb-2">Key Demo URLs:</h4>
+                  <h4 className="text-sm font-semibold text-neutral-700 mb-2">Key Demo URLs:</h4>
                   <ul className="space-y-1.5">
                     {persona.keyUrls.map((link) => (
                       <li key={link.url}>
                         <Link
                           href={link.url}
-                          className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 hover:underline group"
+                          className="flex items-center gap-2 text-sm text-neutral-600 hover:text-neutral-900 hover:underline group"
                         >
                           <FiExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                           <span>{link.label}</span>
@@ -186,11 +186,11 @@ export default function DemoPortalPage() {
 
         {/* Footer Note */}
         <div className="mt-12 text-center">
-          <div className="inline-block px-6 py-4 bg-white border border-gray-200 rounded-lg shadow-sm">
-            <h3 className="text-sm font-semibold text-gray-900 mb-2">📚 Demo Resources</h3>
-            <p className="text-sm text-gray-600 max-w-2xl">
-              For a scripted walkthrough guide, see <code className="font-mono bg-gray-100 px-2 py-1 rounded">docs/DEMO_FLOW.md</code>.
-              For account details, see <code className="font-mono bg-gray-100 px-2 py-1 rounded">docs/DEMO_ACCOUNTS.md</code>.
+          <div className="inline-block px-6 py-4 bg-white border border-neutral-200 rounded-lg shadow-sm">
+            <h3 className="text-sm font-semibold text-neutral-900 mb-2">📚 Demo Resources</h3>
+            <p className="text-sm text-neutral-600 max-w-2xl">
+              For a scripted walkthrough guide, see <code className="font-mono bg-neutral-100 px-2 py-1 rounded">docs/DEMO_FLOW.md</code>.
+              For account details, see <code className="font-mono bg-neutral-100 px-2 py-1 rounded">docs/DEMO_ACCOUNTS.md</code>.
             </p>
           </div>
         </div>

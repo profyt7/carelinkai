@@ -57,9 +57,9 @@ export function BulkActionsBar({
   const getVariantClasses = (variant: string = 'default') => {
     switch (variant) {
       case 'danger':
-        return 'text-red-600 hover:bg-red-50';
+        return 'text-error-600 hover:bg-error-50';
       case 'success':
-        return 'text-green-600 hover:bg-green-50';
+        return 'text-success-600 hover:bg-success-50';
       case 'warning':
         return 'text-amber-600 hover:bg-amber-50';
       default:
@@ -72,14 +72,14 @@ export function BulkActionsBar({
   return (
     <>
       {/* Bulk Actions Bar */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 flex items-center justify-between">
+      <div className="bg-primary-50 border border-primary-200 rounded-lg p-4 mb-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <span className="text-blue-800 font-medium">
+          <span className="text-primary-800 font-medium">
             {selectedCount} of {totalCount} selected
           </span>
           <button
             onClick={onClearSelection}
-            className="text-blue-600 hover:text-blue-800 text-sm underline"
+            className="text-primary-600 hover:text-primary-800 text-sm underline"
           >
             Clear selection
           </button>
@@ -123,8 +123,8 @@ export function BulkActionsBar({
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-red-100 rounded-full">
-                <FiAlertTriangle className="text-red-600 w-6 h-6" />
+              <div className="p-2 bg-error-100 rounded-full">
+                <FiAlertTriangle className="text-error-600 w-6 h-6" />
               </div>
               <h3 className="text-lg font-semibold text-neutral-900">Confirm Action</h3>
             </div>
@@ -142,7 +142,7 @@ export function BulkActionsBar({
               <button
                 onClick={() => executeAction(confirmAction.id)}
                 disabled={actionLoading}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+                className="px-4 py-2 bg-error-600 text-white rounded-lg hover:bg-error-700 disabled:opacity-50"
               >
                 {actionLoading ? 'Processing...' : 'Confirm'}
               </button>

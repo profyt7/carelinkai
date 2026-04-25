@@ -94,7 +94,7 @@ export default function ScheduledReportsPage() {
             </div>
             <Button
               size="lg"
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+              className="bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700"
               onClick={() => toast.success('Feature coming soon!')}
             >
               <Plus className="mr-2 h-5 w-5" />
@@ -106,7 +106,7 @@ export default function ScheduledReportsPage() {
         {/* Scheduled Reports List */}
         {loading ? (
           <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
             <p className="mt-2 text-slate-600">Loading scheduled reports...</p>
           </div>
         ) : scheduledReports?.length === 0 ? (
@@ -144,14 +144,14 @@ export default function ScheduledReportsPage() {
                     <div
                       className={`w-10 h-10 rounded-full flex items-center justify-center ${
                         report?.enabled
-                          ? 'bg-green-100'
+                          ? 'bg-success-100'
                           : 'bg-slate-100'
                       }`}
                     >
                       <Calendar
                         className={`h-5 w-5 ${
                           report?.enabled
-                            ? 'text-green-600'
+                            ? 'text-success-600'
                             : 'text-slate-400'
                         }`}
                       />
@@ -223,7 +223,7 @@ export default function ScheduledReportsPage() {
                         variant="ghost"
                         onClick={() => handleDelete(report?.id)}
                       >
-                        <Trash2 className="h-4 w-4 text-red-600" />
+                        <Trash2 className="h-4 w-4 text-error-600" />
                       </Button>
                     </div>
                   </div>

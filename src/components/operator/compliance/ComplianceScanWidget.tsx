@@ -15,16 +15,16 @@ const CATEGORY_LABELS: Record<Category, string> = {
 };
 
 function SeverityIcon({ severity }: { severity: string }) {
-  if (severity === 'CRITICAL') return <FiAlertCircle className="text-red-500 flex-shrink-0" size={16} />;
+  if (severity === 'CRITICAL') return <FiAlertCircle className="text-error-500 flex-shrink-0" size={16} />;
   if (severity === 'WARNING') return <FiAlertTriangle className="text-amber-500 flex-shrink-0" size={16} />;
-  return <FiCheckCircle className="text-green-500 flex-shrink-0" size={16} />;
+  return <FiCheckCircle className="text-success-500 flex-shrink-0" size={16} />;
 }
 
 function FindingRow({ f }: { f: ComplianceFinding }) {
   const borderColor =
-    f.severity === 'CRITICAL' ? 'border-red-200 bg-red-50' :
+    f.severity === 'CRITICAL' ? 'border-error-200 bg-error-50' :
     f.severity === 'WARNING' ? 'border-amber-200 bg-amber-50' :
-    'border-green-100 bg-green-50';
+    'border-success-100 bg-success-50';
 
   return (
     <div className={`flex items-start gap-3 rounded-lg border p-3 ${borderColor}`}>
@@ -117,24 +117,24 @@ export default function ComplianceScanWidget() {
       )}
 
       {error && (
-        <div className="p-5 text-sm text-red-600">{error}</div>
+        <div className="p-5 text-sm text-error-600">{error}</div>
       )}
 
       {result && (
         <div className="p-5 space-y-5">
           {/* Score cards */}
           <div className="grid grid-cols-3 gap-3">
-            <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-center">
-              <div className="text-2xl font-bold text-red-600">{result.counts.critical}</div>
-              <div className="text-xs text-red-500 font-medium mt-0.5">Critical</div>
+            <div className="rounded-lg bg-error-50 border border-error-200 p-3 text-center">
+              <div className="text-2xl font-bold text-error-600">{result.counts.critical}</div>
+              <div className="text-xs text-error-500 font-medium mt-0.5">Critical</div>
             </div>
             <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 text-center">
               <div className="text-2xl font-bold text-amber-600">{result.counts.warning}</div>
               <div className="text-xs text-amber-500 font-medium mt-0.5">Warnings</div>
             </div>
-            <div className="rounded-lg bg-green-50 border border-green-200 p-3 text-center">
-              <div className="text-2xl font-bold text-green-600">{result.counts.ok}</div>
-              <div className="text-xs text-green-500 font-medium mt-0.5">Passing</div>
+            <div className="rounded-lg bg-success-50 border border-success-200 p-3 text-center">
+              <div className="text-2xl font-bold text-success-600">{result.counts.ok}</div>
+              <div className="text-xs text-success-500 font-medium mt-0.5">Passing</div>
             </div>
           </div>
 
@@ -162,7 +162,7 @@ export default function ComplianceScanWidget() {
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-neutral-700">{CATEGORY_LABELS[cat]}</span>
                       {hasCritical && (
-                        <span className="text-xs px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 font-medium">
+                        <span className="text-xs px-1.5 py-0.5 rounded-full bg-error-100 text-error-600 font-medium">
                           {catFindings.filter((f) => f.severity === 'CRITICAL').length} critical
                         </span>
                       )}
@@ -172,7 +172,7 @@ export default function ComplianceScanWidget() {
                         </span>
                       )}
                       {!hasCritical && !hasWarning && (
-                        <span className="text-xs px-1.5 py-0.5 rounded-full bg-green-100 text-green-600 font-medium">
+                        <span className="text-xs px-1.5 py-0.5 rounded-full bg-success-100 text-success-600 font-medium">
                           All clear
                         </span>
                       )}

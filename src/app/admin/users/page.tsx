@@ -377,7 +377,7 @@ export default function AdminUsersPage() {
                 </tr>
               ) : (
                 users.map((user) => (
-                  <tr key={user.id} className={`hover:bg-neutral-50 ${selectedIds.has(user.id) ? 'bg-blue-50' : ''}`}>
+                  <tr key={user.id} className={`hover:bg-neutral-50 ${selectedIds.has(user.id) ? 'bg-primary-50' : ''}`}>
                     <td className="px-4 py-4">
                       <input
                         type="checkbox"
@@ -395,10 +395,10 @@ export default function AdminUsersPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">{user.role}</span>
+                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-primary-100 text-primary-800">{user.role}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${user.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${user.status === 'ACTIVE' ? 'bg-success-100 text-success-800' : 'bg-error-100 text-error-800'}`}>
                         {user.status}
                       </span>
                     </td>
@@ -432,7 +432,7 @@ export default function AdminUsersPage() {
                             handleDeleteUser(user.id);
                           }} 
                           disabled={deletingUserId === user.id}
-                          className={`p-2 ${deletingUserId === user.id ? 'text-red-400 cursor-not-allowed' : 'text-red-600 hover:text-red-800'}`} 
+                          className={`p-2 ${deletingUserId === user.id ? 'text-error-400 cursor-not-allowed' : 'text-error-600 hover:text-error-800'}`} 
                           title={deletingUserId === user.id ? 'Deleting...' : 'Delete user'}
                         >
                           {deletingUserId === user.id ? (

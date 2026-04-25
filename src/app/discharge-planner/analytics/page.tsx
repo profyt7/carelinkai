@@ -65,12 +65,12 @@ export default function AnalyticsPage() {
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
-      ACCEPTED: "bg-green-500",
-      RESPONDED: "bg-blue-500",
+      ACCEPTED: "bg-success-500",
+      RESPONDED: "bg-primary-500",
       VIEWED: "bg-amber-500",
-      SENT: "bg-purple-500",
+      SENT: "bg-secondary-500",
       PENDING: "bg-neutral-500",
-      DECLINED: "bg-red-500",
+      DECLINED: "bg-error-500",
     };
     return colors[status] || "bg-neutral-500";
   };
@@ -93,7 +93,7 @@ export default function AnalyticsPage() {
       <DashboardLayout title="Analytics" showSearch={false}>
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <div className="text-red-600 mb-4">
+            <div className="text-error-600 mb-4">
               <FiBarChart2 size={48} className="mx-auto mb-2" />
               <p className="font-medium">Failed to load analytics</p>
               <p className="text-sm text-neutral-600 mt-1">{error}</p>
@@ -123,7 +123,7 @@ export default function AnalyticsPage() {
               <select
                 value={timeFilter}
                 onChange={(e) => setTimeFilter(e.target.value as TimeFilter)}
-                className="px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
                 <option value="week">Last 7 Days</option>
                 <option value="month">Last 30 Days</option>
@@ -139,28 +139,28 @@ export default function AnalyticsPage() {
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow p-6 text-white"
+            className="bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg shadow p-6 text-white"
           >
             <div className="flex items-center justify-between mb-2">
               <FiBarChart2 size={24} />
               <div className="text-xs bg-white/20 px-2 py-1 rounded">Total</div>
             </div>
             <p className="text-3xl font-bold mb-1">{overview.totalSearches}</p>
-            <p className="text-sm text-blue-100">Total Searches</p>
+            <p className="text-sm text-primary-100">Total Searches</p>
           </motion.div>
 
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.1 }}
-            className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg shadow p-6 text-white"
+            className="bg-gradient-to-br from-success-500 to-success-600 rounded-lg shadow p-6 text-white"
           >
             <div className="flex items-center justify-between mb-2">
               <FiActivity size={24} />
               <div className="text-xs bg-white/20 px-2 py-1 rounded">Total</div>
             </div>
             <p className="text-3xl font-bold mb-1">{overview.totalRequests}</p>
-            <p className="text-sm text-green-100">Placement Requests</p>
+            <p className="text-sm text-success-100">Placement Requests</p>
           </motion.div>
 
           <motion.div
@@ -174,7 +174,7 @@ export default function AnalyticsPage() {
               <div className="text-xs bg-white/20 px-2 py-1 rounded">Rate</div>
             </div>
             <p className="text-3xl font-bold mb-1">{overview.successRate.toFixed(1)}%</p>
-            <p className="text-sm text-purple-100">Success Rate</p>
+            <p className="text-sm text-secondary-100">Success Rate</p>
           </motion.div>
 
           <motion.div
@@ -237,7 +237,7 @@ export default function AnalyticsPage() {
                         </div>
                         <div className="w-full bg-neutral-200 rounded-full h-2">
                           <div
-                            className="bg-blue-600 h-2 rounded-full transition-all duration-500"
+                            className="bg-primary-600 h-2 rounded-full transition-all duration-500"
                             style={{ width: `${percentage}%` }}
                           />
                         </div>
@@ -338,7 +338,7 @@ export default function AnalyticsPage() {
                   topMatchedHomes.map((home, index) => (
                     <tr key={home.homeId} className="hover:bg-neutral-50">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-800 font-bold text-sm">
+                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary-100 text-primary-800 font-bold text-sm">
                           {index + 1}
                         </span>
                       </td>
@@ -354,7 +354,7 @@ export default function AnalyticsPage() {
                       <td className="px-6 py-4">
                         <div className="w-full bg-neutral-200 rounded-full h-2 max-w-xs">
                           <div
-                            className="bg-green-600 h-2 rounded-full"
+                            className="bg-success-600 h-2 rounded-full"
                             style={{ width: `${home.successRate}%` }}
                           />
                         </div>
@@ -401,7 +401,7 @@ export default function AnalyticsPage() {
                           </div>
                           <div className="w-full bg-neutral-200 rounded-full h-2">
                             <div
-                              className="bg-blue-600 h-2 rounded-full transition-all duration-500"
+                              className="bg-primary-600 h-2 rounded-full transition-all duration-500"
                               style={{ width: `${maxValue > 0 ? (trend.searches / maxValue) * 100 : 0}%` }}
                             />
                           </div>
@@ -413,7 +413,7 @@ export default function AnalyticsPage() {
                           </div>
                           <div className="w-full bg-neutral-200 rounded-full h-2">
                             <div
-                              className="bg-green-600 h-2 rounded-full transition-all duration-500"
+                              className="bg-success-600 h-2 rounded-full transition-all duration-500"
                               style={{ width: `${maxValue > 0 ? (trend.placements / maxValue) * 100 : 0}%` }}
                             />
                           </div>

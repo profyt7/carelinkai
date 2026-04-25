@@ -23,9 +23,9 @@ const COMPLIANCE_TYPES = [
 ];
 
 const COMPLIANCE_STATUSES = [
-  { value: 'CURRENT', label: 'Current', color: 'bg-green-100 text-green-800', icon: FiCheckCircle },
-  { value: 'EXPIRING_SOON', label: 'Expiring Soon', color: 'bg-yellow-100 text-yellow-800', icon: FiAlertCircle },
-  { value: 'EXPIRED', label: 'Expired', color: 'bg-red-100 text-red-800', icon: FiAlertCircle },
+  { value: 'CURRENT', label: 'Current', color: 'bg-success-100 text-success-800', icon: FiCheckCircle },
+  { value: 'EXPIRING_SOON', label: 'Expiring Soon', color: 'bg-warning-100 text-warning-800', icon: FiAlertCircle },
+  { value: 'EXPIRED', label: 'Expired', color: 'bg-error-100 text-error-800', icon: FiAlertCircle },
   { value: 'NOT_REQUIRED', label: 'Not Required', color: 'bg-neutral-100 text-neutral-800', icon: FiX },
 ];
 
@@ -289,7 +289,7 @@ export function ComplianceTab({ residentId }: { residentId: string }) {
                     <ActionGuard resourceType="compliance" action="update">
                       <button
                         onClick={() => openEditModal(item)}
-                        className="p-1.5 text-neutral-600 hover:text-blue-600 hover:bg-neutral-50 rounded"
+                        className="p-1.5 text-neutral-600 hover:text-primary-600 hover:bg-neutral-50 rounded"
                         title="Edit"
                       >
                         <FiEdit2 className="w-4 h-4" />
@@ -298,7 +298,7 @@ export function ComplianceTab({ residentId }: { residentId: string }) {
                     <ActionGuard resourceType="compliance" action="delete">
                       <button
                         onClick={() => handleDelete(item.id)}
-                        className="p-1.5 text-neutral-600 hover:text-red-600 hover:bg-neutral-50 rounded"
+                        className="p-1.5 text-neutral-600 hover:text-error-600 hover:bg-neutral-50 rounded"
                         title="Delete"
                       >
                         <FiTrash2 className="w-4 h-4" />
@@ -314,7 +314,7 @@ export function ComplianceTab({ residentId }: { residentId: string }) {
                         <FiCalendar className="w-4 h-4" />
                         <span className="font-medium">Expires:</span>
                       </div>
-                      <p className={`${daysUntilExpiry !== null && daysUntilExpiry < 30 ? 'text-orange-600 font-medium' : 'text-neutral-900'}`}>
+                      <p className={`${daysUntilExpiry !== null && daysUntilExpiry < 30 ? 'text-warning-600 font-medium' : 'text-neutral-900'}`}>
                         {formatDate(item.expiryDate)}
                         {daysUntilExpiry !== null && daysUntilExpiry >= 0 && daysUntilExpiry < 30 && (
                           <span className="ml-1">({daysUntilExpiry} days)</span>

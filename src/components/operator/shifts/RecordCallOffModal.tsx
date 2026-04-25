@@ -67,7 +67,7 @@ export default function RecordCallOffModal({ shiftId, caregiverName, onClose, on
             <label className="block text-sm font-medium text-neutral-700 mb-1">Type</label>
             <div className="space-y-2">
               {CALL_OFF_TYPES.map((opt) => (
-                <label key={opt.value} className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${type === opt.value ? 'border-red-400 bg-red-50' : 'border-neutral-200 hover:border-neutral-300'}`}>
+                <label key={opt.value} className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${type === opt.value ? 'border-error-400 bg-error-50' : 'border-neutral-200 hover:border-neutral-300'}`}>
                   <div className="flex items-center gap-2">
                     <input
                       type="radio"
@@ -75,11 +75,11 @@ export default function RecordCallOffModal({ shiftId, caregiverName, onClose, on
                       value={opt.value}
                       checked={type === opt.value}
                       onChange={() => setType(opt.value)}
-                      className="text-red-500"
+                      className="text-error-500"
                     />
                     <span className="text-sm text-neutral-700">{opt.label}</span>
                   </div>
-                  <span className="text-xs text-red-600 font-medium">{opt.penalty}</span>
+                  <span className="text-xs text-error-600 font-medium">{opt.penalty}</span>
                 </label>
               ))}
             </div>
@@ -92,11 +92,11 @@ export default function RecordCallOffModal({ shiftId, caregiverName, onClose, on
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
               placeholder="Any additional context..."
-              className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 resize-none"
+              className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-error-400 resize-none"
             />
           </div>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-error-600">{error}</p>}
 
           <div className="flex gap-2 pt-1">
             <button
@@ -109,7 +109,7 @@ export default function RecordCallOffModal({ shiftId, caregiverName, onClose, on
             </button>
             <button
               type="submit"
-              className="flex-1 btn bg-red-600 text-white hover:bg-red-700 border-red-600"
+              className="flex-1 btn bg-error-600 text-white hover:bg-error-700 border-error-600"
               disabled={saving}
             >
               {saving ? 'Saving...' : 'Record Call-Off'}

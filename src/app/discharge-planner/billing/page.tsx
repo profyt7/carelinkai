@@ -69,15 +69,15 @@ export default function DischargePlannerBillingPage() {
       </p>
 
       {isActive ? (
-        <div className="rounded-lg border border-green-200 bg-green-50 p-6">
+        <div className="rounded-lg border border-success-200 bg-success-50 p-6">
           <div className="flex items-center gap-3 mb-3">
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-green-100 text-green-800">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-success-100 text-success-800">
               {profile?.subscriptionStatus === 'TRIALING' ? 'Trial Active' : 'Active'}
             </span>
             <span className="text-neutral-600 text-sm">CareLinkAI Discharge Planner — $99/seat/month</span>
           </div>
           {profile?.subscriptionStatus === 'TRIALING' && profile.trialEndsAt && (
-            <p className="text-sm text-green-700">
+            <p className="text-sm text-success-700">
               Trial ends {new Date(profile.trialEndsAt).toLocaleDateString()}
             </p>
           )}
@@ -111,7 +111,7 @@ export default function DischargePlannerBillingPage() {
               'HIPAA-compliant data handling',
             ].map((feature) => (
               <li key={feature} className="flex items-start gap-2 text-sm text-neutral-700">
-                <svg className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-4 h-4 text-success-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
                 {feature}

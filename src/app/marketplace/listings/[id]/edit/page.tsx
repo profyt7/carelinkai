@@ -47,8 +47,8 @@ export default async function EditListingPage({ params }: { params: { id: string
       <div className="max-w-4xl mx-auto p-4 md:p-6">
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex items-center justify-center h-64 flex-col">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
-            <p className="text-gray-600 text-center mb-4">
+            <h1 className="text-2xl font-bold text-neutral-900 mb-2">Access Denied</h1>
+            <p className="text-neutral-600 text-center mb-4">
               You don't have permission to edit this listing.
             </p>
             <Link
@@ -68,19 +68,19 @@ export default async function EditListingPage({ params }: { params: { id: string
     <div className="max-w-4xl mx-auto p-4 md:p-6">
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         {/* Header */}
-        <div className="p-6 border-b border-gray-200">
+        <div className="p-6 border-b border-neutral-200">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-gray-900">Edit Listing</h1>
+            <h1 className="text-2xl font-bold text-neutral-900">Edit Listing</h1>
             <Link
               href={`/marketplace/listings/${listingId}`}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+              className="inline-flex items-center px-4 py-2 border border-neutral-300 rounded-md shadow-sm text-sm font-medium text-neutral-700 bg-white hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
             >
               <FiArrowLeft className="mr-2" />
               Back to Listing
             </Link>
           </div>
           
-          <p className="text-gray-600">
+          <p className="text-neutral-600">
             Update your listing information below.
           </p>
         </div>

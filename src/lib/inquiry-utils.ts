@@ -42,19 +42,19 @@ export function getInquiryAgeCategory(inquiryDate: Date | string): InquiryAgeCat
  */
 export function getStatusColor(status: InquiryStatus): string {
   const colorMap: Record<InquiryStatus, string> = {
-    NEW: 'bg-blue-100 text-blue-800 border-blue-200',
-    CONTACTED: 'bg-purple-100 text-purple-800 border-purple-200',
-    TOUR_SCHEDULED: 'bg-orange-100 text-orange-800 border-orange-200',
+    NEW: 'bg-primary-100 text-primary-800 border-primary-200',
+    CONTACTED: 'bg-secondary-100 text-secondary-800 border-secondary-200',
+    TOUR_SCHEDULED: 'bg-warning-100 text-warning-800 border-warning-200',
     TOUR_COMPLETED: 'bg-teal-100 text-teal-800 border-teal-200',
     QUALIFIED: 'bg-indigo-100 text-indigo-800 border-indigo-200',
-    CONVERTING: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-    CONVERTED: 'bg-green-100 text-green-800 border-green-200',
+    CONVERTING: 'bg-warning-100 text-warning-800 border-warning-200',
+    CONVERTED: 'bg-success-100 text-success-800 border-success-200',
     PLACEMENT_OFFERED: 'bg-indigo-100 text-indigo-800 border-indigo-200',
-    PLACEMENT_ACCEPTED: 'bg-green-100 text-green-800 border-green-200',
-    CLOSED_LOST: 'bg-gray-100 text-gray-800 border-gray-200',
+    PLACEMENT_ACCEPTED: 'bg-success-100 text-success-800 border-success-200',
+    CLOSED_LOST: 'bg-neutral-100 text-neutral-800 border-neutral-200',
   };
   
-  return colorMap[status] || 'bg-gray-100 text-gray-800 border-gray-200';
+  return colorMap[status] || 'bg-neutral-100 text-neutral-800 border-neutral-200';
 }
 
 /**
@@ -98,9 +98,9 @@ export function getSourceIcon(source: string): string {
  */
 export function getPriorityColor(priority: 'high' | 'normal' | 'low'): string {
   const colorMap = {
-    high: 'text-red-600',
-    normal: 'text-gray-600',
-    low: 'text-gray-400',
+    high: 'text-error-600',
+    normal: 'text-neutral-600',
+    low: 'text-neutral-400',
   };
   
   return colorMap[priority] || colorMap.normal;
@@ -230,10 +230,10 @@ export function getInquiryUrgency(inquiry: {
  */
 export function getUrgencyColor(urgency: UrgencyLevel): string {
   const colorMap: Record<UrgencyLevel, string> = {
-    critical: 'text-red-600 bg-red-50 border-red-200',
-    high: 'text-orange-600 bg-orange-50 border-orange-200',
-    medium: 'text-yellow-600 bg-yellow-50 border-yellow-200',
-    low: 'text-gray-600 bg-gray-50 border-gray-200',
+    critical: 'text-error-600 bg-error-50 border-error-200',
+    high: 'text-warning-600 bg-warning-50 border-warning-200',
+    medium: 'text-warning-600 bg-warning-50 border-warning-200',
+    low: 'text-neutral-600 bg-neutral-50 border-neutral-200',
   };
   
   return colorMap[urgency];

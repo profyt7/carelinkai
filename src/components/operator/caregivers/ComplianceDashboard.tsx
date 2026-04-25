@@ -78,31 +78,31 @@ export function ComplianceDashboard() {
             <FiUsers className="w-8 h-8 text-neutral-400" />
           </div>
         </div>
-        <div className="bg-green-50 rounded-lg border border-green-200 p-6">
+        <div className="bg-success-50 rounded-lg border border-success-200 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-2xl font-bold text-green-900">{stats.currentCertifications}</p>
-              <p className="text-sm text-green-700 mt-1">Current Certifications</p>
+              <p className="text-2xl font-bold text-success-900">{stats.currentCertifications}</p>
+              <p className="text-sm text-success-700 mt-1">Current Certifications</p>
             </div>
-            <FiCheckCircle className="w-8 h-8 text-green-500" />
+            <FiCheckCircle className="w-8 h-8 text-success-500" />
           </div>
         </div>
-        <div className="bg-yellow-50 rounded-lg border border-yellow-200 p-6">
+        <div className="bg-warning-50 rounded-lg border border-warning-200 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-2xl font-bold text-yellow-900">{stats.expiringSoon}</p>
-              <p className="text-sm text-yellow-700 mt-1">Expiring Soon</p>
+              <p className="text-2xl font-bold text-warning-900">{stats.expiringSoon}</p>
+              <p className="text-sm text-warning-700 mt-1">Expiring Soon</p>
             </div>
-            <FiAlertCircle className="w-8 h-8 text-yellow-500" />
+            <FiAlertCircle className="w-8 h-8 text-warning-500" />
           </div>
         </div>
-        <div className="bg-red-50 rounded-lg border border-red-200 p-6">
+        <div className="bg-error-50 rounded-lg border border-error-200 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-2xl font-bold text-red-900">{stats.expired}</p>
-              <p className="text-sm text-red-700 mt-1">Expired</p>
+              <p className="text-2xl font-bold text-error-900">{stats.expired}</p>
+              <p className="text-sm text-error-700 mt-1">Expired</p>
             </div>
-            <FiAlertCircle className="w-8 h-8 text-red-500" />
+            <FiAlertCircle className="w-8 h-8 text-error-500" />
           </div>
         </div>
       </div>
@@ -141,8 +141,8 @@ export function ComplianceDashboard() {
                               <span
                                 className={`text-xs px-2 py-0.5 rounded ${
                                   status === 'EXPIRED'
-                                    ? 'bg-red-100 text-red-800'
-                                    : 'bg-yellow-100 text-yellow-800'
+                                    ? 'bg-error-100 text-error-800'
+                                    : 'bg-warning-100 text-warning-800'
                                 }`}
                               >
                                 {status === 'EXPIRED' ? 'Expired' : 'Expiring Soon'}

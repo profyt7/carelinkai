@@ -56,7 +56,7 @@ export default function ShiftsTable({ shifts }: { shifts: ShiftRow[] }) {
                         {['ASSIGNED', 'IN_PROGRESS', 'COMPLETED'].includes(s.status) && (
                           <button
                             onClick={() => setCallOffShift(s)}
-                            className="btn btn-sm text-red-600 border-red-300 hover:bg-red-50"
+                            className="btn btn-sm text-error-600 border-error-300 hover:bg-error-50"
                           >
                             Call-Off
                           </button>

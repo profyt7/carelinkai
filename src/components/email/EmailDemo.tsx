@@ -216,11 +216,11 @@ export default function EmailDemo() {
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">Email Notification System</h2>
+      <h2 className="text-2xl font-bold text-neutral-800 mb-6">Email Notification System</h2>
 
       {!isAuthenticated ? (
-        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md mb-6">
-          <p className="text-yellow-700 flex items-center">
+        <div className="p-4 bg-warning-50 border border-warning-200 rounded-md mb-6">
+          <p className="text-warning-700 flex items-center">
             <FiAlertCircle className="mr-2" />
             You need to be signed in to send emails. Please sign in to test the email functionality.
           </p>
@@ -228,15 +228,15 @@ export default function EmailDemo() {
       ) : null}
 
       <Tab.Group selectedIndex={tabs.findIndex(t => t.key === selectedTab)} onChange={(index) => setSelectedTab((tabs[index]?.key as EmailTab) ?? 'welcome')}>
-        <Tab.List className="flex space-x-1 rounded-xl bg-blue-50 p-1 mb-6">
+        <Tab.List className="flex space-x-1 rounded-xl bg-primary-50 p-1 mb-6">
           {tabs.map((tab) => (
             <Tab
               key={tab.key}
               className={({ selected }) =>
                 `w-full rounded-lg py-2.5 text-sm font-medium leading-5 
                 ${selected
-                  ? 'bg-blue-600 text-white shadow'
-                  : 'text-blue-700 hover:bg-blue-100 hover:text-blue-800'
+                  ? 'bg-primary-600 text-white shadow'
+                  : 'text-primary-700 hover:bg-primary-100 hover:text-primary-800'
                 } flex items-center justify-center transition-all`
               }
             >
@@ -248,11 +248,11 @@ export default function EmailDemo() {
         <Tab.Panels className="mt-2">
           {/* Welcome Email Form */}
           <Tab.Panel>
-            <div className="bg-gray-50 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Send Welcome Email</h3>
+            <div className="bg-neutral-50 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-neutral-800 mb-4">Send Welcome Email</h3>
               <form onSubmit={handleWelcomeSubmit} className="space-y-4">
                 <div>
-                  <label htmlFor="welcome-recipient" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="welcome-recipient" className="block text-sm font-medium text-neutral-700 mb-1">
                     Recipient Email*
                   </label>
                   <input
@@ -260,12 +260,12 @@ export default function EmailDemo() {
                     id="welcome-recipient"
                     value={welcomeForm.recipient}
                     onChange={(e) => setWelcomeForm({ ...welcomeForm, recipient: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                     required
                   />
                 </div>
                 <div>
-                  <label htmlFor="welcome-firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="welcome-firstName" className="block text-sm font-medium text-neutral-700 mb-1">
                     First Name*
                   </label>
                   <input
@@ -273,12 +273,12 @@ export default function EmailDemo() {
                     id="welcome-firstName"
                     value={welcomeForm.firstName}
                     onChange={(e) => setWelcomeForm({ ...welcomeForm, firstName: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                     required
                   />
                 </div>
                 <div>
-                  <label htmlFor="welcome-lastName" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="welcome-lastName" className="block text-sm font-medium text-neutral-700 mb-1">
                     Last Name
                   </label>
                   <input
@@ -286,11 +286,11 @@ export default function EmailDemo() {
                     id="welcome-lastName"
                     value={welcomeForm.lastName}
                     onChange={(e) => setWelcomeForm({ ...welcomeForm, lastName: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                   />
                 </div>
                 <div>
-                  <label htmlFor="welcome-verificationUrl" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="welcome-verificationUrl" className="block text-sm font-medium text-neutral-700 mb-1">
                     Verification URL
                   </label>
                   <input
@@ -298,14 +298,14 @@ export default function EmailDemo() {
                     id="welcome-verificationUrl"
                     value={welcomeForm.verificationUrl}
                     onChange={(e) => setWelcomeForm({ ...welcomeForm, verificationUrl: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                   />
                 </div>
                 <div className="pt-2">
                   <button
                     type="submit"
                     disabled={loading || !isAuthenticated}
-                    className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                    className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 ${
                       (loading || !isAuthenticated) ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
                   >
@@ -331,11 +331,11 @@ export default function EmailDemo() {
 
           {/* Notification Email Form */}
           <Tab.Panel>
-            <div className="bg-gray-50 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Send Notification Email</h3>
+            <div className="bg-neutral-50 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-neutral-800 mb-4">Send Notification Email</h3>
               <form onSubmit={handleNotificationSubmit} className="space-y-4">
                 <div>
-                  <label htmlFor="notification-recipient" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="notification-recipient" className="block text-sm font-medium text-neutral-700 mb-1">
                     Recipient Email*
                   </label>
                   <input
@@ -343,12 +343,12 @@ export default function EmailDemo() {
                     id="notification-recipient"
                     value={notificationForm.recipient}
                     onChange={(e) => setNotificationForm({ ...notificationForm, recipient: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                     required
                   />
                 </div>
                 <div>
-                  <label htmlFor="notification-firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="notification-firstName" className="block text-sm font-medium text-neutral-700 mb-1">
                     First Name*
                   </label>
                   <input
@@ -356,12 +356,12 @@ export default function EmailDemo() {
                     id="notification-firstName"
                     value={notificationForm.firstName}
                     onChange={(e) => setNotificationForm({ ...notificationForm, firstName: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                     required
                   />
                 </div>
                 <div>
-                  <label htmlFor="notification-subject" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="notification-subject" className="block text-sm font-medium text-neutral-700 mb-1">
                     Subject*
                   </label>
                   <input
@@ -369,12 +369,12 @@ export default function EmailDemo() {
                     id="notification-subject"
                     value={notificationForm.subject}
                     onChange={(e) => setNotificationForm({ ...notificationForm, subject: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                     required
                   />
                 </div>
                 <div>
-                  <label htmlFor="notification-message" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="notification-message" className="block text-sm font-medium text-neutral-700 mb-1">
                     Message*
                   </label>
                   <textarea
@@ -382,13 +382,13 @@ export default function EmailDemo() {
                     rows={3}
                     value={notificationForm.message}
                     onChange={(e) => setNotificationForm({ ...notificationForm, message: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                     required
                   />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="notification-actionUrl" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="notification-actionUrl" className="block text-sm font-medium text-neutral-700 mb-1">
                       Action URL
                     </label>
                     <input
@@ -396,11 +396,11 @@ export default function EmailDemo() {
                       id="notification-actionUrl"
                       value={notificationForm.actionUrl}
                       onChange={(e) => setNotificationForm({ ...notificationForm, actionUrl: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                     />
                   </div>
                   <div>
-                    <label htmlFor="notification-actionText" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="notification-actionText" className="block text-sm font-medium text-neutral-700 mb-1">
                       Action Text
                     </label>
                     <input
@@ -408,19 +408,19 @@ export default function EmailDemo() {
                       id="notification-actionText"
                       value={notificationForm.actionText}
                       onChange={(e) => setNotificationForm({ ...notificationForm, actionText: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                     />
                   </div>
                 </div>
                 <div>
-                  <label htmlFor="notification-category" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="notification-category" className="block text-sm font-medium text-neutral-700 mb-1">
                     Category
                   </label>
                   <select
                     id="notification-category"
                     value={notificationForm.category}
                     onChange={(e) => setNotificationForm({ ...notificationForm, category: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                   >
                     <option value="account">Account</option>
                     <option value="billing">Billing</option>
@@ -434,7 +434,7 @@ export default function EmailDemo() {
                   <button
                     type="submit"
                     disabled={loading || !isAuthenticated}
-                    className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                    className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 ${
                       (loading || !isAuthenticated) ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
                   >
@@ -460,11 +460,11 @@ export default function EmailDemo() {
 
           {/* Appointment Email Form */}
           <Tab.Panel>
-            <div className="bg-gray-50 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Send Appointment Confirmation</h3>
+            <div className="bg-neutral-50 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-neutral-800 mb-4">Send Appointment Confirmation</h3>
               <form onSubmit={handleAppointmentSubmit} className="space-y-4">
                 <div>
-                  <label htmlFor="appointment-recipient" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="appointment-recipient" className="block text-sm font-medium text-neutral-700 mb-1">
                     Recipient Email*
                   </label>
                   <input
@@ -472,12 +472,12 @@ export default function EmailDemo() {
                     id="appointment-recipient"
                     value={appointmentForm.recipient}
                     onChange={(e) => setAppointmentForm({ ...appointmentForm, recipient: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                     required
                   />
                 </div>
                 <div>
-                  <label htmlFor="appointment-firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="appointment-firstName" className="block text-sm font-medium text-neutral-700 mb-1">
                     First Name*
                   </label>
                   <input
@@ -485,19 +485,19 @@ export default function EmailDemo() {
                     id="appointment-firstName"
                     value={appointmentForm.firstName}
                     onChange={(e) => setAppointmentForm({ ...appointmentForm, firstName: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                     required
                   />
                 </div>
                 <div>
-                  <label htmlFor="appointment-type" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="appointment-type" className="block text-sm font-medium text-neutral-700 mb-1">
                     Appointment Type*
                   </label>
                   <select
                     id="appointment-type"
                     value={appointmentForm.appointmentType}
                     onChange={(e) => setAppointmentForm({ ...appointmentForm, appointmentType: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                     required
                   >
                     <option value="Care Consultation">Care Consultation</option>
@@ -508,7 +508,7 @@ export default function EmailDemo() {
                   </select>
                 </div>
                 <div>
-                  <label htmlFor="appointment-dateTime" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="appointment-dateTime" className="block text-sm font-medium text-neutral-700 mb-1">
                     Date & Time*
                   </label>
                   <input
@@ -516,7 +516,7 @@ export default function EmailDemo() {
                     id="appointment-dateTime"
                     value={appointmentForm.dateTime}
                     onChange={(e) => setAppointmentForm({ ...appointmentForm, dateTime: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                     required
                   />
                 </div>
@@ -527,16 +527,16 @@ export default function EmailDemo() {
                       id="appointment-isVirtual"
                       checked={appointmentForm.isVirtual}
                       onChange={(e) => setAppointmentForm({ ...appointmentForm, isVirtual: e.target.checked })}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-neutral-300 rounded"
                     />
-                    <label htmlFor="appointment-isVirtual" className="ml-2 block text-sm font-medium text-gray-700">
+                    <label htmlFor="appointment-isVirtual" className="ml-2 block text-sm font-medium text-neutral-700">
                       Virtual Meeting
                     </label>
                   </div>
                 </div>
                 {appointmentForm.isVirtual ? (
                   <div>
-                    <label htmlFor="appointment-virtualUrl" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="appointment-virtualUrl" className="block text-sm font-medium text-neutral-700 mb-1">
                       Virtual Meeting URL*
                     </label>
                     <input
@@ -544,13 +544,13 @@ export default function EmailDemo() {
                       id="appointment-virtualUrl"
                       value={appointmentForm.virtualMeetingUrl}
                       onChange={(e) => setAppointmentForm({ ...appointmentForm, virtualMeetingUrl: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                       required={appointmentForm.isVirtual}
                     />
                   </div>
                 ) : (
                   <div>
-                    <label htmlFor="appointment-location" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="appointment-location" className="block text-sm font-medium text-neutral-700 mb-1">
                       Location*
                     </label>
                     <input
@@ -558,13 +558,13 @@ export default function EmailDemo() {
                       id="appointment-location"
                       value={appointmentForm.location}
                       onChange={(e) => setAppointmentForm({ ...appointmentForm, location: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                       required={!appointmentForm.isVirtual}
                     />
                   </div>
                 )}
                 <div>
-                  <label htmlFor="appointment-notes" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="appointment-notes" className="block text-sm font-medium text-neutral-700 mb-1">
                     Notes
                   </label>
                   <textarea
@@ -572,14 +572,14 @@ export default function EmailDemo() {
                     rows={3}
                     value={appointmentForm.notes}
                     onChange={(e) => setAppointmentForm({ ...appointmentForm, notes: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                   />
                 </div>
                 <div className="pt-2">
                   <button
                     type="submit"
                     disabled={loading || !isAuthenticated}
-                    className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                    className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 ${
                       (loading || !isAuthenticated) ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
                   >
@@ -605,11 +605,11 @@ export default function EmailDemo() {
 
           {/* Document Sharing Email Form */}
           <Tab.Panel>
-            <div className="bg-gray-50 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Send Document Sharing Notification</h3>
+            <div className="bg-neutral-50 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-neutral-800 mb-4">Send Document Sharing Notification</h3>
               <form onSubmit={handleDocumentSubmit} className="space-y-4">
                 <div>
-                  <label htmlFor="document-recipient" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="document-recipient" className="block text-sm font-medium text-neutral-700 mb-1">
                     Recipient Email*
                   </label>
                   <input
@@ -617,12 +617,12 @@ export default function EmailDemo() {
                     id="document-recipient"
                     value={documentForm.recipient}
                     onChange={(e) => setDocumentForm({ ...documentForm, recipient: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                     required
                   />
                 </div>
                 <div>
-                  <label htmlFor="document-firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="document-firstName" className="block text-sm font-medium text-neutral-700 mb-1">
                     First Name*
                   </label>
                   <input
@@ -630,12 +630,12 @@ export default function EmailDemo() {
                     id="document-firstName"
                     value={documentForm.firstName}
                     onChange={(e) => setDocumentForm({ ...documentForm, firstName: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                     required
                   />
                 </div>
                 <div>
-                  <label htmlFor="document-sharedBy" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="document-sharedBy" className="block text-sm font-medium text-neutral-700 mb-1">
                     Shared By*
                   </label>
                   <input
@@ -643,12 +643,12 @@ export default function EmailDemo() {
                     id="document-sharedBy"
                     value={documentForm.sharedBy}
                     onChange={(e) => setDocumentForm({ ...documentForm, sharedBy: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                     required
                   />
                 </div>
                 <div>
-                  <label htmlFor="document-name" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="document-name" className="block text-sm font-medium text-neutral-700 mb-1">
                     Document Name*
                   </label>
                   <input
@@ -656,12 +656,12 @@ export default function EmailDemo() {
                     id="document-name"
                     value={documentForm.documentName}
                     onChange={(e) => setDocumentForm({ ...documentForm, documentName: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                     required
                   />
                 </div>
                 <div>
-                  <label htmlFor="document-url" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="document-url" className="block text-sm font-medium text-neutral-700 mb-1">
                     Document URL*
                   </label>
                   <input
@@ -669,12 +669,12 @@ export default function EmailDemo() {
                     id="document-url"
                     value={documentForm.documentUrl}
                     onChange={(e) => setDocumentForm({ ...documentForm, documentUrl: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                     required
                   />
                 </div>
                 <div>
-                  <label htmlFor="document-message" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="document-message" className="block text-sm font-medium text-neutral-700 mb-1">
                     Message
                   </label>
                   <textarea
@@ -682,14 +682,14 @@ export default function EmailDemo() {
                     rows={3}
                     value={documentForm.message}
                     onChange={(e) => setDocumentForm({ ...documentForm, message: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                   />
                 </div>
                 <div className="pt-2">
                   <button
                     type="submit"
                     disabled={loading || !isAuthenticated}
-                    className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                    className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 ${
                       (loading || !isAuthenticated) ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
                   >
@@ -715,11 +715,11 @@ export default function EmailDemo() {
 
           {/* Custom HTML Email Form */}
           <Tab.Panel>
-            <div className="bg-gray-50 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Send Custom HTML Email</h3>
+            <div className="bg-neutral-50 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-neutral-800 mb-4">Send Custom HTML Email</h3>
               <form onSubmit={handleCustomSubmit} className="space-y-4">
                 <div>
-                  <label htmlFor="custom-recipient" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="custom-recipient" className="block text-sm font-medium text-neutral-700 mb-1">
                     Recipient Email*
                   </label>
                   <input
@@ -727,12 +727,12 @@ export default function EmailDemo() {
                     id="custom-recipient"
                     value={customForm.recipient}
                     onChange={(e) => setCustomForm({ ...customForm, recipient: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                     required
                   />
                 </div>
                 <div>
-                  <label htmlFor="custom-subject" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="custom-subject" className="block text-sm font-medium text-neutral-700 mb-1">
                     Subject*
                   </label>
                   <input
@@ -740,12 +740,12 @@ export default function EmailDemo() {
                     id="custom-subject"
                     value={customForm.subject}
                     onChange={(e) => setCustomForm({ ...customForm, subject: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                     required
                   />
                 </div>
                 <div>
-                  <label htmlFor="custom-html" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="custom-html" className="block text-sm font-medium text-neutral-700 mb-1">
                     HTML Content*
                   </label>
                   <textarea
@@ -753,13 +753,13 @@ export default function EmailDemo() {
                     rows={10}
                     value={customForm.html}
                     onChange={(e) => setCustomForm({ ...customForm, html: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 font-mono"
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 font-mono"
                     required
                   />
                 </div>
                 <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">Preview</h4>
-                  <div className="border border-gray-300 rounded-md p-4 bg-white">
+                  <h4 className="text-sm font-medium text-neutral-700 mb-2">Preview</h4>
+                  <div className="border border-neutral-300 rounded-md p-4 bg-white">
                     <div dangerouslySetInnerHTML={{ __html: customForm.html }} />
                   </div>
                 </div>
@@ -767,7 +767,7 @@ export default function EmailDemo() {
                   <button
                     type="submit"
                     disabled={loading || !isAuthenticated}
-                    className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                    className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 ${
                       (loading || !isAuthenticated) ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
                   >
@@ -793,57 +793,57 @@ export default function EmailDemo() {
 
           {/* Email History/Logs */}
           <Tab.Panel>
-            <div className="bg-gray-50 rounded-lg p-6">
+            <div className="bg-neutral-50 rounded-lg p-6">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-gray-800">Email History</h3>
+                <h3 className="text-lg font-semibold text-neutral-800">Email History</h3>
                 <button
                   onClick={clearHistory}
-                  className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                  className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-error-700 bg-error-100 hover:bg-error-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-error-500"
                 >
                   Clear History
                 </button>
               </div>
               
               {emailHistory.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <FiMail className="mx-auto h-12 w-12 text-gray-400" />
+                <div className="text-center py-8 text-neutral-500">
+                  <FiMail className="mx-auto h-12 w-12 text-neutral-400" />
                   <p className="mt-2 text-sm">No emails have been sent yet.</p>
                   <p className="text-sm">Use the forms above to send emails and track them here.</p>
                 </div>
               ) : (
                 <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 rounded-lg">
-                  <table className="min-w-full divide-y divide-gray-300">
-                    <thead className="bg-gray-100">
+                  <table className="min-w-full divide-y divide-neutral-300">
+                    <thead className="bg-neutral-100">
                       <tr>
-                        <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-xs font-semibold text-gray-900 sm:pl-6">Type</th>
-                        <th scope="col" className="px-3 py-3.5 text-left text-xs font-semibold text-gray-900">Recipient</th>
-                        <th scope="col" className="px-3 py-3.5 text-left text-xs font-semibold text-gray-900">Subject</th>
-                        <th scope="col" className="px-3 py-3.5 text-left text-xs font-semibold text-gray-900">Time</th>
-                        <th scope="col" className="px-3 py-3.5 text-left text-xs font-semibold text-gray-900">Status</th>
+                        <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-xs font-semibold text-neutral-900 sm:pl-6">Type</th>
+                        <th scope="col" className="px-3 py-3.5 text-left text-xs font-semibold text-neutral-900">Recipient</th>
+                        <th scope="col" className="px-3 py-3.5 text-left text-xs font-semibold text-neutral-900">Subject</th>
+                        <th scope="col" className="px-3 py-3.5 text-left text-xs font-semibold text-neutral-900">Time</th>
+                        <th scope="col" className="px-3 py-3.5 text-left text-xs font-semibold text-neutral-900">Status</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-200 bg-white">
+                    <tbody className="divide-y divide-neutral-200 bg-white">
                       {emailHistory.map((entry) => (
                         <tr key={entry.id}>
-                          <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
-                            {entry.type === 'welcome' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Welcome</span>}
-                            {entry.type === 'notification' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Notification</span>}
-                            {entry.type === 'appointment' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Appointment</span>}
-                            {entry.type === 'document' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">Document</span>}
-                            {entry.type === 'custom' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Custom</span>}
+                          <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-neutral-900 sm:pl-6">
+                            {entry.type === 'welcome' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">Welcome</span>}
+                            {entry.type === 'notification' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-warning-100 text-warning-800">Notification</span>}
+                            {entry.type === 'appointment' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-success-100 text-success-800">Appointment</span>}
+                            {entry.type === 'document' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary-100 text-secondary-800">Document</span>}
+                            {entry.type === 'custom' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-800">Custom</span>}
                           </td>
-                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{entry.recipient}</td>
-                          <td className="px-3 py-4 text-sm text-gray-500 max-w-xs truncate">{entry.subject}</td>
-                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                          <td className="whitespace-nowrap px-3 py-4 text-sm text-neutral-500">{entry.recipient}</td>
+                          <td className="px-3 py-4 text-sm text-neutral-500 max-w-xs truncate">{entry.subject}</td>
+                          <td className="whitespace-nowrap px-3 py-4 text-sm text-neutral-500">
                             {format(entry.timestamp, 'MMM d, yyyy h:mm a')}
                           </td>
                           <td className="whitespace-nowrap px-3 py-4 text-sm">
                             {entry.success ? (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-success-100 text-success-800">
                                 Success
                               </span>
                             ) : (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800" title={entry.error}>
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-error-100 text-error-800" title={entry.error}>
                                 Failed
                               </span>
                             )}
@@ -861,9 +861,9 @@ export default function EmailDemo() {
 
       {/* Error display */}
       {error && (
-        <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-md">
-          <h4 className="text-sm font-medium text-red-800 mb-1">Error</h4>
-          <p className="text-sm text-red-700">{error}</p>
+        <div className="mt-6 p-4 bg-error-50 border border-error-200 rounded-md">
+          <h4 className="text-sm font-medium text-error-800 mb-1">Error</h4>
+          <p className="text-sm text-error-700">{error}</p>
         </div>
       )}
     </div>

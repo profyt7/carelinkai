@@ -117,8 +117,8 @@ export default function SearchHistoryPage() {
 
   const getStatusBadge = (status: string) => {
     const styles = {
-      COMPLETED: "bg-green-100 text-green-700",
-      SEARCHING: "bg-blue-100 text-blue-700",
+      COMPLETED: "bg-success-100 text-success-700",
+      SEARCHING: "bg-primary-100 text-primary-700",
       CANCELLED: "bg-neutral-100 text-neutral-700",
     };
     return styles[status as keyof typeof styles] || "bg-neutral-100 text-neutral-700";
@@ -157,7 +157,7 @@ export default function SearchHistoryPage() {
       <DashboardLayout title="Search History" showSearch={false}>
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <div className="text-red-600 mb-4">
+            <div className="text-error-600 mb-4">
               <FiFileText size={48} className="mx-auto mb-2" />
               <p className="font-medium">Failed to load search history</p>
               <p className="text-sm text-neutral-600 mt-1">{error}</p>
@@ -200,7 +200,7 @@ export default function SearchHistoryPage() {
                 placeholder="Search queries..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
 
@@ -208,7 +208,7 @@ export default function SearchHistoryPage() {
             <select
               value={filter}
               onChange={(e) => setFilter(e.target.value as FilterType)}
-              className="px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
               <option value="all">All Statuses</option>
               <option value="COMPLETED">Completed</option>
@@ -220,7 +220,7 @@ export default function SearchHistoryPage() {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as SortType)}
-              className="px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
               <option value="date_desc">Newest First</option>
               <option value="date_asc">Oldest First</option>
@@ -231,13 +231,13 @@ export default function SearchHistoryPage() {
 
           {/* Summary Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-            <div className="bg-blue-50 rounded-lg p-4">
-              <p className="text-sm text-blue-600 font-medium">Total Searches</p>
-              <p className="text-2xl font-bold text-blue-900 mt-1">{searches.length}</p>
+            <div className="bg-primary-50 rounded-lg p-4">
+              <p className="text-sm text-primary-600 font-medium">Total Searches</p>
+              <p className="text-2xl font-bold text-primary-900 mt-1">{searches.length}</p>
             </div>
-            <div className="bg-green-50 rounded-lg p-4">
-              <p className="text-sm text-green-600 font-medium">Completed</p>
-              <p className="text-2xl font-bold text-green-900 mt-1">
+            <div className="bg-success-50 rounded-lg p-4">
+              <p className="text-sm text-success-600 font-medium">Completed</p>
+              <p className="text-2xl font-bold text-success-900 mt-1">
                 {searches.filter((s) => s.status === "COMPLETED").length}
               </p>
             </div>
@@ -247,9 +247,9 @@ export default function SearchHistoryPage() {
                 {searches.reduce((sum, s) => sum + getMatchCount(s.searchResults), 0)}
               </p>
             </div>
-            <div className="bg-purple-50 rounded-lg p-4">
-              <p className="text-sm text-purple-600 font-medium">Requests Sent</p>
-              <p className="text-2xl font-bold text-purple-900 mt-1">
+            <div className="bg-secondary-50 rounded-lg p-4">
+              <p className="text-sm text-secondary-600 font-medium">Requests Sent</p>
+              <p className="text-2xl font-bold text-secondary-900 mt-1">
                 {searches.reduce((sum, s) => sum + (s.placementRequests?.length || 0), 0)}
               </p>
             </div>
@@ -354,7 +354,7 @@ export default function SearchHistoryPage() {
                                             <p className="text-sm text-neutral-600">{match.location || "Location not specified"}</p>
                                           </div>
                                           <div className="text-right">
-                                            <p className="text-sm font-medium text-blue-600">Score: {match.score || "N/A"}</p>
+                                            <p className="text-sm font-medium text-primary-600">Score: {match.score || "N/A"}</p>
                                           </div>
                                         </div>
                                       ))}

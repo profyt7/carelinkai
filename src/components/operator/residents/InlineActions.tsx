@@ -78,16 +78,16 @@ export function InlineActions({ id, status, homes = [] as HomeOption[] }: { id: 
           </div>
         </>
       )}
-      {err && <span className="text-xs text-red-600">{err}</span>}
+      {err && <span className="text-xs text-error-600">{err}</span>}
     </div>
   );
 }
 
 export function StatusPill({ status }: { status: string }) {
-  const color = status === 'ACTIVE' ? 'bg-green-100 text-green-700'
+  const color = status === 'ACTIVE' ? 'bg-success-100 text-success-700'
     : status === 'DISCHARGED' ? 'bg-neutral-100 text-neutral-700'
-    : status === 'DECEASED' ? 'bg-red-100 text-red-700'
+    : status === 'DECEASED' ? 'bg-error-100 text-error-700'
     : status === 'PENDING' ? 'bg-amber-100 text-amber-800'
-    : 'bg-blue-100 text-blue-700';
+    : 'bg-primary-100 text-primary-700';
   return <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${color}`}>{status}</span>;
 }

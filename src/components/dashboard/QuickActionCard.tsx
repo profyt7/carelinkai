@@ -12,11 +12,11 @@ export function QuickActionCard({ title, description, href, icon }: QuickActionC
   return (
     <Link
       href={href}
-      className="block p-6 bg-white rounded-lg border border-gray-200 hover:border-blue-500 hover:shadow-md transition-all"
+      className="block p-6 bg-white rounded-lg border border-neutral-200 hover:border-primary-500 hover:shadow-md transition-all"
     >
       <div className="text-4xl mb-3">{icon}</div>
-      <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
-      <p className="text-sm text-gray-600">{description}</p>
+      <h3 className="text-lg font-semibold text-neutral-900 mb-2">{title}</h3>
+      <p className="text-sm text-neutral-600">{description}</p>
     </Link>
   );
 }

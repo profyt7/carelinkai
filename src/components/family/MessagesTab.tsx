@@ -210,8 +210,8 @@ export default function MessagesTab({ familyId, showMock = false, currentUserId 
   return (
     <div className="h-[600px] flex gap-4">
       {/* Conversations List */}
-      <div className="w-1/3 bg-white rounded-xl border border-gray-200 shadow-md overflow-hidden flex flex-col">
-        <div className="bg-gradient-to-r from-blue-600 to-cyan-500 p-4">
+      <div className="w-1/3 bg-white rounded-xl border border-neutral-200 shadow-md overflow-hidden flex flex-col">
+        <div className="bg-gradient-to-r from-primary-600 to-cyan-500 p-4">
           <h3 className="text-lg font-bold text-white flex items-center gap-2">
             <MessageSquare className="w-5 h-5" />
             Conversations
@@ -221,40 +221,40 @@ export default function MessagesTab({ familyId, showMock = false, currentUserId 
         <div className="flex-1 overflow-y-auto">
           {conversations.length === 0 ? (
             <div className="p-6 text-center">
-              <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-sm text-gray-500">No conversations yet</p>
-              <p className="text-xs text-gray-400 mt-1">
+              <MessageSquare className="w-12 h-12 text-neutral-300 mx-auto mb-3" />
+              <p className="text-sm text-neutral-500">No conversations yet</p>
+              <p className="text-xs text-neutral-400 mt-1">
                 Start chatting with caregivers and staff
               </p>
             </div>
           ) : (
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-neutral-100">
               {conversations.map((conv) => (
                 <button
                   key={conv.userId}
                   onClick={() => setSelectedUser(conv.userId)}
-                  className={`w-full p-4 text-left hover:bg-blue-50 transition-colors ${
-                    selectedUser === conv.userId ? 'bg-blue-50 border-l-4 border-l-blue-600' : ''
+                  className={`w-full p-4 text-left hover:bg-primary-50 transition-colors ${
+                    selectedUser === conv.userId ? 'bg-primary-50 border-l-4 border-l-blue-600' : ''
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
+                    <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-cyan-400 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
                       {`${conv.userFirstName?.[0] ?? ''}${conv.userLastName?.[0] ?? ''}`}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">
-                        <p className="font-semibold text-gray-900 truncate">
+                        <p className="font-semibold text-neutral-900 truncate">
                           {conv.userFirstName} {conv.userLastName}
                         </p>
                         {conv.unreadCount > 0 && (
-                          <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
+                          <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-error-500 rounded-full">
                             {conv.unreadCount}
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-gray-500 truncate">{conv.lastMessage}</p>
+                      <p className="text-xs text-neutral-500 truncate">{conv.lastMessage}</p>
                       {conv.lastMessageAt && (
-                        <p className="text-[10px] text-gray-400 mt-1">
+                        <p className="text-[10px] text-neutral-400 mt-1">
                           {new Date(conv.lastMessageAt).toLocaleString()}
                         </p>
                       )}
@@ -268,7 +268,7 @@ export default function MessagesTab({ familyId, showMock = false, currentUserId 
       </div>
 
       {/* Message Thread */}
-      <div className="flex-1 bg-white rounded-xl border border-gray-200 shadow-md overflow-hidden flex flex-col">
+      <div className="flex-1 bg-white rounded-xl border border-neutral-200 shadow-md overflow-hidden flex flex-col">
         {!selectedUser ? (
           <div className="flex-1 flex items-center justify-center p-8">
             <EmptyState
@@ -280,7 +280,7 @@ export default function MessagesTab({ familyId, showMock = false, currentUserId 
         ) : (
           <>
             {/* Thread Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-cyan-500 p-4 flex items-center gap-3">
+            <div className="bg-gradient-to-r from-primary-600 to-cyan-500 p-4 flex items-center gap-3">
               <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white font-bold">
                 <FiUser className="w-5 h-5" />
               </div>
@@ -289,7 +289,7 @@ export default function MessagesTab({ familyId, showMock = false, currentUserId 
                   {conversations.find((c) => c.userId === selectedUser)?.userFirstName}{' '}
                   {conversations.find((c) => c.userId === selectedUser)?.userLastName}
                 </p>
-                <p className="text-xs text-blue-100">Active now</p>
+                <p className="text-xs text-primary-100">Active now</p>
               </div>
             </div>
 
@@ -297,7 +297,7 @@ export default function MessagesTab({ familyId, showMock = false, currentUserId 
             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-gray-50 to-white">
               {messages.length === 0 ? (
                 <div className="flex items-center justify-center h-full">
-                  <p className="text-gray-400">No messages yet. Start the conversation!</p>
+                  <p className="text-neutral-400">No messages yet. Start the conversation!</p>
                 </div>
               ) : (
                 messages.map((msg) => {
@@ -310,14 +310,14 @@ export default function MessagesTab({ familyId, showMock = false, currentUserId 
                       <div
                         className={`max-w-[70%] rounded-2xl px-4 py-3 ${
                           isOwnMessage
-                            ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-br-sm'
-                            : 'bg-white border border-gray-200 text-gray-900 rounded-bl-sm shadow-sm'
+                            ? 'bg-gradient-to-r from-primary-600 to-cyan-500 text-white rounded-br-sm'
+                            : 'bg-white border border-neutral-200 text-neutral-900 rounded-bl-sm shadow-sm'
                         }`}
                       >
                         <p className="text-sm leading-relaxed break-words">{msg.content}</p>
                         <p
                           className={`text-[10px] mt-1 ${
-                            isOwnMessage ? 'text-blue-100' : 'text-gray-400'
+                            isOwnMessage ? 'text-primary-100' : 'text-neutral-400'
                           }`}
                         >
                           {new Date(msg.createdAt).toLocaleTimeString(undefined, {
@@ -334,7 +334,7 @@ export default function MessagesTab({ familyId, showMock = false, currentUserId 
             </div>
 
             {/* Message Input */}
-            <div className="border-t border-gray-200 p-4 bg-gray-50">
+            <div className="border-t border-neutral-200 p-4 bg-neutral-50">
               <div className="flex gap-3">
                 <input
                   type="text"
@@ -343,12 +343,12 @@ export default function MessagesTab({ familyId, showMock = false, currentUserId 
                   onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
                   placeholder="Type your message..."
                   disabled={sending}
-                  className="flex-1 border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="flex-1 border-2 border-neutral-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 disabled:bg-neutral-100 disabled:cursor-not-allowed"
                 />
                 <button
                   onClick={handleSendMessage}
                   disabled={sending || !newMessage.trim()}
-                  className="bg-gradient-to-r from-blue-600 to-cyan-500 text-white p-3 rounded-xl hover:from-blue-700 hover:to-cyan-600 hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 disabled:hover:scale-100"
+                  className="bg-gradient-to-r from-primary-600 to-cyan-500 text-white p-3 rounded-xl hover:from-primary-700 hover:to-cyan-600 hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 disabled:hover:scale-100"
                 >
                   <FiSend className="w-5 h-5" />
                 </button>

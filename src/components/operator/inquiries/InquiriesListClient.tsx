@@ -415,15 +415,15 @@ export default function InquiriesListClient({
             <p className="text-neutral-600 mt-4">Loading analytics...</p>
           </div>
         ) : error ? (
-          <div className="rounded-lg border border-red-200 bg-red-50 p-6">
+          <div className="rounded-lg border border-error-200 bg-error-50 p-6">
             <div className="flex items-start gap-3">
-              <FiAlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <FiAlertCircle className="w-5 h-5 text-error-600 flex-shrink-0 mt-0.5" />
               <div>
-                <h3 className="font-medium text-red-900 mb-1">Error loading analytics</h3>
-                <p className="text-red-700 text-sm">{error}</p>
+                <h3 className="font-medium text-error-900 mb-1">Error loading analytics</h3>
+                <p className="text-error-700 text-sm">{error}</p>
                 <button
                   onClick={() => fetchInquiries(pagination.page)}
-                  className="mt-3 text-sm font-medium text-red-600 hover:text-red-700"
+                  className="mt-3 text-sm font-medium text-error-600 hover:text-error-700"
                 >
                   Try again
                 </button>
@@ -461,15 +461,15 @@ export default function InquiriesListClient({
           {loading ? (
             <InquiryCardSkeletonGrid count={12} />
           ) : error ? (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-6">
+            <div className="rounded-lg border border-error-200 bg-error-50 p-6">
               <div className="flex items-start gap-3">
-                <FiAlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <FiAlertCircle className="w-5 h-5 text-error-600 flex-shrink-0 mt-0.5" />
                 <div>
-                  <h3 className="font-medium text-red-900 mb-1">Error loading inquiries</h3>
-                  <p className="text-red-700 text-sm">{error}</p>
+                  <h3 className="font-medium text-error-900 mb-1">Error loading inquiries</h3>
+                  <p className="text-error-700 text-sm">{error}</p>
                   <button
                     onClick={() => fetchInquiries(pagination.page)}
-                    className="mt-3 text-sm font-medium text-red-600 hover:text-red-700"
+                    className="mt-3 text-sm font-medium text-error-600 hover:text-error-700"
                   >
                     Try again
                   </button>

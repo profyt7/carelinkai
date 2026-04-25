@@ -154,7 +154,7 @@ export default function SearchFilters({
             </svg>
             Filters
             {countActiveFilters() > 0 && (
-              <span className="ml-2 bg-blue-500 text-white text-xs font-medium px-2 py-1 rounded-full">
+              <span className="ml-2 bg-primary-500 text-white text-xs font-medium px-2 py-1 rounded-full">
                 {countActiveFilters()}
               </span>
             )}
@@ -165,8 +165,8 @@ export default function SearchFilters({
             disabled={countActiveFilters() === 0 || loading}
             className={`flex items-center text-sm px-3 py-1 rounded-md 
               ${countActiveFilters() === 0 || loading 
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                ? 'bg-neutral-100 text-neutral-400 cursor-not-allowed' 
+                : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'}`}
             aria-label="Clear all filters"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -178,7 +178,7 @@ export default function SearchFilters({
         
         {/* Error messages */}
         {errors.length > 0 && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4" role="alert">
+          <div className="bg-error-50 border border-error-200 text-error-700 px-4 py-3 rounded mb-4" role="alert">
             {errors.map((error, index) => (
               <div key={index}>{error}</div>
             ))}
@@ -190,7 +190,7 @@ export default function SearchFilters({
         {/* flex-wrap lets them flow nicely on smaller screens                       */}
         <div className="flex flex-wrap gap-4">
           {/* Care Level Section */}
-          <div className="min-w-[230px] flex-1 rounded-lg border border-gray-200 p-4">
+          <div className="min-w-[230px] flex-1 rounded-lg border border-neutral-200 p-4">
             <h3 className="text-sm font-medium mb-2 flex items-center">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
@@ -202,20 +202,20 @@ export default function SearchFilters({
                 <label key={level} className="flex items-center">
                   <input
                     type="checkbox"
-                    className="form-checkbox h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
+                    className="form-checkbox h-4 w-4 text-primary-600 rounded focus:ring-primary-500"
                     checked={(localFilters.careLevels || []).includes(level)}
                     onChange={() => handleCareLevelToggle(level)}
                     disabled={loading}
                     aria-label={`Filter by ${getCareLevelName(level)}`}
                   />
-                  <span className="ml-2 text-sm text-gray-700">{getCareLevelName(level)}</span>
+                  <span className="ml-2 text-sm text-neutral-700">{getCareLevelName(level)}</span>
                 </label>
               ))}
             </div>
           </div>
 
           {/* Price Range Section */}
-          <div className="min-w-[230px] flex-1 rounded-lg border border-gray-200 p-4">
+          <div className="min-w-[230px] flex-1 rounded-lg border border-neutral-200 p-4">
             <h3 className="text-sm font-medium mb-2 flex items-center">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -225,11 +225,11 @@ export default function SearchFilters({
             <div className="space-y-3">
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <span className="text-gray-500 sm:text-sm">$</span>
+                  <span className="text-neutral-500 sm:text-sm">$</span>
                 </div>
                 <input
                   type="number"
-                  className="block w-full pl-7 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="block w-full pl-7 pr-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
                   placeholder="Min Price"
                   value={localFilters.priceMin || ''}
                   onChange={(e) => handleFilterChange('priceMin', e.target.value ? Number(e.target.value) : undefined)}
@@ -240,11 +240,11 @@ export default function SearchFilters({
               </div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <span className="text-gray-500 sm:text-sm">$</span>
+                  <span className="text-neutral-500 sm:text-sm">$</span>
                 </div>
                 <input
                   type="number"
-                  className="block w-full pl-7 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="block w-full pl-7 pr-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
                   placeholder="Max Price"
                   value={localFilters.priceMax || ''}
                   onChange={(e) => handleFilterChange('priceMax', e.target.value ? Number(e.target.value) : undefined)}
@@ -257,7 +257,7 @@ export default function SearchFilters({
           </div>
 
           {/* Location Section */}
-          <div className="min-w-[230px] flex-1 rounded-lg border border-gray-200 p-4">
+          <div className="min-w-[230px] flex-1 rounded-lg border border-neutral-200 p-4">
             <h3 className="text-sm font-medium mb-2 flex items-center">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -267,7 +267,7 @@ export default function SearchFilters({
             </h3>
             <input
               type="text"
-              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              className="block w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
               placeholder="City, State, or ZIP"
               value={localFilters.location || ''}
               onChange={(e) => handleFilterChange('location', e.target.value)}
@@ -277,12 +277,12 @@ export default function SearchFilters({
             
             {/* Radius filter */}
             <div className="mt-3">
-              <div className="flex justify-between text-xs text-gray-600 mb-1">
+              <div className="flex justify-between text-xs text-neutral-600 mb-1">
                 <span>Search Radius: {localFilters.radius || 25} miles</span>
               </div>
               <input
                 type="range"
-                className={`w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer 
+                className={`w-full h-2 bg-neutral-200 rounded-lg appearance-none cursor-pointer 
                   ${!localFilters.location || loading ? 'opacity-50' : ''}`}
                 min="5"
                 max="100"
@@ -293,16 +293,16 @@ export default function SearchFilters({
                 aria-label="Search radius in miles"
               />
               {!localFilters.location && (
-                <p className="mt-1 text-xs text-gray-500">Enter a location to set radius</p>
+                <p className="mt-1 text-xs text-neutral-500">Enter a location to set radius</p>
               )}
             </div>
           </div>
 
           {/* Gender Preference */}
-          <div className="min-w-[230px] flex-1 rounded-lg border border-gray-200 p-4">
+          <div className="min-w-[230px] flex-1 rounded-lg border border-neutral-200 p-4">
             <h3 className="text-sm font-medium mb-2">Gender Preference</h3>
             <select
-              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              className="block w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
               value={localFilters.gender || 'ALL'}
               onChange={(e) => handleFilterChange('gender', e.target.value)}
               disabled={loading}
@@ -315,7 +315,7 @@ export default function SearchFilters({
           </div>
 
           {/* Sort Options */}
-          <div className="min-w-[230px] flex-1 rounded-lg border border-gray-200 p-4">
+          <div className="min-w-[230px] flex-1 rounded-lg border border-neutral-200 p-4">
             <h3 className="text-sm font-medium mb-2 flex items-center">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
@@ -323,7 +323,7 @@ export default function SearchFilters({
               Sort Results
             </h3>
             <select
-              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              className="block w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
               value={localFilters.sortBy || 'relevance'}
               onChange={(e) => handleFilterChange('sortBy', e.target.value)}
               disabled={loading}
@@ -338,14 +338,14 @@ export default function SearchFilters({
           </div>
 
           {/* Availability & Verified */}
-          <div className="min-w-[230px] flex-1 rounded-lg border border-gray-200 p-4">
+          <div className="min-w-[230px] flex-1 rounded-lg border border-neutral-200 p-4">
             <h3 className="text-sm font-medium mb-2">Additional Filters</h3>
             
             {/* Availability Number */}
             <div className="mb-3">
               <input
                 type="number"
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                className="block w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
                 placeholder="Minimum Availability"
                 value={typeof localFilters.availability === 'number' ? localFilters.availability : ''}
                 onChange={(e) => {
@@ -356,21 +356,21 @@ export default function SearchFilters({
                 min="0"
                 aria-label="Minimum number of available spots"
               />
-              <p className="mt-1 text-xs text-gray-500">Minimum number of available spots</p>
+              <p className="mt-1 text-xs text-neutral-500">Minimum number of available spots</p>
             </div>
             
             {/* Verified Only Toggle */}
             <label className="inline-flex items-center">
               <input
                 type="checkbox"
-                className="form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
+                className="form-checkbox h-5 w-5 text-primary-600 rounded focus:ring-primary-500"
                 checked={!!localFilters.verified}
                 onChange={(e) => handleFilterChange('verified', e.target.checked)}
                 disabled={loading}
                 aria-label="Show verified homes only"
               />
-              <span className="ml-2 flex items-center text-sm text-gray-700">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <span className="ml-2 flex items-center text-sm text-neutral-700">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                 </svg>
                 Verified Homes Only
@@ -381,12 +381,12 @@ export default function SearchFilters({
 
         {/* Amenities Section */}
         <div className="mt-6">
-          <hr className="mb-4 border-gray-200" />
+          <hr className="mb-4 border-neutral-200" />
           <div className="flex justify-between items-center mb-2">
             <h3 className="text-sm font-medium">Amenities</h3>
             <button 
               onClick={() => setShowAmenities(!showAmenities)}
-              className="text-sm text-blue-600 hover:text-blue-800"
+              className="text-sm text-primary-600 hover:text-primary-800"
               aria-expanded={showAmenities}
               aria-controls="amenities-section"
             >
@@ -400,16 +400,16 @@ export default function SearchFilters({
               className="flex flex-wrap gap-3"
             >
               {COMMON_AMENITIES.map((amenity) => (
-                <label key={amenity} className="flex items-center bg-gray-50 px-3 py-2 rounded-md hover:bg-gray-100 min-w-fit">
+                <label key={amenity} className="flex items-center bg-neutral-50 px-3 py-2 rounded-md hover:bg-neutral-100 min-w-fit">
                   <input
                     type="checkbox"
-                    className="form-checkbox h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
+                    className="form-checkbox h-4 w-4 text-primary-600 rounded focus:ring-primary-500"
                     checked={selectedAmenities.includes(amenity)}
                     onChange={() => handleAmenityToggle(amenity)}
                     disabled={loading}
                     aria-label={`Filter by ${amenity}`}
                   />
-                  <span className="ml-2 text-sm text-gray-700">{amenity}</span>
+                  <span className="ml-2 text-sm text-neutral-700">{amenity}</span>
                 </label>
               ))}
             </div>
@@ -420,14 +420,14 @@ export default function SearchFilters({
               {selectedAmenities.map((amenity) => (
                 <span 
                   key={amenity}
-                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800"
                 >
                   {amenity}
                   <button
                     type="button"
                     onClick={() => handleAmenityToggle(amenity)}
                     disabled={loading}
-                    className="ml-1 flex-shrink-0 inline-flex text-blue-500 hover:text-blue-700 focus:outline-none"
+                    className="ml-1 flex-shrink-0 inline-flex text-primary-500 hover:text-primary-700 focus:outline-none"
                     aria-label={`Remove ${amenity} filter`}
                   >
                     <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -443,9 +443,9 @@ export default function SearchFilters({
         {/* Active Filters Summary */}
         {countActiveFilters() > 0 && (
           <div className="mt-6">
-            <hr className="mb-4 border-gray-200" />
+            <hr className="mb-4 border-neutral-200" />
             <h3 className="text-sm font-medium mb-2 flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-success-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               Active Filters
@@ -454,14 +454,14 @@ export default function SearchFilters({
               {localFilters.careLevels?.map((level) => (
                 <span 
                   key={level}
-                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800"
                 >
                   {getCareLevelName(level)}
                   <button
                     type="button"
                     onClick={() => handleCareLevelToggle(level)}
                     disabled={loading}
-                    className="ml-1 flex-shrink-0 inline-flex text-blue-500 hover:text-blue-700 focus:outline-none"
+                    className="ml-1 flex-shrink-0 inline-flex text-primary-500 hover:text-primary-700 focus:outline-none"
                     aria-label={`Remove ${getCareLevelName(level)} filter`}
                   >
                     <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -472,13 +472,13 @@ export default function SearchFilters({
               ))}
               
               {localFilters.priceMin && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
                   Min: {formatPrice(Number(localFilters.priceMin))}
                   <button
                     type="button"
                     onClick={() => handleFilterChange('priceMin', undefined)}
                     disabled={loading}
-                    className="ml-1 flex-shrink-0 inline-flex text-blue-500 hover:text-blue-700 focus:outline-none"
+                    className="ml-1 flex-shrink-0 inline-flex text-primary-500 hover:text-primary-700 focus:outline-none"
                     aria-label="Remove minimum price filter"
                   >
                     <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -489,13 +489,13 @@ export default function SearchFilters({
               )}
               
               {localFilters.priceMax && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
                   Max: {formatPrice(Number(localFilters.priceMax))}
                   <button
                     type="button"
                     onClick={() => handleFilterChange('priceMax', undefined)}
                     disabled={loading}
-                    className="ml-1 flex-shrink-0 inline-flex text-blue-500 hover:text-blue-700 focus:outline-none"
+                    className="ml-1 flex-shrink-0 inline-flex text-primary-500 hover:text-primary-700 focus:outline-none"
                     aria-label="Remove maximum price filter"
                   >
                     <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -506,13 +506,13 @@ export default function SearchFilters({
               )}
               
               {localFilters.location && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
                   Location: {localFilters.location}
                   <button
                     type="button"
                     onClick={() => handleFilterChange('location', '')}
                     disabled={loading}
-                    className="ml-1 flex-shrink-0 inline-flex text-blue-500 hover:text-blue-700 focus:outline-none"
+                    className="ml-1 flex-shrink-0 inline-flex text-primary-500 hover:text-primary-700 focus:outline-none"
                     aria-label="Remove location filter"
                   >
                     <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -523,13 +523,13 @@ export default function SearchFilters({
               )}
               
               {localFilters.gender && localFilters.gender !== 'ALL' && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
                   Gender: {localFilters.gender}
                   <button
                     type="button"
                     onClick={() => handleFilterChange('gender', 'ALL')}
                     disabled={loading}
-                    className="ml-1 flex-shrink-0 inline-flex text-blue-500 hover:text-blue-700 focus:outline-none"
+                    className="ml-1 flex-shrink-0 inline-flex text-primary-500 hover:text-primary-700 focus:outline-none"
                     aria-label="Remove gender filter"
                   >
                     <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -540,13 +540,13 @@ export default function SearchFilters({
               )}
               
               {localFilters.radius && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
                   Radius: {localFilters.radius} miles
                   <button
                     type="button"
                     onClick={() => handleFilterChange('radius', undefined)}
                     disabled={loading}
-                    className="ml-1 flex-shrink-0 inline-flex text-blue-500 hover:text-blue-700 focus:outline-none"
+                    className="ml-1 flex-shrink-0 inline-flex text-primary-500 hover:text-primary-700 focus:outline-none"
                     aria-label="Remove radius filter"
                   >
                     <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -557,13 +557,13 @@ export default function SearchFilters({
               )}
               
               {localFilters.availability !== undefined && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
                   Min Availability: {localFilters.availability}
                   <button
                     type="button"
                     onClick={() => handleFilterChange('availability', undefined)}
                     disabled={loading}
-                    className="ml-1 flex-shrink-0 inline-flex text-blue-500 hover:text-blue-700 focus:outline-none"
+                    className="ml-1 flex-shrink-0 inline-flex text-primary-500 hover:text-primary-700 focus:outline-none"
                     aria-label="Remove availability filter"
                   >
                     <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -574,13 +574,13 @@ export default function SearchFilters({
               )}
               
               {localFilters.sortBy && localFilters.sortBy !== 'relevance' && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
                   Sort: {SORT_OPTIONS.find(o => o.value === localFilters.sortBy)?.label}
                   <button
                     type="button"
                     onClick={() => handleFilterChange('sortBy', 'relevance')}
                     disabled={loading}
-                    className="ml-1 flex-shrink-0 inline-flex text-blue-500 hover:text-blue-700 focus:outline-none"
+                    className="ml-1 flex-shrink-0 inline-flex text-primary-500 hover:text-primary-700 focus:outline-none"
                     aria-label="Remove sort filter"
                   >
                     <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -591,8 +591,8 @@ export default function SearchFilters({
               )}
               
               {localFilters.verified && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1 text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                   </svg>
                   Verified Only
@@ -600,7 +600,7 @@ export default function SearchFilters({
                     type="button"
                     onClick={() => handleFilterChange('verified', false)}
                     disabled={loading}
-                    className="ml-1 flex-shrink-0 inline-flex text-blue-500 hover:text-blue-700 focus:outline-none"
+                    className="ml-1 flex-shrink-0 inline-flex text-primary-500 hover:text-primary-700 focus:outline-none"
                     aria-label="Remove verified filter"
                   >
                     <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -618,14 +618,14 @@ export default function SearchFilters({
           <button
             onClick={handleReset}
             disabled={loading}
-            className="px-4 py-2 rounded-md border border-gray-300 text-sm text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-60"
+            className="px-4 py-2 rounded-md border border-neutral-300 text-sm text-neutral-700 bg-white hover:bg-neutral-50 disabled:opacity-60"
           >
             Reset
           </button>
           <button
             onClick={onApplyFilters}
             disabled={loading}
-            className="px-4 py-2 rounded-md bg-blue-600 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+            className="px-4 py-2 rounded-md bg-primary-600 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-60"
           >
             Apply Filters
           </button>

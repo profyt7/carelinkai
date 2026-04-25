@@ -140,15 +140,15 @@ export default async function ListingDetailPage({
 
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         {/* Header */}
-        <div className="p-6 border-b border-gray-200">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">{listing.title}</h1>
+        <div className="p-6 border-b border-neutral-200">
+          <h1 className="text-2xl font-bold text-neutral-900 mb-2">{listing.title}</h1>
           {isMock && (
             <div className="mb-2 inline-flex items-center rounded-md bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800 border border-amber-200">
               Demo listing (mock mode)
             </div>
           )}
           
-          <div className="flex flex-wrap items-center text-sm text-gray-500 gap-4 mb-4">
+          <div className="flex flex-wrap items-center text-sm text-neutral-500 gap-4 mb-4">
             {/* Location */}
             {(listing.city || listing.state) && (
               <div className="flex items-center">
@@ -196,7 +196,7 @@ export default async function ListingDetailPage({
           
           {/* Posted By */}
           <div className="flex items-center mt-4">
-            <div className="flex-shrink-0 h-10 w-10 bg-gray-200 rounded-full overflow-hidden relative">
+            <div className="flex-shrink-0 h-10 w-10 bg-neutral-200 rounded-full overflow-hidden relative">
               {profileImage ? (
                 <Image
                   src={profileImage}
@@ -206,16 +206,16 @@ export default async function ListingDetailPage({
                   className="object-cover"
                 />
               ) : (
-                <div className="h-full w-full flex items-center justify-center text-gray-500">
+                <div className="h-full w-full flex items-center justify-center text-neutral-500">
                   {listing.postedBy?.firstName?.[0] || "U"}
                 </div>
               )}
             </div>
             <div className="ml-3">
-              <p className="text-sm font-medium text-gray-900">
+              <p className="text-sm font-medium text-neutral-900">
                 {listing.postedBy?.firstName} {listing.postedBy?.lastName}
               </p>
-              <p className="text-xs text-gray-500">Listing Owner</p>
+              <p className="text-xs text-neutral-500">Listing Owner</p>
             </div>
           </div>
         </div>
@@ -224,21 +224,21 @@ export default async function ListingDetailPage({
         <div className="p-6">
           {/* Description */}
           <div className="mb-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-2">Description</h2>
-            <div className="prose max-w-none text-gray-700 whitespace-pre-wrap">
+            <h2 className="text-lg font-medium text-neutral-900 mb-2">Description</h2>
+            <div className="prose max-w-none text-neutral-700 whitespace-pre-wrap">
               {listing.description}
             </div>
           </div>
           
           {/* Categories */}
           <div className="mb-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-2">Details</h2>
+            <h2 className="text-lg font-medium text-neutral-900 mb-2">Details</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Care Setting */}
               {listing.setting && (
                 <div>
-                  <h3 className="text-sm font-medium text-gray-500">Care Setting</h3>
+                  <h3 className="text-sm font-medium text-neutral-500">Care Setting</h3>
                   <p className="mt-1">{listing.setting}</p>
                 </div>
               )}
@@ -246,12 +246,12 @@ export default async function ListingDetailPage({
               {/* Care Types */}
               {listing.careTypes && listing.careTypes.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-medium text-gray-500">Care Types</h3>
+                  <h3 className="text-sm font-medium text-neutral-500">Care Types</h3>
                   <div className="mt-1 flex flex-wrap gap-1">
                     {listing.careTypes.map((type: string) => (
                       <span
                         key={type}
-                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"
+                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-success-100 text-success-800"
                       >
                         {type}
                       </span>
@@ -263,12 +263,12 @@ export default async function ListingDetailPage({
               {/* Services */}
               {listing.services && listing.services.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-medium text-gray-500">Services</h3>
+                  <h3 className="text-sm font-medium text-neutral-500">Services</h3>
                   <div className="mt-1 flex flex-wrap gap-1">
                     {listing.services.map((service: string) => (
                       <span
                         key={service}
-                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800"
                       >
                         {service}
                       </span>
@@ -280,12 +280,12 @@ export default async function ListingDetailPage({
               {/* Specialties */}
               {listing.specialties && listing.specialties.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-medium text-gray-500">Specialties</h3>
+                  <h3 className="text-sm font-medium text-neutral-500">Specialties</h3>
                   <div className="mt-1 flex flex-wrap gap-1">
                     {listing.specialties.map((specialty: string) => (
                       <span
                         key={specialty}
-                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800"
+                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary-100 text-secondary-800"
                       >
                         {specialty}
                       </span>

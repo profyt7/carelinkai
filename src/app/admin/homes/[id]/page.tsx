@@ -280,26 +280,26 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
       case 'ACTIVE':
-        return 'bg-green-100 text-green-800';
+        return 'bg-success-100 text-success-800';
       case 'PENDING_REVIEW':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-warning-100 text-warning-800';
       case 'SUSPENDED':
-        return 'bg-red-100 text-red-800';
+        return 'bg-error-100 text-error-800';
       case 'INACTIVE':
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-neutral-100 text-neutral-800';
       case 'DRAFT':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-primary-100 text-primary-800';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-neutral-100 text-neutral-800';
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8 flex items-center justify-center">
+      <div className="min-h-screen bg-neutral-50 p-8 flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-gray-600">Loading home details...</p>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+          <p className="mt-4 text-neutral-600">Loading home details...</p>
         </div>
       </div>
     );
@@ -307,14 +307,14 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
 
   if (!home) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
+      <div className="min-h-screen bg-neutral-50 p-8">
         <div className="max-w-7xl mx-auto text-center">
-          <FiAlertTriangle className="mx-auto text-6xl text-red-600 mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Home Not Found</h1>
-          <p className="text-gray-600 mb-6">The requested home could not be found.</p>
+          <FiAlertTriangle className="mx-auto text-6xl text-error-600 mb-4" />
+          <h1 className="text-2xl font-bold text-neutral-900 mb-2">Home Not Found</h1>
+          <p className="text-neutral-600 mb-6">The requested home could not be found.</p>
           <Link
             href="/admin/homes"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
           >
             <FiArrowLeft />
             Back to Homes
@@ -325,13 +325,13 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-neutral-50 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
           <Link
             href="/admin/homes"
-            className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-4"
+            className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-800 mb-4"
           >
             <FiArrowLeft />
             Back to Homes
@@ -339,14 +339,14 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
           
           <div className="flex items-start justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-                <FiHome className="text-blue-600" />
+              <h1 className="text-3xl font-bold text-neutral-900 flex items-center gap-2">
+                <FiHome className="text-primary-600" />
                 {editing ? (
                   <input
                     type="text"
                     value={editForm.name}
                     onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                    className="border-2 border-blue-600 rounded px-2 py-1"
+                    className="border-2 border-primary-600 rounded px-2 py-1"
                   />
                 ) : (
                   home.name
@@ -357,7 +357,7 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
                   {safeString(home.status, 'Unknown').replace(/_/g, ' ')}
                 </span>
                 {(home.metrics?.expiringLicenses ?? 0) > 0 && (
-                  <span className="px-3 py-1 rounded-full text-sm font-semibold bg-orange-100 text-orange-800">
+                  <span className="px-3 py-1 rounded-full text-sm font-semibold bg-warning-100 text-warning-800">
                     {home.metrics?.expiringLicenses} License(s) Expiring
                   </span>
                 )}
@@ -371,14 +371,14 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
                     <>
                       <button
                         onClick={() => handleVerify('APPROVE')}
-                        className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                        className="flex items-center gap-2 px-4 py-2 bg-success-600 text-white rounded-lg hover:bg-success-700"
                       >
                         <FiCheck />
                         Approve
                       </button>
                       <button
                         onClick={() => handleVerify('REJECT')}
-                        className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                        className="flex items-center gap-2 px-4 py-2 bg-error-600 text-white rounded-lg hover:bg-error-700"
                       >
                         <FiX />
                         Reject
@@ -387,7 +387,7 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
                   )}
                   <button
                     onClick={() => setEditing(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
                   >
                     <FiEdit2 />
                     Edit
@@ -409,7 +409,7 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
                         priceMax: home.priceMax,
                       });
                     }}
-                    className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                    className="flex items-center gap-2 px-4 py-2 bg-neutral-600 text-white rounded-lg hover:bg-neutral-700"
                   >
                     <FiX />
                     Cancel
@@ -417,7 +417,7 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
                   <button
                     onClick={handleSave}
                     disabled={saving}
-                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                    className="flex items-center gap-2 px-4 py-2 bg-success-600 text-white rounded-lg hover:bg-success-700 disabled:opacity-50"
                   >
                     <FiSave />
                     {saving ? 'Saving...' : 'Save'}
@@ -433,63 +433,63 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
           <div className="bg-white rounded-lg shadow p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Occupancy</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-sm text-neutral-600">Occupancy</p>
+                <p className="text-2xl font-bold text-neutral-900">
                   {home.currentOccupancy ?? 0}/{home.capacity ?? 0}
                 </p>
-                <p className="text-sm text-gray-500">{home.metrics?.occupancyRate ?? '0'}%</p>
+                <p className="text-sm text-neutral-500">{home.metrics?.occupancyRate ?? '0'}%</p>
               </div>
-              <FiUsers className="text-3xl text-blue-600" />
+              <FiUsers className="text-3xl text-primary-600" />
             </div>
           </div>
           
           <div className="bg-white rounded-lg shadow p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Average Rating</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-sm text-neutral-600">Average Rating</p>
+                <p className="text-2xl font-bold text-neutral-900">
                   {home.metrics?.averageRating || 'N/A'}
                 </p>
-                <p className="text-sm text-gray-500">{home.metrics?.reviewCount ?? 0} reviews</p>
+                <p className="text-sm text-neutral-500">{home.metrics?.reviewCount ?? 0} reviews</p>
               </div>
-              <FiStar className="text-3xl text-yellow-500" />
+              <FiStar className="text-3xl text-warning-500" />
             </div>
           </div>
           
           <div className="bg-white rounded-lg shadow p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Licenses</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-sm text-neutral-600">Licenses</p>
+                <p className="text-2xl font-bold text-neutral-900">
                   {home.metrics?.activeLicenses ?? 0}/{home.metrics?.totalLicenses ?? 0}
                 </p>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-neutral-500">
                   {(home.metrics?.expiredLicenses ?? 0) > 0 
                     ? `${home.metrics?.expiredLicenses} expired` 
                     : 'All current'}
                 </p>
               </div>
-              <FiShield className="text-3xl text-green-600" />
+              <FiShield className="text-3xl text-success-600" />
             </div>
           </div>
           
           <div className="bg-white rounded-lg shadow p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Pending Inquiries</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-sm text-neutral-600">Pending Inquiries</p>
+                <p className="text-2xl font-bold text-neutral-900">
                   {home.metrics?.pendingInquiries ?? 0}
                 </p>
-                <p className="text-sm text-gray-500">Total: {home.inquiries?.length ?? 0}</p>
+                <p className="text-sm text-neutral-500">Total: {home.inquiries?.length ?? 0}</p>
               </div>
-              <FiMail className="text-3xl text-purple-600" />
+              <FiMail className="text-3xl text-secondary-600" />
             </div>
           </div>
         </div>
 
         {/* Tabs */}
         <div className="bg-white rounded-lg shadow mb-6">
-          <div className="border-b border-gray-200">
+          <div className="border-b border-neutral-200">
             <nav className="flex -mb-px">
               {['overview', 'residents', 'licenses', 'reviews', 'inquiries'].map((tab) => (
                 <button
@@ -497,8 +497,8 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
                   onClick={() => setActiveTab(tab as typeof activeTab)}
                   className={`px-6 py-3 text-sm font-medium capitalize ${
                     activeTab === tab
-                      ? 'border-b-2 border-blue-600 text-blue-600'
-                      : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      ? 'border-b-2 border-primary-600 text-primary-600'
+                      : 'text-neutral-500 hover:text-neutral-700 hover:border-neutral-300'
                   }`}
                 >
                   {tab}
@@ -512,10 +512,10 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
               <div className="space-y-6">
                 {/* Basic Info */}
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
+                  <h3 className="text-lg font-semibold text-neutral-900 mb-4">Basic Information</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-neutral-700 mb-1">
                         Description
                       </label>
                       {editing ? (
@@ -523,22 +523,22 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
                           value={editForm.description}
                           onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
                           rows={4}
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                          className="w-full border border-neutral-300 rounded-lg px-3 py-2"
                         />
                       ) : (
-                        <p className="text-gray-900">{home.description}</p>
+                        <p className="text-neutral-900">{home.description}</p>
                       )}
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-neutral-700 mb-1">
                         Care Levels
                       </label>
                       <div className="flex flex-wrap gap-2">
                         {(home.careLevel || []).map((level, idx) => (
                           <span
                             key={`level-${idx}`}
-                            className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+                            className="px-3 py-1 bg-primary-100 text-primary-800 rounded-full text-sm"
                           >
                             {safeString(level, 'Unknown').replace(/_/g, ' ')}
                           </span>
@@ -547,7 +547,7 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-neutral-700 mb-1">
                         Capacity
                       </label>
                       {editing ? (
@@ -555,15 +555,15 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
                           type="number"
                           value={editForm.capacity}
                           onChange={(e) => setEditForm({ ...editForm, capacity: parseInt(e.target.value) })}
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                          className="w-full border border-neutral-300 rounded-lg px-3 py-2"
                         />
                       ) : (
-                        <p className="text-gray-900">{home.capacity} residents</p>
+                        <p className="text-neutral-900">{home.capacity} residents</p>
                       )}
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-neutral-700 mb-1">
                         Current Occupancy
                       </label>
                       {editing ? (
@@ -571,18 +571,18 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
                           type="number"
                           value={editForm.currentOccupancy}
                           onChange={(e) => setEditForm({ ...editForm, currentOccupancy: parseInt(e.target.value) })}
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                          className="w-full border border-neutral-300 rounded-lg px-3 py-2"
                         />
                       ) : (
-                        <p className="text-gray-900">{home.currentOccupancy} residents</p>
+                        <p className="text-neutral-900">{home.currentOccupancy} residents</p>
                       )}
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-neutral-700 mb-1">
                         Price Range
                       </label>
-                      <p className="text-gray-900">
+                      <p className="text-neutral-900">
                         {home.priceMin && home.priceMax
                           ? `$${home.priceMin.toLocaleString()} - $${home.priceMax.toLocaleString()}`
                           : 'Not specified'}
@@ -590,14 +590,14 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-neutral-700 mb-1">
                         Status
                       </label>
                       {editing ? (
                         <select
                           value={editForm.status}
                           onChange={(e) => setEditForm({ ...editForm, status: e.target.value as HomeDetail['status'] })}
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                          className="w-full border border-neutral-300 rounded-lg px-3 py-2"
                         >
                           <option value="DRAFT">Draft</option>
                           <option value="PENDING_REVIEW">Pending Review</option>
@@ -606,7 +606,7 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
                           <option value="INACTIVE">Inactive</option>
                         </select>
                       ) : (
-                        <p className="text-gray-900">{safeString(home.status, 'Unknown').replace(/_/g, ' ')}</p>
+                        <p className="text-neutral-900">{safeString(home.status, 'Unknown').replace(/_/g, ' ')}</p>
                       )}
                     </div>
                   </div>
@@ -615,30 +615,30 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
                 {/* Operator Info */}
                 {home.operator && (
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Operator Information</h3>
-                  <div className="bg-gray-50 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-neutral-900 mb-4">Operator Information</h3>
+                  <div className="bg-neutral-50 rounded-lg p-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <p className="text-sm text-gray-600">Company Name</p>
-                        <p className="font-medium text-gray-900">{home.operator.companyName || 'N/A'}</p>
+                        <p className="text-sm text-neutral-600">Company Name</p>
+                        <p className="font-medium text-neutral-900">{home.operator.companyName || 'N/A'}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">Contact Person</p>
-                        <p className="font-medium text-gray-900">
+                        <p className="text-sm text-neutral-600">Contact Person</p>
+                        <p className="font-medium text-neutral-900">
                           {home.operator.user?.firstName || 'Unknown'} {home.operator.user?.lastName || 'User'}
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600 flex items-center gap-1">
+                        <p className="text-sm text-neutral-600 flex items-center gap-1">
                           <FiMail /> Email
                         </p>
-                        <p className="font-medium text-gray-900">{home.operator.user?.email || 'N/A'}</p>
+                        <p className="font-medium text-neutral-900">{home.operator.user?.email || 'N/A'}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600 flex items-center gap-1">
+                        <p className="text-sm text-neutral-600 flex items-center gap-1">
                           <FiPhone /> Phone
                         </p>
-                        <p className="font-medium text-gray-900">{home.operator.user?.phone || 'N/A'}</p>
+                        <p className="font-medium text-neutral-900">{home.operator.user?.phone || 'N/A'}</p>
                       </div>
                     </div>
                   </div>
@@ -648,16 +648,16 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
                 {/* Address */}
                 {home.address && (
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Address</h3>
-                    <div className="bg-gray-50 rounded-lg p-4 flex items-start gap-2">
-                      <FiMapPin className="text-gray-600 mt-1" />
+                    <h3 className="text-lg font-semibold text-neutral-900 mb-4">Address</h3>
+                    <div className="bg-neutral-50 rounded-lg p-4 flex items-start gap-2">
+                      <FiMapPin className="text-neutral-600 mt-1" />
                       <div>
-                        <p className="text-gray-900">{home.address.street}</p>
-                        {home.address.street2 && <p className="text-gray-900">{home.address.street2}</p>}
-                        <p className="text-gray-900">
+                        <p className="text-neutral-900">{home.address.street}</p>
+                        {home.address.street2 && <p className="text-neutral-900">{home.address.street2}</p>}
+                        <p className="text-neutral-900">
                           {home.address.city}, {home.address.state} {home.address.zipCode}
                         </p>
-                        <p className="text-gray-600">{home.address.country}</p>
+                        <p className="text-neutral-600">{home.address.country}</p>
                       </div>
                     </div>
                   </div>
@@ -666,12 +666,12 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
                 {/* Amenities */}
                 {home.amenities && home.amenities.length > 0 && (
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Amenities</h3>
+                    <h3 className="text-lg font-semibold text-neutral-900 mb-4">Amenities</h3>
                     <div className="flex flex-wrap gap-2">
                       {home.amenities.map((amenity, idx) => (
                         <span
                           key={idx}
-                          className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm"
+                          className="px-3 py-1 bg-secondary-100 text-secondary-800 rounded-full text-sm"
                         >
                           {amenity}
                         </span>
@@ -682,7 +682,7 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
 
                 {/* Photos */}
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <h3 className="text-lg font-semibold text-neutral-900 mb-4 flex items-center gap-2">
                     <FiImage />
                     Photos ({home.photos?.length || 0})
                   </h3>
@@ -696,7 +696,7 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
                             className="w-full h-full object-cover"
                           />
                           {photo.isPrimary && (
-                            <div className="absolute top-2 right-2 bg-blue-600 text-white px-2 py-1 rounded text-xs">
+                            <div className="absolute top-2 right-2 bg-primary-600 text-white px-2 py-1 rounded text-xs">
                               Primary
                             </div>
                           )}
@@ -704,7 +704,7 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
                       ))}
                     </div>
                   ) : (
-                    <p className="text-gray-500">No photos uploaded</p>
+                    <p className="text-neutral-500">No photos uploaded</p>
                   )}
                 </div>
               </div>
@@ -712,35 +712,35 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
 
             {activeTab === 'residents' && (
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                <h3 className="text-lg font-semibold text-neutral-900 mb-4">
                   Residents ({home.residents?.length || 0})
                 </h3>
                 {home.residents && home.residents.length > 0 ? (
                   <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
+                    <table className="min-w-full divide-y divide-neutral-200">
+                      <thead className="bg-neutral-50">
                         <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Family Contact</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Name</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Status</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Family Contact</th>
                         </tr>
                       </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
+                      <tbody className="bg-white divide-y divide-neutral-200">
                         {home.residents.map((resident) => (
                           <tr key={resident.id}>
-                            <td className="px-6 py-4 text-sm text-gray-900">
+                            <td className="px-6 py-4 text-sm text-neutral-900">
                               {resident.firstName} {resident.lastName}
                             </td>
                             <td className="px-6 py-4 text-sm">
                               <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                                 safeString(resident.status) === 'ACTIVE' 
-                                  ? 'bg-green-100 text-green-800'
-                                  : 'bg-gray-100 text-gray-800'
+                                  ? 'bg-success-100 text-success-800'
+                                  : 'bg-neutral-100 text-neutral-800'
                               }`}>
                                 {safeString(resident.status, 'Unknown')}
                               </span>
                             </td>
-                            <td className="px-6 py-4 text-sm text-gray-900">
+                            <td className="px-6 py-4 text-sm text-neutral-900">
                               {(resident as any).family?.user 
                                 ? `${(resident as any).family.user.firstName} ${(resident as any).family.user.lastName}`
                                 : 'N/A'}
@@ -751,14 +751,14 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
                     </table>
                   </div>
                 ) : (
-                  <p className="text-gray-500">No residents</p>
+                  <p className="text-neutral-500">No residents</p>
                 )}
               </div>
             )}
 
             {activeTab === 'licenses' && (
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                <h3 className="text-lg font-semibold text-neutral-900 mb-4">
                   Licenses ({home.licenses?.length || 0})
                 </h3>
                 {home.licenses && home.licenses.length > 0 ? (
@@ -771,31 +771,31 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
                       const isExpired = daysUntilExpiry !== null && daysUntilExpiry < 0;
 
                       return (
-                        <div key={license.id} className="bg-gray-50 rounded-lg p-4">
+                        <div key={license.id} className="bg-neutral-50 rounded-lg p-4">
                           <div className="flex items-start justify-between">
                             <div>
                               <div className="flex items-center gap-2 mb-2">
-                                <FiShield className="text-blue-600" />
-                                <h4 className="font-semibold text-gray-900">{safeString(license.type, 'License')}</h4>
+                                <FiShield className="text-primary-600" />
+                                <h4 className="font-semibold text-neutral-900">{safeString(license.type, 'License')}</h4>
                                 <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                                   safeString(license.status) === 'ACTIVE' 
-                                    ? 'bg-green-100 text-green-800'
-                                    : 'bg-gray-100 text-gray-800'
+                                    ? 'bg-success-100 text-success-800'
+                                    : 'bg-neutral-100 text-neutral-800'
                                 }`}>
                                   {safeString(license.status, 'Unknown')}</span>
                                 {isExpiringSoon && (
-                                  <span className="px-2 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-800">
+                                  <span className="px-2 py-1 rounded-full text-xs font-semibold bg-warning-100 text-warning-800">
                                     Expiring Soon
                                   </span>
                                 )}
                                 {isExpired && (
-                                  <span className="px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">
+                                  <span className="px-2 py-1 rounded-full text-xs font-semibold bg-error-100 text-error-800">
                                     Expired
                                   </span>
                                 )}
                               </div>
-                              <p className="text-sm text-gray-600">License #: {safeString(license.licenseNumber, 'N/A')}</p>
-                              <div className="mt-2 text-sm text-gray-600">
+                              <p className="text-sm text-neutral-600">License #: {safeString(license.licenseNumber, 'N/A')}</p>
+                              <div className="mt-2 text-sm text-neutral-600">
                                 <p>Issued: {formatDate(license.issueDate)}</p>
                                 {license.expirationDate && (
                                   <p>Expires: {formatDate(license.expirationDate)}</p>
@@ -808,79 +808,79 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
                     })}
                   </div>
                 ) : (
-                  <p className="text-gray-500">No licenses on file</p>
+                  <p className="text-neutral-500">No licenses on file</p>
                 )}
               </div>
             )}
 
             {activeTab === 'reviews' && (
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                <h3 className="text-lg font-semibold text-neutral-900 mb-4">
                   Reviews ({home.reviews?.length || 0})
                 </h3>
                 {home.reviews && home.reviews.length > 0 ? (
                   <div className="space-y-4">
                     {home.reviews.map((review) => (
-                      <div key={review.id} className="bg-gray-50 rounded-lg p-4">
+                      <div key={review.id} className="bg-neutral-50 rounded-lg p-4">
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex items-center gap-2">
                             <div className="flex items-center">
                               {[...Array(5)].map((_, i) => (
                                 <FiStar
                                   key={i}
-                                  className={i < review.rating ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}
+                                  className={i < review.rating ? 'text-warning-500 fill-yellow-500' : 'text-neutral-300'}
                                 />
                               ))}
                             </div>
-                            <span className="text-sm text-gray-600">
+                            <span className="text-sm text-neutral-600">
                               {review.family?.user?.firstName || 'Unknown'} {review.family?.user?.lastName || 'User'}
                             </span>
                           </div>
-                          <span className="text-sm text-gray-500">
+                          <span className="text-sm text-neutral-500">
                             {formatDate(review.createdAt)}
                           </span>
                         </div>
-                        <p className="text-gray-900">{review.comment}</p>
+                        <p className="text-neutral-900">{review.comment}</p>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-500">No reviews yet</p>
+                  <p className="text-neutral-500">No reviews yet</p>
                 )}
               </div>
             )}
 
             {activeTab === 'inquiries' && (
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                <h3 className="text-lg font-semibold text-neutral-900 mb-4">
                   Recent Inquiries ({home.inquiries?.length || 0})
                 </h3>
                 {home.inquiries && home.inquiries.length > 0 ? (
                   <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
+                    <table className="min-w-full divide-y divide-neutral-200">
+                      <thead className="bg-neutral-50">
                         <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">From</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">From</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Status</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase">Date</th>
                         </tr>
                       </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
+                      <tbody className="bg-white divide-y divide-neutral-200">
                         {home.inquiries.map((inquiry) => (
                           <tr key={inquiry.id}>
-                            <td className="px-6 py-4 text-sm text-gray-900">
+                            <td className="px-6 py-4 text-sm text-neutral-900">
                               {inquiry.family?.user?.firstName || 'Unknown'} {inquiry.family?.user?.lastName || 'User'}
                             </td>
                             <td className="px-6 py-4 text-sm">
                               <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                                 safeString(inquiry.status) === 'NEW' || safeString(inquiry.status) === 'IN_PROGRESS'
-                                  ? 'bg-yellow-100 text-yellow-800'
-                                  : 'bg-gray-100 text-gray-800'
+                                  ? 'bg-warning-100 text-warning-800'
+                                  : 'bg-neutral-100 text-neutral-800'
                               }`}>
                                 {safeString(inquiry.status, 'Unknown')}
                               </span>
                             </td>
-                            <td className="px-6 py-4 text-sm text-gray-500">
+                            <td className="px-6 py-4 text-sm text-neutral-500">
                               {formatDate(inquiry.createdAt)}
                             </td>
                           </tr>
@@ -889,7 +889,7 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
                     </table>
                   </div>
                 ) : (
-                  <p className="text-gray-500">No inquiries</p>
+                  <p className="text-neutral-500">No inquiries</p>
                 )}
               </div>
             )}

@@ -87,7 +87,7 @@ export function DeleteResidentButton({ residentId }: { residentId: string }) {
   return (
     <PermissionGuard permission={PERMISSIONS.RESIDENTS_DELETE}>
       <button 
-        className="text-red-600 hover:text-red-900 inline-flex items-center gap-1"
+        className="text-error-600 hover:text-error-900 inline-flex items-center gap-1"
         onClick={() => {
           // TODO: Implement delete functionality
           console.log('Delete resident:', residentId);

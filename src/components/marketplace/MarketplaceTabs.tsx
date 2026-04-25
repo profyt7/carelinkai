@@ -52,10 +52,10 @@ export default function MarketplaceTabs({
     "whitespace-nowrap border-b-2 px-1 pb-2 text-sm font-medium transition-colors cursor-pointer " +
     (activeTab === tab
       ? "border-primary-600 text-primary-600"
-      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300");
+      : "border-transparent text-neutral-500 hover:text-neutral-700 hover:border-neutral-300");
 
   return (
-    <div className="mb-4 border-b border-gray-200">
+    <div className="mb-4 border-b border-neutral-200">
       <nav className="-mb-px flex space-x-6" aria-label="Marketplace Tabs">
         {/* Caregivers Tab */}
         <a

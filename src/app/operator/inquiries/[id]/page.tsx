@@ -152,7 +152,7 @@ export default function OperatorLeadDetailPage() {
   if (error || !data) {
     return (
       <div className="p-6">
-          <div className="rounded-md border border-red-200 bg-red-50 p-4 text-red-700">{error || 'Not found'}</div>
+          <div className="rounded-md border border-error-200 bg-error-50 p-4 text-error-700">{error || 'Not found'}</div>
         </div>
     );
   }
@@ -313,7 +313,7 @@ export default function OperatorLeadDetailPage() {
                     ))}
                   </select>
                   {data.convertedToResidentId && (
-                    <p className="mt-2 text-xs text-gray-500">
+                    <p className="mt-2 text-xs text-neutral-500">
                       Status cannot be changed after conversion
                     </p>
                   )}
@@ -323,8 +323,8 @@ export default function OperatorLeadDetailPage() {
 
             {/* Conversion Info or Convert Button */}
             {data.convertedToResidentId && data.convertedResident ? (
-              <div className="rounded-lg border border-green-200 bg-green-50 p-4">
-                <div className="mb-2 text-sm font-medium text-green-900">Converted to Resident</div>
+              <div className="rounded-lg border border-success-200 bg-success-50 p-4">
+                <div className="mb-2 text-sm font-medium text-success-900">Converted to Resident</div>
                 <Link
                   href={`/operator/residents/${data.convertedResident.id}`}
                   className="block text-primary-600 hover:text-primary-700 font-medium mb-2"
@@ -332,18 +332,18 @@ export default function OperatorLeadDetailPage() {
                   {data.convertedResident.firstName} {data.convertedResident.lastName}
                 </Link>
                 {data.conversionDate && (
-                  <p className="text-xs text-green-700 mb-1">
+                  <p className="text-xs text-success-700 mb-1">
                     Converted: {new Date(data.conversionDate).toLocaleDateString()}
                   </p>
                 )}
                 {/* Hide conversion details for families */}
                 {!isFamily && data.convertedBy && (
-                  <p className="text-xs text-green-700 mb-1">
+                  <p className="text-xs text-success-700 mb-1">
                     By: {data.convertedBy.firstName} {data.convertedBy.lastName}
                   </p>
                 )}
                 {!isFamily && data.conversionNotes && (
-                  <p className="text-xs text-green-700 italic mt-2">
+                  <p className="text-xs text-success-700 italic mt-2">
                     "{data.conversionNotes}"
                   </p>
                 )}
@@ -352,14 +352,14 @@ export default function OperatorLeadDetailPage() {
               <div className="rounded-lg border border-neutral-200 bg-white p-4">
                 <button
                   onClick={() => setShowConvertModal(true)}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition font-medium"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-success-600 text-white rounded-md hover:bg-success-700 transition font-medium"
                 >
                   <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                   </svg>
                   Convert to Resident
                 </button>
-                <p className="text-xs text-gray-600 mt-2 text-center">
+                <p className="text-xs text-neutral-600 mt-2 text-center">
                   Create a resident profile from this inquiry
                 </p>
               </div>

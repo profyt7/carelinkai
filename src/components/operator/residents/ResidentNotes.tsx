@@ -158,12 +158,12 @@ export function ResidentNotes({ residentId, currentUserId }: ResidentNotesProps)
   function getVisibilityBadgeColor(visibility: string) {
     switch (visibility) {
       case 'FAMILY':
-        return 'bg-green-100 text-green-800';
+        return 'bg-success-100 text-success-800';
       case 'CARE_TEAM':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-primary-100 text-primary-800';
       case 'INTERNAL':
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-neutral-100 text-neutral-800';
     }
   }
 
@@ -176,9 +176,9 @@ export function ResidentNotes({ residentId, currentUserId }: ResidentNotesProps)
     return (
       <div className="p-4">
         <div className="animate-pulse space-y-4">
-          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-          <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+          <div className="h-4 bg-neutral-200 rounded w-3/4"></div>
+          <div className="h-4 bg-neutral-200 rounded w-1/2"></div>
+          <div className="h-4 bg-neutral-200 rounded w-5/6"></div>
         </div>
       </div>
     );
@@ -187,10 +187,10 @@ export function ResidentNotes({ residentId, currentUserId }: ResidentNotesProps)
   return (
     <div className="space-y-4">
       {/* Add Note Form */}
-      <form onSubmit={handleAddNote} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-        <label className="block text-sm font-medium text-gray-700 mb-2">Add Note</label>
+      <form onSubmit={handleAddNote} className="bg-white border border-neutral-200 rounded-lg p-4 shadow-sm">
+        <label className="block text-sm font-medium text-neutral-700 mb-2">Add Note</label>
         <textarea
-          className="w-full border border-gray-300 rounded-md p-3 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+          className="w-full border border-neutral-300 rounded-md p-3 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
           placeholder="Enter your note here..."
           rows={4}
           value={newNote}
@@ -204,7 +204,7 @@ export function ResidentNotes({ residentId, currentUserId }: ResidentNotesProps)
         <div className="flex items-center justify-between mt-2">
           <div className="flex items-center gap-3">
             <select
-              className="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="border border-neutral-300 rounded-md px-3 py-1.5 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               value={newVisibility}
               onChange={(e) => setNewVisibility(e.target.value as any)}
             >
@@ -212,14 +212,14 @@ export function ResidentNotes({ residentId, currentUserId }: ResidentNotesProps)
               <option value="CARE_TEAM">Care Team</option>
               <option value="FAMILY">Visible to Family</option>
             </select>
-            <span className={`text-xs ${charCount > 900 ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
+            <span className={`text-xs ${charCount > 900 ? 'text-error-600 font-medium' : 'text-neutral-500'}`}>
               {charCount}/1000
             </span>
           </div>
           <button
             type="submit"
             disabled={submitting || !newNote.trim()}
-            className="bg-primary-600 text-white px-4 py-1.5 rounded-md text-sm font-medium hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+            className="bg-primary-600 text-white px-4 py-1.5 rounded-md text-sm font-medium hover:bg-primary-700 disabled:bg-neutral-300 disabled:cursor-not-allowed transition-colors"
           >
             {submitting ? 'Adding...' : 'Add Note'}
           </button>
@@ -228,8 +228,8 @@ export function ResidentNotes({ residentId, currentUserId }: ResidentNotesProps)
 
       {/* Notes List */}
       {notes.length === 0 ? (
-        <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
-          <p className="text-gray-500 text-sm">No notes yet. Add your first note above.</p>
+        <div className="text-center py-8 bg-neutral-50 rounded-lg border border-neutral-200">
+          <p className="text-neutral-500 text-sm">No notes yet. Add your first note above.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -238,7 +238,7 @@ export function ResidentNotes({ residentId, currentUserId }: ResidentNotesProps)
             const isAuthor = currentUserId && note.createdBy?.id === currentUserId;
 
             return (
-              <div key={note.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+              <div key={note.id} className="bg-white border border-neutral-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
                 {/* Header */}
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-3">
@@ -252,10 +252,10 @@ export function ResidentNotes({ residentId, currentUserId }: ResidentNotesProps)
                     </div>
                     {/* Author & Timestamp */}
                     <div>
-                      <p className="text-sm font-medium text-gray-900">
+                      <p className="text-sm font-medium text-neutral-900">
                         {note.createdBy ? `${note.createdBy.firstName} ${note.createdBy.lastName}` : 'Unknown User'}
                       </p>
-                      <p className="text-xs text-gray-500">{formatTimestamp(note.createdAt)}</p>
+                      <p className="text-xs text-neutral-500">{formatTimestamp(note.createdAt)}</p>
                     </div>
                     {/* Visibility Badge */}
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getVisibilityBadgeColor(note.visibility)}`}>
@@ -278,7 +278,7 @@ export function ResidentNotes({ residentId, currentUserId }: ResidentNotesProps)
                       </button>
                       <button
                         onClick={() => handleDeleteNote(note.id)}
-                        className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50 transition-colors"
+                        className="text-error-600 hover:text-error-800 p-1 rounded hover:bg-error-50 transition-colors"
                         title="Delete note"
                       >
                         <FiTrash2 size={14} />
@@ -291,14 +291,14 @@ export function ResidentNotes({ residentId, currentUserId }: ResidentNotesProps)
                 {isEditing ? (
                   <div className="mt-3 space-y-2">
                     <textarea
-                      className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                      className="w-full border border-neutral-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
                       rows={3}
                       value={editContent}
                       onChange={(e) => setEditContent(e.target.value)}
                       maxLength={1000}
                     />
                     <div className="flex items-center justify-between">
-                      <span className={`text-xs ${editContent.length > 900 ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
+                      <span className={`text-xs ${editContent.length > 900 ? 'text-error-600 font-medium' : 'text-neutral-500'}`}>
                         {editContent.length}/1000
                       </span>
                       <div className="flex items-center gap-2">
@@ -313,7 +313,7 @@ export function ResidentNotes({ residentId, currentUserId }: ResidentNotesProps)
                             setEditingId(null);
                             setEditContent('');
                           }}
-                          className="bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-300 transition-colors"
+                          className="bg-neutral-200 text-neutral-700 px-3 py-1 rounded text-sm hover:bg-neutral-300 transition-colors"
                         >
                           Cancel
                         </button>
@@ -321,7 +321,7 @@ export function ResidentNotes({ residentId, currentUserId }: ResidentNotesProps)
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{note.content}</p>
+                  <p className="text-sm text-neutral-700 whitespace-pre-wrap">{note.content}</p>
                 )}
               </div>
             );

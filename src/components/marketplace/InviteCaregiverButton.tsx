@@ -48,7 +48,7 @@ export default function InviteCaregiverButton({ listingId, caregiverId }: Invite
       className={`
         px-3 py-1.5 text-sm font-medium rounded-md transition-colors
         ${isInvited
-          ? 'bg-green-100 text-green-800 cursor-default'
+          ? 'bg-success-100 text-success-800 cursor-default'
           : isLoading
           ? 'bg-primary-400 text-white cursor-wait'
           : 'bg-primary-600 hover:bg-primary-700 text-white'

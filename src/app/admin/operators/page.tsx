@@ -23,12 +23,12 @@ const PLAN_PRICE: Record<string, string> = {
 };
 
 const STATUS_STYLES: Record<string, string> = {
-  ACTIVE: 'bg-green-100 text-green-700',
-  TRIALING: 'bg-blue-100 text-blue-700',
-  PAST_DUE: 'bg-red-100 text-red-700',
+  ACTIVE: 'bg-success-100 text-success-700',
+  TRIALING: 'bg-primary-100 text-primary-700',
+  PAST_DUE: 'bg-error-100 text-error-700',
   CANCELED: 'bg-neutral-100 text-neutral-600',
   INCOMPLETE: 'bg-amber-100 text-amber-700',
-  INCOMPLETE_EXPIRED: 'bg-red-100 text-red-700',
+  INCOMPLETE_EXPIRED: 'bg-error-100 text-error-700',
   PAUSED: 'bg-amber-100 text-amber-700',
 };
 
@@ -70,10 +70,10 @@ export default async function AdminOperatorsPage() {
         {/* Summary cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {[
-            { label: 'Total Operators', value: operators.length, icon: FiUsers, color: 'bg-blue-100 text-blue-600' },
-            { label: 'Active Subscriptions', value: activeCount, icon: FiHome, color: 'bg-green-100 text-green-600' },
-            { label: 'In Trial', value: trialingCount, icon: FiDollarSign, color: 'bg-purple-100 text-purple-600' },
-            { label: 'Past Due', value: pastDueCount, icon: FiAlertCircle, color: 'bg-red-100 text-red-600' },
+            { label: 'Total Operators', value: operators.length, icon: FiUsers, color: 'bg-primary-100 text-primary-600' },
+            { label: 'Active Subscriptions', value: activeCount, icon: FiHome, color: 'bg-success-100 text-success-600' },
+            { label: 'In Trial', value: trialingCount, icon: FiDollarSign, color: 'bg-secondary-100 text-secondary-600' },
+            { label: 'Past Due', value: pastDueCount, icon: FiAlertCircle, color: 'bg-error-100 text-error-600' },
           ].map((s) => (
             <div key={s.label} className="bg-white rounded-lg border border-neutral-200 p-5 flex items-center gap-3">
               <div className={`p-2.5 rounded-lg ${s.color}`}><s.icon size={18} /></div>
@@ -122,7 +122,7 @@ export default async function AdminOperatorsPage() {
                     const expiryDate = op.trialEndsAt ?? op.currentPeriodEndsAt;
                     const isPastDue = op.subscriptionStatus === 'PAST_DUE';
                     return (
-                      <tr key={op.id} className={`hover:bg-neutral-50 transition-colors ${isPastDue ? 'bg-red-50' : ''}`}>
+                      <tr key={op.id} className={`hover:bg-neutral-50 transition-colors ${isPastDue ? 'bg-error-50' : ''}`}>
                         <td className="px-4 py-3">
                           <p className="font-medium text-neutral-900">{op.companyName}</p>
                           {op.stripeCustomerId && (
@@ -159,7 +159,7 @@ export default async function AdminOperatorsPage() {
                         <td className="px-4 py-3 text-neutral-600">{op._count.caregivers}</td>
                         <td className="px-4 py-3 text-xs text-neutral-500">
                           {expiryDate ? (
-                            <span className={new Date(expiryDate) < new Date() && op.subscriptionStatus !== 'ACTIVE' ? 'text-red-600 font-medium' : ''}>
+                            <span className={new Date(expiryDate) < new Date() && op.subscriptionStatus !== 'ACTIVE' ? 'text-error-600 font-medium' : ''}>
                               {new Date(expiryDate).toLocaleDateString()}
                             </span>
                           ) : '—'}

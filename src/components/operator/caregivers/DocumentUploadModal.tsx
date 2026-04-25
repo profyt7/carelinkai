@@ -195,7 +195,7 @@ export function DocumentUploadModal({ caregiverId, onClose, onSuccess }: Documen
                 dragActive
                   ? 'border-primary-500 bg-primary-50'
                   : file
-                  ? 'border-green-500 bg-green-50'
+                  ? 'border-success-500 bg-success-50'
                   : 'border-neutral-300 hover:border-neutral-400'
               }`}
               onDragEnter={handleDrag}
@@ -214,7 +214,7 @@ export function DocumentUploadModal({ caregiverId, onClose, onSuccess }: Documen
 
               {file ? (
                 <div className="space-y-3">
-                  <FiFile className="w-12 h-12 text-green-600 mx-auto" />
+                  <FiFile className="w-12 h-12 text-success-600 mx-auto" />
                   <div>
                     <p className="font-medium text-neutral-900">{file.name}</p>
                     <p className="text-sm text-neutral-600">{formatFileSize(file.size)}</p>
@@ -223,7 +223,7 @@ export function DocumentUploadModal({ caregiverId, onClose, onSuccess }: Documen
                     type="button"
                     onClick={() => setFile(null)}
                     disabled={uploading}
-                    className="text-sm text-red-600 hover:text-red-700 font-medium disabled:opacity-50"
+                    className="text-sm text-error-600 hover:text-error-700 font-medium disabled:opacity-50"
                   >
                     Remove file
                   </button>
@@ -332,11 +332,11 @@ export function DocumentUploadModal({ caregiverId, onClose, onSuccess }: Documen
           </div>
 
           {/* Info Alert */}
-          <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <FiAlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-blue-900">
+          <div className="flex items-start gap-3 p-4 bg-primary-50 border border-primary-200 rounded-lg">
+            <FiAlertCircle className="w-5 h-5 text-primary-600 flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-primary-900">
               <p className="font-medium mb-1">Upload Guidelines</p>
-              <ul className="list-disc list-inside space-y-1 text-blue-800">
+              <ul className="list-disc list-inside space-y-1 text-primary-800">
                 <li>Maximum file size: 10MB</li>
                 <li>Accepted formats: PDF, JPEG, PNG, DOC, DOCX</li>
                 <li>Files are securely stored and encrypted</li>

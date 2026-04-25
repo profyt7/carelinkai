@@ -100,7 +100,7 @@ export default async function RecommendedCaregivers({ listingId }: { listingId: 
     return Array.from({ length: 5 }).map((_, idx) => (
       <span
         key={idx}
-        className={idx < filledStars ? "text-yellow-400" : "text-gray-300"}
+        className={idx < filledStars ? "text-warning-400" : "text-neutral-300"}
         aria-hidden="true"
       >
         ★
@@ -109,7 +109,7 @@ export default async function RecommendedCaregivers({ listingId }: { listingId: 
   };
 
   return (
-    <div className="py-8 border-t border-gray-200 mt-8">
+    <div className="py-8 border-t border-neutral-200 mt-8">
       <h2 className="text-xl font-semibold mb-4">Recommended Caregivers</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {items.map((item) => {
@@ -121,15 +121,15 @@ export default async function RecommendedCaregivers({ listingId }: { listingId: 
           const hasStatus = Boolean(status);
           const statusLabel = status ? status.charAt(0) + status.slice(1).toLowerCase() : "";
           const statusClass = status === "INVITED"
-            ? "bg-yellow-100 text-yellow-800"
+            ? "bg-warning-100 text-warning-800"
             : status === "APPLIED"
-            ? "bg-blue-100 text-blue-800"
-            : "bg-gray-100 text-gray-800";
+            ? "bg-primary-100 text-primary-800"
+            : "bg-neutral-100 text-neutral-800";
           
           return (
             <div key={item.id} className="bg-white border rounded-md p-4 flex flex-col">
               <div className="flex items-start mb-2">
-                <div className="h-12 w-12 rounded-full overflow-hidden bg-gray-100 flex-shrink-0 mr-3">
+                <div className="h-12 w-12 rounded-full overflow-hidden bg-neutral-100 flex-shrink-0 mr-3">
                   {caregiver.user.profileImageUrl ? (
                     <Image
                       src={caregiver.user.profileImageUrl}
@@ -139,13 +139,13 @@ export default async function RecommendedCaregivers({ listingId }: { listingId: 
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <div className="h-full w-full flex items-center justify-center bg-gray-200">
-                      <FiUser size={24} className="text-gray-400" />
+                    <div className="h-full w-full flex items-center justify-center bg-neutral-200">
+                      <FiUser size={24} className="text-neutral-400" />
                     </div>
                   )}
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">{fullName}</h3>
+                  <h3 className="font-semibold text-neutral-900">{fullName}</h3>
                   
                   {/* Rating display */}
                   {caregiver.averageRating !== null && (
@@ -153,7 +153,7 @@ export default async function RecommendedCaregivers({ listingId }: { listingId: 
                       <span className="flex mr-1">
                         {renderStars(caregiver.averageRating)}
                       </span>
-                      <span className="text-gray-600">
+                      <span className="text-neutral-600">
                         {caregiver.averageRating.toFixed(1)} ({caregiver.reviewCount})
                       </span>
                     </div>
@@ -163,7 +163,7 @@ export default async function RecommendedCaregivers({ listingId }: { listingId: 
               
               {/* Hourly rate */}
               {caregiver.hourlyRate && (
-                <div className="text-sm text-gray-800 mb-2 flex items-center">
+                <div className="text-sm text-neutral-800 mb-2 flex items-center">
                   <FiDollarSign className="mr-1" size={14} />
                   <span>${caregiver.hourlyRate.toFixed(2)}/hr</span>
                 </div>
@@ -184,7 +184,7 @@ export default async function RecommendedCaregivers({ listingId }: { listingId: 
                     
                     {/* Show count of additional specialties */}
                     {hiddenCount > 0 && (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-800">
                         +{hiddenCount} more
                       </span>
                     )}
@@ -194,9 +194,9 @@ export default async function RecommendedCaregivers({ listingId }: { listingId: 
               
               {/* Match score + reasons */}
               {item.score > 0 && (
-                <div className="text-xs text-gray-600 mb-3">
+                <div className="text-xs text-neutral-600 mb-3">
                   <div className="flex items-center justify-between">
-                    <span className="font-medium text-gray-800">{item.score}% match</span>
+                    <span className="font-medium text-neutral-800">{item.score}% match</span>
                     <ExplainMatchTrigger
                       title={`${caregiver.user.firstName} ${caregiver.user.lastName}`}
                       score={item.score}

@@ -78,7 +78,7 @@ export function SendMessageModal({
         <div className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-2">
-              Subject <span className="text-red-500">*</span>
+              Subject <span className="text-error-500">*</span>
             </label>
             <input
               type="text"
@@ -91,7 +91,7 @@ export function SendMessageModal({
 
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-2">
-              Message <span className="text-red-500">*</span>
+              Message <span className="text-error-500">*</span>
             </label>
             <textarea
               value={message}

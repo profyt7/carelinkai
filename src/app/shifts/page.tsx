@@ -130,8 +130,8 @@ function BidButton({ shiftId }: { shiftId: string }) {
       title={state === 'done' ? 'Withdraw bid' : 'Place a bid — operator will review'}
       className={`px-3 py-2 rounded-md border text-sm font-medium transition-colors ${
         state === 'done'
-          ? 'bg-green-50 text-green-700 border-green-300 hover:bg-red-50 hover:text-red-600 hover:border-red-300'
-          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+          ? 'bg-success-50 text-success-700 border-success-300 hover:bg-error-50 hover:text-error-600 hover:border-error-300'
+          : 'bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-50'
       }`}
     >
       {state === 'loading' ? '...' : state === 'done' ? 'Bid ✓' : 'Bid'}
@@ -532,17 +532,17 @@ export default function ShiftsPage() {
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
       case 'OPEN':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-primary-100 text-primary-800';
       case 'ASSIGNED':
         return 'bg-amber-100 text-amber-800';
       case 'IN_PROGRESS':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-secondary-100 text-secondary-800';
       case 'COMPLETED':
-        return 'bg-green-100 text-green-800';
+        return 'bg-success-100 text-success-800';
       case 'CANCELED':
-        return 'bg-red-100 text-red-800';
+        return 'bg-error-100 text-error-800';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-neutral-100 text-neutral-800';
     }
   };
 
@@ -556,8 +556,8 @@ export default function ShiftsPage() {
   // Error component
   const ErrorState = ({ message }: { message: string }) => (
     <div className="flex flex-col items-center justify-center p-8 text-center">
-      <FiAlertCircle className="text-red-500 text-3xl mb-2" />
-      <p className="text-gray-700">{message}</p>
+      <FiAlertCircle className="text-error-500 text-3xl mb-2" />
+      <p className="text-neutral-700">{message}</p>
       <button 
         onClick={() => window.location.reload()}
         className="mt-4 px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
@@ -571,12 +571,12 @@ export default function ShiftsPage() {
     <DashboardLayout title="Shifts">
       <div className="p-4 md:p-6">
         {/* Tab navigation */}
-        <div className="flex border-b border-gray-200 mb-6">
+        <div className="flex border-b border-neutral-200 mb-6">
           <button
             className={`py-2 px-4 font-medium text-sm ${
               activeTab === 'open'
                 ? 'text-primary-600 border-b-2 border-primary-600'
-                : 'text-gray-500 hover:text-gray-700'
+                : 'text-neutral-500 hover:text-neutral-700'
             }`}
             onClick={() => setActiveTab('open')}
           >
@@ -586,7 +586,7 @@ export default function ShiftsPage() {
             className={`py-2 px-4 font-medium text-sm ${
               activeTab === 'my'
                 ? 'text-primary-600 border-b-2 border-primary-600'
-                : 'text-gray-500 hover:text-gray-700'
+                : 'text-neutral-500 hover:text-neutral-700'
             }`}
             onClick={() => setActiveTab('my')}
           >
@@ -596,8 +596,8 @@ export default function ShiftsPage() {
 
         {/* Error message with retry */}
         {error && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md flex items-center justify-between">
-            <div className="flex items-center text-red-700">
+          <div className="mb-4 p-4 bg-error-50 border border-error-200 rounded-md flex items-center justify-between">
+            <div className="flex items-center text-error-700">
               <FiAlertCircle className="mr-2 flex-shrink-0" />
               <span>{error}</span>
             </div>
@@ -607,7 +607,7 @@ export default function ShiftsPage() {
                 fetchOpenShiftsData();
                 fetchMyShiftsData();
               }}
-              className="ml-4 px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded-md flex items-center text-sm"
+              className="ml-4 px-3 py-1 bg-error-100 hover:bg-error-200 text-error-700 rounded-md flex items-center text-sm"
             >
               <FiRefreshCw className="mr-1" />
               Retry
@@ -619,9 +619,9 @@ export default function ShiftsPage() {
         {activeTab === 'open' && (
           <div>
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-800">Available Shifts</h2>
+              <h2 className="text-xl font-bold text-neutral-800">Available Shifts</h2>
               {!isLoadingOpen && (
-                <div className="text-sm text-gray-500">{openShifts.length} shifts available</div>
+                <div className="text-sm text-neutral-500">{openShifts.length} shifts available</div>
               )}
             </div>
 
@@ -629,36 +629,36 @@ export default function ShiftsPage() {
               <LoadingState />
             ) : openShifts.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-gray-500">No open shifts available at this time.</p>
+                <p className="text-neutral-500">No open shifts available at this time.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {openShifts.map((shift) => (
-                  <div key={shift.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                  <div key={shift.id} className="bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden">
                     <div className="p-4">
                       <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-medium text-gray-900">{shift.homeName}</h3>
+                        <h3 className="font-medium text-neutral-900">{shift.homeName}</h3>
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeColor(shift.status)}`}>
                           {shift.status}
                         </span>
                       </div>
                       
-                      <div className="flex items-start space-x-2 text-sm text-gray-500 mb-2">
+                      <div className="flex items-start space-x-2 text-sm text-neutral-500 mb-2">
                         <FiMapPin className="mt-0.5 flex-shrink-0" />
                         <span>{shift.address}</span>
                       </div>
                       
-                      <div className="flex items-start space-x-2 text-sm text-gray-500 mb-2">
+                      <div className="flex items-start space-x-2 text-sm text-neutral-500 mb-2">
                         <FiCalendar className="mt-0.5 flex-shrink-0" />
                         <span>{formatDate(shift.startTime)}</span>
                       </div>
                       
-                      <div className="flex items-start space-x-2 text-sm text-gray-500 mb-2">
+                      <div className="flex items-start space-x-2 text-sm text-neutral-500 mb-2">
                         <FiClock className="mt-0.5 flex-shrink-0" />
                         <span>{formatDateTime(shift.startTime)} - {formatDateTime(shift.endTime)}</span>
                       </div>
                       
-                      <div className="flex items-start space-x-2 text-sm text-gray-500 mb-4">
+                      <div className="flex items-start space-x-2 text-sm text-neutral-500 mb-4">
                         <FiDollarSign className="mt-0.5 flex-shrink-0" />
                         <span>${shift.hourlyRate.toFixed(2)}/hr</span>
                       </div>
@@ -695,9 +695,9 @@ export default function ShiftsPage() {
         {activeTab === 'my' && (
           <div>
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-800">My Shifts</h2>
+              <h2 className="text-xl font-bold text-neutral-800">My Shifts</h2>
               {!isLoadingMy && (
-                <div className="text-sm text-gray-500">{myShifts.length} shifts</div>
+                <div className="text-sm text-neutral-500">{myShifts.length} shifts</div>
               )}
             </div>
 
@@ -705,7 +705,7 @@ export default function ShiftsPage() {
               <LoadingState />
             ) : myShifts.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-gray-500">You haven't claimed any shifts yet.</p>
+                <p className="text-neutral-500">You haven't claimed any shifts yet.</p>
                 <button 
                   onClick={() => setActiveTab('open')}
                   className="mt-4 px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
@@ -716,31 +716,31 @@ export default function ShiftsPage() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {myShifts.map((shift) => (
-                  <div key={shift.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                  <div key={shift.id} className="bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden">
                     <div className="p-4">
                       <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-medium text-gray-900">{shift.homeName}</h3>
+                        <h3 className="font-medium text-neutral-900">{shift.homeName}</h3>
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeColor(shift.status)}`}>
                           {shift.status}
                         </span>
                       </div>
                       
-                      <div className="flex items-start space-x-2 text-sm text-gray-500 mb-2">
+                      <div className="flex items-start space-x-2 text-sm text-neutral-500 mb-2">
                         <FiMapPin className="mt-0.5 flex-shrink-0" />
                         <span>{shift.address}</span>
                       </div>
                       
-                      <div className="flex items-start space-x-2 text-sm text-gray-500 mb-2">
+                      <div className="flex items-start space-x-2 text-sm text-neutral-500 mb-2">
                         <FiCalendar className="mt-0.5 flex-shrink-0" />
                         <span>{formatDate(shift.startTime)}</span>
                       </div>
                       
-                      <div className="flex items-start space-x-2 text-sm text-gray-500 mb-2">
+                      <div className="flex items-start space-x-2 text-sm text-neutral-500 mb-2">
                         <FiClock className="mt-0.5 flex-shrink-0" />
                         <span>{formatDateTime(shift.startTime)} - {formatDateTime(shift.endTime)}</span>
                       </div>
                       
-                      <div className="flex items-start space-x-2 text-sm text-gray-500 mb-4">
+                      <div className="flex items-start space-x-2 text-sm text-neutral-500 mb-4">
                         <FiDollarSign className="mt-0.5 flex-shrink-0" />
                         <span>${shift.hourlyRate.toFixed(2)}/hr</span>
                       </div>
@@ -765,7 +765,7 @@ export default function ShiftsPage() {
                         </button>
                       ) : shift.status === 'IN_PROGRESS' ? (
                         <button 
-                          className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-md transition-colors flex items-center justify-center disabled:bg-red-400"
+                          className="w-full bg-error-600 hover:bg-error-700 text-white font-medium py-2 px-4 rounded-md transition-colors flex items-center justify-center disabled:bg-error-400"
                           onClick={() => handleEndShift(shift.id)}
                           disabled={isEndingShift === shift.id}
                         >
@@ -785,7 +785,7 @@ export default function ShiftsPage() {
                         <button 
                           className={`w-full ${
                             shift.status === 'COMPLETED' 
-                              ? 'bg-gray-100 text-gray-700' 
+                              ? 'bg-neutral-100 text-neutral-700' 
                               : 'bg-primary-600 hover:bg-primary-700 text-white'
                           } font-medium py-2 px-4 rounded-md transition-colors flex items-center justify-center`}
                           disabled={shift.status === 'COMPLETED'}

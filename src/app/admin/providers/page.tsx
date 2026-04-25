@@ -260,7 +260,7 @@ export default function AdminProvidersListPage() {
                       <td className="px-4 py-3 text-sm">
                         <div className="flex flex-col gap-1">
                           {provider.isVerified ? (
-                            <span className="inline-flex items-center text-xs text-green-700">
+                            <span className="inline-flex items-center text-xs text-success-700">
                               <FiCheckCircle className="mr-1 h-3 w-3" />
                               Verified
                             </span>
@@ -271,12 +271,12 @@ export default function AdminProvidersListPage() {
                             </span>
                           )}
                           {provider.isActive ? (
-                            <span className="inline-flex items-center text-xs text-green-700">
+                            <span className="inline-flex items-center text-xs text-success-700">
                               <FiCheckCircle className="mr-1 h-3 w-3" />
                               Active
                             </span>
                           ) : (
-                            <span className="inline-flex items-center text-xs text-red-700">
+                            <span className="inline-flex items-center text-xs text-error-700">
                               <FiXCircle className="mr-1 h-3 w-3" />
                               Inactive
                             </span>

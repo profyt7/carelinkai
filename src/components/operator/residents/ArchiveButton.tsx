@@ -75,7 +75,7 @@ export function ArchiveButton({ residentId, residentName }: ArchiveButtonProps) 
             <button
               onClick={handleArchive}
               disabled={loading}
-              className="px-4 py-2 text-sm font-medium text-white bg-orange-600 rounded-md hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-4 py-2 text-sm font-medium text-white bg-warning-600 rounded-md hover:bg-warning-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {loading ? 'Archiving...' : 'Archive'}
             </button>

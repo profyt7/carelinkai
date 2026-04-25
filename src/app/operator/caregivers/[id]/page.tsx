@@ -228,8 +228,8 @@ export default function CaregiverDetailPage() {
               </span>
               <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium border ${
                 caregiver.employmentStatus === 'ACTIVE' 
-                  ? 'bg-green-50 text-green-700 border-green-200' 
-                  : 'bg-gray-50 text-gray-700 border-gray-200'
+                  ? 'bg-success-50 text-success-700 border-success-200' 
+                  : 'bg-neutral-50 text-neutral-700 border-neutral-200'
               }`}>
                 {caregiver.employmentStatus || 'Unknown'}
               </span>
@@ -244,7 +244,7 @@ export default function CaregiverDetailPage() {
             <PermissionGuard permission={PERMISSIONS.CAREGIVERS_DELETE}>
               <button
                 onClick={handleDelete}
-                className="btn btn-secondary flex items-center gap-2 text-red-600 hover:bg-red-50 hover:border-red-300"
+                className="btn btn-secondary flex items-center gap-2 text-error-600 hover:bg-error-50 hover:border-error-300"
               >
                 <FiTrash2 className="w-4 h-4" />
                 Delete

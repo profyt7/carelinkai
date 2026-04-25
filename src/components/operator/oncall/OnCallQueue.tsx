@@ -33,17 +33,17 @@ interface Props {
 
 const STATUS_COLORS: Record<string, string> = {
   OPEN: 'bg-neutral-100 text-neutral-700',
-  FILLING: 'bg-yellow-100 text-yellow-800',
-  FILLED: 'bg-green-100 text-green-800',
-  UNFILLED: 'bg-red-100 text-red-700',
+  FILLING: 'bg-warning-100 text-warning-800',
+  FILLED: 'bg-success-100 text-success-800',
+  UNFILLED: 'bg-error-100 text-error-700',
   CANCELED: 'bg-neutral-100 text-neutral-500',
 };
 
 const OUTCOME_COLORS: Record<string, string> = {
   SENT: 'text-neutral-500',
-  CONFIRMED: 'text-green-600 font-medium',
-  DECLINED: 'text-red-500',
-  ERROR: 'text-red-400',
+  CONFIRMED: 'text-success-600 font-medium',
+  DECLINED: 'text-error-500',
+  ERROR: 'text-error-400',
   NO_RESPONSE: 'text-neutral-400',
 };
 
@@ -110,7 +110,7 @@ export default function OnCallQueue({ homes, openShifts }: Props) {
         <div className="flex items-center gap-3">
           <h2 className="text-xl font-semibold text-neutral-900">On-Call AI Queue</h2>
           {activeNeeds.length > 0 && (
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-warning-100 text-warning-800">
               {activeNeeds.length} active
             </span>
           )}
@@ -171,7 +171,7 @@ export default function OnCallQueue({ homes, openShifts }: Props) {
                     </p>
                   )}
                   {need.filledByCaregiver && (
-                    <p className="text-sm text-green-700 font-medium mt-1">
+                    <p className="text-sm text-success-700 font-medium mt-1">
                       ✓ Filled by {need.filledByCaregiver.user.firstName} {need.filledByCaregiver.user.lastName}
                     </p>
                   )}
@@ -202,7 +202,7 @@ export default function OnCallQueue({ homes, openShifts }: Props) {
                     <button
                       onClick={() => handleCancel(need.id)}
                       disabled={canceling === need.id}
-                      className="px-3 py-1.5 text-red-500 text-xs hover:underline"
+                      className="px-3 py-1.5 text-error-500 text-xs hover:underline"
                     >
                       Cancel
                     </button>

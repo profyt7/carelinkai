@@ -310,10 +310,10 @@ export default function FamilySettingsPage() {
           <div
             className={`mb-6 rounded-lg border p-4 flex items-start gap-3 ${
               message.type === "success"
-                ? "bg-green-50 border-green-200 text-green-800"
+                ? "bg-success-50 border-success-200 text-success-800"
                 : message.type === "error"
-                ? "bg-red-50 border-red-200 text-red-800"
-                : "bg-blue-50 border-blue-200 text-blue-800"
+                ? "bg-error-50 border-error-200 text-error-800"
+                : "bg-primary-50 border-primary-200 text-primary-800"
             }`}
           >
             {message.type === "success" && <FiCheckCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />}
@@ -354,12 +354,12 @@ export default function FamilySettingsPage() {
                   value={formData.primaryContactName}
                   onChange={handleChange}
                   className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                    errors.primaryContactName ? "border-red-500" : "border-neutral-300"
+                    errors.primaryContactName ? "border-error-500" : "border-neutral-300"
                   }`}
                   placeholder="e.g., John Smith"
                 />
                 {errors.primaryContactName && (
-                  <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                  <p className="mt-1 text-sm text-error-600 flex items-center gap-1">
                     <FiAlertCircle className="h-4 w-4" />
                     {errors.primaryContactName}
                   </p>
@@ -382,13 +382,13 @@ export default function FamilySettingsPage() {
                     value={formData.phone}
                     onChange={handleChange}
                     className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                      errors.phone ? "border-red-500" : "border-neutral-300"
+                      errors.phone ? "border-error-500" : "border-neutral-300"
                     }`}
                     placeholder="(555) 123-4567"
                   />
                 </div>
                 {errors.phone && (
-                  <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                  <p className="mt-1 text-sm text-error-600 flex items-center gap-1">
                     <FiAlertCircle className="h-4 w-4" />
                     {errors.phone}
                   </p>
@@ -406,7 +406,7 @@ export default function FamilySettingsPage() {
                   value={formData.relationshipToRecipient}
                   onChange={handleChange}
                   className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                    errors.relationshipToRecipient ? "border-red-500" : "border-neutral-300"
+                    errors.relationshipToRecipient ? "border-error-500" : "border-neutral-300"
                   }`}
                 >
                   <option value="">Select relationship</option>
@@ -417,7 +417,7 @@ export default function FamilySettingsPage() {
                   ))}
                 </select>
                 {errors.relationshipToRecipient && (
-                  <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                  <p className="mt-1 text-sm text-error-600 flex items-center gap-1">
                     <FiAlertCircle className="h-4 w-4" />
                     {errors.relationshipToRecipient}
                   </p>
@@ -458,14 +458,14 @@ export default function FamilySettingsPage() {
                   value={formData.recipientAge || ""}
                   onChange={handleChange}
                   className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                    errors.recipientAge ? "border-red-500" : "border-neutral-300"
+                    errors.recipientAge ? "border-error-500" : "border-neutral-300"
                   }`}
                   placeholder="e.g., 75"
                   min="0"
                   max="150"
                 />
                 {errors.recipientAge && (
-                  <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                  <p className="mt-1 text-sm text-error-600 flex items-center gap-1">
                     <FiAlertCircle className="h-4 w-4" />
                     {errors.recipientAge}
                   </p>
@@ -484,12 +484,12 @@ export default function FamilySettingsPage() {
                   onChange={handleChange}
                   rows={3}
                   className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                    errors.primaryDiagnosis ? "border-red-500" : "border-neutral-300"
+                    errors.primaryDiagnosis ? "border-error-500" : "border-neutral-300"
                   }`}
                   placeholder="e.g., Alzheimer's Disease, Diabetes, etc."
                 />
                 {errors.primaryDiagnosis && (
-                  <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                  <p className="mt-1 text-sm text-error-600 flex items-center gap-1">
                     <FiAlertCircle className="h-4 w-4" />
                     {errors.primaryDiagnosis}
                   </p>
@@ -514,7 +514,7 @@ export default function FamilySettingsPage() {
                     value={formData.mobilityLevel}
                     onChange={handleChange}
                     className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                      errors.mobilityLevel ? "border-red-500" : "border-neutral-300"
+                      errors.mobilityLevel ? "border-error-500" : "border-neutral-300"
                     }`}
                   >
                     <option value="">Select mobility level</option>
@@ -526,7 +526,7 @@ export default function FamilySettingsPage() {
                   </select>
                 </div>
                 {errors.mobilityLevel && (
-                  <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                  <p className="mt-1 text-sm text-error-600 flex items-center gap-1">
                     <FiAlertCircle className="h-4 w-4" />
                     {errors.mobilityLevel}
                   </p>
@@ -552,13 +552,13 @@ export default function FamilySettingsPage() {
                     onChange={handleChange}
                     rows={4}
                     className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                      errors.careNotes ? "border-red-500" : "border-neutral-300"
+                      errors.careNotes ? "border-error-500" : "border-neutral-300"
                     }`}
                     placeholder="Any special needs, preferences, or important information..."
                   />
                 </div>
                 {errors.careNotes && (
-                  <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                  <p className="mt-1 text-sm text-error-600 flex items-center gap-1">
                     <FiAlertCircle className="h-4 w-4" />
                     {errors.careNotes}
                   </p>

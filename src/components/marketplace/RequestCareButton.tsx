@@ -74,7 +74,7 @@ export default function RequestCareButton({
         disabled={status === "loading"}
         className={
           className ||
-          "w-full bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-6 rounded-md transition-colors flex items-center justify-center shadow-lg disabled:bg-gray-300 disabled:cursor-not-allowed"
+          "w-full bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-6 rounded-md transition-colors flex items-center justify-center shadow-lg disabled:bg-neutral-300 disabled:cursor-not-allowed"
         }
       >
         <FiHeart className="mr-2 h-5 w-5" />
@@ -83,10 +83,10 @@ export default function RequestCareButton({
 
       {/* Error Message */}
       {errorMessage && (
-        <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
-          <p className="text-sm text-red-800">{errorMessage}</p>
+        <div className="mt-3 p-3 bg-error-50 border border-error-200 rounded-md">
+          <p className="text-sm text-error-800">{errorMessage}</p>
           {session?.user?.role && session.user.role !== "FAMILY" && (
-            <p className="text-xs text-red-600 mt-1">
+            <p className="text-xs text-error-600 mt-1">
               Currently logged in as: {session.user.role}
             </p>
           )}

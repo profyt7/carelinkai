@@ -38,8 +38,8 @@ export default function TabNavigation({ activeTab, onTabChange, unreadCount = 0 
               className={`
                 px-4 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 whitespace-nowrap
                 ${isActive
-                  ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg scale-105'
-                  : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 shadow-sm'
+                  ? 'bg-gradient-to-r from-primary-600 to-cyan-500 text-white shadow-lg scale-105'
+                  : 'bg-white text-neutral-700 hover:bg-neutral-50 border border-neutral-200 shadow-sm'
                 }
               `}
             >
@@ -48,7 +48,7 @@ export default function TabNavigation({ activeTab, onTabChange, unreadCount = 0 
               {tab.count > 0 && (
                 <span className={`
                   px-2 py-0.5 rounded-full text-xs font-bold
-                  ${isActive ? 'bg-white text-blue-600' : 'bg-red-500 text-white'}
+                  ${isActive ? 'bg-white text-primary-600' : 'bg-error-500 text-white'}
                 `}>
                   {tab.count}
                 </span>

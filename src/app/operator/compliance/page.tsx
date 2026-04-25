@@ -92,7 +92,7 @@ export default async function OperatorCompliancePage({ searchParams }: { searchP
                   <form action={`/api/operator/homes/${l.homeId}/licenses/${l.id}`} method="post">
                     <button className="btn btn-danger btn-sm" type="submit">Delete</button>
                   </form>
-                  <div className={`text-sm ${new Date(l.expirationDate) < today ? 'text-red-600' : 'text-amber-600'}`}>
+                  <div className={`text-sm ${new Date(l.expirationDate) < today ? 'text-error-600' : 'text-amber-600'}`}>
                     {new Date(l.expirationDate).toLocaleDateString()}
                   </div>
                 </div>

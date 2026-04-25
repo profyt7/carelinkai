@@ -76,31 +76,31 @@ export default function ApplicationActions({
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-md p-4 shadow-sm">
-      <h3 className="text-sm font-medium text-gray-700 mb-3">Update Application Status</h3>
+    <div className="bg-white border border-neutral-200 rounded-md p-4 shadow-sm">
+      <h3 className="text-sm font-medium text-neutral-700 mb-3">Update Application Status</h3>
       
       {error && (
-        <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-md text-sm">
+        <div className="mb-4 p-3 bg-error-50 text-error-700 rounded-md text-sm">
           {error}
         </div>
       )}
       
       {success && (
-        <div className="mb-4 p-3 bg-green-50 text-green-700 rounded-md text-sm">
+        <div className="mb-4 p-3 bg-success-50 text-success-700 rounded-md text-sm">
           {success}
         </div>
       )}
       
       <form onSubmit={handleSubmit}>
         <div className="mb-3">
-          <label htmlFor="action" className="block text-xs font-medium text-gray-500 mb-1">
+          <label htmlFor="action" className="block text-xs font-medium text-neutral-500 mb-1">
             Action
           </label>
           <select
             id="action"
             value={action}
             onChange={(e) => setAction(e.target.value as any)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500 text-sm"
+            className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500 text-sm"
             disabled={isSubmitting}
           >
             <option value="INVITE">Invite to Connect</option>
@@ -112,8 +112,8 @@ export default function ApplicationActions({
         
         {action === 'INTERVIEW' && (
           <div className="mb-3">
-            <label htmlFor="interviewAt" className="block text-xs font-medium text-gray-500 mb-1 flex items-center">
-              <FiCalendar className="mr-1 text-gray-400" size={14} />
+            <label htmlFor="interviewAt" className="block text-xs font-medium text-neutral-500 mb-1 flex items-center">
+              <FiCalendar className="mr-1 text-neutral-400" size={14} />
               Interview Date & Time
             </label>
             <input
@@ -121,15 +121,15 @@ export default function ApplicationActions({
               id="interviewAt"
               value={interviewAt}
               onChange={(e) => setInterviewAt(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500 text-sm"
+              className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500 text-sm"
               disabled={isSubmitting}
             />
           </div>
         )}
         
         <div className="mb-3">
-          <label htmlFor="message" className="block text-xs font-medium text-gray-500 mb-1 flex items-center">
-            <MessageSquare className="mr-1 text-gray-400" size={14} />
+          <label htmlFor="message" className="block text-xs font-medium text-neutral-500 mb-1 flex items-center">
+            <MessageSquare className="mr-1 text-neutral-400" size={14} />
             Message (optional)
           </label>
           <textarea
@@ -143,7 +143,7 @@ export default function ApplicationActions({
               action === 'OFFER' ? "Describe the offer and any important details..." :
               "Provide a reason for declining (optional)..."
             }
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500 text-sm"
+            className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500 text-sm"
             disabled={isSubmitting}
           ></textarea>
         </div>

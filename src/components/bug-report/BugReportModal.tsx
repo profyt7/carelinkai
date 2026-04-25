@@ -111,9 +111,9 @@ export function BugReportModal({ isOpen, onClose }: BugReportModalProps) {
               <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
                 {success ? (
                   <div className="text-center py-8">
-                    <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
+                    <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-success-100 mb-4">
                       <svg
-                        className="h-6 w-6 text-green-600"
+                        className="h-6 w-6 text-success-600"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -128,11 +128,11 @@ export function BugReportModal({ isOpen, onClose }: BugReportModalProps) {
                     </div>
                     <Dialog.Title
                       as="h3"
-                      className="text-lg font-medium leading-6 text-gray-900"
+                      className="text-lg font-medium leading-6 text-neutral-900"
                     >
                       Bug Report Submitted!
                     </Dialog.Title>
-                    <p className="mt-2 text-sm text-gray-500">
+                    <p className="mt-2 text-sm text-neutral-500">
                       Thank you for reporting this issue. We'll look into it as soon as possible.
                     </p>
                   </div>
@@ -140,7 +140,7 @@ export function BugReportModal({ isOpen, onClose }: BugReportModalProps) {
                   <>
                     <Dialog.Title
                       as="h3"
-                      className="text-lg font-medium leading-6 text-gray-900 mb-4"
+                      className="text-lg font-medium leading-6 text-neutral-900 mb-4"
                     >
                       🐛 Report a Bug
                     </Dialog.Title>
@@ -150,9 +150,9 @@ export function BugReportModal({ isOpen, onClose }: BugReportModalProps) {
                       <div>
                         <label
                           htmlFor="title"
-                          className="block text-sm font-medium text-gray-700"
+                          className="block text-sm font-medium text-neutral-700"
                         >
-                          Bug Title <span className="text-red-500">*</span>
+                          Bug Title <span className="text-error-500">*</span>
                         </label>
                         <input
                           type="text"
@@ -162,7 +162,7 @@ export function BugReportModal({ isOpen, onClose }: BugReportModalProps) {
                           onChange={(e) =>
                             setFormData({ ...formData, title: e.target.value })
                           }
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                          className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                           placeholder="Brief summary of the issue"
                         />
                       </div>
@@ -171,9 +171,9 @@ export function BugReportModal({ isOpen, onClose }: BugReportModalProps) {
                       <div>
                         <label
                           htmlFor="description"
-                          className="block text-sm font-medium text-gray-700"
+                          className="block text-sm font-medium text-neutral-700"
                         >
-                          Description <span className="text-red-500">*</span>
+                          Description <span className="text-error-500">*</span>
                         </label>
                         <textarea
                           id="description"
@@ -186,7 +186,7 @@ export function BugReportModal({ isOpen, onClose }: BugReportModalProps) {
                               description: e.target.value,
                             })
                           }
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                          className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                           placeholder="Describe what went wrong..."
                         />
                       </div>
@@ -195,7 +195,7 @@ export function BugReportModal({ isOpen, onClose }: BugReportModalProps) {
                       <div>
                         <label
                           htmlFor="steps"
-                          className="block text-sm font-medium text-gray-700"
+                          className="block text-sm font-medium text-neutral-700"
                         >
                           Steps to Reproduce (Optional)
                         </label>
@@ -209,15 +209,15 @@ export function BugReportModal({ isOpen, onClose }: BugReportModalProps) {
                               stepsToReproduce: e.target.value,
                             })
                           }
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                          className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                           placeholder="1. Go to...\n2. Click on...\n3. See error..."
                         />
                       </div>
 
                       {/* Severity */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Severity <span className="text-red-500">*</span>
+                        <label className="block text-sm font-medium text-neutral-700 mb-2">
+                          Severity <span className="text-error-500">*</span>
                         </label>
                         <div className="flex gap-4">
                           {["LOW", "MEDIUM", "HIGH"].map((severity) => (
@@ -233,9 +233,9 @@ export function BugReportModal({ isOpen, onClose }: BugReportModalProps) {
                                     severity: e.target.value as any,
                                   })
                                 }
-                                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-neutral-300"
                               />
-                              <span className="ml-2 text-sm text-gray-700">
+                              <span className="ml-2 text-sm text-neutral-700">
                                 {severity}
                               </span>
                             </label>
@@ -247,7 +247,7 @@ export function BugReportModal({ isOpen, onClose }: BugReportModalProps) {
                       <div>
                         <label
                           htmlFor="screenshot"
-                          className="block text-sm font-medium text-gray-700"
+                          className="block text-sm font-medium text-neutral-700"
                         >
                           Screenshot URL (Optional)
                         </label>
@@ -261,7 +261,7 @@ export function BugReportModal({ isOpen, onClose }: BugReportModalProps) {
                               screenshotUrl: e.target.value,
                             })
                           }
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                          className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                           placeholder="https://..."
                         />
                       </div>
@@ -272,9 +272,9 @@ export function BugReportModal({ isOpen, onClose }: BugReportModalProps) {
                           <div>
                             <label
                               htmlFor="email"
-                              className="block text-sm font-medium text-gray-700"
+                              className="block text-sm font-medium text-neutral-700"
                             >
-                              Your Email <span className="text-red-500">*</span>
+                              Your Email <span className="text-error-500">*</span>
                             </label>
                             <input
                               type="email"
@@ -287,7 +287,7 @@ export function BugReportModal({ isOpen, onClose }: BugReportModalProps) {
                                   userEmail: e.target.value,
                                 })
                               }
-                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                              className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                               placeholder="your@email.com"
                             />
                           </div>
@@ -295,9 +295,9 @@ export function BugReportModal({ isOpen, onClose }: BugReportModalProps) {
                           <div>
                             <label
                               htmlFor="name"
-                              className="block text-sm font-medium text-gray-700"
+                              className="block text-sm font-medium text-neutral-700"
                             >
-                              Your Name <span className="text-red-500">*</span>
+                              Your Name <span className="text-error-500">*</span>
                             </label>
                             <input
                               type="text"
@@ -310,7 +310,7 @@ export function BugReportModal({ isOpen, onClose }: BugReportModalProps) {
                                   userName: e.target.value,
                                 })
                               }
-                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                              className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                               placeholder="John Doe"
                             />
                           </div>
@@ -319,11 +319,11 @@ export function BugReportModal({ isOpen, onClose }: BugReportModalProps) {
 
                       {/* Error Message */}
                       {error && (
-                        <div className="rounded-md bg-red-50 p-4">
+                        <div className="rounded-md bg-error-50 p-4">
                           <div className="flex">
                             <div className="flex-shrink-0">
                               <svg
-                                className="h-5 w-5 text-red-400"
+                                className="h-5 w-5 text-error-400"
                                 viewBox="0 0 20 20"
                                 fill="currentColor"
                               >
@@ -335,7 +335,7 @@ export function BugReportModal({ isOpen, onClose }: BugReportModalProps) {
                               </svg>
                             </div>
                             <div className="ml-3">
-                              <p className="text-sm text-red-800">{error}</p>
+                              <p className="text-sm text-error-800">{error}</p>
                             </div>
                           </div>
                         </div>
@@ -346,7 +346,7 @@ export function BugReportModal({ isOpen, onClose }: BugReportModalProps) {
                         <button
                           type="button"
                           onClick={onClose}
-                          className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                          className="px-4 py-2 text-sm font-medium text-neutral-700 bg-white border border-neutral-300 rounded-md hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                         >
                           Cancel
                         </button>

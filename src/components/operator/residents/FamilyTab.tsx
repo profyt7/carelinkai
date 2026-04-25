@@ -24,10 +24,10 @@ const RELATIONSHIPS = [
 
 // Permission Levels
 const PERMISSION_LEVELS = [
-  { value: 'FULL_ACCESS', label: 'Full Access', color: 'bg-green-100 text-green-800', description: 'Can view and update all information' },
-  { value: 'LIMITED_ACCESS', label: 'Limited Access', color: 'bg-blue-100 text-blue-800', description: 'Can view most information, limited updates' },
-  { value: 'VIEW_ONLY', label: 'View Only', color: 'bg-yellow-100 text-yellow-800', description: 'Can only view information' },
-  { value: 'NO_ACCESS', label: 'No Access', color: 'bg-red-100 text-red-800', description: 'No access to information' },
+  { value: 'FULL_ACCESS', label: 'Full Access', color: 'bg-success-100 text-success-800', description: 'Can view and update all information' },
+  { value: 'LIMITED_ACCESS', label: 'Limited Access', color: 'bg-primary-100 text-primary-800', description: 'Can view most information, limited updates' },
+  { value: 'VIEW_ONLY', label: 'View Only', color: 'bg-warning-100 text-warning-800', description: 'Can only view information' },
+  { value: 'NO_ACCESS', label: 'No Access', color: 'bg-error-100 text-error-800', description: 'No access to information' },
 ];
 
 // Contact Preferences
@@ -279,7 +279,7 @@ export function FamilyTab({ residentId }: { residentId: string }) {
                           {contact.name}
                         </h3>
                         {contact.isPrimaryContact && (
-                          <FiStar className="w-4 h-4 text-yellow-500 fill-yellow-500 flex-shrink-0" title="Primary Contact" />
+                          <FiStar className="w-4 h-4 text-warning-500 fill-yellow-500 flex-shrink-0" title="Primary Contact" />
                         )}
                       </div>
                       <p className="text-sm text-neutral-600 mb-2">{contact.relationship}</p>
@@ -302,7 +302,7 @@ export function FamilyTab({ residentId }: { residentId: string }) {
                     <ActionGuard resourceType="family_contact" action="update">
                       <button
                         onClick={() => openEditModal(contact)}
-                        className="p-1.5 text-neutral-600 hover:text-blue-600 hover:bg-neutral-50 rounded"
+                        className="p-1.5 text-neutral-600 hover:text-primary-600 hover:bg-neutral-50 rounded"
                         title="Edit"
                       >
                         <FiEdit2 className="w-4 h-4" />
@@ -311,7 +311,7 @@ export function FamilyTab({ residentId }: { residentId: string }) {
                     <ActionGuard resourceType="family_contact" action="delete">
                       <button
                         onClick={() => handleDelete(contact.id)}
-                        className="p-1.5 text-neutral-600 hover:text-red-600 hover:bg-neutral-50 rounded"
+                        className="p-1.5 text-neutral-600 hover:text-error-600 hover:bg-neutral-50 rounded"
                         title="Delete"
                       >
                         <FiTrash2 className="w-4 h-4" />
@@ -560,7 +560,7 @@ export function FamilyTab({ residentId }: { residentId: string }) {
                   <div className="flex items-center gap-2 mb-1">
                     <h4 className="text-xl font-semibold text-neutral-900">{viewModal.name}</h4>
                     {viewModal.isPrimaryContact && (
-                      <FiStar className="w-5 h-5 text-yellow-500 fill-yellow-500" title="Primary Contact" />
+                      <FiStar className="w-5 h-5 text-warning-500 fill-yellow-500" title="Primary Contact" />
                     )}
                   </div>
                   <p className="text-neutral-600">{viewModal.relationship}</p>

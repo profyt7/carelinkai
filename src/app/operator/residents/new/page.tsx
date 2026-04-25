@@ -151,37 +151,37 @@ export default function NewResidentPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-1">
-                    First Name <span className="text-red-500">*</span>
+                    First Name <span className="text-error-500">*</span>
                   </label>
                   <input
                     type="text"
                     className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                      errors.firstName ? 'border-red-500' : 'border-neutral-300'
+                      errors.firstName ? 'border-error-500' : 'border-neutral-300'
                     }`}
                     value={form.firstName}
                     onChange={(e) => handleInputChange('firstName', e.target.value)}
                     placeholder="Enter first name"
                   />
                   {errors.firstName && (
-                    <p className="mt-1 text-sm text-red-600">{errors.firstName}</p>
+                    <p className="mt-1 text-sm text-error-600">{errors.firstName}</p>
                   )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-1">
-                    Last Name <span className="text-red-500">*</span>
+                    Last Name <span className="text-error-500">*</span>
                   </label>
                   <input
                     type="text"
                     className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                      errors.lastName ? 'border-red-500' : 'border-neutral-300'
+                      errors.lastName ? 'border-error-500' : 'border-neutral-300'
                     }`}
                     value={form.lastName}
                     onChange={(e) => handleInputChange('lastName', e.target.value)}
                     placeholder="Enter last name"
                   />
                   {errors.lastName && (
-                    <p className="mt-1 text-sm text-red-600">{errors.lastName}</p>
+                    <p className="mt-1 text-sm text-error-600">{errors.lastName}</p>
                   )}
                 </div>
               </div>
@@ -189,29 +189,29 @@ export default function NewResidentPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-1">
-                    Date of Birth <span className="text-red-500">*</span>
+                    Date of Birth <span className="text-error-500">*</span>
                   </label>
                   <input
                     type="date"
                     className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                      errors.dateOfBirth ? 'border-red-500' : 'border-neutral-300'
+                      errors.dateOfBirth ? 'border-error-500' : 'border-neutral-300'
                     }`}
                     value={form.dateOfBirth}
                     onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
                     max={new Date().toISOString().split('T')[0]}
                   />
                   {errors.dateOfBirth && (
-                    <p className="mt-1 text-sm text-red-600">{errors.dateOfBirth}</p>
+                    <p className="mt-1 text-sm text-error-600">{errors.dateOfBirth}</p>
                   )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-1">
-                    Gender <span className="text-red-500">*</span>
+                    Gender <span className="text-error-500">*</span>
                   </label>
                   <select
                     className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                      errors.gender ? 'border-red-500' : 'border-neutral-300'
+                      errors.gender ? 'border-error-500' : 'border-neutral-300'
                     }`}
                     value={form.gender}
                     onChange={(e) => handleInputChange('gender', e.target.value)}
@@ -222,7 +222,7 @@ export default function NewResidentPage() {
                     <option value="PREFER_NOT_TO_SAY">Prefer not to say</option>
                   </select>
                   {errors.gender && (
-                    <p className="mt-1 text-sm text-red-600">{errors.gender}</p>
+                    <p className="mt-1 text-sm text-error-600">{errors.gender}</p>
                   )}
                 </div>
               </div>
@@ -292,14 +292,14 @@ export default function NewResidentPage() {
                   <input
                     type="email"
                     className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                      errors.familyEmail ? 'border-red-500' : 'border-neutral-300'
+                      errors.familyEmail ? 'border-error-500' : 'border-neutral-300'
                     }`}
                     value={form.familyEmail}
                     onChange={(e) => handleInputChange('familyEmail', e.target.value)}
                     placeholder="family@example.com"
                   />
                   {errors.familyEmail && (
-                    <p className="mt-1 text-sm text-red-600">{errors.familyEmail}</p>
+                    <p className="mt-1 text-sm text-error-600">{errors.familyEmail}</p>
                   )}
                 </div>
 

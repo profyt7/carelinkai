@@ -160,31 +160,31 @@ export function CertificationsTab({ caregiverId }: CertificationsTabProps) {
               <FiFileText className="w-8 h-8 text-neutral-400" />
             </div>
           </div>
-          <div className="bg-green-50 rounded-lg border border-green-200 p-4">
+          <div className="bg-success-50 rounded-lg border border-success-200 p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-2xl font-bold text-green-900">{summary.current}</p>
-                <p className="text-sm text-green-700 mt-1">Current</p>
+                <p className="text-2xl font-bold text-success-900">{summary.current}</p>
+                <p className="text-sm text-success-700 mt-1">Current</p>
               </div>
-              <FiCheckCircle className="w-8 h-8 text-green-500" />
+              <FiCheckCircle className="w-8 h-8 text-success-500" />
             </div>
           </div>
-          <div className="bg-yellow-50 rounded-lg border border-yellow-200 p-4">
+          <div className="bg-warning-50 rounded-lg border border-warning-200 p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-2xl font-bold text-yellow-900">{summary.expiringSoon}</p>
-                <p className="text-sm text-yellow-700 mt-1">Expiring Soon</p>
+                <p className="text-2xl font-bold text-warning-900">{summary.expiringSoon}</p>
+                <p className="text-sm text-warning-700 mt-1">Expiring Soon</p>
               </div>
-              <FiAlertCircle className="w-8 h-8 text-yellow-500" />
+              <FiAlertCircle className="w-8 h-8 text-warning-500" />
             </div>
           </div>
-          <div className="bg-red-50 rounded-lg border border-red-200 p-4">
+          <div className="bg-error-50 rounded-lg border border-error-200 p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-2xl font-bold text-red-900">{summary.expired}</p>
-                <p className="text-sm text-red-700 mt-1">Expired</p>
+                <p className="text-2xl font-bold text-error-900">{summary.expired}</p>
+                <p className="text-sm text-error-700 mt-1">Expired</p>
               </div>
-              <FiAlertCircle className="w-8 h-8 text-red-500" />
+              <FiAlertCircle className="w-8 h-8 text-error-500" />
             </div>
           </div>
         </div>
@@ -302,10 +302,10 @@ export function CertificationsTab({ caregiverId }: CertificationsTabProps) {
                     <PermissionGuard permission={PERMISSIONS.CAREGIVERS_MANAGE_CERTIFICATIONS}>
                       <button
                         onClick={() => handleDelete(cert.id)}
-                        className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                        className="p-2 hover:bg-error-50 rounded-lg transition-colors"
                         title="Delete certification"
                       >
-                        <FiTrash2 className="w-4 h-4 text-red-600" />
+                        <FiTrash2 className="w-4 h-4 text-error-600" />
                       </button>
                     </PermissionGuard>
                   </div>

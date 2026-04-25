@@ -94,17 +94,17 @@ export default function ResultsPage() {
   };
   
   const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-600';
-    if (score >= 60) return 'text-blue-600';
-    if (score >= 40) return 'text-yellow-600';
-    return 'text-red-600';
+    if (score >= 80) return 'text-success-600';
+    if (score >= 60) return 'text-primary-600';
+    if (score >= 40) return 'text-warning-600';
+    return 'text-error-600';
   };
   
   const getScoreBackground = (score: number) => {
-    if (score >= 80) return 'bg-green-100';
-    if (score >= 60) return 'bg-blue-100';
-    if (score >= 40) return 'bg-yellow-100';
-    return 'bg-red-100';
+    if (score >= 80) return 'bg-success-100';
+    if (score >= 60) return 'bg-primary-100';
+    if (score >= 40) return 'bg-warning-100';
+    return 'bg-error-100';
   };
   
   const getAvailabilityBadge = (capacity: number, occupancy: number) => {
@@ -112,15 +112,15 @@ export default function ResultsPage() {
     const percentage = (available / capacity) * 100;
     
     if (percentage > 20) {
-      return <span className="px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded">
+      return <span className="px-2 py-1 text-xs font-semibold bg-success-100 text-success-800 rounded">
         {available} beds available
       </span>;
     } else if (percentage > 0) {
-      return <span className="px-2 py-1 text-xs font-semibold bg-yellow-100 text-yellow-800 rounded">
+      return <span className="px-2 py-1 text-xs font-semibold bg-warning-100 text-warning-800 rounded">
         {available} beds available
       </span>;
     } else {
-      return <span className="px-2 py-1 text-xs font-semibold bg-red-100 text-red-800 rounded">
+      return <span className="px-2 py-1 text-xs font-semibold bg-error-100 text-error-800 rounded">
         Waitlist only
       </span>;
     }
@@ -155,10 +155,10 @@ export default function ResultsPage() {
   
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-lg text-gray-600">Finding your perfect matches...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary-600 mx-auto mb-4"></div>
+          <p className="text-lg text-neutral-600">Finding your perfect matches...</p>
         </div>
       </div>
     );
@@ -166,14 +166,14 @@ export default function ResultsPage() {
   
   if (error || !matchRequest) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          <h2 className="text-2xl font-bold text-neutral-900 mb-2">
             {error || 'No results found'}
           </h2>
           <button
             onClick={() => router.push('/dashboard/find-care')}
-            className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            className="mt-4 px-6 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
           >
             Start New Search
           </button>
@@ -185,21 +185,21 @@ export default function ResultsPage() {
   const { results } = matchRequest;
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-indigo-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <button
             onClick={() => router.push('/dashboard/find-care')}
-            className="text-blue-600 hover:text-blue-700 font-medium mb-4 flex items-center"
+            className="text-primary-600 hover:text-primary-700 font-medium mb-4 flex items-center"
           >
             ← New Search
           </button>
           
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+          <h1 className="text-4xl font-bold text-neutral-900 mb-2">
             Your Top {results.length} Matches
           </h1>
-          <p className="text-lg text-gray-600">
+          <p className="text-lg text-neutral-600">
             We've found {results.length} homes that match your preferences
           </p>
         </div>
@@ -215,12 +215,12 @@ export default function ResultsPage() {
                 {/* Left Column: Image and Rank */}
                 <div className="relative">
                   <div className="absolute top-2 left-2 z-10">
-                    <span className="px-3 py-1 bg-white rounded-full font-bold text-gray-900 shadow">
+                    <span className="px-3 py-1 bg-white rounded-full font-bold text-neutral-900 shadow">
                       #{result.rank}
                     </span>
                   </div>
                   
-                  <div className="relative h-48 rounded-lg overflow-hidden bg-gray-200">
+                  <div className="relative h-48 rounded-lg overflow-hidden bg-neutral-200">
                     {result.home.photos.length > 0 ? (
                       <Image
                         src={result.home.photos[0].url}
@@ -229,7 +229,7 @@ export default function ResultsPage() {
                         className="object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-400">
+                      <div className="w-full h-full flex items-center justify-center text-neutral-400">
                         <span>No image available</span>
                       </div>
                     )}
@@ -250,12 +250,12 @@ export default function ResultsPage() {
                 <div className="lg:col-span-2">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
-                      <h2 className="text-2xl font-bold text-gray-900 mb-1">
+                      <h2 className="text-2xl font-bold text-neutral-900 mb-1">
                         {result.home.name}
                       </h2>
                       
                       {result.home.address && (
-                        <p className="text-sm text-gray-600 mb-2">
+                        <p className="text-sm text-neutral-600 mb-2">
                           📍 {result.home.address.city}, {result.home.address.state} {result.home.address.zipCode}
                         </p>
                       )}
@@ -264,7 +264,7 @@ export default function ResultsPage() {
                         {result.home.careLevel.map((level) => (
                           <span
                             key={level}
-                            className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded"
+                            className="px-2 py-1 text-xs font-medium bg-primary-100 text-primary-800 rounded"
                           >
                             {level.replace(/_/g, ' ')}
                           </span>
@@ -275,19 +275,19 @@ export default function ResultsPage() {
                     </div>
                     
                     <div className="text-right">
-                      <p className="text-sm text-gray-600 mb-1">Monthly Cost</p>
-                      <p className="text-xl font-bold text-gray-900">
+                      <p className="text-sm text-neutral-600 mb-1">Monthly Cost</p>
+                      <p className="text-xl font-bold text-neutral-900">
                         ${result.home.priceMin} - ${result.home.priceMax}
                       </p>
                     </div>
                   </div>
                   
                   {/* AI Explanation */}
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 mb-4">
-                    <h3 className="text-sm font-semibold text-gray-900 mb-2">
+                  <div className="bg-gradient-to-r from-primary-50 to-indigo-50 rounded-lg p-4 mb-4">
+                    <h3 className="text-sm font-semibold text-neutral-900 mb-2">
                       💡 Why This Match
                     </h3>
-                    <p className="text-sm text-gray-700 leading-relaxed">
+                    <p className="text-sm text-neutral-700 leading-relaxed">
                       {result.explanation}
                     </p>
                   </div>
@@ -305,25 +305,25 @@ export default function ResultsPage() {
                         <div className={`text-lg font-bold ${getScoreColor(factor.score)}`}>
                           {factor.score.toFixed(0)}
                         </div>
-                        <div className="text-xs text-gray-600">{factor.label}</div>
+                        <div className="text-xs text-neutral-600">{factor.label}</div>
                       </div>
                     ))}
                   </div>
                   
                   {/* Amenities */}
                   <div className="mb-4">
-                    <h4 className="text-sm font-semibold text-gray-900 mb-2">Amenities</h4>
+                    <h4 className="text-sm font-semibold text-neutral-900 mb-2">Amenities</h4>
                     <div className="flex flex-wrap gap-2">
                       {result.home.amenities.slice(0, 6).map((amenity, idx) => (
                         <span
                           key={idx}
-                          className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded"
+                          className="px-2 py-1 text-xs bg-neutral-100 text-neutral-700 rounded"
                         >
                           {amenity}
                         </span>
                       ))}
                       {result.home.amenities.length > 6 && (
-                        <span className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
+                        <span className="px-2 py-1 text-xs bg-neutral-100 text-neutral-700 rounded">
                           +{result.home.amenities.length - 6} more
                         </span>
                       )}
@@ -335,7 +335,7 @@ export default function ResultsPage() {
                     <div className="flex gap-3">
                       <Link
                         href={`/homes/${result.home.id}`}
-                        className="flex-1 px-4 py-2 bg-blue-600 text-white text-center rounded-md hover:bg-blue-700 font-medium"
+                        className="flex-1 px-4 py-2 bg-primary-600 text-white text-center rounded-md hover:bg-primary-700 font-medium"
                       >
                         View Full Profile
                       </Link>
@@ -345,7 +345,7 @@ export default function ResultsPage() {
                           setSelectedHomeForTour({ id: result.home.id, name: result.home.name });
                           setTourModalOpen(true);
                         }}
-                        className="flex-1 px-4 py-2 border-2 border-blue-600 text-blue-600 text-center rounded-md hover:bg-blue-50 font-medium"
+                        className="flex-1 px-4 py-2 border-2 border-primary-600 text-primary-600 text-center rounded-md hover:bg-primary-50 font-medium"
                       >
                         Schedule Tour
                       </button>
@@ -353,7 +353,7 @@ export default function ResultsPage() {
                     
                     {/* Feedback Buttons */}
                     {feedback[result.home.id] ? (
-                      <div className="text-center py-2 bg-green-50 text-green-700 rounded-md font-medium">
+                      <div className="text-center py-2 bg-success-50 text-success-700 rounded-md font-medium">
                         ✓ {feedback[result.home.id] === 'THUMBS_UP' ? 'Liked' : 
                            feedback[result.home.id] === 'THUMBS_DOWN' ? 'Not interested' : 
                            'Placement confirmed!'}
@@ -362,14 +362,14 @@ export default function ResultsPage() {
                       <div className="flex gap-2">
                         <button
                           onClick={() => submitFeedback(result.home.id, 'THUMBS_UP')}
-                          className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-green-50 hover:border-green-500 hover:text-green-700"
+                          className="flex-1 px-4 py-2 border border-neutral-300 text-neutral-700 rounded-md hover:bg-success-50 hover:border-success-500 hover:text-success-700"
                         >
                           👍 Like
                         </button>
                         
                         <button
                           onClick={() => submitFeedback(result.home.id, 'THUMBS_DOWN')}
-                          className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-red-50 hover:border-red-500 hover:text-red-700"
+                          className="flex-1 px-4 py-2 border border-neutral-300 text-neutral-700 rounded-md hover:bg-error-50 hover:border-error-500 hover:text-error-700"
                         >
                           👎 Not Interested
                         </button>
@@ -380,7 +380,7 @@ export default function ResultsPage() {
                               submitFeedback(result.home.id, 'PLACEMENT_CONFIRMED');
                             }
                           }}
-                          className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium"
+                          className="flex-1 px-4 py-2 bg-success-600 text-white rounded-md hover:bg-success-700 font-medium"
                         >
                           ✓ Chose This Home
                         </button>
@@ -395,12 +395,12 @@ export default function ResultsPage() {
         
         {/* Footer */}
         <div className="mt-8 text-center">
-          <p className="text-gray-600 mb-4">
+          <p className="text-neutral-600 mb-4">
             Not seeing what you're looking for?
           </p>
           <button
             onClick={() => router.push('/dashboard/find-care')}
-            className="px-6 py-3 bg-white text-blue-600 border-2 border-blue-600 rounded-md hover:bg-blue-50 font-medium"
+            className="px-6 py-3 bg-white text-primary-600 border-2 border-primary-600 rounded-md hover:bg-primary-50 font-medium"
           >
             Refine Search Criteria
           </button>

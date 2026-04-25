@@ -55,7 +55,7 @@ export function DocumentList({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        <Loader2 className="h-8 w-8 animate-spin text-neutral-400" />
       </div>
     );
   }
@@ -64,7 +64,7 @@ export function DocumentList({
     <div className="space-y-4">
       {/* Filter */}
       <div className="flex items-center gap-4">
-        <label className="text-sm font-medium text-gray-700">Filter by type:</label>
+        <label className="text-sm font-medium text-neutral-700">Filter by type:</label>
         <Select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="w-48">
           <SelectItem value="all">All Documents</SelectItem>
           {Object.entries(DOCUMENT_TYPE_LABELS).map(([value, label]) => (
@@ -73,7 +73,7 @@ export function DocumentList({
             </SelectItem>
           ))}
         </Select>
-        <span className="text-sm text-gray-500">
+        <span className="text-sm text-neutral-500">
           {documents.length} document{documents.length !== 1 ? 's' : ''}
         </span>
       </div>
@@ -81,11 +81,11 @@ export function DocumentList({
       {/* Documents Grid */}
       {documents.length === 0 ? (
         <div className="text-center py-12">
-          <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <FileText className="mx-auto h-12 w-12 text-neutral-400 mb-4" />
+          <h3 className="text-lg font-medium text-neutral-900 mb-2">
             No documents found
           </h3>
-          <p className="text-gray-500">
+          <p className="text-neutral-500">
             Upload documents to get started
           </p>
         </div>

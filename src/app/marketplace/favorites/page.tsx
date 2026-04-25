@@ -72,19 +72,19 @@ export default function FavoritesPage() {
         </div>
 
         {!session?.user ? (
-          <div className="rounded-md border bg-white p-6 text-center text-gray-700">
+          <div className="rounded-md border bg-white p-6 text-center text-neutral-700">
             Please sign in to view your favorites.
           </div>
         ) : session.user.role !== 'CAREGIVER' ? (
-          <div className="rounded-md border bg-white p-6 text-center text-gray-700">
+          <div className="rounded-md border bg-white p-6 text-center text-neutral-700">
             Favorites are available for caregiver accounts.
           </div>
         ) : loading ? (
-          <div className="py-16 text-center text-gray-500">Loading favorites…</div>
+          <div className="py-16 text-center text-neutral-500">Loading favorites…</div>
         ) : items.length === 0 ? (
           <div className="py-16 text-center">
-            <div className="text-lg font-medium text-gray-900 mb-1">No favorites yet</div>
-            <div className="text-sm text-gray-600">Tap the heart on job listings to save them here.</div>
+            <div className="text-lg font-medium text-neutral-900 mb-1">No favorites yet</div>
+            <div className="text-sm text-neutral-600">Tap the heart on job listings to save them here.</div>
           </div>
         ) : (
           <>
@@ -102,13 +102,13 @@ export default function FavoritesPage() {
                     </svg>
                   </button>
                   {listing.status && (
-                    <span className={`absolute right-3 top-3 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${listing.status === 'OPEN' ? 'bg-green-100 text-green-800' : listing.status === 'HIRED' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-700'}`}>
+                    <span className={`absolute right-3 top-3 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${listing.status === 'OPEN' ? 'bg-success-100 text-success-800' : listing.status === 'HIRED' ? 'bg-primary-100 text-primary-800' : 'bg-neutral-100 text-neutral-700'}`}>
                       {listing.status}
                     </span>
                   )}
                   <Link href={`/marketplace/listings/${listing.id}`} className="block">
                     <div className="flex items-start mb-2">
-                      <div className="h-12 w-12 rounded-md overflow-hidden bg-gray-100 flex-shrink-0 mr-3">
+                      <div className="h-12 w-12 rounded-md overflow-hidden bg-neutral-100 flex-shrink-0 mr-3">
                         <Image
                           src={`https://ui-avatars.com/api/?name=${encodeURIComponent(listing.title)}&background=random&size=128`}
                           alt={listing.title}
@@ -121,16 +121,16 @@ export default function FavoritesPage() {
                         />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-gray-900">{listing.title}</h3>
-                        <div className="text-sm text-gray-600">{[listing.city, listing.state].filter(Boolean).join(', ') || 'Location'}</div>
+                        <h3 className="font-semibold text-neutral-900">{listing.title}</h3>
+                        <div className="text-sm text-neutral-600">{[listing.city, listing.state].filter(Boolean).join(', ') || 'Location'}</div>
                       </div>
                     </div>
                     {(listing.hourlyRateMin || listing.hourlyRateMax) && (
-                      <div className="text-sm text-gray-800 mb-2">
+                      <div className="text-sm text-neutral-800 mb-2">
                         {listing.hourlyRateMin && listing.hourlyRateMax ? `$${listing.hourlyRateMin} - $${listing.hourlyRateMax}/hr` : listing.hourlyRateMin ? `From $${listing.hourlyRateMin}/hr` : `Up to $${listing.hourlyRateMax}/hr`}
                       </div>
                     )}
-                    <p className="text-sm text-gray-700 line-clamp-2">{listing.description}</p>
+                    <p className="text-sm text-neutral-700 line-clamp-2">{listing.description}</p>
                   </Link>
                 </div>
               ))}
@@ -145,7 +145,7 @@ export default function FavoritesPage() {
                 >
                   Previous
                 </button>
-                <div className="text-sm text-gray-600">Page {page} of {totalPages}</div>
+                <div className="text-sm text-neutral-600">Page {page} of {totalPages}</div>
                 <button
                   disabled={page >= totalPages}
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}

@@ -35,7 +35,7 @@ export function DocumentsTab({ inquiryId }: DocumentsTabProps) {
 
       {/* Upload Section */}
       {showUpload && (
-        <div className="border rounded-lg p-4 bg-gray-50">
+        <div className="border rounded-lg p-4 bg-neutral-50">
           <DocumentUpload
             inquiryId={inquiryId}
             onUploadComplete={handleUploadComplete}

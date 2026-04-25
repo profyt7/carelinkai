@@ -113,10 +113,10 @@ export default function VerifyEmailPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-neutral-50">
       {/* Left side - Image/Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-blue-600 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-blue-700 opacity-90"></div>
+      <div className="hidden lg:flex lg:w-1/2 bg-primary-600 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-500 to-primary-700 opacity-90"></div>
         <div className="absolute inset-0 flex flex-col justify-center items-center p-12 z-10">
           <div className="mb-8">
             <Image 
@@ -129,13 +129,13 @@ export default function VerifyEmailPage() {
             <h1 className="text-4xl font-bold text-white mb-6">
               Email Verification
             </h1>
-            <p className="text-xl text-blue-100 max-w-md">
+            <p className="text-xl text-primary-100 max-w-md">
               Thank you for verifying your email address. This helps us ensure the security of your account.
             </p>
           </div>
           <div className="mt-12 bg-white/10 p-6 rounded-lg backdrop-blur-sm">
             <h3 className="text-white text-lg font-medium mb-2">Why verify your email?</h3>
-            <ul className="text-blue-100 space-y-2">
+            <ul className="text-primary-100 space-y-2">
               <li className="flex items-center">
                 <span className="mr-2">✓</span> Confirm your account ownership
               </li>
@@ -170,38 +170,38 @@ export default function VerifyEmailPage() {
             {/* Token verification section */}
             {token && (
               <div>
-                <h2 className="text-2xl font-bold text-gray-800 mb-6">
+                <h2 className="text-2xl font-bold text-neutral-800 mb-6">
                   Email Verification
                 </h2>
                 
                 {isVerifying ? (
                   <div className="text-center py-8">
-                    <FiLoader className="animate-spin text-blue-500 text-4xl mx-auto mb-4" />
-                    <p className="text-gray-600">Verifying your email...</p>
+                    <FiLoader className="animate-spin text-primary-500 text-4xl mx-auto mb-4" />
+                    <p className="text-neutral-600">Verifying your email...</p>
                   </div>
                 ) : verificationStatus === "success" ? (
                   <div className="text-center py-6">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-4">
-                      <FiCheckCircle className="text-green-500 text-3xl" />
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-success-100 mb-4">
+                      <FiCheckCircle className="text-success-500 text-3xl" />
                     </div>
-                    <h3 className="text-xl font-medium text-gray-800 mb-2">Verification Successful!</h3>
-                    <p className="text-gray-600 mb-4">{message}</p>
-                    <p className="text-sm text-gray-500">Redirecting to login page in 5 seconds...</p>
+                    <h3 className="text-xl font-medium text-neutral-800 mb-2">Verification Successful!</h3>
+                    <p className="text-neutral-600 mb-4">{message}</p>
+                    <p className="text-sm text-neutral-500">Redirecting to login page in 5 seconds...</p>
                     <Link 
                       href="/auth/login?verified=true" 
-                      className="mt-4 inline-block text-blue-600 hover:text-blue-800 font-medium"
+                      className="mt-4 inline-block text-primary-600 hover:text-primary-800 font-medium"
                     >
                       Go to Login
                     </Link>
                   </div>
                 ) : verificationStatus === "error" ? (
                   <div className="text-center py-6">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mb-4">
-                      <FiAlertCircle className="text-red-500 text-3xl" />
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-error-100 mb-4">
+                      <FiAlertCircle className="text-error-500 text-3xl" />
                     </div>
-                    <h3 className="text-xl font-medium text-gray-800 mb-2">Verification Failed</h3>
-                    <p className="text-gray-600 mb-6">{message}</p>
-                    <p className="text-gray-600 mb-4">
+                    <h3 className="text-xl font-medium text-neutral-800 mb-2">Verification Failed</h3>
+                    <p className="text-neutral-600 mb-6">{message}</p>
+                    <p className="text-neutral-600 mb-4">
                       Please try again or request a new verification email below.
                     </p>
                   </div>
@@ -211,27 +211,27 @@ export default function VerifyEmailPage() {
 
             {/* Resend verification section */}
             {(!token || verificationStatus === "error") && (
-              <div className={token ? "mt-8 pt-8 border-t border-gray-200" : ""}>
-                <h2 className="text-2xl font-bold text-gray-800 mb-2">
+              <div className={token ? "mt-8 pt-8 border-t border-neutral-200" : ""}>
+                <h2 className="text-2xl font-bold text-neutral-800 mb-2">
                   {!token ? "Email Verification" : "Resend Verification Email"}
                 </h2>
-                <p className="text-gray-600 mb-6">
+                <p className="text-neutral-600 mb-6">
                   {!token 
                     ? "Enter your email address to verify your account or request a new verification email."
                     : "Request a new verification email by entering your email address below."}
                 </p>
 
                 {resendStatus === "success" && (
-                  <div className="mb-6 p-3 bg-green-50 border border-green-200 rounded-md flex items-start">
-                    <FiCheckCircle className="text-green-500 mt-0.5 mr-2 flex-shrink-0" />
-                    <p className="text-green-700 text-sm">{message}</p>
+                  <div className="mb-6 p-3 bg-success-50 border border-success-200 rounded-md flex items-start">
+                    <FiCheckCircle className="text-success-500 mt-0.5 mr-2 flex-shrink-0" />
+                    <p className="text-success-700 text-sm">{message}</p>
                   </div>
                 )}
 
                 {resendStatus === "error" && (
-                  <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-md flex items-start">
-                    <FiAlertCircle className="text-red-500 mt-0.5 mr-2 flex-shrink-0" />
-                    <p className="text-red-700 text-sm">{message}</p>
+                  <div className="mb-6 p-3 bg-error-50 border border-error-200 rounded-md flex items-start">
+                    <FiAlertCircle className="text-error-500 mt-0.5 mr-2 flex-shrink-0" />
+                    <p className="text-error-700 text-sm">{message}</p>
                   </div>
                 )}
 
@@ -239,13 +239,13 @@ export default function VerifyEmailPage() {
                   <div className="space-y-2">
                     <label 
                       htmlFor="email" 
-                      className="block text-sm font-medium text-gray-700"
+                      className="block text-sm font-medium text-neutral-700"
                     >
                       Email address
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <FiMail className="text-gray-400" />
+                        <FiMail className="text-neutral-400" />
                       </div>
                       <input
                         id="email"
@@ -254,7 +254,7 @@ export default function VerifyEmailPage() {
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="you@example.com"
                         required
-                        className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                        className="block w-full pl-10 pr-3 py-2.5 border border-neutral-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
                       />
                     </div>
                   </div>
@@ -263,7 +263,7 @@ export default function VerifyEmailPage() {
                     <button
                       type="submit"
                       disabled={isResending || countdown > 0}
-                      className={`w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                      className={`w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 ${
                         (isResending || countdown > 0) ? "opacity-75 cursor-not-allowed" : ""
                       }`}
                     >
@@ -282,11 +282,11 @@ export default function VerifyEmailPage() {
                 </form>
 
                 <div className="mt-8 text-center">
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-neutral-600">
                     Already verified? {" "}
                     <Link 
                       href="/auth/login" 
-                      className="font-medium text-blue-600 hover:text-blue-500"
+                      className="font-medium text-primary-600 hover:text-primary-500"
                     >
                       Sign in
                     </Link>

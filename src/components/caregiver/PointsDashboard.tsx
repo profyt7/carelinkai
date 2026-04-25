@@ -20,7 +20,7 @@ interface Summary {
 const TIER_CONFIG = {
   BRONZE:   { color: 'text-amber-700',   bg: 'bg-amber-100',   bar: 'bg-amber-500',   next: 100,  label: 'Bronze',   emoji: '🥉' },
   SILVER:   { color: 'text-slate-600',   bg: 'bg-slate-100',   bar: 'bg-slate-400',   next: 300,  label: 'Silver',   emoji: '🥈' },
-  GOLD:     { color: 'text-yellow-600',  bg: 'bg-yellow-50',   bar: 'bg-yellow-500',  next: 700,  label: 'Gold',     emoji: '🥇' },
+  GOLD:     { color: 'text-warning-600',  bg: 'bg-warning-50',   bar: 'bg-warning-500',  next: 700,  label: 'Gold',     emoji: '🥇' },
   PLATINUM: { color: 'text-indigo-600',  bg: 'bg-indigo-50',   bar: 'bg-indigo-500',  next: null, label: 'Platinum', emoji: '💎' },
 };
 
@@ -99,7 +99,7 @@ export default function PointsDashboard() {
           ].map(([action, pts]) => (
             <div key={action} className="flex items-center justify-between bg-neutral-50 rounded-lg px-3 py-2">
               <span className="text-neutral-600">{action}</span>
-              <span className="font-semibold text-green-600">{pts}</span>
+              <span className="font-semibold text-success-600">{pts}</span>
             </div>
           ))}
         </div>
@@ -118,7 +118,7 @@ export default function PointsDashboard() {
                     {new Date(t.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </p>
                 </div>
-                <span className={`text-sm font-semibold ${t.points >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                <span className={`text-sm font-semibold ${t.points >= 0 ? 'text-success-600' : 'text-error-500'}`}>
                   {t.points >= 0 ? '+' : ''}{t.points}
                 </span>
               </div>

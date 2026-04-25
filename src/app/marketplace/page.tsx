@@ -1210,16 +1210,16 @@ export default function MarketplacePage() {
         <div className="flex md:space-x-6">
           {/* Sidebar (desktop) */}
           <div className="hidden md:block md:w-72 md:shrink-0">
-            <div className="rounded-md border border-gray-200 bg-white p-4 space-y-3">
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search" className="w-full px-3 py-2 border border-gray-300 rounded-md" />
-              <input value={city} onChange={(e) => setCity(e.target.value)} placeholder="City" className="w-full px-3 py-2 border border-gray-300 rounded-md" />
-              <input value={state} onChange={(e) => setState(e.target.value)} placeholder="State" className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+            <div className="rounded-md border border-neutral-200 bg-white p-4 space-y-3">
+              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search" className="w-full px-3 py-2 border border-neutral-300 rounded-md" />
+              <input value={city} onChange={(e) => setCity(e.target.value)} placeholder="City" className="w-full px-3 py-2 border border-neutral-300 rounded-md" />
+              <input value={state} onChange={(e) => setState(e.target.value)} placeholder="State" className="w-full px-3 py-2 border border-neutral-300 rounded-md" />
               <div className="space-y-3">
                 {activeTab === "caregivers" && (
                   <>
                     <div className="mb-3">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Sort by</label>
-                      <select value={cgSort} onChange={(e) => { setCgSort(e.target.value as any); setCgPage(1); }} className="w-full px-3 py-2 border border-gray-300 rounded-md">
+                      <label className="block text-sm font-medium text-neutral-700 mb-1">Sort by</label>
+                      <select value={cgSort} onChange={(e) => { setCgSort(e.target.value as any); setCgPage(1); }} className="w-full px-3 py-2 border border-neutral-300 rounded-md">
                         <option value="recency">Most recent</option>
                         <option value="rateAsc">Rate: Low to High</option>
                         <option value="rateDesc">Rate: High to Low</option>
@@ -1238,7 +1238,7 @@ export default function MarketplacePage() {
                       </label>
                     </div>
                     <div className="mb-3">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Radius (miles)</label>
+                      <label className="block text-sm font-medium text-neutral-700 mb-1">Radius (miles)</label>
                       <div className="flex gap-2">
                         <input
                           type="number"
@@ -1247,11 +1247,11 @@ export default function MarketplacePage() {
                           value={cgRadius}
                           onChange={(e) => { setCgRadius(e.target.value); setCgPage(1); }}
                           placeholder="e.g. 10"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                          className="w-full px-3 py-2 border border-neutral-300 rounded-md"
                         />
                         <button
                           type="button"
-                          className="shrink-0 rounded-md border px-3 py-2 text-sm hover:bg-gray-50"
+                          className="shrink-0 rounded-md border px-3 py-2 text-sm hover:bg-neutral-50"
                           onClick={() => {
                             if (navigator?.geolocation) {
                               navigator.geolocation.getCurrentPosition(
@@ -1268,65 +1268,65 @@ export default function MarketplacePage() {
                       </div>
                     </div>
                     <div className="mb-3">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Minimum Hourly Rate ($)</label>
+                      <label className="block text-sm font-medium text-neutral-700 mb-1">Minimum Hourly Rate ($)</label>
                       <input 
                         type="number" 
                         value={minRate} 
                         onChange={(e) => setMinRate(e.target.value)} 
                         placeholder="Min Rate" 
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        className="w-full px-3 py-2 border border-neutral-300 rounded-md"
                       />
                     </div>
                     <div className="mb-3">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Maximum Hourly Rate ($)</label>
+                      <label className="block text-sm font-medium text-neutral-700 mb-1">Maximum Hourly Rate ($)</label>
                       <input 
                         type="number" 
                         value={maxRate} 
                         onChange={(e) => setMaxRate(e.target.value)} 
                         placeholder="Max Rate" 
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        className="w-full px-3 py-2 border border-neutral-300 rounded-md"
                       />
                     </div>
                     <div className="mb-3">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Minimum Experience (years)</label>
+                      <label className="block text-sm font-medium text-neutral-700 mb-1">Minimum Experience (years)</label>
                       <input 
                         type="number" 
                         value={minExperience} 
                         onChange={(e) => setMinExperience(e.target.value)} 
                         placeholder="Min Experience" 
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        className="w-full px-3 py-2 border border-neutral-300 rounded-md"
                       />
                     </div>
                     
                     {/* Availability Filters */}
-                    <div className="mt-4 pt-4 border-t border-gray-200">
+                    <div className="mt-4 pt-4 border-t border-neutral-200">
                       <h4 className="font-medium text-sm mb-2">Availability</h4>
                       <div className="mb-3">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Available Date</label>
+                        <label className="block text-sm font-medium text-neutral-700 mb-1">Available Date</label>
                         <input 
                           type="date" 
                           value={availableDate} 
                           onChange={(e) => setAvailableDate(e.target.value)} 
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                          className="w-full px-3 py-2 border border-neutral-300 rounded-md"
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-2 mb-3">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
+                          <label className="block text-sm font-medium text-neutral-700 mb-1">Start Time</label>
                           <input 
                             type="time" 
                             value={availableStartTime} 
                             onChange={(e) => setAvailableStartTime(e.target.value)} 
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                            className="w-full px-3 py-2 border border-neutral-300 rounded-md"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">End Time</label>
+                          <label className="block text-sm font-medium text-neutral-700 mb-1">End Time</label>
                           <input 
                             type="time" 
                             value={availableEndTime} 
                             onChange={(e) => setAvailableEndTime(e.target.value)} 
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                            className="w-full px-3 py-2 border border-neutral-300 rounded-md"
                           />
                         </div>
                       </div>
@@ -1363,8 +1363,8 @@ export default function MarketplacePage() {
                 {activeTab === "jobs" && (
                   <>
                     <div className="mb-3">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Sort by</label>
-                      <select value={jobSort} onChange={(e) => { setJobSort(e.target.value as any); setJobPage(1); }} className="w-full px-3 py-2 border border-gray-300 rounded-md">
+                      <label className="block text-sm font-medium text-neutral-700 mb-1">Sort by</label>
+                      <select value={jobSort} onChange={(e) => { setJobSort(e.target.value as any); setJobPage(1); }} className="w-full px-3 py-2 border border-neutral-300 rounded-md">
                         <option value="recency">Most recent</option>
                         <option value="rateAsc">Rate: Low to High</option>
                         <option value="rateDesc">Rate: High to Low</option>
@@ -1372,17 +1372,17 @@ export default function MarketplacePage() {
                       </select>
                     </div>
                     <div className="mb-3">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">ZIP Code</label>
+                      <label className="block text-sm font-medium text-neutral-700 mb-1">ZIP Code</label>
                       <input 
                         type="text" 
                         value={zip} 
                         onChange={(e) => setZip(e.target.value)} 
                         placeholder="ZIP Code" 
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        className="w-full px-3 py-2 border border-neutral-300 rounded-md"
                       />
                     </div>
                     <div className="mb-3">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Radius (miles)</label>
+                      <label className="block text-sm font-medium text-neutral-700 mb-1">Radius (miles)</label>
                       <div className="flex gap-2">
                         <input
                           type="number"
@@ -1391,11 +1391,11 @@ export default function MarketplacePage() {
                           value={jobRadius}
                           onChange={(e) => { setJobRadius(e.target.value); setJobPage(1); }}
                           placeholder="e.g. 10"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                          className="w-full px-3 py-2 border border-neutral-300 rounded-md"
                         />
                         <button
                           type="button"
-                          className="shrink-0 rounded-md border px-3 py-2 text-sm hover:bg-gray-50"
+                          className="shrink-0 rounded-md border px-3 py-2 text-sm hover:bg-neutral-50"
                           onClick={() => {
                             if (navigator?.geolocation) {
                               navigator.geolocation.getCurrentPosition(
@@ -1501,8 +1501,8 @@ export default function MarketplacePage() {
                 {activeTab === "providers" && (
                   <>
                     <div className="mb-3">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Sort by</label>
-                      <select value={providerSort} onChange={(e) => { setProviderSort(e.target.value as any); setProviderPage(1); }} className="w-full px-3 py-2 border border-gray-300 rounded-md">
+                      <label className="block text-sm font-medium text-neutral-700 mb-1">Sort by</label>
+                      <select value={providerSort} onChange={(e) => { setProviderSort(e.target.value as any); setProviderPage(1); }} className="w-full px-3 py-2 border border-neutral-300 rounded-md">
                         <option value="ratingDesc">Rating: High to Low</option>
                         <option value="rateAsc">Price: Low to High</option>
                         <option value="rateDesc">Price: High to Low</option>
@@ -1510,7 +1510,7 @@ export default function MarketplacePage() {
                       </select>
                     </div>
                     <div className="mb-3">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Radius (miles)</label>
+                      <label className="block text-sm font-medium text-neutral-700 mb-1">Radius (miles)</label>
                       <div className="flex gap-2">
                         <input
                           type="number"
@@ -1519,11 +1519,11 @@ export default function MarketplacePage() {
                           value={prRadius}
                           onChange={(e) => { setPrRadius(e.target.value); setProviderPage(1); }}
                           placeholder="e.g. 10"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                          className="w-full px-3 py-2 border border-neutral-300 rounded-md"
                         />
                         <button
                           type="button"
-                          className="shrink-0 rounded-md border px-3 py-2 text-sm hover:bg-gray-50"
+                          className="shrink-0 rounded-md border px-3 py-2 text-sm hover:bg-neutral-50"
                           onClick={() => {
                             if (navigator?.geolocation) {
                               navigator.geolocation.getCurrentPosition(
@@ -1557,7 +1557,7 @@ export default function MarketplacePage() {
               </div>
               <button 
                 onClick={clearAllFilters} 
-                className="w-full rounded-md bg-gray-100 px-3 py-2 text-sm text-gray-700 hover:bg-gray-200"
+                className="w-full rounded-md bg-neutral-100 px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-200"
               >
                 Clear Filters
               </button>
@@ -1569,14 +1569,14 @@ export default function MarketplacePage() {
             {chips.length > 0 && (
               <div className="mb-4 flex flex-wrap items-center gap-2">
                 {chips.map((c) => (
-                  <button key={c.key} onClick={c.remove} className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-sm bg-white hover:bg-gray-50">
+                  <button key={c.key} onClick={c.remove} className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-sm bg-white hover:bg-neutral-50">
                     <span>{c.label}</span>
-                    <span className="text-gray-500">×</span>
+                    <span className="text-neutral-500">×</span>
                   </button>
                 ))}
                 <button
                   onClick={clearAllFilters}
-                  className="ml-auto inline-flex items-center rounded-md bg-gray-100 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-200"
+                  className="ml-auto inline-flex items-center rounded-md bg-neutral-100 px-3 py-1.5 text-sm text-neutral-700 hover:bg-neutral-200"
                 >
                   Clear all
                 </button>
@@ -1605,7 +1605,7 @@ export default function MarketplacePage() {
                 </button>
                 <button
                   onClick={saveCurrentSearch}
-                  className="inline-flex items-center rounded-md bg-white border px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+                  className="inline-flex items-center rounded-md bg-white border px-3 py-1.5 text-sm text-neutral-700 hover:bg-neutral-50"
                   title="Save this search locally"
                 >
                   Save search
@@ -1613,29 +1613,29 @@ export default function MarketplacePage() {
                 <div className="relative">
                   <button
                     onClick={() => setSavedOpen((v) => !v)}
-                    className="inline-flex items-center rounded-md bg-white border px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+                    className="inline-flex items-center rounded-md bg-white border px-3 py-1.5 text-sm text-neutral-700 hover:bg-neutral-50"
                     title="View saved searches"
                   >
                     Saved ({saved.length})
-                    <svg className="ml-1 h-4 w-4 text-gray-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.25 8.29a.75.75 0 01-.02-1.08z" clipRule="evenodd" /></svg>
+                    <svg className="ml-1 h-4 w-4 text-neutral-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.25 8.29a.75.75 0 01-.02-1.08z" clipRule="evenodd" /></svg>
                   </button>
                   {savedOpen && (
                     <div className="absolute right-0 mt-2 w-72 rounded-md border bg-white shadow-md z-10">
                       <div className="max-h-64 overflow-auto p-2">
                         {saved.length === 0 ? (
-                          <div className="p-3 text-sm text-gray-500">No saved searches yet.</div>
+                          <div className="p-3 text-sm text-neutral-500">No saved searches yet.</div>
                         ) : saved.map((s) => (
-                          <div key={s.id} className="group flex items-center justify-between gap-2 rounded-md px-2 py-1.5 hover:bg-gray-50">
+                          <div key={s.id} className="group flex items-center justify-between gap-2 rounded-md px-2 py-1.5 hover:bg-neutral-50">
                             <button
                               onClick={() => loadSavedSearch(s)}
-                              className="truncate text-left text-sm text-gray-800 hover:underline flex-1"
+                              className="truncate text-left text-sm text-neutral-800 hover:underline flex-1"
                               title={s.name}
                             >
                               {s.name}
                             </button>
                             <button
                               onClick={() => deleteSavedSearch(s.id)}
-                              className="opacity-60 hover:opacity-100 text-gray-500 text-sm"
+                              className="opacity-60 hover:opacity-100 text-neutral-500 text-sm"
                               title="Remove"
                             >
                               ×
@@ -1649,11 +1649,11 @@ export default function MarketplacePage() {
               </div>
             )}
             {/* Mobile filters */}
-            <div className="mb-6 rounded-md border border-gray-200 bg-white p-3 pb-16 md:hidden">
+            <div className="mb-6 rounded-md border border-neutral-200 bg-white p-3 pb-16 md:hidden">
               <div className="grid grid-cols-1 gap-3">
-                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search" className="w-full px-3 py-2 border border-gray-300 rounded-md" />
-                <input value={city} onChange={(e) => setCity(e.target.value)} placeholder="City" className="w-full px-3 py-2 border border-gray-300 rounded-md" />
-                <input value={state} onChange={(e) => setState(e.target.value)} placeholder="State" className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search" className="w-full px-3 py-2 border border-neutral-300 rounded-md" />
+                <input value={city} onChange={(e) => setCity(e.target.value)} placeholder="City" className="w-full px-3 py-2 border border-neutral-300 rounded-md" />
+                <input value={state} onChange={(e) => setState(e.target.value)} placeholder="State" className="w-full px-3 py-2 border border-neutral-300 rounded-md" />
                 
                 {activeTab === "caregivers" && (
                   <>
@@ -1662,21 +1662,21 @@ export default function MarketplacePage() {
                       value={minRate} 
                       onChange={(e) => setMinRate(e.target.value)} 
                       placeholder="Min Rate ($)" 
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="w-full px-3 py-2 border border-neutral-300 rounded-md"
                     />
                     <input 
                       type="number" 
                       value={maxRate} 
                       onChange={(e) => setMaxRate(e.target.value)} 
                       placeholder="Max Rate ($)" 
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="w-full px-3 py-2 border border-neutral-300 rounded-md"
                     />
                     <input 
                       type="number" 
                       value={minExperience} 
                       onChange={(e) => setMinExperience(e.target.value)} 
                       placeholder="Min Experience (years)" 
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="w-full px-3 py-2 border border-neutral-300 rounded-md"
                     />
                     
                     <div className="mt-1">
@@ -1689,15 +1689,15 @@ export default function MarketplacePage() {
                         <span>Shortlist only</span>
                       </label>
                     </div>
-                    <details open={cgSettingOpen} onToggle={handleDetailsToggle('cgSetting', setCgSettingOpen)} className="group rounded-md border border-gray-200 bg-white p-3">
+                    <details open={cgSettingOpen} onToggle={handleDetailsToggle('cgSetting', setCgSettingOpen)} className="group rounded-md border border-neutral-200 bg-white p-3">
                       <summary className="flex items-center justify-between cursor-pointer text-sm font-medium">
                         <span className="flex items-center gap-2">
                           <span>Setting</span>
                           {settings.length > 0 && (
-                            <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700">{settings.length}</span>
+                            <span className="inline-flex items-center rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-700">{settings.length}</span>
                           )}
                         </span>
-                        <svg className="h-4 w-4 text-gray-500 transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <svg className="h-4 w-4 text-neutral-500 transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                           <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.939l3.71-3.71a.75.75 0 111.06 1.061l-4.24 4.24a.75.75 0 01-1.06 0L5.25 8.29a.75.75 0 01-.02-1.06z" clipRule="evenodd" />
                         </svg>
                       </summary>
@@ -1711,15 +1711,15 @@ export default function MarketplacePage() {
                       </div>
                     </details>
                     
-                    <details open={cgCareTypesOpen} onToggle={handleDetailsToggle('cgCareTypes', setCgCareTypesOpen)} className="group rounded-md border border-gray-200 bg-white p-3">
+                    <details open={cgCareTypesOpen} onToggle={handleDetailsToggle('cgCareTypes', setCgCareTypesOpen)} className="group rounded-md border border-neutral-200 bg-white p-3">
                       <summary className="flex items-center justify-between cursor-pointer text-sm font-medium">
                         <span className="flex items-center gap-2">
                           <span>Care Types</span>
                           {careTypes.length > 0 && (
-                            <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700">{careTypes.length}</span>
+                            <span className="inline-flex items-center rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-700">{careTypes.length}</span>
                           )}
                         </span>
-                        <svg className="h-4 w-4 text-gray-500 transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <svg className="h-4 w-4 text-neutral-500 transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                           <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.939l3.71-3.71a.75.75 0 111.06 1.061l-4.24 4.24a.75.75 0 01-1.06 0L5.25 8.29a.75.75 0 01-.02-1.06z" clipRule="evenodd" />
                         </svg>
                       </summary>
@@ -1733,15 +1733,15 @@ export default function MarketplacePage() {
                       </div>
                     </details>
                     
-                    <details open={cgSpecialtiesOpen} onToggle={handleDetailsToggle('cgSpecialties', setCgSpecialtiesOpen)} className="group rounded-md border border-gray-200 bg-white p-3">
+                    <details open={cgSpecialtiesOpen} onToggle={handleDetailsToggle('cgSpecialties', setCgSpecialtiesOpen)} className="group rounded-md border border-neutral-200 bg-white p-3">
                       <summary className="flex items-center justify-between cursor-pointer text-sm font-medium">
                         <span className="flex items-center gap-2">
                           <span>Specialties</span>
                           {specialties.length > 0 && (
-                            <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700">{specialties.length}</span>
+                            <span className="inline-flex items-center rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-700">{specialties.length}</span>
                           )}
                         </span>
-                        <svg className="h-4 w-4 text-gray-500 transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <svg className="h-4 w-4 text-neutral-500 transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                           <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.939l3.71-3.71a.75.75 0 111.06 1.061l-4.24 4.24a.75.75 0 01-1.06 0L5.25 8.29a.75.75 0 01-.02-1.06z" clipRule="evenodd" />
                         </svg>
                       </summary>
@@ -1764,20 +1764,20 @@ export default function MarketplacePage() {
                       value={zip} 
                       onChange={(e) => setZip(e.target.value)} 
                       placeholder="ZIP Code" 
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="w-full px-3 py-2 border border-neutral-300 rounded-md"
                     />
                     <div>
                       <h4 className="font-medium text-sm mb-2">Setting</h4>
                       
-                      <details open={jobSettingOpen} onToggle={handleDetailsToggle('jobSetting', setJobSettingOpen)} className="group rounded-md border border-gray-200 bg-white p-3">
+                      <details open={jobSettingOpen} onToggle={handleDetailsToggle('jobSetting', setJobSettingOpen)} className="group rounded-md border border-neutral-200 bg-white p-3">
                         <summary className="flex items-center justify-between cursor-pointer text-sm font-medium">
                           <span className="flex items-center gap-2">
                             <span>Setting</span>
                             {settings.length > 0 && (
-                              <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700">{settings.length}</span>
+                              <span className="inline-flex items-center rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-700">{settings.length}</span>
                             )}
                           </span>
-                          <svg className="h-4 w-4 text-gray-500 transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                          <svg className="h-4 w-4 text-neutral-500 transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                             <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.939l3.71-3.71a.75.75 0 111.06 1.061l-4.24 4.24a.75.75 0 01-1.06 0L5.25 8.29a.75.75 0 01-.02-1.06z" clipRule="evenodd" />
                           </svg>
                         </summary>
@@ -1870,10 +1870,10 @@ export default function MarketplacePage() {
                 </div>
             {/* Sticky Apply/Clear bar for mobile */}
             <div className="fixed bottom-3 left-3 right-3 z-30 md:hidden">
-              <div className="rounded-md bg-white shadow-lg border border-gray-200 p-2 flex items-center gap-2">
+              <div className="rounded-md bg-white shadow-lg border border-neutral-200 p-2 flex items-center gap-2">
                 <button
                   onClick={clearAllFilters}
-                  className="flex-1 rounded-md bg-gray-100 px-3 py-2 text-sm text-gray-800 hover:bg-gray-200"
+                  className="flex-1 rounded-md bg-neutral-100 px-3 py-2 text-sm text-neutral-800 hover:bg-neutral-200"
                 >
                   Clear
                 </button>
@@ -1901,12 +1901,12 @@ export default function MarketplacePage() {
             {/* Tab bodies */}
             {activeTab === "caregivers" ? (
               caregiversLoading && caregiversToRender.length === 0 ? (
-                <div className="py-20 text-center text-gray-500">Loading caregivers…</div>
+                <div className="py-20 text-center text-neutral-500">Loading caregivers…</div>
               ) : caregiversToRender.length === 0 ? (
                 <div className="py-16 text-center">
-                  <div className="text-lg font-medium text-gray-900 mb-1">No caregivers found</div>
-                  <div className="text-sm text-gray-600 mb-4">Try adjusting your filters or search terms.</div>
-                  <button onClick={clearAllFilters} className="inline-flex items-center rounded-md bg-gray-100 px-3 py-2 text-sm text-gray-800 hover:bg-gray-200">Reset filters</button>
+                  <div className="text-lg font-medium text-neutral-900 mb-1">No caregivers found</div>
+                  <div className="text-sm text-neutral-600 mb-4">Try adjusting your filters or search terms.</div>
+                  <button onClick={clearAllFilters} className="inline-flex items-center rounded-md bg-neutral-100 px-3 py-2 text-sm text-neutral-800 hover:bg-neutral-200">Reset filters</button>
                 </div>
               ) : (
                 <VirtuosoGrid
@@ -1916,7 +1916,7 @@ export default function MarketplacePage() {
                   initialItemCount={20}
                   endReached={() => { if (cgHasMoreRender && !caregiversLoading) setCgPage((p) => p + 1); }}
                   overscan={200}
-                  components={{ List: GridList as any, Item: GridItem as any, Footer: () => (!cgHasMoreRender && caregiversToRender.length > 0 ? <div className="py-6 text-center text-gray-400">End of results</div> : null) as any }}
+                  components={{ List: GridList as any, Item: GridItem as any, Footer: () => (!cgHasMoreRender && caregiversToRender.length > 0 ? <div className="py-6 text-center text-neutral-400">End of results</div> : null) as any }}
                   itemContent={(_, cg) => (cg ? (
                     <div className="relative">
                       {/* Favorite (always visible; server-sync when FAMILY) */}
@@ -1927,7 +1927,7 @@ export default function MarketplacePage() {
                           className="absolute right-3 top-3 z-10 inline-flex items-center justify-center h-8 w-8 rounded-full bg-white/90 border hover:bg-white"
                           title={caregiverFavorites.has(cg.id) ? 'Shortlisted' : 'Shortlist'}
                         >
-                          <svg viewBox="0 0 24 24" className={`h-5 w-5 ${caregiverFavorites.has(cg.id) ? 'text-rose-600' : 'text-gray-400'}`} fill={caregiverFavorites.has(cg.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <svg viewBox="0 0 24 24" className={`h-5 w-5 ${caregiverFavorites.has(cg.id) ? 'text-rose-600' : 'text-neutral-400'}`} fill={caregiverFavorites.has(cg.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" />
                           </svg>
                         </button>
@@ -1938,12 +1938,12 @@ export default function MarketplacePage() {
               )
             ) : activeTab === "jobs" ? (
               listingsLoading && listings.length === 0 ? (
-                <div className="py-20 text-center text-gray-500">Loading jobs…</div>
+                <div className="py-20 text-center text-neutral-500">Loading jobs…</div>
               ) : jobsToRender.length === 0 ? (
                 <div className="py-16 text-center">
-                  <div className="text-lg font-medium text-gray-900 mb-1">No jobs found</div>
-                  <div className="text-sm text-gray-600 mb-4">Try different keywords or clear all filters.</div>
-                  <button onClick={clearAllFilters} className="inline-flex items-center rounded-md bg-gray-100 px-3 py-2 text-sm text-gray-800 hover:bg-gray-200">Reset filters</button>
+                  <div className="text-lg font-medium text-neutral-900 mb-1">No jobs found</div>
+                  <div className="text-sm text-neutral-600 mb-4">Try different keywords or clear all filters.</div>
+                  <button onClick={clearAllFilters} className="inline-flex items-center rounded-md bg-neutral-100 px-3 py-2 text-sm text-neutral-800 hover:bg-neutral-200">Reset filters</button>
                 </div>
               ) : (
                 <>
@@ -1960,17 +1960,17 @@ export default function MarketplacePage() {
                     initialItemCount={Math.min(jobsToRender.length, 20)}
                     endReached={() => { if (jobHasMoreRender && !listingsLoading) setJobPage((p) => p + 1); }}
                     overscan={200}
-                    components={{ List: GridList as any, Item: GridItem as any, Footer: () => (!jobHasMoreRender && jobsToRender.length > 0 ? <div className="py-6 text-center text-gray-400">End of results</div> : null) as any }}
+                    components={{ List: GridList as any, Item: GridItem as any, Footer: () => (!jobHasMoreRender && jobsToRender.length > 0 ? <div className="py-6 text-center text-neutral-400">End of results</div> : null) as any }}
                     itemContent={(_, job) => (
                       <Link href={`/marketplace/listings/${job.id}`} className={`relative block bg-white border rounded-md p-4 transition-shadow ${job.status === 'CLOSED' || job.status === 'HIRED' ? 'opacity-80' : 'hover:shadow-md'}`}>
                         {/* Status badge */}
                         {job.status && (
-                          <span className={`absolute right-3 top-3 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${job.status === 'OPEN' ? 'bg-green-100 text-green-800' : job.status === 'HIRED' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-700'}`}>
+                          <span className={`absolute right-3 top-3 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${job.status === 'OPEN' ? 'bg-success-100 text-success-800' : job.status === 'HIRED' ? 'bg-primary-100 text-primary-800' : 'bg-neutral-100 text-neutral-700'}`}>
                             {job.status}
                           </span>
                         )}
                         <div className="flex items-start mb-2">
-                          <div className="h-12 w-12 rounded-md overflow-hidden bg-gray-100 flex-shrink-0 mr-3">
+                          <div className="h-12 w-12 rounded-md overflow-hidden bg-neutral-100 flex-shrink-0 mr-3">
                             <Image
                               src={`https://ui-avatars.com/api/?name=${encodeURIComponent(job.title)}&background=random&size=128`}
                               alt={job.title}
@@ -1983,28 +1983,28 @@ export default function MarketplacePage() {
                             />
                           </div>
                           <div>
-                            <h3 className="font-semibold text-gray-900">{job.title}</h3>
-                            <div className="text-sm text-gray-600">
+                            <h3 className="font-semibold text-neutral-900">{job.title}</h3>
+                            <div className="text-sm text-neutral-600">
                               {[job.city, job.state].filter(Boolean).join(", ") || "Location"}
                               {typeof job.distanceMiles === 'number' && isFinite(job.distanceMiles) && (
-                                <span className="ml-2 text-gray-500">• {job.distanceMiles.toFixed(1)} mi</span>
+                                <span className="ml-2 text-neutral-500">• {job.distanceMiles.toFixed(1)} mi</span>
                               )}
                             </div>
                           </div>
                         </div>
                         {(job.hourlyRateMin || job.hourlyRateMax) && (
-                          <div className="text-sm text-gray-800 mb-2">
+                          <div className="text-sm text-neutral-800 mb-2">
                             {job.hourlyRateMin && job.hourlyRateMax ? `$${job.hourlyRateMin} - $${job.hourlyRateMax}/hr` : job.hourlyRateMin ? `From $${job.hourlyRateMin}/hr` : `Up to $${job.hourlyRateMax}/hr`}
                           </div>
                         )}
                         {(typeof job.applicationCount === 'number' || typeof job.hireCount === 'number') && (
-                          <div className="mb-2 text-xs text-gray-600">
+                          <div className="mb-2 text-xs text-neutral-600">
                             {typeof job.applicationCount === 'number' && <span>{job.applicationCount} appl</span>}
                             {typeof job.applicationCount === 'number' && typeof job.hireCount === 'number' && <span className="mx-1">•</span>}
                             {typeof job.hireCount === 'number' && <span>{job.hireCount} hires</span>}
                           </div>
                         )}
-                        <p className="text-sm text-gray-700 line-clamp-2">{job.description}</p>
+                        <p className="text-sm text-neutral-700 line-clamp-2">{job.description}</p>
                       </Link>
                     )}
                   />
@@ -2012,12 +2012,12 @@ export default function MarketplacePage() {
               )
             ) : (
               providersLoading && providers.length === 0 ? (
-                <div className="py-20 text-center text-gray-500">Loading providers…</div>
+                <div className="py-20 text-center text-neutral-500">Loading providers…</div>
               ) : providers.length === 0 ? (
                 <div className="py-16 text-center">
-                  <div className="text-lg font-medium text-gray-900 mb-1">No providers found</div>
-                  <div className="text-sm text-gray-600 mb-4">Try broadening your search or clearing filters.</div>
-                  <button onClick={clearAllFilters} className="inline-flex items-center rounded-md bg-gray-100 px-3 py-2 text-sm text-gray-800 hover:bg-gray-200">Reset filters</button>
+                  <div className="text-lg font-medium text-neutral-900 mb-1">No providers found</div>
+                  <div className="text-sm text-neutral-600 mb-4">Try broadening your search or clearing filters.</div>
+                  <button onClick={clearAllFilters} className="inline-flex items-center rounded-md bg-neutral-100 px-3 py-2 text-sm text-neutral-800 hover:bg-neutral-200">Reset filters</button>
                 </div>
               ) : (
                 <VirtuosoGrid
@@ -2027,7 +2027,7 @@ export default function MarketplacePage() {
                   initialItemCount={20}
                   endReached={() => { if (prHasMore && !providersLoading) setProviderPage((p) => p + 1); }}
                   overscan={200}
-                  components={{ List: GridList as any, Item: GridItem as any, Footer: () => (!prHasMore && providers.length > 0 ? <div className="py-6 text-center text-gray-400">End of results</div> : null) as any }}
+                  components={{ List: GridList as any, Item: GridItem as any, Footer: () => (!prHasMore && providers.length > 0 ? <div className="py-6 text-center text-neutral-400">End of results</div> : null) as any }}
                   itemContent={(_, p) => (p ? (
                     <Link href={`/marketplace/providers/${p.id}`} className="relative block bg-white border rounded-md p-4 hover:shadow-md transition-shadow">
                       {/* Favorite (local) */}
@@ -2038,12 +2038,12 @@ export default function MarketplacePage() {
                         className="absolute right-3 bottom-3 z-10 inline-flex items-center justify-center h-8 w-8 rounded-full bg-white/90 border hover:bg-white"
                         title={providerFavorites.has(p.id) ? 'Unfavorite' : 'Favorite'}
                       >
-                        <svg viewBox="0 0 24 24" className={`h-5 w-5 ${providerFavorites.has(p.id) ? 'text-rose-600' : 'text-gray-400'}`} fill={providerFavorites.has(p.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg viewBox="0 0 24 24" className={`h-5 w-5 ${providerFavorites.has(p.id) ? 'text-rose-600' : 'text-neutral-400'}`} fill={providerFavorites.has(p.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" />
                         </svg>
                       </button>
                       <div className="flex items-start mb-2">
-                        <div className="h-12 w-12 rounded-full overflow-hidden bg-gray-100 flex-shrink-0 mr-3">
+                        <div className="h-12 w-12 rounded-full overflow-hidden bg-neutral-100 flex-shrink-0 mr-3">
                           <Image
                             src={`https://ui-avatars.com/api/?name=${encodeURIComponent(p.name)}&background=random&size=128`}
                             alt={p.name}
@@ -2056,11 +2056,11 @@ export default function MarketplacePage() {
                           />
                         </div>
                         <div>
-                          <h3 className="font-semibold text-gray-900">{p.name}</h3>
-                          <div className="text-sm text-gray-600">
+                          <h3 className="font-semibold text-neutral-900">{p.name}</h3>
+                          <div className="text-sm text-neutral-600">
                             {[p.city, p.state].filter(Boolean).join(", ")}
                             {typeof p.distanceMiles === 'number' && isFinite(p.distanceMiles) && (
-                              <span className="ml-2 text-gray-500">• {p.distanceMiles.toFixed(1)} mi</span>
+                              <span className="ml-2 text-neutral-500">• {p.distanceMiles.toFixed(1)} mi</span>
                             )}
                           </div>
                         </div>
@@ -2068,21 +2068,21 @@ export default function MarketplacePage() {
                       <div className="flex items-center text-sm mb-2">
                         <span className="mr-1 flex">
                           {Array.from({ length: 5 }).map((_, idx) => (
-                            <span key={idx} className={idx < Math.round(p.ratingAverage) ? "text-yellow-400" : "text-gray-300"}>★</span>
+                            <span key={idx} className={idx < Math.round(p.ratingAverage) ? "text-warning-400" : "text-neutral-300"}>★</span>
                           ))}
                         </span>
-                        <span className="text-gray-600">{p.ratingAverage.toFixed(1)} ({p.reviewCount})</span>
+                        <span className="text-neutral-600">{p.ratingAverage.toFixed(1)} ({p.reviewCount})</span>
                       </div>
                       <div className="flex flex-wrap gap-2 mb-2">
                         {(p.services || []).slice(0, 4).map((s: string) => (
                           <span key={s} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">{s.replace(/-/g, " ")}</span>
                         ))}
                         {(p.services?.length || 0) > 4 && (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">+{(p.services?.length || 0) - 4} more</span>
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-800">+{(p.services?.length || 0) - 4} more</span>
                         )}
                       </div>
                       {(p.hourlyRate !== null || p.perMileRate !== null) && (
-                        <div className="text-sm text-gray-800 mb-2">{p.hourlyRate !== null ? `$${p.hourlyRate}/hr` : `$${p.perMileRate?.toFixed(2)}/mi`}</div>
+                        <div className="text-sm text-neutral-800 mb-2">{p.hourlyRate !== null ? `$${p.hourlyRate}/hr` : `$${p.perMileRate?.toFixed(2)}/mi`}</div>
                       )}
                     </Link>
                   ) : null)}

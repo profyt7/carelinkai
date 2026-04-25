@@ -199,7 +199,7 @@ export function ReportGenerator({
               id="type"
               value={type}
               onChange={(e) => setType(e.target.value)}
-              className="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
+              className="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-600"
             >
               {REPORT_TEMPLATES?.map?.((template) => (
                 <option key={template?.value} value={template?.value}>
@@ -227,7 +227,7 @@ export function ReportGenerator({
               id="dateRange"
               value={dateRange}
               onChange={(e) => setDateRange(e.target.value)}
-              className="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
+              className="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-600"
             >
               {DATE_RANGES?.map?.((range) => (
                 <option key={range?.value} value={range?.value}>
@@ -271,7 +271,7 @@ export function ReportGenerator({
                 onChange={(e) =>
                   setSelectedHomes(e.target.value === 'all' ? [] : [e.target.value])
                 }
-                className="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
+                className="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-600"
               >
                 <option value="all">All Facilities</option>
                 {homes?.map?.((home) => (
@@ -290,7 +290,7 @@ export function ReportGenerator({
               id="format"
               value={format}
               onChange={(e) => setFormat(e.target.value)}
-              className="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
+              className="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-600"
             >
               <option value="PDF">PDF (Portable Document Format)</option>
               <option value="EXCEL">Excel (Spreadsheet)</option>

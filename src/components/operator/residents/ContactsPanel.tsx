@@ -94,7 +94,7 @@ export function ContactsPanel({ residentId }: { residentId: string }) {
           <button
             type="button"
             onClick={addEmpty}
-            className="rounded-md bg-gray-100 px-3 py-1.5 text-sm text-gray-800 hover:bg-gray-200"
+            className="rounded-md bg-neutral-100 px-3 py-1.5 text-sm text-neutral-800 hover:bg-neutral-200"
           >
             Add contact
           </button>
@@ -170,7 +170,7 @@ export function ContactsPanel({ residentId }: { residentId: string }) {
               <button
                 type="button"
                 onClick={() => removeAt(idx)}
-                className="rounded-md border px-3 py-1.5 text-sm hover:bg-gray-50"
+                className="rounded-md border px-3 py-1.5 text-sm hover:bg-neutral-50"
               >
                 Remove
               </button>

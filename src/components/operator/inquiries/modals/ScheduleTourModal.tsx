@@ -60,7 +60,7 @@ export function ScheduleTourModal({ isOpen, onClose, inquiryId, inquiryData }: S
           <h2 className="text-xl font-semibold">Schedule Tour</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-neutral-400 hover:text-neutral-600"
             disabled={isLoading}
           >
             <FiX className="w-5 h-5" />
@@ -70,14 +70,14 @@ export function ScheduleTourModal({ isOpen, onClose, inquiryId, inquiryData }: S
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg">
+            <div className="bg-error-50 border border-error-200 text-error-600 px-4 py-3 rounded-lg">
               {error}
             </div>
           )}
 
           {/* Tour Date */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-neutral-700 mb-1">
               <FiCalendar className="inline w-4 h-4 mr-1" />
               Tour Date *
             </label>
@@ -86,14 +86,14 @@ export function ScheduleTourModal({ isOpen, onClose, inquiryId, inquiryData }: S
               required
               value={formData.tourDate}
               onChange={(e) => setFormData({ ...formData, tourDate: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               min={format(new Date(), 'yyyy-MM-dd')}
             />
           </div>
 
           {/* Tour Time */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-neutral-700 mb-1">
               <FiClock className="inline w-4 h-4 mr-1" />
               Tour Time *
             </label>
@@ -102,13 +102,13 @@ export function ScheduleTourModal({ isOpen, onClose, inquiryId, inquiryData }: S
               required
               value={formData.tourTime}
               onChange={(e) => setFormData({ ...formData, tourTime: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
 
           {/* Tour Guide */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-neutral-700 mb-1">
               <FiUser className="inline w-4 h-4 mr-1" />
               Tour Guide
             </label>
@@ -117,13 +117,13 @@ export function ScheduleTourModal({ isOpen, onClose, inquiryId, inquiryData }: S
               value={formData.tourGuide}
               onChange={(e) => setFormData({ ...formData, tourGuide: e.target.value })}
               placeholder="Staff member name"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
 
           {/* Notes */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-neutral-700 mb-1">
               Notes
             </label>
             <textarea
@@ -131,7 +131,7 @@ export function ScheduleTourModal({ isOpen, onClose, inquiryId, inquiryData }: S
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               placeholder="Additional notes or instructions"
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
 
@@ -141,14 +141,14 @@ export function ScheduleTourModal({ isOpen, onClose, inquiryId, inquiryData }: S
               type="button"
               onClick={onClose}
               disabled={isLoading}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+              className="flex-1 px-4 py-2 border border-neutral-300 rounded-lg hover:bg-neutral-50 disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
             >
               {isLoading ? 'Scheduling...' : 'Schedule Tour'}
             </button>

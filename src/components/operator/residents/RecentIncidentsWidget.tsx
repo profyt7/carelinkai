@@ -22,13 +22,13 @@ export function RecentIncidentsWidget({ incidents }: RecentIncidentsWidgetProps)
     .slice(0, 5);
 
   const severityConfig: Record<string, { color: string; bg: string; icon: React.ReactElement }> = {
-    HIGH: { color: 'text-red-600', bg: 'bg-red-50', icon: <FiAlertTriangle className="w-4 h-4" /> },
-    MEDIUM: { color: 'text-orange-600', bg: 'bg-orange-50', icon: <FiAlertCircle className="w-4 h-4" /> },
-    LOW: { color: 'text-blue-600', bg: 'bg-blue-50', icon: <FiInfo className="w-4 h-4" /> },
+    HIGH: { color: 'text-error-600', bg: 'bg-error-50', icon: <FiAlertTriangle className="w-4 h-4" /> },
+    MEDIUM: { color: 'text-warning-600', bg: 'bg-warning-50', icon: <FiAlertCircle className="w-4 h-4" /> },
+    LOW: { color: 'text-primary-600', bg: 'bg-primary-50', icon: <FiInfo className="w-4 h-4" /> },
   };
   
   // Default config for unknown/undefined severity
-  const defaultConfig = { color: 'text-gray-600', bg: 'bg-gray-50', icon: <FiInfo className="w-4 h-4" /> };
+  const defaultConfig = { color: 'text-neutral-600', bg: 'bg-neutral-50', icon: <FiInfo className="w-4 h-4" /> };
 
   const formatDate = (date: Date | string) => {
     try {
@@ -40,15 +40,15 @@ export function RecentIncidentsWidget({ incidents }: RecentIncidentsWidgetProps)
 
   if (recentIncidents.length === 0) {
     return (
-      <div className="bg-white p-6 rounded-lg border border-gray-200">
+      <div className="bg-white p-6 rounded-lg border border-neutral-200">
         <h3 className="text-lg font-semibold mb-4">Recent Incidents</h3>
-        <p className="text-gray-600 text-sm">No incidents reported</p>
+        <p className="text-neutral-600 text-sm">No incidents reported</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white p-6 rounded-lg border border-gray-200">
+    <div className="bg-white p-6 rounded-lg border border-neutral-200">
       <h3 className="text-lg font-semibold mb-4">Recent Incidents</h3>
       <div className="space-y-3">
         {recentIncidents.map((incident) => {
@@ -61,9 +61,9 @@ export function RecentIncidentsWidget({ incidents }: RecentIncidentsWidgetProps)
               <div className={config.color}>{config.icon}</div>
               <div className="flex-1">
                 <div className="font-medium text-sm">{incident.type?.replace(/_/g, ' ') || 'Unknown'}</div>
-                <div className="text-xs text-gray-600 mt-1">{formatDate(incident.date)}</div>
+                <div className="text-xs text-neutral-600 mt-1">{formatDate(incident.date)}</div>
                 {incident.description && (
-                  <div className="text-xs text-gray-500 mt-1 line-clamp-2">{incident.description}</div>
+                  <div className="text-xs text-neutral-500 mt-1 line-clamp-2">{incident.description}</div>
                 )}
               </div>
               <div className={`text-xs font-medium ${config.color}`}>

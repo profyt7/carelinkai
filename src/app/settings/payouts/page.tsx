@@ -323,8 +323,8 @@ export default function PayoutsSettings() {
         <div
           className={`mb-6 rounded-md p-4 ${
             message.type === "error"
-              ? "bg-red-50 text-red-800"
-              : "bg-green-50 text-green-800"
+              ? "bg-error-50 text-error-800"
+              : "bg-success-50 text-success-800"
           }`}
         >
           <div className="flex items-center">
@@ -355,9 +355,9 @@ export default function PayoutsSettings() {
                 <div className="rounded-md border border-neutral-200 bg-white p-4">
                   <div className="flex items-center">
                     {connectStatus.detailsSubmitted ? (
-                      <FiCheckCircle className="h-5 w-5 text-green-500" />
+                      <FiCheckCircle className="h-5 w-5 text-success-500" />
                     ) : (
-                      <FiXCircle className="h-5 w-5 text-yellow-500" />
+                      <FiXCircle className="h-5 w-5 text-warning-500" />
                     )}
                     <span className="ml-2 text-sm font-medium">Details Submitted</span>
                   </div>
@@ -366,9 +366,9 @@ export default function PayoutsSettings() {
                 <div className="rounded-md border border-neutral-200 bg-white p-4">
                   <div className="flex items-center">
                     {connectStatus.chargesEnabled ? (
-                      <FiCheckCircle className="h-5 w-5 text-green-500" />
+                      <FiCheckCircle className="h-5 w-5 text-success-500" />
                     ) : (
-                      <FiXCircle className="h-5 w-5 text-yellow-500" />
+                      <FiXCircle className="h-5 w-5 text-warning-500" />
                     )}
                     <span className="ml-2 text-sm font-medium">Charges Enabled</span>
                   </div>
@@ -377,9 +377,9 @@ export default function PayoutsSettings() {
                 <div className="rounded-md border border-neutral-200 bg-white p-4">
                   <div className="flex items-center">
                     {connectStatus.payoutsEnabled ? (
-                      <FiCheckCircle className="h-5 w-5 text-green-500" />
+                      <FiCheckCircle className="h-5 w-5 text-success-500" />
                     ) : (
-                      <FiXCircle className="h-5 w-5 text-yellow-500" />
+                      <FiXCircle className="h-5 w-5 text-warning-500" />
                     )}
                     <span className="ml-2 text-sm font-medium">Payouts Enabled</span>
                   </div>
@@ -473,7 +473,7 @@ export default function PayoutsSettings() {
                       />
                     </div>
                     {errors.amount && (
-                      <p className="mt-1 text-sm text-red-600">{errors.amount}</p>
+                      <p className="mt-1 text-sm text-error-600">{errors.amount}</p>
                     )}
                   </div>
                   

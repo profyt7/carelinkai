@@ -159,7 +159,7 @@ export function StatusActions({ residentId, status }: { residentId: string; stat
             {status !== 'ACTIVE' && (
               <button 
                 disabled={loading} 
-                className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-success-600 text-white text-sm font-medium rounded-md hover:bg-success-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 onClick={() => handleActionClick('admit')}
               >
                 <FiCheck size={16} />
@@ -171,7 +171,7 @@ export function StatusActions({ residentId, status }: { residentId: string; stat
               <>
                 <button 
                   disabled={loading} 
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   onClick={() => setShowTransfer(true)}
                 >
                   <FiArrowRight size={16} />
@@ -179,7 +179,7 @@ export function StatusActions({ residentId, status }: { residentId: string; stat
                 </button>
                 <button 
                   disabled={loading} 
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-md hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-warning-600 text-white text-sm font-medium rounded-md hover:bg-warning-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   onClick={() => handleActionClick('discharge')}
                 >
                   <FiX size={16} />
@@ -187,7 +187,7 @@ export function StatusActions({ residentId, status }: { residentId: string; stat
                 </button>
                 <button 
                   disabled={loading} 
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-error-600 text-white text-sm font-medium rounded-md hover:bg-error-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   onClick={() => handleActionClick('deceased')}
                 >
                   <FiAlertCircle size={16} />
@@ -199,8 +199,8 @@ export function StatusActions({ residentId, status }: { residentId: string; stat
         </div>
         
         {error && (
-          <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-sm text-red-800">{error}</p>
+          <div className="mt-3 p-3 bg-error-50 border border-error-200 rounded-md">
+            <p className="text-sm text-error-800">{error}</p>
           </div>
         )}
       </div>
@@ -226,10 +226,10 @@ export function StatusActions({ residentId, status }: { residentId: string; stat
               disabled={loading}
               className={`px-4 py-2 text-sm font-medium text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                 confirmAction === 'deceased' 
-                  ? 'bg-red-600 hover:bg-red-700' 
+                  ? 'bg-error-600 hover:bg-error-700' 
                   : confirmAction === 'discharge'
-                  ? 'bg-orange-600 hover:bg-orange-700'
-                  : 'bg-green-600 hover:bg-green-700'
+                  ? 'bg-warning-600 hover:bg-warning-700'
+                  : 'bg-success-600 hover:bg-success-700'
               }`}
             >
               {loading ? 'Processing...' : 'Confirm'}
@@ -307,7 +307,7 @@ export function StatusActions({ residentId, status }: { residentId: string; stat
             <button
               onClick={doTransfer}
               disabled={loading || !selectedHomeId}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {loading ? 'Transferring...' : 'Transfer'}
             </button>

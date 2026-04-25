@@ -258,14 +258,14 @@ export default function OperatorLeadDetailPage() {
   if (error && !lead) {
     return (
       <div className="p-6">
-          <div className="rounded-lg border border-red-200 bg-red-50 p-4 flex items-start gap-3">
-            <FiAlertCircle className="text-red-600 mt-0.5" size={20} />
+          <div className="rounded-lg border border-error-200 bg-error-50 p-4 flex items-start gap-3">
+            <FiAlertCircle className="text-error-600 mt-0.5" size={20} />
             <div>
-              <h3 className="font-medium text-red-800">Error Loading Lead</h3>
-              <p className="text-sm text-red-700 mt-1">{error}</p>
+              <h3 className="font-medium text-error-800">Error Loading Lead</h3>
+              <p className="text-sm text-error-700 mt-1">{error}</p>
               <button
                 onClick={() => router.push("/operator/leads")}
-                className="mt-3 text-sm text-red-600 hover:text-red-800 font-medium"
+                className="mt-3 text-sm text-error-600 hover:text-error-800 font-medium"
               >
                 Back to Leads
               </button>
@@ -306,16 +306,16 @@ export default function OperatorLeadDetailPage() {
 
         {/* Success/Error Messages */}
         {successMessage && (
-          <div className="rounded-lg border border-green-200 bg-green-50 p-4 flex items-start gap-3">
-            <FiCheckCircle className="text-green-600 mt-0.5" size={20} />
-            <p className="text-sm text-green-800">{successMessage}</p>
+          <div className="rounded-lg border border-success-200 bg-success-50 p-4 flex items-start gap-3">
+            <FiCheckCircle className="text-success-600 mt-0.5" size={20} />
+            <p className="text-sm text-success-800">{successMessage}</p>
           </div>
         )}
         
         {error && (
-          <div className="rounded-lg border border-red-200 bg-red-50 p-4 flex items-start gap-3">
-            <FiAlertCircle className="text-red-600 mt-0.5" size={20} />
-            <p className="text-sm text-red-800">{error}</p>
+          <div className="rounded-lg border border-error-200 bg-error-50 p-4 flex items-start gap-3">
+            <FiAlertCircle className="text-error-600 mt-0.5" size={20} />
+            <p className="text-sm text-error-800">{error}</p>
           </div>
         )}
 

@@ -108,10 +108,10 @@ export default async function FamilyDashboard() {
     <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        <h1 className="text-3xl font-bold text-neutral-900 mb-2">
           Welcome back, {displayName}
         </h1>
-        <p className="text-gray-600">
+        <p className="text-neutral-600">
           Find the perfect care for your loved ones
         </p>
       </div>
@@ -141,7 +141,7 @@ export default async function FamilyDashboard() {
 
       {/* Quick Actions */}
       <div className="mb-8">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
+        <h2 className="text-xl font-semibold text-neutral-900 mb-4">Quick Actions</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <QuickActionCard
             title="Search Homes"
@@ -168,21 +168,21 @@ export default async function FamilyDashboard() {
       {data.recentActivity.length > 0 && (
         <div>
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">Recent Activity</h2>
+            <h2 className="text-xl font-semibold text-neutral-900">Recent Activity</h2>
             <Link
               href="/dashboard/inquiries"
-              className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+              className="text-primary-600 hover:text-primary-700 text-sm font-medium"
             >
               View All →
             </Link>
           </div>
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <div className="divide-y divide-gray-200">
+          <div className="bg-white rounded-lg border border-neutral-200 overflow-hidden">
+            <div className="divide-y divide-neutral-200">
               {data.recentActivity.map((item) => (
                 <Link
                   key={item.id}
                   href={item.link}
-                  className="block p-4 hover:bg-gray-50 transition-colors"
+                  className="block p-4 hover:bg-neutral-50 transition-colors"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -190,11 +190,11 @@ export default async function FamilyDashboard() {
                         <span className="text-lg">
                           {item.type === 'home' ? '🏠' : item.type === 'aide' ? '👤' : '🏥'}
                         </span>
-                        <h3 className="text-sm font-medium text-gray-900">
+                        <h3 className="text-sm font-medium text-neutral-900">
                           {item.target}
                         </h3>
                       </div>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-neutral-500">
                         {new Date(item.createdAt).toLocaleDateString('en-US', {
                           month: 'short',
                           day: 'numeric',
@@ -203,11 +203,11 @@ export default async function FamilyDashboard() {
                       </p>
                     </div>
                     <span className={`px-2 py-1 text-xs rounded-full ${
-                      item.status === 'NEW' ? 'bg-blue-100 text-blue-700' :
-                      item.status === 'CONTACTED' ? 'bg-yellow-100 text-yellow-700' :
-                      item.status === 'TOUR_SCHEDULED' ? 'bg-purple-100 text-purple-700' :
-                      item.status === 'IN_REVIEW' ? 'bg-orange-100 text-orange-700' :
-                      'bg-gray-100 text-gray-700'
+                      item.status === 'NEW' ? 'bg-primary-100 text-primary-700' :
+                      item.status === 'CONTACTED' ? 'bg-warning-100 text-warning-700' :
+                      item.status === 'TOUR_SCHEDULED' ? 'bg-secondary-100 text-secondary-700' :
+                      item.status === 'IN_REVIEW' ? 'bg-warning-100 text-warning-700' :
+                      'bg-neutral-100 text-neutral-700'
                     }`}>
                       {item.status.replace(/_/g, ' ')}
                     </span>
@@ -221,17 +221,17 @@ export default async function FamilyDashboard() {
 
       {/* Empty State */}
       {data.recentActivity.length === 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-8 text-center">
+        <div className="bg-primary-50 border border-primary-200 rounded-lg p-8 text-center">
           <div className="text-5xl mb-4">🔍</div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+          <h3 className="text-lg font-semibold text-neutral-900 mb-2">
             No inquiries yet
           </h3>
-          <p className="text-gray-600 mb-4">
+          <p className="text-neutral-600 mb-4">
             Start your search to find the perfect care solution for your loved one
           </p>
           <Link
             href="/search-homes"
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
           >
             Search Care Homes →
           </Link>

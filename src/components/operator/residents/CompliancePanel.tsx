@@ -72,7 +72,7 @@ export function CompliancePanel({ residentId }: { residentId: string }) {
           <div className="text-xs text-neutral-600 flex gap-3">
             <span>Open: {summary.open}</span>
             <span>Due soon: {summary.dueSoon}</span>
-            <span>Overdue: <span className="text-red-600 font-medium">{summary.overdue}</span></span>
+            <span>Overdue: <span className="text-error-600 font-medium">{summary.overdue}</span></span>
             <span>Completed: {summary.completed}</span>
           </div>
         )}
@@ -105,7 +105,7 @@ export function CompliancePanel({ residentId }: { residentId: string }) {
               <div className="text-neutral-600 text-xs">{it.type}{it.dueDate ? ` • due ${new Date(it.dueDate).toLocaleDateString()}` : ''}</div>
             </div>
             <div className="flex items-center gap-2">
-              <span className={`text-xs px-2 py-0.5 rounded ${it.status==='OPEN'?'bg-amber-50 text-amber-700':'bg-green-50 text-green-700'}`}>{it.status}</span>
+              <span className={`text-xs px-2 py-0.5 rounded ${it.status==='OPEN'?'bg-amber-50 text-amber-700':'bg-success-50 text-success-700'}`}>{it.status}</span>
               {it.status==='OPEN' && (
                 <button className="btn btn-xs" onClick={() => markComplete(it.id)}>Mark complete</button>
               )}

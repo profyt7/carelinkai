@@ -30,9 +30,9 @@ const fmt = (n: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
 
 const statusColor: Record<string, string> = {
-  PENDING:   "bg-yellow-100 text-yellow-700",
-  CONVERTED: "bg-green-100 text-green-700",
-  PAID:      "bg-blue-100 text-blue-700",
+  PENDING:   "bg-warning-100 text-warning-700",
+  CONVERTED: "bg-success-100 text-success-700",
+  PAID:      "bg-primary-100 text-primary-700",
 };
 
 export default function AffiliateDashboardPage() {
@@ -66,7 +66,7 @@ export default function AffiliateDashboardPage() {
         <p className="mt-1 text-neutral-600">Track your referrals and earnings.</p>
 
         {loading && <p className="mt-8 text-neutral-500">Loading…</p>}
-        {error && <p className="mt-8 text-red-600">{error}</p>}
+        {error && <p className="mt-8 text-error-600">{error}</p>}
 
         {data && (
           <div className="mt-6 space-y-6">
@@ -84,7 +84,7 @@ export default function AffiliateDashboardPage() {
                   onClick={copyLink}
                   className="btn btn-secondary flex items-center gap-2 shrink-0"
                 >
-                  {copied ? <FiCheck className="text-green-600" /> : <FiCopy />}
+                  {copied ? <FiCheck className="text-success-600" /> : <FiCopy />}
                   {copied ? "Copied!" : "Copy"}
                 </button>
               </div>
@@ -97,8 +97,8 @@ export default function AffiliateDashboardPage() {
             {/* Summary stats */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
-                { label: "Total Referrals", value: data.summary.totalReferrals, icon: <FiUsers />, color: "text-blue-600" },
-                { label: "Converted",       value: data.summary.converted,      icon: <FiCheck />,   color: "text-green-600" },
+                { label: "Total Referrals", value: data.summary.totalReferrals, icon: <FiUsers />, color: "text-primary-600" },
+                { label: "Converted",       value: data.summary.converted,      icon: <FiCheck />,   color: "text-success-600" },
                 { label: "Total Earned",    value: fmt(data.summary.totalEarned),   icon: <FiDollarSign />, color: "text-emerald-600" },
                 { label: "Pending Payout",  value: fmt(data.summary.pendingPayout), icon: <FiDollarSign />, color: "text-amber-600" },
               ].map((s) => (
@@ -138,7 +138,7 @@ export default function AffiliateDashboardPage() {
                             {r.referredEmail.startsWith("inquiry:") ? "—" : r.referredEmail}
                           </td>
                           <td className="px-6 py-3">
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColor[r.status] ?? "bg-gray-100 text-gray-600"}`}>
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColor[r.status] ?? "bg-neutral-100 text-neutral-600"}`}>
                               {r.status}
                             </span>
                           </td>
@@ -152,7 +152,7 @@ export default function AffiliateDashboardPage() {
                           </td>
                           <td className="px-6 py-3 text-right">
                             {r.commissionPaid ? (
-                              <span className="text-green-600 font-medium">✓ Paid</span>
+                              <span className="text-success-600 font-medium">✓ Paid</span>
                             ) : (
                               <span className="text-neutral-400">Pending</span>
                             )}

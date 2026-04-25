@@ -197,9 +197,9 @@ export function DocumentUploadModal({
         </div>
 
         {error && (
-          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
-            <FiAlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-red-700">{error}</p>
+          <div className="mt-4 p-3 bg-error-50 border border-error-200 rounded-lg flex items-start gap-2">
+            <FiAlertCircle className="w-5 h-5 text-error-500 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-error-700">{error}</p>
           </div>
         )}
 
@@ -254,8 +254,8 @@ export function DocumentUploadModal({
 
         {/* Classification Result */}
         {classificationResult && (
-          <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg space-y-3">
-            <div className="flex items-center gap-2 text-green-700 font-semibold">
+          <div className="mt-4 p-4 bg-success-50 border border-success-200 rounded-lg space-y-3">
+            <div className="flex items-center gap-2 text-success-700 font-semibold">
               <FiCheckCircle className="w-5 h-5" />
               <span>Upload Complete! AI Classification:</span>
             </div>

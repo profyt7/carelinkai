@@ -132,19 +132,19 @@ export function CaregiverCard({ caregiver }: CaregiverCardProps) {
             {/* Stats Row */}
             <div className="flex flex-wrap items-center gap-3 mb-3">
               {certCount > 0 && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-primary-50 text-primary-700 border border-primary-200">
                   <FiAward className="w-3.5 h-3.5" />
                   {certCount} Cert{certCount !== 1 ? 's' : ''}
                 </span>
               )}
               {assignmentCount > 0 && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-secondary-50 text-secondary-700 border border-secondary-200">
                   <FiUsers className="w-3.5 h-3.5" />
                   {assignmentCount} Assignment{assignmentCount !== 1 ? 's' : ''}
                 </span>
               )}
               {documentCount > 0 && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-green-50 text-green-700 border border-green-200">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-success-50 text-success-700 border border-success-200">
                   <FiFileText className="w-3.5 h-3.5" />
                   {documentCount} Doc{documentCount !== 1 ? 's' : ''}
                 </span>
@@ -175,12 +175,12 @@ export function CaregiverCard({ caregiver }: CaregiverCardProps) {
           {(hasExpiredCerts || hasExpiringSoon) && (
             <div className="flex-shrink-0">
               {hasExpiredCerts ? (
-                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-error-100 text-error-800 border border-error-200">
                   <FiAlertCircle className="w-3 h-3" />
                   Expired
                 </span>
               ) : hasExpiringSoon ? (
-                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-warning-100 text-warning-800 border border-warning-200">
                   <FiAlertCircle className="w-3 h-3" />
                   Expiring
                 </span>

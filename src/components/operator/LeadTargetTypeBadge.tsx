@@ -27,7 +27,7 @@ export default function LeadTargetTypeBadge({
 }: LeadTargetTypeBadgeProps) {
   // Define color schemes for each type
   const colorMap: Record<LeadTargetType, string> = {
-    AIDE: "bg-purple-100 text-purple-800 border-purple-200",
+    AIDE: "bg-secondary-100 text-secondary-800 border-secondary-200",
     PROVIDER: "bg-teal-100 text-teal-800 border-teal-200"
   };
 

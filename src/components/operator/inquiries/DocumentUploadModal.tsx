@@ -166,9 +166,9 @@ export function DocumentUploadModal({
         </div>
 
         {error && (
-          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
-            <FiAlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-red-700">{error}</p>
+          <div className="mt-4 p-3 bg-error-50 border border-error-200 rounded-lg flex items-start gap-2">
+            <FiAlertCircle className="w-5 h-5 text-error-500 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-error-700">{error}</p>
           </div>
         )}
 

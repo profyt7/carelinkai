@@ -49,7 +49,7 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 via-primary-50 to-purple-50 py-12 px-4 sm:px-6 lg:px-8">
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-[#3978FC]/10 rounded-full blur-3xl" />
@@ -91,9 +91,9 @@ export default function ForgotPasswordPage() {
 
               {/* Error Message */}
               {error && (
-                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start">
-                  <FiAlertCircle className="w-5 h-5 text-red-500 mr-3 flex-shrink-0 mt-0.5" />
-                  <p className="text-red-700 text-sm">{error}</p>
+                <div className="mb-6 p-4 bg-error-50 border border-error-200 rounded-lg flex items-start">
+                  <FiAlertCircle className="w-5 h-5 text-error-500 mr-3 flex-shrink-0 mt-0.5" />
+                  <p className="text-error-700 text-sm">{error}</p>
                 </div>
               )}
 
@@ -114,7 +114,7 @@ export default function ForgotPasswordPage() {
                       placeholder="you@example.com"
                       className={`block w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#3978FC] focus:border-transparent transition-colors ${
                         errors.email
-                          ? "border-red-300 bg-red-50"
+                          ? "border-error-300 bg-error-50"
                           : "border-slate-300 bg-white"
                       }`}
                       {...register("email", {
@@ -127,7 +127,7 @@ export default function ForgotPasswordPage() {
                     />
                   </div>
                   {errors.email && (
-                    <p className="mt-2 text-sm text-red-600">{errors.email.message}</p>
+                    <p className="mt-2 text-sm text-error-600">{errors.email.message}</p>
                   )}
                 </div>
 
@@ -180,8 +180,8 @@ export default function ForgotPasswordPage() {
           ) : (
             /* Success State */
             <div className="text-center py-4">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-                <FiCheck className="w-8 h-8 text-green-600" />
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-success-100 rounded-full mb-4">
+                <FiCheck className="w-8 h-8 text-success-600" />
               </div>
               <h2 className="text-2xl font-bold text-slate-900 mb-2">
                 Check Your Email

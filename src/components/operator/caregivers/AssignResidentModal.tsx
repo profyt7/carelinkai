@@ -131,7 +131,7 @@ export function AssignResidentModal({
           {/* Search Residents */}
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-2">
-              Select Resident <span className="text-red-500">*</span>
+              Select Resident <span className="text-error-500">*</span>
             </label>
             <div className="relative mb-3">
               <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
@@ -202,7 +202,7 @@ export function AssignResidentModal({
           {/* Start Date */}
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-2">
-              Start Date <span className="text-red-500">*</span>
+              Start Date <span className="text-error-500">*</span>
             </label>
             <input
               type="date"

@@ -130,13 +130,13 @@ export function ResidentCard({ resident }: ResidentCardProps) {
             {/* Stats Badges */}
             <div className="flex items-center gap-2 mt-4 flex-wrap">
               {assessmentCount > 0 && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-primary-50 text-primary-700 border border-primary-200">
                   <FiClipboard className="w-3 h-3" />
                   {assessmentCount} Assessment{assessmentCount !== 1 ? 's' : ''}
                 </span>
               )}
               {incidentCount > 0 && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-orange-50 text-orange-700 border border-orange-200">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-warning-50 text-warning-700 border border-warning-200">
                   <FiAlertTriangle className="w-3 h-3" />
                   {incidentCount} Incident{incidentCount !== 1 ? 's' : ''}
                 </span>

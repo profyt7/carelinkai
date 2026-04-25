@@ -55,9 +55,9 @@ export default async function AdminAffiliatesPage() {
         {/* Summary cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {[
-            { label: 'Total Affiliates', value: affiliates.length.toString(), icon: FiUsers, color: 'bg-blue-100 text-blue-600' },
-            { label: 'Total Conversions', value: totalConversions.toString(), icon: FiCheckCircle, color: 'bg-green-100 text-green-600' },
-            { label: 'Total Commissions Earned', value: fmt$(totalEarned), icon: FiDollarSign, color: 'bg-purple-100 text-purple-600' },
+            { label: 'Total Affiliates', value: affiliates.length.toString(), icon: FiUsers, color: 'bg-primary-100 text-primary-600' },
+            { label: 'Total Conversions', value: totalConversions.toString(), icon: FiCheckCircle, color: 'bg-success-100 text-success-600' },
+            { label: 'Total Commissions Earned', value: fmt$(totalEarned), icon: FiDollarSign, color: 'bg-secondary-100 text-secondary-600' },
             { label: 'Commissions Unpaid', value: fmt$(totalUnpaid), icon: FiClock, color: 'bg-amber-100 text-amber-600' },
           ].map((stat) => (
             <div key={stat.label} className="bg-white rounded-lg border border-neutral-200 p-5 flex items-center gap-4">
@@ -108,7 +108,7 @@ export default async function AdminAffiliatesPage() {
                         </td>
                         <td className="px-4 py-3 text-neutral-600">{a.referrals.length}</td>
                         <td className="px-4 py-3">
-                          <span className="inline-flex items-center gap-1 text-green-700 font-medium">
+                          <span className="inline-flex items-center gap-1 text-success-700 font-medium">
                             <FiCheckCircle size={12} /> {conversions}
                           </span>
                         </td>
@@ -119,7 +119,7 @@ export default async function AdminAffiliatesPage() {
                               <FiClock size={12} /> {fmt$(unpaid)}
                             </span>
                           ) : (
-                            <span className="text-green-600 text-xs">Paid up</span>
+                            <span className="text-success-600 text-xs">Paid up</span>
                           )}
                         </td>
                         <td className="px-4 py-3 text-neutral-500 text-xs">
@@ -158,8 +158,8 @@ export default async function AdminAffiliatesPage() {
                         <td className="px-4 py-3 text-neutral-600">{r.referredEmail}</td>
                         <td className="px-4 py-3">
                           <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
-                            r.status === 'CONVERTED' ? 'bg-green-100 text-green-700'
-                            : r.status === 'REGISTERED' ? 'bg-blue-100 text-blue-700'
+                            r.status === 'CONVERTED' ? 'bg-success-100 text-success-700'
+                            : r.status === 'REGISTERED' ? 'bg-primary-100 text-primary-700'
                             : 'bg-neutral-100 text-neutral-600'
                           }`}>
                             {r.status}
@@ -170,7 +170,7 @@ export default async function AdminAffiliatesPage() {
                         </td>
                         <td className="px-4 py-3">
                           {r.commissionPaid ? (
-                            <span className="text-green-600 text-xs font-medium">Paid</span>
+                            <span className="text-success-600 text-xs font-medium">Paid</span>
                           ) : r.commissionAmount ? (
                             <span className="text-amber-600 text-xs font-medium">Pending</span>
                           ) : (

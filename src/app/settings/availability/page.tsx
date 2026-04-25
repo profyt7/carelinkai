@@ -180,7 +180,7 @@ export default function AvailabilityPage() {
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading availability...</p>
+            <p className="mt-4 text-neutral-600">Loading availability...</p>
           </div>
         </div>
       </DashboardLayout>
@@ -191,8 +191,8 @@ export default function AvailabilityPage() {
     return (
       <DashboardLayout title="Settings • Availability">
         <div className="max-w-4xl mx-auto p-6">
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <p className="text-yellow-800">This page is only accessible to caregivers.</p>
+          <div className="bg-warning-50 border border-warning-200 rounded-lg p-4">
+            <p className="text-warning-800">This page is only accessible to caregivers.</p>
           </div>
         </div>
       </DashboardLayout>
@@ -206,20 +206,20 @@ export default function AvailabilityPage() {
       <div className="max-w-6xl mx-auto p-4 md:p-6">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Manage Availability</h1>
-          <p className="text-gray-600">Set your working hours and availability for potential employers</p>
+          <h1 className="text-2xl font-bold text-neutral-900 mb-2">Manage Availability</h1>
+          <p className="text-neutral-600">Set your working hours and availability for potential employers</p>
         </div>
 
         {/* Success/Error Messages */}
         {successMessage && (
-          <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-4">
-            <p className="text-green-800">{successMessage}</p>
+          <div className="mb-4 bg-success-50 border border-success-200 rounded-lg p-4">
+            <p className="text-success-800">{successMessage}</p>
           </div>
         )}
         
         {error && (
-          <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
-            <p className="text-red-800">{error}</p>
+          <div className="mb-4 bg-error-50 border border-error-200 rounded-lg p-4">
+            <p className="text-error-800">{error}</p>
           </div>
         )}
 
@@ -255,7 +255,7 @@ export default function AvailabilityPage() {
 
         {/* Calendar View */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="grid grid-cols-1 md:grid-cols-7 divide-x divide-gray-200">
+          <div className="grid grid-cols-1 md:grid-cols-7 divide-x divide-neutral-200">
             {weekDays.map((day, index) => {
               const daySlots = getSlotsForDay(day);
               const isToday = isSameDay(day, new Date());
@@ -263,28 +263,28 @@ export default function AvailabilityPage() {
               return (
                 <div
                   key={index}
-                  className={`min-h-[200px] p-3 ${isToday ? 'bg-blue-50' : ''}`}
+                  className={`min-h-[200px] p-3 ${isToday ? 'bg-primary-50' : ''}`}
                 >
                   <div className="font-medium text-sm mb-2">
-                    <div className={`${isToday ? 'text-primary-600' : 'text-gray-700'}`}>
+                    <div className={`${isToday ? 'text-primary-600' : 'text-neutral-700'}`}>
                       {format(day, 'EEE')}
                     </div>
-                    <div className={`text-lg ${isToday ? 'text-primary-600 font-bold' : 'text-gray-900'}`}>
+                    <div className={`text-lg ${isToday ? 'text-primary-600 font-bold' : 'text-neutral-900'}`}>
                       {format(day, 'd')}
                     </div>
                   </div>
                   
                   <div className="space-y-2">
                     {daySlots.length === 0 ? (
-                      <p className="text-xs text-gray-400 italic">No availability</p>
+                      <p className="text-xs text-neutral-400 italic">No availability</p>
                     ) : (
                       daySlots.map((slot) => (
                         <div
                           key={slot.id}
                           className={`text-xs p-2 rounded ${
                             slot.isAvailable
-                              ? 'bg-green-100 border border-green-300'
-                              : 'bg-gray-100 border border-gray-300'
+                              ? 'bg-success-100 border border-success-300'
+                              : 'bg-neutral-100 border border-neutral-300'
                           }`}
                         >
                           <div className="flex items-center justify-between mb-1">
@@ -293,7 +293,7 @@ export default function AvailabilityPage() {
                             </span>
                             <button
                               onClick={() => handleDeleteSlot(slot.id)}
-                              className="text-red-600 hover:text-red-700"
+                              className="text-error-600 hover:text-error-700"
                             >
                               <FiTrash2 size={12} />
                             </button>
@@ -322,7 +322,7 @@ export default function AvailabilityPage() {
                 <h3 className="text-lg font-semibold">Add Availability</h3>
                 <button
                   onClick={() => setShowAddModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-neutral-400 hover:text-neutral-600"
                 >
                   <FiX size={20} />
                 </button>
@@ -330,54 +330,54 @@ export default function AvailabilityPage() {
               
               <form onSubmit={handleAddSlot} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-neutral-700 mb-1">
                     Date
                   </label>
                   <input
                     type="date"
                     value={formData.date}
                     onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
                     required
                   />
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-neutral-700 mb-1">
                       Start Time
                     </label>
                     <input
                       type="time"
                       value={formData.startTime}
                       onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
                       required
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-neutral-700 mb-1">
                       End Time
                     </label>
                     <input
                       type="time"
                       value={formData.endTime}
                       onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
                       required
                     />
                   </div>
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-neutral-700 mb-1">
                     Recurrence
                   </label>
                   <select
                     value={formData.recurrence}
                     onChange={(e) => setFormData({ ...formData, recurrence: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
                   >
                     <option value="none">None (single day)</option>
                     <option value="daily">Daily</option>
@@ -387,17 +387,17 @@ export default function AvailabilityPage() {
                 
                 {formData.recurrence !== 'none' && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-neutral-700 mb-1">
                       Recurrence End Date
                     </label>
                     <input
                       type="date"
                       value={formData.recurrenceEnd}
                       onChange={(e) => setFormData({ ...formData, recurrenceEnd: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                      className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
                       min={formData.date}
                     />
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-neutral-500 mt-1">
                       Leave blank to set for 90 days from start date
                     </p>
                   </div>
@@ -407,7 +407,7 @@ export default function AvailabilityPage() {
                   <button
                     type="button"
                     onClick={() => setShowAddModal(false)}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                    className="flex-1 px-4 py-2 border border-neutral-300 rounded-md text-neutral-700 hover:bg-neutral-50"
                   >
                     Cancel
                   </button>

@@ -138,7 +138,7 @@ export function OperatorDashboardContent() {
   if (error) {
     return (
       <div className="p-4 sm:p-6 max-w-7xl mx-auto">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800">
+        <div className="bg-error-50 border border-error-200 rounded-lg p-4 text-error-800">
           <p className="font-medium">Error loading dashboard</p>
           <p className="text-sm mt-1">{error}</p>
         </div>
@@ -197,7 +197,7 @@ export function OperatorDashboardContent() {
             icon={AlertCircle}
             trend={metrics.criticalIncidents.trend}
             trendValue={metrics.criticalIncidents.trendValue}
-            iconColor="text-red-600"
+            iconColor="text-error-600"
           />
         )}
         {metrics?.overdueAssessments && (

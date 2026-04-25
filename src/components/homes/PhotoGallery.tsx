@@ -355,7 +355,7 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
                   className={`relative h-12 w-16 shrink-0 overflow-hidden rounded border-2 transition-all ${
                     index === activeIndex 
                       ? "border-white" 
-                      : "border-transparent opacity-60 hover:border-gray-400 hover:opacity-100"
+                      : "border-transparent opacity-60 hover:border-neutral-400 hover:opacity-100"
                   }`}
                 >
                   <Image

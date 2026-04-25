@@ -256,13 +256,13 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
             <div class="w-64 p-2">
               <div class="flex items-start justify-between mb-2">
                 <h3 class="font-semibold text-sm">${home.name}</h3>
-                <button id="fav-btn-${home.id}" class="${isFavorite ? 'text-red-500' : 'text-neutral-400'}">
+                <button id="fav-btn-${home.id}" class="${isFavorite ? 'text-error-500' : 'text-neutral-400'}">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="${isFavorite ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
                 </button>
               </div>
               <p class="text-xs text-neutral-600 mb-2">${addressText}</p>
               <div class="flex items-center text-xs text-neutral-500 mb-2"><span class="mr-1">$</span>${home.priceRange.formattedMin || '$?'}+/month</div>
-              <a href="/homes/${home.id}" class="block w-full text-center bg-blue-500 hover:bg-blue-600 text-white text-xs py-1.5 rounded transition-colors">View Details</a>
+              <a href="/homes/${home.id}" class="block w-full text-center bg-primary-500 hover:bg-primary-600 text-white text-xs py-1.5 rounded transition-colors">View Details</a>
             </div>
           `;
         };
@@ -300,11 +300,11 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
 
   if (mapError) {
     return (
-      <div className="flex h-full items-center justify-center bg-red-50 rounded-lg border-2 border-red-200" style={{ minHeight: "400px" }}>
+      <div className="flex h-full items-center justify-center bg-error-50 rounded-lg border-2 border-error-200" style={{ minHeight: "400px" }}>
         <div className="text-center p-4">
-          <FiMapPin className="mx-auto h-12 w-12 text-red-400" />
-          <p className="mt-2 text-red-600 font-medium">{mapError}</p>
-          <p className="text-sm text-red-500">Please refresh the page to try again.</p>
+          <FiMapPin className="mx-auto h-12 w-12 text-error-400" />
+          <p className="mt-2 text-error-600 font-medium">{mapError}</p>
+          <p className="text-sm text-error-500">Please refresh the page to try again.</p>
         </div>
       </div>
     );

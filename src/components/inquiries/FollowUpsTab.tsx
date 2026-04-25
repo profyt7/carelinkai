@@ -33,17 +33,17 @@ export function FollowUpsTab({ inquiryId }: FollowUpsTabProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'COMPLETED':
-        return 'bg-green-100 text-green-800';
+        return 'bg-success-100 text-success-800';
       case 'PENDING':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-primary-100 text-primary-800';
       case 'SENT':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-secondary-100 text-secondary-800';
       case 'CANCELLED':
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-neutral-100 text-neutral-800';
       case 'OVERDUE':
-        return 'bg-red-100 text-red-800';
+        return 'bg-error-100 text-error-800';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-neutral-100 text-neutral-800';
     }
   };
 
@@ -57,17 +57,17 @@ export function FollowUpsTab({ inquiryId }: FollowUpsTabProps) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-        <p className="ml-3 text-gray-600">Loading follow-ups...</p>
+        <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
+        <p className="ml-3 text-neutral-600">Loading follow-ups...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-        <p className="text-red-800 font-medium">Error loading follow-ups</p>
-        <p className="text-red-600 text-sm mt-1">{error.message || 'Please try again'}</p>
+      <div className="bg-error-50 border border-error-200 rounded-lg p-4">
+        <p className="text-error-800 font-medium">Error loading follow-ups</p>
+        <p className="text-error-600 text-sm mt-1">{error.message || 'Please try again'}</p>
       </div>
     );
   }
@@ -78,7 +78,7 @@ export function FollowUpsTab({ inquiryId }: FollowUpsTabProps) {
       <div className="flex gap-3">
         <button
           onClick={() => setShowScheduler(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
         >
           <Plus className="w-4 h-4" />
           Schedule Follow-up
@@ -89,9 +89,9 @@ export function FollowUpsTab({ inquiryId }: FollowUpsTabProps) {
       <div className="space-y-4">
         {!followUps || followUps.length === 0 ? (
           <div className="text-center py-12">
-            <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600">No follow-ups scheduled</p>
-            <p className="text-sm text-gray-500 mt-1">
+            <Calendar className="w-12 h-12 text-neutral-400 mx-auto mb-4" />
+            <p className="text-neutral-600">No follow-ups scheduled</p>
+            <p className="text-sm text-neutral-500 mt-1">
               Schedule a follow-up to track next actions
             </p>
           </div>
@@ -102,20 +102,20 @@ export function FollowUpsTab({ inquiryId }: FollowUpsTabProps) {
               <div
                 key={followUp.id}
                 className={`bg-white border rounded-lg p-4 ${
-                  overdue ? 'border-red-300 bg-red-50' : 'border-gray-200'
+                  overdue ? 'border-error-300 bg-error-50' : 'border-neutral-200'
                 }`}
               >
                 {/* Header */}
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <div className={overdue ? 'text-red-600' : 'text-blue-600'}>
+                    <div className={overdue ? 'text-error-600' : 'text-primary-600'}>
                       {getTypeIcon(followUp.type)}
                     </div>
                     <div>
-                      <h4 className="font-medium text-gray-900">
+                      <h4 className="font-medium text-neutral-900">
                         {followUp.subject || `${followUp.type} Follow-up`}
                       </h4>
-                      <div className="flex items-center gap-3 mt-1 text-sm text-gray-600">
+                      <div className="flex items-center gap-3 mt-1 text-sm text-neutral-600">
                         <span className="flex items-center gap-1">
                           <Calendar className="w-4 h-4" />
                           {format(new Date(followUp.scheduledFor), 'MMM d, yyyy')}
@@ -139,8 +139,8 @@ export function FollowUpsTab({ inquiryId }: FollowUpsTabProps) {
 
                 {/* Content */}
                 {followUp.content && (
-                  <div className="bg-gray-50 rounded-lg p-3 mb-3">
-                    <p className="text-sm text-gray-900 whitespace-pre-wrap">
+                  <div className="bg-neutral-50 rounded-lg p-3 mb-3">
+                    <p className="text-sm text-neutral-900 whitespace-pre-wrap">
                       {followUp.content}
                     </p>
                   </div>
@@ -149,11 +149,11 @@ export function FollowUpsTab({ inquiryId }: FollowUpsTabProps) {
                 {/* Actions */}
                 {followUp.status === 'PENDING' && (
                   <div className="flex gap-2">
-                    <button className="flex items-center gap-1 px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors">
+                    <button className="flex items-center gap-1 px-3 py-1.5 text-sm bg-success-600 text-white rounded hover:bg-success-700 transition-colors">
                       <CheckCircle className="w-4 h-4" />
                       Mark Complete
                     </button>
-                    <button className="flex items-center gap-1 px-3 py-1.5 text-sm border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors">
+                    <button className="flex items-center gap-1 px-3 py-1.5 text-sm border border-neutral-300 text-neutral-700 rounded hover:bg-neutral-50 transition-colors">
                       <XCircle className="w-4 h-4" />
                       Cancel
                     </button>
@@ -162,7 +162,7 @@ export function FollowUpsTab({ inquiryId }: FollowUpsTabProps) {
 
                 {/* Completion Info */}
                 {followUp.completedAt && (
-                  <div className="mt-3 pt-3 border-t border-gray-200 text-sm text-gray-600">
+                  <div className="mt-3 pt-3 border-t border-neutral-200 text-sm text-neutral-600">
                     <p>
                       Completed on {format(new Date(followUp.completedAt), 'MMM d, yyyy h:mm a')}
                     </p>

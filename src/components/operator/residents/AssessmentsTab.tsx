@@ -179,13 +179,13 @@ export function AssessmentsTab({ residentId }: { residentId: string }) {
   const getStatusColor = (status?: string | null) => {
     switch (status) {
       case 'COMPLETED':
-        return 'bg-green-100 text-green-800';
+        return 'bg-success-100 text-success-800';
       case 'IN_PROGRESS':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-primary-100 text-primary-800';
       case 'PENDING_REVIEW':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-warning-100 text-warning-800';
       case 'SCHEDULED':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-secondary-100 text-secondary-800';
       default:
         return 'bg-neutral-100 text-neutral-800';
     }
@@ -260,7 +260,7 @@ export function AssessmentsTab({ residentId }: { residentId: string }) {
                   <ActionGuard resourceType="assessment" action="update">
                     <button
                       onClick={() => openEditModal(assessment)}
-                      className="p-1.5 text-neutral-600 hover:text-blue-600 hover:bg-neutral-50 rounded"
+                      className="p-1.5 text-neutral-600 hover:text-primary-600 hover:bg-neutral-50 rounded"
                       title="Edit"
                     >
                       <FiEdit2 className="w-4 h-4" />
@@ -269,7 +269,7 @@ export function AssessmentsTab({ residentId }: { residentId: string }) {
                   <ActionGuard resourceType="assessment" action="delete">
                     <button
                       onClick={() => handleDelete(assessment.id)}
-                      className="p-1.5 text-neutral-600 hover:text-red-600 hover:bg-neutral-50 rounded"
+                      className="p-1.5 text-neutral-600 hover:text-error-600 hover:bg-neutral-50 rounded"
                       title="Delete"
                     >
                       <FiTrash2 className="w-4 h-4" />

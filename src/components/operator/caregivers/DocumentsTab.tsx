@@ -187,13 +187,13 @@ export function DocumentsTab({ caregiverId }: DocumentsTabProps) {
                         {DOCUMENT_TYPE_LABELS[doc.documentType] || doc.documentType}
                       </span>
                       {expirationStatus === 'expired' && (
-                        <span className="inline-flex items-center gap-1 text-xs text-red-600 bg-red-50 px-2 py-0.5 rounded">
+                        <span className="inline-flex items-center gap-1 text-xs text-error-600 bg-error-50 px-2 py-0.5 rounded">
                           <FiAlertCircle className="w-3 h-3" />
                           Expired
                         </span>
                       )}
                       {expirationStatus === 'expiring' && (
-                        <span className="inline-flex items-center gap-1 text-xs text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded">
+                        <span className="inline-flex items-center gap-1 text-xs text-warning-600 bg-warning-50 px-2 py-0.5 rounded">
                           <FiAlertCircle className="w-3 h-3" />
                           Expiring Soon
                         </span>
@@ -253,10 +253,10 @@ export function DocumentsTab({ caregiverId }: DocumentsTabProps) {
                     <PermissionGuard permission={PERMISSIONS.DOCUMENTS_DELETE}>
                       <button
                         onClick={() => handleDelete(doc.id, doc.title)}
-                        className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                        className="p-2 hover:bg-error-50 rounded-lg transition-colors"
                         title="Delete document"
                       >
-                        <FiTrash2 className="w-4 h-4 text-red-600" />
+                        <FiTrash2 className="w-4 h-4 text-error-600" />
                       </button>
                     </PermissionGuard>
                   </div>

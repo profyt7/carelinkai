@@ -72,7 +72,7 @@ function StepIndicator({ current }: { current: Step }) {
             <div
               className={`w-9 h-9 rounded-full flex items-center justify-center font-semibold text-sm transition-colors ${
                 s.n < current
-                  ? "bg-green-500 text-white"
+                  ? "bg-success-500 text-white"
                   : s.n === current
                   ? "bg-primary-600 text-white"
                   : "bg-neutral-200 text-neutral-500"
@@ -91,7 +91,7 @@ function StepIndicator({ current }: { current: Step }) {
           {i < steps.length - 1 && (
             <div
               className={`w-16 h-0.5 mb-4 mx-1 ${
-                s.n < current ? "bg-green-400" : "bg-neutral-200"
+                s.n < current ? "bg-success-400" : "bg-neutral-200"
               }`}
             />
           )}
@@ -272,7 +272,7 @@ export default function OperatorOnboardingPage() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-neutral-700 mb-1">
-                  Company / Facility Name <span className="text-red-500">*</span>
+                  Company / Facility Name <span className="text-error-500">*</span>
                 </label>
                 <input
                   className="form-input w-full"
@@ -293,7 +293,7 @@ export default function OperatorOnboardingPage() {
               </div>
             </div>
 
-            {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+            {error && <p className="mt-4 text-sm text-error-600">{error}</p>}
 
             <button
               onClick={submitProfile}
@@ -314,7 +314,7 @@ export default function OperatorOnboardingPage() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-neutral-700 mb-1">
-                  Home Name <span className="text-red-500">*</span>
+                  Home Name <span className="text-error-500">*</span>
                 </label>
                 <input
                   className="form-input w-full"
@@ -326,7 +326,7 @@ export default function OperatorOnboardingPage() {
 
               <div>
                 <label className="block text-sm font-medium text-neutral-700 mb-1">
-                  Brief Description <span className="text-red-500">*</span>
+                  Brief Description <span className="text-error-500">*</span>
                 </label>
                 <textarea
                   className="form-input w-full"
@@ -339,7 +339,7 @@ export default function OperatorOnboardingPage() {
 
               <div>
                 <label className="block text-sm font-medium text-neutral-700 mb-1">
-                  Street Address <span className="text-red-500">*</span>
+                  Street Address <span className="text-error-500">*</span>
                 </label>
                 <input
                   className="form-input w-full"
@@ -352,7 +352,7 @@ export default function OperatorOnboardingPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-1">
-                    City <span className="text-red-500">*</span>
+                    City <span className="text-error-500">*</span>
                   </label>
                   <input
                     className="form-input w-full"
@@ -363,7 +363,7 @@ export default function OperatorOnboardingPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-1">
-                    State <span className="text-red-500">*</span>
+                    State <span className="text-error-500">*</span>
                   </label>
                   <input
                     className="form-input w-full"
@@ -378,7 +378,7 @@ export default function OperatorOnboardingPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-1">
-                    ZIP Code <span className="text-red-500">*</span>
+                    ZIP Code <span className="text-error-500">*</span>
                   </label>
                   <input
                     className="form-input w-full"
@@ -389,7 +389,7 @@ export default function OperatorOnboardingPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-1">
-                    Capacity <span className="text-red-500">*</span>
+                    Capacity <span className="text-error-500">*</span>
                   </label>
                   <input
                     className="form-input w-full"
@@ -404,7 +404,7 @@ export default function OperatorOnboardingPage() {
 
               <div>
                 <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Care Type <span className="text-red-500">*</span>
+                  Care Type <span className="text-error-500">*</span>
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   {CARE_LEVELS.map((cl) => (
@@ -428,7 +428,7 @@ export default function OperatorOnboardingPage() {
               </div>
             </div>
 
-            {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+            {error && <p className="mt-4 text-sm text-error-600">{error}</p>}
 
             <div className="mt-6 flex gap-3">
               <button
@@ -484,7 +484,7 @@ export default function OperatorOnboardingPage() {
                   <ul className="text-xs text-neutral-600 space-y-1 mb-3">
                     {plan.features.map((f) => (
                       <li key={f} className="flex items-center gap-1.5">
-                        <FiCheck size={11} className="text-green-500 shrink-0" />
+                        <FiCheck size={11} className="text-success-500 shrink-0" />
                         {f}
                       </li>
                     ))}
@@ -502,7 +502,7 @@ export default function OperatorOnboardingPage() {
               ))}
             </div>
 
-            {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+            {error && <p className="mt-4 text-sm text-error-600">{error}</p>}
 
             <button
               onClick={() => router.push("/operator")}

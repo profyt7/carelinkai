@@ -89,14 +89,14 @@ export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
 };
 
 export const DOCUMENT_TYPE_COLORS: Record<DocumentType, string> = {
-  MEDICAL_RECORD: 'bg-blue-100 text-blue-800',
-  INSURANCE: 'bg-green-100 text-green-800',
-  IDENTIFICATION: 'bg-purple-100 text-purple-800',
-  FINANCIAL: 'bg-yellow-100 text-yellow-800',
-  LEGAL: 'bg-orange-100 text-orange-800',
+  MEDICAL_RECORD: 'bg-primary-100 text-primary-800',
+  INSURANCE: 'bg-success-100 text-success-800',
+  IDENTIFICATION: 'bg-secondary-100 text-secondary-800',
+  FINANCIAL: 'bg-warning-100 text-warning-800',
+  LEGAL: 'bg-warning-100 text-warning-800',
   ASSESSMENT_FORM: 'bg-pink-100 text-pink-800',
-  EMERGENCY_CONTACT: 'bg-red-100 text-red-800',
-  GENERAL: 'bg-gray-100 text-gray-800',
+  EMERGENCY_CONTACT: 'bg-error-100 text-error-800',
+  GENERAL: 'bg-neutral-100 text-neutral-800',
 };
 
 export const ALLOWED_FILE_TYPES = [

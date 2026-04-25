@@ -31,14 +31,14 @@ const REPORT_TEMPLATES = [
     title: 'Occupancy Report',
     description: 'Track resident counts, occupancy rates, and capacity trends',
     icon: TrendingUp,
-    color: 'from-blue-500 to-cyan-500',
+    color: 'from-primary-500 to-cyan-500',
   },
   {
     type: 'FINANCIAL',
     title: 'Financial Report',
     description: 'Revenue, expenses, and per-resident cost analysis',
     icon: DollarSign,
-    color: 'from-green-500 to-emerald-500',
+    color: 'from-success-500 to-emerald-500',
   },
   {
     type: 'INCIDENT',
@@ -59,7 +59,7 @@ const REPORT_TEMPLATES = [
     title: 'Compliance Report',
     description: 'Assessments, certifications, and audit readiness',
     icon: ClipboardCheck,
-    color: 'from-indigo-500 to-blue-500',
+    color: 'from-indigo-500 to-primary-500',
   },
   {
     type: 'INQUIRY',
@@ -73,7 +73,7 @@ const REPORT_TEMPLATES = [
     title: 'Resident Report',
     description: 'Demographics, care levels, and length of stay',
     icon: UserPlus,
-    color: 'from-teal-500 to-green-500',
+    color: 'from-teal-500 to-success-500',
   },
   {
     type: 'FACILITY_COMPARISON',
@@ -153,7 +153,7 @@ export default function ReportsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Button
             size="lg"
-            className="h-auto py-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+            className="h-auto py-6 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700"
             onClick={() => setShowGenerator(true)}
           >
             <div className="flex flex-col items-center gap-2">
@@ -211,7 +211,7 @@ export default function ReportsPage() {
               return (
                 <Card
                   key={template?.type}
-                  className="group relative overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer border-2 hover:border-blue-400"
+                  className="group relative overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer border-2 hover:border-primary-400"
                   onClick={() => setShowGenerator(true)}
                 >
                   <div className="p-6 space-y-4">
@@ -224,7 +224,7 @@ export default function ReportsPage() {
 
                     {/* Content */}
                     <div className="space-y-2">
-                      <h3 className="font-semibold text-lg text-slate-900 group-hover:text-blue-600 transition-colors">
+                      <h3 className="font-semibold text-lg text-slate-900 group-hover:text-primary-600 transition-colors">
                         {template?.title}
                       </h3>
                       <p className="text-sm text-slate-600 line-clamp-2">
@@ -275,7 +275,7 @@ export default function ReportsPage() {
 
           {loading ? (
             <div className="text-center py-12">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
               <p className="mt-2 text-slate-600">Loading reports...</p>
             </div>
           ) : recentReports?.length === 0 ? (
@@ -298,7 +298,7 @@ export default function ReportsPage() {
                 <Card key={report?.id} className="p-4 hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4 flex-1">
-                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-500 to-indigo-500 flex items-center justify-center">
                         <FileText className="h-5 w-5 text-white" />
                       </div>
                       <div className="flex-1">
@@ -365,8 +365,8 @@ export default function ReportsPage() {
                           {report?.schedule?.toLowerCase?.()} at {report?.time}
                         </p>
                       </div>
-                      <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
-                        <Calendar className="h-4 w-4 text-green-600" />
+                      <div className="w-8 h-8 rounded-full bg-success-100 flex items-center justify-center">
+                        <Calendar className="h-4 w-4 text-success-600" />
                       </div>
                     </div>
                     <div className="text-sm text-slate-600">

@@ -43,10 +43,10 @@ export function FollowUpRemindersWidget({ reminders, onUpdate }: FollowUpReminde
     const now = new Date();
     const hoursUntil = differenceInHours(date, now);
 
-    if (isPast(date)) return 'bg-red-50 border-red-200 text-red-800';
-    if (hoursUntil < 24) return 'bg-orange-50 border-orange-200 text-orange-800';
-    if (hoursUntil < 72) return 'bg-yellow-50 border-yellow-200 text-yellow-800';
-    return 'bg-green-50 border-green-200 text-green-800';
+    if (isPast(date)) return 'bg-error-50 border-error-200 text-error-800';
+    if (hoursUntil < 24) return 'bg-warning-50 border-warning-200 text-warning-800';
+    if (hoursUntil < 72) return 'bg-warning-50 border-warning-200 text-warning-800';
+    return 'bg-success-50 border-success-200 text-success-800';
   };
 
   const getUrgencyLabel = (dueDate: Date | string) => {
@@ -79,13 +79,13 @@ export function FollowUpRemindersWidget({ reminders, onUpdate }: FollowUpReminde
 
   if (sortedReminders.length === 0) {
     return (
-      <div className="bg-white p-6 rounded-lg border border-gray-200">
+      <div className="bg-white p-6 rounded-lg border border-neutral-200">
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
           <FiBell className="w-5 h-5" />
           Follow-up Reminders
         </h3>
-        <div className="text-center py-8 text-gray-500">
-          <FiBell className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+        <div className="text-center py-8 text-neutral-500">
+          <FiBell className="w-12 h-12 mx-auto mb-2 text-neutral-300" />
           <p>No pending reminders</p>
         </div>
       </div>
@@ -93,11 +93,11 @@ export function FollowUpRemindersWidget({ reminders, onUpdate }: FollowUpReminde
   }
 
   return (
-    <div className="bg-white p-6 rounded-lg border border-gray-200">
+    <div className="bg-white p-6 rounded-lg border border-neutral-200">
       <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
         <FiBell className="w-5 h-5" />
         Follow-up Reminders
-        <span className="ml-auto text-sm font-normal text-gray-500">
+        <span className="ml-auto text-sm font-normal text-neutral-500">
           {sortedReminders.length} pending
         </span>
       </h3>
@@ -122,28 +122,28 @@ export function FollowUpRemindersWidget({ reminders, onUpdate }: FollowUpReminde
                     {getUrgencyLabel(reminder.dueDate)}
                   </span>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+                <div className="flex items-center gap-2 text-sm text-neutral-600 mb-1">
                   <FiUser className="w-4 h-4 flex-shrink-0" />
                   <Link
                     href={`/operator/inquiries/${reminder.inquiry.id}`}
-                    className="text-blue-600 hover:text-blue-800 truncate"
+                    className="text-primary-600 hover:text-primary-800 truncate"
                   >
                     {reminder.inquiry.family.user.firstName}{' '}
                     {reminder.inquiry.family.user.lastName}
                   </Link>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
+                <div className="flex items-center gap-2 text-sm text-neutral-600">
                   <FiClock className="w-4 h-4 flex-shrink-0" />
                   <span>{format(new Date(reminder.dueDate), 'MMM d, yyyy • h:mm a')}</span>
                 </div>
                 {reminder.notes && (
-                  <p className="text-sm text-gray-600 mt-2 truncate">{reminder.notes}</p>
+                  <p className="text-sm text-neutral-600 mt-2 truncate">{reminder.notes}</p>
                 )}
               </div>
               <button
                 onClick={() => handleCompleteReminder(reminder.id)}
                 disabled={completingId === reminder.id}
-                className="flex-shrink-0 p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors disabled:opacity-50"
+                className="flex-shrink-0 p-2 text-neutral-400 hover:text-success-600 hover:bg-success-50 rounded transition-colors disabled:opacity-50"
                 title="Mark as complete"
               >
                 <FiCheckCircle className="w-5 h-5" />
@@ -157,7 +157,7 @@ export function FollowUpRemindersWidget({ reminders, onUpdate }: FollowUpReminde
         <div className="mt-4 text-center">
           <Link
             href="/operator/inquiries?filter=reminders"
-            className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+            className="text-sm text-primary-600 hover:text-primary-800 font-medium"
           >
             View all {sortedReminders.length} reminders →
           </Link>

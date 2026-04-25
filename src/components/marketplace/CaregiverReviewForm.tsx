@@ -44,23 +44,23 @@ export default function CaregiverReviewForm({ caregiverId }: Props) {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-      <h3 className="text-lg font-medium text-gray-900 mb-4">Leave a review</h3>
+    <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-4">
+      <h3 className="text-lg font-medium text-neutral-900 mb-4">Leave a review</h3>
       {success ? (
-        <div className="rounded-md bg-green-50 p-3 text-sm text-green-800">Thank you! Your review has been submitted.</div>
+        <div className="rounded-md bg-success-50 p-3 text-sm text-success-800">Thank you! Your review has been submitted.</div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <div className="rounded-md bg-red-50 p-3 text-sm text-red-800">{error}</div>
+            <div className="rounded-md bg-error-50 p-3 text-sm text-error-800">{error}</div>
           )}
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
-            <label htmlFor="rating" className="text-sm font-medium text-gray-700">Rating</label>
+            <label htmlFor="rating" className="text-sm font-medium text-neutral-700">Rating</label>
             <select
               id="rating"
               value={rating}
               onChange={(e) => setRating(parseInt(e.target.value, 10))}
-              className="sm:col-span-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 bg-white"
+              className="sm:col-span-2 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 bg-white"
             >
               {[5,4,3,2,1].map(r => (
                 <option key={r} value={r}>{r} {r === 1 ? "star" : "stars"}</option>
@@ -69,25 +69,25 @@ export default function CaregiverReviewForm({ caregiverId }: Props) {
           </div>
 
           <div>
-            <label htmlFor="title" className="block text-sm font-medium text-gray-700">Title (optional)</label>
+            <label htmlFor="title" className="block text-sm font-medium text-neutral-700">Title (optional)</label>
             <input
               id="title"
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+              className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
               maxLength={120}
               placeholder="Great caregiver!"
             />
           </div>
 
           <div>
-            <label htmlFor="content" className="block text-sm font-medium text-gray-700">Comments (optional)</label>
+            <label htmlFor="content" className="block text-sm font-medium text-neutral-700">Comments (optional)</label>
             <textarea
               id="content"
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+              className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
               rows={4}
               maxLength={2000}
               placeholder="Share your experience working with this caregiver"
@@ -98,11 +98,11 @@ export default function CaregiverReviewForm({ caregiverId }: Props) {
             <input
               id="isPublic"
               type="checkbox"
-              className="h-4 w-4 text-primary-600 border-gray-300 rounded"
+              className="h-4 w-4 text-primary-600 border-neutral-300 rounded"
               checked={isPublic}
               onChange={(e) => setIsPublic(e.target.checked)}
             />
-            <label htmlFor="isPublic" className="ml-2 block text-sm text-gray-700">Make my review public</label>
+            <label htmlFor="isPublic" className="ml-2 block text-sm text-neutral-700">Make my review public</label>
           </div>
 
           <div className="pt-2">
@@ -120,7 +120,7 @@ export default function CaregiverReviewForm({ caregiverId }: Props) {
           </div>
         </form>
       )}
-      <p className="text-xs text-gray-500 mt-3">You can review caregivers you have hired or worked with.</p>
+      <p className="text-xs text-neutral-500 mt-3">You can review caregivers you have hired or worked with.</p>
     </div>
   );
 }

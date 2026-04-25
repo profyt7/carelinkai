@@ -173,57 +173,57 @@ export default function NewHomePage() {
               
               <div>
                 <label className="block text-sm font-medium text-neutral-700 mb-1">
-                  Home Name <span className="text-red-500">*</span>
+                  Home Name <span className="text-error-500">*</span>
                 </label>
                 <input
                   type="text"
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                    errors.name ? 'border-red-500' : 'border-neutral-300'
+                    errors.name ? 'border-error-500' : 'border-neutral-300'
                   }`}
                   value={form.name}
                   onChange={(e) => handleInputChange('name', e.target.value)}
                   placeholder="e.g., Sunny Meadows Assisted Living"
                 />
                 {errors.name && (
-                  <p className="mt-1 text-sm text-red-600">{errors.name}</p>
+                  <p className="mt-1 text-sm text-error-600">{errors.name}</p>
                 )}
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-neutral-700 mb-1">
-                  Description <span className="text-red-500">*</span>
+                  Description <span className="text-error-500">*</span>
                 </label>
                 <textarea
                   rows={4}
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                    errors.description ? 'border-red-500' : 'border-neutral-300'
+                    errors.description ? 'border-error-500' : 'border-neutral-300'
                   }`}
                   value={form.description}
                   onChange={(e) => handleInputChange('description', e.target.value)}
                   placeholder="Describe your home, its atmosphere, and what makes it special..."
                 />
                 {errors.description && (
-                  <p className="mt-1 text-sm text-red-600">{errors.description}</p>
+                  <p className="mt-1 text-sm text-error-600">{errors.description}</p>
                 )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-1">
-                    Capacity <span className="text-red-500">*</span>
+                    Capacity <span className="text-error-500">*</span>
                   </label>
                   <input
                     type="number"
                     min="1"
                     className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                      errors.capacity ? 'border-red-500' : 'border-neutral-300'
+                      errors.capacity ? 'border-error-500' : 'border-neutral-300'
                     }`}
                     value={form.capacity}
                     onChange={(e) => handleInputChange('capacity', e.target.value)}
                     placeholder="Number of residents"
                   />
                   {errors.capacity && (
-                    <p className="mt-1 text-sm text-red-600">{errors.capacity}</p>
+                    <p className="mt-1 text-sm text-error-600">{errors.capacity}</p>
                   )}
                 </div>
 
@@ -248,7 +248,7 @@ export default function NewHomePage() {
             {/* Care Levels */}
             <div className="space-y-4">
               <h3 className="text-sm font-medium text-neutral-700 border-b pb-2">
-                Care Levels Offered <span className="text-red-500">*</span>
+                Care Levels Offered <span className="text-error-500">*</span>
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {CARE_LEVELS.map((level) => (
@@ -271,7 +271,7 @@ export default function NewHomePage() {
                 ))}
               </div>
               {errors.careLevel && (
-                <p className="text-sm text-red-600">{errors.careLevel}</p>
+                <p className="text-sm text-error-600">{errors.careLevel}</p>
               )}
             </div>
 
@@ -288,14 +288,14 @@ export default function NewHomePage() {
                     step="0.01"
                     min="0"
                     className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                      errors.priceMin ? 'border-red-500' : 'border-neutral-300'
+                      errors.priceMin ? 'border-error-500' : 'border-neutral-300'
                     }`}
                     value={form.priceMin}
                     onChange={(e) => handleInputChange('priceMin', e.target.value)}
                     placeholder="e.g., 3000"
                   />
                   {errors.priceMin && (
-                    <p className="mt-1 text-sm text-red-600">{errors.priceMin}</p>
+                    <p className="mt-1 text-sm text-error-600">{errors.priceMin}</p>
                   )}
                 </div>
 
@@ -308,14 +308,14 @@ export default function NewHomePage() {
                     step="0.01"
                     min="0"
                     className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                      errors.priceMax ? 'border-red-500' : 'border-neutral-300'
+                      errors.priceMax ? 'border-error-500' : 'border-neutral-300'
                     }`}
                     value={form.priceMax}
                     onChange={(e) => handleInputChange('priceMax', e.target.value)}
                     placeholder="e.g., 6000"
                   />
                   {errors.priceMax && (
-                    <p className="mt-1 text-sm text-red-600">{errors.priceMax}</p>
+                    <p className="mt-1 text-sm text-error-600">{errors.priceMax}</p>
                   )}
                 </div>
               </div>
@@ -327,19 +327,19 @@ export default function NewHomePage() {
               
               <div>
                 <label className="block text-sm font-medium text-neutral-700 mb-1">
-                  Street Address <span className="text-red-500">*</span>
+                  Street Address <span className="text-error-500">*</span>
                 </label>
                 <input
                   type="text"
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                    errors.street ? 'border-red-500' : 'border-neutral-300'
+                    errors.street ? 'border-error-500' : 'border-neutral-300'
                   }`}
                   value={form.street}
                   onChange={(e) => handleInputChange('street', e.target.value)}
                   placeholder="123 Main St"
                 />
                 {errors.street && (
-                  <p className="mt-1 text-sm text-red-600">{errors.street}</p>
+                  <p className="mt-1 text-sm text-error-600">{errors.street}</p>
                 )}
               </div>
 
@@ -359,56 +359,56 @@ export default function NewHomePage() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-1">
-                    City <span className="text-red-500">*</span>
+                    City <span className="text-error-500">*</span>
                   </label>
                   <input
                     type="text"
                     className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                      errors.city ? 'border-red-500' : 'border-neutral-300'
+                      errors.city ? 'border-error-500' : 'border-neutral-300'
                     }`}
                     value={form.city}
                     onChange={(e) => handleInputChange('city', e.target.value)}
                     placeholder="Seattle"
                   />
                   {errors.city && (
-                    <p className="mt-1 text-sm text-red-600">{errors.city}</p>
+                    <p className="mt-1 text-sm text-error-600">{errors.city}</p>
                   )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-1">
-                    State <span className="text-red-500">*</span>
+                    State <span className="text-error-500">*</span>
                   </label>
                   <input
                     type="text"
                     maxLength={2}
                     className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                      errors.state ? 'border-red-500' : 'border-neutral-300'
+                      errors.state ? 'border-error-500' : 'border-neutral-300'
                     }`}
                     value={form.state}
                     onChange={(e) => handleInputChange('state', e.target.value.toUpperCase())}
                     placeholder="WA"
                   />
                   {errors.state && (
-                    <p className="mt-1 text-sm text-red-600">{errors.state}</p>
+                    <p className="mt-1 text-sm text-error-600">{errors.state}</p>
                   )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-1">
-                    ZIP Code <span className="text-red-500">*</span>
+                    ZIP Code <span className="text-error-500">*</span>
                   </label>
                   <input
                     type="text"
                     className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                      errors.zipCode ? 'border-red-500' : 'border-neutral-300'
+                      errors.zipCode ? 'border-error-500' : 'border-neutral-300'
                     }`}
                     value={form.zipCode}
                     onChange={(e) => handleInputChange('zipCode', e.target.value)}
                     placeholder="98101"
                   />
                   {errors.zipCode && (
-                    <p className="mt-1 text-sm text-red-600">{errors.zipCode}</p>
+                    <p className="mt-1 text-sm text-error-600">{errors.zipCode}</p>
                   )}
                 </div>
               </div>

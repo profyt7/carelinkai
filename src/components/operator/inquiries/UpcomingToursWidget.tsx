@@ -35,10 +35,10 @@ export function UpcomingToursWidget({ tours }: UpcomingToursWidgetProps) {
     const now = new Date();
     const hoursUntil = differenceInHours(date, now);
 
-    if (isPast(date)) return 'bg-red-50 border-red-200 text-red-800';
-    if (hoursUntil < 24) return 'bg-orange-50 border-orange-200 text-orange-800';
-    if (hoursUntil < 72) return 'bg-yellow-50 border-yellow-200 text-yellow-800';
-    return 'bg-blue-50 border-blue-200 text-blue-800';
+    if (isPast(date)) return 'bg-error-50 border-error-200 text-error-800';
+    if (hoursUntil < 24) return 'bg-warning-50 border-warning-200 text-warning-800';
+    if (hoursUntil < 72) return 'bg-warning-50 border-warning-200 text-warning-800';
+    return 'bg-primary-50 border-primary-200 text-primary-800';
   };
 
   const getUrgencyLabel = (tourDate: Date | string) => {
@@ -55,13 +55,13 @@ export function UpcomingToursWidget({ tours }: UpcomingToursWidgetProps) {
 
   if (sortedTours.length === 0) {
     return (
-      <div className="bg-white p-6 rounded-lg border border-gray-200">
+      <div className="bg-white p-6 rounded-lg border border-neutral-200">
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
           <FiCalendar className="w-5 h-5" />
           Upcoming Tours
         </h3>
-        <div className="text-center py-8 text-gray-500">
-          <FiCalendar className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+        <div className="text-center py-8 text-neutral-500">
+          <FiCalendar className="w-12 h-12 mx-auto mb-2 text-neutral-300" />
           <p>No tours scheduled</p>
         </div>
       </div>
@@ -69,11 +69,11 @@ export function UpcomingToursWidget({ tours }: UpcomingToursWidgetProps) {
   }
 
   return (
-    <div className="bg-white p-6 rounded-lg border border-gray-200">
+    <div className="bg-white p-6 rounded-lg border border-neutral-200">
       <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
         <FiCalendar className="w-5 h-5" />
         Upcoming Tours
-        <span className="ml-auto text-sm font-normal text-gray-500">
+        <span className="ml-auto text-sm font-normal text-neutral-500">
           {sortedTours.length} scheduled
         </span>
       </h3>
@@ -88,16 +88,16 @@ export function UpcomingToursWidget({ tours }: UpcomingToursWidgetProps) {
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <FiUser className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                  <FiUser className="w-4 h-4 text-neutral-400 flex-shrink-0" />
                   <span className="font-medium truncate">
                     {tour.family.user.firstName} {tour.family.user.lastName}
                   </span>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+                <div className="flex items-center gap-2 text-sm text-neutral-600 mb-1">
                   <FiMapPin className="w-4 h-4 flex-shrink-0" />
                   <span className="truncate">{tour.home.name}</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
+                <div className="flex items-center gap-2 text-sm text-neutral-600">
                   <FiClock className="w-4 h-4 flex-shrink-0" />
                   <span>{format(new Date(tour.tourDate), 'MMM d, yyyy • h:mm a')}</span>
                 </div>
@@ -120,7 +120,7 @@ export function UpcomingToursWidget({ tours }: UpcomingToursWidgetProps) {
         <div className="mt-4 text-center">
           <Link
             href="/operator/inquiries?filter=tours"
-            className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+            className="text-sm text-primary-600 hover:text-primary-800 font-medium"
           >
             View all {sortedTours.length} tours →
           </Link>

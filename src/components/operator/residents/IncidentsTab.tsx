@@ -25,17 +25,17 @@ const INCIDENT_TYPES = [
 ];
 
 const SEVERITY_LEVELS = [
-  { value: 'MINOR', label: 'Minor', color: 'bg-blue-100 text-blue-800' },
-  { value: 'MODERATE', label: 'Moderate', color: 'bg-yellow-100 text-yellow-800' },
-  { value: 'SEVERE', label: 'Severe', color: 'bg-orange-100 text-orange-800' },
-  { value: 'CRITICAL', label: 'Critical', color: 'bg-red-100 text-red-800' },
+  { value: 'MINOR', label: 'Minor', color: 'bg-primary-100 text-primary-800' },
+  { value: 'MODERATE', label: 'Moderate', color: 'bg-warning-100 text-warning-800' },
+  { value: 'SEVERE', label: 'Severe', color: 'bg-warning-100 text-warning-800' },
+  { value: 'CRITICAL', label: 'Critical', color: 'bg-error-100 text-error-800' },
 ];
 
 const INCIDENT_STATUSES = [
-  { value: 'REPORTED', label: 'Reported', color: 'bg-blue-100 text-blue-800' },
-  { value: 'UNDER_REVIEW', label: 'Under Review', color: 'bg-yellow-100 text-yellow-800' },
-  { value: 'RESOLVED', label: 'Resolved', color: 'bg-green-100 text-green-800' },
-  { value: 'FOLLOW_UP_REQUIRED', label: 'Follow-up Required', color: 'bg-orange-100 text-orange-800' },
+  { value: 'REPORTED', label: 'Reported', color: 'bg-primary-100 text-primary-800' },
+  { value: 'UNDER_REVIEW', label: 'Under Review', color: 'bg-warning-100 text-warning-800' },
+  { value: 'RESOLVED', label: 'Resolved', color: 'bg-success-100 text-success-800' },
+  { value: 'FOLLOW_UP_REQUIRED', label: 'Follow-up Required', color: 'bg-warning-100 text-warning-800' },
 ];
 
 type Incident = {
@@ -316,7 +316,7 @@ export function IncidentsTab({ residentId }: { residentId: string }) {
                   <ActionGuard resourceType="incident" action="update">
                     <button
                       onClick={() => openEditModal(incident)}
-                      className="p-1.5 text-neutral-600 hover:text-blue-600 hover:bg-neutral-50 rounded"
+                      className="p-1.5 text-neutral-600 hover:text-primary-600 hover:bg-neutral-50 rounded"
                       title="Edit"
                     >
                       <FiEdit2 className="w-4 h-4" />
@@ -325,7 +325,7 @@ export function IncidentsTab({ residentId }: { residentId: string }) {
                   <ActionGuard resourceType="incident" action="delete">
                     <button
                       onClick={() => handleDelete(incident.id)}
-                      className="p-1.5 text-neutral-600 hover:text-red-600 hover:bg-neutral-50 rounded"
+                      className="p-1.5 text-neutral-600 hover:text-error-600 hover:bg-neutral-50 rounded"
                       title="Delete"
                     >
                       <FiTrash2 className="w-4 h-4" />
@@ -363,7 +363,7 @@ export function IncidentsTab({ residentId }: { residentId: string }) {
                 {incident.followUpRequired && (
                   <div>
                     <div className="text-neutral-600 mb-1 font-medium">Follow-up:</div>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-warning-100 text-warning-800">
                       Required
                     </span>
                   </div>
@@ -658,7 +658,7 @@ export function IncidentsTab({ residentId }: { residentId: string }) {
                     {viewModal.status.replace(/_/g, ' ')}
                   </span>
                   {viewModal.followUpRequired && (
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-orange-100 text-orange-800">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-warning-100 text-warning-800">
                       Follow-up Required
                     </span>
                   )}

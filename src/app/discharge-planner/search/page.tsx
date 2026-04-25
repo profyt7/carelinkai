@@ -24,19 +24,19 @@ export default async function DischargePlannerSearchPage() {
 
   return (
     <DashboardLayout title="AI Placement Search" showSearch={false}>
-      <div className="bg-gradient-to-br from-blue-50 via-white to-purple-50 min-h-full">
+      <div className="bg-gradient-to-br from-primary-50 via-white to-purple-50 min-h-full">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           {/* Header */}
           <div className="text-center mb-12">
             <div className="flex items-center justify-center mb-4">
-              <div className="p-3 bg-blue-600 rounded-full">
+              <div className="p-3 bg-primary-600 rounded-full">
                 <Stethoscope className="h-8 w-8 text-white" />
               </div>
             </div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            <h1 className="text-4xl font-bold text-neutral-900 mb-4">
               AI-Powered Placement Search
             </h1>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-neutral-600 max-w-3xl mx-auto">
               Describe your patient's needs in natural language, and our AI will find the most suitable assisted living homes
             </p>
           </div>

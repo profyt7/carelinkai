@@ -18,7 +18,7 @@ export default function ConfidenceIndicator({
   // Handle null/undefined confidence
   if (confidence === null || confidence === undefined) {
     return (
-      <span className="text-xs text-gray-400 italic">
+      <span className="text-xs text-neutral-400 italic">
         No confidence score
       </span>
     );
@@ -27,9 +27,9 @@ export default function ConfidenceIndicator({
   // Ensure confidence is a number between 0-100
   const score = Math.max(0, Math.min(100, confidence));
   const getColor = () => {
-    if (score >= 80) return { bg: 'bg-green-500', text: 'text-green-700', border: 'border-green-500' };
-    if (score >= 60) return { bg: 'bg-yellow-500', text: 'text-yellow-700', border: 'border-yellow-500' };
-    return { bg: 'bg-red-500', text: 'text-red-700', border: 'border-red-500' };
+    if (score >= 80) return { bg: 'bg-success-500', text: 'text-success-700', border: 'border-success-500' };
+    if (score >= 60) return { bg: 'bg-warning-500', text: 'text-warning-700', border: 'border-warning-500' };
+    return { bg: 'bg-error-500', text: 'text-error-700', border: 'border-error-500' };
   };
 
   const getLabel = () => {
@@ -74,7 +74,7 @@ export default function ConfidenceIndicator({
             stroke="currentColor"
             strokeWidth="4"
             fill="none"
-            className="text-gray-200"
+            className="text-neutral-200"
           />
           <circle
             cx={svgSize / 2}
@@ -121,7 +121,7 @@ export default function ConfidenceIndicator({
           </span>
         </div>
       )}
-      <div className={`${sizeClasses[size].width} ${sizeClasses[size].height} bg-gray-200 rounded-full overflow-hidden`}>
+      <div className={`${sizeClasses[size].width} ${sizeClasses[size].height} bg-neutral-200 rounded-full overflow-hidden`}>
         <div
           className={`${sizeClasses[size].height} ${colors.bg} rounded-full transition-all duration-500 ease-out`}
           style={{ width: `${score}%` }}

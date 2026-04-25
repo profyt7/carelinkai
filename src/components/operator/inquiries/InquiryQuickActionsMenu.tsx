@@ -85,49 +85,49 @@ export function InquiryQuickActionsMenu({
       label: 'Convert to Resident', 
       icon: <FiUserPlus className="w-4 h-4" />, 
       show: canConvert && inquiryData?.status !== 'CONVERTED',
-      color: 'text-green-600'
+      color: 'text-success-600'
     },
     { 
       id: 'schedule-tour', 
       label: 'Schedule Tour', 
       icon: <FiCalendar className="w-4 h-4" />, 
       show: canUpdate,
-      color: 'text-blue-600'
+      color: 'text-primary-600'
     },
     { 
       id: 'update-status', 
       label: 'Update Status', 
       icon: <FiEdit className="w-4 h-4" />, 
       show: canUpdate,
-      color: 'text-gray-700'
+      color: 'text-neutral-700'
     },
     { 
       id: 'assign-staff', 
       label: 'Assign Staff', 
       icon: <FiUsers className="w-4 h-4" />, 
       show: canUpdate,
-      color: 'text-purple-600'
+      color: 'text-secondary-600'
     },
     { 
       id: 'add-note', 
       label: 'Add Note', 
       icon: <MessageSquare className="w-4 h-4" />, 
       show: canUpdate,
-      color: 'text-gray-700'
+      color: 'text-neutral-700'
     },
     { 
       id: 'set-reminder', 
       label: 'Set Reminder', 
       icon: <FiBell className="w-4 h-4" />, 
       show: canUpdate,
-      color: 'text-orange-600'
+      color: 'text-warning-600'
     },
     { 
       id: 'toggle-priority', 
       label: inquiryData?.priority === 'HIGH' ? 'Remove Priority' : 'Mark as Priority', 
       icon: <FiFlag className="w-4 h-4" />, 
       show: canUpdate,
-      color: 'text-red-600',
+      color: 'text-error-600',
       action: handleTogglePriority
     },
   ].filter(action => action.show);
@@ -141,7 +141,7 @@ export function InquiryQuickActionsMenu({
       <div className="relative" ref={menuRef}>
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
           title="Quick actions"
           aria-label="Quick actions menu"
         >
@@ -149,13 +149,13 @@ export function InquiryQuickActionsMenu({
         </button>
 
         {isOpen && (
-          <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg border border-gray-200 shadow-lg z-50">
+          <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg border border-neutral-200 shadow-lg z-50">
             <div className="py-1">
               {actions.map((action) => (
                 <button
                   key={action.id}
                   onClick={() => action.action ? action.action() : handleAction(action.id)}
-                  className={`w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3 text-sm ${action.color}`}
+                  className={`w-full px-4 py-2 text-left hover:bg-neutral-50 flex items-center gap-3 text-sm ${action.color}`}
                 >
                   {action.icon}
                   {action.label}

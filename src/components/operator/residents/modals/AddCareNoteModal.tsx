@@ -58,24 +58,24 @@ export function AddCareNoteModal({ isOpen, onClose, residentId, residentName }: 
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold">Add Care Note</h2>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <button onClick={onClose} className="text-neutral-400 hover:text-neutral-600">
               <FiX className="w-5 h-5" />
             </button>
           </div>
 
           <div className="mb-4">
-            <p className="text-sm text-gray-600">Adding note for: <strong>{residentName}</strong></p>
+            <p className="text-sm text-neutral-600">Adding note for: <strong>{residentName}</strong></p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-neutral-700 mb-1">
                 Category
               </label>
               <select
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               >
                 <option value="GENERAL">General</option>
                 <option value="HEALTH">Health</option>
@@ -88,13 +88,13 @@ export function AddCareNoteModal({ isOpen, onClose, residentId, residentName }: 
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-neutral-700 mb-1">
                 Note Content *
               </label>
               <textarea
                 value={formData.content}
                 onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 rows={5}
                 placeholder="Enter care note details..."
                 required
@@ -102,13 +102,13 @@ export function AddCareNoteModal({ isOpen, onClose, residentId, residentName }: 
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-neutral-700 mb-1">
                 Visibility
               </label>
               <select
                 value={formData.visibility}
                 onChange={(e) => setFormData({ ...formData, visibility: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               >
                 <option value="STAFF_ONLY">Staff Only</option>
                 <option value="FAMILY_VISIBLE">Visible to Family</option>
@@ -119,14 +119,14 @@ export function AddCareNoteModal({ isOpen, onClose, residentId, residentName }: 
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                className="flex-1 px-4 py-2 border border-neutral-300 rounded-lg hover:bg-neutral-50"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={submitting}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
               >
                 {submitting ? 'Adding...' : 'Add Note'}
               </button>

@@ -25,25 +25,25 @@ const careLevelConfig: Record<CareLevel, {
   description: string;
 }> = {
   INDEPENDENT: {
-    color: 'bg-green-50 text-green-700 border-green-200',
+    color: 'bg-success-50 text-success-700 border-success-200',
     icon: <FiCheck />,
     label: 'Independent',
     description: 'Low care needs',
   },
   ASSISTED: {
-    color: 'bg-blue-50 text-blue-700 border-blue-200',
+    color: 'bg-primary-50 text-primary-700 border-primary-200',
     icon: <FiUsers />,
     label: 'Assisted Living',
     description: 'Moderate care needs',
   },
   MEMORY_CARE: {
-    color: 'bg-purple-50 text-purple-700 border-purple-200',
+    color: 'bg-secondary-50 text-secondary-700 border-secondary-200',
     icon: <Brain />,
     label: 'Memory Care',
     description: 'Specialized care',
   },
   SKILLED_NURSING: {
-    color: 'bg-orange-50 text-orange-700 border-orange-200',
+    color: 'bg-warning-50 text-warning-700 border-warning-200',
     icon: <FiHeart />,
     label: 'Skilled Nursing',
     description: 'High care needs',
@@ -76,7 +76,7 @@ export function CareLevelBadge({
 }: CareLevelBadgeProps) {
   const normalizedLevel = level.toUpperCase() as CareLevel;
   const config = careLevelConfig[normalizedLevel] || {
-    color: 'bg-gray-50 text-gray-700 border-gray-200',
+    color: 'bg-neutral-50 text-neutral-700 border-neutral-200',
     icon: <FiUsers />,
     label: level,
     description: '',
@@ -110,7 +110,7 @@ export function CareLevelBadge({
 export function getCareLevelColor(level: string): string {
   const normalizedLevel = level.toUpperCase() as CareLevel;
   const config = careLevelConfig[normalizedLevel];
-  return config?.color || 'bg-gray-50 text-gray-700 border-gray-200';
+  return config?.color || 'bg-neutral-50 text-neutral-700 border-neutral-200';
 }
 
 // Utility function to get care level icon for other components

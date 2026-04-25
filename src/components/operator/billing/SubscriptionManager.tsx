@@ -41,16 +41,16 @@ const PLAN_RANK: Record<string, number> = { STARTER: 1, PROFESSIONAL: 2, GROWTH:
 function StatusBadge({ status }: { status: SubscriptionData['subscriptionStatus'] }) {
   switch (status) {
     case 'ACTIVE':
-      return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"><CheckCircle className="w-3 h-3" /> Active</span>;
+      return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-success-100 text-success-800"><CheckCircle className="w-3 h-3" /> Active</span>;
     case 'TRIALING':
-      return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"><Clock className="w-3 h-3" /> Free Trial</span>;
+      return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800"><Clock className="w-3 h-3" /> Free Trial</span>;
     case 'PAST_DUE':
-      return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"><AlertTriangle className="w-3 h-3" /> Past Due</span>;
+      return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-warning-100 text-warning-800"><AlertTriangle className="w-3 h-3" /> Past Due</span>;
     case 'CANCELED':
     case 'INCOMPLETE_EXPIRED':
-      return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"><XCircle className="w-3 h-3" /> Canceled</span>;
+      return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-error-100 text-error-800"><XCircle className="w-3 h-3" /> Canceled</span>;
     default:
-      return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">No Plan</span>;
+      return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-600">No Plan</span>;
   }
 }
 
@@ -61,15 +61,15 @@ function formatCents(cents: number, currency: string) {
 function InvoiceStatusBadge({ status }: { status: InvoiceData['status'] }) {
   switch (status) {
     case 'PAID':
-      return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Paid</span>;
+      return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-success-100 text-success-800">Paid</span>;
     case 'OPEN':
-      return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Open</span>;
+      return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-warning-100 text-warning-800">Open</span>;
     case 'VOID':
-      return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Void</span>;
+      return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-600">Void</span>;
     case 'UNCOLLECTIBLE':
-      return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">Uncollectible</span>;
+      return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-error-100 text-error-700">Uncollectible</span>;
     default:
-      return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Draft</span>;
+      return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-600">Draft</span>;
   }
 }
 
@@ -154,8 +154,8 @@ export default function SubscriptionManager() {
   if (loading) {
     return (
       <div className="card animate-pulse">
-        <div className="h-5 bg-gray-200 rounded w-40 mb-3" />
-        <div className="h-8 bg-gray-200 rounded w-32" />
+        <div className="h-5 bg-neutral-200 rounded w-40 mb-3" />
+        <div className="h-8 bg-neutral-200 rounded w-32" />
       </div>
     );
   }
@@ -168,10 +168,10 @@ export default function SubscriptionManager() {
   return (
     <div className="space-y-4">
       {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{error}</div>
+        <div className="rounded-lg bg-error-50 border border-error-200 px-4 py-3 text-sm text-error-700">{error}</div>
       )}
       {success && (
-        <div className="rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700 flex items-center gap-2">
+        <div className="rounded-lg bg-success-50 border border-success-200 px-4 py-3 text-sm text-success-700 flex items-center gap-2">
           <CheckCircle className="w-4 h-4 flex-shrink-0" />{success}
         </div>
       )}
@@ -191,7 +191,7 @@ export default function SubscriptionManager() {
               <div className="text-sm text-neutral-500 mt-0.5">{planDetails.price} · {planDetails.homes}</div>
             )}
             {subscription?.subscriptionStatus === 'TRIALING' && subscription.trialEndsAt && (
-              <div className="text-sm text-blue-600 mt-1">
+              <div className="text-sm text-primary-600 mt-1">
                 Trial ends {new Date(subscription.trialEndsAt).toLocaleDateString()}
               </div>
             )}
@@ -201,7 +201,7 @@ export default function SubscriptionManager() {
               </div>
             )}
             {subscription?.subscriptionStatus === 'PAST_DUE' && (
-              <div className="text-sm text-yellow-700 mt-1 font-medium">
+              <div className="text-sm text-warning-700 mt-1 font-medium">
                 Payment failed — update your payment method to restore access.
               </div>
             )}
@@ -246,14 +246,14 @@ export default function SubscriptionManager() {
                 <div
                   key={plan}
                   className={`border-2 rounded-xl p-4 flex flex-col gap-3 transition-all ${
-                    isCurrent ? 'border-blue-400 bg-blue-50' : 'border-neutral-200 hover:border-blue-300 hover:shadow-sm'
+                    isCurrent ? 'border-primary-400 bg-primary-50' : 'border-neutral-200 hover:border-primary-300 hover:shadow-sm'
                   }`}
                 >
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <div className="font-semibold text-base">{details.label}</div>
-                      {isCurrent && <span className="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">Current</span>}
-                      {!isCurrent && isUpgrade && <span className="text-xs font-medium text-green-600 bg-green-100 px-2 py-0.5 rounded-full">Upgrade</span>}
+                      {isCurrent && <span className="text-xs font-medium text-primary-600 bg-primary-100 px-2 py-0.5 rounded-full">Current</span>}
+                      {!isCurrent && isUpgrade && <span className="text-xs font-medium text-success-600 bg-success-100 px-2 py-0.5 rounded-full">Upgrade</span>}
                       {!isCurrent && !isUpgrade && <span className="text-xs font-medium text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">Downgrade</span>}
                     </div>
                     <div className="text-2xl font-bold">{details.price}</div>
@@ -318,7 +318,7 @@ export default function SubscriptionManager() {
                             href={inv.invoiceUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
+                            className="inline-flex items-center gap-1 text-xs text-primary-600 hover:text-primary-800"
                           >
                             <ExternalLink className="w-3 h-3" /> View
                           </a>
@@ -366,7 +366,7 @@ export default function SubscriptionManager() {
               return (
                 <div
                   key={plan}
-                  className="border border-neutral-200 rounded-xl p-4 flex flex-col gap-3 hover:border-blue-400 hover:shadow-sm transition-all"
+                  className="border border-neutral-200 rounded-xl p-4 flex flex-col gap-3 hover:border-primary-400 hover:shadow-sm transition-all"
                 >
                   <div>
                     <div className="font-semibold text-base">{details.label}</div>

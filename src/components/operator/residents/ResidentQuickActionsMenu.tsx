@@ -73,20 +73,20 @@ export function ResidentQuickActionsMenu({ residentId, residentName, onUpdate }:
       <div className="relative" ref={menuRef}>
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          className="p-2 hover:bg-neutral-100 rounded-lg transition-colors"
           title="Quick actions"
         >
           <FiMoreVertical className="w-5 h-5" />
         </button>
 
         {isOpen && (
-          <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg border border-gray-200 shadow-lg z-50">
+          <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg border border-neutral-200 shadow-lg z-50">
             <div className="py-1">
               {actions.map((action) => (
                 <button
                   key={action.id}
                   onClick={() => handleAction(action.id)}
-                  className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3 text-sm"
+                  className="w-full px-4 py-2 text-left hover:bg-neutral-50 flex items-center gap-3 text-sm"
                 >
                   {action.icon}
                   {action.label}

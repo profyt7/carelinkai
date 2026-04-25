@@ -185,10 +185,10 @@ export default function PhotoGalleryManager({
                 <button
                   onClick={() => handleDelete(photo.id)}
                   disabled={deletingId === photo.id}
-                  className="p-1.5 bg-white/90 rounded-md hover:bg-red-50 transition disabled:opacity-50"
+                  className="p-1.5 bg-white/90 rounded-md hover:bg-error-50 transition disabled:opacity-50"
                   title="Delete photo"
                 >
-                  <FiTrash2 className="h-4 w-4 text-red-600" />
+                  <FiTrash2 className="h-4 w-4 text-error-600" />
                 </button>
               </div>
 

@@ -99,19 +99,19 @@ export default function PWASettingsPage() {
               </div>
               
               {isUpdateAvailable && (
-                <div className="col-span-2 bg-blue-50 border border-blue-200 rounded-md p-4">
+                <div className="col-span-2 bg-primary-50 border border-primary-200 rounded-md p-4">
                   <div className="flex">
-                    <FiDownload className="h-5 w-5 text-blue-500 mr-3" />
+                    <FiDownload className="h-5 w-5 text-primary-500 mr-3" />
                     <div>
-                      <h3 className="text-sm font-medium text-blue-800">
+                      <h3 className="text-sm font-medium text-primary-800">
                         Update available
                       </h3>
-                      <p className="mt-1 text-sm text-blue-700">
+                      <p className="mt-1 text-sm text-primary-700">
                         A new version of CareLink AI is available.
                       </p>
                       <button
                         onClick={updateApp}
-                        className="mt-3 inline-flex items-center px-3 py-1.5 border border-blue-700 text-xs font-medium rounded text-blue-700 bg-blue-50 hover:bg-blue-100"
+                        className="mt-3 inline-flex items-center px-3 py-1.5 border border-primary-700 text-xs font-medium rounded text-primary-700 bg-primary-50 hover:bg-primary-100"
                       >
                         Update Now
                       </button>

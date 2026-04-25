@@ -159,18 +159,18 @@ export default function InquiryForm({
       <div className="flex min-h-screen items-center justify-center p-4">
         <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <div className="flex items-center justify-between p-6 border-b border-neutral-200">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">
+              <h2 className="text-2xl font-bold text-neutral-900">
                 Request Care Services
               </h2>
-              <p className="text-sm text-gray-600 mt-1">
+              <p className="text-sm text-neutral-600 mt-1">
                 Submit an inquiry to {targetName}
               </p>
             </div>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-neutral-400 hover:text-neutral-600 transition-colors"
               aria-label="Close"
             >
               <FiX className="h-6 w-6" />
@@ -179,13 +179,13 @@ export default function InquiryForm({
 
           {/* Success Message */}
           {submitSuccess && (
-            <div className="m-6 p-4 bg-green-50 border border-green-200 rounded-md flex items-start">
-              <FiCheckCircle className="h-5 w-5 text-green-600 mt-0.5 mr-3 flex-shrink-0" />
+            <div className="m-6 p-4 bg-success-50 border border-success-200 rounded-md flex items-start">
+              <FiCheckCircle className="h-5 w-5 text-success-600 mt-0.5 mr-3 flex-shrink-0" />
               <div>
-                <h3 className="text-sm font-medium text-green-800">
+                <h3 className="text-sm font-medium text-success-800">
                   Inquiry Submitted Successfully!
                 </h3>
-                <p className="text-sm text-green-700 mt-1">
+                <p className="text-sm text-success-700 mt-1">
                   Your inquiry has been sent to {targetName}. You'll receive a
                   response soon.
                 </p>
@@ -195,13 +195,13 @@ export default function InquiryForm({
 
           {/* Error Message */}
           {submitError && (
-            <div className="m-6 p-4 bg-red-50 border border-red-200 rounded-md flex items-start">
-              <FiAlertCircle className="h-5 w-5 text-red-600 mt-0.5 mr-3 flex-shrink-0" />
+            <div className="m-6 p-4 bg-error-50 border border-error-200 rounded-md flex items-start">
+              <FiAlertCircle className="h-5 w-5 text-error-600 mt-0.5 mr-3 flex-shrink-0" />
               <div>
-                <h3 className="text-sm font-medium text-red-800">
+                <h3 className="text-sm font-medium text-error-800">
                   Submission Failed
                 </h3>
-                <p className="text-sm text-red-700 mt-1">{submitError}</p>
+                <p className="text-sm text-error-700 mt-1">{submitError}</p>
               </div>
             </div>
           )}
@@ -213,9 +213,9 @@ export default function InquiryForm({
               <div>
                 <label
                   htmlFor="message"
-                  className="block text-sm font-medium text-gray-700 mb-2"
+                  className="block text-sm font-medium text-neutral-700 mb-2"
                 >
-                  Message <span className="text-red-500">*</span>
+                  Message <span className="text-error-500">*</span>
                 </label>
                 <textarea
                   id="message"
@@ -226,15 +226,15 @@ export default function InquiryForm({
                   placeholder="Tell us about your care needs, expectations, and any specific requirements..."
                   className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
                     errors.message
-                      ? "border-red-300 focus:ring-red-500 focus:border-red-500"
-                      : "border-gray-300"
+                      ? "border-error-300 focus:ring-error-500 focus:border-error-500"
+                      : "border-neutral-300"
                   }`}
                   required
                 />
                 {errors.message && (
-                  <p className="mt-1 text-sm text-red-600">{errors.message}</p>
+                  <p className="mt-1 text-sm text-error-600">{errors.message}</p>
                 )}
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-neutral-500">
                   {formData.message.length}/1000 characters
                 </p>
               </div>
@@ -243,7 +243,7 @@ export default function InquiryForm({
               <div>
                 <label
                   htmlFor="preferredStartDate"
-                  className="block text-sm font-medium text-gray-700 mb-2"
+                  className="block text-sm font-medium text-neutral-700 mb-2"
                 >
                   Preferred Start Date (Optional)
                 </label>
@@ -254,7 +254,7 @@ export default function InquiryForm({
                   value={formData.preferredStartDate}
                   onChange={handleChange}
                   min={new Date().toISOString().split("T")[0]}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className="w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 />
               </div>
 
@@ -262,7 +262,7 @@ export default function InquiryForm({
               <div>
                 <label
                   htmlFor="expectedHoursPerWeek"
-                  className="block text-sm font-medium text-gray-700 mb-2"
+                  className="block text-sm font-medium text-neutral-700 mb-2"
                 >
                   Expected Hours Per Week (Optional)
                 </label>
@@ -277,12 +277,12 @@ export default function InquiryForm({
                   placeholder="e.g., 20"
                   className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
                     errors.expectedHoursPerWeek
-                      ? "border-red-300 focus:ring-red-500 focus:border-red-500"
-                      : "border-gray-300"
+                      ? "border-error-300 focus:ring-error-500 focus:border-error-500"
+                      : "border-neutral-300"
                   }`}
                 />
                 {errors.expectedHoursPerWeek && (
-                  <p className="mt-1 text-sm text-red-600">
+                  <p className="mt-1 text-sm text-error-600">
                     {errors.expectedHoursPerWeek}
                   </p>
                 )}
@@ -292,7 +292,7 @@ export default function InquiryForm({
               <div>
                 <label
                   htmlFor="location"
-                  className="block text-sm font-medium text-gray-700 mb-2"
+                  className="block text-sm font-medium text-neutral-700 mb-2"
                 >
                   Location (Optional)
                 </label>
@@ -304,16 +304,16 @@ export default function InquiryForm({
                   onChange={handleChange}
                   placeholder="City, State or ZIP code"
                   maxLength={255}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className="w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 />
               </div>
 
               {/* Submit Button */}
-              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+              <div className="flex justify-end space-x-3 pt-4 border-t border-neutral-200">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2 border border-neutral-300 rounded-md text-neutral-700 font-medium hover:bg-neutral-50 transition-colors"
                   disabled={submitting}
                 >
                   Cancel
@@ -321,7 +321,7 @@ export default function InquiryForm({
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-6 py-2 bg-primary-600 text-white font-medium rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center transition-colors"
+                  className="px-6 py-2 bg-primary-600 text-white font-medium rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:bg-neutral-300 disabled:cursor-not-allowed flex items-center transition-colors"
                 >
                   {submitting ? (
                     <>

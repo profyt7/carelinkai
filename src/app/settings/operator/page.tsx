@@ -158,37 +158,37 @@ export default function OperatorProfilePage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-1">
-                    First Name <span className="text-red-500">*</span>
+                    First Name <span className="text-error-500">*</span>
                   </label>
                   <input
                     type="text"
                     className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                      errors.firstName ? 'border-red-500' : 'border-neutral-300'
+                      errors.firstName ? 'border-error-500' : 'border-neutral-300'
                     }`}
                     value={form.firstName}
                     onChange={(e) => handleInputChange('firstName', e.target.value)}
                     placeholder="Enter first name"
                   />
                   {errors.firstName && (
-                    <p className="mt-1 text-sm text-red-600">{errors.firstName}</p>
+                    <p className="mt-1 text-sm text-error-600">{errors.firstName}</p>
                   )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-1">
-                    Last Name <span className="text-red-500">*</span>
+                    Last Name <span className="text-error-500">*</span>
                   </label>
                   <input
                     type="text"
                     className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                      errors.lastName ? 'border-red-500' : 'border-neutral-300'
+                      errors.lastName ? 'border-error-500' : 'border-neutral-300'
                     }`}
                     value={form.lastName}
                     onChange={(e) => handleInputChange('lastName', e.target.value)}
                     placeholder="Enter last name"
                   />
                   {errors.lastName && (
-                    <p className="mt-1 text-sm text-red-600">{errors.lastName}</p>
+                    <p className="mt-1 text-sm text-error-600">{errors.lastName}</p>
                   )}
                 </div>
               </div>
@@ -214,14 +214,14 @@ export default function OperatorProfilePage() {
                   <input
                     type="tel"
                     className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                      errors.phone ? 'border-red-500' : 'border-neutral-300'
+                      errors.phone ? 'border-error-500' : 'border-neutral-300'
                     }`}
                     value={form.phone}
                     onChange={(e) => handleInputChange('phone', e.target.value)}
                     placeholder="+1 (555) 123-4567"
                   />
                   {errors.phone && (
-                    <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
+                    <p className="mt-1 text-sm text-error-600">{errors.phone}</p>
                   )}
                 </div>
               </div>
@@ -233,19 +233,19 @@ export default function OperatorProfilePage() {
               
               <div>
                 <label className="block text-sm font-medium text-neutral-700 mb-1">
-                  Company Name <span className="text-red-500">*</span>
+                  Company Name <span className="text-error-500">*</span>
                 </label>
                 <input
                   type="text"
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                    errors.companyName ? 'border-red-500' : 'border-neutral-300'
+                    errors.companyName ? 'border-error-500' : 'border-neutral-300'
                   }`}
                   value={form.companyName}
                   onChange={(e) => handleInputChange('companyName', e.target.value)}
                   placeholder="Your company or facility name"
                 />
                 {errors.companyName && (
-                  <p className="mt-1 text-sm text-red-600">{errors.companyName}</p>
+                  <p className="mt-1 text-sm text-error-600">{errors.companyName}</p>
                 )}
               </div>
 

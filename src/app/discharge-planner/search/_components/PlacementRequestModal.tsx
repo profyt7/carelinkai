@@ -122,7 +122,7 @@ export default function PlacementRequestModal({ isOpen, onClose, home, searchId 
                 {/* Close Button */}
                 <button
                   onClick={onClose}
-                  className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                  className="absolute top-4 right-4 p-2 text-neutral-400 hover:text-neutral-600 transition-colors"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -130,19 +130,19 @@ export default function PlacementRequestModal({ isOpen, onClose, home, searchId 
                 {/* Success State */}
                 {success ? (
                   <div className="text-center py-8">
-                    <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                      <CheckCircle className="h-10 w-10 text-green-600" />
+                    <div className="mx-auto w-16 h-16 bg-success-100 rounded-full flex items-center justify-center mb-4">
+                      <CheckCircle className="h-10 w-10 text-success-600" />
                     </div>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">Request Sent Successfully!</h3>
-                    <p className="text-gray-600">The facility will receive your placement request shortly.</p>
+                    <h3 className="text-2xl font-bold text-neutral-900 mb-2">Request Sent Successfully!</h3>
+                    <p className="text-neutral-600">The facility will receive your placement request shortly.</p>
                   </div>
                 ) : (
                   <>
                     {/* Header */}
-                    <Dialog.Title as="h3" className="text-2xl font-bold text-gray-900 mb-2">
+                    <Dialog.Title as="h3" className="text-2xl font-bold text-neutral-900 mb-2">
                       Send Placement Request
                     </Dialog.Title>
-                    <p className="text-gray-600 mb-6">
+                    <p className="text-neutral-600 mb-6">
                       To: <span className="font-semibold">{home?.homeName || 'Unknown Home'}</span>
                     </p>
 
@@ -150,7 +150,7 @@ export default function PlacementRequestModal({ isOpen, onClose, home, searchId 
                     <form onSubmit={handleSubmit} className="space-y-6">
                       {/* Patient Name */}
                       <div>
-                        <label htmlFor="patientName" className="block text-sm font-semibold text-gray-700 mb-2">
+                        <label htmlFor="patientName" className="block text-sm font-semibold text-neutral-700 mb-2">
                           Patient Name *
                         </label>
                         <input
@@ -160,7 +160,7 @@ export default function PlacementRequestModal({ isOpen, onClose, home, searchId 
                           value={formData.patientName}
                           onChange={handleChange}
                           required
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                           placeholder="John Doe"
                           autoComplete="name"
                         />
@@ -168,7 +168,7 @@ export default function PlacementRequestModal({ isOpen, onClose, home, searchId 
 
                       {/* Patient Age */}
                       <div>
-                        <label htmlFor="patientAge" className="block text-sm font-semibold text-gray-700 mb-2">
+                        <label htmlFor="patientAge" className="block text-sm font-semibold text-neutral-700 mb-2">
                           Patient Age *
                         </label>
                         <input
@@ -180,7 +180,7 @@ export default function PlacementRequestModal({ isOpen, onClose, home, searchId 
                           required
                           min="0"
                           max="150"
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                           placeholder="78"
                           autoComplete="off"
                         />
@@ -188,7 +188,7 @@ export default function PlacementRequestModal({ isOpen, onClose, home, searchId 
 
                       {/* Medical Needs */}
                       <div>
-                        <label htmlFor="medicalNeeds" className="block text-sm font-semibold text-gray-700 mb-2">
+                        <label htmlFor="medicalNeeds" className="block text-sm font-semibold text-neutral-700 mb-2">
                           Medical Needs & Care Requirements *
                         </label>
                         <textarea
@@ -198,14 +198,14 @@ export default function PlacementRequestModal({ isOpen, onClose, home, searchId 
                           onChange={handleChange}
                           required
                           rows={4}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                          className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
                           placeholder="E.g., Moderate Alzheimer's, requires 24/7 supervision, physical therapy 3x/week..."
                         />
                       </div>
 
                       {/* Timeline */}
                       <div>
-                        <label htmlFor="timeline" className="block text-sm font-semibold text-gray-700 mb-2">
+                        <label htmlFor="timeline" className="block text-sm font-semibold text-neutral-700 mb-2">
                           Timeline for Placement *
                         </label>
                         <select
@@ -214,7 +214,7 @@ export default function PlacementRequestModal({ isOpen, onClose, home, searchId 
                           value={formData.timeline}
                           onChange={handleChange}
                           required
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         >
                           <option value="immediate">Immediate (within 1 week)</option>
                           <option value="urgent">Urgent (1-2 weeks)</option>
@@ -225,7 +225,7 @@ export default function PlacementRequestModal({ isOpen, onClose, home, searchId 
 
                       {/* Payment Type */}
                       <div>
-                        <label htmlFor="paymentType" className="block text-sm font-semibold text-gray-700 mb-2">
+                        <label htmlFor="paymentType" className="block text-sm font-semibold text-neutral-700 mb-2">
                           Payment Type *
                         </label>
                         <select
@@ -234,7 +234,7 @@ export default function PlacementRequestModal({ isOpen, onClose, home, searchId 
                           value={formData.paymentType}
                           onChange={handleChange}
                           required
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         >
                           <option value="private">Private Pay</option>
                           <option value="medicare">Medicare</option>
@@ -247,7 +247,7 @@ export default function PlacementRequestModal({ isOpen, onClose, home, searchId 
 
                       {/* Additional Notes */}
                       <div>
-                        <label htmlFor="additionalNotes" className="block text-sm font-semibold text-gray-700 mb-2">
+                        <label htmlFor="additionalNotes" className="block text-sm font-semibold text-neutral-700 mb-2">
                           Additional Notes (Optional)
                         </label>
                         <textarea
@@ -256,16 +256,16 @@ export default function PlacementRequestModal({ isOpen, onClose, home, searchId 
                           value={formData.additionalNotes}
                           onChange={handleChange}
                           rows={3}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                          className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
                           placeholder="Any special requirements or preferences..."
                         />
                       </div>
 
                       {/* Error Display */}
                       {error && (
-                        <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
-                          <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-                          <p className="text-sm text-red-600">{error}</p>
+                        <div className="p-4 bg-error-50 border border-error-200 rounded-lg flex items-start gap-2">
+                          <AlertCircle className="h-5 w-5 text-error-600 flex-shrink-0 mt-0.5" />
+                          <p className="text-sm text-error-600">{error}</p>
                         </div>
                       )}
 
@@ -274,7 +274,7 @@ export default function PlacementRequestModal({ isOpen, onClose, home, searchId 
                         <button
                           type="button"
                           onClick={onClose}
-                          className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
+                          className="flex-1 px-6 py-3 border border-neutral-300 text-neutral-700 rounded-lg font-semibold hover:bg-neutral-50 transition-colors"
                           disabled={isSending}
                         >
                           Cancel
@@ -282,7 +282,7 @@ export default function PlacementRequestModal({ isOpen, onClose, home, searchId 
                         <button
                           type="submit"
                           disabled={isSending}
-                          className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-6 rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2"
+                          className="flex-1 bg-gradient-to-r from-primary-600 to-purple-600 text-white py-3 px-6 rounded-lg font-semibold hover:from-primary-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2"
                         >
                           {isSending ? (
                             <>

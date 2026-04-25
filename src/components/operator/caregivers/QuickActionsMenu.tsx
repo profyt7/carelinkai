@@ -169,8 +169,8 @@ export function QuickActionsMenu({ caregiver, onUpdate }: QuickActionsMenuProps)
                     disabled={updating}
                     className={`w-full px-4 py-2 text-left text-sm flex items-center gap-3 ${
                       caregiver.employmentStatus === 'ACTIVE'
-                        ? 'text-red-600 hover:bg-red-50'
-                        : 'text-green-600 hover:bg-green-50'
+                        ? 'text-error-600 hover:bg-error-50'
+                        : 'text-success-600 hover:bg-success-50'
                     }`}
                   >
                     {caregiver.employmentStatus === 'ACTIVE' ? (

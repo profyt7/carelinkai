@@ -313,32 +313,32 @@ export default function EditHomePage() {
               
               <div>
                 <label className="block text-sm font-medium text-neutral-700 mb-1">
-                  Home Name <span className="text-red-500">*</span>
+                  Home Name <span className="text-error-500">*</span>
                 </label>
                 <input
                   type="text"
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                    errors.name ? 'border-red-500' : 'border-neutral-300'
+                    errors.name ? 'border-error-500' : 'border-neutral-300'
                   }`}
                   value={form.name}
                   onChange={(e) => handleInputChange('name', e.target.value)}
                 />
-                {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
+                {errors.name && <p className="mt-1 text-sm text-error-600">{errors.name}</p>}
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-neutral-700 mb-1">
-                  Description <span className="text-red-500">*</span>
+                  Description <span className="text-error-500">*</span>
                 </label>
                 <textarea
                   rows={4}
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                    errors.description ? 'border-red-500' : 'border-neutral-300'
+                    errors.description ? 'border-error-500' : 'border-neutral-300'
                   }`}
                   value={form.description}
                   onChange={(e) => handleInputChange('description', e.target.value)}
                 />
-                {errors.description && <p className="mt-1 text-sm text-red-600">{errors.description}</p>}
+                {errors.description && <p className="mt-1 text-sm text-error-600">{errors.description}</p>}
                 
                 {/* AI Profile Generation */}
                 <div className="mt-3">
@@ -368,16 +368,16 @@ export default function EditHomePage() {
 
               {/* AI Preview Modal/Section */}
               {showAIPreview && aiGeneratedData && (
-                <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
+                <div className="mt-4 p-4 bg-gradient-to-r from-primary-50 to-indigo-50 border border-primary-200 rounded-lg">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center">
-                      <svg className="w-5 h-5 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="w-5 h-5 text-primary-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                       </svg>
                       <h4 className="text-sm font-semibold text-neutral-800">
                         AI-Generated Profile
                       </h4>
-                      <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                      <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-primary-100 text-primary-800 rounded-full">
                         New
                       </span>
                     </div>
@@ -397,7 +397,7 @@ export default function EditHomePage() {
                     <label className="block text-sm font-medium text-neutral-700 mb-2">
                       Generated Description:
                     </label>
-                    <div className="bg-white p-3 rounded-md border border-blue-200 text-sm text-neutral-700 leading-relaxed">
+                    <div className="bg-white p-3 rounded-md border border-primary-200 text-sm text-neutral-700 leading-relaxed">
                       {aiGeneratedData.description}
                     </div>
                   </div>
@@ -408,10 +408,10 @@ export default function EditHomePage() {
                       <label className="block text-sm font-medium text-neutral-700 mb-2">
                         Key Highlights:
                       </label>
-                      <ul className="bg-white p-3 rounded-md border border-blue-200 space-y-2">
+                      <ul className="bg-white p-3 rounded-md border border-primary-200 space-y-2">
                         {aiGeneratedData.highlights.map((highlight, index) => (
                           <li key={index} className="flex items-start text-sm text-neutral-700">
-                            <svg className="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <svg className="w-4 h-4 text-success-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                             </svg>
                             {highlight}
@@ -452,18 +452,18 @@ export default function EditHomePage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-1">
-                    Capacity <span className="text-red-500">*</span>
+                    Capacity <span className="text-error-500">*</span>
                   </label>
                   <input
                     type="number"
                     min="1"
                     className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                      errors.capacity ? 'border-red-500' : 'border-neutral-300'
+                      errors.capacity ? 'border-error-500' : 'border-neutral-300'
                     }`}
                     value={form.capacity}
                     onChange={(e) => handleInputChange('capacity', Number(e.target.value))}
                   />
-                  {errors.capacity && <p className="mt-1 text-sm text-red-600">{errors.capacity}</p>}
+                  {errors.capacity && <p className="mt-1 text-sm text-error-600">{errors.capacity}</p>}
                 </div>
 
                 <div>
@@ -518,7 +518,7 @@ export default function EditHomePage() {
             {/* Care Levels */}
             <div className="space-y-4">
               <h3 className="text-sm font-medium text-neutral-700 border-b pb-2">
-                Care Levels Offered <span className="text-red-500">*</span>
+                Care Levels Offered <span className="text-error-500">*</span>
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {CARE_LEVELS.map((level) => (
@@ -540,7 +540,7 @@ export default function EditHomePage() {
                   </label>
                 ))}
               </div>
-              {errors.careLevel && <p className="text-sm text-red-600">{errors.careLevel}</p>}
+              {errors.careLevel && <p className="text-sm text-error-600">{errors.careLevel}</p>}
             </div>
 
             {/* Pricing */}
@@ -556,12 +556,12 @@ export default function EditHomePage() {
                     step="0.01"
                     min="0"
                     className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                      errors.priceMin ? 'border-red-500' : 'border-neutral-300'
+                      errors.priceMin ? 'border-error-500' : 'border-neutral-300'
                     }`}
                     value={form.priceMin}
                     onChange={(e) => handleInputChange('priceMin', e.target.value)}
                   />
-                  {errors.priceMin && <p className="mt-1 text-sm text-red-600">{errors.priceMin}</p>}
+                  {errors.priceMin && <p className="mt-1 text-sm text-error-600">{errors.priceMin}</p>}
                 </div>
 
                 <div>
@@ -573,12 +573,12 @@ export default function EditHomePage() {
                     step="0.01"
                     min="0"
                     className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                      errors.priceMax ? 'border-red-500' : 'border-neutral-300'
+                      errors.priceMax ? 'border-error-500' : 'border-neutral-300'
                     }`}
                     value={form.priceMax}
                     onChange={(e) => handleInputChange('priceMax', e.target.value)}
                   />
-                  {errors.priceMax && <p className="mt-1 text-sm text-red-600">{errors.priceMax}</p>}
+                  {errors.priceMax && <p className="mt-1 text-sm text-error-600">{errors.priceMax}</p>}
                 </div>
               </div>
             </div>

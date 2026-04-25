@@ -133,13 +133,13 @@ interface Inquiry {
 const STATUS_INFO = {
   SUBMITTED: {
     label: "Submitted",
-    color: "bg-blue-100 text-blue-800",
+    color: "bg-primary-100 text-primary-800",
     icon: <FiClockOutline className="h-4 w-4" />,
     description: "Your inquiry has been submitted to the care home"
   },
   CONTACTED: {
     label: "Contacted",
-    color: "bg-purple-100 text-purple-800",
+    color: "bg-secondary-100 text-secondary-800",
     icon: <FiPhone className="h-4 w-4" />,
     description: "The care home has received your inquiry"
   },
@@ -157,7 +157,7 @@ const STATUS_INFO = {
   },
   DECIDED: {
     label: "Decided",
-    color: "bg-green-100 text-green-800",
+    color: "bg-success-100 text-success-800",
     icon: <FiCheckCircle className="h-4 w-4" />,
     description: "You've made a decision about this care home"
   },
@@ -171,28 +171,28 @@ const STATUS_INFO = {
 
 // Priority badges
 const PRIORITY_BADGES = {
-  HIGH: { color: "bg-red-100 text-red-800", label: "High Priority" },
+  HIGH: { color: "bg-error-100 text-error-800", label: "High Priority" },
   MEDIUM: { color: "bg-amber-100 text-amber-800", label: "Medium Priority" },
-  LOW: { color: "bg-blue-100 text-blue-800", label: "Low Priority" }
+  LOW: { color: "bg-primary-100 text-primary-800", label: "Low Priority" }
 };
 
 // Permission level info
 const PERMISSION_LEVELS = {
   VIEW: { 
     label: "Viewer", 
-    color: "bg-blue-100 text-blue-800", 
+    color: "bg-primary-100 text-primary-800", 
     icon: <FiEye className="h-4 w-4" />,
     description: "Can view all inquiry details but cannot make changes"
   },
   COMMENT: { 
     label: "Commenter", 
-    color: "bg-green-100 text-green-800", 
+    color: "bg-success-100 text-success-800", 
     icon: <MessageSquare className="h-4 w-4" />,
     description: "Can view and add comments/notes to the inquiry"
   },
   VOTE: { 
     label: "Decision Maker", 
-    color: "bg-purple-100 text-purple-800", 
+    color: "bg-secondary-100 text-secondary-800", 
     icon: <FiThumbsUp className="h-4 w-4" />,
     description: "Can view, comment, and vote on decisions"
   },
@@ -814,7 +814,7 @@ export default function InquiryDetailPage() {
                             message.sender.role === 'USER' 
                               ? 'bg-primary-500 text-white' 
                               : message.sender.role === 'CARE_ADVISOR'
-                                ? 'bg-purple-100 text-neutral-800'
+                                ? 'bg-secondary-100 text-neutral-800'
                                 : 'bg-white text-neutral-800 shadow-sm'
                           }`}>
                             {message.sender.role !== 'USER' && (
@@ -1018,7 +1018,7 @@ export default function InquiryDetailPage() {
                                       </div>
                                     )}
                                     {person.isActive && (
-                                      <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-green-500"></span>
+                                      <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-success-500"></span>
                                     )}
                                   </div>
                                   <div>

@@ -90,9 +90,9 @@ export default function InquiryCard({ inquiry, onEdit, onContact, isFamily = fal
     <div
       className={`group relative bg-white rounded-lg border-2 shadow-sm hover:shadow-md transition-all duration-200 ${
         urgency === 'critical'
-          ? 'border-red-300 hover:border-red-400'
+          ? 'border-error-300 hover:border-error-400'
           : urgency === 'high'
-          ? 'border-orange-300 hover:border-orange-400'
+          ? 'border-warning-300 hover:border-warning-400'
           : 'border-neutral-200 hover:border-neutral-300'
       }`}
     >
@@ -188,9 +188,9 @@ export default function InquiryCard({ inquiry, onEdit, onContact, isFamily = fal
         )}
 
         {/* Next Action */}
-        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-          <div className="text-xs font-medium text-blue-700 mb-1">Next Action</div>
-          <div className="text-sm text-blue-900">{nextAction}</div>
+        <div className="mb-4 p-3 bg-primary-50 border border-primary-200 rounded-md">
+          <div className="text-xs font-medium text-primary-700 mb-1">Next Action</div>
+          <div className="text-sm text-primary-900">{nextAction}</div>
         </div>
 
         {/* Stage Duration */}

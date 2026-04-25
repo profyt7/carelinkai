@@ -245,7 +245,7 @@ export default function AdminProviderDetailPage() {
                     disabled={saving === "provider-verification"}
                     className={`px-4 py-2 rounded-md font-medium text-sm ${
                       provider.isVerified
-                        ? "bg-green-100 text-green-800 hover:bg-green-200"
+                        ? "bg-success-100 text-success-800 hover:bg-success-200"
                         : "bg-amber-100 text-amber-800 hover:bg-amber-200"
                     } disabled:opacity-50`}
                   >
@@ -266,8 +266,8 @@ export default function AdminProviderDetailPage() {
                     disabled={saving === "provider-active"}
                     className={`px-4 py-2 rounded-md font-medium text-sm ${
                       provider.isActive
-                        ? "bg-green-100 text-green-800 hover:bg-green-200"
-                        : "bg-red-100 text-red-800 hover:bg-red-200"
+                        ? "bg-success-100 text-success-800 hover:bg-success-200"
+                        : "bg-error-100 text-error-800 hover:bg-error-200"
                     } disabled:opacity-50`}
                   >
                     {provider.isActive ? (
@@ -455,9 +455,9 @@ export default function AdminProviderDetailPage() {
                             <span
                               className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
                                 cred.status === "VERIFIED"
-                                  ? "bg-green-100 text-green-800"
+                                  ? "bg-success-100 text-success-800"
                                   : cred.status === "REJECTED"
-                                  ? "bg-red-100 text-red-800"
+                                  ? "bg-error-100 text-error-800"
                                   : "bg-amber-100 text-amber-800"
                               }`}
                             >

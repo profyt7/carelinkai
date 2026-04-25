@@ -183,7 +183,7 @@ export default function AdminUserDetailPage() {
           <Link href="/admin/users" className="text-[#3978FC] hover:text-[#3167d4] flex items-center gap-2 mb-4">
             <FiArrowLeft /> Back to Users
           </Link>
-          <div className="bg-red-50 text-red-700 p-4 rounded-lg">
+          <div className="bg-error-50 text-error-700 p-4 rounded-lg">
             {error || 'User not found'}
           </div>
         </div>
@@ -306,7 +306,7 @@ export default function AdminUserDetailPage() {
             <button
               type="button"
               onClick={handleDelete}
-              className="bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors flex items-center gap-2 ml-auto"
+              className="bg-error-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-error-700 transition-colors flex items-center gap-2 ml-auto"
             >
               <FiTrash2 />
               Delete User
@@ -341,7 +341,7 @@ export default function AdminUserDetailPage() {
             
             <div className="mb-4">
               <label className="block text-sm font-medium text-neutral-700 mb-2">
-                Reason for impersonation <span className="text-red-500">*</span>
+                Reason for impersonation <span className="text-error-500">*</span>
               </label>
               <textarea
                 value={impersonateReason}

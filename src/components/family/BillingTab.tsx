@@ -127,7 +127,7 @@ export default function BillingTab({ familyId, showMock = false, isGuest = false
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+      <div className="bg-white rounded-lg border border-neutral-200 p-6 shadow-sm">
         <LoadingState type="list" count={3} />
       </div>
     );
@@ -136,20 +136,20 @@ export default function BillingTab({ familyId, showMock = false, isGuest = false
   return (
     <div className="space-y-6">
       {/* Wallet Balance Card */}
-      <div className="bg-gradient-to-br from-blue-500 via-blue-600 to-cyan-500 rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02]">
+      <div className="bg-gradient-to-br from-primary-500 via-primary-600 to-cyan-500 rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02]">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-blue-100 font-semibold text-sm uppercase tracking-wide mb-2">
+            <p className="text-primary-100 font-semibold text-sm uppercase tracking-wide mb-2">
               Wallet Balance
             </p>
             <p className="text-5xl font-bold text-white mb-1">
               {walletBalance !== null ? (
                 new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(walletBalance))
               ) : (
-                <span className="animate-pulse text-blue-200">$—.—</span>
+                <span className="animate-pulse text-primary-200">$—.—</span>
               )}
             </p>
-            <p className="text-blue-100 text-sm">Available funds</p>
+            <p className="text-primary-100 text-sm">Available funds</p>
           </div>
           <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-lg">
             <FiDollarSign className="w-10 h-10 text-white" />
@@ -159,15 +159,15 @@ export default function BillingTab({ familyId, showMock = false, isGuest = false
 
       {/* Care Payments */}
       {!showMock && bookings.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-md">
-          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-indigo-400 to-blue-500 rounded-lg flex items-center justify-center">
+        <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-md">
+          <h3 className="text-lg font-bold text-neutral-900 mb-4 flex items-center gap-2">
+            <div className="w-8 h-8 bg-gradient-to-br from-indigo-400 to-primary-500 rounded-lg flex items-center justify-center">
               <FiHome className="w-4 h-4 text-white" />
             </div>
             Care Payments
           </h3>
           {payError && (
-            <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+            <div className="mb-4 rounded-lg bg-error-50 border border-error-200 px-4 py-3 text-sm text-error-700">
               {payError}
             </div>
           )}
@@ -185,14 +185,14 @@ export default function BillingTab({ familyId, showMock = false, isGuest = false
               const fmt = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
 
               return (
-                <div key={booking.id} className="border border-gray-200 rounded-xl p-4">
+                <div key={booking.id} className="border border-neutral-200 rounded-xl p-4">
                   <div className="flex items-center justify-between mb-3">
                     <div>
-                      <div className="font-semibold text-gray-900">{booking.home.name}</div>
-                      <div className="text-sm text-gray-500">Monthly rate: {fmt(monthly)}</div>
+                      <div className="font-semibold text-neutral-900">{booking.home.name}</div>
+                      <div className="text-sm text-neutral-500">Monthly rate: {fmt(monthly)}</div>
                     </div>
                     <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                      booking.status === 'CONFIRMED' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                      booking.status === 'CONFIRMED' ? 'bg-success-100 text-success-700' : 'bg-neutral-100 text-neutral-600'
                     }`}>
                       {booking.status}
                     </span>
@@ -201,7 +201,7 @@ export default function BillingTab({ familyId, showMock = false, isGuest = false
                     <button
                       onClick={() => payFromWallet(booking.id, Math.round(monthly * 100), 'MONTHLY_FEE')}
                       disabled={!canPayMonthly || !!payingId || isGuest}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold py-2 px-4 rounded-lg transition-colors"
+                      className="flex-1 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold py-2 px-4 rounded-lg transition-colors"
                     >
                       {isPayingMonthly ? 'Processing…' : `Pay Monthly — ${fmt(monthlyTotal)}`}
                     </button>
@@ -209,7 +209,7 @@ export default function BillingTab({ familyId, showMock = false, isGuest = false
                       <button
                         onClick={() => payFromWallet(booking.id, Math.round((deposit ?? 0) * 100), 'DEPOSIT')}
                         disabled={!canPayDeposit || !!payingId || isGuest}
-                        className="flex-1 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed text-gray-800 text-sm font-semibold py-2 px-4 rounded-lg transition-colors"
+                        className="flex-1 bg-neutral-100 hover:bg-neutral-200 disabled:opacity-50 disabled:cursor-not-allowed text-neutral-800 text-sm font-semibold py-2 px-4 rounded-lg transition-colors"
                       >
                         {isPayingDeposit ? 'Processing…' : `Pay Deposit — ${fmt(depositTotal)}`}
                       </button>
@@ -220,7 +220,7 @@ export default function BillingTab({ familyId, showMock = false, isGuest = false
                       Add {fmt(monthlyTotal - balance)} more to pay this month&apos;s fee.
                     </p>
                   )}
-                  <p className="text-xs text-gray-400 mt-2">Includes 2.5% CareLinkAI service fee</p>
+                  <p className="text-xs text-neutral-400 mt-2">Includes 2.5% CareLinkAI service fee</p>
                 </div>
               );
             })}
@@ -229,9 +229,9 @@ export default function BillingTab({ familyId, showMock = false, isGuest = false
       )}
 
       {/* Deposit Section */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-md">
-        <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-          <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-emerald-500 rounded-lg flex items-center justify-center">
+      <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-md">
+        <h3 className="text-lg font-bold text-neutral-900 mb-4 flex items-center gap-2">
+          <div className="w-8 h-8 bg-gradient-to-br from-success-400 to-emerald-500 rounded-lg flex items-center justify-center">
             <FiDollarSign className="w-4 h-4 text-white" />
           </div>
           Add Funds
@@ -239,7 +239,7 @@ export default function BillingTab({ familyId, showMock = false, isGuest = false
         <div className="space-y-4">
           <div className="flex flex-wrap items-end gap-3">
             <div className="flex-1 min-w-[200px]">
-              <label htmlFor="amount" className="block text-sm font-semibold text-gray-700 mb-2">
+              <label htmlFor="amount" className="block text-sm font-semibold text-neutral-700 mb-2">
                 Deposit Amount (USD)
               </label>
               <input
@@ -249,13 +249,13 @@ export default function BillingTab({ familyId, showMock = false, isGuest = false
                 step={1}
                 value={depositAmount}
                 onChange={(e) => setDepositAmount(Number(e.target.value))}
-                className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                className="w-full rounded-lg border-2 border-neutral-300 px-4 py-3 text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200"
               />
             </div>
             <button
               disabled={depositAmount <= 0 || isGuest}
               onClick={createDeposit}
-              className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-3 rounded-lg hover:from-green-600 hover:to-emerald-700 hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transform hover:scale-105 disabled:hover:scale-100"
+              className="bg-gradient-to-r from-success-500 to-emerald-600 text-white px-6 py-3 rounded-lg hover:from-success-600 hover:to-emerald-700 hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transform hover:scale-105 disabled:hover:scale-100"
             >
               💳 Deposit Funds
             </button>
@@ -268,8 +268,8 @@ export default function BillingTab({ familyId, showMock = false, isGuest = false
                 onClick={() => setDepositAmount(amount)}
                 className={`px-5 py-2.5 text-sm rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 ${
                   depositAmount === amount
-                    ? 'bg-gradient-to-r from-blue-500 to-cyan-400 text-white shadow-lg border-2 border-blue-600'
-                    : 'bg-gray-50 text-gray-700 border-2 border-gray-200 hover:bg-gray-100 hover:border-gray-300'
+                    ? 'bg-gradient-to-r from-primary-500 to-cyan-400 text-white shadow-lg border-2 border-primary-600'
+                    : 'bg-neutral-50 text-neutral-700 border-2 border-neutral-200 hover:bg-neutral-100 hover:border-neutral-300'
                 }`}
               >
                 ${amount}
@@ -277,12 +277,12 @@ export default function BillingTab({ familyId, showMock = false, isGuest = false
             ))}
           </div>
           {!isStripeConfigured && (
-            <div className="rounded-lg bg-yellow-50 p-3 text-sm text-yellow-700 border border-yellow-200">
+            <div className="rounded-lg bg-warning-50 p-3 text-sm text-warning-700 border border-warning-200">
               🚧 Test mode - no real charges will be made.
             </div>
           )}
           {isGuest && (
-            <div className="rounded-lg bg-gray-50 p-3 text-sm text-gray-600 border border-gray-200">
+            <div className="rounded-lg bg-neutral-50 p-3 text-sm text-neutral-600 border border-neutral-200">
               🚫 Guests cannot make deposits. Please contact a family administrator.
             </div>
           )}
@@ -290,39 +290,39 @@ export default function BillingTab({ familyId, showMock = false, isGuest = false
       </div>
 
       {/* Wallet Transactions */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-md">
-        <h4 className="mb-5 text-lg font-bold text-gray-900 flex items-center gap-2">
+      <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-md">
+        <h4 className="mb-5 text-lg font-bold text-neutral-900 flex items-center gap-2">
           <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-pink-500 rounded-lg flex items-center justify-center">
             <FiDollarSign className="w-4 h-4 text-white" />
           </div>
           Recent Wallet Transactions
         </h4>
         {transactions.length === 0 ? (
-          <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-10 text-center border border-gray-200">
-            <p className="text-sm text-gray-500 font-medium">No transactions yet.</p>
+          <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-10 text-center border border-neutral-200">
+            <p className="text-sm text-neutral-500 font-medium">No transactions yet.</p>
           </div>
         ) : (
           <div className="space-y-3">
             {transactions.slice(0, 5).map((tx: any) => (
-              <div key={tx.id} className="flex justify-between items-center p-4 bg-gradient-to-r from-gray-50 to-gray-50/50 rounded-xl hover:from-blue-50 hover:to-cyan-50 transition-all duration-200 border border-gray-200 hover:border-blue-300 hover:shadow-md group">
+              <div key={tx.id} className="flex justify-between items-center p-4 bg-gradient-to-r from-gray-50 to-gray-50/50 rounded-xl hover:from-primary-50 hover:to-cyan-50 transition-all duration-200 border border-neutral-200 hover:border-primary-300 hover:shadow-md group">
                 <div className="flex items-center gap-3">
                   <span className={`inline-block rounded-full px-3 py-1.5 text-xs font-bold shadow-sm ${
                     tx.type === 'DEPOSIT'
-                      ? 'bg-gradient-to-r from-green-400 to-emerald-500 text-white'
-                      : 'bg-gradient-to-r from-blue-400 to-cyan-500 text-white'
+                      ? 'bg-gradient-to-r from-success-400 to-emerald-500 text-white'
+                      : 'bg-gradient-to-r from-primary-400 to-cyan-500 text-white'
                   }`}>
                     {tx.type === 'DEPOSIT' ? '↓' : '↑'} {tx.type}
                   </span>
                   <div>
-                    <span className="text-sm text-gray-700 font-medium group-hover:text-gray-900 transition-colors">
+                    <span className="text-sm text-neutral-700 font-medium group-hover:text-neutral-900 transition-colors">
                       {new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(tx.createdAt))}
                     </span>
                     {tx.description && (
-                      <p className="text-xs text-gray-400">{tx.description}</p>
+                      <p className="text-xs text-neutral-400">{tx.description}</p>
                     )}
                   </div>
                 </div>
-                <span className={`text-base font-bold ${tx.type === 'DEPOSIT' ? 'text-green-600' : 'text-gray-900'}`}>
+                <span className={`text-base font-bold ${tx.type === 'DEPOSIT' ? 'text-success-600' : 'text-neutral-900'}`}>
                   {tx.type === 'DEPOSIT' ? '+' : '−'}
                   {new Intl.NumberFormat('en-US', { style: 'currency', currency: tx.currency || 'USD' }).format(Number(tx.amount))}
                 </span>
@@ -333,25 +333,25 @@ export default function BillingTab({ familyId, showMock = false, isGuest = false
       </div>
 
       {/* Payment History */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-md">
-        <h4 className="mb-5 text-lg font-bold text-gray-900 flex items-center gap-2">
+      <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-md">
+        <h4 className="mb-5 text-lg font-bold text-neutral-900 flex items-center gap-2">
           <div className="w-8 h-8 bg-gradient-to-br from-orange-400 to-red-500 rounded-lg flex items-center justify-center">
             <FiDownload className="w-4 h-4 text-white" />
           </div>
           Recent Payments
         </h4>
         {payments.length === 0 ? (
-          <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-10 text-center border border-gray-200">
-            <p className="text-sm text-gray-500 font-medium">No payments yet.</p>
+          <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-10 text-center border border-neutral-200">
+            <p className="text-sm text-neutral-500 font-medium">No payments yet.</p>
           </div>
         ) : (
           <div className="space-y-3">
             {payments.map((p: any) => (
-              <div key={p.id} className="flex justify-between items-center p-4 bg-gradient-to-r from-gray-50 to-gray-50/50 rounded-xl hover:from-orange-50 hover:to-red-50 transition-all duration-200 border border-gray-200 hover:border-orange-300 hover:shadow-md group">
-                <span className="text-sm text-gray-700 font-medium group-hover:text-gray-900 transition-colors">
+              <div key={p.id} className="flex justify-between items-center p-4 bg-gradient-to-r from-gray-50 to-gray-50/50 rounded-xl hover:from-orange-50 hover:to-red-50 transition-all duration-200 border border-neutral-200 hover:border-warning-300 hover:shadow-md group">
+                <span className="text-sm text-neutral-700 font-medium group-hover:text-neutral-900 transition-colors">
                   {new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(p.createdAt))}
                 </span>
-                <span className="text-base font-bold text-gray-900">
+                <span className="text-base font-bold text-neutral-900">
                   {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(p.amount))}
                 </span>
               </div>

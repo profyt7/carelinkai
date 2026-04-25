@@ -887,7 +887,7 @@ export default function ProfileSettings() {
                 className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
               />
               {errors.emergencyContact && (
-                <p className="mt-1 text-sm text-red-600">{errors.emergencyContact}</p>
+                <p className="mt-1 text-sm text-error-600">{errors.emergencyContact}</p>
               )}
             </div>
             
@@ -904,7 +904,7 @@ export default function ProfileSettings() {
                 className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
               />
               {errors.emergencyPhone && (
-                <p className="mt-1 text-sm text-red-600">{errors.emergencyPhone}</p>
+                <p className="mt-1 text-sm text-error-600">{errors.emergencyPhone}</p>
               )}
             </div>
           </>
@@ -926,7 +926,7 @@ export default function ProfileSettings() {
                 className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
               />
               {errors.companyName && (
-                <p className="mt-1 text-sm text-red-600">{errors.companyName}</p>
+                <p className="mt-1 text-sm text-error-600">{errors.companyName}</p>
               )}
             </div>
             
@@ -943,7 +943,7 @@ export default function ProfileSettings() {
                 className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
               />
               {errors.taxId && (
-                <p className="mt-1 text-sm text-red-600">{errors.taxId}</p>
+                <p className="mt-1 text-sm text-error-600">{errors.taxId}</p>
               )}
             </div>
             
@@ -960,7 +960,7 @@ export default function ProfileSettings() {
                 className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
               />
               {errors.businessLicense && (
-                <p className="mt-1 text-sm text-red-600">{errors.businessLicense}</p>
+                <p className="mt-1 text-sm text-error-600">{errors.businessLicense}</p>
               )}
             </div>
           </>
@@ -982,7 +982,7 @@ export default function ProfileSettings() {
                 className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
               />
               {errors.bio && (
-                <p className="mt-1 text-sm text-red-600">{errors.bio}</p>
+                <p className="mt-1 text-sm text-error-600">{errors.bio}</p>
               )}
             </div>
 
@@ -1107,7 +1107,7 @@ export default function ProfileSettings() {
                 className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
               />
               {errors.yearsExperience && (
-                <p className="mt-1 text-sm text-red-600">{errors.yearsExperience}</p>
+                <p className="mt-1 text-sm text-error-600">{errors.yearsExperience}</p>
               )}
             </div>
             
@@ -1126,7 +1126,7 @@ export default function ProfileSettings() {
                 className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
               />
               {errors.hourlyRate && (
-                <p className="mt-1 text-sm text-red-600">{errors.hourlyRate}</p>
+                <p className="mt-1 text-sm text-error-600">{errors.hourlyRate}</p>
               )}
             </div>
             
@@ -1164,7 +1164,7 @@ export default function ProfileSettings() {
                       required
                     />
                     {credErrors.type && (
-                      <p className="mt-1 text-sm text-red-600">{credErrors.type}</p>
+                      <p className="mt-1 text-sm text-error-600">{credErrors.type}</p>
                     )}
                   </div>
                   
@@ -1182,7 +1182,7 @@ export default function ProfileSettings() {
                       required
                     />
                     {credErrors.issueDate && (
-                      <p className="mt-1 text-sm text-red-600">{credErrors.issueDate}</p>
+                      <p className="mt-1 text-sm text-error-600">{credErrors.issueDate}</p>
                     )}
                   </div>
                   
@@ -1200,7 +1200,7 @@ export default function ProfileSettings() {
                       required
                     />
                     {credErrors.expirationDate && (
-                      <p className="mt-1 text-sm text-red-600">{credErrors.expirationDate}</p>
+                      <p className="mt-1 text-sm text-error-600">{credErrors.expirationDate}</p>
                     )}
                   </div>
                   
@@ -1219,7 +1219,7 @@ export default function ProfileSettings() {
                       />
                     </div>
                     {credErrors.file && (
-                      <p className="mt-1 text-sm text-red-600">{credErrors.file}</p>
+                      <p className="mt-1 text-sm text-error-600">{credErrors.file}</p>
                     )}
                   </div>
                   
@@ -1292,12 +1292,12 @@ export default function ProfileSettings() {
                             </td>
                             <td className="whitespace-nowrap px-6 py-4 text-sm text-neutral-500">
                               {cred.isVerified ? (
-                                <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                                <span className="inline-flex items-center rounded-full bg-success-100 px-2.5 py-0.5 text-xs font-medium text-success-800">
                                   <FiCheckCircle className="mr-1 h-3 w-3" />
                                   Verified
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
+                                <span className="inline-flex items-center rounded-full bg-warning-100 px-2.5 py-0.5 text-xs font-medium text-warning-800">
                                   <FiXCircle className="mr-1 h-3 w-3" />
                                   Pending
                                 </span>
@@ -1316,7 +1316,7 @@ export default function ProfileSettings() {
                               )}
                               <button
                                 onClick={() => handleDeleteCredential(cred.id)}
-                                className="text-red-600 hover:text-red-900"
+                                className="text-error-600 hover:text-error-900"
                               >
                                 <FiTrash2 className="inline h-4 w-4" />
                               </button>
@@ -1348,7 +1348,7 @@ export default function ProfileSettings() {
                 className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
               />
               {errors.organization && (
-                <p className="mt-1 text-sm text-red-600">{errors.organization}</p>
+                <p className="mt-1 text-sm text-error-600">{errors.organization}</p>
               )}
             </div>
             
@@ -1368,7 +1368,7 @@ export default function ProfileSettings() {
                 className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
               />
               {errors.commissionRate && (
-                <p className="mt-1 text-sm text-red-600">{errors.commissionRate}</p>
+                <p className="mt-1 text-sm text-error-600">{errors.commissionRate}</p>
               )}
             </div>
           </>
@@ -1398,7 +1398,7 @@ export default function ProfileSettings() {
 
             <div className="col-span-6">
               <label htmlFor="businessName" className="block text-sm font-medium text-neutral-700">
-                Business Name <span className="text-red-500">*</span>
+                Business Name <span className="text-error-500">*</span>
               </label>
               <input
                 type="text"
@@ -1410,13 +1410,13 @@ export default function ProfileSettings() {
                 className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
               />
               {errors.businessName && (
-                <p className="mt-1 text-sm text-red-600">{errors.businessName}</p>
+                <p className="mt-1 text-sm text-error-600">{errors.businessName}</p>
               )}
             </div>
 
             <div className="col-span-6 sm:col-span-3">
               <label htmlFor="contactName" className="block text-sm font-medium text-neutral-700">
-                Contact Name <span className="text-red-500">*</span>
+                Contact Name <span className="text-error-500">*</span>
               </label>
               <input
                 type="text"
@@ -1428,13 +1428,13 @@ export default function ProfileSettings() {
                 className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
               />
               {errors.contactName && (
-                <p className="mt-1 text-sm text-red-600">{errors.contactName}</p>
+                <p className="mt-1 text-sm text-error-600">{errors.contactName}</p>
               )}
             </div>
 
             <div className="col-span-6 sm:col-span-3">
               <label htmlFor="contactEmail" className="block text-sm font-medium text-neutral-700">
-                Contact Email <span className="text-red-500">*</span>
+                Contact Email <span className="text-error-500">*</span>
               </label>
               <input
                 type="email"
@@ -1446,7 +1446,7 @@ export default function ProfileSettings() {
                 className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
               />
               {errors.contactEmail && (
-                <p className="mt-1 text-sm text-red-600">{errors.contactEmail}</p>
+                <p className="mt-1 text-sm text-error-600">{errors.contactEmail}</p>
               )}
             </div>
 
@@ -1463,7 +1463,7 @@ export default function ProfileSettings() {
                 className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
               />
               {errors.contactPhone && (
-                <p className="mt-1 text-sm text-red-600">{errors.contactPhone}</p>
+                <p className="mt-1 text-sm text-error-600">{errors.contactPhone}</p>
               )}
             </div>
 
@@ -1481,7 +1481,7 @@ export default function ProfileSettings() {
                 className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
               />
               {errors.yearsInBusiness && (
-                <p className="mt-1 text-sm text-red-600">{errors.yearsInBusiness}</p>
+                <p className="mt-1 text-sm text-error-600">{errors.yearsInBusiness}</p>
               )}
             </div>
 
@@ -1499,7 +1499,7 @@ export default function ProfileSettings() {
                 className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
               />
               {errors.website && (
-                <p className="mt-1 text-sm text-red-600">{errors.website}</p>
+                <p className="mt-1 text-sm text-error-600">{errors.website}</p>
               )}
             </div>
 
@@ -1517,7 +1517,7 @@ export default function ProfileSettings() {
                 className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
               />
               {errors.bio && (
-                <p className="mt-1 text-sm text-red-600">{errors.bio}</p>
+                <p className="mt-1 text-sm text-error-600">{errors.bio}</p>
               )}
             </div>
 
@@ -1525,7 +1525,7 @@ export default function ProfileSettings() {
             <div className="col-span-6 mt-6">
               <h3 className="text-lg font-medium text-neutral-800">Services Offered</h3>
               <p className="mt-1 text-sm text-neutral-500">
-                Select the types of services your business provides. <span className="text-red-500">*</span>
+                Select the types of services your business provides. <span className="text-error-500">*</span>
               </p>
             </div>
 
@@ -1548,7 +1548,7 @@ export default function ProfileSettings() {
                 ))}
               </div>
               {errors.serviceTypes && (
-                <p className="mt-1 text-sm text-red-600">{errors.serviceTypes}</p>
+                <p className="mt-1 text-sm text-error-600">{errors.serviceTypes}</p>
               )}
             </div>
 
@@ -1573,7 +1573,7 @@ export default function ProfileSettings() {
                 className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
               />
               {errors.licenseNumber && (
-                <p className="mt-1 text-sm text-red-600">{errors.licenseNumber}</p>
+                <p className="mt-1 text-sm text-error-600">{errors.licenseNumber}</p>
               )}
             </div>
 
@@ -1591,7 +1591,7 @@ export default function ProfileSettings() {
                 className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
               />
               {errors.insuranceInfo && (
-                <p className="mt-1 text-sm text-red-600">{errors.insuranceInfo}</p>
+                <p className="mt-1 text-sm text-error-600">{errors.insuranceInfo}</p>
               )}
             </div>
 
@@ -1730,8 +1730,8 @@ export default function ProfileSettings() {
         <div
           className={`mb-6 rounded-md p-4 ${
             message.type === "error"
-              ? "bg-red-50 text-red-800"
-              : "bg-green-50 text-green-800"
+              ? "bg-error-50 text-error-800"
+              : "bg-success-50 text-success-800"
           }`}
         >
           <div className="flex items-center">
@@ -1803,7 +1803,7 @@ export default function ProfileSettings() {
                     type="button"
                     onClick={handleDeletePhoto}
                     disabled={uploadingPhoto}
-                    className="inline-flex items-center rounded-md border border-red-300 bg-white px-3 py-2 text-sm font-medium text-red-700 shadow-sm hover:bg-red-50"
+                    className="inline-flex items-center rounded-md border border-error-300 bg-white px-3 py-2 text-sm font-medium text-error-700 shadow-sm hover:bg-error-50"
                   >
                     <FiTrash2 className="mr-2 h-4 w-4" />
                     Remove
@@ -1848,7 +1848,7 @@ export default function ProfileSettings() {
                   required
                 />
                 {errors.firstName && (
-                  <p className="mt-1 text-sm text-red-600">{errors.firstName}</p>
+                  <p className="mt-1 text-sm text-error-600">{errors.firstName}</p>
                 )}
               </div>
               
@@ -1866,7 +1866,7 @@ export default function ProfileSettings() {
                   required
                 />
                 {errors.lastName && (
-                  <p className="mt-1 text-sm text-red-600">{errors.lastName}</p>
+                  <p className="mt-1 text-sm text-error-600">{errors.lastName}</p>
                 )}
               </div>
               
@@ -1910,7 +1910,7 @@ export default function ProfileSettings() {
                   />
                 </div>
                 {errors.phone && (
-                  <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
+                  <p className="mt-1 text-sm text-error-600">{errors.phone}</p>
                 )}
               </div>
               
@@ -1956,7 +1956,7 @@ export default function ProfileSettings() {
                   />
                 </div>
                 {addressErrors.street && (
-                  <p className="mt-1 text-sm text-red-600">{addressErrors.street}</p>
+                  <p className="mt-1 text-sm text-error-600">{addressErrors.street}</p>
                 )}
               </div>
               
@@ -1987,7 +1987,7 @@ export default function ProfileSettings() {
                   className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
                 />
                 {addressErrors.city && (
-                  <p className="mt-1 text-sm text-red-600">{addressErrors.city}</p>
+                  <p className="mt-1 text-sm text-error-600">{addressErrors.city}</p>
                 )}
               </div>
               
@@ -2004,7 +2004,7 @@ export default function ProfileSettings() {
                   className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
                 />
                 {addressErrors.state && (
-                  <p className="mt-1 text-sm text-red-600">{addressErrors.state}</p>
+                  <p className="mt-1 text-sm text-error-600">{addressErrors.state}</p>
                 )}
               </div>
               
@@ -2021,7 +2021,7 @@ export default function ProfileSettings() {
                   className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
                 />
                 {addressErrors.zipCode && (
-                  <p className="mt-1 text-sm text-red-600">{addressErrors.zipCode}</p>
+                  <p className="mt-1 text-sm text-error-600">{addressErrors.zipCode}</p>
                 )}
               </div>
               
@@ -2038,7 +2038,7 @@ export default function ProfileSettings() {
                   className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
                 />
                 {addressErrors.country && (
-                  <p className="mt-1 text-sm text-red-600">{addressErrors.country}</p>
+                  <p className="mt-1 text-sm text-error-600">{addressErrors.country}</p>
                 )}
               </div>
             </div>

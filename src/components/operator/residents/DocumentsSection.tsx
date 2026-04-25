@@ -138,7 +138,7 @@ export function DocumentsSection({ residentId }: { residentId: string }) {
       </div>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+        <div className="mb-4 p-3 bg-error-50 border border-error-200 rounded-lg text-sm text-error-700">
           {error}
         </div>
       )}
@@ -209,14 +209,14 @@ export function DocumentsSection({ residentId }: { residentId: string }) {
                   </button>
                   <button
                     onClick={() => handleDownload(doc.fileUrl, doc.fileName)}
-                    className="p-2 text-neutral-600 hover:text-green-600 hover:bg-green-50 rounded transition-colors"
+                    className="p-2 text-neutral-600 hover:text-success-600 hover:bg-success-50 rounded transition-colors"
                     title="Download"
                   >
                     <FiDownload className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => handleDelete(doc.id)}
-                    className="p-2 text-neutral-600 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                    className="p-2 text-neutral-600 hover:text-error-600 hover:bg-error-50 rounded transition-colors"
                     title="Delete"
                   >
                     <FiTrash2 className="w-4 h-4" />

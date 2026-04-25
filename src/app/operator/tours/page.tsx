@@ -156,52 +156,52 @@ export default function OperatorToursPage() {
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Tour Management</h1>
-        <p className="mt-2 text-sm text-gray-600">
+        <h1 className="text-2xl font-bold text-neutral-900">Tour Management</h1>
+        <p className="mt-2 text-sm text-neutral-600">
           Manage tour requests and schedules
         </p>
       </div>
 
       {/* Stats Cards */}
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-lg border border-gray-200 bg-white p-4">
+        <div className="rounded-lg border border-neutral-200 bg-white p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Pending Requests</p>
-              <p className="mt-1 text-2xl font-semibold text-yellow-600">
+              <p className="text-sm text-neutral-600">Pending Requests</p>
+              <p className="mt-1 text-2xl font-semibold text-warning-600">
                 {pendingCount}
               </p>
             </div>
-            <div className="rounded-full bg-yellow-100 p-3">
-              <FiClock className="h-6 w-6 text-yellow-600" />
+            <div className="rounded-full bg-warning-100 p-3">
+              <FiClock className="h-6 w-6 text-warning-600" />
             </div>
           </div>
         </div>
 
-        <div className="rounded-lg border border-gray-200 bg-white p-4">
+        <div className="rounded-lg border border-neutral-200 bg-white p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Confirmed Tours</p>
-              <p className="mt-1 text-2xl font-semibold text-green-600">
+              <p className="text-sm text-neutral-600">Confirmed Tours</p>
+              <p className="mt-1 text-2xl font-semibold text-success-600">
                 {confirmedCount}
               </p>
             </div>
-            <div className="rounded-full bg-green-100 p-3">
-              <FiCheckCircle className="h-6 w-6 text-green-600" />
+            <div className="rounded-full bg-success-100 p-3">
+              <FiCheckCircle className="h-6 w-6 text-success-600" />
             </div>
           </div>
         </div>
 
-        <div className="rounded-lg border border-gray-200 bg-white p-4">
+        <div className="rounded-lg border border-neutral-200 bg-white p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Completed</p>
-              <p className="mt-1 text-2xl font-semibold text-blue-600">
+              <p className="text-sm text-neutral-600">Completed</p>
+              <p className="mt-1 text-2xl font-semibold text-primary-600">
                 {completedCount}
               </p>
             </div>
-            <div className="rounded-full bg-blue-100 p-3">
-              <FiCalendar className="h-6 w-6 text-blue-600" />
+            <div className="rounded-full bg-primary-100 p-3">
+              <FiCalendar className="h-6 w-6 text-primary-600" />
             </div>
           </div>
         </div>
@@ -211,23 +211,23 @@ export default function OperatorToursPage() {
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative flex-1">
           <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-            <FiSearch className="h-5 w-5 text-gray-400" />
+            <FiSearch className="h-5 w-5 text-neutral-400" />
           </div>
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by family name or home..."
-            className="block w-full rounded-md border-gray-300 pl-10 focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+            className="block w-full rounded-md border-neutral-300 pl-10 focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
           />
         </div>
 
         <div className="flex items-center space-x-2">
-          <FiFilter className="h-5 w-5 text-gray-400" />
+          <FiFilter className="h-5 w-5 text-neutral-400" />
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value as typeof filter)}
-            className="block rounded-md border-gray-300 py-2 pl-3 pr-10 text-sm focus:border-primary-500 focus:ring-primary-500"
+            className="block rounded-md border-neutral-300 py-2 pl-3 pr-10 text-sm focus:border-primary-500 focus:ring-primary-500"
           >
             <option value="all">All Statuses ({tours.length})</option>
             <option value="PENDING">Pending ({pendingCount})</option>
@@ -242,21 +242,21 @@ export default function OperatorToursPage() {
       {isLoading && (
         <div className="flex items-center justify-center py-12">
           <FiLoader className="h-8 w-8 animate-spin text-primary-600" />
-          <span className="ml-3 text-gray-600">Loading tours...</span>
+          <span className="ml-3 text-neutral-600">Loading tours...</span>
         </div>
       )}
 
       {/* Error State */}
       {error && (
-        <div className="rounded-md bg-red-50 p-4">
+        <div className="rounded-md bg-error-50 p-4">
           <div className="flex">
-            <FiAlertCircle className="h-5 w-5 text-red-400" />
+            <FiAlertCircle className="h-5 w-5 text-error-400" />
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">Error</h3>
-              <p className="mt-1 text-sm text-red-700">{error}</p>
+              <h3 className="text-sm font-medium text-error-800">Error</h3>
+              <p className="mt-1 text-sm text-error-700">{error}</p>
               <button
                 onClick={fetchTours}
-                className="mt-2 text-sm font-medium text-red-600 hover:text-red-500"
+                className="mt-2 text-sm font-medium text-error-600 hover:text-error-500"
               >
                 Try again
               </button>
@@ -273,17 +273,17 @@ export default function OperatorToursPage() {
               {filteredAndSearchedTours.map((tour) => (
                 <div
                   key={tour.id}
-                  className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
+                  className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       {/* Header */}
                       <div className="mb-3 flex items-start justify-between">
                         <div>
-                          <h3 className="text-lg font-semibold text-gray-900">
+                          <h3 className="text-lg font-semibold text-neutral-900">
                             {tour.home.name}
                           </h3>
-                          <div className="mt-1 flex items-center text-sm text-gray-600">
+                          <div className="mt-1 flex items-center text-sm text-neutral-600">
                             <FiUser className="mr-1 h-4 w-4" />
                             {tour.family.user.firstName}{" "}
                             {tour.family.user.lastName}
@@ -302,7 +302,7 @@ export default function OperatorToursPage() {
                       {/* Details */}
                       <div className="space-y-2">
                         {tour.home.address && (
-                          <div className="flex items-start text-sm text-gray-600">
+                          <div className="flex items-start text-sm text-neutral-600">
                             <FiMapPin className="mr-2 mt-0.5 h-4 w-4 flex-shrink-0" />
                             <span>
                               {tour.home.address.street},{" "}
@@ -311,7 +311,7 @@ export default function OperatorToursPage() {
                           </div>
                         )}
 
-                        <div className="flex items-start text-sm text-gray-600">
+                        <div className="flex items-start text-sm text-neutral-600">
                           <FiCalendar className="mr-2 mt-0.5 h-4 w-4 flex-shrink-0" />
                           <span>
                             {tour.requestedTimes.length} time slot
@@ -320,8 +320,8 @@ export default function OperatorToursPage() {
                         </div>
 
                         {tour.familyNotes && (
-                          <div className="mt-2 rounded-md bg-gray-50 p-3">
-                            <p className="text-sm text-gray-700">
+                          <div className="mt-2 rounded-md bg-neutral-50 p-3">
+                            <p className="text-sm text-neutral-700">
                               <span className="font-medium">Note:</span>{" "}
                               {tour.familyNotes}
                             </p>
@@ -342,7 +342,7 @@ export default function OperatorToursPage() {
                         {tour.status === "PENDING" && (
                           <button
                             onClick={() => handleQuickAction("decline", tour.id)}
-                            className="inline-flex items-center text-sm font-medium text-red-600 hover:text-red-700"
+                            className="inline-flex items-center text-sm font-medium text-error-600 hover:text-error-700"
                           >
                             <FiXCircle className="mr-1.5 h-4 w-4" />
                             Decline
@@ -355,12 +355,12 @@ export default function OperatorToursPage() {
               ))}
             </div>
           ) : (
-            <div className="rounded-lg border-2 border-dashed border-gray-300 bg-white p-12 text-center">
-              <FiCalendar className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-4 text-lg font-medium text-gray-900">
+            <div className="rounded-lg border-2 border-dashed border-neutral-300 bg-white p-12 text-center">
+              <FiCalendar className="mx-auto h-12 w-12 text-neutral-400" />
+              <h3 className="mt-4 text-lg font-medium text-neutral-900">
                 No tours found
               </h3>
-              <p className="mt-2 text-sm text-gray-600">
+              <p className="mt-2 text-sm text-neutral-600">
                 {searchQuery
                   ? "No tours match your search criteria."
                   : filter !== "all"

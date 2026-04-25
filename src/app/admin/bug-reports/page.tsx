@@ -98,28 +98,28 @@ export default function BugReportsPage() {
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case "HIGH":
-        return "bg-red-100 text-red-800";
+        return "bg-error-100 text-error-800";
       case "MEDIUM":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-warning-100 text-warning-800";
       case "LOW":
-        return "bg-green-100 text-green-800";
+        return "bg-success-100 text-success-800";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-neutral-100 text-neutral-800";
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "NEW":
-        return "bg-blue-100 text-blue-800";
+        return "bg-primary-100 text-primary-800";
       case "IN_PROGRESS":
-        return "bg-purple-100 text-purple-800";
+        return "bg-secondary-100 text-secondary-800";
       case "RESOLVED":
-        return "bg-green-100 text-green-800";
+        return "bg-success-100 text-success-800";
       case "CLOSED":
-        return "bg-gray-100 text-gray-800";
+        return "bg-neutral-100 text-neutral-800";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-neutral-100 text-neutral-800";
     }
   };
 
@@ -128,7 +128,7 @@ export default function BugReportsPage() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-neutral-600">Loading...</p>
         </div>
       </div>
     );
@@ -159,13 +159,13 @@ export default function BugReportsPage() {
         <div className="bg-white rounded-lg shadow-sm p-4 mb-6 border border-neutral-200">
           <div className="flex flex-wrap gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-neutral-700 mb-1">
                 Status
               </label>
               <select
                 value={filter.status}
                 onChange={(e) => setFilter({ ...filter, status: e.target.value })}
-                className="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                className="rounded-md border-neutral-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
               >
                 <option value="all">All Status</option>
                 <option value="NEW">New</option>
@@ -176,13 +176,13 @@ export default function BugReportsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-neutral-700 mb-1">
                 Severity
               </label>
               <select
                 value={filter.severity}
                 onChange={(e) => setFilter({ ...filter, severity: e.target.value })}
-                className="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                className="rounded-md border-neutral-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
               >
                 <option value="all">All Severity</option>
                 <option value="HIGH">High</option>
@@ -198,48 +198,48 @@ export default function BugReportsPage() {
           {loading ? (
             <div className="p-8 text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
-              <p className="mt-4 text-gray-600">Loading bug reports...</p>
+              <p className="mt-4 text-neutral-600">Loading bug reports...</p>
             </div>
           ) : bugReports.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
+            <div className="p-8 text-center text-neutral-500">
               No bug reports found
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+              <table className="min-w-full divide-y divide-neutral-200">
+                <thead className="bg-neutral-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
                       Title
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
                       User
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
                       Severity
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
                       Date
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white divide-y divide-neutral-200">
                   {bugReports.map((bug) => (
-                    <tr key={bug.id} className="hover:bg-gray-50">
+                    <tr key={bug.id} className="hover:bg-neutral-50">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className="text-sm font-medium text-neutral-900">
                           {bug.title}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{bug.userName}</div>
-                        <div className="text-xs text-gray-500">{bug.userEmail}</div>
+                        <div className="text-sm text-neutral-900">{bug.userName}</div>
+                        <div className="text-xs text-neutral-500">{bug.userEmail}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
@@ -259,7 +259,7 @@ export default function BugReportsPage() {
                           {bug.status.replace("_", " ")}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
                         {new Date(bug.createdAt).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -296,27 +296,27 @@ export default function BugReportsPage() {
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-neutral-700">
                     Title
                   </label>
-                  <p className="mt-1 text-gray-900">{selectedBug.title}</p>
+                  <p className="mt-1 text-neutral-900">{selectedBug.title}</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-neutral-700">
                     Description
                   </label>
-                  <p className="mt-1 text-gray-900 whitespace-pre-wrap">
+                  <p className="mt-1 text-neutral-900 whitespace-pre-wrap">
                     {selectedBug.description}
                   </p>
                 </div>
 
                 {selectedBug.stepsToReproduce && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">
+                    <label className="block text-sm font-medium text-neutral-700">
                       Steps to Reproduce
                     </label>
-                    <p className="mt-1 text-gray-900 whitespace-pre-wrap">
+                    <p className="mt-1 text-neutral-900 whitespace-pre-wrap">
                       {selectedBug.stepsToReproduce}
                     </p>
                   </div>
@@ -324,37 +324,37 @@ export default function BugReportsPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">
+                    <label className="block text-sm font-medium text-neutral-700">
                       Reported By
                     </label>
-                    <p className="mt-1 text-gray-900">
+                    <p className="mt-1 text-neutral-900">
                       {selectedBug.userName} ({selectedBug.userEmail})
                     </p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">
+                    <label className="block text-sm font-medium text-neutral-700">
                       User Type
                     </label>
-                    <p className="mt-1 text-gray-900">
+                    <p className="mt-1 text-neutral-900">
                       {selectedBug.userType || "Guest"}
                     </p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">
+                    <label className="block text-sm font-medium text-neutral-700">
                       Page URL
                     </label>
-                    <p className="mt-1 text-gray-900 text-sm break-all">
+                    <p className="mt-1 text-neutral-900 text-sm break-all">
                       {selectedBug.pageUrl}
                     </p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">
+                    <label className="block text-sm font-medium text-neutral-700">
                       Browser Info
                     </label>
-                    <p className="mt-1 text-gray-900 text-sm">
+                    <p className="mt-1 text-neutral-900 text-sm">
                       {selectedBug.browserInfo}
                     </p>
                   </div>
@@ -362,7 +362,7 @@ export default function BugReportsPage() {
 
                 {selectedBug.screenshotUrl && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-neutral-700 mb-2">
                       Screenshot
                     </label>
                     <img
@@ -374,7 +374,7 @@ export default function BugReportsPage() {
                 )}
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
                     Update Status
                   </label>
                   <select
@@ -382,7 +382,7 @@ export default function BugReportsPage() {
                     onChange={(e) =>
                       updateBugStatus(selectedBug.id, { status: e.target.value })
                     }
-                    className="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    className="rounded-md border-neutral-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                   >
                     <option value="NEW">New</option>
                     <option value="IN_PROGRESS">In Progress</option>
@@ -394,7 +394,7 @@ export default function BugReportsPage() {
                 <div className="flex justify-end gap-3 pt-4 border-t">
                   <button
                     onClick={() => setIsDetailModalOpen(false)}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                    className="px-4 py-2 text-sm font-medium text-neutral-700 bg-white border border-neutral-300 rounded-md hover:bg-neutral-50"
                   >
                     Close
                   </button>

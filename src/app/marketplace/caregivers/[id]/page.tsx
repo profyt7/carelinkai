@@ -193,7 +193,7 @@ export default async function CaregiverDetailPage({
       <span
         key={idx}
         className={
-          idx < filledStars ? "text-yellow-400" : "text-gray-300"
+          idx < filledStars ? "text-warning-400" : "text-neutral-300"
         }
         aria-hidden="true"
       >
@@ -216,9 +216,9 @@ export default async function CaregiverDetailPage({
 
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         {/* Header */}
-        <div className="p-6 border-b border-gray-200">
+        <div className="p-6 border-b border-neutral-200">
           <div className="flex items-start">
-            <div className="h-24 w-24 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
+            <div className="h-24 w-24 rounded-full overflow-hidden bg-neutral-100 flex-shrink-0">
               {caregiver.photoUrl ? (
                 <img
                   src={isCloudinaryUrl(caregiver.photoUrl) ? getCloudinaryAvatar(caregiver.photoUrl) : caregiver.photoUrl}
@@ -227,16 +227,16 @@ export default async function CaregiverDetailPage({
                   className="h-full w-full object-cover"
                 />
               ) : (
-                <div className="h-full w-full flex items-center justify-center text-gray-400 text-4xl">
+                <div className="h-full w-full flex items-center justify-center text-neutral-400 text-4xl">
                   {caregiver.name.charAt(0)}
                 </div>
               )}
             </div>
             <div className="ml-6">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">{caregiver.name}</h1>
+              <h1 className="text-2xl font-bold text-neutral-900 mb-2">{caregiver.name}</h1>
               
               {location && (
-                <div className="flex items-center text-gray-500 mb-2">
+                <div className="flex items-center text-neutral-500 mb-2">
                   <FiMapPin className="mr-1" />
                   <span>{location}</span>
                 </div>
@@ -246,7 +246,7 @@ export default async function CaregiverDetailPage({
                 <span className="mr-2 flex">
                   {renderStars()}
                 </span>
-                <span className="text-gray-600">
+                <span className="text-neutral-600">
                   {ratingAvg.toFixed(1)} ({reviewCount} reviews)
                 </span>
               </div>
@@ -257,10 +257,10 @@ export default async function CaregiverDetailPage({
                     key={index} 
                     className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                       badge === 'Background Check Clear' 
-                        ? 'bg-green-100 text-green-800' 
+                        ? 'bg-success-100 text-success-800' 
                         : badge === 'Top Rated'
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-blue-100 text-blue-800'
+                        ? 'bg-warning-100 text-warning-800'
+                        : 'bg-primary-100 text-primary-800'
                     }`}
                   >
                     {badge === 'Background Check Clear' && <FiCheckCircle className="mr-1" size={12} />}
@@ -277,10 +277,10 @@ export default async function CaregiverDetailPage({
         <div className="p-6">
           {/* Request Care CTA - Prominent placement */}
           <div className="mb-6 bg-primary-50 border border-primary-200 rounded-lg p-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            <h3 className="text-lg font-semibold text-neutral-900 mb-2">
               Interested in hiring {caregiver.name}?
             </h3>
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="text-sm text-neutral-600 mb-4">
               Submit a care inquiry to connect with this caregiver and discuss your needs.
             </p>
             <RequestCareButton
@@ -296,9 +296,9 @@ export default async function CaregiverDetailPage({
               {/* Hourly Rate */}
               {caregiver.hourlyRate && (
                 <div className="flex items-center">
-                  <FiDollarSign className="mr-2 text-gray-500" size={20} />
+                  <FiDollarSign className="mr-2 text-neutral-500" size={20} />
                   <div>
-                    <h3 className="text-sm font-medium text-gray-500">Hourly Rate</h3>
+                    <h3 className="text-sm font-medium text-neutral-500">Hourly Rate</h3>
                     <p className="mt-1 text-lg font-semibold">${caregiver.hourlyRate.toFixed(2)}/hr</p>
                   </div>
                 </div>
@@ -307,9 +307,9 @@ export default async function CaregiverDetailPage({
               {/* Years Experience */}
               {caregiver.yearsExperience && (
                 <div className="flex items-center">
-                  <FiClock className="mr-2 text-gray-500" size={20} />
+                  <FiClock className="mr-2 text-neutral-500" size={20} />
                   <div>
-                    <h3 className="text-sm font-medium text-gray-500">Experience</h3>
+                    <h3 className="text-sm font-medium text-neutral-500">Experience</h3>
                     <p className="mt-1 text-lg font-semibold">
                       {caregiver.yearsExperience} {caregiver.yearsExperience === 1 ? 'Year' : 'Years'}
                     </p>
@@ -321,8 +321,8 @@ export default async function CaregiverDetailPage({
             {/* Bio */}
             {caregiver.bio && (
               <div className="mb-6">
-                <h2 className="text-lg font-medium text-gray-900 mb-2">About</h2>
-                <div className="prose max-w-none text-gray-700">
+                <h2 className="text-lg font-medium text-neutral-900 mb-2">About</h2>
+                <div className="prose max-w-none text-neutral-700">
                   {caregiver.bio}
                 </div>
               </div>
@@ -331,7 +331,7 @@ export default async function CaregiverDetailPage({
             {/* Specialties */}
             {caregiver.specialties.length > 0 && (
               <div className="mb-6">
-                <h2 className="text-lg font-medium text-gray-900 mb-2">Specialties</h2>
+                <h2 className="text-lg font-medium text-neutral-900 mb-2">Specialties</h2>
                 <div className="flex flex-wrap gap-2">
                   {caregiver.specialties.map((specialty: string, index: number) => (
                     <span 
@@ -348,22 +348,22 @@ export default async function CaregiverDetailPage({
             {/* Credentials & Certifications */}
             {caregiver.credentials && caregiver.credentials.length > 0 && (
               <div className="mb-6">
-                <h2 className="text-lg font-medium text-gray-900 mb-2">Credentials & Certifications</h2>
-                <div className="bg-gray-50 rounded-lg p-4">
+                <h2 className="text-lg font-medium text-neutral-900 mb-2">Credentials & Certifications</h2>
+                <div className="bg-neutral-50 rounded-lg p-4">
                   <div className="space-y-3">
                     {caregiver.credentials.map((credential: any) => (
                       <div key={credential.id} className="flex items-start justify-between">
                         <div className="flex items-start">
-                          <FiCheckCircle className="text-green-500 mt-1 mr-2 flex-shrink-0" size={16} />
+                          <FiCheckCircle className="text-success-500 mt-1 mr-2 flex-shrink-0" size={16} />
                           <div>
-                            <p className="font-medium text-gray-900">{credential.type}</p>
-                            <p className="text-sm text-gray-500">
+                            <p className="font-medium text-neutral-900">{credential.type}</p>
+                            <p className="text-sm text-neutral-500">
                               Expires: {new Date(credential.expirationDate).toLocaleDateString()}
                             </p>
                           </div>
                         </div>
                         {credential.isVerified && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-success-100 text-success-800">
                             Verified
                           </span>
                         )}
@@ -377,8 +377,8 @@ export default async function CaregiverDetailPage({
             {/* Availability Calendar */}
             {caregiver.availabilitySlots && caregiver.availabilitySlots.length > 0 && (
               <div className="mb-6">
-                <h2 className="text-lg font-medium text-gray-900 mb-2">Availability (Next 7 Days)</h2>
-                <div className="bg-gray-50 rounded-lg p-4">
+                <h2 className="text-lg font-medium text-neutral-900 mb-2">Availability (Next 7 Days)</h2>
+                <div className="bg-neutral-50 rounded-lg p-4">
                   <div className="space-y-2">
                     {caregiver.availabilitySlots.map((slot: any) => {
                       const startDate = new Date(slot.startTime);
@@ -386,19 +386,19 @@ export default async function CaregiverDetailPage({
                       const isSameDay = startDate.toDateString() === endDate.toDateString();
                       
                       return (
-                        <div key={slot.id} className="flex items-center justify-between bg-white rounded p-3 border border-gray-200">
+                        <div key={slot.id} className="flex items-center justify-between bg-white rounded p-3 border border-neutral-200">
                           <div className="flex items-center">
                             <FiCalendar className="text-primary-600 mr-3 flex-shrink-0" size={18} />
                             <div>
-                              <p className="font-medium text-gray-900">
+                              <p className="font-medium text-neutral-900">
                                 {startDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                               </p>
-                              <p className="text-sm text-gray-500">
+                              <p className="text-sm text-neutral-500">
                                 {startDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} - {endDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                               </p>
                             </div>
                           </div>
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-success-100 text-success-800">
                             Available
                           </span>
                         </div>
@@ -406,7 +406,7 @@ export default async function CaregiverDetailPage({
                     })}
                   </div>
                 </div>
-                <p className="text-sm text-gray-500 mt-2">
+                <p className="text-sm text-neutral-500 mt-2">
                   Contact the caregiver to schedule a time or request additional availability.
                 </p>
               </div>
@@ -423,7 +423,7 @@ export default async function CaregiverDetailPage({
             </Link>
             <Link 
               href={`/dashboard/inquiries?caregiverId=${caregiver.id}`}
-              className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2 px-4 rounded-md transition-colors text-center"
+              className="flex-1 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 font-medium py-2 px-4 rounded-md transition-colors text-center"
             >
               Request interview/shift
             </Link>
@@ -431,7 +431,7 @@ export default async function CaregiverDetailPage({
 
           {/* Per-diem shift booking */}
           <section className="mt-10">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">
+            <h2 className="text-lg font-medium text-neutral-900 mb-4">
               Book a per-diem shift
             </h2>
             <RequestShiftForm
@@ -442,7 +442,7 @@ export default async function CaregiverDetailPage({
 
           {/* Reviews */}
           <section className="mt-10">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Reviews</h2>
+            <h2 className="text-lg font-medium text-neutral-900 mb-4">Reviews</h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <CaregiverReviewsList caregiverId={caregiver.id} />
               <CaregiverReviewForm caregiverId={caregiver.id} />
@@ -451,7 +451,7 @@ export default async function CaregiverDetailPage({
 
           {/* Reviews */}
           <section className="mt-10">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Reviews</h2>
+            <h2 className="text-lg font-medium text-neutral-900 mb-4">Reviews</h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <CaregiverReviewsList caregiverId={caregiver.id} />
               <CaregiverReviewForm caregiverId={caregiver.id} />

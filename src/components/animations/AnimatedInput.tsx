@@ -29,9 +29,9 @@ const AnimatedInput = forwardRef<HTMLInputElement, AnimatedInputProps>(
       'transition-all duration-200',
       'focus:outline-none focus:ring-2 focus:ring-offset-0',
       error
-        ? 'border-red-500 focus:ring-red-200 focus:border-red-500'
+        ? 'border-error-500 focus:ring-error-200 focus:border-error-500'
         : success
-        ? 'border-green-500 focus:ring-green-200 focus:border-green-500'
+        ? 'border-success-500 focus:ring-success-200 focus:border-success-500'
         : 'border-neutral-300 focus:ring-[#3978FC]/20 focus:border-[#3978FC]',
       leftIcon && 'pl-10',
       className
@@ -54,13 +54,13 @@ const AnimatedInput = forwardRef<HTMLInputElement, AnimatedInputProps>(
             )}
             <input ref={ref} className={inputStyles} {...props} />
             {success && (
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500">
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-success-500">
                 <FiCheck />
               </span>
             )}
           </div>
           {error && (
-            <p className="flex items-center gap-1 text-sm text-red-600">
+            <p className="flex items-center gap-1 text-sm text-error-600">
               <FiAlertCircle className="h-3.5 w-3.5" />
               {error}
             </p>
@@ -113,7 +113,7 @@ const AnimatedInput = forwardRef<HTMLInputElement, AnimatedInputProps>(
                 initial={{ opacity: 0, scale: 0 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0 }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-success-500"
               >
                 <FiCheck />
               </motion.span>
@@ -126,7 +126,7 @@ const AnimatedInput = forwardRef<HTMLInputElement, AnimatedInputProps>(
               initial={{ opacity: 0, y: -5, height: 0 }}
               animate={{ opacity: 1, y: 0, height: 'auto' }}
               exit={{ opacity: 0, y: -5, height: 0 }}
-              className="flex items-center gap-1 text-sm text-red-600 overflow-hidden"
+              className="flex items-center gap-1 text-sm text-error-600 overflow-hidden"
             >
               <FiAlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
               {error}

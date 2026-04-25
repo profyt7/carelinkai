@@ -48,7 +48,7 @@ export default async function AdminDashboard() {
       description: 'Manage users, roles, and permissions',
       icon: FiUsers,
       href: '/admin/users',
-      color: 'from-blue-500 to-blue-600',
+      color: 'from-primary-500 to-primary-600',
     },
     {
       title: 'Bug Reports',
@@ -90,7 +90,7 @@ export default async function AdminDashboard() {
       description: 'View platform metrics and insights',
       icon: FiTrendingUp,
       href: '/admin/analytics',
-      color: 'from-green-500 to-green-600',
+      color: 'from-success-500 to-success-600',
     },
     {
       title: 'Inquiries Management',
@@ -129,10 +129,10 @@ export default async function AdminDashboard() {
               <div>
                 <p className="text-sm font-medium text-neutral-600">Total Users</p>
                 <p className="text-3xl font-bold text-neutral-900 mt-2">{stats.userCount}</p>
-                <p className="text-sm text-green-600 mt-1">{stats.activeUsers} active (30d)</p>
+                <p className="text-sm text-success-600 mt-1">{stats.activeUsers} active (30d)</p>
               </div>
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <FiUsers className="text-blue-600 text-2xl" />
+              <div className="p-3 bg-primary-100 rounded-lg">
+                <FiUsers className="text-primary-600 text-2xl" />
               </div>
             </div>
           </div>
@@ -143,8 +143,8 @@ export default async function AdminDashboard() {
                 <p className="text-sm font-medium text-neutral-600">Care Homes</p>
                 <p className="text-3xl font-bold text-neutral-900 mt-2">{stats.homeCount}</p>
               </div>
-              <div className="p-3 bg-purple-100 rounded-lg">
-                <FiHome className="text-purple-600 text-2xl" />
+              <div className="p-3 bg-secondary-100 rounded-lg">
+                <FiHome className="text-secondary-600 text-2xl" />
               </div>
             </div>
           </div>
@@ -155,8 +155,8 @@ export default async function AdminDashboard() {
                 <p className="text-sm font-medium text-neutral-600">Caregivers</p>
                 <p className="text-3xl font-bold text-neutral-900 mt-2">{stats.caregiverCount}</p>
               </div>
-              <div className="p-3 bg-green-100 rounded-lg">
-                <FiActivity className="text-green-600 text-2xl" />
+              <div className="p-3 bg-success-100 rounded-lg">
+                <FiActivity className="text-success-600 text-2xl" />
               </div>
             </div>
           </div>
@@ -179,8 +179,8 @@ export default async function AdminDashboard() {
                 <p className="text-sm font-medium text-neutral-600">Placements</p>
                 <p className="text-3xl font-bold text-neutral-900 mt-2">{stats.placementCount}</p>
               </div>
-              <div className="p-3 bg-yellow-100 rounded-lg">
-                <FiFileText className="text-yellow-600 text-2xl" />
+              <div className="p-3 bg-warning-100 rounded-lg">
+                <FiFileText className="text-warning-600 text-2xl" />
               </div>
             </div>
           </div>

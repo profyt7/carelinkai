@@ -509,14 +509,14 @@ export default function DocumentUploadModal({
               <Dialog.Panel className="w-full max-w-3xl transform overflow-hidden rounded-lg bg-white p-6 text-left align-middle shadow-xl transition-all">
                 <Dialog.Title
                   as="div"
-                  className="flex items-center justify-between border-b border-gray-200 pb-4"
+                  className="flex items-center justify-between border-b border-neutral-200 pb-4"
                 >
-                  <h3 className="text-lg font-medium leading-6 text-gray-900">
+                  <h3 className="text-lg font-medium leading-6 text-neutral-900">
                     Upload Documents
                   </h3>
                   <button
                     type="button"
-                    className="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                    className="rounded-md bg-white text-neutral-400 hover:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                     onClick={isUploading ? undefined : handleClose}
                     disabled={isUploading}
                     aria-label="Close"
@@ -532,7 +532,7 @@ export default function DocumentUploadModal({
                     className={`mt-2 flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 transition-colors ${
                       isDragging 
                         ? 'border-primary-500 bg-primary-50' 
-                        : 'border-gray-300 hover:border-primary-400'
+                        : 'border-neutral-300 hover:border-primary-400'
                     }`}
                     onDragEnter={handleDragEnter}
                     onDragOver={handleDragOver}
@@ -541,10 +541,10 @@ export default function DocumentUploadModal({
                   >
                     <div className="flex flex-col items-center justify-center">
                       <FiUpload 
-                        className={`h-12 w-12 ${isDragging ? 'text-primary-500' : 'text-gray-400'}`} 
+                        className={`h-12 w-12 ${isDragging ? 'text-primary-500' : 'text-neutral-400'}`} 
                         aria-hidden="true" 
                       />
-                      <p className="mt-2 text-sm text-gray-600">
+                      <p className="mt-2 text-sm text-neutral-600">
                         {isDragging ? (
                           <span className="font-medium text-primary-600">Drop files here</span>
                         ) : (
@@ -553,7 +553,7 @@ export default function DocumentUploadModal({
                           </>
                         )}
                       </p>
-                      <p className="mt-1 text-xs text-gray-500">
+                      <p className="mt-1 text-xs text-neutral-500">
                         PDF, Word, Excel, PowerPoint, Images up to 10MB
                       </p>
                       <button
@@ -581,13 +581,13 @@ export default function DocumentUploadModal({
                   {/* File List */}
                   {files.length > 0 && (
                     <div className="mt-4">
-                      <h4 className="text-sm font-medium text-gray-700">Selected Files</h4>
-                      <ul className="mt-2 divide-y divide-gray-200 rounded-md border border-gray-200">
+                      <h4 className="text-sm font-medium text-neutral-700">Selected Files</h4>
+                      <ul className="mt-2 divide-y divide-neutral-200 rounded-md border border-neutral-200">
                         {files.map((file) => (
                           <li key={file.id} className="flex items-center justify-between py-3 pl-3 pr-4 text-sm">
                             <div className="flex w-0 flex-1 items-center">
                               {file.preview ? (
-                                <div className="relative h-10 w-10 flex-shrink-0 rounded-md overflow-hidden bg-gray-100">
+                                <div className="relative h-10 w-10 flex-shrink-0 rounded-md overflow-hidden bg-neutral-100">
                                   <Image
                                     src={file.preview}
                                     alt={file.name}
@@ -597,11 +597,11 @@ export default function DocumentUploadModal({
                                   />
                                 </div>
                               ) : (
-                                <FiFile className="h-5 w-5 flex-shrink-0 text-gray-400" aria-hidden="true" />
+                                <FiFile className="h-5 w-5 flex-shrink-0 text-neutral-400" aria-hidden="true" />
                               )}
                               <div className="ml-2 flex-1 truncate">
-                                <p className="truncate text-gray-700">{file.name}</p>
-                                <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
+                                <p className="truncate text-neutral-700">{file.name}</p>
+                                <p className="text-xs text-neutral-500">{formatFileSize(file.size)}</p>
                               </div>
                             </div>
                             
@@ -609,18 +609,18 @@ export default function DocumentUploadModal({
                             <div className="ml-4 flex flex-shrink-0 items-center space-x-2">
                               {isUploading ? (
                                 <div className="w-24">
-                                  <div className="h-1.5 w-full rounded-full bg-gray-200">
+                                  <div className="h-1.5 w-full rounded-full bg-neutral-200">
                                     <div 
                                       className="h-1.5 rounded-full bg-primary-500" 
                                       style={{ width: `${file.progress}%` }}
                                     />
                                   </div>
-                                  <p className="mt-1 text-right text-xs text-gray-500">{Math.round(file.progress)}%</p>
+                                  <p className="mt-1 text-right text-xs text-neutral-500">{Math.round(file.progress)}%</p>
                                 </div>
                               ) : (
                                 <button
                                   type="button"
-                                  className="rounded-md text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                                  className="rounded-md text-neutral-400 hover:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                                   onClick={() => removeFile(file.id)}
                                   aria-label={`Remove ${file.name}`}
                                 >
@@ -629,7 +629,7 @@ export default function DocumentUploadModal({
                               )}
                               
                               {file.uploaded && (
-                                <FiCheckCircle className="h-5 w-5 text-green-500" aria-hidden="true" />
+                                <FiCheckCircle className="h-5 w-5 text-success-500" aria-hidden="true" />
                               )}
                             </div>
                           </li>
@@ -641,15 +641,15 @@ export default function DocumentUploadModal({
                   {/* Document Metadata */}
                   <div className="mt-6 space-y-4">
                     <div>
-                      <label htmlFor="title" className="block text-sm font-medium text-gray-700">
-                        Title <span className="text-red-500">*</span>
+                      <label htmlFor="title" className="block text-sm font-medium text-neutral-700">
+                        Title <span className="text-error-500">*</span>
                       </label>
                       <input
                         type="text"
                         id="title"
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                        className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
                         placeholder="Enter document title"
                         required
                         disabled={isUploading}
@@ -657,7 +657,7 @@ export default function DocumentUploadModal({
                     </div>
                     
                     <div>
-                      <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                      <label htmlFor="description" className="block text-sm font-medium text-neutral-700">
                         Description
                       </label>
                       <textarea
@@ -665,14 +665,14 @@ export default function DocumentUploadModal({
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
                         rows={3}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                        className="mt-1 block w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
                         placeholder="Enter optional description"
                         disabled={isUploading}
                       />
                     </div>
                     
                     <div>
-                      <label htmlFor="document-type" className="block text-sm font-medium text-gray-700">
+                      <label htmlFor="document-type" className="block text-sm font-medium text-neutral-700">
                         Document Type
                       </label>
                       <Listbox
@@ -684,12 +684,12 @@ export default function DocumentUploadModal({
                         disabled={isUploading}
                       >
                         <div className="relative mt-1">
-                          <Listbox.Button className="relative w-full cursor-default rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-left shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 sm:text-sm">
+                          <Listbox.Button className="relative w-full cursor-default rounded-md border border-neutral-300 bg-white py-2 pl-3 pr-10 text-left shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 sm:text-sm">
                             <span className="block truncate">
                               {DOCUMENT_TYPES.find(type => type.id === documentType)?.name || 'Select type'}
                             </span>
                             <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                              <FiChevronDown className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                              <FiChevronDown className="h-5 w-5 text-neutral-400" aria-hidden="true" />
                             </span>
                           </Listbox.Button>
                           <Transition
@@ -704,7 +704,7 @@ export default function DocumentUploadModal({
                                   key={type.id}
                                   className={({ active }) =>
                                     `relative cursor-default select-none py-2 pl-3 pr-9 ${
-                                      active ? 'bg-primary-100 text-primary-900' : 'text-gray-900'
+                                      active ? 'bg-primary-100 text-primary-900' : 'text-neutral-900'
                                     }`
                                   }
                                   value={type.id}
@@ -734,10 +734,10 @@ export default function DocumentUploadModal({
                     </div>
                     
                     <div>
-                      <label htmlFor="tags" className="block text-sm font-medium text-gray-700">
+                      <label htmlFor="tags" className="block text-sm font-medium text-neutral-700">
                         Tags
                       </label>
-                      <div className="mt-1 flex flex-wrap items-center gap-2 rounded-md border border-gray-300 bg-white p-2 focus-within:border-primary-500 focus-within:ring-1 focus-within:ring-primary-500">
+                      <div className="mt-1 flex flex-wrap items-center gap-2 rounded-md border border-neutral-300 bg-white p-2 focus-within:border-primary-500 focus-within:ring-1 focus-within:ring-primary-500">
                         {tags.map((tag) => (
                           <div 
                             key={tag} 
@@ -789,11 +789,11 @@ export default function DocumentUploadModal({
                         type="checkbox"
                         checked={isEncrypted}
                         onChange={(e) => setIsEncrypted(e.target.checked)}
-                        className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                        className="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
                         disabled={isUploading}
                       />
-                      <label htmlFor="encrypt" className="ml-2 flex items-center text-sm text-gray-700">
-                        <FiLock className="mr-1 h-4 w-4 text-gray-500" />
+                      <label htmlFor="encrypt" className="ml-2 flex items-center text-sm text-neutral-700">
+                        <FiLock className="mr-1 h-4 w-4 text-neutral-500" />
                         Encrypt document for enhanced privacy
                       </label>
                     </div>
@@ -801,13 +801,13 @@ export default function DocumentUploadModal({
 
                   {/* Error Message */}
                   {uploadError && (
-                    <div className="mt-4 rounded-md bg-red-50 p-4">
+                    <div className="mt-4 rounded-md bg-error-50 p-4">
                       <div className="flex">
                         <div className="flex-shrink-0">
-                          <FiAlertCircle className="h-5 w-5 text-red-400" aria-hidden="true" />
+                          <FiAlertCircle className="h-5 w-5 text-error-400" aria-hidden="true" />
                         </div>
                         <div className="ml-3">
-                          <p className="text-sm text-red-700">{uploadError}</p>
+                          <p className="text-sm text-error-700">{uploadError}</p>
                         </div>
                       </div>
                     </div>
@@ -815,13 +815,13 @@ export default function DocumentUploadModal({
 
                   {/* Success Message */}
                   {uploadSuccess && (
-                    <div className="mt-4 rounded-md bg-green-50 p-4">
+                    <div className="mt-4 rounded-md bg-success-50 p-4">
                       <div className="flex">
                         <div className="flex-shrink-0">
-                          <FiCheckCircle className="h-5 w-5 text-green-400" aria-hidden="true" />
+                          <FiCheckCircle className="h-5 w-5 text-success-400" aria-hidden="true" />
                         </div>
                         <div className="ml-3">
-                          <p className="text-sm text-green-700">
+                          <p className="text-sm text-success-700">
                             Documents uploaded successfully!
                           </p>
                         </div>
@@ -833,14 +833,14 @@ export default function DocumentUploadModal({
                   {isUploading && (
                     <div className="mt-4">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-gray-700">
+                        <span className="text-sm font-medium text-neutral-700">
                           Uploading documents...
                         </span>
-                        <span className="text-sm text-gray-500">
+                        <span className="text-sm text-neutral-500">
                           {Math.round(uploadProgress)}%
                         </span>
                       </div>
-                      <div className="mt-2 h-2 w-full rounded-full bg-gray-200">
+                      <div className="mt-2 h-2 w-full rounded-full bg-neutral-200">
                         <div 
                           className="h-2 rounded-full bg-primary-500" 
                           style={{ width: `${uploadProgress}%` }}
@@ -853,7 +853,7 @@ export default function DocumentUploadModal({
                   <div className="mt-6 flex justify-end space-x-3">
                     <button
                       type="button"
-                      className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                      className="rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 shadow-sm hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                       onClick={handleClose}
                       disabled={isUploading}
                     >

@@ -55,12 +55,12 @@ export default function OperatorPage() {
     return (
       <div className="flex items-center justify-center h-screen p-6">
         <div className="max-w-md w-full">
-          <div className="rounded-lg border-2 border-red-300 bg-red-50 p-6">
+          <div className="rounded-lg border-2 border-error-300 bg-error-50 p-6">
             <div className="flex items-start gap-3">
-              <FiAlertCircle className="h-6 w-6 text-red-600 flex-shrink-0 mt-0.5" />
+              <FiAlertCircle className="h-6 w-6 text-error-600 flex-shrink-0 mt-0.5" />
               <div>
-                <h3 className="text-lg font-semibold text-red-900 mb-2">Access Denied</h3>
-                <p className="text-sm text-red-800 mb-4">
+                <h3 className="text-lg font-semibold text-error-900 mb-2">Access Denied</h3>
+                <p className="text-sm text-error-800 mb-4">
                   You don't have permission to access this page. This area is only available to operators and administrators.
                 </p>
                 <button 

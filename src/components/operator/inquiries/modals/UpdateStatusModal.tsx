@@ -69,7 +69,7 @@ export function UpdateStatusModal({ isOpen, onClose, inquiryId, currentStatus }:
           <h2 className="text-xl font-semibold">Update Status</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-neutral-400 hover:text-neutral-600"
             disabled={isLoading}
           >
             <FiX className="w-5 h-5" />
@@ -79,14 +79,14 @@ export function UpdateStatusModal({ isOpen, onClose, inquiryId, currentStatus }:
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg">
+            <div className="bg-error-50 border border-error-200 text-error-600 px-4 py-3 rounded-lg">
               {error}
             </div>
           )}
 
           {/* Status Selection */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-neutral-700 mb-2">
               New Status *
             </label>
             <div className="space-y-2 max-h-96 overflow-y-auto">
@@ -95,8 +95,8 @@ export function UpdateStatusModal({ isOpen, onClose, inquiryId, currentStatus }:
                   key={option.value}
                   className={`flex items-start p-3 border rounded-lg cursor-pointer transition-colors ${
                     formData.status === option.value
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-300 hover:border-blue-300'
+                      ? 'border-primary-500 bg-primary-50'
+                      : 'border-neutral-300 hover:border-primary-300'
                   }`}
                 >
                   <input
@@ -109,7 +109,7 @@ export function UpdateStatusModal({ isOpen, onClose, inquiryId, currentStatus }:
                   />
                   <div>
                     <div className="font-medium">{option.label}</div>
-                    <div className="text-sm text-gray-600">{option.description}</div>
+                    <div className="text-sm text-neutral-600">{option.description}</div>
                   </div>
                 </label>
               ))}
@@ -118,7 +118,7 @@ export function UpdateStatusModal({ isOpen, onClose, inquiryId, currentStatus }:
 
           {/* Reason */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-neutral-700 mb-1">
               Reason / Notes
             </label>
             <textarea
@@ -126,7 +126,7 @@ export function UpdateStatusModal({ isOpen, onClose, inquiryId, currentStatus }:
               onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
               placeholder="Why is the status being changed?"
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
 
@@ -136,14 +136,14 @@ export function UpdateStatusModal({ isOpen, onClose, inquiryId, currentStatus }:
               type="button"
               onClick={onClose}
               disabled={isLoading}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+              className="flex-1 px-4 py-2 border border-neutral-300 rounded-lg hover:bg-neutral-50 disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
             >
               {isLoading ? 'Updating...' : 'Update Status'}
             </button>

@@ -333,7 +333,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       case 'READ':
         return <FiCheckCircle className="h-3 w-3 text-primary-500" />;
       case 'FAILED':
-        return <FiX className="h-3 w-3 text-red-500" />;
+        return <FiX className="h-3 w-3 text-error-500" />;
       default:
         return null;
     }
@@ -343,11 +343,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const getRoleColor = (role: ParticipantRole) => {
     switch (role) {
       case 'CARE_HOME':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-primary-100 text-primary-800';
       case 'CARE_ADVISOR':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-secondary-100 text-secondary-800';
       case 'FAMILY_MEMBER':
-        return 'bg-green-100 text-green-800';
+        return 'bg-success-100 text-success-800';
       case 'SYSTEM':
         return 'bg-neutral-100 text-neutral-800';
       default:
@@ -375,7 +375,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     } else if (sender?.role === 'CARE_ADVISOR') {
       return {
         containerClass: 'justify-start',
-        bubbleClass: 'bg-purple-100 text-neutral-800 rounded-tr-lg rounded-bl-lg rounded-br-lg',
+        bubbleClass: 'bg-secondary-100 text-neutral-800 rounded-tr-lg rounded-bl-lg rounded-br-lg',
         textClass: 'text-neutral-800'
       };
     } else {
@@ -445,7 +445,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           <div className="flex items-center p-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-md bg-neutral-100">
               {isPdf ? (
-                <FiFile className="h-5 w-5 text-red-500" />
+                <FiFile className="h-5 w-5 text-error-500" />
               ) : (
                 <FiFile className="h-5 w-5 text-neutral-500" />
               )}
@@ -666,7 +666,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       {/* Message input */}
       <div className="border-t border-neutral-200 p-4">
         {error && (
-          <div className="mb-2 rounded-md bg-red-50 p-2 text-sm text-red-800">
+          <div className="mb-2 rounded-md bg-error-50 p-2 text-sm text-error-800">
             <p>{error}</p>
           </div>
         )}

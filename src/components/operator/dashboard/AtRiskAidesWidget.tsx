@@ -16,7 +16,7 @@ interface AtRiskCaregiver {
 }
 
 const LEVEL_STYLES = {
-  HIGH:   { bg: 'bg-red-50',    border: 'border-red-200',    badge: 'bg-red-100 text-red-700',   icon: FiAlertCircle,  label: 'High Risk' },
+  HIGH:   { bg: 'bg-error-50',    border: 'border-error-200',    badge: 'bg-error-100 text-error-700',   icon: FiAlertCircle,  label: 'High Risk' },
   MEDIUM: { bg: 'bg-amber-50',  border: 'border-amber-200',  badge: 'bg-amber-100 text-amber-700', icon: FiAlertTriangle, label: 'Medium Risk' },
 };
 
@@ -35,15 +35,15 @@ export default function AtRiskAidesWidget() {
   if (loading || caregivers.length === 0) return null;
 
   return (
-    <div className="rounded-xl border border-red-200 bg-white p-5">
+    <div className="rounded-xl border border-error-200 bg-white p-5">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <div className="rounded-full bg-red-100 p-1.5">
-            <FiAlertTriangle size={14} className="text-red-600" />
+          <div className="rounded-full bg-error-100 p-1.5">
+            <FiAlertTriangle size={14} className="text-error-600" />
           </div>
           <h3 className="font-semibold text-neutral-800 text-sm">
             At-Risk Aides
-            <span className="ml-1.5 text-xs font-normal bg-red-100 text-red-700 px-1.5 py-0.5 rounded-full">
+            <span className="ml-1.5 text-xs font-normal bg-error-100 text-error-700 px-1.5 py-0.5 rounded-full">
               {caregivers.length}
             </span>
           </h3>
@@ -63,7 +63,7 @@ export default function AtRiskAidesWidget() {
               href={`/operator/caregivers/${c.id}`}
               className={`flex items-start gap-3 rounded-lg border ${style.border} ${style.bg} p-3 hover:opacity-80 transition-opacity`}
             >
-              <Icon size={16} className={c.risk.level === 'HIGH' ? 'text-red-500 mt-0.5 flex-shrink-0' : 'text-amber-500 mt-0.5 flex-shrink-0'} />
+              <Icon size={16} className={c.risk.level === 'HIGH' ? 'text-error-500 mt-0.5 flex-shrink-0' : 'text-amber-500 mt-0.5 flex-shrink-0'} />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-neutral-800 truncate">{c.name}</span>

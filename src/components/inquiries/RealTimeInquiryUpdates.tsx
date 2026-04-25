@@ -288,13 +288,13 @@ const RealTimeInquiryUpdates: React.FC<RealTimeInquiryUpdatesProps> = ({
   const getUpdateIcon = (type: UpdateType) => {
     switch (type) {
       case 'STATUS_CHANGE':
-        return <FiCheckCircle className="h-5 w-5 text-green-500" />;
+        return <FiCheckCircle className="h-5 w-5 text-success-500" />;
       case 'NEW_MESSAGE':
-        return <MessageSquare className="h-5 w-5 text-blue-500" />;
+        return <MessageSquare className="h-5 w-5 text-primary-500" />;
       case 'TOUR_REMINDER':
         return <FiCalendar className="h-5 w-5 text-amber-500" />;
       case 'DOCUMENT_SHARED':
-        return <FiFileText className="h-5 w-5 text-purple-500" />;
+        return <FiFileText className="h-5 w-5 text-secondary-500" />;
       case 'NOTE_ADDED':
         return <FiFileText className="h-5 w-5 text-indigo-500" />;
     }
@@ -343,7 +343,7 @@ const RealTimeInquiryUpdates: React.FC<RealTimeInquiryUpdatesProps> = ({
         return (
           <button
             onClick={() => navigateToInquiry(update.inquiryId, update.type)}
-            className="flex items-center rounded-md bg-purple-100 px-2 py-1 text-xs font-medium text-purple-700 hover:bg-purple-200"
+            className="flex items-center rounded-md bg-secondary-100 px-2 py-1 text-xs font-medium text-secondary-700 hover:bg-secondary-200"
           >
             View Document
           </button>
@@ -529,7 +529,7 @@ const RealTimeInquiryUpdates: React.FC<RealTimeInquiryUpdatesProps> = ({
               onClick={() => setActiveFilter('STATUS_CHANGE')}
               className={`flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${
                 activeFilter === 'STATUS_CHANGE'
-                  ? 'bg-green-100 text-green-800'
+                  ? 'bg-success-100 text-success-800'
                   : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
               }`}
             >
@@ -540,7 +540,7 @@ const RealTimeInquiryUpdates: React.FC<RealTimeInquiryUpdatesProps> = ({
               onClick={() => setActiveFilter('NEW_MESSAGE')}
               className={`flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${
                 activeFilter === 'NEW_MESSAGE'
-                  ? 'bg-blue-100 text-blue-800'
+                  ? 'bg-primary-100 text-primary-800'
                   : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
               }`}
             >
@@ -562,7 +562,7 @@ const RealTimeInquiryUpdates: React.FC<RealTimeInquiryUpdatesProps> = ({
               onClick={() => setActiveFilter('DOCUMENT_SHARED')}
               className={`flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${
                 activeFilter === 'DOCUMENT_SHARED'
-                  ? 'bg-purple-100 text-purple-800'
+                  ? 'bg-secondary-100 text-secondary-800'
                   : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
               }`}
             >
@@ -628,7 +628,7 @@ const RealTimeInquiryUpdates: React.FC<RealTimeInquiryUpdatesProps> = ({
               animate={{ opacity: 1, backgroundColor: '#ffffff' }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.3 }}
-              className={`relative p-4 ${!update.isRead ? 'bg-blue-50' : ''}`}
+              className={`relative p-4 ${!update.isRead ? 'bg-primary-50' : ''}`}
               onClick={() => markAsRead(update.id)}
             >
               {!update.isRead && (

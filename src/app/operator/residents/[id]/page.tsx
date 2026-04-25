@@ -151,11 +151,11 @@ export default async function ResidentDetail({ params, searchParams }: { params:
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="mb-4 text-6xl">😔</div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Resident Not Found</h2>
-          <p className="text-gray-600 mb-6">The resident you're looking for doesn't exist or you don't have access to view it.</p>
+          <h2 className="text-2xl font-bold text-neutral-900 mb-2">Resident Not Found</h2>
+          <p className="text-neutral-600 mb-6">The resident you're looking for doesn't exist or you don't have access to view it.</p>
           <Link
             href="/operator/residents"
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
           >
             ← Back to Residents
           </Link>
@@ -227,11 +227,11 @@ export default async function ResidentDetail({ params, searchParams }: { params:
               )}
               <div className="flex items-center gap-3 mt-2">
                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                  resident.status === 'ACTIVE' ? 'bg-green-100 text-green-800' :
-                  resident.status === 'INQUIRY' ? 'bg-blue-100 text-blue-800' :
-                  resident.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                  resident.status === 'ACTIVE' ? 'bg-success-100 text-success-800' :
+                  resident.status === 'INQUIRY' ? 'bg-primary-100 text-primary-800' :
+                  resident.status === 'PENDING' ? 'bg-warning-100 text-warning-800' :
                   resident.status === 'DISCHARGED' ? 'bg-neutral-100 text-neutral-800' :
-                  'bg-red-100 text-red-800'
+                  'bg-error-100 text-error-800'
                 }`}>
                   {resident.status}
                 </span>

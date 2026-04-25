@@ -164,8 +164,8 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
                     onClick={() => onToggleFavorite?.(home.id)}
                     className={`ml-2 ${
                       favorites.includes(home.id) 
-                        ? 'text-red-500' 
-                        : 'text-neutral-400 hover:text-red-500'
+                        ? 'text-error-500' 
+                        : 'text-neutral-400 hover:text-error-500'
                     }`}
                   >
                     <FiHeart className="h-4 w-4" fill={favorites.includes(home.id) ? 'currentColor' : 'none'} />
@@ -183,7 +183,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
                 
                 <div className="flex flex-wrap gap-1 mb-2">
                   {home.careLevel.slice(0, 2).map((level) => (
-                    <span key={level} className="px-1.5 py-0.5 bg-blue-100 text-blue-800 text-xs rounded">
+                    <span key={level} className="px-1.5 py-0.5 bg-primary-100 text-primary-800 text-xs rounded">
                       {level.replace('_', ' ')}
                     </span>
                   ))}
@@ -200,7 +200,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
                 
                 <Link 
                   href={`/homes/${home.id}`}
-                  className="block w-full text-center bg-blue-500 hover:bg-blue-600 text-white text-xs py-1.5 rounded transition-colors"
+                  className="block w-full text-center bg-primary-500 hover:bg-primary-600 text-white text-xs py-1.5 rounded transition-colors"
                 >
                   View Details
                 </Link>

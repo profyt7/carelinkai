@@ -484,8 +484,8 @@ export default function AccountSettings() {
         <div
           className={`mb-6 rounded-md p-4 ${
             message.type === "error"
-              ? "bg-red-50 text-red-800"
-              : "bg-green-50 text-green-800"
+              ? "bg-error-50 text-error-800"
+              : "bg-success-50 text-success-800"
           }`}
         >
           <div className="flex items-center">
@@ -532,7 +532,7 @@ export default function AccountSettings() {
               <div className="mt-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="text-sm font-medium text-neutral-700">Account Status</div>
-                  <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                  <span className="inline-flex items-center rounded-full bg-success-100 px-2.5 py-0.5 text-xs font-medium text-success-800">
                     Active
                   </span>
                 </div>
@@ -541,7 +541,7 @@ export default function AccountSettings() {
                   <div className="text-sm font-medium text-neutral-700">Two-Factor Auth</div>
                   <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                     twoFactorEnabled
-                      ? "bg-green-100 text-green-800"
+                      ? "bg-success-100 text-success-800"
                       : "bg-neutral-100 text-neutral-800"
                   }`}>
                     {twoFactorEnabled ? "Enabled" : "Disabled"}
@@ -622,7 +622,7 @@ export default function AccountSettings() {
                     </div>
                   </div>
                   {errors.currentPassword && (
-                    <p className="mt-1 text-sm text-red-600">{errors.currentPassword}</p>
+                    <p className="mt-1 text-sm text-error-600">{errors.currentPassword}</p>
                   )}
                 </div>
                 
@@ -659,7 +659,7 @@ export default function AccountSettings() {
                     </div>
                   </div>
                   {errors.newPassword && (
-                    <p className="mt-1 text-sm text-red-600">{errors.newPassword}</p>
+                    <p className="mt-1 text-sm text-error-600">{errors.newPassword}</p>
                   )}
                   <p className="mt-1 text-xs text-neutral-500">
                     Password must be at least 8 characters and include uppercase, lowercase, 
@@ -700,7 +700,7 @@ export default function AccountSettings() {
                     </div>
                   </div>
                   {errors.confirmPassword && (
-                    <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>
+                    <p className="mt-1 text-sm text-error-600">{errors.confirmPassword}</p>
                   )}
                 </div>
               </div>
@@ -752,7 +752,7 @@ export default function AccountSettings() {
                       disabled={saving}
                       className={`inline-flex items-center rounded-md border px-4 py-2 text-sm font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
                         twoFactorEnabled
-                          ? "border-red-300 bg-white text-red-700 hover:bg-red-50"
+                          ? "border-error-300 bg-white text-error-700 hover:bg-error-50"
                           : "border-transparent bg-primary-600 text-white hover:bg-primary-700"
                       }`}
                     >
@@ -891,7 +891,7 @@ export default function AccountSettings() {
                   type="button"
                   onClick={handleLogoutAllDevices}
                   disabled={saving}
-                  className="inline-flex items-center rounded-md border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700 shadow-sm hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                  className="inline-flex items-center rounded-md border border-error-300 bg-white px-4 py-2 text-sm font-medium text-error-700 shadow-sm hover:bg-error-50 focus:outline-none focus:ring-2 focus:ring-error-500 focus:ring-offset-2"
                 >
                   {saving ? (
                     <FiLoader className="mr-2 h-4 w-4 animate-spin" />
@@ -905,25 +905,25 @@ export default function AccountSettings() {
           </div>
           
           {/* Danger zone */}
-          <div className="overflow-hidden rounded-lg bg-red-50 shadow">
-            <div className="border-b border-red-200 bg-red-100 px-4 py-5 sm:px-6">
-              <h3 className="text-lg font-medium text-red-800">Danger Zone</h3>
+          <div className="overflow-hidden rounded-lg bg-error-50 shadow">
+            <div className="border-b border-error-200 bg-error-100 px-4 py-5 sm:px-6">
+              <h3 className="text-lg font-medium text-error-800">Danger Zone</h3>
             </div>
             <div className="px-4 py-5 sm:p-6">
               <div className="flex items-start">
                 <div className="flex-shrink-0">
-                  <FiAlertTriangle className="h-6 w-6 text-red-600" />
+                  <FiAlertTriangle className="h-6 w-6 text-error-600" />
                 </div>
                 <div className="ml-3">
-                  <h4 className="text-lg font-medium text-red-800">Deactivate Account</h4>
-                  <p className="mt-1 text-sm text-red-700">
+                  <h4 className="text-lg font-medium text-error-800">Deactivate Account</h4>
+                  <p className="mt-1 text-sm text-error-700">
                     Once you deactivate your account, all your data will be inaccessible. This action cannot be undone.
                   </p>
                   <div className="mt-4">
                     <button
                       type="button"
                       onClick={() => setShowDeactivateModal(true)}
-                      className="inline-flex items-center rounded-md border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700 shadow-sm hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                      className="inline-flex items-center rounded-md border border-error-300 bg-white px-4 py-2 text-sm font-medium text-error-700 shadow-sm hover:bg-error-50 focus:outline-none focus:ring-2 focus:ring-error-500 focus:ring-offset-2"
                     >
                       <FiSlash className="mr-2 h-4 w-4" />
                       Deactivate Account
@@ -945,8 +945,8 @@ export default function AccountSettings() {
             <div className="inline-block transform overflow-hidden rounded-lg bg-white text-left align-bottom shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:align-middle">
               <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                 <div className="sm:flex sm:items-start">
-                  <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
-                    <FiAlertTriangle className="h-6 w-6 text-red-600" />
+                  <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-error-100 sm:mx-0 sm:h-10 sm:w-10">
+                    <FiAlertTriangle className="h-6 w-6 text-error-600" />
                   </div>
                   <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
                     <h3 className="text-lg font-medium leading-6 text-neutral-900">Deactivate Account</h3>
@@ -964,7 +964,7 @@ export default function AccountSettings() {
                   type="button"
                   onClick={handleDeactivateAccount}
                   disabled={saving}
-                  className="inline-flex w-full justify-center rounded-md border border-transparent bg-red-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm"
+                  className="inline-flex w-full justify-center rounded-md border border-transparent bg-error-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-error-700 focus:outline-none focus:ring-2 focus:ring-error-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm"
                 >
                   {saving ? (
                     <>

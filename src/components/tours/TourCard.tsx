@@ -76,17 +76,17 @@ export default function TourCard({ tour, viewAs, onAction }: TourCardProps) {
   const canCancel = ["PENDING", "CONFIRMED"].includes(tour.status);
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
+    <div className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
       <div className="flex items-start justify-between">
         <div className="flex-1">
           {/* Header */}
           <div className="mb-3 flex items-start justify-between">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">
+              <h3 className="text-lg font-semibold text-neutral-900">
                 {tour.home.name}
               </h3>
               {viewAs === "operator" && tour.family && (
-                <div className="mt-1 flex items-center text-sm text-gray-600">
+                <div className="mt-1 flex items-center text-sm text-neutral-600">
                   <FiUser className="mr-1 h-4 w-4" />
                   {tour.family.user.firstName} {tour.family.user.lastName}
                 </div>
@@ -97,17 +97,17 @@ export default function TourCard({ tour, viewAs, onAction }: TourCardProps) {
 
           {/* Details */}
           <div className="space-y-2">
-            <div className="flex items-start text-sm text-gray-600">
+            <div className="flex items-start text-sm text-neutral-600">
               <FiMapPin className="mr-2 mt-0.5 h-4 w-4 flex-shrink-0" />
               <span>{address}</span>
             </div>
 
-            <div className="flex items-start text-sm text-gray-600">
+            <div className="flex items-start text-sm text-neutral-600">
               <FiCalendar className="mr-2 mt-0.5 h-4 w-4 flex-shrink-0" />
               <span>{getDisplayTime()}</span>
             </div>
 
-            <div className="flex items-start text-sm text-gray-500">
+            <div className="flex items-start text-sm text-neutral-500">
               <FiClock className="mr-2 mt-0.5 h-4 w-4 flex-shrink-0" />
               <span>Requested {formatDate(tour.createdAt)}</span>
             </div>
@@ -130,7 +130,7 @@ export default function TourCard({ tour, viewAs, onAction }: TourCardProps) {
             {canCancel && onAction && (
               <button
                 onClick={() => onAction("cancel", tour.id)}
-                className="text-sm font-medium text-red-600 hover:text-red-700"
+                className="text-sm font-medium text-error-600 hover:text-error-700"
               >
                 Cancel Tour
               </button>

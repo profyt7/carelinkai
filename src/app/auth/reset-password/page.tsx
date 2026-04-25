@@ -116,8 +116,8 @@ function ResetPasswordForm() {
   if (!tokenValid) {
     return (
       <div className="text-center py-4">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-4">
-          <FiAlertCircle className="w-8 h-8 text-red-600" />
+        <div className="inline-flex items-center justify-center w-16 h-16 bg-error-100 rounded-full mb-4">
+          <FiAlertCircle className="w-8 h-8 text-error-600" />
         </div>
         <h2 className="text-2xl font-bold text-slate-900 mb-2">Invalid or Expired Link</h2>
         <p className="text-slate-500 mb-6">
@@ -137,8 +137,8 @@ function ResetPasswordForm() {
   if (success) {
     return (
       <div className="text-center py-4">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-          <FiCheck className="w-8 h-8 text-green-600" />
+        <div className="inline-flex items-center justify-center w-16 h-16 bg-success-100 rounded-full mb-4">
+          <FiCheck className="w-8 h-8 text-success-600" />
         </div>
         <h2 className="text-2xl font-bold text-slate-900 mb-2">Password Reset Successfully</h2>
         <p className="text-slate-500 mb-6">
@@ -167,9 +167,9 @@ function ResetPasswordForm() {
 
       {/* Error Message */}
       {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start">
-          <FiAlertCircle className="w-5 h-5 text-red-500 mr-3 flex-shrink-0 mt-0.5" />
-          <p className="text-red-700 text-sm">{error}</p>
+        <div className="mb-6 p-4 bg-error-50 border border-error-200 rounded-lg flex items-start">
+          <FiAlertCircle className="w-5 h-5 text-error-500 mr-3 flex-shrink-0 mt-0.5" />
+          <p className="text-error-700 text-sm">{error}</p>
         </div>
       )}
 
@@ -190,7 +190,7 @@ function ResetPasswordForm() {
               autoComplete="new-password"
               placeholder="••••••••"
               className={`block w-full pl-10 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-[#3978FC] focus:border-transparent transition-colors ${
-                errors.password ? "border-red-300 bg-red-50" : "border-slate-300 bg-white"
+                errors.password ? "border-error-300 bg-error-50" : "border-slate-300 bg-white"
               }`}
               {...register("password", {
                 required: "Password is required",
@@ -213,7 +213,7 @@ function ResetPasswordForm() {
             </button>
           </div>
           {errors.password && (
-            <p className="mt-2 text-sm text-red-600">{errors.password.message}</p>
+            <p className="mt-2 text-sm text-error-600">{errors.password.message}</p>
           )}
 
           {/* Password Requirements */}
@@ -225,7 +225,7 @@ function ResetPasswordForm() {
                   <li
                     key={index}
                     className={`flex items-center text-xs ${
-                      req.met ? "text-green-600" : "text-slate-400"
+                      req.met ? "text-success-600" : "text-slate-400"
                     }`}
                   >
                     {req.met ? (
@@ -256,7 +256,7 @@ function ResetPasswordForm() {
               autoComplete="new-password"
               placeholder="••••••••"
               className={`block w-full pl-10 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-[#3978FC] focus:border-transparent transition-colors ${
-                errors.confirmPassword ? "border-red-300 bg-red-50" : "border-slate-300 bg-white"
+                errors.confirmPassword ? "border-error-300 bg-error-50" : "border-slate-300 bg-white"
               }`}
               {...register("confirmPassword", {
                 required: "Please confirm your password",
@@ -276,7 +276,7 @@ function ResetPasswordForm() {
             </button>
           </div>
           {errors.confirmPassword && (
-            <p className="mt-2 text-sm text-red-600">{errors.confirmPassword.message}</p>
+            <p className="mt-2 text-sm text-error-600">{errors.confirmPassword.message}</p>
           )}
         </div>
 
@@ -331,7 +331,7 @@ function ResetPasswordForm() {
 
 export default function ResetPasswordPage() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 via-primary-50 to-purple-50 py-12 px-4 sm:px-6 lg:px-8">
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-[#3978FC]/10 rounded-full blur-3xl" />

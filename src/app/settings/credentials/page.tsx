@@ -238,8 +238,8 @@ export default function CredentialsSettingsPage() {
         <div
           className={`mb-6 rounded-md p-4 ${
             message.type === "error"
-              ? "bg-red-50 text-red-800"
-              : "bg-green-50 text-green-800"
+              ? "bg-error-50 text-error-800"
+              : "bg-success-50 text-success-800"
           }`}
         >
           <div className="flex items-center">
@@ -278,7 +278,7 @@ export default function CredentialsSettingsPage() {
                 required
               />
               {credErrors.type && (
-                <p className="mt-1 text-sm text-red-600">{credErrors.type}</p>
+                <p className="mt-1 text-sm text-error-600">{credErrors.type}</p>
               )}
             </div>
             <div className="col-span-6 sm:col-span-3">
@@ -295,7 +295,7 @@ export default function CredentialsSettingsPage() {
                 required
               />
               {credErrors.issueDate && (
-                <p className="mt-1 text-sm text-red-600">{credErrors.issueDate}</p>
+                <p className="mt-1 text-sm text-error-600">{credErrors.issueDate}</p>
               )}
             </div>
             <div className="col-span-6 sm:col-span-3">
@@ -312,7 +312,7 @@ export default function CredentialsSettingsPage() {
                 required
               />
               {credErrors.expirationDate && (
-                <p className="mt-1 text-sm text-red-600">{credErrors.expirationDate}</p>
+                <p className="mt-1 text-sm text-error-600">{credErrors.expirationDate}</p>
               )}
             </div>
             <div className="col-span-6 sm:col-span-3">
@@ -328,7 +328,7 @@ export default function CredentialsSettingsPage() {
                 required
               />
               {credErrors.file && (
-                <p className="mt-1 text-sm text-red-600">{credErrors.file}</p>
+                <p className="mt-1 text-sm text-error-600">{credErrors.file}</p>
               )}
             </div>
             <div className="col-span-6 mt-2 flex justify-end">
@@ -402,11 +402,11 @@ export default function CredentialsSettingsPage() {
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-sm text-neutral-500">
                       {cred.isVerified ? (
-                        <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                        <span className="inline-flex items-center rounded-full bg-success-100 px-2.5 py-0.5 text-xs font-medium text-success-800">
                           Verified
                         </span>
                       ) : (
-                        <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
+                        <span className="inline-flex items-center rounded-full bg-warning-100 px-2.5 py-0.5 text-xs font-medium text-warning-800">
                           Pending
                         </span>
                       )}
@@ -425,7 +425,7 @@ export default function CredentialsSettingsPage() {
                       )}
                       <button
                         onClick={() => handleDeleteCredential(cred.id)}
-                        className="text-red-600 hover:text-red-900"
+                        className="text-error-600 hover:text-error-900"
                         title="Delete"
                       >
                         <FiTrash2 className="inline h-4 w-4" />

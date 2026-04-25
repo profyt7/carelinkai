@@ -25,9 +25,9 @@ export function AlertCard({
   const typeConfig = {
     error: {
       icon: FiAlertCircle,
-      bgColor: 'bg-red-50',
-      iconColor: 'text-red-600',
-      borderColor: 'border-red-200',
+      bgColor: 'bg-error-50',
+      iconColor: 'text-error-600',
+      borderColor: 'border-error-200',
     },
     warning: {
       icon: FiAlertTriangle,
@@ -37,15 +37,15 @@ export function AlertCard({
     },
     info: {
       icon: FiInfo,
-      bgColor: 'bg-blue-50',
-      iconColor: 'text-blue-600',
-      borderColor: 'border-blue-200',
+      bgColor: 'bg-primary-50',
+      iconColor: 'text-primary-600',
+      borderColor: 'border-primary-200',
     },
     success: {
       icon: FiCheckCircle,
-      bgColor: 'bg-green-50',
-      iconColor: 'text-green-600',
-      borderColor: 'border-green-200',
+      bgColor: 'bg-success-50',
+      iconColor: 'text-success-600',
+      borderColor: 'border-success-200',
     },
   };
 

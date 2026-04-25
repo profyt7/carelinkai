@@ -229,7 +229,7 @@ export default function ResidentMatchPage() {
               </button>
 
               {error && (
-                <div className="flex items-start gap-2 rounded-md border border-red-200 bg-red-50 p-3 text-red-700">
+                <div className="flex items-start gap-2 rounded-md border border-error-200 bg-error-50 p-3 text-error-700">
                   <FiAlertTriangle className="mt-0.5" />
                   <span className="text-sm">{error}</span>
                 </div>
@@ -252,7 +252,7 @@ export default function ResidentMatchPage() {
             )}
 
             {items && items.length === 0 && !loading && (
-              <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-md p-4">
+              <div className="bg-warning-50 border border-warning-200 text-warning-800 rounded-md p-4">
                 No matches found. Try adjusting the profile.
               </div>
             )}

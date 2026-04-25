@@ -27,10 +27,10 @@ interface Props {
 }
 
 const BG_CHECK_BADGE: Record<string, string> = {
-  CLEARED: 'bg-green-100 text-green-800',
-  PENDING: 'bg-yellow-100 text-yellow-800',
+  CLEARED: 'bg-success-100 text-success-800',
+  PENDING: 'bg-warning-100 text-warning-800',
   NOT_STARTED: 'bg-neutral-100 text-neutral-600',
-  FAILED: 'bg-red-100 text-red-800',
+  FAILED: 'bg-error-100 text-error-800',
 };
 
 export default function ShiftAutoFill({ homeId, homeName }: Props) {

@@ -44,9 +44,9 @@ import ImpersonationBanner from "../admin/ImpersonationBanner";
 
 // Role badge colors
 const roleBadgeColors = {
-  ADMIN: { bg: "bg-purple-100", text: "text-purple-800" },
-  OPERATOR: { bg: "bg-blue-100", text: "text-blue-800" },
-  CAREGIVER: { bg: "bg-green-100", text: "text-green-800" },
+  ADMIN: { bg: "bg-secondary-100", text: "text-secondary-800" },
+  OPERATOR: { bg: "bg-primary-100", text: "text-primary-800" },
+  CAREGIVER: { bg: "bg-success-100", text: "text-success-800" },
   FAMILY: { bg: "bg-amber-100", text: "text-amber-800" },
   AFFILIATE: { bg: "bg-pink-100", text: "text-pink-800" },
   DISCHARGE_PLANNER: { bg: "bg-teal-100", text: "text-teal-800" },
@@ -950,7 +950,7 @@ export default function DashboardLayout({
                     </Link>
                     <button 
                       onClick={handleLogout}
-                      className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-neutral-100 transition-colors flex items-center"
+                      className="w-full text-left px-4 py-3 text-sm text-error-600 hover:bg-neutral-100 transition-colors flex items-center"
                       role="menuitem"
                     >
                       <FiLogOut size={16} className="mr-2" />

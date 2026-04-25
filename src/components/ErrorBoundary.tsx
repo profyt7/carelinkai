@@ -58,8 +58,8 @@ class ErrorBoundary extends Component<Props, State> {
       return (
         <div className="min-h-screen flex items-center justify-center bg-neutral-50 px-4">
           <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mb-6">
-              <FiAlertTriangle className="text-red-600 text-3xl" />
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-error-100 mb-6">
+              <FiAlertTriangle className="text-error-600 text-3xl" />
             </div>
             <h1 className="text-2xl font-bold text-neutral-800 mb-4">
               Oops! Something went wrong

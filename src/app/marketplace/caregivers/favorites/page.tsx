@@ -81,23 +81,23 @@ export default function FamilyShortlistPage() {
     <div className="px-4 md:px-6 py-4">
       <div className="mb-4 flex items-center gap-3">
         <Link href="/marketplace" className="text-sm text-primary-600 hover:underline">← Back to Marketplace</Link>
-        <h1 className="text-base font-medium text-gray-900">My Caregiver Shortlist</h1>
+        <h1 className="text-base font-medium text-neutral-900">My Caregiver Shortlist</h1>
       </div>
 
       {!session?.user ? (
-        <div className="rounded-md border bg-white p-6 text-center text-gray-700">
+        <div className="rounded-md border bg-white p-6 text-center text-neutral-700">
           Please sign in to view your shortlist.
         </div>
       ) : !isFamily ? (
-        <div className="rounded-md border bg-white p-6 text-center text-gray-700">
+        <div className="rounded-md border bg-white p-6 text-center text-neutral-700">
           Shortlists are available for family accounts.
         </div>
       ) : loading ? (
-        <div className="py-16 text-center text-gray-500">Loading shortlist…</div>
+        <div className="py-16 text-center text-neutral-500">Loading shortlist…</div>
       ) : ids.length === 0 ? (
         <div className="py-16 text-center">
-          <div className="text-lg font-medium text-gray-900 mb-1">No caregivers shortlisted</div>
-          <div className="text-sm text-gray-600">Tap the heart on caregiver cards to add them to your shortlist.</div>
+          <div className="text-lg font-medium text-neutral-900 mb-1">No caregivers shortlisted</div>
+          <div className="text-sm text-neutral-600">Tap the heart on caregiver cards to add them to your shortlist.</div>
           <div className="mt-4">
             <Link href="/marketplace?tab=caregivers" className="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm text-white hover:bg-primary-700">Browse caregivers</Link>
           </div>
@@ -132,7 +132,7 @@ export default function FamilyShortlistPage() {
               >
                 Previous
               </button>
-              <div className="text-sm text-gray-600">Page {page} of {totalPages}</div>
+              <div className="text-sm text-neutral-600">Page {page} of {totalPages}</div>
               <button
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}

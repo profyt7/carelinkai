@@ -72,7 +72,7 @@ export function SetReminderModal({ isOpen, onClose, inquiryId, inquiryData }: Se
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-neutral-400 hover:text-neutral-600"
             disabled={isLoading}
           >
             <FiX className="w-5 h-5" />
@@ -82,20 +82,20 @@ export function SetReminderModal({ isOpen, onClose, inquiryId, inquiryData }: Se
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg">
+            <div className="bg-error-50 border border-error-200 text-error-600 px-4 py-3 rounded-lg">
               {error}
             </div>
           )}
 
           {/* Reminder Type */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-neutral-700 mb-1">
               Reminder Type *
             </label>
             <select
               value={formData.type}
               onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
               {REMINDER_TYPES.map((type) => (
                 <option key={type.value} value={type.value}>
@@ -107,7 +107,7 @@ export function SetReminderModal({ isOpen, onClose, inquiryId, inquiryData }: Se
 
           {/* Due Date */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-neutral-700 mb-1">
               <FiCalendar className="inline w-4 h-4 mr-1" />
               Due Date *
             </label>
@@ -116,14 +116,14 @@ export function SetReminderModal({ isOpen, onClose, inquiryId, inquiryData }: Se
               required
               value={formData.dueDate}
               onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               min={format(new Date(), 'yyyy-MM-dd')}
             />
           </div>
 
           {/* Due Time */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-neutral-700 mb-1">
               <FiClock className="inline w-4 h-4 mr-1" />
               Due Time *
             </label>
@@ -132,13 +132,13 @@ export function SetReminderModal({ isOpen, onClose, inquiryId, inquiryData }: Se
               required
               value={formData.dueTime}
               onChange={(e) => setFormData({ ...formData, dueTime: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
 
           {/* Notes */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-neutral-700 mb-1">
               Notes
             </label>
             <textarea
@@ -146,7 +146,7 @@ export function SetReminderModal({ isOpen, onClose, inquiryId, inquiryData }: Se
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               placeholder="Additional details or context"
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
 
@@ -156,14 +156,14 @@ export function SetReminderModal({ isOpen, onClose, inquiryId, inquiryData }: Se
               type="button"
               onClick={onClose}
               disabled={isLoading}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+              className="flex-1 px-4 py-2 border border-neutral-300 rounded-lg hover:bg-neutral-50 disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
             >
               {isLoading ? 'Setting...' : 'Set Reminder'}
             </button>

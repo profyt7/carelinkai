@@ -365,14 +365,14 @@ export default function CommunicationsPage() {
       onClick={() => setActiveTab(tab)}
       className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
         activeTab === tab
-          ? 'bg-blue-600 text-white'
-          : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+          ? 'bg-primary-600 text-white'
+          : 'bg-white text-neutral-700 hover:bg-neutral-100 border border-neutral-200'
       }`}
     >
       <Icon className="w-4 h-4" />
       {label}
       {badge !== undefined && badge > 0 && (
-        <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-red-500 text-white">
+        <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-error-500 text-white">
           {badge}
         </span>
       )}
@@ -381,26 +381,26 @@ export default function CommunicationsPage() {
 
   // Messages list view
   const renderMessagesList = () => (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+    <div className="bg-white rounded-xl shadow-sm border border-neutral-200">
       {/* Search bar */}
-      <div className="p-4 border-b border-gray-200">
+      <div className="p-4 border-b border-neutral-200">
         <div className="relative">
-          <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
           <input
             type="text"
             placeholder="Search messages..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full pl-10 pr-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
           />
         </div>
       </div>
 
       {/* Messages list */}
-      <div className="divide-y divide-gray-200">
+      <div className="divide-y divide-neutral-200">
         {messages.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
-            <FiMail className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+          <div className="p-8 text-center text-neutral-500">
+            <FiMail className="w-12 h-12 mx-auto mb-4 text-neutral-300" />
             <p>No messages found</p>
           </div>
         ) : (
@@ -408,33 +408,33 @@ export default function CommunicationsPage() {
             <div
               key={message.id}
               onClick={() => setSelectedMessage(message)}
-              className={`p-4 cursor-pointer hover:bg-gray-50 transition-colors ${
-                message.status !== 'READ' && activeTab === 'inbox' ? 'bg-blue-50' : ''
+              className={`p-4 cursor-pointer hover:bg-neutral-50 transition-colors ${
+                message.status !== 'READ' && activeTab === 'inbox' ? 'bg-primary-50' : ''
               }`}
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     {message.status !== 'READ' && activeTab === 'inbox' && (
-                      <span className="w-2 h-2 rounded-full bg-blue-600" />
+                      <span className="w-2 h-2 rounded-full bg-primary-600" />
                     )}
-                    <span className="font-medium text-gray-900">
+                    <span className="font-medium text-neutral-900">
                       {activeTab === 'inbox'
                         ? `${message.sender.firstName} ${message.sender.lastName}`
                         : `To: ${message.receiver.firstName} ${message.receiver.lastName}`}
                     </span>
                     {message.broadcast && (
-                      <span className="px-2 py-0.5 text-xs rounded bg-purple-100 text-purple-700">
+                      <span className="px-2 py-0.5 text-xs rounded bg-secondary-100 text-secondary-700">
                         Broadcast
                       </span>
                     )}
                   </div>
-                  <p className="text-sm font-medium text-gray-800 mt-1 truncate">
+                  <p className="text-sm font-medium text-neutral-800 mt-1 truncate">
                     {message.subject || '(No subject)'}
                   </p>
-                  <p className="text-sm text-gray-500 truncate">{message.content}</p>
+                  <p className="text-sm text-neutral-500 truncate">{message.content}</p>
                 </div>
-                <span className="text-xs text-gray-400 whitespace-nowrap ml-4">
+                <span className="text-xs text-neutral-400 whitespace-nowrap ml-4">
                   {formatDate(message.createdAt)}
                 </span>
               </div>
@@ -445,21 +445,21 @@ export default function CommunicationsPage() {
 
       {/* Pagination */}
       {messagesTotalPages > 1 && (
-        <div className="p-4 border-t border-gray-200 flex items-center justify-between">
+        <div className="p-4 border-t border-neutral-200 flex items-center justify-between">
           <button
             onClick={() => setMessagesPage((p) => Math.max(1, p - 1))}
             disabled={messagesPage === 1}
-            className="flex items-center gap-1 px-3 py-1 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50"
+            className="flex items-center gap-1 px-3 py-1 text-sm text-neutral-600 hover:text-neutral-900 disabled:opacity-50"
           >
             <FiChevronLeft /> Previous
           </button>
-          <span className="text-sm text-gray-500">
+          <span className="text-sm text-neutral-500">
             Page {messagesPage} of {messagesTotalPages}
           </span>
           <button
             onClick={() => setMessagesPage((p) => Math.min(messagesTotalPages, p + 1))}
             disabled={messagesPage === messagesTotalPages}
-            className="flex items-center gap-1 px-3 py-1 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50"
+            className="flex items-center gap-1 px-3 py-1 text-sm text-neutral-600 hover:text-neutral-900 disabled:opacity-50"
           >
             Next <FiChevronRight />
           </button>
@@ -474,11 +474,11 @@ export default function CommunicationsPage() {
     return (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
-          <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-            <h3 className="font-semibold text-gray-900">Message Details</h3>
+          <div className="p-4 border-b border-neutral-200 flex items-center justify-between">
+            <h3 className="font-semibold text-neutral-900">Message Details</h3>
             <button
               onClick={() => setSelectedMessage(null)}
-              className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+              className="p-2 text-neutral-400 hover:text-neutral-600 rounded-lg hover:bg-neutral-100"
             >
               <FiX />
             </button>
@@ -486,50 +486,50 @@ export default function CommunicationsPage() {
           <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
             <div className="space-y-4">
               <div>
-                <p className="text-sm text-gray-500">From</p>
+                <p className="text-sm text-neutral-500">From</p>
                 <p className="font-medium">
                   {selectedMessage.sender.firstName} {selectedMessage.sender.lastName}{' '}
-                  <span className="text-gray-400">({selectedMessage.sender.email})</span>
+                  <span className="text-neutral-400">({selectedMessage.sender.email})</span>
                 </p>
               </div>
               <div>
-                <p className="text-sm text-gray-500">To</p>
+                <p className="text-sm text-neutral-500">To</p>
                 <p className="font-medium">
                   {selectedMessage.receiver.firstName} {selectedMessage.receiver.lastName}{' '}
-                  <span className="text-gray-400">({selectedMessage.receiver.email})</span>
+                  <span className="text-neutral-400">({selectedMessage.receiver.email})</span>
                 </p>
               </div>
               <div>
-                <p className="text-sm text-gray-500">Subject</p>
+                <p className="text-sm text-neutral-500">Subject</p>
                 <p className="font-medium">{selectedMessage.subject || '(No subject)'}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500">Date</p>
+                <p className="text-sm text-neutral-500">Date</p>
                 <p className="font-medium">{formatDate(selectedMessage.createdAt)}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500 mb-2">Message</p>
-                <div className="bg-gray-50 rounded-lg p-4 whitespace-pre-wrap">
+                <p className="text-sm text-neutral-500 mb-2">Message</p>
+                <div className="bg-neutral-50 rounded-lg p-4 whitespace-pre-wrap">
                   {selectedMessage.content}
                 </div>
               </div>
             </div>
           </div>
-          <div className="p-4 border-t border-gray-200 flex items-center justify-between">
+          <div className="p-4 border-t border-neutral-200 flex items-center justify-between">
             <div className="flex items-center gap-2">
               {activeTab === 'inbox' && (
                 <>
                   {selectedMessage.status === 'READ' ? (
                     <button
                       onClick={() => handleMarkMessage(selectedMessage.id, 'markAsUnread')}
-                      className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+                      className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 hover:bg-neutral-100 rounded-lg"
                     >
                       <FiEyeOff /> Mark as Unread
                     </button>
                   ) : (
                     <button
                       onClick={() => handleMarkMessage(selectedMessage.id, 'markAsRead')}
-                      className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
+                      className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 hover:bg-neutral-100 rounded-lg"
                     >
                       <FiEye /> Mark as Read
                     </button>
@@ -539,7 +539,7 @@ export default function CommunicationsPage() {
             </div>
             <button
               onClick={() => handleDeleteMessage(selectedMessage.id)}
-              className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg"
+              className="flex items-center gap-2 px-3 py-2 text-sm text-error-600 hover:bg-error-50 rounded-lg"
             >
               <FiTrash2 /> Delete
             </button>
@@ -551,11 +551,11 @@ export default function CommunicationsPage() {
 
   // Compose form
   const renderComposeForm = () => (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-6">Compose New Message</h3>
+    <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6">
+      <h3 className="text-lg font-semibold text-neutral-900 mb-6">Compose New Message</h3>
       <form onSubmit={handleSendMessage} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-neutral-700 mb-1">
             Recipient *
           </label>
           <div className="relative">
@@ -567,15 +567,15 @@ export default function CommunicationsPage() {
                 setUserSearchQuery(e.target.value);
                 setComposeRecipientId('');
               }}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             />
             {isSearchingUsers && (
               <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                <FiRefreshCw className="w-4 h-4 animate-spin text-gray-400" />
+                <FiRefreshCw className="w-4 h-4 animate-spin text-neutral-400" />
               </div>
             )}
             {searchedUsers.length > 0 && !composeRecipientId && (
-              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+              <div className="absolute z-10 w-full mt-1 bg-white border border-neutral-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                 {searchedUsers.map((user) => (
                   <button
                     key={user.id}
@@ -585,12 +585,12 @@ export default function CommunicationsPage() {
                       setUserSearchQuery(`${user.firstName} ${user.lastName} (${user.email})`);
                       setSearchedUsers([]);
                     }}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-50"
+                    className="w-full text-left px-4 py-2 hover:bg-neutral-50"
                   >
-                    <p className="font-medium text-gray-900">
+                    <p className="font-medium text-neutral-900">
                       {user.firstName} {user.lastName}
                     </p>
-                    <p className="text-sm text-gray-500">{user.email}</p>
+                    <p className="text-sm text-neutral-500">{user.email}</p>
                   </button>
                 ))}
               </div>
@@ -598,30 +598,30 @@ export default function CommunicationsPage() {
           </div>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Subject *</label>
+          <label className="block text-sm font-medium text-neutral-700 mb-1">Subject *</label>
           <input
             type="text"
             value={composeSubject}
             onChange={(e) => setComposeSubject(e.target.value)}
             placeholder="Enter subject..."
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Message *</label>
+          <label className="block text-sm font-medium text-neutral-700 mb-1">Message *</label>
           <textarea
             value={composeContent}
             onChange={(e) => setComposeContent(e.target.value)}
             placeholder="Enter your message..."
             rows={8}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+            className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
           />
         </div>
         <div className="flex justify-end">
           <button
             type="submit"
             disabled={loading || !composeRecipientId || !composeSubject || !composeContent}
-            className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <FiSend /> Send Message
           </button>
@@ -633,16 +633,16 @@ export default function CommunicationsPage() {
   // Broadcast form
   const renderBroadcastForm = () => (
     <div className="space-y-6">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-6">Send Broadcast Message</h3>
+      <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6">
+        <h3 className="text-lg font-semibold text-neutral-900 mb-6">Send Broadcast Message</h3>
         <form onSubmit={handleSendBroadcast} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Target Role</label>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">Target Role</label>
               <select
                 value={broadcastTargetRole}
                 onChange={(e) => setBroadcastTargetRole(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               >
                 {ROLES.map((role) => (
                   <option key={role.value} value={role.value}>
@@ -652,11 +652,11 @@ export default function CommunicationsPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Target Status</label>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">Target Status</label>
               <select
                 value={broadcastTargetStatus}
                 onChange={(e) => setBroadcastTargetStatus(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               >
                 <option value="ACTIVE">Active Users Only</option>
                 <option value="PENDING">Pending Users Only</option>
@@ -665,30 +665,30 @@ export default function CommunicationsPage() {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Subject *</label>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">Subject *</label>
             <input
               type="text"
               value={broadcastSubject}
               onChange={(e) => setBroadcastSubject(e.target.value)}
               placeholder="Enter broadcast subject..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Message *</label>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">Message *</label>
             <textarea
               value={broadcastContent}
               onChange={(e) => setBroadcastContent(e.target.value)}
               placeholder="Enter your broadcast message..."
               rows={8}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+              className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
             />
           </div>
           <div className="flex justify-end">
             <button
               type="submit"
               disabled={loading || !broadcastSubject || !broadcastContent}
-              className="flex items-center gap-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-6 py-2 bg-secondary-600 text-white rounded-lg hover:bg-secondary-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <FiUsers /> Send Broadcast
             </button>
@@ -697,14 +697,14 @@ export default function CommunicationsPage() {
       </div>
 
       {/* Broadcast History */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="p-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">Broadcast History</h3>
+      <div className="bg-white rounded-xl shadow-sm border border-neutral-200">
+        <div className="p-4 border-b border-neutral-200">
+          <h3 className="text-lg font-semibold text-neutral-900">Broadcast History</h3>
         </div>
-        <div className="divide-y divide-gray-200">
+        <div className="divide-y divide-neutral-200">
           {broadcasts.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
-              <FiUsers className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+            <div className="p-8 text-center text-neutral-500">
+              <FiUsers className="w-12 h-12 mx-auto mb-4 text-neutral-300" />
               <p>No broadcasts sent yet</p>
             </div>
           ) : (
@@ -712,18 +712,18 @@ export default function CommunicationsPage() {
               <div key={broadcast.id} className="p-4">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="font-medium text-gray-900">{broadcast.subject}</p>
-                    <p className="text-sm text-gray-500 mt-1 line-clamp-2">{broadcast.content}</p>
+                    <p className="font-medium text-neutral-900">{broadcast.subject}</p>
+                    <p className="text-sm text-neutral-500 mt-1 line-clamp-2">{broadcast.content}</p>
                     <div className="flex items-center gap-4 mt-2">
-                      <span className="text-xs px-2 py-1 rounded bg-purple-100 text-purple-700">
+                      <span className="text-xs px-2 py-1 rounded bg-secondary-100 text-secondary-700">
                         {broadcast.targetRole || 'All Users'}
                       </span>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-neutral-500">
                         {broadcast.recipientCount} recipients
                       </span>
                     </div>
                   </div>
-                  <span className="text-xs text-gray-400 whitespace-nowrap">
+                  <span className="text-xs text-neutral-400 whitespace-nowrap">
                     {formatDate(broadcast.createdAt)}
                   </span>
                 </div>
@@ -732,21 +732,21 @@ export default function CommunicationsPage() {
           )}
         </div>
         {broadcastsTotalPages > 1 && (
-          <div className="p-4 border-t border-gray-200 flex items-center justify-center gap-4">
+          <div className="p-4 border-t border-neutral-200 flex items-center justify-center gap-4">
             <button
               onClick={() => setBroadcastsPage((p) => Math.max(1, p - 1))}
               disabled={broadcastsPage === 1}
-              className="text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50"
+              className="text-sm text-neutral-600 hover:text-neutral-900 disabled:opacity-50"
             >
               Previous
             </button>
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-neutral-500">
               Page {broadcastsPage} of {broadcastsTotalPages}
             </span>
             <button
               onClick={() => setBroadcastsPage((p) => Math.min(broadcastsTotalPages, p + 1))}
               disabled={broadcastsPage === broadcastsTotalPages}
-              className="text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50"
+              className="text-sm text-neutral-600 hover:text-neutral-900 disabled:opacity-50"
             >
               Next
             </button>
@@ -758,13 +758,13 @@ export default function CommunicationsPage() {
 
   // Notifications list
   const renderNotificationsList = () => (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-      <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900">System Notifications</h3>
+    <div className="bg-white rounded-xl shadow-sm border border-neutral-200">
+      <div className="p-4 border-b border-neutral-200 flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-neutral-900">System Notifications</h3>
         <select
           value={notificationTypeFilter}
           onChange={(e) => setNotificationTypeFilter(e.target.value)}
-          className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+          className="px-3 py-1.5 text-sm border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500"
         >
           <option value="">All Types</option>
           {NOTIFICATION_TYPES.map((type) => (
@@ -774,10 +774,10 @@ export default function CommunicationsPage() {
           ))}
         </select>
       </div>
-      <div className="divide-y divide-gray-200 max-h-[600px] overflow-y-auto">
+      <div className="divide-y divide-neutral-200 max-h-[600px] overflow-y-auto">
         {notifications.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
-            <FiBell className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+          <div className="p-8 text-center text-neutral-500">
+            <FiBell className="w-12 h-12 mx-auto mb-4 text-neutral-300" />
             <p>No notifications found</p>
           </div>
         ) : (
@@ -787,24 +787,24 @@ export default function CommunicationsPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     {!notification.isRead && (
-                      <span className="w-2 h-2 rounded-full bg-blue-600" />
+                      <span className="w-2 h-2 rounded-full bg-primary-600" />
                     )}
-                    <span className="font-medium text-gray-900">{notification.title}</span>
+                    <span className="font-medium text-neutral-900">{notification.title}</span>
                     <span className={`px-2 py-0.5 text-xs rounded ${
-                      notification.type === 'ALERT' ? 'bg-red-100 text-red-700' :
-                      notification.type === 'BROADCAST' ? 'bg-purple-100 text-purple-700' :
-                      notification.type === 'SYSTEM' ? 'bg-blue-100 text-blue-700' :
-                      'bg-gray-100 text-gray-700'
+                      notification.type === 'ALERT' ? 'bg-error-100 text-error-700' :
+                      notification.type === 'BROADCAST' ? 'bg-secondary-100 text-secondary-700' :
+                      notification.type === 'SYSTEM' ? 'bg-primary-100 text-primary-700' :
+                      'bg-neutral-100 text-neutral-700'
                     }`}>
                       {notification.type}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
-                  <p className="text-xs text-gray-400 mt-1">
+                  <p className="text-sm text-neutral-600 mt-1">{notification.message}</p>
+                  <p className="text-xs text-neutral-400 mt-1">
                     To: {notification.user.firstName} {notification.user.lastName} ({notification.user.email})
                   </p>
                 </div>
-                <span className="text-xs text-gray-400 whitespace-nowrap ml-4">
+                <span className="text-xs text-neutral-400 whitespace-nowrap ml-4">
                   {formatDate(notification.createdAt)}
                 </span>
               </div>
@@ -813,21 +813,21 @@ export default function CommunicationsPage() {
         )}
       </div>
       {notificationsTotalPages > 1 && (
-        <div className="p-4 border-t border-gray-200 flex items-center justify-center gap-4">
+        <div className="p-4 border-t border-neutral-200 flex items-center justify-center gap-4">
           <button
             onClick={() => setNotificationsPage((p) => Math.max(1, p - 1))}
             disabled={notificationsPage === 1}
-            className="text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50"
+            className="text-sm text-neutral-600 hover:text-neutral-900 disabled:opacity-50"
           >
             Previous
           </button>
-          <span className="text-sm text-gray-500">
+          <span className="text-sm text-neutral-500">
             Page {notificationsPage} of {notificationsTotalPages}
           </span>
           <button
             onClick={() => setNotificationsPage((p) => Math.min(notificationsTotalPages, p + 1))}
             disabled={notificationsPage === notificationsTotalPages}
-            className="text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50"
+            className="text-sm text-neutral-600 hover:text-neutral-900 disabled:opacity-50"
           >
             Next
           </button>
@@ -837,28 +837,28 @@ export default function CommunicationsPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-neutral-50 p-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Communications</h1>
-          <p className="text-gray-500 mt-1">Manage messages, broadcasts, and notifications</p>
+          <h1 className="text-2xl font-bold text-neutral-900">Communications</h1>
+          <p className="text-neutral-500 mt-1">Manage messages, broadcasts, and notifications</p>
         </div>
 
         {/* Alerts */}
         {error && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
-            <FiX className="text-red-500" />
-            <span className="text-red-700">{error}</span>
-            <button onClick={() => setError(null)} className="ml-auto text-red-500">
+          <div className="mb-4 p-4 bg-error-50 border border-error-200 rounded-lg flex items-center gap-2">
+            <FiX className="text-error-500" />
+            <span className="text-error-700">{error}</span>
+            <button onClick={() => setError(null)} className="ml-auto text-error-500">
               <FiX />
             </button>
           </div>
         )}
         {success && (
-          <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
-            <FiCheck className="text-green-500" />
-            <span className="text-green-700">{success}</span>
+          <div className="mb-4 p-4 bg-success-50 border border-success-200 rounded-lg flex items-center gap-2">
+            <FiCheck className="text-success-500" />
+            <span className="text-success-700">{success}</span>
           </div>
         )}
 
@@ -874,7 +874,7 @@ export default function CommunicationsPage() {
         {/* Loading */}
         {loading && (
           <div className="flex items-center justify-center py-12">
-            <FiRefreshCw className="w-6 h-6 animate-spin text-blue-600" />
+            <FiRefreshCw className="w-6 h-6 animate-spin text-primary-600" />
           </div>
         )}
 

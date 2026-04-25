@@ -51,21 +51,21 @@ export default function ClassificationBadge({
   
   // Base document type colors
   const typeColorClasses: Record<string, string> = {
-    blue: 'bg-blue-100 text-blue-800 border-blue-300',
-    green: 'bg-green-100 text-green-800 border-green-300',
-    purple: 'bg-purple-100 text-purple-800 border-purple-300',
-    yellow: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-    red: 'bg-red-100 text-red-800 border-red-300',
+    blue: 'bg-primary-100 text-primary-800 border-primary-300',
+    green: 'bg-success-100 text-success-800 border-success-300',
+    purple: 'bg-secondary-100 text-secondary-800 border-secondary-300',
+    yellow: 'bg-warning-100 text-warning-800 border-warning-300',
+    red: 'bg-error-100 text-error-800 border-error-300',
     indigo: 'bg-indigo-100 text-indigo-800 border-indigo-300',
-    orange: 'bg-orange-100 text-orange-800 border-orange-300',
-    gray: 'bg-gray-100 text-gray-800 border-gray-300',
+    orange: 'bg-warning-100 text-warning-800 border-warning-300',
+    gray: 'bg-neutral-100 text-neutral-800 border-neutral-300',
   };
 
   // Confidence-based ring colors
   const confidenceRingClasses: Record<string, string> = {
-    green: 'ring-2 ring-green-500 ring-offset-1',
-    yellow: 'ring-2 ring-yellow-500 ring-offset-1',
-    red: 'ring-2 ring-red-500 ring-offset-1',
+    green: 'ring-2 ring-success-500 ring-offset-1',
+    yellow: 'ring-2 ring-warning-500 ring-offset-1',
+    red: 'ring-2 ring-error-500 ring-offset-1',
     gray: '',
   };
 
@@ -95,9 +95,9 @@ export default function ClassificationBadge({
         <span>{config.label}</span>
         {showConfidence && confidenceIcon && (
           <span className={`ml-0.5 font-bold ${
-            confColor === 'green' ? 'text-green-600' :
-            confColor === 'yellow' ? 'text-yellow-600' :
-            'text-red-600'
+            confColor === 'green' ? 'text-success-600' :
+            confColor === 'yellow' ? 'text-warning-600' :
+            'text-error-600'
           }`}>
             {confidenceIcon}
           </span>
@@ -110,32 +110,32 @@ export default function ClassificationBadge({
       </div>
 
       {/* Tooltip */}
-      <div className="invisible group-hover:visible absolute z-50 w-64 p-3 mt-2 text-sm bg-gray-900 text-white rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+      <div className="invisible group-hover:visible absolute z-50 w-64 p-3 mt-2 text-sm bg-neutral-900 text-white rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200">
         <div className="space-y-2">
           {score !== null ? (
             <div>
               <span className="font-semibold">Confidence:</span>{' '}
               <span className={`font-bold ${
-                confColor === 'green' ? 'text-green-400' :
-                confColor === 'yellow' ? 'text-yellow-400' : 'text-red-400'
+                confColor === 'green' ? 'text-success-400' :
+                confColor === 'yellow' ? 'text-warning-400' : 'text-error-400'
               }`}>
                 {score.toFixed(1)}%
               </span>
             </div>
           ) : (
             <div>
-              <span className="font-semibold text-gray-400">No confidence score available</span>
+              <span className="font-semibold text-neutral-400">No confidence score available</span>
             </div>
           )}
           
           {reasoning && (
             <div>
               <span className="font-semibold">Reasoning:</span>
-              <p className="mt-1 text-xs text-gray-300">{reasoning}</p>
+              <p className="mt-1 text-xs text-neutral-300">{reasoning}</p>
             </div>
           )}
           
-          <div className="text-xs text-gray-400 border-t border-gray-700 pt-2">
+          <div className="text-xs text-neutral-400 border-t border-neutral-700 pt-2">
             {autoClassified ? (
               <span>✨ Auto-classified by AI</span>
             ) : (

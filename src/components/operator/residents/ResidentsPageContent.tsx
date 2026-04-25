@@ -39,8 +39,8 @@ export function ResidentsPageContent({ items, nextCursor, q, status, homeId, fam
           onClick={() => setView('list')}
           className={`px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors ${
             view === 'list'
-              ? 'bg-blue-600 text-white'
-              : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+              ? 'bg-primary-600 text-white'
+              : 'bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-50'
           }`}
         >
           <FiList className="w-4 h-4" />
@@ -50,8 +50,8 @@ export function ResidentsPageContent({ items, nextCursor, q, status, homeId, fam
           onClick={() => setView('analytics')}
           className={`px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors ${
             view === 'analytics'
-              ? 'bg-blue-600 text-white'
-              : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+              ? 'bg-primary-600 text-white'
+              : 'bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-50'
           }`}
         >
           <FiBarChart2 className="w-4 h-4" />

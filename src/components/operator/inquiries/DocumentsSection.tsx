@@ -39,9 +39,9 @@ const DOCUMENT_TYPE_LABELS: Record<string, string> = {
 
 const getFileIcon = (fileType: string) => {
   if (fileType.startsWith('image/')) {
-    return <FiImage className="w-5 h-5 text-blue-500" />;
+    return <FiImage className="w-5 h-5 text-primary-500" />;
   } else if (fileType === 'application/pdf') {
-    return <FiFile className="w-5 h-5 text-red-500" />;
+    return <FiFile className="w-5 h-5 text-error-500" />;
   } else {
     return <FiFileText className="w-5 h-5 text-neutral-500" />;
   }
@@ -219,7 +219,7 @@ export function DocumentsSection({ inquiryId }: DocumentsSectionProps) {
                 <button
                   onClick={() => handleDelete(doc.id)}
                   disabled={deleting === doc.id}
-                  className="p-2 text-neutral-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="p-2 text-neutral-600 hover:text-error-600 hover:bg-error-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Delete"
                 >
                   <FiTrash2 className="w-4 h-4" />

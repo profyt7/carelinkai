@@ -38,9 +38,9 @@ export function CaregiverAnalytics({ caregivers }: CaregiverAnalyticsProps) {
 
   if (caregivers.length === 0) {
     return (
-      <div className="bg-gray-50 rounded-lg p-8 text-center">
-        <FiUsers className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-        <p className="text-gray-600">No caregiver data available for analytics</p>
+      <div className="bg-neutral-50 rounded-lg p-8 text-center">
+        <FiUsers className="w-12 h-12 text-neutral-400 mx-auto mb-3" />
+        <p className="text-neutral-600">No caregiver data available for analytics</p>
       </div>
     );
   }

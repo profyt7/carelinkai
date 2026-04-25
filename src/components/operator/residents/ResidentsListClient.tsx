@@ -385,11 +385,11 @@ export function ResidentsListClient({
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          resident.status === 'ACTIVE' ? 'bg-green-100 text-green-800' :
-                          resident.status === 'INQUIRY' ? 'bg-blue-100 text-blue-800' :
-                          resident.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                          resident.status === 'ACTIVE' ? 'bg-success-100 text-success-800' :
+                          resident.status === 'INQUIRY' ? 'bg-primary-100 text-primary-800' :
+                          resident.status === 'PENDING' ? 'bg-warning-100 text-warning-800' :
                           resident.status === 'DISCHARGED' ? 'bg-neutral-100 text-neutral-800' :
-                          'bg-red-100 text-red-800'
+                          'bg-error-100 text-error-800'
                         }`}>
                           {resident.status}
                         </span>
@@ -397,10 +397,10 @@ export function ResidentsListClient({
                       <td className="px-6 py-4 whitespace-nowrap">
                         {careLevel && (
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            careLevel === 'INDEPENDENT' ? 'bg-green-100 text-green-800' :
-                            careLevel === 'ASSISTED' ? 'bg-blue-100 text-blue-800' :
-                            careLevel === 'MEMORY_CARE' ? 'bg-purple-100 text-purple-800' :
-                            'bg-orange-100 text-orange-800'
+                            careLevel === 'INDEPENDENT' ? 'bg-success-100 text-success-800' :
+                            careLevel === 'ASSISTED' ? 'bg-primary-100 text-primary-800' :
+                            careLevel === 'MEMORY_CARE' ? 'bg-secondary-100 text-secondary-800' :
+                            'bg-warning-100 text-warning-800'
                           }`}>
                             {careLevel.replace(/_/g, ' ')}
                           </span>

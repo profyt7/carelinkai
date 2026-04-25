@@ -14,25 +14,25 @@ interface CertificationStatusBadgeProps {
 const STATUS_CONFIG = {
   CURRENT: {
     label: 'Current',
-    color: 'bg-green-100 text-green-800 border-green-200',
+    color: 'bg-success-100 text-success-800 border-success-200',
     icon: FiCheckCircle,
     description: 'Valid certification',
   },
   EXPIRING_SOON: {
     label: 'Expiring Soon',
-    color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+    color: 'bg-warning-100 text-warning-800 border-warning-200',
     icon: FiAlertCircle,
     description: 'Expires within 30 days',
   },
   EXPIRED: {
     label: 'Expired',
-    color: 'bg-red-100 text-red-800 border-red-200',
+    color: 'bg-error-100 text-error-800 border-error-200',
     icon: FiXCircle,
     description: 'Certification expired',
   },
   PENDING: {
     label: 'Pending',
-    color: 'bg-blue-100 text-blue-800 border-blue-200',
+    color: 'bg-primary-100 text-primary-800 border-primary-200',
     icon: FiClock,
     description: 'Awaiting verification',
   },

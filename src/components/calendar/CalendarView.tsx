@@ -1075,7 +1075,7 @@ export default function CalendarView({
       
       {/* Error Display */}
       {error && (
-        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 flex items-start">
+        <div className="mt-4 p-3 bg-error-50 border border-error-200 rounded-md text-error-700 flex items-start">
           <FiAlertCircle className="mt-0.5 mr-2 flex-shrink-0" />
           <div>
             <p className="font-medium">Error loading calendar</p>
@@ -1083,7 +1083,7 @@ export default function CalendarView({
             <button
               type="button"
               onClick={refreshCalendar}
-              className="mt-2 text-sm text-red-700 font-medium hover:text-red-800 flex items-center"
+              className="mt-2 text-sm text-error-700 font-medium hover:text-error-800 flex items-center"
             >
               <FiRefreshCw className="mr-1" /> Try again
             </button>
@@ -1143,7 +1143,7 @@ export default function CalendarView({
                 setIsDeleteModalOpen(true);
                 setContextMenuPosition(null);
               }}
-              className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center"
+              className="w-full text-left px-3 py-2 text-sm text-error-600 hover:bg-error-50 flex items-center"
             >
               <FiTrash2 className="mr-2" /> Cancel
             </button>
@@ -1157,7 +1157,7 @@ export default function CalendarView({
                 handleCompleteAppointment();
                 setContextMenuPosition(null);
               }}
-              className="w-full text-left px-3 py-2 text-sm text-green-600 hover:bg-green-50 flex items-center"
+              className="w-full text-left px-3 py-2 text-sm text-success-600 hover:bg-success-50 flex items-center"
             >
               <FiCheck className="mr-2" /> Mark Complete
             </button>
@@ -1539,7 +1539,7 @@ export default function CalendarView({
                               setIsDetailsModalOpen(false);
                               setIsDeleteModalOpen(true);
                             }}
-                            className="px-3 py-1.5 text-sm font-medium text-red-600 bg-white border border-red-300 rounded-md hover:bg-red-50"
+                            className="px-3 py-1.5 text-sm font-medium text-error-600 bg-white border border-error-300 rounded-md hover:bg-error-50"
                           >
                             <FiTrash2 className="inline-block mr-1" />
                             Cancel Appointment
@@ -1551,7 +1551,7 @@ export default function CalendarView({
                           <button
                             type="button"
                             onClick={handleCompleteAppointment}
-                            className="px-3 py-1.5 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700"
+                            className="px-3 py-1.5 text-sm font-medium text-white bg-success-600 border border-transparent rounded-md hover:bg-success-700"
                           >
                             <FiCheck className="inline-block mr-1" />
                             Mark Complete
@@ -1664,7 +1664,7 @@ export default function CalendarView({
                   <button
                     type="button"
                     onClick={handleCancelAppointment}
-                    className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                    className="px-4 py-2 text-sm font-medium text-white bg-error-600 border border-transparent rounded-md hover:bg-error-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-error-500"
                     disabled={isCancelling}
                   >
                     {isCancelling ? (

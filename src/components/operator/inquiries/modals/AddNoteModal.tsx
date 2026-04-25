@@ -71,7 +71,7 @@ export function AddNoteModal({ isOpen, onClose, inquiryId, inquiryData }: AddNot
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-neutral-400 hover:text-neutral-600"
             disabled={isLoading}
           >
             <FiX className="w-5 h-5" />
@@ -81,20 +81,20 @@ export function AddNoteModal({ isOpen, onClose, inquiryId, inquiryData }: AddNot
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg">
+            <div className="bg-error-50 border border-error-200 text-error-600 px-4 py-3 rounded-lg">
               {error}
             </div>
           )}
 
           {/* Category */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-neutral-700 mb-1">
               Category *
             </label>
             <select
               value={formData.category}
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
               {NOTE_CATEGORIES.map((cat) => (
                 <option key={cat.value} value={cat.value}>
@@ -106,7 +106,7 @@ export function AddNoteModal({ isOpen, onClose, inquiryId, inquiryData }: AddNot
 
           {/* Note */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-neutral-700 mb-1">
               Note *
             </label>
             <textarea
@@ -115,7 +115,7 @@ export function AddNoteModal({ isOpen, onClose, inquiryId, inquiryData }: AddNot
               onChange={(e) => setFormData({ ...formData, note: e.target.value })}
               placeholder="Enter your note here..."
               rows={5}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
 
@@ -126,9 +126,9 @@ export function AddNoteModal({ isOpen, onClose, inquiryId, inquiryData }: AddNot
                 type="checkbox"
                 checked={formData.isInternal}
                 onChange={(e) => setFormData({ ...formData, isInternal: e.target.checked })}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                className="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
               />
-              <span className="text-sm text-gray-700">
+              <span className="text-sm text-neutral-700">
                 Internal only (not visible to family)
               </span>
             </label>
@@ -140,14 +140,14 @@ export function AddNoteModal({ isOpen, onClose, inquiryId, inquiryData }: AddNot
               type="button"
               onClick={onClose}
               disabled={isLoading}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+              className="flex-1 px-4 py-2 border border-neutral-300 rounded-lg hover:bg-neutral-50 disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
             >
               {isLoading ? 'Adding...' : 'Add Note'}
             </button>

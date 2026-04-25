@@ -16,29 +16,29 @@ interface KanbanColumnProps {
 }
 
 const colorClasses: Record<string, string> = {
-  blue: 'bg-blue-50 border-blue-200',
+  blue: 'bg-primary-50 border-primary-200',
   indigo: 'bg-indigo-50 border-indigo-200',
-  purple: 'bg-purple-50 border-purple-200',
+  purple: 'bg-secondary-50 border-secondary-200',
   pink: 'bg-pink-50 border-pink-200',
   cyan: 'bg-cyan-50 border-cyan-200',
   teal: 'bg-teal-50 border-teal-200',
-  green: 'bg-green-50 border-green-200',
+  green: 'bg-success-50 border-success-200',
   lime: 'bg-lime-50 border-lime-200',
   emerald: 'bg-emerald-50 border-emerald-200',
-  gray: 'bg-gray-50 border-gray-200',
+  gray: 'bg-neutral-50 border-neutral-200',
 };
 
 const headerColorClasses: Record<string, string> = {
-  blue: 'bg-blue-100 text-blue-800',
+  blue: 'bg-primary-100 text-primary-800',
   indigo: 'bg-indigo-100 text-indigo-800',
-  purple: 'bg-purple-100 text-purple-800',
+  purple: 'bg-secondary-100 text-secondary-800',
   pink: 'bg-pink-100 text-pink-800',
   cyan: 'bg-cyan-100 text-cyan-800',
   teal: 'bg-teal-100 text-teal-800',
-  green: 'bg-green-100 text-green-800',
+  green: 'bg-success-100 text-success-800',
   lime: 'bg-lime-100 text-lime-800',
   emerald: 'bg-emerald-100 text-emerald-800',
-  gray: 'bg-gray-100 text-gray-800',
+  gray: 'bg-neutral-100 text-neutral-800',
 };
 
 export function KanbanColumn({ id, title, inquiries, onInquiryClick }: KanbanColumnProps) {
@@ -64,7 +64,7 @@ export function KanbanColumn({ id, title, inquiries, onInquiryClick }: KanbanCol
       <div
         ref={setNodeRef}
         className={`${columnClasses} border-2 ${
-          isOver ? 'border-dashed border-blue-400 bg-blue-50' : ''
+          isOver ? 'border-dashed border-primary-400 bg-primary-50' : ''
         } rounded-b-lg p-3 min-h-[500px] transition-colors`}
       >
         <SortableContext
@@ -73,7 +73,7 @@ export function KanbanColumn({ id, title, inquiries, onInquiryClick }: KanbanCol
         >
           <div className="space-y-3">
             {inquiries.length === 0 ? (
-              <div className="text-center py-8 text-gray-400 text-sm">
+              <div className="text-center py-8 text-neutral-400 text-sm">
                 No inquiries
               </div>
             ) : (

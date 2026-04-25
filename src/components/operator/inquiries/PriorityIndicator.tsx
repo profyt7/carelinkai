@@ -17,22 +17,22 @@ const urgencyConfig: Record<UrgencyLevel, { icon: React.ReactNode; label: string
   critical: {
     icon: <FiAlertCircle />,
     label: 'Critical',
-    color: 'text-red-600',
+    color: 'text-error-600',
   },
   high: {
     icon: <FiFlag />,
     label: 'High Priority',
-    color: 'text-orange-600',
+    color: 'text-warning-600',
   },
   medium: {
     icon: <FiFlag />,
     label: 'Medium',
-    color: 'text-yellow-600',
+    color: 'text-warning-600',
   },
   low: {
     icon: <FiFlag />,
     label: 'Low',
-    color: 'text-gray-400',
+    color: 'text-neutral-400',
   },
 };
 

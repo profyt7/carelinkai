@@ -76,12 +76,12 @@ export default function HomeAnalyticsPage() {
   if (error || !data) {
     return (
       <div className="p-6">
-        <div className="rounded-lg bg-red-50 border border-red-200 p-4 text-red-700">
+        <div className="rounded-lg bg-error-50 border border-error-200 p-4 text-error-700">
           <p className="font-medium">Error loading analytics</p>
           <p className="text-sm mt-1">{error ?? 'An error occurred'}</p>
           <button
             onClick={() => router.back()}
-            className="mt-3 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+            className="mt-3 px-4 py-2 bg-error-600 text-white rounded-md hover:bg-error-700"
           >
             Go Back
           </button>
@@ -107,11 +107,11 @@ export default function HomeAnalyticsPage() {
       {trend !== undefined && (
         <div className="flex items-center gap-1 mt-3">
           {trend >= 0 ? (
-            <TrendingUp className="h-4 w-4 text-green-600" />
+            <TrendingUp className="h-4 w-4 text-success-600" />
           ) : (
-            <TrendingDown className="h-4 w-4 text-red-600" />
+            <TrendingDown className="h-4 w-4 text-error-600" />
           )}
-          <span className={`text-sm font-medium ${trend >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+          <span className={`text-sm font-medium ${trend >= 0 ? 'text-success-600' : 'text-error-600'}`}>
             {Math.abs(trend)}%
           </span>
         </div>
@@ -310,31 +310,31 @@ export default function HomeAnalyticsPage() {
             </ResponsiveContainer>
           </div>
           <div className="flex flex-col justify-center space-y-4">
-            <div className="bg-blue-50 rounded-lg p-4">
+            <div className="bg-primary-50 rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-blue-900">Tours This Month</p>
-                  <p className="text-3xl font-bold text-blue-700 mt-1">{data.inquiries.toursThisMonth}</p>
+                  <p className="text-sm font-medium text-primary-900">Tours This Month</p>
+                  <p className="text-3xl font-bold text-primary-700 mt-1">{data.inquiries.toursThisMonth}</p>
                 </div>
-                <Calendar className="h-8 w-8 text-blue-600" />
+                <Calendar className="h-8 w-8 text-primary-600" />
               </div>
             </div>
-            <div className="bg-green-50 rounded-lg p-4">
+            <div className="bg-success-50 rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-green-900">Conversion Rate</p>
-                  <p className="text-3xl font-bold text-green-700 mt-1">{data.inquiries.conversionRate}%</p>
+                  <p className="text-sm font-medium text-success-900">Conversion Rate</p>
+                  <p className="text-3xl font-bold text-success-700 mt-1">{data.inquiries.conversionRate}%</p>
                 </div>
-                <Target className="h-8 w-8 text-green-600" />
+                <Target className="h-8 w-8 text-success-600" />
               </div>
             </div>
-            <div className="bg-purple-50 rounded-lg p-4">
+            <div className="bg-secondary-50 rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-purple-900">Total Inquiries</p>
-                  <p className="text-3xl font-bold text-purple-700 mt-1">{data.inquiries.total}</p>
+                  <p className="text-sm font-medium text-secondary-900">Total Inquiries</p>
+                  <p className="text-3xl font-bold text-secondary-700 mt-1">{data.inquiries.total}</p>
                 </div>
-                <Activity className="h-8 w-8 text-purple-600" />
+                <Activity className="h-8 w-8 text-secondary-600" />
               </div>
             </div>
           </div>
@@ -438,21 +438,21 @@ export default function HomeAnalyticsPage() {
         <div className="bg-white rounded-lg border border-neutral-200 p-6">
           <h2 className="text-lg font-semibold text-neutral-900 mb-4">Staff Utilization</h2>
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-blue-50 rounded-lg p-4">
-              <p className="text-sm font-medium text-blue-900">Total Staff</p>
-              <p className="text-3xl font-bold text-blue-700 mt-2">{data.staff.total}</p>
+            <div className="bg-primary-50 rounded-lg p-4">
+              <p className="text-sm font-medium text-primary-900">Total Staff</p>
+              <p className="text-3xl font-bold text-primary-700 mt-2">{data.staff.total}</p>
             </div>
-            <div className="bg-purple-50 rounded-lg p-4">
-              <p className="text-sm font-medium text-purple-900">Staff:Resident Ratio</p>
-              <p className="text-3xl font-bold text-purple-700 mt-2">1:{Math.round(1 / (data.staff.staffToResidentRatio || 1))}</p>
+            <div className="bg-secondary-50 rounded-lg p-4">
+              <p className="text-sm font-medium text-secondary-900">Staff:Resident Ratio</p>
+              <p className="text-3xl font-bold text-secondary-700 mt-2">1:{Math.round(1 / (data.staff.staffToResidentRatio || 1))}</p>
             </div>
-            <div className="bg-green-50 rounded-lg p-4">
-              <p className="text-sm font-medium text-green-900">Shifts This Month</p>
-              <p className="text-3xl font-bold text-green-700 mt-2">{data.staff.shiftsThisMonth}</p>
+            <div className="bg-success-50 rounded-lg p-4">
+              <p className="text-sm font-medium text-success-900">Shifts This Month</p>
+              <p className="text-3xl font-bold text-success-700 mt-2">{data.staff.shiftsThisMonth}</p>
             </div>
-            <div className="bg-orange-50 rounded-lg p-4">
-              <p className="text-sm font-medium text-orange-900">Avg Hours/Caregiver</p>
-              <p className="text-3xl font-bold text-orange-700 mt-2">{data.staff.avgHoursPerCaregiver}</p>
+            <div className="bg-warning-50 rounded-lg p-4">
+              <p className="text-sm font-medium text-warning-900">Avg Hours/Caregiver</p>
+              <p className="text-3xl font-bold text-warning-700 mt-2">{data.staff.avgHoursPerCaregiver}</p>
             </div>
           </div>
         </div>
@@ -499,7 +499,7 @@ export default function HomeAnalyticsPage() {
               <p className="text-sm text-neutral-600">Average Rating</p>
               <div className="flex items-center gap-2 mt-1">
                 <p className="text-2xl font-bold text-neutral-900">{data.reviews.avgRating.toFixed(1)}</p>
-                <Star className="h-5 w-5 text-yellow-500 fill-current" />
+                <Star className="h-5 w-5 text-warning-500 fill-current" />
               </div>
             </div>
             <div className="text-right">
@@ -548,7 +548,7 @@ export default function HomeAnalyticsPage() {
                   <td className="px-4 py-3 text-sm text-neutral-700">${facility.revenue.toLocaleString()}</td>
                   <td className="px-4 py-3 text-sm text-neutral-700">
                     <div className="flex items-center gap-1">
-                      <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                      <Star className="h-4 w-4 text-warning-500 fill-current" />
                       {facility.rating}
                     </div>
                   </td>

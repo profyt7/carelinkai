@@ -91,14 +91,14 @@ export function AIResponseGenerator({ inquiryId, onClose }: AIResponseGeneratorP
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+        <div className="sticky top-0 bg-white border-b border-neutral-200 px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Wand2 className="w-5 h-5 text-blue-600" />
-            <h2 className="text-xl font-bold text-gray-900">AI Response Generator</h2>
+            <Wand2 className="w-5 h-5 text-primary-600" />
+            <h2 className="text-xl font-bold text-neutral-900">AI Response Generator</h2>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-neutral-400 hover:text-neutral-600"
           >
             <X className="w-5 h-5" />
           </button>
@@ -110,7 +110,7 @@ export function AIResponseGenerator({ inquiryId, onClose }: AIResponseGeneratorP
             <div className="space-y-6">
               {/* Response Type Selection */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
+                <label className="block text-sm font-medium text-neutral-700 mb-3">
                   Select Response Type
                 </label>
                 <div className="space-y-2">
@@ -119,8 +119,8 @@ export function AIResponseGenerator({ inquiryId, onClose }: AIResponseGeneratorP
                       key={type.value}
                       className={`flex items-start p-4 border-2 rounded-lg cursor-pointer transition-colors ${
                         responseType === type.value
-                          ? 'border-blue-600 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-primary-600 bg-primary-50'
+                          : 'border-neutral-200 hover:border-neutral-300'
                       }`}
                     >
                       <input
@@ -129,11 +129,11 @@ export function AIResponseGenerator({ inquiryId, onClose }: AIResponseGeneratorP
                         value={type.value}
                         checked={responseType === type.value}
                         onChange={(e) => setResponseType(e.target.value as ResponseType)}
-                        className="mt-1 text-blue-600 focus:ring-blue-500"
+                        className="mt-1 text-primary-600 focus:ring-primary-500"
                       />
                       <div className="ml-3">
-                        <p className="font-medium text-gray-900">{type.label}</p>
-                        <p className="text-sm text-gray-600">{type.description}</p>
+                        <p className="font-medium text-neutral-900">{type.label}</p>
+                        <p className="text-sm text-neutral-600">{type.description}</p>
                       </div>
                     </label>
                   ))}
@@ -142,7 +142,7 @@ export function AIResponseGenerator({ inquiryId, onClose }: AIResponseGeneratorP
 
               {/* Custom Instructions */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-neutral-700 mb-2">
                   Custom Instructions (Optional)
                 </label>
                 <textarea
@@ -150,7 +150,7 @@ export function AIResponseGenerator({ inquiryId, onClose }: AIResponseGeneratorP
                   onChange={(e) => setCustomInstructions(e.target.value)}
                   rows={4}
                   placeholder="Add any specific instructions for the AI to include in the response..."
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
               </div>
 
@@ -158,7 +158,7 @@ export function AIResponseGenerator({ inquiryId, onClose }: AIResponseGeneratorP
               <div className="flex justify-end gap-3">
                 <button
                   onClick={onClose}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2 border border-neutral-300 text-neutral-700 rounded-lg hover:bg-neutral-50 transition-colors"
                   disabled={isGenerating}
                 >
                   Cancel
@@ -166,7 +166,7 @@ export function AIResponseGenerator({ inquiryId, onClose }: AIResponseGeneratorP
                 <button
                   onClick={handleGenerate}
                   disabled={isGenerating}
-                  className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="flex items-center gap-2 px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <Wand2 className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
                   {isGenerating ? 'Generating...' : 'Generate Response'}
@@ -177,17 +177,17 @@ export function AIResponseGenerator({ inquiryId, onClose }: AIResponseGeneratorP
             <div className="space-y-6">
               {/* Preview */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-neutral-700 mb-2">
                   Generated Response
                 </label>
-                <p className="text-sm text-gray-600 mb-3">
+                <p className="text-sm text-neutral-600 mb-3">
                   Review and edit the response before sending
                 </p>
                 <textarea
                   value={generatedResponse}
                   onChange={(e) => setGeneratedResponse(e.target.value)}
                   rows={12}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
               </div>
 
@@ -195,7 +195,7 @@ export function AIResponseGenerator({ inquiryId, onClose }: AIResponseGeneratorP
               <div className="flex justify-end gap-3">
                 <button
                   onClick={() => setStep('select')}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2 border border-neutral-300 text-neutral-700 rounded-lg hover:bg-neutral-50 transition-colors"
                   disabled={isSending}
                 >
                   Back
@@ -203,7 +203,7 @@ export function AIResponseGenerator({ inquiryId, onClose }: AIResponseGeneratorP
                 <button
                   onClick={handleSend}
                   disabled={isSending}
-                  className="flex items-center gap-2 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="flex items-center gap-2 px-6 py-2 bg-success-600 text-white rounded-lg hover:bg-success-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <Send className="w-4 h-4" />
                   {isSending ? 'Sending...' : 'Send Email'}

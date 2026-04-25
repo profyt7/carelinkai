@@ -82,7 +82,7 @@ export function CaregiverDashboardContent() {
   if (error) {
     return (
       <div className="p-4 sm:p-6 max-w-7xl mx-auto">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800">
+        <div className="bg-error-50 border border-error-200 rounded-lg p-4 text-error-800">
           <p className="font-medium">Error loading dashboard</p>
           <p className="text-sm mt-1">{error}</p>
         </div>
@@ -164,10 +164,10 @@ export function CaregiverDashboardContent() {
           </Link>
           <Link
             href="/shifts"
-            className="bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg p-4 transition-colors duration-200"
+            className="bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-lg p-4 transition-colors duration-200"
           >
             <div className="flex items-center space-x-3">
-              <Calendar size={24} className="text-blue-600" />
+              <Calendar size={24} className="text-primary-600" />
               <div>
                 <h3 className="font-medium text-neutral-900">My Schedule</h3>
                 <p className="text-sm text-neutral-600">View shifts</p>

@@ -18,22 +18,22 @@ const sourceConfig: Record<InquirySource, { icon: React.ReactNode; label: string
   website: {
     icon: <FiGlobe className="w-3 h-3" />,
     label: 'Website',
-    color: 'bg-blue-50 text-blue-700 border-blue-200',
+    color: 'bg-primary-50 text-primary-700 border-primary-200',
   },
   phone: {
     icon: <FiPhone className="w-3 h-3" />,
     label: 'Phone',
-    color: 'bg-green-50 text-green-700 border-green-200',
+    color: 'bg-success-50 text-success-700 border-success-200',
   },
   referral: {
     icon: <FiUsers className="w-3 h-3" />,
     label: 'Referral',
-    color: 'bg-purple-50 text-purple-700 border-purple-200',
+    color: 'bg-secondary-50 text-secondary-700 border-secondary-200',
   },
   walkin: {
     icon: <FiUser className="w-3 h-3" />,
     label: 'Walk-in',
-    color: 'bg-orange-50 text-orange-700 border-orange-200',
+    color: 'bg-warning-50 text-warning-700 border-warning-200',
   },
   email: {
     icon: <FiMail className="w-3 h-3" />,
@@ -43,7 +43,7 @@ const sourceConfig: Record<InquirySource, { icon: React.ReactNode; label: string
   other: {
     icon: <FiFileText className="w-3 h-3" />,
     label: 'Other',
-    color: 'bg-gray-50 text-gray-700 border-gray-200',
+    color: 'bg-neutral-50 text-neutral-700 border-neutral-200',
   },
 };
 

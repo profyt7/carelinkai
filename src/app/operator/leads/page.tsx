@@ -234,14 +234,14 @@ export default function OperatorLeadsListPage() {
   if (error) {
     return (
       <div className="p-6">
-          <div className="rounded-lg border border-red-200 bg-red-50 p-4 flex items-start gap-3">
-            <FiAlertCircle className="text-red-600 mt-0.5" size={20} />
+          <div className="rounded-lg border border-error-200 bg-error-50 p-4 flex items-start gap-3">
+            <FiAlertCircle className="text-error-600 mt-0.5" size={20} />
             <div>
-              <h3 className="font-medium text-red-800">Error Loading Leads</h3>
-              <p className="text-sm text-red-700 mt-1">{error}</p>
+              <h3 className="font-medium text-error-800">Error Loading Leads</h3>
+              <p className="text-sm text-error-700 mt-1">{error}</p>
               <button
                 onClick={() => fetchLeads(currentPage)}
-                className="mt-3 text-sm text-red-600 hover:text-red-800 font-medium"
+                className="mt-3 text-sm text-error-600 hover:text-error-800 font-medium"
               >
                 Try Again
               </button>

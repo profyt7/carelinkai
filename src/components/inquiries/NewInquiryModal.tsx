@@ -118,11 +118,11 @@ export function NewInquiryModal({ onClose, onSuccess }: NewInquiryModalProps) {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-gray-900">New Inquiry</h2>
+        <div className="sticky top-0 bg-white border-b border-neutral-200 px-6 py-4 flex items-center justify-between">
+          <h2 className="text-xl font-bold text-neutral-900">New Inquiry</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-neutral-400 hover:text-neutral-600"
           >
             <X className="w-5 h-5" />
           </button>
@@ -133,14 +133,14 @@ export function NewInquiryModal({ onClose, onSuccess }: NewInquiryModalProps) {
           {/* Family and Home Selection */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Family <span className="text-red-500">*</span>
+              <label className="block text-sm font-medium text-neutral-700 mb-2">
+                Family <span className="text-error-500">*</span>
               </label>
               <select
                 value={formData.familyId}
                 onChange={(e) => handleChange('familyId', e.target.value)}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.familyId ? 'border-red-500' : 'border-gray-300'
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                  errors.familyId ? 'border-error-500' : 'border-neutral-300'
                 }`}
               >
                 <option value="">Select family</option>
@@ -151,19 +151,19 @@ export function NewInquiryModal({ onClose, onSuccess }: NewInquiryModalProps) {
                 ))}
               </select>
               {errors.familyId && (
-                <p className="text-red-500 text-sm mt-1">{errors.familyId}</p>
+                <p className="text-error-500 text-sm mt-1">{errors.familyId}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Home <span className="text-red-500">*</span>
+              <label className="block text-sm font-medium text-neutral-700 mb-2">
+                Home <span className="text-error-500">*</span>
               </label>
               <select
                 value={formData.homeId}
                 onChange={(e) => handleChange('homeId', e.target.value)}
-                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.homeId ? 'border-red-500' : 'border-gray-300'
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                  errors.homeId ? 'border-error-500' : 'border-neutral-300'
                 }`}
               >
                 <option value="">Select home</option>
@@ -174,74 +174,74 @@ export function NewInquiryModal({ onClose, onSuccess }: NewInquiryModalProps) {
                 ))}
               </select>
               {errors.homeId && (
-                <p className="text-red-500 text-sm mt-1">{errors.homeId}</p>
+                <p className="text-error-500 text-sm mt-1">{errors.homeId}</p>
               )}
             </div>
           </div>
 
           {/* Contact Information */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">
+            <h3 className="text-lg font-semibold text-neutral-900 mb-3">
               Contact Information
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Contact Name <span className="text-red-500">*</span>
+                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  Contact Name <span className="text-error-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={formData.contactName}
                   onChange={(e) => handleChange('contactName', e.target.value)}
-                  className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.contactName ? 'border-red-500' : 'border-gray-300'
+                  className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                    errors.contactName ? 'border-error-500' : 'border-neutral-300'
                   }`}
                   placeholder="John Doe"
                 />
                 {errors.contactName && (
-                  <p className="text-red-500 text-sm mt-1">{errors.contactName}</p>
+                  <p className="text-error-500 text-sm mt-1">{errors.contactName}</p>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email <span className="text-red-500">*</span>
+                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  Email <span className="text-error-500">*</span>
                 </label>
                 <input
                   type="email"
                   value={formData.contactEmail}
                   onChange={(e) => handleChange('contactEmail', e.target.value)}
-                  className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.contactEmail ? 'border-red-500' : 'border-gray-300'
+                  className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                    errors.contactEmail ? 'border-error-500' : 'border-neutral-300'
                   }`}
                   placeholder="john@example.com"
                 />
                 {errors.contactEmail && (
-                  <p className="text-red-500 text-sm mt-1">{errors.contactEmail}</p>
+                  <p className="text-error-500 text-sm mt-1">{errors.contactEmail}</p>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-neutral-700 mb-2">
                   Phone
                 </label>
                 <input
                   type="tel"
                   value={formData.contactPhone || ''}
                   onChange={(e) => handleChange('contactPhone', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                   placeholder="(555) 123-4567"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-neutral-700 mb-2">
                   Preferred Contact Method
                 </label>
                 <select
                   value={formData.preferredContactMethod}
                   onChange={(e) => handleChange('preferredContactMethod', e.target.value as ContactMethod)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
                   {Object.values(ContactMethod).map((method) => (
                     <option key={method} value={method}>
@@ -255,37 +255,37 @@ export function NewInquiryModal({ onClose, onSuccess }: NewInquiryModalProps) {
 
           {/* Care Recipient Information */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">
+            <h3 className="text-lg font-semibold text-neutral-900 mb-3">
               Care Recipient Information
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Name <span className="text-red-500">*</span>
+                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  Name <span className="text-error-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={formData.careRecipientName}
                   onChange={(e) => handleChange('careRecipientName', e.target.value)}
-                  className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.careRecipientName ? 'border-red-500' : 'border-gray-300'
+                  className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                    errors.careRecipientName ? 'border-error-500' : 'border-neutral-300'
                   }`}
                   placeholder="Jane Smith"
                 />
                 {errors.careRecipientName && (
-                  <p className="text-red-500 text-sm mt-1">{errors.careRecipientName}</p>
+                  <p className="text-error-500 text-sm mt-1">{errors.careRecipientName}</p>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-neutral-700 mb-2">
                   Age
                 </label>
                 <input
                   type="number"
                   value={formData.careRecipientAge || ''}
                   onChange={(e) => handleChange('careRecipientAge', e.target.value ? parseInt(e.target.value) : undefined)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                   placeholder="75"
                   min="0"
                   max="120"
@@ -296,18 +296,18 @@ export function NewInquiryModal({ onClose, onSuccess }: NewInquiryModalProps) {
 
           {/* Inquiry Details */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">
+            <h3 className="text-lg font-semibold text-neutral-900 mb-3">
               Inquiry Details
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-neutral-700 mb-2">
                   Urgency
                 </label>
                 <select
                   value={formData.urgency}
                   onChange={(e) => handleChange('urgency', e.target.value as InquiryUrgency)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
                   {Object.values(InquiryUrgency).map((urgency) => (
                     <option key={urgency} value={urgency}>
@@ -318,13 +318,13 @@ export function NewInquiryModal({ onClose, onSuccess }: NewInquiryModalProps) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-neutral-700 mb-2">
                   Source
                 </label>
                 <select
                   value={formData.source}
                   onChange={(e) => handleChange('source', e.target.value as InquirySource)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
                   {Object.values(InquirySource).map((source) => (
                     <option key={source} value={source}>
@@ -336,38 +336,38 @@ export function NewInquiryModal({ onClose, onSuccess }: NewInquiryModalProps) {
             </div>
 
             <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-neutral-700 mb-2">
                 Message / Notes
               </label>
               <textarea
                 value={formData.message || ''}
                 onChange={(e) => handleChange('message', e.target.value)}
                 rows={4}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 placeholder="Any additional information..."
               />
             </div>
 
             <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-neutral-700 mb-2">
                 Additional Info
               </label>
               <textarea
                 value={formData.additionalInfo || ''}
                 onChange={(e) => handleChange('additionalInfo', e.target.value)}
                 rows={3}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 placeholder="Care needs, special requirements, etc."
               />
             </div>
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+          <div className="flex justify-end gap-3 pt-4 border-t border-neutral-200">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              className="px-4 py-2 border border-neutral-300 text-neutral-700 rounded-lg hover:bg-neutral-50 transition-colors"
               disabled={isSubmitting}
             >
               Cancel
@@ -375,7 +375,7 @@ export function NewInquiryModal({ onClose, onSuccess }: NewInquiryModalProps) {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isSubmitting ? 'Creating...' : 'Create Inquiry'}
             </button>

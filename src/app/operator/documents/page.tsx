@@ -234,25 +234,25 @@ export default function DocumentLibraryPage() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading documents...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+          <p className="mt-4 text-neutral-600">Loading documents...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-neutral-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-white border-b border-neutral-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Document Library</h1>
-              <p className="mt-1 text-sm text-gray-600">
+              <h1 className="text-3xl font-bold text-neutral-900">Document Library</h1>
+              <p className="mt-1 text-sm text-neutral-600">
                 {filteredDocuments.length} documents
                 {pendingReviewCount > 0 && (
-                  <span className="ml-2 px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-medium">
+                  <span className="ml-2 px-2 py-0.5 bg-error-100 text-error-700 rounded-full text-xs font-medium">
                     {pendingReviewCount} need review
                   </span>
                 )}
@@ -261,13 +261,13 @@ export default function DocumentLibraryPage() {
 
             <div className="flex items-center gap-3">
               {/* View mode toggle */}
-              <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
+              <div className="flex items-center border border-neutral-300 rounded-lg overflow-hidden">
                 <button
                   onClick={() => setViewMode('grid')}
                   className={`px-3 py-2 ${
                     viewMode === 'grid'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                      ? 'bg-primary-600 text-white'
+                      : 'bg-white text-neutral-700 hover:bg-neutral-50'
                   }`}
                 >
                   Grid
@@ -276,8 +276,8 @@ export default function DocumentLibraryPage() {
                   onClick={() => setViewMode('list')}
                   className={`px-3 py-2 ${
                     viewMode === 'list'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                      ? 'bg-primary-600 text-white'
+                      : 'bg-white text-neutral-700 hover:bg-neutral-50'
                   }`}
                 >
                   List
@@ -287,7 +287,7 @@ export default function DocumentLibraryPage() {
               {/* Filter toggle */}
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className="px-4 py-2 bg-white border border-neutral-300 rounded-lg hover:bg-neutral-50 transition-colors"
               >
                 {showFilters ? 'Hide' : 'Show'} Filters
               </button>
@@ -301,17 +301,17 @@ export default function DocumentLibraryPage() {
               placeholder="Search documents by name or type..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             />
           </div>
 
           {/* Sort options */}
           <div className="mt-4 flex items-center gap-4">
-            <label className="text-sm font-medium text-gray-700">Sort by:</label>
+            <label className="text-sm font-medium text-neutral-700">Sort by:</label>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm"
+              className="px-3 py-1.5 border border-neutral-300 rounded-lg text-sm"
             >
               <option value="date">Upload Date</option>
               <option value="name">File Name</option>
@@ -319,7 +319,7 @@ export default function DocumentLibraryPage() {
             </select>
             <button
               onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-              className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50"
+              className="px-3 py-1.5 border border-neutral-300 rounded-lg text-sm hover:bg-neutral-50"
             >
               {sortOrder === 'asc' ? '↑' : '↓'}
             </button>
@@ -333,12 +333,12 @@ export default function DocumentLibraryPage() {
           {/* Filters sidebar */}
           {showFilters && (
             <div className="w-64 flex-shrink-0">
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sticky top-4">
+              <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-4 sticky top-4">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-gray-900">Filters</h3>
+                  <h3 className="font-semibold text-neutral-900">Filters</h3>
                   <button
                     onClick={clearFilters}
-                    className="text-xs text-blue-600 hover:text-blue-700"
+                    className="text-xs text-primary-600 hover:text-primary-700"
                   >
                     Clear all
                   </button>
@@ -346,7 +346,7 @@ export default function DocumentLibraryPage() {
 
                 {/* Document Type Filter */}
                 <div className="mb-6">
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">Document Type</h4>
+                  <h4 className="text-sm font-medium text-neutral-700 mb-2">Document Type</h4>
                   <div className="space-y-2">
                     {Object.values(DocumentType).map((type) => (
                       <label key={type} className="flex items-center">
@@ -354,9 +354,9 @@ export default function DocumentLibraryPage() {
                           type="checkbox"
                           checked={filters.documentTypes.includes(type)}
                           onChange={() => toggleFilter('documentTypes', type)}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          className="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
                         />
-                        <span className="ml-2 text-sm text-gray-700">
+                        <span className="ml-2 text-sm text-neutral-700">
                           {type.replace(/_/g, ' ')}
                         </span>
                       </label>
@@ -366,7 +366,7 @@ export default function DocumentLibraryPage() {
 
                 {/* Validation Status Filter */}
                 <div className="mb-6">
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">Validation Status</h4>
+                  <h4 className="text-sm font-medium text-neutral-700 mb-2">Validation Status</h4>
                   <div className="space-y-2">
                     {Object.values(ValidationStatus).map((status) => (
                       <label key={status} className="flex items-center">
@@ -374,9 +374,9 @@ export default function DocumentLibraryPage() {
                           type="checkbox"
                           checked={filters.validationStatuses.includes(status)}
                           onChange={() => toggleFilter('validationStatuses', status)}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          className="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
                         />
-                        <span className="ml-2 text-sm text-gray-700">
+                        <span className="ml-2 text-sm text-neutral-700">
                           {status.replace(/_/g, ' ')}
                         </span>
                       </label>
@@ -386,7 +386,7 @@ export default function DocumentLibraryPage() {
 
                 {/* Review Status Filter */}
                 <div className="mb-6">
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">Review Status</h4>
+                  <h4 className="text-sm font-medium text-neutral-700 mb-2">Review Status</h4>
                   <div className="space-y-2">
                     {Object.values(ReviewStatus).map((status) => (
                       <label key={status} className="flex items-center">
@@ -394,9 +394,9 @@ export default function DocumentLibraryPage() {
                           type="checkbox"
                           checked={filters.reviewStatuses.includes(status)}
                           onChange={() => toggleFilter('reviewStatuses', status)}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          className="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
                         />
-                        <span className="ml-2 text-sm text-gray-700">
+                        <span className="ml-2 text-sm text-neutral-700">
                           {status.replace(/_/g, ' ')}
                         </span>
                       </label>
@@ -406,7 +406,7 @@ export default function DocumentLibraryPage() {
 
                 {/* Confidence Range Filter */}
                 <div className="mb-6">
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">
+                  <h4 className="text-sm font-medium text-neutral-700 mb-2">
                     Confidence Level: {filters.confidenceMin}% - {filters.confidenceMax}%
                   </h4>
                   <input
@@ -435,14 +435,14 @@ export default function DocumentLibraryPage() {
 
                 {/* Entity Type Filter */}
                 <div className="mb-6">
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">Entity Type</h4>
+                  <h4 className="text-sm font-medium text-neutral-700 mb-2">Entity Type</h4>
                   <select
                     value={filters.entityType}
                     onChange={(e) => setFilters(prev => ({
                       ...prev,
                       entityType: e.target.value as any,
                     }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm"
                   >
                     <option value="ALL">All Documents</option>
                     <option value="RESIDENT">Resident Documents</option>
@@ -458,8 +458,8 @@ export default function DocumentLibraryPage() {
             {filteredDocuments.length === 0 ? (
               <div className="text-center py-12">
                 <span className="text-6xl">📄</span>
-                <p className="mt-4 text-gray-600">No documents found</p>
-                <p className="text-sm text-gray-500 mt-1">Try adjusting your filters</p>
+                <p className="mt-4 text-neutral-600">No documents found</p>
+                <p className="text-sm text-neutral-500 mt-1">Try adjusting your filters</p>
               </div>
             ) : (
               <div

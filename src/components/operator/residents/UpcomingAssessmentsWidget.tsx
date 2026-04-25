@@ -31,10 +31,10 @@ export function UpcomingAssessmentsWidget({ assessments }: UpcomingAssessmentsWi
   };
 
   const urgencyConfig = {
-    overdue: { color: 'text-red-600', bg: 'bg-red-50', icon: <FiAlertCircle className="w-4 h-4" /> },
-    urgent: { color: 'text-orange-600', bg: 'bg-orange-50', icon: <FiAlertCircle className="w-4 h-4" /> },
-    soon: { color: 'text-yellow-600', bg: 'bg-yellow-50', icon: <FiCalendar className="w-4 h-4" /> },
-    upcoming: { color: 'text-blue-600', bg: 'bg-blue-50', icon: <FiCalendar className="w-4 h-4" /> },
+    overdue: { color: 'text-error-600', bg: 'bg-error-50', icon: <FiAlertCircle className="w-4 h-4" /> },
+    urgent: { color: 'text-warning-600', bg: 'bg-warning-50', icon: <FiAlertCircle className="w-4 h-4" /> },
+    soon: { color: 'text-warning-600', bg: 'bg-warning-50', icon: <FiCalendar className="w-4 h-4" /> },
+    upcoming: { color: 'text-primary-600', bg: 'bg-primary-50', icon: <FiCalendar className="w-4 h-4" /> },
   };
 
   const formatDate = (date: Date | string) => {
@@ -47,18 +47,18 @@ export function UpcomingAssessmentsWidget({ assessments }: UpcomingAssessmentsWi
 
   if (upcomingAssessments.length === 0) {
     return (
-      <div className="bg-white p-6 rounded-lg border border-gray-200">
+      <div className="bg-white p-6 rounded-lg border border-neutral-200">
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <FiCheckCircle className="w-5 h-5 text-green-500" />
+          <FiCheckCircle className="w-5 h-5 text-success-500" />
           Upcoming Assessments
         </h3>
-        <p className="text-gray-600 text-sm">All assessments are up to date!</p>
+        <p className="text-neutral-600 text-sm">All assessments are up to date!</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white p-6 rounded-lg border border-gray-200">
+    <div className="bg-white p-6 rounded-lg border border-neutral-200">
       <h3 className="text-lg font-semibold mb-4">Upcoming Assessments</h3>
       <div className="space-y-3">
         {upcomingAssessments.map((assessment) => {

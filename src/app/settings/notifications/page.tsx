@@ -415,14 +415,14 @@ export default function NotificationsSettingsPage() {
     return (
       <DashboardLayout title="Notification Preferences" showSearch={false}>
         <div className="flex min-h-[60vh] flex-col items-center justify-center p-4">
-          <div className="rounded-md border border-red-300 bg-red-50 p-6 text-center">
-            <h1 className="text-lg font-semibold text-red-800">
+          <div className="rounded-md border border-error-300 bg-error-50 p-6 text-center">
+            <h1 className="text-lg font-semibold text-error-800">
               Error loading preferences
             </h1>
-            <p className="mt-2 text-sm text-red-700">{error}</p>
+            <p className="mt-2 text-sm text-error-700">{error}</p>
             <button
               onClick={() => window.location.reload()}
-              className="mt-4 rounded-md bg-red-100 px-4 py-2 text-sm font-medium text-red-800 hover:bg-red-200"
+              className="mt-4 rounded-md bg-error-100 px-4 py-2 text-sm font-medium text-error-800 hover:bg-error-200"
             >
               Try Again
             </button>
@@ -719,10 +719,10 @@ export default function NotificationsSettingsPage() {
                 <div className="flex items-center justify-between pt-2">
                   <div>
                     {orgError && (
-                      <p className="text-sm text-red-600">{orgError}</p>
+                      <p className="text-sm text-error-600">{orgError}</p>
                     )}
                     {orgSaveSuccess && (
-                      <p className="text-sm text-green-600">Organization preferences saved successfully!</p>
+                      <p className="text-sm text-success-600">Organization preferences saved successfully!</p>
                     )}
                   </div>
                   <button
@@ -745,10 +745,10 @@ export default function NotificationsSettingsPage() {
           <div className="flex items-center justify-between">
             <div>
               {error && (
-                <p className="text-sm text-red-600">{error}</p>
+                <p className="text-sm text-error-600">{error}</p>
               )}
               {saveSuccess && (
-                <p className="text-sm text-green-600">Preferences saved successfully!</p>
+                <p className="text-sm text-success-600">Preferences saved successfully!</p>
               )}
             </div>
             <div className="flex space-x-3">

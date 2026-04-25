@@ -37,17 +37,17 @@ interface StatusConfig {
 const STATUS_CONFIG: Record<InquiryStatus, StatusConfig> = {
   NEW: {
     label: 'New',
-    color: 'text-gray-700',
-    bgColor: 'bg-gray-100',
-    borderColor: 'border-gray-300',
+    color: 'text-neutral-700',
+    bgColor: 'bg-neutral-100',
+    borderColor: 'border-neutral-300',
     icon: <FiInbox className="w-3.5 h-3.5" />,
     description: 'New inquiry, not yet contacted',
   },
   CONTACTED: {
     label: 'Contacted',
-    color: 'text-blue-700',
-    bgColor: 'bg-blue-100',
-    borderColor: 'border-blue-300',
+    color: 'text-primary-700',
+    bgColor: 'bg-primary-100',
+    borderColor: 'border-primary-300',
     icon: <FiPhone className="w-3.5 h-3.5" />,
     description: 'Family has been contacted',
   },
@@ -61,33 +61,33 @@ const STATUS_CONFIG: Record<InquiryStatus, StatusConfig> = {
   },
   TOUR_COMPLETED: {
     label: 'Tour Completed',
-    color: 'text-purple-700',
-    bgColor: 'bg-purple-100',
-    borderColor: 'border-purple-300',
+    color: 'text-secondary-700',
+    bgColor: 'bg-secondary-100',
+    borderColor: 'border-secondary-300',
     icon: <FiCheckCircle className="w-3.5 h-3.5" />,
     description: 'Tour has been completed',
   },
   QUALIFIED: {
     label: 'Qualified',
-    color: 'text-green-700',
-    bgColor: 'bg-green-100',
-    borderColor: 'border-green-300',
+    color: 'text-success-700',
+    bgColor: 'bg-success-100',
+    borderColor: 'border-success-300',
     icon: <FiThumbsUp className="w-3.5 h-3.5" />,
     description: 'Lead is qualified for placement',
   },
   CONVERTING: {
     label: 'Converting',
-    color: 'text-yellow-700',
-    bgColor: 'bg-yellow-100',
-    borderColor: 'border-yellow-300',
+    color: 'text-warning-700',
+    bgColor: 'bg-warning-100',
+    borderColor: 'border-warning-300',
     icon: <FiRefreshCw className="w-3.5 h-3.5" />,
     description: 'In process of creating resident record',
   },
   CONVERTED: {
     label: 'Converted',
-    color: 'text-purple-700',
-    bgColor: 'bg-purple-100',
-    borderColor: 'border-purple-300',
+    color: 'text-secondary-700',
+    bgColor: 'bg-secondary-100',
+    borderColor: 'border-secondary-300',
     icon: <FiUserCheck className="w-3.5 h-3.5" />,
     description: 'Successfully converted to resident',
   },
@@ -109,9 +109,9 @@ const STATUS_CONFIG: Record<InquiryStatus, StatusConfig> = {
   },
   CLOSED_LOST: {
     label: 'Closed Lost',
-    color: 'text-red-700',
-    bgColor: 'bg-red-100',
-    borderColor: 'border-red-300',
+    color: 'text-error-700',
+    bgColor: 'bg-error-100',
+    borderColor: 'border-error-300',
     icon: <FiXCircle className="w-3.5 h-3.5" />,
     description: 'Inquiry closed without placement',
   },
@@ -154,7 +154,7 @@ export default function InquiryStatusBadge({
         {config.label}
       </span>
       {showDescription && (
-        <p className="text-xs text-gray-600 mt-1">{config.description}</p>
+        <p className="text-xs text-neutral-600 mt-1">{config.description}</p>
       )}
     </div>
   );
@@ -191,14 +191,14 @@ export function InquiryStatusSelector({
 
   return (
     <div className={className}>
-      <label className="block text-sm font-medium text-gray-700 mb-1">
+      <label className="block text-sm font-medium text-neutral-700 mb-1">
         Status
       </label>
       <select
         value={currentStatus}
         onChange={(e) => onStatusChange(e.target.value as InquiryStatus)}
         disabled={disabled}
-        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {statuses.map((status) => {
           const config = STATUS_CONFIG[status];

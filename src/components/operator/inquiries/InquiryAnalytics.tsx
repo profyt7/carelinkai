@@ -15,9 +15,9 @@ export function InquiryAnalytics({ inquiries }: InquiryAnalyticsProps) {
 
   if (inquiries.length === 0) {
     return (
-      <div className="bg-gray-50 rounded-lg p-8 text-center">
-        <FiUsers className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-        <p className="text-gray-600">No inquiry data available for analytics</p>
+      <div className="bg-neutral-50 rounded-lg p-8 text-center">
+        <FiUsers className="w-12 h-12 text-neutral-400 mx-auto mb-3" />
+        <p className="text-neutral-600">No inquiry data available for analytics</p>
       </div>
     );
   }
@@ -59,7 +59,7 @@ export function InquiryAnalytics({ inquiries }: InquiryAnalyticsProps) {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Conversion Funnel */}
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <div className="bg-white p-6 rounded-lg border border-neutral-200">
           <h3 className="text-lg font-semibold mb-4">Conversion Funnel</h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={analytics.conversionFunnelData}>
@@ -74,7 +74,7 @@ export function InquiryAnalytics({ inquiries }: InquiryAnalyticsProps) {
 
         {/* Source Distribution */}
         {analytics.bySourceData.length > 0 && (
-          <div className="bg-white p-6 rounded-lg border border-gray-200">
+          <div className="bg-white p-6 rounded-lg border border-neutral-200">
             <h3 className="text-lg font-semibold mb-4">Inquiry Sources</h3>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
@@ -100,7 +100,7 @@ export function InquiryAnalytics({ inquiries }: InquiryAnalyticsProps) {
       </div>
 
       {/* Monthly Trends */}
-      <div className="bg-white p-6 rounded-lg border border-gray-200">
+      <div className="bg-white p-6 rounded-lg border border-neutral-200">
         <h3 className="text-lg font-semibold mb-4">Monthly Trends (Last 6 Months)</h3>
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={analytics.monthlyTrendsData}>
@@ -117,16 +117,16 @@ export function InquiryAnalytics({ inquiries }: InquiryAnalyticsProps) {
 
       {/* Status Breakdown */}
       {analytics.byStatusData.length > 0 && (
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <div className="bg-white p-6 rounded-lg border border-neutral-200">
           <h3 className="text-lg font-semibold mb-4">Inquiry Status Distribution</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
             {analytics.byStatusData.slice(0, 10).map((item) => (
-              <div key={item.status} className="text-center p-4 bg-gray-50 rounded-lg">
+              <div key={item.status} className="text-center p-4 bg-neutral-50 rounded-lg">
                 <div className="text-2xl font-bold" style={{ color: item.fill }}>
                   {item.count}
                 </div>
-                <div className="text-sm text-gray-600 mt-1">{item.status}</div>
-                <div className="text-xs text-gray-500 mt-1">{item.percentage}%</div>
+                <div className="text-sm text-neutral-600 mt-1">{item.status}</div>
+                <div className="text-xs text-neutral-500 mt-1">{item.percentage}%</div>
               </div>
             ))}
           </div>
@@ -135,15 +135,15 @@ export function InquiryAnalytics({ inquiries }: InquiryAnalyticsProps) {
 
       {/* Priority Breakdown */}
       {analytics.byPriorityData.length > 0 && (
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <div className="bg-white p-6 rounded-lg border border-neutral-200">
           <h3 className="text-lg font-semibold mb-4">Priority Distribution</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {analytics.byPriorityData.map((item) => (
-              <div key={item.priority} className="text-center p-4 bg-gray-50 rounded-lg">
+              <div key={item.priority} className="text-center p-4 bg-neutral-50 rounded-lg">
                 <div className="text-2xl font-bold" style={{ color: item.fill }}>
                   {item.count}
                 </div>
-                <div className="text-sm text-gray-600 mt-1">{item.priority}</div>
+                <div className="text-sm text-neutral-600 mt-1">{item.priority}</div>
               </div>
             ))}
           </div>
@@ -151,20 +151,20 @@ export function InquiryAnalytics({ inquiries }: InquiryAnalyticsProps) {
       )}
 
       {/* Tour Metrics Detail */}
-      <div className="bg-white p-6 rounded-lg border border-gray-200">
+      <div className="bg-white p-6 rounded-lg border border-neutral-200">
         <h3 className="text-lg font-semibold mb-4">Tour Performance</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="text-center">
-            <div className="text-3xl font-bold text-blue-600">{analytics.tourMetrics.toursScheduled}</div>
-            <div className="text-sm text-gray-600 mt-1">Tours Scheduled</div>
+            <div className="text-3xl font-bold text-primary-600">{analytics.tourMetrics.toursScheduled}</div>
+            <div className="text-sm text-neutral-600 mt-1">Tours Scheduled</div>
           </div>
           <div className="text-center">
-            <div className="text-3xl font-bold text-green-600">{analytics.tourMetrics.toursCompleted}</div>
-            <div className="text-sm text-gray-600 mt-1">Tours Completed</div>
+            <div className="text-3xl font-bold text-success-600">{analytics.tourMetrics.toursCompleted}</div>
+            <div className="text-sm text-neutral-600 mt-1">Tours Completed</div>
           </div>
           <div className="text-center">
-            <div className="text-3xl font-bold text-purple-600">{analytics.tourMetrics.averageDaysToTour}</div>
-            <div className="text-sm text-gray-600 mt-1">Avg Days to Tour</div>
+            <div className="text-3xl font-bold text-secondary-600">{analytics.tourMetrics.averageDaysToTour}</div>
+            <div className="text-sm text-neutral-600 mt-1">Avg Days to Tour</div>
           </div>
         </div>
       </div>

@@ -27,10 +27,10 @@ export function DocumentViewer({ document, onClose }: DocumentViewerProps) {
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
           <div className="flex-1 min-w-0">
-            <h2 className="text-lg font-semibold text-gray-900 truncate">
+            <h2 className="text-lg font-semibold text-neutral-900 truncate">
               {document.fileName}
             </h2>
-            <div className="flex items-center gap-3 text-sm text-gray-500 mt-1">
+            <div className="flex items-center gap-3 text-sm text-neutral-500 mt-1">
               <span>{DOCUMENT_TYPE_LABELS[document.type as DocumentType]}</span>
               <span>•</span>
               <span>{formatFileSize(document.fileSize)}</span>
@@ -81,7 +81,7 @@ export function DocumentViewer({ document, onClose }: DocumentViewerProps) {
                 )}
                 {!isPDF && !isImage && (
                   <div className="text-center py-12">
-                    <p className="text-gray-500 mb-4">
+                    <p className="text-neutral-500 mb-4">
                       Preview not available for this file type
                     </p>
                     <Button onClick={handleDownload}>
@@ -116,7 +116,7 @@ export function DocumentViewer({ document, onClose }: DocumentViewerProps) {
               )}
               {!isPDF && !isImage && (
                 <div className="text-center py-12">
-                  <p className="text-gray-500 mb-4">
+                  <p className="text-neutral-500 mb-4">
                     Preview not available for this file type
                   </p>
                   <Button onClick={handleDownload}>

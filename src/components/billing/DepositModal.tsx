@@ -95,18 +95,18 @@ function DepositForm({
   if (isMockMode) {
     return (
       <div className="p-6">
-        <div className="mb-6 rounded-md bg-green-50 p-4 text-center">
+        <div className="mb-6 rounded-md bg-success-50 p-4 text-center">
           <FiCheckCircle
-            className="mx-auto mb-2 h-10 w-10 text-green-500"
+            className="mx-auto mb-2 h-10 w-10 text-success-500"
             aria-hidden="true"
           />
-          <h3 className="text-lg font-medium text-green-800">
+          <h3 className="text-lg font-medium text-success-800">
             Deposit Successful!
           </h3>
-          <p className="mt-1 text-sm text-green-600">
+          <p className="mt-1 text-sm text-success-600">
             {formattedAmount} has been added to your wallet.
           </p>
-          <p className="mt-3 text-xs text-gray-500">
+          <p className="mt-3 text-xs text-neutral-500">
             (This is a mock transaction for development)
           </p>
         </div>
@@ -134,10 +134,10 @@ function DepositForm({
             <FiDollarSign className="h-6 w-6 text-primary-600" />
           </div>
         </div>
-        <h3 className="text-center text-lg font-medium text-gray-900">
+        <h3 className="text-center text-lg font-medium text-neutral-900">
           Deposit {formattedAmount}
         </h3>
-        <p className="mt-1 text-center text-sm text-gray-500">
+        <p className="mt-1 text-center text-sm text-neutral-500">
           Enter your payment details below
         </p>
       </div>
@@ -149,16 +149,16 @@ function DepositForm({
 
       {/* Error message */}
       {error && (
-        <div className="mb-4 rounded-md bg-red-50 p-4">
+        <div className="mb-4 rounded-md bg-error-50 p-4">
           <div className="flex">
             <div className="flex-shrink-0">
               <FiAlertCircle
-                className="h-5 w-5 text-red-400"
+                className="h-5 w-5 text-error-400"
                 aria-hidden="true"
               />
             </div>
             <div className="ml-3">
-              <p className="text-sm text-red-700">{error}</p>
+              <p className="text-sm text-error-700">{error}</p>
             </div>
           </div>
         </div>
@@ -166,16 +166,16 @@ function DepositForm({
 
       {/* Success message */}
       {succeeded && (
-        <div className="mb-4 rounded-md bg-green-50 p-4">
+        <div className="mb-4 rounded-md bg-success-50 p-4">
           <div className="flex">
             <div className="flex-shrink-0">
               <FiCheckCircle
-                className="h-5 w-5 text-green-400"
+                className="h-5 w-5 text-success-400"
                 aria-hidden="true"
               />
             </div>
             <div className="ml-3">
-              <p className="text-sm text-green-700">
+              <p className="text-sm text-success-700">
                 Payment successful! Funds will be added to your wallet shortly.
               </p>
             </div>
@@ -189,7 +189,7 @@ function DepositForm({
           type="button"
           disabled={isSubmitting || succeeded}
           onClick={onClose}
-          className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+          className="rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 shadow-sm hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
         >
           Cancel
         </button>
@@ -263,14 +263,14 @@ export default function DepositModal({
               <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-lg bg-white text-left align-middle shadow-xl transition-all">
                 <Dialog.Title
                   as="div"
-                  className="flex items-center justify-between border-b border-gray-200 p-4"
+                  className="flex items-center justify-between border-b border-neutral-200 p-4"
                 >
-                  <h3 className="text-lg font-medium leading-6 text-gray-900">
+                  <h3 className="text-lg font-medium leading-6 text-neutral-900">
                     Deposit Funds
                   </h3>
                   <button
                     type="button"
-                    className="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                    className="rounded-md bg-white text-neutral-400 hover:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                     onClick={onClose}
                     aria-label="Close"
                   >

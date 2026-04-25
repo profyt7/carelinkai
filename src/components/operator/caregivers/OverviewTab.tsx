@@ -217,7 +217,7 @@ export function OverviewTab({ caregiver, onUpdate }: OverviewTabProps) {
             {languages.map((lang, index) => (
               <span
                 key={index}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-blue-50 text-blue-700 border border-blue-200"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-primary-50 text-primary-700 border border-primary-200"
               >
                 <FiGlobe className="w-3.5 h-3.5" />
                 {lang}

@@ -19,9 +19,9 @@ export default async function OperatorInquiriesPage() {
   if (!user || !allowedRoles.includes(user.role as string)) {
     return (
       <div className="p-4 sm:p-6 max-w-7xl mx-auto">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-          <h2 className="text-xl font-semibold text-red-900 mb-2">Access Denied</h2>
-          <p className="text-red-700">You do not have permission to view this page.</p>
+        <div className="bg-error-50 border border-error-200 rounded-lg p-6 text-center">
+          <h2 className="text-xl font-semibold text-error-900 mb-2">Access Denied</h2>
+          <p className="text-error-700">You do not have permission to view this page.</p>
         </div>
       </div>
     );

@@ -29,7 +29,7 @@ export function ExtractedTextViewer({ text, fileName }: ExtractedTextViewerProps
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <FileText className="h-5 w-5 text-gray-400" />
+          <FileText className="h-5 w-5 text-neutral-400" />
           <h3 className="text-lg font-semibold">Extracted Text</h3>
         </div>
         <Button variant="outline" size="sm" onClick={handleCopy}>
@@ -48,13 +48,13 @@ export function ExtractedTextViewer({ text, fileName }: ExtractedTextViewerProps
       </div>
 
       {/* Text Content */}
-      <div className="border rounded-lg p-4 bg-gray-50 max-h-96 overflow-y-auto">
+      <div className="border rounded-lg p-4 bg-neutral-50 max-h-96 overflow-y-auto">
         {text ? (
-          <pre className="whitespace-pre-wrap text-sm text-gray-700 font-mono">
+          <pre className="whitespace-pre-wrap text-sm text-neutral-700 font-mono">
             {text}
           </pre>
         ) : (
-          <p className="text-gray-500 text-center py-8">
+          <p className="text-neutral-500 text-center py-8">
             No text extracted yet
           </p>
         )}
@@ -62,7 +62,7 @@ export function ExtractedTextViewer({ text, fileName }: ExtractedTextViewerProps
 
       {/* Stats */}
       {text && (
-        <div className="flex items-center gap-4 text-sm text-gray-500">
+        <div className="flex items-center gap-4 text-sm text-neutral-500">
           <span>{text.length} characters</span>
           <span>•</span>
           <span>{text.split(/\s+/).length} words</span>

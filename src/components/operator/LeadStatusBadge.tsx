@@ -27,11 +27,11 @@ export default function LeadStatusBadge({
 }: LeadStatusBadgeProps) {
   // Define color schemes for each status
   const colorMap: Record<LeadStatus, string> = {
-    NEW: "bg-blue-100 text-blue-800 border-blue-200",
-    IN_REVIEW: "bg-yellow-100 text-yellow-800 border-yellow-200",
-    CONTACTED: "bg-green-100 text-green-800 border-green-200",
-    CLOSED: "bg-gray-100 text-gray-800 border-gray-200",
-    CANCELLED: "bg-red-100 text-red-800 border-red-200"
+    NEW: "bg-primary-100 text-primary-800 border-primary-200",
+    IN_REVIEW: "bg-warning-100 text-warning-800 border-warning-200",
+    CONTACTED: "bg-success-100 text-success-800 border-success-200",
+    CLOSED: "bg-neutral-100 text-neutral-800 border-neutral-200",
+    CANCELLED: "bg-error-100 text-error-800 border-error-200"
   };
 
   // Define size classes

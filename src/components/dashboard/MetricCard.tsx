@@ -29,8 +29,8 @@ export function MetricCard({
   className = '',
 }: MetricCardProps) {
   const trendColors = {
-    up: 'text-green-600',
-    down: 'text-red-600',
+    up: 'text-success-600',
+    down: 'text-error-600',
     neutral: 'text-neutral-500',
   };
 

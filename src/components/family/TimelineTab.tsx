@@ -148,7 +148,7 @@ export default function TimelineTab({ familyId, showMock = false }: TimelineTabP
 
   if (error) {
     return (
-      <div className="rounded-lg border-2 border-red-200 bg-red-50 p-6 text-red-700">
+      <div className="rounded-lg border-2 border-error-200 bg-error-50 p-6 text-error-700">
         <p className="font-medium">Error loading activity</p>
         <p className="text-sm mt-1">{error}</p>
       </div>
@@ -176,8 +176,8 @@ export default function TimelineTab({ familyId, showMock = false }: TimelineTabP
             className={`
               px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200
               ${activityFilter === filter
-                ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-md'
-                : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+                ? 'bg-gradient-to-r from-primary-600 to-cyan-500 text-white shadow-md'
+                : 'bg-white text-neutral-700 border border-neutral-200 hover:bg-neutral-50'
               }
             `}
           >
@@ -188,17 +188,17 @@ export default function TimelineTab({ familyId, showMock = false }: TimelineTabP
 
       {/* Activity Timeline */}
       {filteredActivities.length === 0 ? (
-        <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-          <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-          <p className="text-gray-500">No {activityFilter.toLowerCase()} activity found</p>
+        <div className="bg-white rounded-lg border border-neutral-200 p-12 text-center">
+          <FileText className="w-12 h-12 text-neutral-400 mx-auto mb-3" />
+          <p className="text-neutral-500">No {activityFilter.toLowerCase()} activity found</p>
         </div>
       ) : (
         <div className="space-y-8">
           {groupActivitiesByDate(filteredActivities).map(([date, items], groupIndex) => (
             <div key={date} className="relative">
               {/* Date Header */}
-              <div className="sticky top-0 z-10 mb-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg px-4 py-3 border border-blue-200 shadow-sm">
-                <h3 className="text-sm font-bold text-blue-800 uppercase tracking-wide">
+              <div className="sticky top-0 z-10 mb-4 bg-gradient-to-r from-primary-50 to-cyan-50 rounded-lg px-4 py-3 border border-primary-200 shadow-sm">
+                <h3 className="text-sm font-bold text-primary-800 uppercase tracking-wide">
                   {new Date(date).toLocaleDateString(undefined, {
                     weekday: 'long',
                     year: 'numeric',
@@ -211,7 +211,7 @@ export default function TimelineTab({ familyId, showMock = false }: TimelineTabP
               {/* Timeline Items */}
               <ul className="relative space-y-4 pl-4">
                 {/* Vertical Timeline Line */}
-                <div className="absolute left-9 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-200 via-cyan-200 to-blue-100" />
+                <div className="absolute left-9 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary-200 via-cyan-200 to-primary-100" />
                 
                 {items.map((a, index) => (
                   <li
@@ -221,35 +221,35 @@ export default function TimelineTab({ familyId, showMock = false }: TimelineTabP
                     <div className="flex items-start gap-4">
                       {/* Timeline Icon */}
                       <div className="relative z-10">
-                        <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 text-white shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110">
+                        <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-cyan-400 text-white shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110">
                           {React.cloneElement(iconForType(a.type) as any, {
                             className: 'h-6 w-6',
                           })}
                         </span>
                         {/* Connecting Dot */}
                         {index < items.length - 1 && (
-                          <div className="absolute left-1/2 -translate-x-1/2 top-14 w-1 h-4 bg-gradient-to-b from-blue-300 to-transparent" />
+                          <div className="absolute left-1/2 -translate-x-1/2 top-14 w-1 h-4 bg-gradient-to-b from-primary-300 to-transparent" />
                         )}
                       </div>
                       
                       {/* Activity Card */}
-                      <div className="flex-1 rounded-xl border border-gray-200 bg-white p-5 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-300">
-                        <div className="text-sm font-semibold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors duration-200">
+                      <div className="flex-1 rounded-xl border border-neutral-200 bg-white p-5 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 hover:border-primary-300">
+                        <div className="text-sm font-semibold text-neutral-900 mb-3 group-hover:text-primary-600 transition-colors duration-200">
                           {a.description}
                         </div>
                         <div className="flex items-center gap-3 text-xs">
                           <div className="flex items-center gap-2">
-                            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 text-[10px] font-bold text-white shadow-sm">
+                            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-cyan-400 text-[10px] font-bold text-white shadow-sm">
                               {`${a.actor?.firstName?.[0] ?? ''}${a.actor?.lastName?.[0] ?? ''}`}
                             </span>
-                            <span className="font-medium text-gray-700">
+                            <span className="font-medium text-neutral-700">
                               {a.actor
                                 ? `${a.actor.firstName ?? ''} ${a.actor.lastName ?? ''}`
                                 : '—'}
                             </span>
                           </div>
-                          <span className="w-1 h-1 rounded-full bg-gray-400"></span>
-                          <span className="text-gray-500 font-medium">
+                          <span className="w-1 h-1 rounded-full bg-neutral-400"></span>
+                          <span className="text-neutral-500 font-medium">
                             {new Date(a.createdAt).toLocaleTimeString(undefined, {
                               hour: 'numeric',
                               minute: '2-digit'

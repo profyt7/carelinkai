@@ -156,7 +156,7 @@ export function ResidentPhotoUpload({
         {photoUrl && !uploading && (
           <button
             onClick={handleDelete}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-error-600 text-white text-sm font-medium rounded-md hover:bg-error-700 transition-colors"
           >
             <FiTrash2 size={16} />
             Remove

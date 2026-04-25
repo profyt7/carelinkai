@@ -141,11 +141,11 @@ export function getConfidenceLevel(confidence: number): {
   color: string;
 } {
   if (confidence >= CONFIDENCE_THRESHOLDS.HIGH) {
-    return { level: 'high', label: 'High Confidence', color: 'text-green-600' };
+    return { level: 'high', label: 'High Confidence', color: 'text-success-600' };
   } else if (confidence >= CONFIDENCE_THRESHOLDS.MEDIUM) {
-    return { level: 'medium', label: 'Medium Confidence', color: 'text-yellow-600' };
+    return { level: 'medium', label: 'Medium Confidence', color: 'text-warning-600' };
   } else {
-    return { level: 'low', label: 'Low Confidence', color: 'text-red-600' };
+    return { level: 'low', label: 'Low Confidence', color: 'text-error-600' };
   }
 }
 

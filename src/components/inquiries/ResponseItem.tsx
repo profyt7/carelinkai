@@ -36,14 +36,14 @@ export function ResponseItem({ response, onUpdate }: ResponseItemProps) {
     switch (status) {
       case 'SENT':
       case 'DELIVERED':
-        return 'bg-green-100 text-green-800';
+        return 'bg-success-100 text-success-800';
       case 'DRAFT':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-warning-100 text-warning-800';
       case 'FAILED':
       case 'BOUNCED':
-        return 'bg-red-100 text-red-800';
+        return 'bg-error-100 text-error-800';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-neutral-100 text-neutral-800';
     }
   };
 
@@ -95,18 +95,18 @@ export function ResponseItem({ response, onUpdate }: ResponseItemProps) {
 
   return (
     <>
-      <div className="bg-white border border-gray-200 rounded-lg p-4">
+      <div className="bg-white border border-neutral-200 rounded-lg p-4">
         {/* Header */}
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3">
-            <div className="text-blue-600">
+            <div className="text-primary-600">
               {getChannelIcon(response.channel)}
             </div>
             <div>
-              <h4 className="font-medium text-gray-900">
+              <h4 className="font-medium text-neutral-900">
                 {response.subject || `${response.channel} ${response.type}`}
               </h4>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-neutral-600">
                 {response.sentAt
                   ? format(new Date(response.sentAt), 'MMM d, yyyy h:mm a')
                   : 'Not sent yet'}
@@ -122,15 +122,15 @@ export function ResponseItem({ response, onUpdate }: ResponseItemProps) {
         </div>
 
         {/* Content */}
-        <div className="bg-gray-50 rounded-lg p-3 mb-3">
-          <p className="text-sm text-gray-900 whitespace-pre-wrap">
+        <div className="bg-neutral-50 rounded-lg p-3 mb-3">
+          <p className="text-sm text-neutral-900 whitespace-pre-wrap">
             {response.content}
           </p>
         </div>
 
         {/* Metadata and Actions */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4 text-xs text-gray-500">
+          <div className="flex items-center gap-4 text-xs text-neutral-500">
             <span>Type: {response.type}</span>
             <span>Channel: {response.channel}</span>
             {response.toAddress && <span>To: {response.toAddress}</span>}
@@ -142,7 +142,7 @@ export function ResponseItem({ response, onUpdate }: ResponseItemProps) {
               <button
                 onClick={() => setShowSendDialog(true)}
                 disabled={isSending}
-                className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <Send className="w-4 h-4" />
                 Send
@@ -150,7 +150,7 @@ export function ResponseItem({ response, onUpdate }: ResponseItemProps) {
               <button
                 onClick={() => setShowDeleteDialog(true)}
                 disabled={isDeleting}
-                className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-error-600 bg-error-50 rounded-lg hover:bg-error-100 focus:outline-none focus:ring-2 focus:ring-error-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <Trash2 className="w-4 h-4" />
                 Delete

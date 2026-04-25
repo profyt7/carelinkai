@@ -126,8 +126,8 @@ export default function FamilyToursPage() {
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">My Tours</h1>
-        <p className="mt-2 text-sm text-gray-600">
+        <h1 className="text-2xl font-bold text-neutral-900">My Tours</h1>
+        <p className="mt-2 text-sm text-neutral-600">
           View and manage your scheduled tours
         </p>
       </div>
@@ -140,11 +140,11 @@ export default function FamilyToursPage() {
             className={`rounded-md px-3 py-2 text-sm font-medium ${
               filter === "all"
                 ? "bg-primary-100 text-primary-700"
-                : "text-gray-500 hover:text-gray-700"
+                : "text-neutral-500 hover:text-neutral-700"
             }`}
           >
             All Tours
-            <span className="ml-2 rounded-full bg-gray-200 px-2 py-0.5 text-xs">
+            <span className="ml-2 rounded-full bg-neutral-200 px-2 py-0.5 text-xs">
               {tours.length}
             </span>
           </button>
@@ -153,11 +153,11 @@ export default function FamilyToursPage() {
             className={`rounded-md px-3 py-2 text-sm font-medium ${
               filter === "upcoming"
                 ? "bg-primary-100 text-primary-700"
-                : "text-gray-500 hover:text-gray-700"
+                : "text-neutral-500 hover:text-neutral-700"
             }`}
           >
             Upcoming
-            <span className="ml-2 rounded-full bg-gray-200 px-2 py-0.5 text-xs">
+            <span className="ml-2 rounded-full bg-neutral-200 px-2 py-0.5 text-xs">
               {upcomingCount}
             </span>
           </button>
@@ -166,11 +166,11 @@ export default function FamilyToursPage() {
             className={`rounded-md px-3 py-2 text-sm font-medium ${
               filter === "past"
                 ? "bg-primary-100 text-primary-700"
-                : "text-gray-500 hover:text-gray-700"
+                : "text-neutral-500 hover:text-neutral-700"
             }`}
           >
             Past
-            <span className="ml-2 rounded-full bg-gray-200 px-2 py-0.5 text-xs">
+            <span className="ml-2 rounded-full bg-neutral-200 px-2 py-0.5 text-xs">
               {pastCount}
             </span>
           </button>
@@ -181,21 +181,21 @@ export default function FamilyToursPage() {
       {isLoading && (
         <div className="flex items-center justify-center py-12">
           <FiLoader className="h-8 w-8 animate-spin text-primary-600" />
-          <span className="ml-3 text-gray-600">Loading tours...</span>
+          <span className="ml-3 text-neutral-600">Loading tours...</span>
         </div>
       )}
 
       {/* Error State */}
       {error && (
-        <div className="rounded-md bg-red-50 p-4">
+        <div className="rounded-md bg-error-50 p-4">
           <div className="flex">
-            <FiAlertCircle className="h-5 w-5 text-red-400" />
+            <FiAlertCircle className="h-5 w-5 text-error-400" />
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">Error</h3>
-              <p className="mt-1 text-sm text-red-700">{error}</p>
+              <h3 className="text-sm font-medium text-error-800">Error</h3>
+              <p className="mt-1 text-sm text-error-700">{error}</p>
               <button
                 onClick={fetchTours}
-                className="mt-2 text-sm font-medium text-red-600 hover:text-red-500"
+                className="mt-2 text-sm font-medium text-error-600 hover:text-error-500"
               >
                 Try again
               </button>
@@ -223,16 +223,16 @@ export default function FamilyToursPage() {
               ))}
             </div>
           ) : (
-            <div className="rounded-lg border-2 border-dashed border-gray-300 bg-white p-12 text-center">
-              <FiCalendar className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-4 text-lg font-medium text-gray-900">
+            <div className="rounded-lg border-2 border-dashed border-neutral-300 bg-white p-12 text-center">
+              <FiCalendar className="mx-auto h-12 w-12 text-neutral-400" />
+              <h3 className="mt-4 text-lg font-medium text-neutral-900">
                 {filter === "upcoming"
                   ? "No upcoming tours"
                   : filter === "past"
                   ? "No past tours"
                   : "No tours yet"}
               </h3>
-              <p className="mt-2 text-sm text-gray-600">
+              <p className="mt-2 text-sm text-neutral-600">
                 {filter === "upcoming"
                   ? "You don't have any upcoming tours scheduled."
                   : filter === "past"
@@ -255,11 +255,11 @@ export default function FamilyToursPage() {
 
       {/* Help Section */}
       {!isLoading && tours.length > 0 && (
-        <div className="mt-8 rounded-lg bg-blue-50 p-6">
-          <h3 className="text-sm font-medium text-blue-900">
+        <div className="mt-8 rounded-lg bg-primary-50 p-6">
+          <h3 className="text-sm font-medium text-primary-900">
             Tour Tips
           </h3>
-          <ul className="mt-2 space-y-1 text-sm text-blue-700">
+          <ul className="mt-2 space-y-1 text-sm text-primary-700">
             <li>• Arrive 10-15 minutes early to your scheduled tour</li>
             <li>• Prepare a list of questions about care services and amenities</li>
             <li>• You can reschedule or cancel tours up to 24 hours before</li>

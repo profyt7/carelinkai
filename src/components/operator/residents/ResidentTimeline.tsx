@@ -57,27 +57,27 @@ export function ResidentTimeline({ residentId }: ResidentTimelineProps) {
     switch (eventType.toLowerCase()) {
       case 'created':
       case 'admission':
-        return <FiHome className="text-blue-600" size={18} />;
+        return <FiHome className="text-primary-600" size={18} />;
       case 'updated':
       case 'assessment':
-        return <FiFileText className="text-green-600" size={18} />;
+        return <FiFileText className="text-success-600" size={18} />;
       case 'note':
       case 'note_added':
-        return <FiFileText className="text-purple-600" size={18} />;
+        return <FiFileText className="text-secondary-600" size={18} />;
       case 'care_level_changed':
       case 'medication_change':
-        return <FiActivity className="text-orange-600" size={18} />;
+        return <FiActivity className="text-warning-600" size={18} />;
       case 'transfer':
       case 'home_transferred':
         return <FiUsers className="text-indigo-600" size={18} />;
       case 'appointment':
         return <FiCalendar className="text-pink-600" size={18} />;
       case 'incident':
-        return <FiAlertCircle className="text-red-600" size={18} />;
+        return <FiAlertCircle className="text-error-600" size={18} />;
       case 'completed':
-        return <FiCheckCircle className="text-green-600" size={18} />;
+        return <FiCheckCircle className="text-success-600" size={18} />;
       default:
-        return <FiActivity className="text-gray-600" size={18} />;
+        return <FiActivity className="text-neutral-600" size={18} />;
     }
   }
 
@@ -85,27 +85,27 @@ export function ResidentTimeline({ residentId }: ResidentTimelineProps) {
     switch (eventType.toLowerCase()) {
       case 'created':
       case 'admission':
-        return 'bg-blue-100 border-blue-300';
+        return 'bg-primary-100 border-primary-300';
       case 'updated':
       case 'assessment':
-        return 'bg-green-100 border-green-300';
+        return 'bg-success-100 border-success-300';
       case 'note':
       case 'note_added':
-        return 'bg-purple-100 border-purple-300';
+        return 'bg-secondary-100 border-secondary-300';
       case 'care_level_changed':
       case 'medication_change':
-        return 'bg-orange-100 border-orange-300';
+        return 'bg-warning-100 border-warning-300';
       case 'transfer':
       case 'home_transferred':
         return 'bg-indigo-100 border-indigo-300';
       case 'appointment':
         return 'bg-pink-100 border-pink-300';
       case 'incident':
-        return 'bg-red-100 border-red-300';
+        return 'bg-error-100 border-error-300';
       case 'completed':
-        return 'bg-green-100 border-green-300';
+        return 'bg-success-100 border-success-300';
       default:
-        return 'bg-gray-100 border-gray-300';
+        return 'bg-neutral-100 border-neutral-300';
     }
   }
 
@@ -148,10 +148,10 @@ export function ResidentTimeline({ residentId }: ResidentTimelineProps) {
         <div className="animate-pulse space-y-4">
           {[1, 2, 3].map((i) => (
             <div key={i} className="flex gap-4">
-              <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+              <div className="w-10 h-10 bg-neutral-200 rounded-full"></div>
               <div className="flex-1 space-y-2">
-                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                <div className="h-4 bg-neutral-200 rounded w-3/4"></div>
+                <div className="h-3 bg-neutral-200 rounded w-1/2"></div>
               </div>
             </div>
           ))}
@@ -162,10 +162,10 @@ export function ResidentTimeline({ residentId }: ResidentTimelineProps) {
 
   if (events.length === 0) {
     return (
-      <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
-        <FiClock className="mx-auto text-gray-400 mb-2" size={32} />
-        <p className="text-gray-500 text-sm">No timeline events yet.</p>
-        <p className="text-gray-400 text-xs mt-1">Activity will appear here as it occurs.</p>
+      <div className="text-center py-8 bg-neutral-50 rounded-lg border border-neutral-200">
+        <FiClock className="mx-auto text-neutral-400 mb-2" size={32} />
+        <p className="text-neutral-500 text-sm">No timeline events yet.</p>
+        <p className="text-neutral-400 text-xs mt-1">Activity will appear here as it occurs.</p>
       </div>
     );
   }
@@ -175,7 +175,7 @@ export function ResidentTimeline({ residentId }: ResidentTimelineProps) {
       {/* Timeline Events */}
       <div className="relative">
         {/* Vertical Line */}
-        <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-gray-200"></div>
+        <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-neutral-200"></div>
 
         {/* Events List */}
         <div className="space-y-6">
@@ -187,26 +187,26 @@ export function ResidentTimeline({ residentId }: ResidentTimelineProps) {
               </div>
 
               {/* Event Card */}
-              <div className="flex-1 bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex-1 bg-white border border-neutral-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
                 {/* Event Header */}
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1">
-                    <h3 className="text-sm font-semibold text-gray-900">{event.title}</h3>
-                    <p className="text-xs text-gray-500 mt-0.5">{formatTimestamp(event.createdAt)}</p>
+                    <h3 className="text-sm font-semibold text-neutral-900">{event.title}</h3>
+                    <p className="text-xs text-neutral-500 mt-0.5">{formatTimestamp(event.createdAt)}</p>
                   </div>
-                  <span className="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full">
+                  <span className="text-xs font-medium text-neutral-600 bg-neutral-100 px-2 py-0.5 rounded-full">
                     {event.eventType.replace(/_/g, ' ')}
                   </span>
                 </div>
 
                 {/* Event Description */}
                 {event.description && (
-                  <p className="text-sm text-gray-600 mb-2">{event.description}</p>
+                  <p className="text-sm text-neutral-600 mb-2">{event.description}</p>
                 )}
 
                 {/* Scheduled/Completed Times */}
                 {(event.scheduledAt || event.completedAt) && (
-                  <div className="flex items-center gap-4 text-xs text-gray-500 mt-2 pt-2 border-t border-gray-100">
+                  <div className="flex items-center gap-4 text-xs text-neutral-500 mt-2 pt-2 border-t border-neutral-100">
                     {event.scheduledAt && (
                       <div className="flex items-center gap-1">
                         <FiCalendar size={12} />

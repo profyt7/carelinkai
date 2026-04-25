@@ -157,7 +157,7 @@ export default function InquiriesFilterPanel({ homes, initialFilters = {} }: Inq
             <FiFilter className="h-5 w-5 text-neutral-600" />
             <h3 className="font-medium text-neutral-800">Filters</h3>
             {hasActiveFilters && (
-              <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">
+              <span className="ml-2 px-2 py-0.5 bg-primary-100 text-primary-700 text-xs rounded-full">
                 Active
               </span>
             )}
@@ -293,7 +293,7 @@ export default function InquiriesFilterPanel({ homes, initialFilters = {} }: Inq
           </div>
         ) : error ? (
           <div className="p-6">
-            <div className="rounded-md border border-red-200 bg-red-50 p-4 text-red-700">
+            <div className="rounded-md border border-error-200 bg-error-50 p-4 text-error-700">
               {error}
             </div>
           </div>
@@ -341,13 +341,13 @@ export default function InquiriesFilterPanel({ homes, initialFilters = {} }: Inq
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                          inquiry.status === 'NEW' ? 'bg-red-100 text-red-800' :
-                          inquiry.status === 'CONTACTED' ? 'bg-blue-100 text-blue-800' :
-                          inquiry.status === 'TOUR_SCHEDULED' ? 'bg-yellow-100 text-yellow-800' :
-                          inquiry.status === 'TOUR_COMPLETED' ? 'bg-purple-100 text-purple-800' :
+                          inquiry.status === 'NEW' ? 'bg-error-100 text-error-800' :
+                          inquiry.status === 'CONTACTED' ? 'bg-primary-100 text-primary-800' :
+                          inquiry.status === 'TOUR_SCHEDULED' ? 'bg-warning-100 text-warning-800' :
+                          inquiry.status === 'TOUR_COMPLETED' ? 'bg-secondary-100 text-secondary-800' :
                           inquiry.status === 'PLACEMENT_OFFERED' ? 'bg-indigo-100 text-indigo-800' :
-                          inquiry.status === 'PLACEMENT_ACCEPTED' ? 'bg-green-100 text-green-800' :
-                          'bg-gray-100 text-gray-800'
+                          inquiry.status === 'PLACEMENT_ACCEPTED' ? 'bg-success-100 text-success-800' :
+                          'bg-neutral-100 text-neutral-800'
                         }`}>
                           {inquiry.status.replace(/_/g, ' ')}
                         </span>
@@ -392,13 +392,13 @@ export default function InquiriesFilterPanel({ homes, initialFilters = {} }: Inq
                     <div className="flex items-start justify-between">
                       <div className="font-medium text-neutral-900">{inquiry.home.name}</div>
                       <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full flex-shrink-0 ml-2 ${
-                        inquiry.status === 'NEW' ? 'bg-red-100 text-red-800' :
-                        inquiry.status === 'CONTACTED' ? 'bg-blue-100 text-blue-800' :
-                        inquiry.status === 'TOUR_SCHEDULED' ? 'bg-yellow-100 text-yellow-800' :
-                        inquiry.status === 'TOUR_COMPLETED' ? 'bg-purple-100 text-purple-800' :
+                        inquiry.status === 'NEW' ? 'bg-error-100 text-error-800' :
+                        inquiry.status === 'CONTACTED' ? 'bg-primary-100 text-primary-800' :
+                        inquiry.status === 'TOUR_SCHEDULED' ? 'bg-warning-100 text-warning-800' :
+                        inquiry.status === 'TOUR_COMPLETED' ? 'bg-secondary-100 text-secondary-800' :
                         inquiry.status === 'PLACEMENT_OFFERED' ? 'bg-indigo-100 text-indigo-800' :
-                        inquiry.status === 'PLACEMENT_ACCEPTED' ? 'bg-green-100 text-green-800' :
-                        'bg-gray-100 text-gray-800'
+                        inquiry.status === 'PLACEMENT_ACCEPTED' ? 'bg-success-100 text-success-800' :
+                        'bg-neutral-100 text-neutral-800'
                       }`}>
                         {inquiry.status.replace(/_/g, ' ')}
                       </span>

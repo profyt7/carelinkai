@@ -88,13 +88,13 @@ const Toast: React.FC<ToastProps> = ({ notification, onClose, autoClose = true, 
   const getIcon = () => {
     switch (notification.type) {
       case 'MESSAGE':
-        return <MessageSquare className="h-5 w-5 text-blue-500" />;
+        return <MessageSquare className="h-5 w-5 text-primary-500" />;
       case 'INQUIRY_UPDATE':
-        return <FiInfo className="h-5 w-5 text-purple-500" />;
+        return <FiInfo className="h-5 w-5 text-secondary-500" />;
       case 'TOUR_REMINDER':
         return <FiCalendar className="h-5 w-5 text-amber-500" />;
       case 'DOCUMENT_SHARED':
-        return <FiFile className="h-5 w-5 text-green-500" />;
+        return <FiFile className="h-5 w-5 text-success-500" />;
       case 'STATUS_CHANGE':
         return <FiCheckCircle className="h-5 w-5 text-indigo-500" />;
       case 'SYSTEM':
@@ -108,7 +108,7 @@ const Toast: React.FC<ToastProps> = ({ notification, onClose, autoClose = true, 
   const getBgColor = () => {
     switch (notification.priority) {
       case 'HIGH':
-        return 'bg-red-50 border-red-200';
+        return 'bg-error-50 border-error-200';
       case 'MEDIUM':
         return 'bg-amber-50 border-amber-200';
       case 'LOW':
@@ -373,13 +373,13 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
   const getNotificationIcon = (type: NotificationType) => {
     switch (type) {
       case 'MESSAGE':
-        return <MessageSquare className="h-5 w-5 text-blue-500" />;
+        return <MessageSquare className="h-5 w-5 text-primary-500" />;
       case 'INQUIRY_UPDATE':
-        return <FiInfo className="h-5 w-5 text-purple-500" />;
+        return <FiInfo className="h-5 w-5 text-secondary-500" />;
       case 'TOUR_REMINDER':
         return <FiCalendar className="h-5 w-5 text-amber-500" />;
       case 'DOCUMENT_SHARED':
-        return <FiFile className="h-5 w-5 text-green-500" />;
+        return <FiFile className="h-5 w-5 text-success-500" />;
       case 'STATUS_CHANGE':
         return <FiCheckCircle className="h-5 w-5 text-indigo-500" />;
       case 'SYSTEM':
@@ -430,7 +430,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
                     onClick={() => setFilter('MESSAGE')}
                     className={`rounded-md px-2 py-1 text-xs font-medium ${
                       filter === 'MESSAGE'
-                        ? 'bg-blue-100 text-blue-800'
+                        ? 'bg-primary-100 text-primary-800'
                         : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
                     }`}
                   >

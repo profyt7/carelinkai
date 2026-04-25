@@ -73,15 +73,15 @@ export default function ConversionPipelineDashboard() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
       </div>
     );
   }
 
   if (error || !data) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-        <p className="text-red-600">{ error || 'Failed to load pipeline data'}</p>
+      <div className="bg-error-50 border border-error-200 rounded-lg p-4">
+        <p className="text-error-600">{ error || 'Failed to load pipeline data'}</p>
       </div>
     );
   }
@@ -119,28 +119,28 @@ export default function ConversionPipelineDashboard() {
       </div>
 
       {/* Pipeline Funnel */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Conversion Pipeline</h3>
+      <div className="bg-white rounded-lg border border-neutral-200 p-6">
+        <h3 className="text-lg font-semibold text-neutral-900 mb-4">Conversion Pipeline</h3>
         <div className="space-y-3">
           {stageMetrics.map((stage, idx) => (
             <div key={stage.status} className="flex items-center gap-4">
               <div className="flex-1">
                 <div className="flex items-center justify-between mb-1">
                   <InquiryStatusBadge status={stage.status as any} size="sm" />
-                  <span className="text-sm font-medium text-gray-900">{stage.count}</span>
+                  <span className="text-sm font-medium text-neutral-900">{stage.count}</span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-neutral-200 rounded-full h-2">
                   <div
-                    className="bg-blue-600 h-2 rounded-full transition-all"
+                    className="bg-primary-600 h-2 rounded-full transition-all"
                     style={{ width: `${(stage.count / stats.total) * 100}%` }}
                   />
                 </div>
               </div>
-              <div className="text-xs text-gray-600 w-24 text-right">
+              <div className="text-xs text-neutral-600 w-24 text-right">
                 {stage.avgDaysInStage.toFixed(1)} days avg
               </div>
               {idx < stageMetrics.length - 1 && (
-                <FiArrowRight className="text-gray-400 flex-shrink-0" />
+                <FiArrowRight className="text-neutral-400 flex-shrink-0" />
               )}
             </div>
           ))}
@@ -149,28 +149,28 @@ export default function ConversionPipelineDashboard() {
 
       {/* Recent Conversions */}
       {recentConversions.length > 0 && (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Conversions</h3>
+        <div className="bg-white rounded-lg border border-neutral-200 p-6">
+          <h3 className="text-lg font-semibold text-neutral-900 mb-4">Recent Conversions</h3>
           <div className="space-y-3">
             {recentConversions.map((conversion) => (
               <div
                 key={conversion.id}
-                className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0"
+                className="flex items-center justify-between py-2 border-b border-neutral-100 last:border-0"
               >
                 <div className="flex-1">
                   <Link
                     href={`/operator/residents/${conversion.convertedResident.id}`}
-                    className="font-medium text-blue-600 hover:text-blue-700"
+                    className="font-medium text-primary-600 hover:text-primary-700"
                   >
                     {conversion.convertedResident.firstName}{' '}
                     {conversion.convertedResident.lastName}
                   </Link>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-neutral-600">
                     {conversion.home.name} • Converted by{' '}
                     {conversion.convertedBy.firstName} {conversion.convertedBy.lastName}
                   </p>
                 </div>
-                <div className="text-sm text-gray-500">
+                <div className="text-sm text-neutral-500">
                   {new Date(conversion.conversionDate).toLocaleDateString()}
                 </div>
               </div>
@@ -191,18 +191,18 @@ interface MetricCardProps {
 
 function MetricCard({ title, value, icon, color }: MetricCardProps) {
   const colorClasses = {
-    blue: 'bg-blue-100 text-blue-600',
-    green: 'bg-green-100 text-green-600',
-    purple: 'bg-purple-100 text-purple-600',
-    yellow: 'bg-yellow-100 text-yellow-600',
+    blue: 'bg-primary-100 text-primary-600',
+    green: 'bg-success-100 text-success-600',
+    purple: 'bg-secondary-100 text-secondary-600',
+    yellow: 'bg-warning-100 text-warning-600',
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4">
+    <div className="bg-white rounded-lg border border-neutral-200 p-4">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-gray-600 mb-1">{title}</p>
-          <p className="text-2xl font-bold text-gray-900">{value}</p>
+          <p className="text-sm text-neutral-600 mb-1">{title}</p>
+          <p className="text-2xl font-bold text-neutral-900">{value}</p>
         </div>
         <div className={`p-3 rounded-full ${colorClasses[color]}`}>
           {React.cloneElement(icon as React.ReactElement<any>, { className: 'w-6 h-6' })}

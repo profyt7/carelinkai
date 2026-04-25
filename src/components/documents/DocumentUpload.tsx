@@ -136,7 +136,7 @@ export function DocumentUpload({
     <div className="space-y-4">
       {/* Document Type Selector */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-neutral-700 mb-2">
           Document Type
         </label>
         <Select value={documentType} onChange={(e) => setDocumentType(e.target.value as DocumentType)}>
@@ -153,20 +153,20 @@ export function DocumentUpload({
         {...getRootProps()}
         className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
           isDragActive
-            ? 'border-blue-500 bg-blue-50'
-            : 'border-gray-300 hover:border-gray-400'
+            ? 'border-primary-500 bg-primary-50'
+            : 'border-neutral-300 hover:border-neutral-400'
         }`}
       >
         <input {...getInputProps()} />
-        <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+        <Upload className="mx-auto h-12 w-12 text-neutral-400 mb-4" />
         {isDragActive ? (
-          <p className="text-lg text-blue-600">Drop files here...</p>
+          <p className="text-lg text-primary-600">Drop files here...</p>
         ) : (
           <>
-            <p className="text-lg text-gray-700 mb-2">
+            <p className="text-lg text-neutral-700 mb-2">
               Drag & drop files here, or click to browse
             </p>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-neutral-500">
               Supported: PDF, JPG, PNG, GIF, WebP (max 10MB)
             </p>
           </>
@@ -176,29 +176,29 @@ export function DocumentUpload({
       {/* Uploading Files */}
       {uploadingFiles.length > 0 && (
         <div className="space-y-2">
-          <h3 className="text-sm font-medium text-gray-700">Uploading Files</h3>
+          <h3 className="text-sm font-medium text-neutral-700">Uploading Files</h3>
           {uploadingFiles.map((uf, index) => (
             <div
               key={index}
-              className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"
+              className="flex items-center gap-3 p-3 bg-neutral-50 rounded-lg"
             >
-              <FileText className="h-5 w-5 text-gray-400" />
+              <FileText className="h-5 w-5 text-neutral-400" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">
+                <p className="text-sm font-medium text-neutral-900 truncate">
                   {uf.file.name}
                 </p>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-neutral-500">
                   {formatFileSize(uf.file.size)}
                 </p>
               </div>
               {uf.status === 'uploading' && (
-                <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
+                <Loader2 className="h-5 w-5 text-primary-600 animate-spin" />
               )}
               {uf.status === 'success' && (
-                <span className="text-green-600 text-sm font-medium">✓</span>
+                <span className="text-success-600 text-sm font-medium">✓</span>
               )}
               {uf.status === 'error' && (
-                <span className="text-red-600 text-sm font-medium">✗</span>
+                <span className="text-error-600 text-sm font-medium">✗</span>
               )}
             </div>
           ))}
