@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Roboto } from "next/font/google";
+import { Inter, DM_Serif_Display } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { Providers } from "./providers";
@@ -29,19 +29,20 @@ import OnboardingModal from "../components/onboarding/OnboardingModal";
 // Sentry error tracking
 import SentryProvider from "../components/SentryProvider";
 
-// Load Inter font for headers (CareLinkAI branding)
+// Inter — primary UI font (body, labels, buttons, nav, headings)
 const inter = Inter({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-inter",
+  weight: ["300", "400", "500", "600", "700"],
 });
 
-// Load Roboto font for body text (CareLinkAI branding)
-const roboto = Roboto({
-  weight: ['300', '400', '500', '700'],
+// DM Serif Display — emotional accent font for hero moments and family-facing copy
+const dmSerif = DM_Serif_Display({
+  weight: ["400"],
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-roboto",
+  variable: "--font-dm-serif",
 });
 
 // App metadata for SEO and sharing
@@ -143,7 +144,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${roboto.variable}`}>
+    <html lang="en" className={`${inter.variable} ${dmSerif.variable}`}>
       <head>
         {/* CareLinkAI Favicon - Updated branding */}
         <link rel="icon" type="image/png" href="/icons/favicon.png" />

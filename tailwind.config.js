@@ -114,9 +114,10 @@ module.exports = {
         },
       },
       fontFamily: {
-        // CareLinkAI Branding: Inter for headers, Roboto for body
+        // CareLinkAI Branding: Inter everywhere, DM Serif Display for emotional moments
         sans: [
-          "Roboto",
+          "var(--font-inter)",
+          "Inter",
           "ui-sans-serif",
           "system-ui",
           "-apple-system",
@@ -127,28 +128,25 @@ module.exports = {
           "sans-serif",
         ],
         display: [
+          "var(--font-inter)",
           "Inter",
           "ui-sans-serif",
           "system-ui",
-          "-apple-system",
-          "BlinkMacSystemFont",
-          "Segoe UI",
-          "Roboto",
-          "Helvetica Neue",
-          "Arial",
           "sans-serif",
         ],
         heading: [
+          "var(--font-inter)",
           "Inter",
           "ui-sans-serif",
           "system-ui",
-          "-apple-system",
-          "BlinkMacSystemFont",
-          "Segoe UI",
-          "Roboto",
-          "Helvetica Neue",
-          "Arial",
           "sans-serif",
+        ],
+        serif: [
+          "var(--font-dm-serif)",
+          "DM Serif Display",
+          "Georgia",
+          "Cambria",
+          "serif",
         ],
       },
       fontSize: {
