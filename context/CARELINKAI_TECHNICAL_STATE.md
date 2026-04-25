@@ -2,7 +2,7 @@
 _Last updated: 2026-04-24_
 
 ## Active Branch
-`claude/review-carelink-docs-49Ycv` (admin revenue dashboard + operator onboarding wizard — ready to merge to main)
+`main` (all features merged — Stripe billing fully verified end-to-end in test mode)
 
 ## Production URL
 https://carelinkai.onrender.com (also: https://getcarelinkai.com)
@@ -60,11 +60,11 @@ FAMILY, OPERATOR, CAREGIVER, ADMIN, STAFF, PROVIDER, AFFILIATE, DISCHARGE_PLANNE
 - **Admin revenue dashboard:** MRR, placement fees collected/pending, affiliate commissions owed, recent payments table, subscription breakdown by plan
 - **Operator onboarding wizard:** 3-step guided flow (company → first home → plan selection); new operators auto-redirected on first login
 
-## Known Issues (as of 2026-04-24)
+## Known Issues (as of 2026-04-25)
 1. 274 TypeScript strict mode errors — CI type-check step is disabled (non-blocking at runtime)
 2. 2 pre-existing test failures: `calendar.appointments.api` and `emergency.api`
-3. ~~CareBot outputs raw markdown~~ — FIXED (OL-013 closed 2026-04-24)
-4. Stripe Products/Prices not yet created in Stripe dashboard — subscription checkout will fail until `STRIPE_PRICE_*` env vars are set
+3. Demo accounts use test Stripe data — when switching to live Stripe, all operator `stripeCustomerId` fields must be cleared and operators re-subscribed
+4. seed-demo.ts `update:{}` bug fixed for all 7 top-level user accounts; nested operator/caregiver/etc upserts still use `update:{}`
 
 ## Pending Deployment Actions (before subscription billing goes live)
 1. **Merge branch to main** — triggers Render auto-deploy

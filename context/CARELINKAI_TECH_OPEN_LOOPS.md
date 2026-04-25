@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-04-24 (session 2)_
+_Last updated: 2026-04-25_
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -24,14 +24,11 @@ Each loop: what it is, why it matters, what done looks like.
 - **Done:** CareBot, inquiry AI, document classification, discharge planner, match explainer all live
 
 ### OL-004: Revenue model not finalized / Stripe billing not wired
-- **Status:** ✅ CODE COMPLETE (2026-04-24) — awaiting Render deployment + Stripe dashboard setup
-- **What's done:** 12-stream revenue model finalized. Stripe checkout, portal, webhook handlers, feature gating all built and committed.
-- **Remaining to activate (Chris action required):**
-  1. Merge branch → apply migration in Render shell
-  2. Create Stripe Products/Prices in Stripe dashboard (Starter $99, Professional $249, Growth $499)
-  3. Set `STRIPE_PRICE_*` env vars in Render
-  4. Register webhook endpoint in Stripe dashboard (see CARELINKAI_TECHNICAL_STATE.md for full checklist)
-- **Done when:** Operator can subscribe, enter a credit card, and be billed monthly
+- **Status:** ✅ FULLY VERIFIED END-TO-END (2026-04-25)
+- Operator checkout → trial → portal → plan switching → webhook → DB all confirmed working in test mode
+- In-app plan switching built (upgrade/downgrade without Stripe portal redirect)
+- Admin revenue dashboard live: MRR, placement fees, affiliate commissions, recent payments, subscription breakdown
+- **Remaining before live revenue:** Switch to live Stripe account (runbook: `context/STRIPE_SETUP_RUNBOOK.md`)
 
 ### OL-007: Full end-to-end operator onboarding never verified
 - **Status:** ✅ CLOSED (2026-04-23) — all 10 steps verified in production

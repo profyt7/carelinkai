@@ -2,6 +2,44 @@
 
 ---
 
+### 2026-04-25 — Stripe Integration Hardening + Billing UX Fixes
+
+- **Objective:** Verify end-to-end Stripe subscription flow, fix plan switching, fix admin login, fix user management table overflow.
+
+- **Work completed:**
+  1. **In-app plan switching** (`/api/operator/billing/switch-plan`): Built new API route calling `stripe.subscriptions.update()` with proration. Added try/catch so Stripe errors surface as readable JSON instead of HTML. Updated `SubscriptionManager.tsx` with inline plan cards showing Upgrade/Downgrade/Current badges — no portal redirect needed.
+  2. **Stripe account mismatch diagnosed and resolved**: CoWork set up products/prices in a different Stripe account than what `STRIPE_SECRET_KEY` pointed to. Updated `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY` in Render to match correct account. Cleared stale `stripeCustomerId`/`stripeSubscriptionId` from demo operator DB record via Render shell. Operator re-subscribed successfully in correct account.
+  3. **Admin account fix**: `demo.admin@carelinkai.test` couldn't log in ("invalid email or password"). Root cause: seed used `update: {}` so password hash was never reset on existing accounts. Fixed via Render shell node command. Also updated all 7 demo account upserts in `seed-demo.ts` to always reset `passwordHash`, `status`, `emailVerified` on every run.
+  4. **User management table overflow**: Long deleted-user email addresses (`deleted_176...@example.com`) were pushing Actions column off screen. Added `max-w-[260px]` + `truncate` to user cell.
+  5. **Admin analytics revenue dashboard**: Deployed — MRR showing $249 (1 active Professional trial subscriber), Subscriptions by Plan showing PROFESSIONAL=1, PROFESSIONAL (trial)=1.
+  6. **Stripe portal plan switching**: Enabled "Customers can switch plans" + added all 3 products in Stripe portal settings. Also enabled Promotion codes toggle so FOUNDERS49 can be applied on plan changes.
+  7. **Manage Billing portal**: Confirmed working — shows "Update subscription" button, invoice history, payment method management.
+
+- **Files changed:**
+  - `src/app/api/operator/billing/switch-plan/route.ts` — new route (plan switching via Stripe API)
+  - `src/components/operator/billing/SubscriptionManager.tsx` — inline plan switcher UI
+  - `src/app/admin/users/page.tsx` — truncate long emails in user table
+  - `prisma/seed-demo.ts` — all 7 demo accounts now reset password on upsert
+  - `context/DEV_SESSION_SUMMARIES.md`, `CARELINKAI_TECHNICAL_STATE.md`, `CARELINKAI_TECH_OPEN_LOOPS.md` — updated
+
+- **Commands run:**
+  - Render shell: `node ~/project/src/fix.js` — reset demo.admin password
+  - Render shell: `node ~/project/src/clear.js` — cleared stale Stripe customer ID from operator
+  - Multiple `git rebase origin/main && git push --force-with-lease` cycles
+  - PRs #499, #500, #501 merged to main
+
+- **Tests/build status:** TypeScript clean on changed files. CI type-check still disabled (OL-005/006 pending).
+
+- **Deployment impact:** All changes live on main/production. Stripe billing fully functional end-to-end in test mode.
+
+- **New risks/blockers:**
+  - Stripe account swap (when Chris replaces test account with real account) will require: new secret/publishable keys in Render, re-create products/prices, clear stripeCustomerId for all operators, update STRIPE_PRICE_* env vars. Runbook exists at `context/STRIPE_SETUP_RUNBOOK.md`.
+  - Demo operator's subscription is in test mode — will need to be cleared again when switching to live Stripe.
+
+- **Recommended next step:** TypeScript strict error cleanup (OL-005) to re-enable CI, OR build family search/discovery improvements to drive placement fee revenue.
+
+---
+
 ### 2026-04-24 — Admin Revenue Dashboard + Operator Onboarding Wizard
 
 - **Objective:** Build admin revenue visibility (MRR, placement fees, affiliate commissions) and guided first-time operator onboarding.
