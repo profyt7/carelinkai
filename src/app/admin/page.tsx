@@ -61,14 +61,14 @@ export default async function AdminDashboard() {
       title: 'Listing Management',
       description: 'Review and manage home listings',
       icon: FiHome,
-      href: '/admin/listings',
+      href: '/admin/homes',
       color: 'from-purple-500 to-purple-600',
     },
     {
-      title: 'Content Moderation',
-      description: 'Review reports and moderate content',
+      title: 'Affiliate Management',
+      description: 'View affiliates, referrals, and commissions owed',
       icon: FiMessageSquare,
-      href: '/admin/moderation',
+      href: '/admin/affiliates',
       color: 'from-pink-500 to-pink-600',
     },
     {
