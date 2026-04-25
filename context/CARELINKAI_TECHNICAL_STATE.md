@@ -68,7 +68,10 @@ FAMILY, OPERATOR, CAREGIVER, ADMIN, STAFF, PROVIDER, AFFILIATE, DISCHARGE_PLANNE
 - **Aide gamification (points/tiers):** BRONZE/SILVER/GOLD/PLATINUM tiers; points auto-awarded on timesheet approval and reviews; penalized on call-off; PointsDashboard at /caregiver/points
 - **Shift bidding:** Caregivers bid on open shifts; operators accept/decline; on accept: shift assigned + MarketplaceHire + hire fee triggered atomically
 - **Waitlist management:** WaitlistEntry model; /api/operator/homes/[id]/waitlist + /api/family/waitlist
-- **Education hub:** 7 long-form guides at /learn and /learn/guides/[slug] (SEO-optimized, no CMS needed)
+- **Education hub:** 15 long-form guides at /learn and /learn/guides/[slug] (SEO-optimized, no CMS needed; content.ts is single source of truth)
+- **Care Concierge widget:** Replaces CareBot globally; family-facing AI chat (Claude Haiku) with home search + care term lookup tools; `/api/care-concierge` public endpoint
+- **Family onboarding wizard:** /get-started 3-step wizard (role → need → timeline) routes families to the right destination
+- **Financing CTAs:** CareCredit affiliate links on /learn and home listing pricing tab
 - **Compliance document kits:** 3 Ohio ALF kits ($149-$199); one-time Stripe checkout; ComplianceKitPurchase model; /operator/compliance-kits
 
 ## Known Issues (as of 2026-04-25)
@@ -147,5 +150,7 @@ See `REVENUE_MODEL.md` for the full breakdown. 12 streams finalized:
 - Local limitation: Prisma binary engine in sandbox dies after ~7 tests due to thread limits. NOT a production issue.
 
 ## Immediate Next Priorities
-1. **Run production smoke tests** — `npm run test:e2e:prod` after each deploy to verify production health
-2. Plan next revenue/product milestone — all known open loops are closed
+1. **Merge feature branch to main** — triggers Render auto-deploy for all family-facing features
+2. **Verify on production:** /get-started wizard, /learn (15 articles), Care Concierge chat widget
+3. **Text to Place (roadmap):** Twilio integration already exists; family texts to inquire about a home
+4. **CareCredit affiliate account** — sign up at carecredit.com/partners to get a tracked affiliate link and earn commission on referrals

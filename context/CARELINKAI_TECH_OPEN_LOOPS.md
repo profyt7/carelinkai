@@ -135,4 +135,8 @@ Each loop: what it is, why it matters, what done looks like.
 | Aide ghosting/no-show problem | Call-off tracking + gamification points + shift bidding + On-Call AI outreach all built | 2026-04-25 |
 | Waitlist management missing | WaitlistEntry model; operator + family API routes | 2026-04-25 |
 | Education hub missing | 7 long-form guides at /learn and /learn/guides/[slug] | 2026-04-25 |
+| Education hub at 7 articles | Expanded to 15 articles in content.ts; learn/page.tsx now imports from content.ts | 2026-04-25 |
+| Family-facing chat widget | Care Concierge replaces CareBot globally; public /api/care-concierge + home search tools | 2026-04-25 |
+| Family onboarding missing | /get-started 3-step wizard routes by role + need + timeline | 2026-04-25 |
+| Financing CTA missing | CareCredit affiliate banners on /learn and home listing pricing tab | 2026-04-25 |
 | Compliance document kits not built | ComplianceKitPurchase model; 3 Ohio kits at $149-$199; Stripe one-time checkout | 2026-04-25 |

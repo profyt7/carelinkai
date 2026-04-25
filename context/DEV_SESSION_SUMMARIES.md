@@ -2,6 +2,38 @@
 
 ---
 
+### 2026-04-25 — Family UX Layer: Education Hub Expansion, Care Concierge, Onboarding Wizard, Financing CTAs
+
+- **Objective:** Build the family-facing experience layer: expand education hub to 15 articles, replace global CareBot with a family-specific Care Concierge AI widget, build a 3-step onboarding wizard at /get-started, and add CareCredit financing CTAs.
+- **Work completed:**
+  1. **Home listing real-data render rebuilt:** Full rich layout (tabs, inquiry form, amenities, pricing, location, contact) for production homes — was showing sparse fallback. Matches mock layout 1:1.
+  2. **Ohio cities added to CITY_COORDINATES:** 12 Ohio cities (Cleveland, Columbus, Akron, Toledo, etc.) + 9 state-level fallbacks. Fixes blank maps on all Ohio homes.
+  3. **Operator edit form improvements:** Added `currentOccupancy` field; Zod PATCH schema now accepts `careLevel`, `genderRestriction`, `address`; address `upsert` logic added to PATCH handler.
+  4. **Education Hub expanded to 15 articles:** Added 8 new guides: signs-parent-needs-more-care, power-of-attorney-guide, understanding-dementia-family-guide, veterans-benefits-assisted-living, talking-to-parent-about-assisted-living, avoiding-caregiver-burnout, what-medicare-covers, fall-prevention-senior-safety. All in `content.ts` with full section content.
+  5. **Care Concierge AI widget:** New family-facing floating chat widget at `src/components/CareConcierge.tsx`. Separate from CareBot — uses public `/api/care-concierge` endpoint. Tools: `search_homes` (Prisma query) + `get_care_type_info` (10-term lookup). System prompt warm/family-focused.
+  6. **Care Concierge replaces CareBot globally:** Root `layout.tsx` updated to import `CareConcierge` instead of `FloatingChatButton`. CareConcierge is strictly better for family audience.
+  7. **/get-started wizard:** 3-step onboarding at `/get-started`. Role → Need → Timeline. Smart routing: urgent/now → `/search?urgent=true`; costs → cost guide; understand-options → `/learn`; default → `/search`. Non-family roles redirect immediately.
+  8. **Learn index page now imports from content.ts:** Was hardcoded 7-item array. Now `import { GUIDES } from './guides/content'` — always in sync with actual articles.
+  9. **Financing CTAs added:** CareCredit affiliate link banner on `/learn` page and home listing pricing tab. Text: "Need help affording care? Apply in minutes."
+- **Files changed:**
+  - `src/app/api/homes/[id]/route.ts` — Ohio coordinates
+  - `src/app/homes/[id]/page.tsx` — real-data render rebuilt + CareCredit banner
+  - `src/app/api/operator/homes/[id]/route.ts` — Zod schema + address upsert
+  - `src/app/operator/homes/[id]/edit/page.tsx` — currentOccupancy field
+  - `src/app/learn/guides/content.ts` — expanded from 7 to 15 articles
+  - `src/app/learn/page.tsx` — imports from content.ts + CareCredit banner
+  - `src/app/api/care-concierge/route.ts` — **NEW** family AI chat endpoint
+  - `src/components/CareConcierge.tsx` — **NEW** floating care advisor widget
+  - `src/app/get-started/page.tsx` — **NEW** family onboarding wizard
+  - `src/app/layout.tsx` — swapped FloatingChatButton → CareConcierge
+- **Commands run:** `git add`, `git commit`, `git push -u origin HEAD:claude/review-carelink-docs-49Ycv`
+- **Tests/build status:** No TypeScript errors expected (all types match existing patterns). Build not run locally.
+- **Deployment impact:** Feature branch pushed. CareConcierge requires `ANTHROPIC_API_KEY` (already set in Render). No new env vars or schema migrations needed.
+- **New risks/blockers:** None. CareCredit affiliate links are plain `<a>` tags — no backend integration needed.
+- **Recommended next step:** Merge feature branch to main to trigger Render deploy and make all family-facing features live. Then verify /get-started wizard, /learn hub (15 articles), and Care Concierge widget on production.
+
+---
+
 ### 2026-04-25 — Aide Reliability System: Call-Offs, Gamification Points, Shift Bidding
 
 - **Objective:** Solve aide ghosting/no-show problem with a reliability tracking + gamification system. Also build On-Call AI outreach (auto-fills open shifts via SMS/voice).
