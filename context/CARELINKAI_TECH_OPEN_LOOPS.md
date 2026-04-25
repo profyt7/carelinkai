@@ -62,9 +62,7 @@ Each loop: what it is, why it matters, what done looks like.
 - All calls non-blocking; gracefully no-ops if Twilio not configured
 
 ### OL-010: Invoice model missing from schema
-- **Status:** No Prisma model for invoices
-- **Impact:** Cannot generate invoices for operators
-- **Fix:** Add Invoice model; generate on Stripe subscription payment (invoice.payment_succeeded webhook event)
+- **Status:** ✅ CLOSED (2026-04-25) — `Invoice` model added; webhook upserts on payment_succeeded/failed; `GET /api/operator/billing/invoices` live; invoice history table in SubscriptionManager UI
 
 ### OL-011: Playwright tests configured for localhost only
 - **Status:** Tests can't run against production
@@ -114,3 +112,4 @@ Each loop: what it is, why it matters, what done looks like.
 | Placement fee billing switch | Switched from PaymentIntent → invoice item; collected on next billing cycle | 2026-04-24 |
 | OL-005: TypeScript strict mode errors | 147 errors fixed across 73 files; `npm run type-check` passes 0 errors | 2026-04-24 |
 | OL-006: CI type-check step disabled | Re-enabled in `.github/workflows/quality.yml` | 2026-04-24 |
+| OL-010: Invoice model missing | Invoice model + migration + webhook upsert + billing API + UI table | 2026-04-25 |

@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
 import Stripe from "stripe";
 import { bindRequestLogger } from "@/lib/logger";
-import { SubscriptionPlan, SubscriptionStatus } from "@prisma/client";
+import { InvoiceStatus, SubscriptionPlan, SubscriptionStatus } from "@prisma/client";
 import { smsService } from "@/lib/sms/sms-service";
 
 /**
@@ -233,6 +233,34 @@ export async function POST(request: NextRequest) {
         },
       });
 
+      // Persist invoice record
+      const subId = typeof invoice.subscription === "string" ? invoice.subscription : invoice.subscription?.id;
+      await prisma.invoice.upsert({
+        where: { stripeInvoiceId: invoice.id },
+        create: {
+          operatorId: operator.id,
+          stripeInvoiceId: invoice.id,
+          stripeSubscriptionId: subId ?? null,
+          status: InvoiceStatus.PAID,
+          amountDue: invoice.amount_due,
+          amountPaid: invoice.amount_paid,
+          currency: invoice.currency,
+          description: invoice.description ?? null,
+          periodStart: invoice.period_start ? new Date(invoice.period_start * 1000) : null,
+          periodEnd: invoice.period_end ? new Date(invoice.period_end * 1000) : null,
+          invoiceUrl: invoice.hosted_invoice_url ?? null,
+          invoicePdf: invoice.invoice_pdf ?? null,
+          paidAt: invoice.status_transitions?.paid_at ? new Date(invoice.status_transitions.paid_at * 1000) : null,
+        },
+        update: {
+          status: InvoiceStatus.PAID,
+          amountPaid: invoice.amount_paid,
+          invoiceUrl: invoice.hosted_invoice_url ?? null,
+          invoicePdf: invoice.invoice_pdf ?? null,
+          paidAt: invoice.status_transitions?.paid_at ? new Date(invoice.status_transitions.paid_at * 1000) : null,
+        },
+      });
+
       // Settle any placement fees that were queued on this billing cycle
       const settled = await prisma.payment.updateMany({
         where: { userId: operator.userId, type: "PLACEMENT_FEE", status: "PROCESSING" },
@@ -258,6 +286,30 @@ export async function POST(request: NextRequest) {
       await prisma.operator.update({
         where: { id: operator.id },
         data: { subscriptionStatus: SubscriptionStatus.PAST_DUE },
+      });
+
+      // Persist invoice record (open = payment failed / awaiting retry)
+      const failedSubId = typeof invoice.subscription === "string" ? invoice.subscription : invoice.subscription?.id;
+      await prisma.invoice.upsert({
+        where: { stripeInvoiceId: invoice.id },
+        create: {
+          operatorId: operator.id,
+          stripeInvoiceId: invoice.id,
+          stripeSubscriptionId: failedSubId ?? null,
+          status: InvoiceStatus.OPEN,
+          amountDue: invoice.amount_due,
+          amountPaid: invoice.amount_paid,
+          currency: invoice.currency,
+          description: invoice.description ?? null,
+          periodStart: invoice.period_start ? new Date(invoice.period_start * 1000) : null,
+          periodEnd: invoice.period_end ? new Date(invoice.period_end * 1000) : null,
+          invoiceUrl: invoice.hosted_invoice_url ?? null,
+          invoicePdf: invoice.invoice_pdf ?? null,
+        },
+        update: {
+          status: InvoiceStatus.OPEN,
+          invoiceUrl: invoice.hosted_invoice_url ?? null,
+        },
       });
 
       // SMS alert to operator (non-blocking)

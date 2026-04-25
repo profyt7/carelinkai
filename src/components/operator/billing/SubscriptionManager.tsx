@@ -1,7 +1,23 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { CheckCircle, Clock, AlertTriangle, XCircle, CreditCard, ArrowUpRight, Zap, RefreshCw } from 'lucide-react';
+import { CheckCircle, Clock, AlertTriangle, XCircle, CreditCard, ArrowUpRight, Zap, RefreshCw, FileText, Download, ExternalLink } from 'lucide-react';
+
+interface InvoiceData {
+  id: string;
+  stripeInvoiceId: string;
+  status: 'DRAFT' | 'OPEN' | 'PAID' | 'VOID' | 'UNCOLLECTIBLE';
+  amountDue: number;
+  amountPaid: number;
+  currency: string;
+  description: string | null;
+  periodStart: string | null;
+  periodEnd: string | null;
+  invoiceUrl: string | null;
+  invoicePdf: string | null;
+  paidAt: string | null;
+  createdAt: string;
+}
 
 interface SubscriptionData {
   id: string;
@@ -38,8 +54,28 @@ function StatusBadge({ status }: { status: SubscriptionData['subscriptionStatus'
   }
 }
 
+function formatCents(cents: number, currency: string) {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency.toUpperCase() }).format(cents / 100);
+}
+
+function InvoiceStatusBadge({ status }: { status: InvoiceData['status'] }) {
+  switch (status) {
+    case 'PAID':
+      return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Paid</span>;
+    case 'OPEN':
+      return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Open</span>;
+    case 'VOID':
+      return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Void</span>;
+    case 'UNCOLLECTIBLE':
+      return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">Uncollectible</span>;
+    default:
+      return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Draft</span>;
+  }
+}
+
 export default function SubscriptionManager() {
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
+  const [invoices, setInvoices] = useState<InvoiceData[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -47,10 +83,15 @@ export default function SubscriptionManager() {
   const [showPlanChange, setShowPlanChange] = useState(false);
 
   useEffect(() => {
-    fetch('/api/operator/billing/subscription')
-      .then((r) => r.json())
-      .then((d) => setSubscription(d.subscription))
-      .catch(() => setError('Could not load subscription data.'))
+    Promise.all([
+      fetch('/api/operator/billing/subscription').then((r) => r.json()),
+      fetch('/api/operator/billing/invoices').then((r) => r.json()),
+    ])
+      .then(([subData, invData]) => {
+        setSubscription(subData.subscription);
+        setInvoices(invData.invoices ?? []);
+      })
+      .catch(() => setError('Could not load billing data.'))
       .finally(() => setLoading(false));
   }, []);
 
@@ -236,6 +277,69 @@ export default function SubscriptionManager() {
             Need unlimited homes?{' '}
             <a href="mailto:hello@getcarelinkai.com" className="underline">Contact us for Enterprise pricing.</a>
           </p>
+        </div>
+      )}
+
+      {/* Invoice history */}
+      {invoices.length > 0 && (
+        <div className="card">
+          <div className="flex items-center gap-2 mb-4">
+            <FileText className="w-4 h-4 text-neutral-500" />
+            <h3 className="font-semibold text-neutral-800">Invoice History</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-neutral-500 border-b border-neutral-100">
+                  <th className="pb-2 font-medium pr-4">Period</th>
+                  <th className="pb-2 font-medium pr-4">Amount</th>
+                  <th className="pb-2 font-medium pr-4">Status</th>
+                  <th className="pb-2 font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-50">
+                {invoices.map((inv) => (
+                  <tr key={inv.id} className="hover:bg-neutral-50">
+                    <td className="py-3 pr-4 text-neutral-700">
+                      {inv.periodStart && inv.periodEnd
+                        ? `${new Date(inv.periodStart).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })} – ${new Date(inv.periodEnd).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`
+                        : new Date(inv.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="py-3 pr-4 font-medium text-neutral-800">
+                      {formatCents(inv.status === 'PAID' ? inv.amountPaid : inv.amountDue, inv.currency)}
+                    </td>
+                    <td className="py-3 pr-4">
+                      <InvoiceStatusBadge status={inv.status} />
+                    </td>
+                    <td className="py-3">
+                      <div className="flex items-center gap-2">
+                        {inv.invoiceUrl && (
+                          <a
+                            href={inv.invoiceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
+                          >
+                            <ExternalLink className="w-3 h-3" /> View
+                          </a>
+                        )}
+                        {inv.invoicePdf && (
+                          <a
+                            href={inv.invoicePdf}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs text-neutral-600 hover:text-neutral-800"
+                          >
+                            <Download className="w-3 h-3" /> PDF
+                          </a>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

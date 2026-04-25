@@ -136,7 +136,6 @@ See `REVENUE_MODEL.md` for the full breakdown. 12 streams finalized:
 - Local limitation: Prisma binary engine in sandbox dies after ~7 tests due to thread limits. NOT a production issue.
 
 ## Immediate Next Priorities
-1. **Merge branch + apply migration + set new env vars** — migration `20260424000002` must run; set WALLET_FEE_PCT, DEFAULT_AFFILIATE_COMMISSION_PCT, CRON_SECRET, Twilio vars; add tour-reminders cron job in Render
-2. **Create Stripe Products + register webhook** — Starter $99, Professional $249, Growth $499; register `/api/webhooks/stripe` endpoint (see Pending Deployment Actions above)
-3. Fix 2 pre-existing test failures (`calendar.appointments.api`, `emergency.api`)
-4. Fix Invoice model (OL-010) — add Prisma Invoice model; generate on Stripe `invoice.payment_succeeded`
+1. **Apply migration in Render shell** — run `npx prisma migrate deploy` to apply `20260424000003_add_invoice_model`
+2. Fix 2 pre-existing test failures (`calendar.appointments.api`, `emergency.api`)
+3. OL-011: Playwright config for production environment

@@ -155,6 +155,7 @@ model Operator {
   caregivers           CaregiverEmployment[]
   user                 User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   tourRequests         TourRequest[]
+  invoices             Invoice[]
 
   @@index([userId])
   @@index([companyName])
@@ -2449,4 +2450,35 @@ enum SubscriptionStatus {
   INCOMPLETE
   INCOMPLETE_EXPIRED
   PAUSED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  OPEN
+  PAID
+  VOID
+  UNCOLLECTIBLE
+}
+
+model Invoice {
+  id                   String        @id @default(cuid())
+  operatorId           String
+  stripeInvoiceId      String        @unique
+  stripeSubscriptionId String?
+  status               InvoiceStatus
+  amountDue            Int
+  amountPaid           Int           @default(0)
+  currency             String        @default("usd")
+  description          String?
+  periodStart          DateTime?
+  periodEnd            DateTime?
+  invoiceUrl           String?
+  invoicePdf           String?
+  paidAt               DateTime?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+  operator             Operator      @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+
+  @@index([operatorId])
+  @@index([stripeInvoiceId])
 }

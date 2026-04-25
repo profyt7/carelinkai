@@ -2,6 +2,35 @@
 
 ---
 
+### 2026-04-25 — Invoice Model + OL-010 + Merge to Main
+
+- **Objective:** Merge TypeScript cleanup branch to main, then implement OL-010 (Invoice model for operator billing).
+- **Work completed:**
+  1. Merged `claude/review-carelink-docs-49Ycv` → `main` (fast-forward, no conflicts). Render auto-deploy triggered.
+  2. Added `InvoiceStatus` enum (`DRAFT`, `OPEN`, `PAID`, `VOID`, `UNCOLLECTIBLE`) to `prisma/schema.prisma`.
+  3. Added `Invoice` model with fields: `operatorId`, `stripeInvoiceId` (unique), `stripeSubscriptionId`, `status`, `amountDue`, `amountPaid`, `currency`, `description`, `periodStart`, `periodEnd`, `invoiceUrl`, `invoicePdf`, `paidAt`, timestamps. Cascades on Operator delete.
+  4. Added `invoices Invoice[]` relation to `Operator` model.
+  5. Created migration file `20260424000003_add_invoice_model` (manual SQL — no local DB).
+  6. Ran `npx prisma generate` to update client.
+  7. Updated `src/app/api/webhooks/stripe/route.ts`: both `invoice.payment_succeeded` and `invoice.payment_failed` handlers now upsert an `Invoice` record (status `PAID` or `OPEN` respectively), capturing all Stripe invoice fields.
+  8. Added `GET /api/operator/billing/invoices` route — returns up to 24 invoices newest-first for the authenticated operator.
+  9. Updated `SubscriptionManager.tsx`: fetches invoices in parallel with subscription data; renders an "Invoice History" table with period, amount, status badge, and View/PDF links.
+  10. All changes type-check clean (`npm run type-check` → 0 errors).
+- **Files changed:**
+  - `prisma/schema.prisma` — Invoice model + InvoiceStatus enum + Operator relation
+  - `prisma/migrations/20260424000003_add_invoice_model/migration.sql` — new
+  - `src/app/api/webhooks/stripe/route.ts` — upsert Invoice on payment events
+  - `src/app/api/operator/billing/invoices/route.ts` — new
+  - `src/components/operator/billing/SubscriptionManager.tsx` — invoice history UI
+  - `context/` — all 3 state files updated
+- **Commands run:** `npx prisma generate`, `npx tsc --noEmit`, `git merge`, `git push origin main`
+- **Tests/build status:** Type-check passes 0 errors. Migration not yet applied to production (requires `npx prisma migrate deploy` in Render shell).
+- **Deployment impact:** Schema migration pending — operators will not see invoices until migration runs on Render.
+- **New risks/blockers:** Migration `20260424000003` must be applied in Render shell before this feature is live.
+- **Recommended next step:** Run `npx prisma migrate deploy` in Render shell, then verify invoice records appear after next Stripe billing event.
+
+---
+
 ### 2026-04-24 — TypeScript Strict Mode Cleanup (OL-005 + OL-006)
 
 - **Objective:** Fix all TypeScript errors so `npm run type-check` passes and the CI type-check step can be re-enabled.
