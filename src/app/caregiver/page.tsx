@@ -151,7 +151,13 @@ export default async function CaregiverDashboard() {
       {/* Quick Actions */}
       <div className="mb-8">
         <h2 className="text-xl font-semibold text-neutral-900 mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <QuickActionCard
+            title="My Applications"
+            description="Track your job applications"
+            href="/caregiver/applications"
+            icon="📋"
+          />
           <QuickActionCard
             title="Edit Profile"
             description="Update your bio, skills, and availability"
