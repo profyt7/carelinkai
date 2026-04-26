@@ -4,13 +4,14 @@ import authOptions from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { formatDistance } from "date-fns";
-import { 
-  FiArrowLeft, 
-  FiUser, 
-  FiMail, 
+import {
+  FiArrowLeft,
+  FiUser,
+  FiMail,
   FiCalendar,
   FiFileText,
-  FiAlertCircle
+  FiAlertCircle,
+  FiMessageSquare
 } from "react-icons/fi";
 import ApplicationActions from "../ApplicationActions";
 import Image from "next/image";
@@ -228,10 +229,20 @@ export default async function ApplicationDetailPage({
           </div>
           
           {/* Sidebar with actions */}
-          <div className="md:w-80 mt-6 md:mt-0">
-            <h2 className="text-lg font-medium text-neutral-900 mb-4">Actions</h2>
-            <ApplicationActions 
-              applicationId={application.id} 
+          <div className="md:w-80 mt-6 md:mt-0 space-y-4">
+            <h2 className="text-lg font-medium text-neutral-900">Actions</h2>
+
+            {/* Message button */}
+            <Link
+              href={`/messages?with=${application.caregiver.user.id}`}
+              className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl border border-neutral-200 bg-white text-sm font-medium text-neutral-700 hover:bg-neutral-50 hover:border-neutral-300 transition-colors"
+            >
+              <FiMessageSquare className="h-4 w-4 text-primary-500" />
+              Message Caregiver
+            </Link>
+
+            <ApplicationActions
+              applicationId={application.id}
               onActionComplete={() => {}}
             />
           </div>

@@ -1,0 +1,395 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import {
+  FiArrowLeft, FiCheck, FiAlertCircle, FiDollarSign,
+  FiMapPin, FiCalendar, FiFileText, FiBriefcase,
+} from "react-icons/fi";
+
+// ─── static option lists ───────────────────────────────────────────────────
+
+const SETTINGS = [
+  "In-Home", "Assisted Living", "Memory Care",
+  "Independent Living", "Skilled Nursing", "Hospice",
+];
+
+const CARE_TYPES = [
+  "Senior Care", "Dementia Care", "Alzheimer's Care", "Parkinson's Care",
+  "Post-Surgery Care", "Disability Care", "Pediatric Care",
+  "Overnight Care", "Live-In Care", "Respite Care",
+];
+
+const SERVICES = [
+  "Personal Care / ADLs", "Medication Management", "Meal Preparation",
+  "Light Housekeeping", "Transportation", "Companionship",
+  "Physical Therapy Assistance", "Wound Care", "Bathing & Grooming",
+  "Incontinence Care", "Mobility Assistance",
+];
+
+const SPECIALTIES = [
+  "Dementia / Alzheimer's", "Parkinson's Disease", "Stroke Recovery",
+  "Diabetes Management", "Hospice / End of Life", "Autism Support",
+  "Veteran Care", "Pediatric Special Needs", "Behavioral Health",
+];
+
+const US_STATES = [
+  "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN",
+  "IA","KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV",
+  "NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN",
+  "TX","UT","VT","VA","WA","WV","WI","WY",
+];
+
+// ─── helpers ───────────────────────────────────────────────────────────────
+
+function toggle(arr: string[], val: string): string[] {
+  return arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val];
+}
+
+function CheckGroup({
+  label, options, selected, onChange,
+}: {
+  label: string; options: string[]; selected: string[]; onChange: (v: string[]) => void;
+}) {
+  return (
+    <div>
+      <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-3">{label}</p>
+      <div className="flex flex-wrap gap-2">
+        {options.map((opt) => {
+          const active = selected.includes(opt);
+          return (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => onChange(toggle(selected, opt))}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${
+                active
+                  ? "bg-primary-500 border-primary-500 text-white"
+                  : "bg-white border-neutral-200 text-neutral-600 hover:border-primary-300 hover:text-primary-600"
+              }`}
+            >
+              {active && <FiCheck className="h-3 w-3" />}
+              {opt}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function Section({
+  icon: Icon, title, children,
+}: {
+  icon: React.ElementType; title: string; children: React.ReactNode;
+}) {
+  return (
+    <div className="bg-white rounded-xl border border-neutral-200 p-6">
+      <div className="flex items-center gap-2.5 mb-5">
+        <div className="h-8 w-8 rounded-lg bg-primary-50 flex items-center justify-center">
+          <Icon className="h-4 w-4 text-primary-600" />
+        </div>
+        <h2 className="text-sm font-semibold text-neutral-800">{title}</h2>
+      </div>
+      <div className="space-y-4">{children}</div>
+    </div>
+  );
+}
+
+// ─── page ──────────────────────────────────────────────────────────────────
+
+export default function NewListingPage() {
+  const router = useRouter();
+
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [rateMin, setRateMin] = useState("");
+  const [rateMax, setRateMax] = useState("");
+  const [setting, setSetting] = useState("");
+  const [careTypes, setCareTypes] = useState<string[]>([]);
+  const [services, setServices] = useState<string[]>([]);
+  const [specialties, setSpecialties] = useState<string[]>([]);
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [zip, setZip] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const valid = title.trim().length > 0 && description.trim().length > 0;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!valid || submitting) return;
+
+    setSubmitting(true);
+    setError(null);
+
+    try {
+      const body: Record<string, unknown> = {
+        title: title.trim(),
+        description: description.trim(),
+        setting: setting || undefined,
+        careTypes,
+        services,
+        specialties,
+        city: city || undefined,
+        state: state || undefined,
+        zipCode: zip || undefined,
+      };
+
+      if (rateMin) body.hourlyRateMin = parseFloat(rateMin);
+      if (rateMax) body.hourlyRateMax = parseFloat(rateMax);
+      if (startDate) body.startTime = new Date(startDate).toISOString();
+      if (endDate) body.endTime = new Date(endDate).toISOString();
+
+      const res = await fetch("/api/marketplace/listings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to create listing");
+      }
+
+      const { data } = await res.json();
+      router.push(`/marketplace/listings/${data.id}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="max-w-3xl mx-auto px-4 py-8">
+      {/* Header */}
+      <div className="mb-6">
+        <Link
+          href="/marketplace?tab=jobs"
+          className="inline-flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-700 mb-4"
+        >
+          <FiArrowLeft className="h-4 w-4" /> Back to Marketplace
+        </Link>
+        <p className="text-xs font-semibold text-neutral-400 uppercase tracking-widest mb-1">Marketplace</p>
+        <h1 className="text-2xl font-bold text-neutral-900">Post a Caregiver Job</h1>
+        <p className="text-sm text-neutral-500 mt-1">
+          Describe the role and caregivers will apply directly.
+        </p>
+      </div>
+
+      {error && (
+        <div className="mb-5 flex items-start gap-3 rounded-xl border border-error-200 bg-error-50 px-4 py-3">
+          <FiAlertCircle className="h-5 w-5 text-error-600 flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-error-800">{error}</p>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Job details */}
+        <Section icon={FiFileText} title="Job Details">
+          <div>
+            <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-1.5">
+              Job Title <span className="text-error-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g. Evening caregiver for mom with Alzheimer's"
+              className="w-full rounded-lg border border-neutral-200 px-3 py-2.5 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-1.5">
+              Description <span className="text-error-500">*</span>
+            </label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={5}
+              placeholder="Describe the care needs, schedule expectations, and any important details about the role..."
+              className="w-full rounded-lg border border-neutral-200 px-3 py-2.5 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400 resize-none"
+              required
+            />
+            <p className="text-xs text-neutral-400 mt-1">{description.length} characters</p>
+          </div>
+        </Section>
+
+        {/* Pay rate */}
+        <Section icon={FiDollarSign} title="Pay Rate">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-1.5">
+                Min Rate ($/hr)
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-sm">$</span>
+                <input
+                  type="number"
+                  min={0}
+                  step={0.5}
+                  value={rateMin}
+                  onChange={(e) => setRateMin(e.target.value)}
+                  placeholder="18"
+                  className="w-full rounded-lg border border-neutral-200 pl-7 pr-3 py-2.5 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-1.5">
+                Max Rate ($/hr)
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-sm">$</span>
+                <input
+                  type="number"
+                  min={0}
+                  step={0.5}
+                  value={rateMax}
+                  onChange={(e) => setRateMax(e.target.value)}
+                  placeholder="25"
+                  className="w-full rounded-lg border border-neutral-200 pl-7 pr-3 py-2.5 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400"
+                />
+              </div>
+            </div>
+          </div>
+          <p className="text-xs text-neutral-400">Leave blank if rate is negotiable.</p>
+        </Section>
+
+        {/* Care setting */}
+        <Section icon={FiBriefcase} title="Care Setting">
+          <div>
+            <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-1.5">
+              Setting Type
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {SETTINGS.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setSetting(setting === s ? "" : s)}
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${
+                    setting === s
+                      ? "bg-primary-500 border-primary-500 text-white"
+                      : "bg-white border-neutral-200 text-neutral-600 hover:border-primary-300 hover:text-primary-600"
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <CheckGroup
+            label="Care Types"
+            options={CARE_TYPES}
+            selected={careTypes}
+            onChange={setCareTypes}
+          />
+
+          <CheckGroup
+            label="Services Required"
+            options={SERVICES}
+            selected={services}
+            onChange={setServices}
+          />
+
+          <CheckGroup
+            label="Specialties"
+            options={SPECIALTIES}
+            selected={specialties}
+            onChange={setSpecialties}
+          />
+        </Section>
+
+        {/* Location */}
+        <Section icon={FiMapPin} title="Location">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-1.5">City</label>
+              <input
+                type="text"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                placeholder="Cleveland"
+                className="w-full rounded-lg border border-neutral-200 px-3 py-2.5 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-1.5">State</label>
+              <select
+                value={state}
+                onChange={(e) => setState(e.target.value)}
+                className="w-full rounded-lg border border-neutral-200 px-3 py-2.5 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400 bg-white"
+              >
+                <option value="">Select state</option>
+                {US_STATES.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="w-40">
+            <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-1.5">ZIP Code</label>
+            <input
+              type="text"
+              value={zip}
+              onChange={(e) => setZip(e.target.value)}
+              placeholder="44101"
+              maxLength={5}
+              className="w-full rounded-lg border border-neutral-200 px-3 py-2.5 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400"
+            />
+          </div>
+        </Section>
+
+        {/* Schedule */}
+        <Section icon={FiCalendar} title="Schedule (Optional)">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-1.5">Start Date</label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full rounded-lg border border-neutral-200 px-3 py-2.5 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-1.5">End Date</label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full rounded-lg border border-neutral-200 px-3 py-2.5 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400"
+              />
+            </div>
+          </div>
+          <p className="text-xs text-neutral-400">Leave blank for an ongoing/open-ended position.</p>
+        </Section>
+
+        {/* Submit */}
+        <div className="flex items-center justify-between pt-2">
+          <Link
+            href="/marketplace?tab=jobs"
+            className="px-4 py-2.5 text-sm font-medium text-neutral-600 border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors"
+          >
+            Cancel
+          </Link>
+          <button
+            type="submit"
+            disabled={!valid || submitting}
+            className="px-6 py-2.5 text-sm font-semibold text-white bg-primary-500 hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
+          >
+            {submitting ? "Posting…" : "Post Job Listing"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}

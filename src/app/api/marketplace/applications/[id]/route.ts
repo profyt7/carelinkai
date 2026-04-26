@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
+import { stripe } from '@/lib/stripe';
 
 /**
  * PATCH /api/marketplace/applications/[id]
@@ -91,6 +92,11 @@ export async function PATCH(
         notificationTitle = 'Application update: Offer';
         defaultMessage = `You've received an offer for "${application.listing.title}"`;
         break;
+      case 'HIRE':
+        newStatus = 'HIRED';
+        notificationTitle = 'Application update: Hired';
+        defaultMessage = `Congratulations! You've been hired for "${application.listing.title}"`;
+        break;
       case 'REJECT':
         newStatus = 'REJECTED';
         notificationTitle = 'Application update: Not selected';
@@ -98,7 +104,7 @@ export async function PATCH(
         break;
       default:
         return NextResponse.json(
-          { error: 'Invalid action. Must be one of: INVITE, INTERVIEW, OFFER, REJECT' },
+          { error: 'Invalid action. Must be one of: INVITE, INTERVIEW, OFFER, HIRE, REJECT' },
           { status: 400 }
         );
     }
@@ -160,6 +166,13 @@ export async function PATCH(
       }
     });
     
+    // Trigger hire fee if action is HIRE (non-blocking)
+    if (action === 'HIRE') {
+      triggerApplicationHireFee(applicationId, updatedApplication).catch((err) =>
+        console.error('[HIRE_FEE] Non-blocking error:', err)
+      );
+    }
+
     return NextResponse.json(
       { data: updatedApplication },
       { status: 200 }
@@ -173,9 +186,71 @@ export async function PATCH(
   }
 }
 
+// ─── Hire fee helper ──────────────────────────────────────────────────────────
+
+async function triggerApplicationHireFee(
+  applicationId: string,
+  application: { caregiver: { user: { firstName: string; lastName: string } }; listing: { postedByUserId: string } }
+) {
+  const feeCents = parseInt(process.env.MARKETPLACE_HIRE_FEE_CENTS ?? '25000', 10);
+  const caregiverName = `${application.caregiver.user.firstName} ${application.caregiver.user.lastName}`;
+
+  // Find operator via listing poster's operator record
+  const operator = await prisma.operator.findFirst({
+    where: { userId: application.listing.postedByUserId },
+    select: { id: true, userId: true, stripeCustomerId: true },
+  });
+
+  // Record payment regardless of Stripe availability
+  let payment: { id: string } | null = null;
+  try {
+    payment = await prisma.payment.create({
+      data: {
+        userId: application.listing.postedByUserId,
+        amount: feeCents / 100,
+        status: 'PENDING',
+        type: 'MARKETPLACE_HIRE_FEE',
+        description: `Marketplace hire fee — ${caregiverName}`,
+      },
+    });
+  } catch (err) {
+    console.error('[HIRE_FEE] Could not create payment record:', err);
+    return;
+  }
+
+  if (!operator?.stripeCustomerId) {
+    console.warn('[HIRE_FEE] No Stripe customer — fee recorded as PENDING', { paymentId: payment.id, applicationId });
+    return;
+  }
+
+  try {
+    const invoiceItem = await stripe.invoiceItems.create({
+      customer: operator.stripeCustomerId,
+      amount: feeCents,
+      currency: 'usd',
+      description: `Marketplace hire fee — ${caregiverName}`,
+      metadata: { applicationId, type: 'MARKETPLACE_HIRE_FEE' },
+    });
+
+    await prisma.payment.update({
+      where: { id: payment.id },
+      data: {
+        status: 'PROCESSING',
+        stripePaymentId: invoiceItem.id,
+        description: `Marketplace hire fee — ${caregiverName} (queued for next invoice)`,
+      },
+    });
+  } catch (err: any) {
+    await prisma.payment.update({ where: { id: payment.id }, data: { status: 'FAILED' } }).catch(() => {});
+    console.error('[HIRE_FEE] Failed to queue invoice item:', err?.message ?? err);
+  }
+}
+
+// ─── Method not allowed handlers ─────────────────────────────────────────────
+
 /**
  * GET /api/marketplace/applications/[id]
- * 
+ *
  * Method not allowed - return 405
  */
 export function GET() {

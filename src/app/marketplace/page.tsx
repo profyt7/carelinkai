@@ -1197,14 +1197,24 @@ export default function MarketplacePage() {
 
   return (
       <div className="px-4 md:px-6 py-4">
-        {/* Marketplace Tabs */}
-        <MarketplaceTabs
-          activeTab={activeTab}
-          caregiversCount={cgTotal}
-          jobsCount={jobTotal}
-          providersCount={providerTotal}
-          onTabChange={handleTabChange}
-        />
+        {/* Marketplace Tabs + Post a Job CTA */}
+        <div className="flex items-center justify-between gap-4 mb-1">
+          <MarketplaceTabs
+            activeTab={activeTab}
+            caregiversCount={cgTotal}
+            jobsCount={jobTotal}
+            providersCount={providerTotal}
+            onTabChange={handleTabChange}
+          />
+          {activeTab === "jobs" && (
+            <Link
+              href="/marketplace/listings/new"
+              className="flex-shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary-500 hover:bg-primary-600 text-white text-sm font-semibold transition-colors shadow-sm"
+            >
+              <span className="text-lg leading-none">+</span> Post a Job
+            </Link>
+          )}
+        </div>
 
         {/* Two-column layout */}
         <div className="flex md:space-x-6">
