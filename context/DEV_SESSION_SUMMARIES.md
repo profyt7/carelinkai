@@ -2,6 +2,28 @@
 
 ---
 
+### 2026-04-26 — Caregiver Review Dashboard + Operator Review Rating Page
+
+- **Objective:** Build operator review/rating dashboard and caregiver self-review summary. Both were identified as high-leverage gaps after shipping the My Applications feature.
+- **Work completed:**
+  1. **Caregiver sidebar nav link:** Added "My Applications" to DashboardLayout under Listings (CAREGIVER role only). Pushed independently.
+  2. **Application status notifications — link + email:** PATCH `/api/marketplace/applications/[id]` now sets `link: '/caregiver/applications'` on the in-app Notification so clicking it navigates. Also added non-blocking `sendApplicationStatusEmail()` helper — sends subject + message + "View My Applications" CTA button to the caregiver's email on every status change (INVITE/INTERVIEW/OFFER/HIRE/REJECT).
+  3. **Operator Caregiver Reviews page (`/operator/reviews`):** Server component listing all marketplace-hired caregivers (deduplicated by caregiverId). Shows aggregate star rating, review count, 5-star rating breakdown bars, latest 3 reviews inline. "Leave Review" button opens `LeaveReviewModal` via client `ReviewTrigger.tsx` wrapper. "View Profile" link. "✓ Reviewed" badge if operator already reviewed. Empty state with Browse Marketplace CTA. "Caregiver Reviews" nav link added to operator sidebar.
+  4. **Caregiver dashboard rating tile + reviews section:** Stat tiles expanded 3→4 columns. New 4th tile: avg star rating (filled FiStar icons) + review count. "My Reviews" section shows 3 most recent reviews (stars, title, content preview, relative timestamp) above Recent Inquiries.
+- **Files changed:**
+  - `src/app/api/marketplace/applications/[id]/route.ts` — added `link` to notification + `sendApplicationStatusEmail()` helper
+  - `src/app/operator/reviews/page.tsx` (new) — full operator review page
+  - `src/app/operator/reviews/ReviewTrigger.tsx` (new) — client leave-review button wrapper
+  - `src/app/caregiver/page.tsx` — added rating tile + My Reviews section + `formatDistance`/`FiStar` imports
+  - `src/components/layout/DashboardLayout.tsx` — added `FiStar` import + "My Applications" + "Caregiver Reviews" nav items
+- **Commands run:** `npx tsc --noEmit` (0 errors ×3), `git commit` ×3, `git push origin main` ×3
+- **Tests/build status:** TypeScript 0 errors. No Jest run.
+- **Deployment impact:** No schema migrations. No new env vars. All 3 pushes triggered Render auto-deploy.
+- **New risks/blockers:** None.
+- **Recommended next step:** Consider adding a caregiver public profile link from their dashboard (the "View public profile →" link currently goes to `/marketplace/caregivers/me` which may not resolve — should use the actual caregiver ID). Also: operator hire-fee billing runbook (switch Stripe to live keys).
+
+---
+
 ### 2026-04-26 — Caregiver My Applications Page + Site Audit Gap Fixes
 
 - **Objective:** Full site audit for major gaps, then fix the 3 highest-priority ones found.
