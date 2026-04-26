@@ -2,6 +2,27 @@
 
 ---
 
+### 2026-04-26 — Caregiver My Applications Page + Site Audit Gap Fixes
+
+- **Objective:** Full site audit for major gaps, then fix the 3 highest-priority ones found.
+- **Work completed:**
+  1. **Full site audit:** Ran comprehensive audit across all user roles (family, caregiver, operator, admin, discharge planner, affiliate). Found 3 real gaps; On-Call AI was a false alarm (routes already exist).
+  2. **Caregiver My Applications API:** `GET /api/caregiver/applications` — resolves caregiver from session, returns all applications with listing title/city/state/setting/rates, hire status, ordered by createdAt desc.
+  3. **Caregiver My Applications page:** `/caregiver/applications/page.tsx` — lists all applications with status badges (APPLIED→HIRED→REJECTED), listing location, pay rate, applied-ago date, "View Listing" link, hire-recorded badge, listing-closed badge, empty state with Browse Jobs CTA.
+  4. **Caregiver dashboard Quick Actions:** Added "My Applications 📋" card linking to `/caregiver/applications`. Grid changed from 3→4 columns.
+  5. **Wallet gap confirmed not real:** `/api/billing/wallet` and `src/components/billing/DepositModal.tsx` already exist and are fully implemented. BillingTab already wires them together. No work needed.
+- **Files changed:**
+  - `src/app/api/caregiver/applications/route.ts` (new)
+  - `src/app/caregiver/applications/page.tsx` (new)
+  - `src/app/caregiver/page.tsx` (Quick Actions grid 3→4)
+- **Commands run:** `npx tsc --noEmit` (0 errors), `git commit`, `git push origin main`
+- **Tests/build status:** TypeScript 0 errors. No Jest run.
+- **Deployment impact:** No schema migrations. No new env vars. Deploy triggered by main push.
+- **New risks/blockers:** None identified.
+- **Recommended next step:** Add "My Applications" to the caregiver sidebar nav in `DashboardLayout.tsx` so it's always accessible. Then consider: (1) operator review/rating dashboard, (2) caregiver notification when application status changes.
+
+---
+
 ### 2026-04-26 — Marketplace Improvements: Design Tokens, Direction B, Create Listing, Hire Fee Modal, Messaging
 
 - **Objective:** Close OL-020 (landing page tokens), apply Direction B design across app, build all 4 marketplace feature improvements.

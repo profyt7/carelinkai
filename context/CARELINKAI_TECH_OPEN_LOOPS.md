@@ -101,6 +101,9 @@ Each loop: what it is, why it matters, what done looks like.
 
 | Loop | Description | Closed |
 |------|-------------|--------|
+| Caregiver My Applications | `GET /api/caregiver/applications` + `/caregiver/applications` page built | 2026-04-26 |
+| Wallet deposit gap (false alarm) | `/api/billing/wallet` + `DepositModal.tsx` already exist | 2026-04-26 |
+| On-Call AI gap (false alarm) | `/api/scheduling/needs/{id}/start` and `cancel` routes already exist | 2026-04-26 |
 | Email FROM domain | Was `noreply@applyedge.co` | 2026-04-21 |
 | .env.example missing 12 vars | Added all required vars | 2026-04-21 |
 | context/ directory missing | Created all state files | 2026-04-21 |
