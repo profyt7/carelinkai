@@ -25,6 +25,7 @@ async function getCaregiverDashboardData(userId: string) {
 
   if (!caregiver) {
     return {
+      caregiverId: null as string | null,
       isVisible: false,
       backgroundCheckStatus: 'NOT_STARTED',
       activeLeads: 0,
@@ -57,6 +58,7 @@ async function getCaregiverDashboardData(userId: string) {
   ]);
 
   return {
+    caregiverId: caregiver.id,
     isVisible: caregiver.isVisibleInMarketplace,
     backgroundCheckStatus: caregiver.backgroundCheckStatus,
     activeLeads: caregiver._count.leads,
@@ -214,7 +216,7 @@ export default async function CaregiverDashboard() {
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-neutral-900">My Reviews</h2>
             <Link
-              href={`/marketplace/caregivers/me`}
+              href={data.caregiverId ? `/marketplace/caregivers/${data.caregiverId}` : '/marketplace'}
               className="text-sm text-primary-600 hover:underline"
             >
               View public profile →
