@@ -14,6 +14,7 @@ import {
   FiMessageSquare
 } from "react-icons/fi";
 import ApplicationActions from "../ApplicationActions";
+import LeaveReviewButton from "./LeaveReviewButton";
 import Image from "next/image";
 
 export const dynamic = "force-dynamic";
@@ -93,6 +94,8 @@ export default async function ApplicationDetailPage({
         return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">Interviewing</span>;
       case 'OFFERED':
         return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-warning-100 text-warning-800">Offered</span>;
+      case 'HIRED':
+        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-success-100 text-success-800">Hired</span>;
       case 'ACCEPTED':
         return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-success-100 text-success-800">Accepted</span>;
       case 'REJECTED':
@@ -240,6 +243,14 @@ export default async function ApplicationDetailPage({
               <FiMessageSquare className="h-4 w-4 text-primary-500" />
               Message Caregiver
             </Link>
+
+            {/* Leave a review once hired */}
+            {application.status === "HIRED" && (
+              <LeaveReviewButton
+                caregiverId={application.caregiver.id}
+                caregiverName={`${application.caregiver.user.firstName} ${application.caregiver.user.lastName}`}
+              />
+            )}
 
             <ApplicationActions
               applicationId={application.id}

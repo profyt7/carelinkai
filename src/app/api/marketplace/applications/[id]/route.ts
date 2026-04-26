@@ -143,6 +143,22 @@ export async function PATCH(
         }
       }
     });
+
+    // Create MarketplaceHire record when action is HIRE (enables review permission + hire fee)
+    if (action === 'HIRE') {
+      try {
+        await prisma.marketplaceHire.create({
+          data: {
+            applicationId,
+            listingId: application.listing.id,
+            caregiverId: application.caregiver.id,
+          },
+        });
+      } catch (err) {
+        // Swallow duplicate key errors (idempotent)
+        console.warn('[HIRE] Could not create MarketplaceHire record:', err);
+      }
+    }
     
     // Create notification for caregiver
     const notificationData: any = {
