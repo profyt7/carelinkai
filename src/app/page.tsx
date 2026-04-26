@@ -12,6 +12,7 @@ import {
   FiVideo, FiGlobe, FiBarChart, FiChevronDown, FiPhone, FiMail, FiMapPin
 } from "react-icons/fi";
 import { prefersReducedMotion, durations, easings } from "@/lib/animations";
+import DemoRequestForm from "@/components/marketing/DemoRequestForm";
 
 // Animation variants
 const fadeInUp = {
@@ -1526,7 +1527,47 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 9. FINAL CTA SECTION */}
+      {/* 9. REQUEST A DEMO SECTION */}
+      <section id="request-demo" className="py-20 bg-white border-t border-neutral-100">
+        <div className="max-w-5xl mx-auto px-4 md:px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            {/* Left — pitch */}
+            <div>
+              <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-primary-100 text-primary-700 mb-4 uppercase tracking-wide">
+                Personalized Demo
+              </span>
+              <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 mb-4 leading-tight">
+                See CareLinkAI in action — built for your facility
+              </h2>
+              <p className="text-neutral-500 text-lg mb-8">
+                Get a free 20-minute walkthrough tailored to your operation. We'll show you how operators are using CareLinkAI to fill shifts faster, reduce call-off chaos, and build a reliable caregiver pipeline.
+              </p>
+              <ul className="space-y-3">
+                {[
+                  "Live marketplace demo with real caregiver applications",
+                  "On-Call AI auto-fill — watch it contact caregivers instantly",
+                  "Full operator dashboard: shifts, residents, billing, analytics",
+                  "No commitment. No credit card. Just a conversation.",
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-3 text-sm text-neutral-600">
+                    <span className="h-5 w-5 rounded-full bg-success-100 text-success-600 flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold">✓</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Right — form */}
+            <div className="bg-neutral-50 border border-neutral-200 rounded-2xl p-8">
+              <h3 className="text-lg font-semibold text-neutral-900 mb-1">Request your demo</h3>
+              <p className="text-sm text-neutral-400 mb-6">We respond within one business day.</p>
+              <DemoRequestForm />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 10. FINAL CTA SECTION */}
       <section className="py-20 bg-gradient-to-br from-primary-500 to-secondary-500 relative overflow-hidden">
         {/* Background decoration */}
         <div className="absolute inset-0 overflow-hidden">
@@ -1552,7 +1593,7 @@ export default function HomePage() {
               <FiArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
             </Link>
             <Link 
-              href="/contact" 
+              href="#request-demo"
               className="bg-transparent hover:bg-white/10 text-white px-10 py-4 rounded-lg font-bold text-lg text-center border-2 border-white transition-all duration-300"
             >
               Schedule a Demo
@@ -1642,7 +1683,7 @@ export default function HomePage() {
               <h3 className="text-white font-bold mb-4">Support</h3>
               <ul className="space-y-3">
                 <li><Link href="/help" className="hover:text-white transition-colors">Help Center</Link></li>
-                <li><Link href="/contact" className="hover:text-white transition-colors">Contact Us</Link></li>
+                <li><Link href="#request-demo" className="hover:text-white transition-colors">Request a Demo</Link></li>
                 <li><Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
                 <li><Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link></li>
               </ul>

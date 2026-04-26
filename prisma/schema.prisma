@@ -221,6 +221,22 @@ model Caregiver {
   @@index([employmentType])
 }
 
+model DemoRequest {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  company   String?
+  phone     String?
+  role      String?
+  message   String?
+  contacted Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+  @@index([createdAt])
+}
+
 model Affiliate {
   id             String              @id @default(cuid())
   userId         String              @unique
