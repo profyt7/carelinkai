@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { stripe } from '@/lib/stripe';
+import EmailService from '@/lib/email-service';
 
 /**
  * PATCH /api/marketplace/applications/[id]
@@ -178,10 +179,19 @@ export async function PATCH(
         type: 'SYSTEM',
         title: notificationTitle,
         message: message || defaultMessage,
+        link: '/caregiver/applications',
         data: notificationData
       }
     });
     
+    // Send status-change email to caregiver (non-blocking)
+    sendApplicationStatusEmail(
+      updatedApplication.caregiver.user,
+      application.listing.title,
+      notificationTitle,
+      message || defaultMessage
+    ).catch((err) => console.error('[APP_EMAIL] Non-blocking error:', err));
+
     // Trigger hire fee if action is HIRE (non-blocking)
     if (action === 'HIRE') {
       triggerApplicationHireFee(applicationId, updatedApplication).catch((err) =>
@@ -260,6 +270,35 @@ async function triggerApplicationHireFee(
     await prisma.payment.update({ where: { id: payment.id }, data: { status: 'FAILED' } }).catch(() => {});
     console.error('[HIRE_FEE] Failed to queue invoice item:', err?.message ?? err);
   }
+}
+
+// ─── Application status email helper ─────────────────────────────────────────
+
+async function sendApplicationStatusEmail(
+  caregiverUser: { firstName: string; lastName: string; email: string },
+  listingTitle: string,
+  subject: string,
+  bodyMessage: string
+) {
+  const appUrl = process.env.NEXTAUTH_URL ?? 'https://getcarelinkai.com';
+  await EmailService.sendEmail({
+    to: caregiverUser.email,
+    subject,
+    text: `Hi ${caregiverUser.firstName},\n\n${bodyMessage}\n\nView all your applications: ${appUrl}/caregiver/applications\n\n— The CareLinkAI Team`,
+    html: `
+      <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
+        <h2 style="color:#1a1a2e;margin-bottom:8px">${subject}</h2>
+        <p style="color:#444;font-size:15px">Hi ${caregiverUser.firstName},</p>
+        <p style="color:#444;font-size:15px">${bodyMessage}</p>
+        <p style="color:#666;font-size:14px">Listing: <strong>${listingTitle}</strong></p>
+        <a href="${appUrl}/caregiver/applications"
+           style="display:inline-block;margin-top:20px;padding:10px 20px;background:#4f46e5;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px">
+          View My Applications
+        </a>
+        <p style="color:#999;font-size:12px;margin-top:32px">— The CareLinkAI Team</p>
+      </div>
+    `,
+  });
 }
 
 // ─── Method not allowed handlers ─────────────────────────────────────────────
