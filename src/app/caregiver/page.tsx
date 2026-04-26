@@ -3,11 +3,12 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { formatDistance } from "date-fns";
+import { FiStar } from "react-icons/fi";
 import { StatTile } from "@/components/dashboard/StatTile";
 import { QuickActionCard } from "@/components/dashboard/QuickActionCard";
 
 async function getCaregiverDashboardData(userId: string) {
-  // Get caregiver record
   const caregiver = await prisma.caregiver.findUnique({
     where: { userId },
     select: {
@@ -16,11 +17,7 @@ async function getCaregiverDashboardData(userId: string) {
       backgroundCheckStatus: true,
       _count: {
         select: {
-          leads: {
-            where: {
-              status: { notIn: ['CLOSED', 'CANCELLED'] }
-            }
-          }
+          leads: { where: { status: { notIn: ['CLOSED', 'CANCELLED'] } } }
         }
       }
     }
@@ -31,32 +28,44 @@ async function getCaregiverDashboardData(userId: string) {
       isVisible: false,
       backgroundCheckStatus: 'NOT_STARTED',
       activeLeads: 0,
-      recentLeads: []
+      recentLeads: [],
+      reviewStats: { avg: 0, count: 0 },
+      recentReviews: [],
     };
   }
 
-  // Get recent leads
-  const recentLeads = await prisma.lead.findMany({
-    where: { 
-      aideId: caregiver.id,
-      targetType: 'AIDE'
-    },
-    orderBy: { createdAt: 'desc' },
-    take: 5,
-    include: {
-      family: { 
-        select: { 
-          user: { select: { firstName: true, lastName: true } } 
-        } 
+  const [recentLeads, reviewAgg, recentReviews] = await Promise.all([
+    prisma.lead.findMany({
+      where: { aideId: caregiver.id, targetType: 'AIDE' },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+      include: {
+        family: { select: { user: { select: { firstName: true, lastName: true } } } }
       }
-    }
-  });
+    }),
+    prisma.caregiverReview.aggregate({
+      where: { caregiverId: caregiver.id },
+      _avg: { rating: true },
+      _count: { rating: true },
+    }),
+    prisma.caregiverReview.findMany({
+      where: { caregiverId: caregiver.id },
+      orderBy: { createdAt: 'desc' },
+      take: 3,
+      select: { id: true, rating: true, title: true, content: true, createdAt: true },
+    }),
+  ]);
 
   return {
     isVisible: caregiver.isVisibleInMarketplace,
     backgroundCheckStatus: caregiver.backgroundCheckStatus,
     activeLeads: caregiver._count.leads,
-    recentLeads
+    recentLeads,
+    reviewStats: {
+      avg: reviewAgg._avg.rating ?? 0,
+      count: reviewAgg._count.rating,
+    },
+    recentReviews,
   };
 }
 
@@ -122,7 +131,7 @@ export default async function CaregiverDashboard() {
       )}
 
       {/* Tiles */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <StatTile
           title="Profile Visibility"
           value={data.isVisible ? 'Visible' : 'Hidden'}
@@ -146,6 +155,26 @@ export default async function CaregiverDashboard() {
           icon="📋"
           description="Open family inquiries"
         />
+        {/* Review rating tile */}
+        <div className="bg-white p-6 rounded-lg border border-neutral-200">
+          <div className="flex items-center gap-1 mb-3">
+            {[1,2,3,4,5].map((s) => (
+              <FiStar
+                key={s}
+                className={`h-5 w-5 ${s <= Math.round(data.reviewStats.avg) ? 'text-warning-400 fill-warning-400' : 'text-neutral-200'}`}
+              />
+            ))}
+          </div>
+          <p className="text-2xl font-bold text-neutral-900 mb-0.5">
+            {data.reviewStats.count > 0 ? data.reviewStats.avg.toFixed(1) : '—'}
+          </p>
+          <h3 className="text-sm font-medium text-neutral-600 mb-0.5">My Rating</h3>
+          <p className="text-xs text-neutral-400">
+            {data.reviewStats.count === 0
+              ? 'No reviews yet'
+              : `${data.reviewStats.count} review${data.reviewStats.count !== 1 ? 's' : ''}`}
+          </p>
+        </div>
       </div>
 
       {/* Quick Actions */}
@@ -178,6 +207,46 @@ export default async function CaregiverDashboard() {
           />
         </div>
       </div>
+
+      {/* My Reviews */}
+      {data.recentReviews.length > 0 && (
+        <div className="mb-8">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold text-neutral-900">My Reviews</h2>
+            <Link
+              href={`/marketplace/caregivers/me`}
+              className="text-sm text-primary-600 hover:underline"
+            >
+              View public profile →
+            </Link>
+          </div>
+          <div className="bg-white rounded-lg border border-neutral-200 overflow-hidden divide-y divide-neutral-100">
+            {data.recentReviews.map((review) => (
+              <div key={review.id} className="p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="flex gap-0.5">
+                    {[1,2,3,4,5].map((s) => (
+                      <FiStar
+                        key={s}
+                        className={`h-3.5 w-3.5 ${s <= review.rating ? 'text-warning-400 fill-warning-400' : 'text-neutral-200'}`}
+                      />
+                    ))}
+                  </div>
+                  {review.title && (
+                    <span className="text-sm font-medium text-neutral-800">{review.title}</span>
+                  )}
+                  <span className="text-xs text-neutral-400 ml-auto">
+                    {formatDistance(new Date(review.createdAt), new Date(), { addSuffix: true })}
+                  </span>
+                </div>
+                {review.content && (
+                  <p className="text-sm text-neutral-600 line-clamp-2">{review.content}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Recent Activity */}
       {data.recentLeads.length > 0 && (

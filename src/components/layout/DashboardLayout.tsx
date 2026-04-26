@@ -31,7 +31,8 @@ import {
   FiClipboard,
   FiPieChart,
   FiFolder,
-  FiLink
+  FiLink,
+  FiStar
 } from "react-icons/fi";
 import { MessageSquare, Stethoscope } from "lucide-react";
 // Real-time notification center
@@ -92,6 +93,7 @@ const navItems: NavItem[] = [
       { name: "Marketplace", icon: <FiUsers size={18} />, href: "/marketplace", showInMobileBar: true },
       { name: "My Applications", icon: <FiClipboard size={18} />, href: "/caregiver/applications", showInMobileBar: false, roleRestriction: ["CAREGIVER"] },
       { name: "Caregivers", icon: <FiUsers size={18} />, href: "/operator/caregivers", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
+      { name: "Caregiver Reviews", icon: <FiStar size={18} />, href: "/operator/reviews", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
       { name: "Operator", icon: <FiHome size={18} />, href: "/operator", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
     ]
   },
