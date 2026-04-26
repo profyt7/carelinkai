@@ -150,12 +150,12 @@ export function OperatorDashboardContent() {
     <div className="p-4 sm:p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900">Dashboard Overview</h1>
-        <p className="text-sm text-neutral-600 mt-1">Monitor your operations and key metrics</p>
+        <p className="text-xs font-semibold text-neutral-400 uppercase tracking-widest mb-1">Overview</p>
+        <h1 className="text-2xl font-bold text-neutral-900">Operations Dashboard</h1>
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         {metrics?.totalResidents && (
           <MetricCard
             title="Total Residents"
@@ -165,6 +165,7 @@ export function OperatorDashboardContent() {
             trend={metrics.totalResidents.trend}
             trendValue={metrics.totalResidents.trendValue}
             href="/operator/residents"
+            color="blue"
           />
         )}
         {metrics?.activeCaregivers && (
@@ -176,6 +177,7 @@ export function OperatorDashboardContent() {
             trend={metrics.activeCaregivers.trend}
             trendValue={metrics.activeCaregivers.trendValue}
             href="/operator/caregivers"
+            color="green"
           />
         )}
         {metrics?.pendingInquiries && (
@@ -187,6 +189,7 @@ export function OperatorDashboardContent() {
             trend={metrics.pendingInquiries.trend}
             trendValue={metrics.pendingInquiries.trendValue}
             href="/operator/inquiries"
+            color="purple"
           />
         )}
         {metrics?.criticalIncidents && (
@@ -197,7 +200,7 @@ export function OperatorDashboardContent() {
             icon={AlertCircle}
             trend={metrics.criticalIncidents.trend}
             trendValue={metrics.criticalIncidents.trendValue}
-            iconColor="text-error-600"
+            color="red"
           />
         )}
         {metrics?.overdueAssessments && (
@@ -208,7 +211,7 @@ export function OperatorDashboardContent() {
             icon={Clipboard}
             trend={metrics.overdueAssessments.trend}
             trendValue={metrics.overdueAssessments.trendValue}
-            iconColor="text-amber-600"
+            color="amber"
           />
         )}
         {metrics?.toursThisWeek && (
@@ -219,6 +222,7 @@ export function OperatorDashboardContent() {
             icon={Calendar}
             trend={metrics.toursThisWeek.trend}
             trendValue={metrics.toursThisWeek.trendValue}
+            color="blue"
           />
         )}
       </div>
@@ -237,7 +241,7 @@ export function OperatorDashboardContent() {
 
       {/* Alerts */}
       {alerts && alerts.length > 0 && (
-        <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6 mb-6">
+        <div className="bg-white rounded-xl border border-neutral-200 p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-neutral-900">Alerts & Notifications</h2>
             <Link href="/operator/inquiries" className="text-sm text-primary-600 hover:text-primary-700">
@@ -254,7 +258,7 @@ export function OperatorDashboardContent() {
 
       {/* Recent Activity */}
       {activities && activities.length > 0 && (
-        <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6 mb-6">
+        <div className="bg-white rounded-xl border border-neutral-200 p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-neutral-900">Recent Activity</h2>
           </div>
@@ -267,7 +271,7 @@ export function OperatorDashboardContent() {
       )}
 
       {/* Quick Actions */}
-      <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6">
+      <div className="bg-white rounded-xl border border-neutral-200 p-6">
         <h2 className="text-lg font-semibold text-neutral-900 mb-4">Quick Actions</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
           <QuickActionButton label="Add Resident" icon={Plus} href="/operator/residents/new" />
