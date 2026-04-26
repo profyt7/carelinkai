@@ -665,7 +665,7 @@ export default function DashboardLayout({
                         className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left transition-all duration-200 ${
                           hasActiveChild 
                             ? 'bg-primary-500 text-white' 
-                            : 'text-neutral-300 hover:bg-neutral-700 hover:text-white'
+                            : 'text-neutral-400 hover:bg-white/10 hover:text-neutral-100'
                         }`}
                         aria-expanded={isExpanded}
                       >
@@ -697,7 +697,7 @@ export default function DashboardLayout({
                                 className={`flex items-center px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
                                   isActive
                                     ? 'bg-primary-600 text-white font-medium'
-                                    : 'text-neutral-400 hover:bg-neutral-700 hover:text-white'
+                                    : 'text-neutral-400 hover:bg-white/10 hover:text-neutral-100'
                                 }`}
                                 onClick={(e) => {
                                   if (isMobile) setSidebarOpen(false);
@@ -733,7 +733,7 @@ export default function DashboardLayout({
                     className={`flex items-center px-3 py-2.5 rounded-lg mb-1 transition-all duration-200 ${
                       isActive
                         ? 'bg-primary-500 text-white font-medium'
-                        : 'text-neutral-300 hover:bg-neutral-700 hover:text-white'
+                        : 'text-neutral-400 hover:bg-white/10 hover:text-neutral-100'
                     }`}
                     onClick={(e) => {
                       if (isMobile) setSidebarOpen(false);
@@ -758,7 +758,7 @@ export default function DashboardLayout({
         
         {/* User info in sidebar (mobile only) */}
         {isMobile && (
-          <div className="flex-shrink-0 p-4 border-t border-neutral-700">
+          <div className="flex-shrink-0 p-4 border-t border-white/10">
             <div className="flex items-center">
               {profileImage ? (
                 <Image
@@ -769,7 +769,7 @@ export default function DashboardLayout({
                   className="h-10 w-10 rounded-full object-cover"
                 />
               ) : (
-                <div className="h-10 w-10 rounded-full bg-neutral-600 flex items-center justify-center">
+                <div className="h-10 w-10 rounded-full bg-white/10 flex items-center justify-center">
                   <FiUser size={20} className="text-white" />
                 </div>
               )}
@@ -800,7 +800,7 @@ export default function DashboardLayout({
         {...((isMobile && sidebarOpen) && { inert: "" as any })}
       >
         {/* Header */}
-        <header className="bg-white border-b border-neutral-200 h-header flex items-center px-4 md:px-6 shadow-sm">
+        <header className="bg-white border-b border-neutral-200 h-header flex items-center px-4 md:px-6">
           {(isMobile || isTablet) && (
             <button 
               onClick={toggleSidebar}

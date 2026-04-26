@@ -109,8 +109,9 @@ module.exports = {
           500: "#64748b", // Medium text
           600: "#475569", // Default text
           700: "#334155", // Dark text
-          800: "#1e293b", // Sidebar background (like QuickBooks)
-          900: "#0f172a", // Darkest elements
+          800: "#1e293b", // Dark elements
+          900: "#0f172a", // Very dark
+          950: "#05101c", // Sidebar (Direction B)
         },
       },
       fontFamily: {

@@ -119,19 +119,19 @@ export function FormSkeleton({ fields = 5 }: FormSkeletonProps) {
   );
 }
 
-// Dashboard KPI skeleton — matches StatCard with left-border accent shape
+// Dashboard KPI skeleton — matches StatCard Direction B top-border shape
 export function DashboardKPISkeleton({ count = 4 }: { count?: number }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="rounded-lg border-l-4 border border-neutral-200 bg-white p-4 sm:p-5">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1 space-y-2.5">
-              <Skeleton className="h-3 w-20" />
-              <Skeleton className="h-8 w-24" />
-              <Skeleton className="h-3 w-32" />
-            </div>
-            <Skeleton className="h-10 w-10 rounded-lg flex-shrink-0" />
+        <div key={i} className="rounded-xl border-t-4 border border-neutral-200 bg-white p-5">
+          <div className="flex items-center justify-between mb-4">
+            <Skeleton className="h-9 w-9 rounded-lg" />
+          </div>
+          <Skeleton className="h-8 w-20 mb-2" />
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-3 w-10" />
           </div>
         </div>
       ))}
