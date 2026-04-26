@@ -2,6 +2,27 @@
 
 ---
 
+### 2026-04-26 — Marketplace Improvements: Design Tokens, Direction B, Create Listing, Hire Fee Modal, Messaging
+
+- **Objective:** Close OL-020 (landing page tokens), apply Direction B design across app, build all 4 marketplace feature improvements.
+- **Work completed:**
+  1. **Landing page token cleanup (OL-020):** Replaced all raw hex Tailwind classes in `src/app/page.tsx` — `[#3978FC]`→`primary-500`, `[#7253B7]`→`secondary-500`, `[#63666A]`→`neutral-500`, `[#1A1A1A]`→`neutral-900`, and several less-common hex values. 492 arbitrary classes eliminated.
+  2. **Direction B design system:** Added `neutral-950: "#05101c"` to `tailwind.config.js`. Updated `globals.css` sidebar CSS. Updated `DashboardLayout.tsx` header + nav items (dark sidebar, white/10 hover). Full redesign of `StatCard.tsx` and `MetricCard.tsx` to `border-t-4` colored top-accent pattern. `DashboardSkeleton.tsx` rebuilt with shimmer animation. `OperatorDashboardContent.tsx` color props assigned per card.
+  3. **Design preview page:** `/design-preview` page with 3 interactive mockups (Direction A: Warm Clinical, Direction B: SaaS Dark Sidebar, Direction C: Airy Minimal). User chose Direction B.
+  4. **Marketplace Create Listing form:** `src/app/marketplace/listings/new/page.tsx` — full form with Job Details, Pay Rate, Care Setting (pill toggles for setting/care types/services/specialties), Location (city/state/ZIP), Schedule sections. POSTs to `/api/marketplace/listings`, redirects to listing detail.
+  5. **Post a Job button:** Added to marketplace page tab bar; visible only on jobs tab; links to `/marketplace/listings/new`.
+  6. **Hire fee confirmation modal:** `ApplicationActions.tsx` redesigned — added HIRE action to dropdown, shows `HireConfirmModal` with fee amount ($250) before submitting. Color-coded submit button. Design tokens throughout.
+  7. **HIRE API handler:** `PATCH /api/marketplace/applications/[id]` now handles `action=HIRE` → status=HIRED + non-blocking `triggerApplicationHireFee()` (Stripe invoice item queued on operator's next cycle, falls back to PENDING if no Stripe customer).
+  8. **Message Caregiver button:** Added to application detail page sidebar — links to `/messages?with={caregiverUserId}` to open existing messaging thread.
+- **Files changed:** `src/app/page.tsx`, `tailwind.config.js`, `globals.css`, `DashboardLayout.tsx`, `StatCard.tsx`, `MetricCard.tsx`, `DashboardSkeleton.tsx`, `OperatorDashboardContent.tsx`, `design-preview/page.tsx` (new), `marketplace/listings/new/page.tsx` (new), `marketplace/page.tsx`, `ApplicationActions.tsx`, `applications/[id]/route.ts`, `[applicationId]/page.tsx`
+- **Commands run:** `npm run type-check` (0 errors), `git commit`, `git push`
+- **Tests/build status:** TypeScript 0 errors. No Jest run this session.
+- **Deployment impact:** No new schema migrations. No new env vars required.
+- **New risks/blockers:** None.
+- **Recommended next step:** Merge feature branch to main → Render deploy. Then build operator review/rating system.
+
+---
+
 ### 2026-04-25 — UI/UX Design Polish: Component Redesigns + Bulk Token Unification
 
 - **Objective:** Complete full design polish pass — redesign core UI components, modernize loading states, upgrade search cards, and bulk-replace all remaining legacy color tokens across the entire codebase.

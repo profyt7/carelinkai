@@ -52,12 +52,8 @@ Each loop: what it is, why it matters, what done looks like.
 ### OL-019: Demo caregiver employment not linked in production DB
 - **Status:** ✅ CLOSED (2026-04-26) — Admin clicked fix in /admin/tools
 
----
-
 ### OL-020: Landing page (src/app/page.tsx) still has legacy color tokens
-- **Status:** 🟡 OPEN
-- **What:** `src/app/page.tsx` was excluded from the bulk sed pass to avoid breaking intentional marketing gradient choices. Still contains `blue-*`, `gray-*`, and raw hex inline styles (`#3978FC`, `#7253B7`).
-- **Done when:** Careful manual review of page.tsx replaces remaining raw tokens with design system equivalents without changing marketing copy or gradient intent.
+- **Status:** ✅ CLOSED (2026-04-26) — All raw hex Tailwind classes replaced with design tokens. TypeScript 0 errors confirmed.
 
 ---
 
@@ -154,3 +150,12 @@ Each loop: what it is, why it matters, what done looks like.
 | Login page using wrong brand colors | Complete redesign: gradient panel primary-600→secondary-600, DM Serif hero headline, all tokens corrected | 2026-04-25 |
 | Bulk token unification across codebase | 259 files bulk-updated via sed: red→error, green→success, blue→primary, gray→neutral, yellow/orange→warning, purple→secondary. TypeScript 0 errors. 0 old tokens remain (except src/app/page.tsx deferred). | 2026-04-25 |
 | Component design polish pass | StatCard left-border accent + trend prop; skeleton shimmer animation + HomeCardSkeleton; search card hover lift; tabs fixed; error/not-found redesigned; operator dashboard token fixes | 2026-04-25 |
+| OL-016: Aide reliability migration | `npx prisma migrate deploy` run in Render shell — confirmed deployed | 2026-04-26 |
+| OL-017: Twilio webhooks for On-Call AI | Webhooks registered in Twilio console | 2026-04-26 |
+| OL-018: Render cron for On-Call AI | Cron job created in Render dashboard | 2026-04-26 |
+| OL-019: Demo caregiver employment | Admin clicked fix in /admin/tools | 2026-04-26 |
+| OL-020: Landing page legacy tokens | All raw hex Tailwind classes in page.tsx replaced with design tokens | 2026-04-26 |
+| Direction B design system applied | Dark sidebar (neutral-950), border-t-4 stat cards, shimmer skeletons, design preview page | 2026-04-26 |
+| Marketplace Create Listing form | /marketplace/listings/new with full form + pill toggles for care types/services/specialties | 2026-04-26 |
+| Hire fee confirmation UI | HIRE action in ApplicationActions shows $250 fee modal before submitting; API queues Stripe invoice item | 2026-04-26 |
+| Message Caregiver on application page | "Message Caregiver" button links to /messages?with={userId} on application detail page | 2026-04-26 |
