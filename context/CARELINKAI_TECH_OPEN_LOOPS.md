@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-04-25 (session 2)_
+_Last updated: 2026-04-26_
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -41,24 +41,16 @@ Each loop: what it is, why it matters, what done looks like.
 ---
 
 ### OL-016: Aide reliability migration not yet deployed to production
-- **Status:** 🔴 OPEN
-- **What:** Migration `20260425200000_aide_reliability` creates CallOff, CaregiverPoints, PointTransaction, ShiftBid, ShiftNeed, CoverageAttempt tables + enums
-- **Done when:** `npx prisma migrate deploy` runs clean in Render shell
+- **Status:** ✅ CLOSED (2026-04-26) — Chris confirmed migration deployed to production
 
 ### OL-017: Twilio webhook URLs not registered for On-Call AI
-- **Status:** 🟡 OPEN
-- **What:** On-Call AI dispatcher sends SMS/voice via Twilio but incoming replies go nowhere until webhooks are set
-- **Done when:** Twilio console → Phone Number → set Messaging webhook to `https://getcarelinkai.com/api/webhooks/twilio/sms` and Voice webhook to `https://getcarelinkai.com/api/webhooks/twilio/voice`
+- **Status:** ✅ CLOSED (2026-04-26) — Twilio webhooks registered in console
 
 ### OL-018: Render cron not set up for On-Call AI wave dispatch
-- **Status:** 🟡 OPEN
-- **What:** Wave cooldowns are checked by `/api/cron/oncall-waves` but nothing calls it
-- **Done when:** Render cron job created: POST `https://getcarelinkai.com/api/cron/oncall-waves` every 10 min with `x-cron-secret` header
+- **Status:** ✅ CLOSED (2026-04-26) — Render cron job created
 
 ### OL-019: Demo caregiver employment not linked in production DB
-- **Status:** 🔴 OPEN (one-time manual action needed)
-- **What:** Operator caregiver tab shows blank because demo caregivers have no `CaregiverEmployment` records linking them to the demo operator. The fix endpoint + UI button exist at `/admin/tools`.
-- **Done when:** Admin clicks "Fix Demo Caregiver Employment" in Admin Tools on production (`https://getcarelinkai.com/admin/tools`). Takes <5 seconds.
+- **Status:** ✅ CLOSED (2026-04-26) — Admin clicked fix in /admin/tools
 
 ---
 
