@@ -90,6 +90,7 @@ const navItems: NavItem[] = [
     children: [
       { name: "Search Homes", icon: <FiSearch size={18} />, href: "/search", showInMobileBar: false },
       { name: "Marketplace", icon: <FiUsers size={18} />, href: "/marketplace", showInMobileBar: true },
+      { name: "My Applications", icon: <FiClipboard size={18} />, href: "/caregiver/applications", showInMobileBar: false, roleRestriction: ["CAREGIVER"] },
       { name: "Caregivers", icon: <FiUsers size={18} />, href: "/operator/caregivers", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
       { name: "Operator", icon: <FiHome size={18} />, href: "/operator", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
     ]
