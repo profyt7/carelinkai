@@ -3,12 +3,15 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { getMockCaregiverDetail } from "@/lib/mock/marketplace";
 import { isMockModeEnabledFromCookies } from "@/lib/mockMode";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import Link from "next/link";
 import { FiMapPin, FiDollarSign, FiClock, FiCheckCircle, FiCalendar } from "react-icons/fi";
 import RequestShiftForm from "@/components/marketplace/RequestShiftForm";
 import CaregiverReviewForm from "@/components/marketplace/CaregiverReviewForm";
 import CaregiverReviewsList from "@/components/marketplace/CaregiverReviewsList";
 import RequestCareButton from "@/components/marketplace/RequestCareButton";
+import DirectHireButton from "@/components/marketplace/DirectHireButton";
 import { getCloudinaryAvatar, isCloudinaryUrl } from "@/lib/cloudinaryUrl";
 
 export const dynamic = "force-dynamic";
@@ -145,6 +148,19 @@ export default async function CaregiverDetailPage({
 }: {
   params: { id: string };
 }) {
+  const session = await getServerSession(authOptions);
+  const isOperator = session?.user?.role === 'OPERATOR' || session?.user?.role === 'ADMIN';
+
+  // Fetch operator plan if applicable
+  let operatorPlan: string | null = null;
+  if (isOperator && session?.user?.id) {
+    const op = await prisma.operator.findFirst({
+      where: { userId: session.user.id },
+      select: { subscriptionPlan: true },
+    });
+    operatorPlan = op?.subscriptionPlan ?? null;
+  }
+
   // Check mock mode - support both general mock mode and marketplace-specific mock mode
   const cookieStore = await cookies();
   const generalMockMode = isMockModeEnabledFromCookies(cookieStore);
@@ -275,19 +291,47 @@ export default async function CaregiverDetailPage({
         
         {/* Body */}
         <div className="p-6">
-          {/* Request Care CTA - Prominent placement */}
+          {/* CTA — operator sees Hire button, families see Request Care */}
           <div className="mb-6 bg-primary-50 border border-primary-200 rounded-lg p-4">
-            <h3 className="text-lg font-semibold text-neutral-900 mb-2">
-              Interested in hiring {caregiver.name}?
-            </h3>
-            <p className="text-sm text-neutral-600 mb-4">
-              Submit a care inquiry to connect with this caregiver and discuss your needs.
-            </p>
-            <RequestCareButton
-              targetType="AIDE"
-              targetId={caregiver.id}
-              targetName={caregiver.name}
-            />
+            {isOperator ? (
+              <>
+                <h3 className="text-lg font-semibold text-neutral-900 mb-2">
+                  Ready to hire {caregiver.name}?
+                </h3>
+                <p className="text-sm text-neutral-600 mb-4">
+                  Add {caregiver.name.split(' ')[0]} to your team. An employment record will be created and they'll be notified immediately.
+                </p>
+                {operatorPlan && ['PROFESSIONAL', 'GROWTH', 'AGENCY'].includes(operatorPlan) ? (
+                  <p className="text-xs text-success-700 font-medium mb-3">
+                    ✓ Marketplace hire included in your {operatorPlan} plan — no additional fee.
+                  </p>
+                ) : (
+                  <p className="text-xs text-amber-700 font-medium mb-3">
+                    A $99 marketplace access fee applies on the Starter plan.
+                  </p>
+                )}
+                <DirectHireButton
+                  caregiverId={caregiver.id}
+                  caregiverName={caregiver.name}
+                  operatorPlan={operatorPlan}
+                  isMock={caregiver.id.startsWith('cg_')}
+                />
+              </>
+            ) : (
+              <>
+                <h3 className="text-lg font-semibold text-neutral-900 mb-2">
+                  Interested in hiring {caregiver.name}?
+                </h3>
+                <p className="text-sm text-neutral-600 mb-4">
+                  Submit a care inquiry to connect with this caregiver and discuss your needs.
+                </p>
+                <RequestCareButton
+                  targetType="AIDE"
+                  targetId={caregiver.id}
+                  targetName={caregiver.name}
+                />
+              </>
+            )}
           </div>
 
           {/* Details section */}
