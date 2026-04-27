@@ -165,8 +165,6 @@ See `REVENUE_MODEL.md` for the full breakdown. 12 streams finalized:
 - **Components polished:** StatCard (left-border accent + trend), skeleton-loader (shimmer + HomeCardSkeleton), tabs (real tokens), breadcrumbs, confirm-dialog, error, not-found, login page, search page.
 
 ## Immediate Next Priorities
-1. **Set new env vars in Render:** `STRIPE_PRICE_AGENCY` (Agency plan $799/mo), `STRIPE_PRICE_DISCHARGE_PLANNER_DEPT` (Department license $499/mo)
-2. **Run migration in Render shell:** `npx prisma migrate deploy` — applies `20260427000000_revenue_model_expansion`
-3. **Switch Stripe to live mode** — follow runbook in `context/STRIPE_SETUP_RUNBOOK.md`
-4. **Landing page token pass:** `src/app/page.tsx` still uses `blue-*`/`gray-*` and raw hex inline styles; needs a careful pass
-5. **Playwright smoke tests:** Automate the 3-login demo verification checklist to catch regressions faster
+1. **Run migration in Render shell:** `npx prisma migrate deploy` — applies `20260427000000_revenue_model_expansion` (OL-021 — still open)
+2. **Switch Stripe to live mode** — follow runbook in `context/STRIPE_SETUP_RUNBOOK.md`
+3. **Run Playwright smoke tests** before each deploy: `npx playwright test tests/demo-verification.spec.ts --workers=1`

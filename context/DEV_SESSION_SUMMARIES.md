@@ -2,6 +2,41 @@
 
 ---
 
+### 2026-04-27 — Landing Page Overhaul (Benefits, FAQ, How It Works) + Playwright Smoke Tests
+
+- **Objective:** Complete landing page update for newly shipped features; add Playwright smoke test suite covering all 3 demo logins.
+- **Work completed:**
+  1. **Playwright demo verification suite (`tests/demo-verification.spec.ts`):**
+     - 13 tests across 3 describe blocks (Operator, Caregiver, Discharge Planner)
+     - Operator: dashboard role badge, marketplace cards, Hire button (not Request Care), single Reviews section (count===1), billing page, pipeline dashboard
+     - Caregiver: /dashboard→/caregiver redirect, stat tiles visible, single sidebar on /caregiver/points, residents no crash
+     - Discharge Planner: /dashboard→/discharge-planner redirect, dashboard loads, billing nav link, billing page $99/$499 cards + nav, single sidebar
+     - Auth helper extended: DISCHARGE_PLANNER added to `TEST_USERS` in `tests/helpers/auth.ts`
+  2. **Landing page — Benefits tabs:**
+     - Operators tab: added On-Call AI Shift Coverage, AI Shift Auto-fill, Direct Caregiver Hire (12 items total, 4×3 grid)
+     - Caregivers tab: added Points & Tier Rewards and Reliability Score cards (6 total)
+     - Healthcare tab: wrapped siblings in single parent div; added $99 individual / $499 department license callout banner
+     - Affiliates tab: added 3-tier commission table (STANDARD 20% / SILVER 25% / GOLD 30%); updated "Recurring Commission" copy to mention 20–30% tiered rates
+  3. **Landing page — How It Works:**
+     - Discharge Planner card: added licensing tier footer ("Individual $99/mo · Department $499/mo")
+  4. **Landing page — FAQ:**
+     - FAQ 5: replaced "8 AI-powered features" with accurate current-feature description
+     - FAQ 6: removed stale "Q1 2026" virtual tour reference
+     - Added FAQ 7: direct caregiver hire from marketplace
+     - Added FAQ 8: affiliate referral tiers and monthly payout
+  5. **Token cleanup:** Fixed last remaining legacy tokens in page.tsx (`bg-green-100/text-green-800 → success-*`, `bg-blue-50 → primary-50`)
+- **Files changed:**
+  - `tests/demo-verification.spec.ts` (new)
+  - `tests/helpers/auth.ts` — DISCHARGE_PLANNER user added
+  - `src/app/page.tsx` — benefits tabs, How It Works, FAQ updated
+- **Commands run:** `npm run type-check` (0 errors), `git commit`, `git push origin main`
+- **Tests/build status:** TypeScript 0 errors.
+- **Deployment impact:** Static UI changes only. Renders auto-deploy from main.
+- **New risks/blockers:** OL-021 (revenue model migration) and OL-022 (STRIPE_PRICE_AGENCY, STRIPE_PRICE_DISCHARGE_PLANNER_DEPT) still open.
+- **Recommended next step:** Run `npx prisma migrate deploy` in Render shell for `20260427000000_revenue_model_expansion`. Then switch Stripe to live mode per runbook.
+
+---
+
 ### 2026-04-27 — Revenue Model Expansion + Bug Fixes + Operator Direct Hire
 
 - **Objective:** Implement 5 new monetization streams, fix demo login bugs found during review, add operator direct hire button on caregiver profile page.

@@ -14,9 +14,7 @@ Each loop: what it is, why it matters, what done looks like.
 - **Done when:** `npx prisma migrate deploy` run in Render shell with no errors.
 
 ### OL-022: STRIPE_PRICE_AGENCY and STRIPE_PRICE_DISCHARGE_PLANNER_DEPT not set
-- **Status:** 🔴 OPEN
-- **What:** Agency plan ($799/mo) and Discharge Planner department license ($499/mo) checkout will fail until these price IDs are created in Stripe and set as env vars in Render.
-- **Done when:** Both vars set in Render dashboard; checkout flows tested in Stripe test mode.
+- **Status:** ✅ FIXED (2026-04-27) — Chris confirmed both env vars already set in Render dashboard.
 
 
 
@@ -175,6 +173,9 @@ Each loop: what it is, why it matters, what done looks like.
 | OL-019: Demo caregiver employment | Admin clicked fix in /admin/tools | 2026-04-26 |
 | OL-020: Landing page legacy tokens | All raw hex Tailwind classes in page.tsx replaced with design tokens | 2026-04-26 |
 | Direction B design system applied | Dark sidebar (neutral-950), border-t-4 stat cards, shimmer skeletons, design preview page | 2026-04-26 |
+| OL-022: Stripe price env vars | STRIPE_PRICE_AGENCY + STRIPE_PRICE_DISCHARGE_PLANNER_DEPT confirmed set in Render | 2026-04-27 |
+| Landing page benefits/FAQ overhaul | Operators/Caregivers/Healthcare/Affiliates tabs updated; On-Call AI, Direct Hire, Points, tiered commissions, licensing tiers added; FAQ 5/6 updated, 2 new FAQs added | 2026-04-27 |
+| Playwright demo verification suite | 13 tests across 3 roles; DISCHARGE_PLANNER added to TEST_USERS; replaces manual post-deploy checklist | 2026-04-27 |
 | Marketplace Create Listing form | /marketplace/listings/new with full form + pill toggles for care types/services/specialties | 2026-04-26 |
 | Hire fee confirmation UI | HIRE action in ApplicationActions shows $250 fee modal before submitting; API queues Stripe invoice item | 2026-04-26 |
 | Message Caregiver on application page | "Message Caregiver" button links to /messages?with={userId} on application detail page | 2026-04-26 |
