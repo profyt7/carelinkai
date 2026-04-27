@@ -36,6 +36,22 @@ import Image from 'next/image';
 import { FiEdit, FiFileText, FiUser, FiClipboard, FiAlertTriangle, FiShield, FiUsers, FiFolder, FiCalendar } from 'react-icons/fi';
 import { getDaysSinceAdmission } from '@/lib/resident-analytics';
 
+function AccessDenied() {
+  return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="text-center max-w-sm">
+        <div className="h-14 w-14 rounded-full bg-error-100 flex items-center justify-center mx-auto mb-4">
+          <FiShield className="h-7 w-7 text-error-600" />
+        </div>
+        <h2 className="text-xl font-bold text-neutral-900 mb-2">Access Restricted</h2>
+        <p className="text-neutral-500 text-sm">
+          You don&apos;t have permission to view this resident&apos;s details. Contact your operator if you need access.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 async function fetchResident(id: string) {
   const cookieHeader = (await cookies()).toString();
   const h = await headers();
@@ -45,7 +61,8 @@ async function fetchResident(id: string) {
     headers: { cookie: cookieHeader },
   });
   if (res.status === 404) return null;
-  if (!res.ok) throw new Error('Failed to load resident');
+  if (res.status === 401 || res.status === 403) return { _forbidden: true } as const;
+  if (!res.ok) return null;
   return res.json();
 }
 
@@ -122,6 +139,7 @@ export default async function ResidentDetail({ params, searchParams }: { params:
     } else {
       // Fallback to live data when ID not in mock set
       const data = await fetchResident(params.id);
+      if (data && '_forbidden' in data) return <AccessDenied />;
       if (!data?.resident) return notFound();
       resident = data.resident;
       [contacts, timeline, assessments, incidents, notes] = await Promise.all([
@@ -134,6 +152,7 @@ export default async function ResidentDetail({ params, searchParams }: { params:
     }
   } else {
     const data = await fetchResident(params.id);
+    if (data && '_forbidden' in data) return <AccessDenied />;
     if (!data?.resident) return notFound();
     resident = data.resident;
     [contacts, timeline, assessments, incidents, notes] = await Promise.all([

@@ -177,6 +177,15 @@ const navItems: NavItem[] = [
     roleRestriction: ["OPERATOR", "ADMIN"],
   },
 
+  // 8a. Discharge Planner Billing
+  {
+    name: "Billing",
+    icon: <FiDollarSign size={20} />,
+    href: "/discharge-planner/billing",
+    showInMobileBar: false,
+    roleRestriction: ["DISCHARGE_PLANNER"],
+  },
+
   // 8b. Affiliate Dashboard (affiliate-only)
   {
     name: "Affiliate Dashboard",
