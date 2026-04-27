@@ -104,6 +104,9 @@ export default function HomePage() {
             <Link href="#roadmap" className="text-neutral-500 hover:text-primary-500 font-medium transition-colors">
               Roadmap
             </Link>
+            <Link href="/learn" className="text-neutral-500 hover:text-primary-500 font-medium transition-colors">
+              Learn
+            </Link>
           </div>
           
           <div className="flex items-center space-x-4">
@@ -148,8 +151,7 @@ export default function HomePage() {
               </h1>
               
               <p className="mt-6 text-xl text-neutral-500 max-w-xl leading-relaxed">
-                Connect with the perfect care homes and caregivers using intelligent AI matching. 
-                HIPAA-compliant, trusted, and built for families.
+                The all-in-one AI platform for senior care — intelligent matching for families, smart shift coverage for operators, and instant placements for discharge planners. HIPAA-compliant and live today.
               </p>
               
               {/* CTAs */}
@@ -294,15 +296,19 @@ export default function HomePage() {
               <ul className="space-y-2">
                 <li className="flex items-start">
                   <FiCheck className="text-secondary-500 mt-1 mr-2 flex-shrink-0" />
-                  <span className="text-sm text-neutral-500">AI-generated home profiles</span>
+                  <span className="text-sm text-neutral-500">AI-generated inquiry responses</span>
                 </li>
                 <li className="flex items-start">
                   <FiCheck className="text-secondary-500 mt-1 mr-2 flex-shrink-0" />
-                  <span className="text-sm text-neutral-500">Automated inquiry responses</span>
+                  <span className="text-sm text-neutral-500">On-Call AI fills open shifts in under 15 min</span>
                 </li>
                 <li className="flex items-start">
                   <FiCheck className="text-secondary-500 mt-1 mr-2 flex-shrink-0" />
-                  <span className="text-sm text-neutral-500">Resident management system</span>
+                  <span className="text-sm text-neutral-500">Direct-hire caregivers from the marketplace</span>
+                </li>
+                <li className="flex items-start">
+                  <FiCheck className="text-secondary-500 mt-1 mr-2 flex-shrink-0" />
+                  <span className="text-sm text-neutral-500">Resident and document management</span>
                 </li>
               </ul>
             </div>
@@ -343,7 +349,7 @@ export default function HomePage() {
               <span className="text-sm font-bold text-white">POWERED BY AI</span>
             </div>
             <h2 className="text-4xl md:text-5xl font-bold text-neutral-900 mb-4">
-              8 AI-Powered Features That Make Us Different
+              AI-Powered Features Built for Senior Care
             </h2>
             <p className="text-xl text-neutral-500 max-w-3xl mx-auto">
               Our proprietary AI technology transforms how senior care connections are made
@@ -1561,6 +1567,21 @@ export default function HomePage() {
                 )}
               </AnimatePresence>
             </motion.div>
+
+            {/* FAQ 9 */}
+            <motion.div className="bg-neutral-50 rounded-xl border border-neutral-200 overflow-hidden" initial={false}>
+              <button onClick={() => toggleFaq(8)} className="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-neutral-100 transition-colors">
+                <span className="font-bold text-lg text-neutral-900">Do you have compliance resources for Ohio ALF operators?</span>
+                <motion.div animate={{ rotate: openFaqIndex === 8 ? 180 : 0 }} transition={{ duration: 0.2 }}><FiChevronDown className="text-primary-500 text-xl" /></motion.div>
+              </button>
+              <AnimatePresence>
+                {openFaqIndex === 8 && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
+                    <div className="px-6 pb-5 text-neutral-500"><p>Yes. We offer three downloadable Ohio Assisted Living Facility compliance document kits ($149–$199 one-time purchase) covering state licensing requirements, resident rights, and medication management. Available in your operator portal under Compliance Kits, or from the footer of this page. More states coming soon.</p></div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -1700,8 +1721,9 @@ export default function HomePage() {
               <ul className="space-y-3">
                 <li><Link href="#features" className="hover:text-white transition-colors">Features</Link></li>
                 <li><Link href="#roadmap" className="hover:text-white transition-colors">Roadmap</Link></li>
-                <li><Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link></li>
-                <li><Link href="/integrations" className="hover:text-white transition-colors">Integrations</Link></li>
+                <li><Link href="/learn" className="hover:text-white transition-colors">Education Hub</Link></li>
+                <li><Link href="/operator/compliance-kits" className="hover:text-white transition-colors">Compliance Kits</Link></li>
+                <li><Link href="#pricing" className="hover:text-white transition-colors">Pricing</Link></li>
               </ul>
             </div>
             

@@ -32,7 +32,8 @@ import {
   FiPieChart,
   FiFolder,
   FiLink,
-  FiStar
+  FiStar,
+  FiBook
 } from "react-icons/fi";
 import { MessageSquare, Stethoscope } from "lucide-react";
 // Real-time notification center
@@ -146,6 +147,7 @@ const navItems: NavItem[] = [
       { name: "On-Call AI", icon: <FiZap size={18} />, href: "/operator/oncall", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
       { name: "Documents", icon: <FiFolder size={18} />, href: "/operator/documents", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
       { name: "Compliance", icon: <FiClipboard size={18} />, href: "/operator/compliance", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
+      { name: "Compliance Kits", icon: <FiFolder size={18} />, href: "/operator/compliance-kits", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN"] },
       { name: "Finances", icon: <FiDollarSign size={18} />, href: "/settings/payouts", showInMobileBar: true },
     ]
   },
@@ -193,6 +195,15 @@ const navItems: NavItem[] = [
     href: "/affiliate/dashboard",
     showInMobileBar: false,
     roleRestriction: ["AFFILIATE", "ADMIN"],
+  },
+
+  // 8c. Education Hub (families and caregivers)
+  {
+    name: "Education Hub",
+    icon: <FiBook size={20} />,
+    href: "/learn",
+    showInMobileBar: false,
+    roleRestriction: ["FAMILY", "CAREGIVER"],
   },
 
   // 9. Settings (collapsible)
