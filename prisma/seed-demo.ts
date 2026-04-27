@@ -88,9 +88,15 @@ async function main() {
         create: {
           companyName: 'CareLink Services Inc.',
           businessLicense: 'CA-ALF-2024-1234',
+          subscriptionPlan: 'PROFESSIONAL',
         },
       },
     },
+  });
+  // Ensure existing demo operator is on PROFESSIONAL plan
+  await prisma.operator.update({
+    where: { userId: demoOperator.id },
+    data: { subscriptionPlan: 'PROFESSIONAL' },
   });
   console.log('  ✓ Operator account created: demo.operator@carelinkai.test');
 
