@@ -2,7 +2,63 @@
 
 ---
 
-### 2026-04-26 — Caregiver Review Dashboard + Operator Review Rating Page
+### 2026-04-27 — Revenue Model Expansion + Bug Fixes + Operator Direct Hire
+
+- **Objective:** Implement 5 new monetization streams, fix demo login bugs found during review, add operator direct hire button on caregiver profile page.
+- **Work completed:**
+  1. **Revenue model expansion (5 streams):**
+     - On-Call AI + Shift Autofill gated behind Professional+ plan (`planHasFeature` at page + API level)
+     - Discharge Planner department license ($499/mo, 10 seats) — two-card billing UI, licenseType param to Stripe checkout, stored on profile
+     - Family referral affiliate track — `referredByCode` on Family at registration, auto-populated on inquiries, `AffiliateReferralType` enum recorded on commission
+     - Tiered affiliate commissions — `CommissionTier` enum (STANDARD 20% / SILVER 25% / GOLD 30%); tier rate used when no commissionRate override; admin affiliates table updated with Tier column
+     - AGENCY subscription plan — $799/mo, rank=3 (peer of GROWTH), hire fee waived, features list in SubscriptionManager, STRIPE_PRICE_AGENCY env var
+  2. **Schema migration:** `prisma/migrations/20260427000000_revenue_model_expansion/migration.sql` — all DDL changes; `npx prisma generate` run clean
+  3. **Bug fixes (demo review pass):**
+     - Double reviews on caregiver profile page — removed duplicate `<section>` block
+     - Discharge planner billing page had no nav — added DashboardLayout wrapper directly to billing page (other pages already had it; removed erroneous layout.tsx)
+     - Demo operator plan set to PROFESSIONAL — seed-demo.ts now sets `subscriptionPlan: 'PROFESSIONAL'` on create + forces update on re-seed; `npm run seed:demo` run on Render
+     - Caregiver points page double sidebar — removed redundant DashboardLayout wrapper
+     - Resident page 403 crash — `fetchResident` returns `{ _forbidden: true }` instead of throwing; AccessDenied component shown
+     - Caregiver Dashboard link — `/dashboard` now redirects CAREGIVER → `/caregiver`, DISCHARGE_PLANNER → `/discharge-planner`
+  4. **Operator direct hire button on caregiver profile:**
+     - `POST /api/operator/caregivers/[id]/hire` — creates CaregiverEmployment + MarketplaceHire + notification; triggers $99 Stripe invoice item for Starter plan (waived for Professional/Growth/Agency)
+     - `DirectHireButton` client component — plan-aware modal (green "included" box for paid plans, amber $99 warning for Starter); position dropdown; mock-mode simulation for demo caregivers
+     - Caregiver profile page now shows role-specific CTA: operators see Hire button with plan-aware pricing preview, families see Request Care button
+- **Files changed:**
+  - `prisma/schema.prisma` — 4 new enums, 4 model fields added
+  - `prisma/migrations/20260427000000_revenue_model_expansion/migration.sql` (new)
+  - `prisma/seed-demo.ts` — demo operator forced to PROFESSIONAL plan
+  - `src/lib/subscription.ts` — ON_CALL_AI, SHIFT_AUTOFILL, AGENCY_MANAGEMENT, BULK_HIRING, CONTRACTOR_MANAGEMENT features; AGENCY rank
+  - `src/app/operator/oncall/page.tsx` — Professional+ gate
+  - `src/app/api/operator/shifts/autofill/route.ts` — Professional+ gate
+  - `src/app/api/scheduling/needs/[id]/start/route.ts` — Professional+ gate
+  - `src/app/api/discharge-planner/billing/subscribe/route.ts` — licenseType param
+  - `src/app/discharge-planner/billing/page.tsx` — two-card layout + DashboardLayout wrapper
+  - `src/app/api/auth/register/route.ts` — referredByCode capture
+  - `src/app/api/inquiries/route.ts` — auto-populate affiliateCode from family referral
+  - `src/lib/services/inquiry-conversion.ts` — tiered commissions + AffiliateReferralType
+  - `src/app/admin/affiliates/page.tsx` — Tier column + tier-based rates
+  - `src/components/operator/billing/SubscriptionManager.tsx` — AGENCY plan
+  - `src/app/api/operator/billing/subscribe/route.ts` — AGENCY price
+  - `src/app/api/operator/billing/switch-plan/route.ts` — AGENCY
+  - `src/app/api/marketplace/applications/[id]/route.ts` — AGENCY hire fee waiver
+  - `src/app/marketplace/caregivers/[id]/page.tsx` — role-specific CTA + getServerSession
+  - `src/app/marketplace/listings/[id]/applications/ApplicationActions.tsx` — plan-aware hire modal
+  - `src/app/caregiver/points/page.tsx` — removed redundant DashboardLayout
+  - `src/app/operator/residents/[id]/page.tsx` — graceful 403 handling
+  - `src/app/dashboard/page.tsx` — CAREGIVER/DISCHARGE_PLANNER redirects
+  - `src/app/discharge-planner/page.tsx` — restored DashboardLayout wrapper
+  - `src/app/api/operator/caregivers/[id]/hire/route.ts` (new)
+  - `src/components/marketplace/DirectHireButton.tsx` (new)
+- **Commands run:** `npx prisma generate`, `npx tsc --noEmit` (0 errors ×5), `npm run seed:demo` (Render shell), `git commit` ×5, `git push origin main` ×5
+- **Tests/build status:** TypeScript 0 errors. No Jest/Playwright run.
+- **Deployment impact:** Schema migration required in production. All pushes auto-deploy via Render from main.
+- **New risks/blockers:** `STRIPE_PRICE_AGENCY` env var must be set in Render for Agency plan checkout to work. `STRIPE_PRICE_DISCHARGE_PLANNER_DEPT` must be set for department license checkout.
+- **Recommended next step:** (1) Set `STRIPE_PRICE_AGENCY` and `STRIPE_PRICE_DISCHARGE_PLANNER_DEPT` in Render env vars. (2) Run `npx prisma migrate deploy` in Render shell for the revenue model migration. (3) Consider Playwright smoke tests across all 3 demo logins to automate future regression checks.
+
+---
+
+
 
 - **Objective:** Build operator review/rating dashboard and caregiver self-review summary. Both were identified as high-leverage gaps after shipping the My Applications feature.
 - **Work completed:**

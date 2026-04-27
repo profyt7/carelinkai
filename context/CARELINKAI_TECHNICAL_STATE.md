@@ -1,5 +1,5 @@
 # CareLinkAI — Technical State
-_Last updated: 2026-04-26_
+_Last updated: 2026-04-27_
 
 ## Active Branch
 `main` (all features merged — Stripe billing fully verified end-to-end in test mode)
@@ -31,7 +31,7 @@ https://carelinkai.onrender.com (also: https://getcarelinkai.com)
 | AI — All features | Anthropic Claude API (`claude-sonnet-4-6`, `claude-haiku-4-5-20251001`) |
 
 ## Schema Summary
-67 Prisma models + enums. New since 2026-04-25: CallOff, CaregiverPoints, PointTransaction, ShiftBid, ShiftNeed, CoverageAttempt. New enums: CallOffType, PointsTier, PointsEventType, BidStatus, ShiftNeedStatus, CoverageChannel, CoverageOutcome. New caregiver fields: homeLat/homeLng, reliabilityScore (now includes call-off weight). PaymentType enum: + MARKETPLACE_HIRE_FEE, FEATURED_LISTING_FEE, COMPLIANCE_KIT.
+67+ Prisma models + enums. New since 2026-04-27: `DischargePlannerLicenseType` enum (INDIVIDUAL/DEPARTMENT), `AffiliateReferralType` enum (OPERATOR/FAMILY), `CommissionTier` enum (STANDARD/SILVER/GOLD). New fields: `DischargePlannerProfile.licenseType + seatCount`, `Family.referredByCode`, `AffiliateReferral.referralType`, `Affiliate.commissionTier`. `SubscriptionPlan` enum: +AGENCY. Migration: `20260427000000_revenue_model_expansion`.
 
 ## User Roles
 FAMILY, OPERATOR, CAREGIVER, ADMIN, STAFF, PROVIDER, AFFILIATE, DISCHARGE_PLANNER
@@ -165,8 +165,8 @@ See `REVENUE_MODEL.md` for the full breakdown. 12 streams finalized:
 - **Components polished:** StatCard (left-border accent + trend), skeleton-loader (shimmer + HomeCardSkeleton), tabs (real tokens), breadcrumbs, confirm-dialog, error, not-found, login page, search page.
 
 ## Immediate Next Priorities
-1. **One-time production DB fix:** Click "Fix Demo Caregiver Employment" in `/admin/tools` on production — links demo caregivers to demo operator
-2. **Verify on production after Render deploy:** bulk token unification visual check (no style regressions), StatCard new design, skeleton shimmer, search card lift
-3. **Landing page token pass:** `src/app/page.tsx` still uses `blue-*`/`gray-*` and raw hex inline styles; needs a careful pass
-4. **Switch Stripe to live mode** — follow runbook in `context/STRIPE_SETUP_RUNBOOK.md`
-5. **Text to Place (roadmap):** Twilio integration already exists; family texts to inquire about a home
+1. **Set new env vars in Render:** `STRIPE_PRICE_AGENCY` (Agency plan $799/mo), `STRIPE_PRICE_DISCHARGE_PLANNER_DEPT` (Department license $499/mo)
+2. **Run migration in Render shell:** `npx prisma migrate deploy` — applies `20260427000000_revenue_model_expansion`
+3. **Switch Stripe to live mode** — follow runbook in `context/STRIPE_SETUP_RUNBOOK.md`
+4. **Landing page token pass:** `src/app/page.tsx` still uses `blue-*`/`gray-*` and raw hex inline styles; needs a careful pass
+5. **Playwright smoke tests:** Automate the 3-login demo verification checklist to catch regressions faster

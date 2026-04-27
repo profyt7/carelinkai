@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-04-26_
+_Last updated: 2026-04-27_
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -7,6 +7,18 @@ Each loop: what it is, why it matters, what done looks like.
 ---
 
 ## 🔴 Critical (Blocking Revenue / Demos)
+
+### OL-021: Revenue model migration not deployed to production
+- **Status:** 🔴 OPEN
+- **What:** `20260427000000_revenue_model_expansion` adds CommissionTier, AffiliateReferralType, DischargePlannerLicenseType enums + new fields on Affiliate, AffiliateReferral, DischargePlannerProfile, Family. Must be deployed before any new revenue features work in production.
+- **Done when:** `npx prisma migrate deploy` run in Render shell with no errors.
+
+### OL-022: STRIPE_PRICE_AGENCY and STRIPE_PRICE_DISCHARGE_PLANNER_DEPT not set
+- **Status:** 🔴 OPEN
+- **What:** Agency plan ($799/mo) and Discharge Planner department license ($499/mo) checkout will fail until these price IDs are created in Stripe and set as env vars in Render.
+- **Done when:** Both vars set in Render dashboard; checkout flows tested in Stripe test mode.
+
+
 
 ### OL-001: Demo accounts not seeded in production
 - **Status:** ✅ FIXED (2026-04-22)
@@ -166,3 +178,8 @@ Each loop: what it is, why it matters, what done looks like.
 | Marketplace Create Listing form | /marketplace/listings/new with full form + pill toggles for care types/services/specialties | 2026-04-26 |
 | Hire fee confirmation UI | HIRE action in ApplicationActions shows $250 fee modal before submitting; API queues Stripe invoice item | 2026-04-26 |
 | Message Caregiver on application page | "Message Caregiver" button links to /messages?with={userId} on application detail page | 2026-04-26 |
+| Revenue model expansion (5 streams) | On-Call/Autofill gates, DP dept license, family referral track, tiered commissions, AGENCY plan | 2026-04-27 |
+| Operator direct hire from caregiver profile | DirectHireButton + /api/operator/caregivers/[id]/hire; plan-aware modal; replaces family-only CTA for operators | 2026-04-27 |
+| Caregiver dashboard showing wrong page | /dashboard now redirects CAREGIVER → /caregiver, DISCHARGE_PLANNER → /discharge-planner | 2026-04-27 |
+| Discharge planner double nav | Removed erroneous layout.tsx; billing page now has its own DashboardLayout wrapper | 2026-04-27 |
+| Demo operator on Starter plan | seed-demo.ts forces PROFESSIONAL plan on upsert + explicit update; re-seeded on Render | 2026-04-27 |
