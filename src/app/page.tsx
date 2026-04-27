@@ -1017,11 +1017,11 @@ export default function HomePage() {
                 </div>
                 <div className="bg-gradient-to-r from-primary-500/10 to-secondary-500/10 rounded-xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 border border-primary-500/20">
                   <div>
-                    <div className="font-bold text-neutral-900">Provider portal coming soon</div>
-                    <div className="text-sm text-neutral-500 mt-1">Register early to be listed when we launch in your area.</div>
+                    <div className="font-bold text-neutral-900">Your services, found by the right clients — live now</div>
+                    <div className="text-sm text-neutral-500 mt-1">List your business on the CareLinkAI marketplace and get discovered by care homes and families searching in your area.</div>
                   </div>
-                  <Link href="/auth/register?role=provider" className="bg-gradient-to-r from-primary-500 to-secondary-500 text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity whitespace-nowrap shadow-lg">
-                    Join the Waitlist →
+                  <Link href="/marketplace?tab=providers" className="bg-gradient-to-r from-primary-500 to-secondary-500 text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity whitespace-nowrap shadow-lg">
+                    View Provider Listings →
                   </Link>
                 </div>
               </div>
@@ -1115,7 +1115,7 @@ export default function HomePage() {
               Simple, Transparent Pricing
             </h2>
             <p className="text-xl text-neutral-500 max-w-3xl mx-auto">
-              For care home operators. Families, caregivers, and discharge planners are always free.
+              For care home operators. Families and caregivers always search free.
             </p>
           </div>
 
@@ -1246,6 +1246,7 @@ export default function HomePage() {
                 { icon: <FiBarChart />, title: 'Compliance Document Kits', desc: 'Ohio ALF compliance kits ($149–$199) — one-click purchase, instant access' },
                 { icon: <FiTrendingUp />, title: 'Affiliate Program', desc: 'Tiered commissions (20/25/30%) with family referral tracking and live dashboard' },
                 { icon: <FiShield />, title: 'Caregiver Marketplace', desc: 'Browse, shortlist, and hire verified caregivers with background check badges and reviews' },
+                { icon: <FiGlobe />, title: 'Provider Marketplace', desc: 'Transportation, meal services, housekeeping, and more — listed and discoverable by care homes and families' },
               ].map((item) => (
                 <div key={item.title} className="bg-white p-5 rounded-xl border border-neutral-200 shadow-sm flex items-start gap-4">
                   <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-success-50 text-success-600 flex items-center justify-center text-lg">
@@ -1304,20 +1305,20 @@ export default function HomePage() {
           {/* Trust Statistics */}
           <div className="grid md:grid-cols-4 gap-8 mb-16">
             <div className="bg-white p-6 rounded-xl shadow-lg border border-neutral-200 text-center">
-              <div className="text-4xl font-bold text-primary-500 mb-2">10,000+</div>
-              <p className="text-neutral-500 font-medium">Families Helped</p>
+              <div className="text-4xl font-bold text-primary-500 mb-2">&lt; 15 min</div>
+              <p className="text-neutral-500 font-medium">On-Call AI Shift Fill</p>
             </div>
             <div className="bg-white p-6 rounded-xl shadow-lg border border-neutral-200 text-center">
-              <div className="text-4xl font-bold text-secondary-500 mb-2">200+</div>
-              <p className="text-neutral-500 font-medium">Care Homes</p>
+              <div className="text-4xl font-bold text-secondary-500 mb-2">50+</div>
+              <p className="text-neutral-500 font-medium">AI Match Data Points</p>
             </div>
             <div className="bg-white p-6 rounded-xl shadow-lg border border-neutral-200 text-center">
-              <div className="text-4xl font-bold text-primary-500 mb-2">500+</div>
-              <p className="text-neutral-500 font-medium">Caregivers</p>
+              <div className="text-4xl font-bold text-primary-500 mb-2">6</div>
+              <p className="text-neutral-500 font-medium">User Roles Served</p>
             </div>
             <div className="bg-white p-6 rounded-xl shadow-lg border border-neutral-200 text-center">
-              <div className="text-4xl font-bold text-secondary-500 mb-2">98%</div>
-              <p className="text-neutral-500 font-medium">Match Accuracy</p>
+              <div className="text-4xl font-bold text-secondary-500 mb-2">$0</div>
+              <p className="text-neutral-500 font-medium">Always Free for Families</p>
             </div>
           </div>
           
@@ -1636,11 +1637,10 @@ export default function HomePage() {
         
         <div className="max-w-5xl mx-auto px-4 md:px-6 text-center relative z-10">
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-            Ready to Find the Perfect Care?
+            Senior Care, Reimagined by AI
           </h2>
           <p className="text-xl text-white/90 max-w-3xl mx-auto mb-10">
-            Join thousands of families, care homes, and healthcare professionals who trust CareLinkAI 
-            to make senior care placement simple, fast, and effective.
+            Whether you're a family finding care, an operator managing a facility, a caregiver building a career, or a hospital discharge planner — CareLinkAI was built for you. Start free today.
           </p>
           
           <div className="flex flex-col sm:flex-row justify-center gap-4 mb-8">
@@ -1752,7 +1752,7 @@ export default function HomePage() {
           
           {/* Contact Info */}
           <div className="border-t border-neutral-700 pt-8 pb-8">
-            <div className="grid md:grid-cols-3 gap-6 text-sm">
+            <div className="grid md:grid-cols-2 gap-6 text-sm">
               <div className="flex items-center">
                 <FiMail className="text-primary-500 mr-3" />
                 <a href="mailto:support@getcarelinkai.com" className="hover:text-white transition-colors">
@@ -1760,14 +1760,8 @@ export default function HomePage() {
                 </a>
               </div>
               <div className="flex items-center">
-                <FiPhone className="text-secondary-500 mr-3" />
-                <a href="tel:+18005551234" className="hover:text-white transition-colors">
-                  1-800-555-1234
-                </a>
-              </div>
-              <div className="flex items-center">
                 <FiMapPin className="text-primary-500 mr-3" />
-                <span>San Francisco, CA</span>
+                <span>Cleveland, OH</span>
               </div>
             </div>
           </div>
