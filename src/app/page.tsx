@@ -646,9 +646,12 @@ export default function HomePage() {
                   </div>
                   <div>
                     <h4 className="font-semibold text-neutral-900">Place Patient</h4>
-                    <p className="text-sm text-neutral-500">Secure placement in minutes</p>
+                    <p className="text-sm text-neutral-500">Secure placement in minutes — no phone tag</p>
                   </div>
                 </div>
+              </div>
+              <div className="mt-4 pt-4 border-t border-secondary-500/20 text-xs text-neutral-500 text-center">
+                Individual license <span className="font-semibold text-neutral-700">$99/mo</span> · Department (unlimited seats) <span className="font-semibold text-neutral-700">$499/mo</span>
               </div>
             </div>
           </div>
@@ -796,6 +799,9 @@ export default function HomePage() {
                     { icon: <FiFileText />, title: 'Document Management', desc: 'Store and classify resident documents with AI. No more lost paperwork.' },
                     { icon: <FiShield />, title: 'Compliance Tracking', desc: 'Track certifications, background checks, and regulatory requirements automatically.' },
                     { icon: <FiMessageCircle />, title: 'Messaging & Notifications', desc: 'In-platform messaging with families. Real-time notifications for new inquiries and tours.' },
+                    { icon: <FiSmartphone />, title: 'On-Call AI Shift Coverage', desc: 'Automatically contacts available caregivers via SMS when a shift opens. Average fill time under 15 minutes.' },
+                    { icon: <FiZap />, title: 'AI Shift Auto-fill', desc: 'Describe a shift in plain text — AI instantly finds the best-matched available caregivers and ranks them.' },
+                    { icon: <FiAward />, title: 'Direct Caregiver Hire', desc: 'Browse the marketplace and hire caregivers to your facility in 3 clicks — no job posting required.' },
                   ].map((item, i) => (
                     <div key={i} className="flex items-start space-x-3">
                       <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-gradient-to-br from-secondary-500 to-secondary-400 flex items-center justify-center text-white">
@@ -858,10 +864,29 @@ export default function HomePage() {
                     <p className="text-neutral-500">Choose jobs that fit your schedule and availability preferences.</p>
                   </div>
                 </div>
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center">
+                    <FiAward className="text-white text-xl" />
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-bold text-neutral-900 mb-2">Points & Tier Rewards</h4>
+                    <p className="text-neutral-500">Earn points for every shift, on-time arrival, and 5-star review. Climb from BRONZE to PLATINUM and unlock higher pay rates.</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center">
+                    <FiTrendingUp className="text-white text-xl" />
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-bold text-neutral-900 mb-2">Reliability Score</h4>
+                    <p className="text-neutral-500">Your 0-100 reliability score is visible to operators — built from reviews, shift history, and on-time record. High scores mean more job offers.</p>
+                  </div>
+                </div>
               </div>
             )}
-            
+
             {activeBenefitTab === 'healthcare' && (
+              <div>
               <div className="grid md:grid-cols-2 gap-8">
                 <div className="flex items-start space-x-4">
                   <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-br from-secondary-500 to-primary-500 flex items-center justify-center">
@@ -918,11 +943,21 @@ export default function HomePage() {
                   </div>
                 </div>
               </div>
+              <div className="mt-8 bg-gradient-to-r from-secondary-500/10 to-primary-500/10 rounded-xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4 border border-secondary-500/20">
+                <div>
+                  <div className="font-bold text-neutral-900 text-lg">Individual license: $99/mo · Department license: $499/mo</div>
+                  <div className="text-sm text-neutral-500 mt-1">Individual planners and hospital department teams both covered. Cancel anytime.</div>
+                </div>
+                <Link href="/auth/register?role=discharge_planner" className="bg-gradient-to-r from-secondary-500 to-primary-500 text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity whitespace-nowrap shadow-lg">
+                  Start Free →
+                </Link>
+              </div>
+              </div>
             )}
 
             {activeBenefitTab === 'providers' && (
               <div>
-                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-3">
+                <div className="mb-6 p-4 bg-primary-50 border border-primary-200 rounded-xl flex items-start gap-3">
                   <FiZap className="text-primary-500 mt-0.5 flex-shrink-0" />
                   <div>
                     <div className="font-semibold text-neutral-900">Senior Service Provider Marketplace</div>
@@ -988,7 +1023,7 @@ export default function HomePage() {
 
             {activeBenefitTab === 'affiliates' && (
               <div>
-                <div className="mb-6 p-4 bg-purple-50 border border-purple-200 rounded-xl flex items-start gap-3">
+                <div className="mb-6 p-4 bg-secondary-50 border border-secondary-200 rounded-xl flex items-start gap-3">
                   <FiHeart className="text-secondary-500 mt-0.5 flex-shrink-0" />
                   <div>
                     <div className="font-semibold text-neutral-900">Earn by Referring Care Homes and Families</div>
@@ -997,14 +1032,27 @@ export default function HomePage() {
                     </p>
                   </div>
                 </div>
+                <div className="mb-6 grid grid-cols-3 gap-4">
+                  {[
+                    { tier: 'STANDARD', rate: '20%', desc: 'New affiliates', color: 'border-neutral-300 bg-neutral-50' },
+                    { tier: 'SILVER', rate: '25%', desc: '5+ active referrals', color: 'border-secondary-300 bg-secondary-50' },
+                    { tier: 'GOLD', rate: '30%', desc: '15+ active referrals', color: 'border-warning-400 bg-warning-50' },
+                  ].map((t) => (
+                    <div key={t.tier} className={`rounded-xl border-2 p-4 text-center ${t.color}`}>
+                      <div className="text-xs font-bold text-neutral-500 uppercase tracking-wide mb-1">{t.tier}</div>
+                      <div className="text-3xl font-bold text-neutral-900">{t.rate}</div>
+                      <div className="text-xs text-neutral-500 mt-1">{t.desc}</div>
+                    </div>
+                  ))}
+                </div>
                 <div className="grid md:grid-cols-2 gap-8 mb-8">
                   <div className="flex items-start space-x-4">
                     <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-br from-secondary-500 to-primary-500 flex items-center justify-center">
                       <FiTrendingUp className="text-white text-xl" />
                     </div>
                     <div>
-                      <h4 className="text-lg font-bold text-neutral-900 mb-2">Recurring Commission</h4>
-                      <p className="text-neutral-500">Earn a percentage of every subscription payment from operators you refer — for as long as they remain active.</p>
+                      <h4 className="text-lg font-bold text-neutral-900 mb-2">Tiered Recurring Commissions</h4>
+                      <p className="text-neutral-500">Earn 20–30% of every subscription payment from operators and families you refer. Rates increase automatically as you grow your referral network.</p>
                     </div>
                   </div>
                   <div className="flex items-start space-x-4">
@@ -1054,7 +1102,7 @@ export default function HomePage() {
       <section id="pricing" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 md:px-6">
           <div className="text-center mb-14">
-            <div className="inline-flex items-center bg-green-100 text-green-800 rounded-full px-4 py-2 mb-6 text-sm font-semibold">
+            <div className="inline-flex items-center bg-success-100 text-success-800 rounded-full px-4 py-2 mb-6 text-sm font-semibold">
               <FiCheck className="mr-2" /> 14-day free trial · No credit card required
             </div>
             <h2 className="text-4xl md:text-5xl font-bold text-neutral-900 mb-4">
@@ -1463,7 +1511,7 @@ export default function HomePage() {
               <AnimatePresence>
                 {openFaqIndex === 4 && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
-                    <div className="px-6 pb-5 text-neutral-500"><p>We're the only platform that uses advanced AI to match all stakeholders - families, care homes, caregivers, and healthcare professionals. Our 8 AI-powered features automate the entire placement process, making it faster, more accurate, and less stressful for everyone involved.</p></div>
+                    <div className="px-6 pb-5 text-neutral-500"><p>CareLinkAI is the only platform that serves every stakeholder in senior care — families, operators, caregivers, discharge planners, and affiliates — each with a dedicated AI-powered portal. Features like On-Call AI shift coverage, AI inquiry responses, automatic reliability scores, and tiered commission tracking are live today and built into every plan.</p></div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -1478,7 +1526,37 @@ export default function HomePage() {
               <AnimatePresence>
                 {openFaqIndex === 5 && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
-                    <div className="px-6 pb-5 text-neutral-500"><p>Yes! Our AI-powered tour scheduling finds optimal times for both families and facilities. You'll receive automated reminders and confirmations. Virtual tours and video consultations are coming in Q1 2026.</p></div>
+                    <div className="px-6 pb-5 text-neutral-500"><p>Yes! Our AI-powered tour scheduling finds optimal times for both families and facilities. Families book directly from the listing page, and both parties receive automated reminders and confirmations via email and SMS.</p></div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+
+            {/* FAQ 7 */}
+            <motion.div className="bg-neutral-50 rounded-xl border border-neutral-200 overflow-hidden" initial={false}>
+              <button onClick={() => toggleFaq(6)} className="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-neutral-100 transition-colors">
+                <span className="font-bold text-lg text-neutral-900">Can operators hire caregivers directly from the marketplace?</span>
+                <motion.div animate={{ rotate: openFaqIndex === 6 ? 180 : 0 }} transition={{ duration: 0.2 }}><FiChevronDown className="text-primary-500 text-xl" /></motion.div>
+              </button>
+              <AnimatePresence>
+                {openFaqIndex === 6 && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
+                    <div className="px-6 pb-5 text-neutral-500"><p>Yes. Operators on any plan can browse caregiver profiles in the marketplace and hire directly with one click — no job posting or application process required. The caregiver is notified instantly, an employment record is created, and the hire is logged for compliance. Professional and Growth plan operators pay no per-hire marketplace fee.</p></div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+
+            {/* FAQ 8 */}
+            <motion.div className="bg-neutral-50 rounded-xl border border-neutral-200 overflow-hidden" initial={false}>
+              <button onClick={() => toggleFaq(7)} className="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-neutral-100 transition-colors">
+                <span className="font-bold text-lg text-neutral-900">How does the affiliate referral program work?</span>
+                <motion.div animate={{ rotate: openFaqIndex === 7 ? 180 : 0 }} transition={{ duration: 0.2 }}><FiChevronDown className="text-primary-500 text-xl" /></motion.div>
+              </button>
+              <AnimatePresence>
+                {openFaqIndex === 7 && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
+                    <div className="px-6 pb-5 text-neutral-500"><p>Affiliates get a unique referral link and earn recurring commissions on every operator or family subscription they refer. New affiliates start at 20% commission; reaching 5 active referrals unlocks SILVER tier (25%); 15+ referrals unlocks GOLD tier (30%). Commissions are tracked in real time in your affiliate dashboard and paid monthly.</p></div>
                   </motion.div>
                 )}
               </AnimatePresence>
