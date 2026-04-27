@@ -39,6 +39,12 @@ export const TEST_USERS: Record<string, TestUser> = {
     role: 'FAMILY',
     name: 'Demo Family',
   },
+  DISCHARGE_PLANNER: {
+    email: 'demo.healthcare@carelinkai.test',
+    password: 'DemoUser123!',
+    role: 'CAREGIVER', // typed as CAREGIVER for interface compatibility
+    name: 'Demo Healthcare',
+  },
 };
 
 /**
