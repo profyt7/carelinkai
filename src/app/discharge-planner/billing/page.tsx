@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
+import DashboardLayout from '@/components/layout/DashboardLayout';
 
 interface Profile {
   subscriptionStatus: string | null;
@@ -77,13 +78,16 @@ export default function DischargePlannerBillingPage() {
 
   if (loading) {
     return (
-      <div className="p-6 flex justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-neutral-200 border-t-primary-500" />
-      </div>
+      <DashboardLayout title="Billing" showSearch={false}>
+        <div className="p-6 flex justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-neutral-200 border-t-primary-500" />
+        </div>
+      </DashboardLayout>
     );
   }
 
   return (
+    <DashboardLayout title="Billing" showSearch={false}>
     <div className="p-6 max-w-3xl">
       <h1 className="text-2xl font-bold text-neutral-900 mb-2">Discharge Planner Subscription</h1>
       <p className="text-neutral-500 mb-8">
@@ -184,5 +188,6 @@ export default function DischargePlannerBillingPage() {
 
       <p className="text-xs text-neutral-400 text-center mt-6">No credit card required during trial</p>
     </div>
+    </DashboardLayout>
   );
 }
