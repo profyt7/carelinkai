@@ -213,19 +213,37 @@ export async function PATCH(
 }
 
 // ─── Hire fee helper ──────────────────────────────────────────────────────────
+// Professional and Growth plans include unlimited marketplace hires.
+// Starter plan (or no plan) is charged a $99 access fee per hire.
+
+const STARTER_HIRE_FEE_CENTS = parseInt(
+  process.env.MARKETPLACE_HIRE_FEE_CENTS ?? '9900',
+  10
+);
 
 async function triggerApplicationHireFee(
   applicationId: string,
   application: { caregiver: { user: { firstName: string; lastName: string } }; listing: { postedByUserId: string } }
 ) {
-  const feeCents = parseInt(process.env.MARKETPLACE_HIRE_FEE_CENTS ?? '25000', 10);
   const caregiverName = `${application.caregiver.user.firstName} ${application.caregiver.user.lastName}`;
 
-  // Find operator via listing poster's operator record
+  // Find operator + plan
   const operator = await prisma.operator.findFirst({
     where: { userId: application.listing.postedByUserId },
-    select: { id: true, userId: true, stripeCustomerId: true },
+    select: { id: true, userId: true, stripeCustomerId: true, subscriptionPlan: true },
   });
+
+  // Professional and Growth plans include unlimited marketplace hires — no fee
+  if (
+    operator?.subscriptionPlan === 'PROFESSIONAL' ||
+    operator?.subscriptionPlan === 'GROWTH'
+  ) {
+    console.log(`[HIRE_FEE] Plan ${operator.subscriptionPlan} — marketplace hire included, no fee`);
+    return;
+  }
+
+  // Starter plan (or no plan): charge $99 access fee
+  const feeCents = STARTER_HIRE_FEE_CENTS;
 
   // Record payment regardless of Stripe availability
   let payment: { id: string } | null = null;
@@ -236,7 +254,7 @@ async function triggerApplicationHireFee(
         amount: feeCents / 100,
         status: 'PENDING',
         type: 'MARKETPLACE_HIRE_FEE',
-        description: `Marketplace hire fee — ${caregiverName}`,
+        description: `Marketplace hire access fee — ${caregiverName}`,
       },
     });
   } catch (err) {
@@ -254,7 +272,7 @@ async function triggerApplicationHireFee(
       customer: operator.stripeCustomerId,
       amount: feeCents,
       currency: 'usd',
-      description: `Marketplace hire fee — ${caregiverName}`,
+      description: `Marketplace hire access fee — ${caregiverName}`,
       metadata: { applicationId, type: 'MARKETPLACE_HIRE_FEE' },
     });
 
@@ -263,7 +281,7 @@ async function triggerApplicationHireFee(
       data: {
         status: 'PROCESSING',
         stripePaymentId: invoiceItem.id,
-        description: `Marketplace hire fee — ${caregiverName} (queued for next invoice)`,
+        description: `Marketplace hire access fee — ${caregiverName} (queued for next invoice)`,
       },
     });
   } catch (err: any) {

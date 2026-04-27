@@ -59,6 +59,15 @@ export default async function ApplicationDetailPage({
     notFound();
   }
   
+  // Fetch operator's subscription plan (for hire fee display)
+  const operatorRecord = session?.user
+    ? await prisma.operator.findFirst({
+        where: { userId: session.user.id },
+        select: { subscriptionPlan: true },
+      })
+    : null;
+  const operatorPlan = operatorRecord?.subscriptionPlan ?? null;
+
   // Check if user is authenticated and is the listing owner
   if (!session?.user || session.user.id !== application.listing.postedByUserId) {
     return (
@@ -254,6 +263,7 @@ export default async function ApplicationDetailPage({
 
             <ApplicationActions
               applicationId={application.id}
+              operatorPlan={operatorPlan}
               onActionComplete={() => {}}
             />
           </div>

@@ -7,11 +7,12 @@ import { MessageSquare } from "lucide-react";
 
 interface ApplicationActionsProps {
   applicationId: string;
+  operatorPlan?: string | null;
   onActionComplete?: () => void;
 }
 
-const HIRE_FEE_DOLLARS = parseInt(
-  process.env.NEXT_PUBLIC_MARKETPLACE_HIRE_FEE_DOLLARS ?? "250",
+const STARTER_HIRE_FEE_DOLLARS = parseInt(
+  process.env.NEXT_PUBLIC_MARKETPLACE_HIRE_FEE_DOLLARS ?? "99",
   10
 );
 
@@ -19,33 +20,50 @@ function HireConfirmModal({
   onConfirm,
   onCancel,
   loading,
+  operatorPlan,
 }: {
   onConfirm: () => void;
   onCancel: () => void;
   loading: boolean;
+  operatorPlan: string | null;
 }) {
+  const isPaidPlan = operatorPlan === "PROFESSIONAL" || operatorPlan === "GROWTH";
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
       <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
         <div className="flex items-start gap-3 mb-4">
-          <div className="h-10 w-10 rounded-lg bg-warning-50 flex items-center justify-center flex-shrink-0">
-            <FiDollarSign className="h-5 w-5 text-warning-600" />
+          <div className={`h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 ${isPaidPlan ? "bg-success-50" : "bg-warning-50"}`}>
+            <FiDollarSign className={`h-5 w-5 ${isPaidPlan ? "text-success-600" : "text-warning-600"}`} />
           </div>
           <div>
             <h3 className="text-base font-semibold text-neutral-900">Confirm Hire</h3>
-            <p className="text-sm text-neutral-500 mt-0.5">A marketplace hire fee will be charged</p>
+            <p className="text-sm text-neutral-500 mt-0.5">
+              {isPaidPlan ? "Marketplace hire included in your plan" : "A marketplace access fee will be charged"}
+            </p>
           </div>
         </div>
 
-        <div className="bg-neutral-50 rounded-lg p-4 mb-5 border border-neutral-200">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-neutral-600">Marketplace hire fee</span>
-            <span className="text-base font-bold text-neutral-900">${HIRE_FEE_DOLLARS}</span>
+        {isPaidPlan ? (
+          <div className="bg-success-50 rounded-lg p-4 mb-5 border border-success-200">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-success-700">✓ No additional fee</span>
+            </div>
+            <p className="text-xs text-success-600 mt-1">
+              Unlimited marketplace hires are included in your {operatorPlan === "PROFESSIONAL" ? "Professional" : "Growth"} plan.
+            </p>
           </div>
-          <p className="text-xs text-neutral-400 mt-2">
-            This fee is collected on your next billing cycle and covers the cost of connecting you with this caregiver through CareLinkAI.
-          </p>
-        </div>
+        ) : (
+          <div className="bg-neutral-50 rounded-lg p-4 mb-5 border border-neutral-200">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-neutral-600">Marketplace access fee</span>
+              <span className="text-base font-bold text-neutral-900">${STARTER_HIRE_FEE_DOLLARS}</span>
+            </div>
+            <p className="text-xs text-neutral-400 mt-2">
+              Charged on your next billing cycle. Upgrade to Professional for unlimited hires with no per-hire fee.
+            </p>
+          </div>
+        )}
 
         <div className="flex gap-3">
           <button
@@ -62,7 +80,7 @@ function HireConfirmModal({
             disabled={loading}
             className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors disabled:opacity-50"
           >
-            {loading ? "Processing…" : `Confirm Hire ($${HIRE_FEE_DOLLARS})`}
+            {loading ? "Processing…" : isPaidPlan ? "Confirm Hire" : `Confirm Hire ($${STARTER_HIRE_FEE_DOLLARS})`}
           </button>
         </div>
       </div>
@@ -72,6 +90,7 @@ function HireConfirmModal({
 
 export default function ApplicationActions({
   applicationId,
+  operatorPlan = null,
   onActionComplete,
 }: ApplicationActionsProps) {
   const router = useRouter();
@@ -114,9 +133,12 @@ export default function ApplicationActions({
       setMessage("");
       setInterviewAt("");
       setShowHireModal(false);
+      const isPaidPlan = operatorPlan === "PROFESSIONAL" || operatorPlan === "GROWTH";
       setSuccess(
         confirmedAction === "HIRE"
-          ? `Caregiver hired! A $${HIRE_FEE_DOLLARS} fee has been queued for your next billing cycle.`
+          ? isPaidPlan
+            ? "Caregiver hired! No additional fee — included in your plan."
+            : `Caregiver hired! A $${STARTER_HIRE_FEE_DOLLARS} access fee has been queued for your next billing cycle.`
           : "Application updated successfully"
       );
 
@@ -145,6 +167,7 @@ export default function ApplicationActions({
           onConfirm={() => submitAction("HIRE")}
           onCancel={() => setShowHireModal(false)}
           loading={isSubmitting}
+          operatorPlan={operatorPlan}
         />
       )}
 
@@ -183,12 +206,19 @@ export default function ApplicationActions({
               <option value="REJECT">Decline Application</option>
             </select>
 
-            {action === "HIRE" && (
-              <p className="mt-1.5 text-xs text-warning-600 flex items-center gap-1">
-                <FiDollarSign className="h-3 w-3" />
-                A ${HIRE_FEE_DOLLARS} hire fee will be charged to your next invoice.
-              </p>
-            )}
+            {action === "HIRE" && (() => {
+              const isPaid = operatorPlan === "PROFESSIONAL" || operatorPlan === "GROWTH";
+              return isPaid ? (
+                <p className="mt-1.5 text-xs text-success-600 flex items-center gap-1">
+                  ✓ Included in your {operatorPlan === "PROFESSIONAL" ? "Professional" : "Growth"} plan — no extra fee.
+                </p>
+              ) : (
+                <p className="mt-1.5 text-xs text-warning-600 flex items-center gap-1">
+                  <FiDollarSign className="h-3 w-3" />
+                  A ${STARTER_HIRE_FEE_DOLLARS} access fee will be charged to your next invoice.
+                </p>
+              );
+            })()}
           </div>
 
           {action === "INTERVIEW" && (
