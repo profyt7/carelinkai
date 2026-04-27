@@ -419,32 +419,32 @@ export default function HomePage() {
             {/* Feature 5 */}
             <div className="group bg-white p-6 rounded-xl shadow-lg border-2 border-transparent hover:border-primary-500 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl">
               <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-primary-500 to-primary-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <FiFileText className="text-white text-2xl" />
+                <FiZap className="text-white text-2xl" />
               </div>
               <h3 className="text-lg font-bold text-neutral-900 mb-2">
-                Smart Document Processing
+                On-Call AI Shift Coverage
               </h3>
               <p className="text-sm text-neutral-500 mb-3">
-                AI-powered document validation, extraction, and organization for medical records, insurance, and assessments.
+                When a caregiver calls out, AI instantly reaches the nearest available staff via SMS and IVR — filling the shift in minutes, not hours.
               </p>
               <p className="text-xs font-semibold text-primary-500">
-                ✓ 90% time savings
+                ✓ Average fill time under 15 min
               </p>
             </div>
-            
+
             {/* Feature 6 */}
             <div className="group bg-white p-6 rounded-xl shadow-lg border-2 border-transparent hover:border-secondary-500 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl">
               <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-secondary-500 to-secondary-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <FiClock className="text-white text-2xl" />
+                <FiBriefcase className="text-white text-2xl" />
               </div>
               <h3 className="text-lg font-bold text-neutral-900 mb-2">
-                Automated Follow-ups
+                Direct Caregiver Hire
               </h3>
               <p className="text-sm text-neutral-500 mb-3">
-                Smart follow-up system that engages families at the right time with the right message via email and SMS.
+                Operators browse the marketplace and hire caregivers directly — employment records created instantly, caregiver notified in real time.
               </p>
               <p className="text-xs font-semibold text-secondary-500">
-                ✓ 3x higher engagement
+                ✓ Hire in 3 clicks
               </p>
             </div>
             
@@ -1065,18 +1065,18 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
             {/* Starter */}
-            <div className="border-2 border-neutral-200 rounded-2xl p-8 flex flex-col hover:border-primary-500 hover:shadow-lg transition-all">
+            <div className="border-2 border-neutral-200 rounded-2xl p-7 flex flex-col hover:border-primary-500 hover:shadow-lg transition-all">
               <div className="mb-6">
                 <div className="text-sm font-semibold text-neutral-500 uppercase tracking-wide mb-2">Starter</div>
                 <div className="text-4xl font-bold text-neutral-900">$99<span className="text-lg font-normal text-neutral-500">/mo</span></div>
                 <div className="text-sm text-neutral-500 mt-1">1 home · Billed monthly</div>
               </div>
               <ul className="space-y-3 mb-8 flex-1">
-                {['Inquiry pipeline', 'Resident management', 'Caregiver basic management', 'Document storage', 'Email support'].map((f) => (
+                {['Inquiry pipeline', 'Resident management', 'Caregiver management', 'Document storage', 'Email support'].map((f) => (
                   <li key={f} className="flex items-center gap-2 text-sm text-neutral-500">
-                    <FiCheck className="text-green-500 flex-shrink-0" /> {f}
+                    <FiCheck className="text-success-500 flex-shrink-0" /> {f}
                   </li>
                 ))}
               </ul>
@@ -1086,7 +1086,7 @@ export default function HomePage() {
             </div>
 
             {/* Professional — highlighted */}
-            <div className="border-2 border-secondary-500 rounded-2xl p-8 flex flex-col shadow-xl relative bg-gradient-to-b from-secondary-50 to-white">
+            <div className="border-2 border-secondary-500 rounded-2xl p-7 flex flex-col shadow-xl relative bg-gradient-to-b from-secondary-50 to-white">
               <div className="absolute -top-4 left-1/2 -translate-x-1/2">
                 <span className="bg-gradient-to-r from-secondary-500 to-primary-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow">MOST POPULAR</span>
               </div>
@@ -1096,7 +1096,7 @@ export default function HomePage() {
                 <div className="text-sm text-neutral-500 mt-1">Up to 3 homes · Billed monthly</div>
               </div>
               <ul className="space-y-3 mb-8 flex-1">
-                {['Everything in Starter', 'AI inquiry responses', 'Full caregiver management', 'Tour scheduling', 'Analytics dashboard', 'Priority email support'].map((f) => (
+                {['Everything in Starter', 'AI inquiry responses', 'On-Call AI shift coverage', 'AI shift auto-fill', 'Tour scheduling', 'Analytics dashboard', 'Priority support'].map((f) => (
                   <li key={f} className="flex items-center gap-2 text-sm text-neutral-500">
                     <FiCheck className="text-secondary-500 flex-shrink-0" /> {f}
                   </li>
@@ -1108,16 +1108,16 @@ export default function HomePage() {
             </div>
 
             {/* Growth */}
-            <div className="border-2 border-neutral-200 rounded-2xl p-8 flex flex-col hover:border-primary-500 hover:shadow-lg transition-all">
+            <div className="border-2 border-neutral-200 rounded-2xl p-7 flex flex-col hover:border-primary-500 hover:shadow-lg transition-all">
               <div className="mb-6">
                 <div className="text-sm font-semibold text-neutral-500 uppercase tracking-wide mb-2">Growth</div>
                 <div className="text-4xl font-bold text-neutral-900">$499<span className="text-lg font-normal text-neutral-500">/mo</span></div>
                 <div className="text-sm text-neutral-500 mt-1">Up to 10 homes · Billed monthly</div>
               </div>
               <ul className="space-y-3 mb-8 flex-1">
-                {['Everything in Professional', 'Discharge planner integration', 'Advanced analytics & reports', 'Compliance tracking', 'Priority phone support'].map((f) => (
+                {['Everything in Professional', 'Discharge planner integration', 'Advanced analytics & reports', 'Compliance kit access', 'Priority phone support'].map((f) => (
                   <li key={f} className="flex items-center gap-2 text-sm text-neutral-500">
-                    <FiCheck className="text-green-500 flex-shrink-0" /> {f}
+                    <FiCheck className="text-success-500 flex-shrink-0" /> {f}
                   </li>
                 ))}
               </ul>
@@ -1125,11 +1125,30 @@ export default function HomePage() {
                 Start Free Trial
               </Link>
             </div>
+
+            {/* Agency */}
+            <div className="border-2 border-neutral-200 rounded-2xl p-7 flex flex-col hover:border-primary-500 hover:shadow-lg transition-all">
+              <div className="mb-6">
+                <div className="text-sm font-semibold text-neutral-500 uppercase tracking-wide mb-2">Agency</div>
+                <div className="text-4xl font-bold text-neutral-900">$799<span className="text-lg font-normal text-neutral-500">/mo</span></div>
+                <div className="text-sm text-neutral-500 mt-1">Multi-location · Billed monthly</div>
+              </div>
+              <ul className="space-y-3 mb-8 flex-1">
+                {['Everything in Growth', 'Agency staffing dashboard', 'Bulk caregiver hiring', 'Contractor & W2 management', 'Volume hire discounts', 'Dedicated account manager'].map((f) => (
+                  <li key={f} className="flex items-center gap-2 text-sm text-neutral-500">
+                    <FiCheck className="text-success-500 flex-shrink-0" /> {f}
+                  </li>
+                ))}
+              </ul>
+              <Link href="/auth/register?role=operator&plan=agency" className="w-full text-center border-2 border-primary-500 text-primary-500 px-6 py-3 rounded-lg font-semibold hover:bg-primary-500 hover:text-white transition-all">
+                Start Free Trial
+              </Link>
+            </div>
           </div>
 
           <div className="text-center mt-10">
             <p className="text-neutral-500">
-              Need more than 10 homes or want white-label?{' '}
+              Running more than one location type or need white-label?{' '}
               <a href="mailto:hello@getcarelinkai.com" className="text-primary-500 font-semibold hover:underline">Contact us for Enterprise pricing.</a>
             </p>
             <p className="text-sm text-neutral-500 mt-3">
@@ -1139,137 +1158,78 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 7. COMING SOON FEATURES (ROADMAP) */}
+      {/* 7. ROADMAP SECTION */}
       <section id="roadmap" className="py-20 bg-gradient-to-br from-neutral-50 to-white">
         <div className="max-w-7xl mx-auto px-4 md:px-6">
           <div className="text-center mb-16">
             <div className="inline-flex items-center bg-gradient-to-r from-primary-500 to-secondary-500 rounded-full px-4 py-2 shadow-lg mb-6">
               <FiTrendingUp className="text-white mr-2" />
-              <span className="text-sm font-bold text-white">COMING SOON</span>
+              <span className="text-sm font-bold text-white">BUILT &amp; BUILDING</span>
             </div>
             <h2 className="text-4xl md:text-5xl font-bold text-neutral-900 mb-4">
-              What's Next for CareLinkAI
+              What We've Shipped &amp; What's Next
             </h2>
             <p className="text-xl text-neutral-500 max-w-3xl mx-auto">
-              We're constantly innovating to make senior care placement even better
+              We ship fast. Here's what's live today and what's coming next.
             </p>
           </div>
           
-          {/* Roadmap Timeline */}
-          <div className="relative">
-            {/* Timeline line */}
-            <div className="absolute left-1/2 transform -translate-x-1/2 h-full w-1 bg-gradient-to-b from-primary-500 via-secondary-500 to-neutral-200"></div>
-            
-            <div className="space-y-12">
-              {/* Q1 2026 */}
-              <div className="relative">
-                <div className="flex items-center justify-center mb-8">
-                  <div className="bg-gradient-to-r from-primary-500 to-primary-400 text-white px-6 py-2 rounded-full font-bold shadow-lg z-10">
-                    Q1 2026
-                  </div>
-                </div>
-                <div className="grid md:grid-cols-2 gap-8">
-                  <div className="bg-gradient-to-br from-primary-50 to-white p-6 rounded-xl shadow-lg border border-primary-500/20">
-                    <div className="flex items-start space-x-4">
-                      <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-br from-primary-500 to-primary-400 flex items-center justify-center">
-                        <FiSmartphone className="text-white text-xl" />
-                      </div>
-                      <div>
-                        <h4 className="text-lg font-bold text-neutral-900 mb-2">Mobile App (iOS & Android)</h4>
-                        <p className="text-sm text-neutral-500">Search for care, manage inquiries, and communicate on the go with our native mobile apps.</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="bg-gradient-to-br from-secondary-50 to-white p-6 rounded-xl shadow-lg border border-secondary-500/20">
-                    <div className="flex items-start space-x-4">
-                      <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-br from-secondary-500 to-secondary-400 flex items-center justify-center">
-                        <FiVideo className="text-white text-xl" />
-                      </div>
-                      <div>
-                        <h4 className="text-lg font-bold text-neutral-900 mb-2">Video Tours</h4>
-                        <p className="text-sm text-neutral-500">Take virtual tours of facilities from the comfort of your home with live video streaming.</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+          {/* Now Live */}
+          <div className="mb-14">
+            <div className="flex items-center justify-center mb-8">
+              <div className="bg-success-500 text-white px-6 py-2 rounded-full font-bold shadow-lg flex items-center gap-2">
+                <FiCheck /> Now Live
               </div>
-              
-              {/* Q2 2026 */}
-              <div className="relative">
-                <div className="flex items-center justify-center mb-8">
-                  <div className="bg-gradient-to-r from-secondary-500 to-secondary-400 text-white px-6 py-2 rounded-full font-bold shadow-lg z-10">
-                    Q2 2026
+            </div>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {[
+                { icon: <FiZap />, title: 'On-Call AI Shift Coverage', desc: 'Auto-dispatches available staff via SMS/IVR when a caregiver calls out' },
+                { icon: <FiCalendar />, title: 'AI Shift Auto-fill', desc: 'Claude AI matches free-text shift descriptions to available caregivers instantly' },
+                { icon: <FiBriefcase />, title: 'Direct Caregiver Hire', desc: 'Operators hire from the marketplace in 3 clicks — employment record created instantly' },
+                { icon: <FiUsers />, title: 'Caregiver Reliability Score', desc: '0–100 score computed from reviews, shifts, background check, and call-off history' },
+                { icon: <FiAward />, title: 'Caregiver Points & Tiers', desc: 'Bronze → Platinum gamification with points for reliability, reviews, and consistency' },
+                { icon: <FiActivity />, title: 'Discharge Planner Portal', desc: 'AI placement search for social workers with individual ($99) and department ($499) licensing' },
+                { icon: <FiBarChart />, title: 'Compliance Document Kits', desc: 'Ohio ALF compliance kits ($149–$199) — one-click purchase, instant access' },
+                { icon: <FiTrendingUp />, title: 'Affiliate Program', desc: 'Tiered commissions (20/25/30%) with family referral tracking and live dashboard' },
+                { icon: <FiShield />, title: 'Caregiver Marketplace', desc: 'Browse, shortlist, and hire verified caregivers with background check badges and reviews' },
+              ].map((item) => (
+                <div key={item.title} className="bg-white p-5 rounded-xl border border-neutral-200 shadow-sm flex items-start gap-4">
+                  <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-success-50 text-success-600 flex items-center justify-center text-lg">
+                    {item.icon}
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-neutral-900 mb-0.5">{item.title}</h4>
+                    <p className="text-xs text-neutral-500">{item.desc}</p>
                   </div>
                 </div>
-                <div className="grid md:grid-cols-2 gap-8">
-                  <div className="bg-gradient-to-br from-primary-50 to-white p-6 rounded-xl shadow-lg border border-primary-500/20">
-                    <div className="flex items-start space-x-4">
-                      <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center">
-                        <FiMessageCircle className="text-white text-xl" />
-                      </div>
-                      <div>
-                        <h4 className="text-lg font-bold text-neutral-900 mb-2">Virtual Consultations</h4>
-                        <p className="text-sm text-neutral-500">Schedule video consultations with care coordinators and facility staff directly in the platform.</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="bg-gradient-to-br from-secondary-50 to-white p-6 rounded-xl shadow-lg border border-secondary-500/20">
-                    <div className="flex items-start space-x-4">
-                      <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-br from-secondary-500 to-primary-500 flex items-center justify-center">
-                        <FiBarChart className="text-white text-xl" />
-                      </div>
-                      <div>
-                        <h4 className="text-lg font-bold text-neutral-900 mb-2">Advanced Analytics Dashboard</h4>
-                        <p className="text-sm text-neutral-500">Deep insights into occupancy trends, conversion rates, and facility performance metrics.</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Coming Soon */}
+          <div>
+            <div className="flex items-center justify-center mb-8">
+              <div className="bg-gradient-to-r from-secondary-500 to-primary-500 text-white px-6 py-2 rounded-full font-bold shadow-lg flex items-center gap-2">
+                <FiTrendingUp /> Coming Soon
               </div>
-              
-              {/* Future */}
-              <div className="relative">
-                <div className="flex items-center justify-center mb-8">
-                  <div className="bg-gradient-to-r from-primary-500 to-secondary-500 text-white px-6 py-2 rounded-full font-bold shadow-lg z-10">
-                    Future Features
+            </div>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {[
+                { icon: <FiSmartphone />, title: 'Mobile App', desc: 'iOS & Android native apps for operators and families' },
+                { icon: <FiVideo />, title: 'Video Tours', desc: 'Live-streamed virtual facility tours from home' },
+                { icon: <FiGlobe />, title: 'Multi-Language', desc: 'Spanish, Chinese, and additional language support' },
+                { icon: <FiActivity />, title: 'EHR Integrations', desc: 'Connect with major electronic health record systems' },
+              ].map((item) => (
+                <div key={item.title} className="bg-white p-5 rounded-xl border border-neutral-200 border-dashed shadow-sm flex items-start gap-4 opacity-80">
+                  <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-neutral-100 text-neutral-500 flex items-center justify-center text-lg">
+                    {item.icon}
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-neutral-700 mb-0.5">{item.title}</h4>
+                    <p className="text-xs text-neutral-400">{item.desc}</p>
                   </div>
                 </div>
-                <div className="grid md:grid-cols-3 gap-6">
-                  <div className="bg-white p-6 rounded-xl shadow-lg border border-neutral-200">
-                    <div className="flex items-start space-x-3">
-                      <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-gradient-to-br from-primary-500 to-primary-400 flex items-center justify-center">
-                        <FiActivity className="text-white" />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-neutral-900 mb-1">EHR Integrations</h4>
-                        <p className="text-xs text-neutral-500">Connect with major EHR systems</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="bg-white p-6 rounded-xl shadow-lg border border-neutral-200">
-                    <div className="flex items-start space-x-3">
-                      <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-gradient-to-br from-secondary-500 to-secondary-400 flex items-center justify-center">
-                        <FiGlobe className="text-white" />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-neutral-900 mb-1">Multi-Language Support</h4>
-                        <p className="text-xs text-neutral-500">Spanish, Chinese, and more</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="bg-white p-6 rounded-xl shadow-lg border border-neutral-200">
-                    <div className="flex items-start space-x-3">
-                      <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center">
-                        <FiAward className="text-white" />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-neutral-900 mb-1">Quality Ratings</h4>
-                        <p className="text-xs text-neutral-500">Comprehensive facility reviews</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </div>
