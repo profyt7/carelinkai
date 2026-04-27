@@ -3,7 +3,6 @@ import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { OperatorDashboardContent } from "@/components/dashboard/OperatorDashboardContent";
 import { FamilyDashboardContent } from "@/components/dashboard/FamilyDashboardContent";
-import { CaregiverDashboardContent } from "@/components/dashboard/CaregiverDashboardContent";
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -18,7 +17,9 @@ export default async function DashboardPage() {
     case 'OPERATOR':
       return <OperatorDashboardContent />;
     case 'CAREGIVER':
-      return <CaregiverDashboardContent />;
+      redirect('/caregiver');
+    case 'DISCHARGE_PLANNER':
+      redirect('/discharge-planner');
     case 'FAMILY':
       return <FamilyDashboardContent />;
     default:
