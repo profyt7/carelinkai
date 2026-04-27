@@ -8,9 +8,10 @@ import { stripe } from '@/lib/stripe';
 import { UserRole } from '@prisma/client';
 
 const PLAN_PRICE_MAP: Record<string, string | undefined> = {
-  STARTER: process.env['STRIPE_PRICE_STARTER'],
+  STARTER:      process.env['STRIPE_PRICE_STARTER'],
   PROFESSIONAL: process.env['STRIPE_PRICE_PROFESSIONAL'],
-  GROWTH: process.env['STRIPE_PRICE_GROWTH'],
+  GROWTH:       process.env['STRIPE_PRICE_GROWTH'],
+  AGENCY:       process.env['STRIPE_PRICE_AGENCY'],
 };
 
 /**

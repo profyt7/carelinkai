@@ -53,12 +53,17 @@ export async function POST(request: NextRequest) {
     const data = validationResult.data;
     
     // Use authenticated user's family ID if available, otherwise use provided familyId
-    const familyId = session?.user?.id ? 
-      (await prisma.family.findUnique({ 
-        where: { userId: session.user.id },
-        select: { id: true }
-      }))?.id : 
-      data.familyId;
+    const familyRecord = session?.user?.id
+      ? await prisma.family.findUnique({
+          where: { userId: session.user.id },
+          select: { id: true, referredByCode: true },
+        })
+      : null;
+    const familyId = familyRecord?.id ?? data.familyId;
+
+    // Fall back to the family's stored referral code if none passed explicitly
+    const resolvedAffiliateCode =
+      data.affiliateCode || familyRecord?.referredByCode || null;
     
     if (!familyId) {
       return NextResponse.json(
@@ -83,7 +88,7 @@ export async function POST(request: NextRequest) {
         urgency: data.urgency,
         source: data.source,
         preferredContactMethod: data.preferredContactMethod,
-        affiliateCode: data.affiliateCode || null,
+        affiliateCode: resolvedAffiliateCode,
         status: 'NEW',
       },
       include: {

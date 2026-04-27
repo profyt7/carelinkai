@@ -18,11 +18,18 @@ export const FEATURES = {
   CAREGIVER_MANAGEMENT:   'PROFESSIONAL',
   TOUR_SCHEDULING:        'PROFESSIONAL',
   ANALYTICS:              'PROFESSIONAL',
+  ON_CALL_AI:             'PROFESSIONAL',
+  SHIFT_AUTOFILL:         'PROFESSIONAL',
 
   // Growth and above
   DISCHARGE_PLANNER:      'GROWTH',
   ADVANCED_ANALYTICS:     'GROWTH',
   PRIORITY_SUPPORT:       'GROWTH',
+
+  // Agency and above (multi-location staffing agencies)
+  AGENCY_MANAGEMENT:      'AGENCY',
+  BULK_HIRING:            'AGENCY',
+  CONTRACTOR_MANAGEMENT:  'AGENCY',
 
   // Enterprise only
   WHITE_LABEL:            'ENTERPRISE',
@@ -33,6 +40,7 @@ const PLAN_RANK: Record<string, number> = {
   STARTER:      1,
   PROFESSIONAL: 2,
   GROWTH:       3,
+  AGENCY:       3, // Agency is a peer of Growth, specialized for staffing agencies
   ENTERPRISE:   4,
 };
 

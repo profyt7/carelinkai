@@ -23,6 +23,7 @@ export default async function AdminAffiliatesPage() {
         select: {
           id: true,
           referredEmail: true,
+          referralType: true,
           status: true,
           conversionDate: true,
           commissionAmount: true,
@@ -86,7 +87,7 @@ export default async function AdminAffiliatesPage() {
               <table className="w-full text-sm">
                 <thead className="bg-neutral-50 border-b border-neutral-200">
                   <tr>
-                    {['Name', 'Email', 'Code', 'Commission Rate', 'Referrals', 'Conversions', 'Earned', 'Unpaid', 'Joined'].map((h) => (
+                    {['Name', 'Email', 'Code', 'Tier', 'Rate', 'Referrals', 'Conversions', 'Earned', 'Unpaid', 'Joined'].map((h) => (
                       <th key={h} className="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wide">{h}</th>
                     ))}
                   </tr>
@@ -103,8 +104,28 @@ export default async function AdminAffiliatesPage() {
                         <td className="px-4 py-3">
                           <span className="font-mono text-xs bg-neutral-100 px-2 py-1 rounded">{a.affiliateCode}</span>
                         </td>
+                        <td className="px-4 py-3">
+                          {(() => {
+                            const tier = a.commissionTier ?? 'STANDARD';
+                            const colors: Record<string, string> = {
+                              GOLD: 'bg-amber-100 text-amber-800',
+                              SILVER: 'bg-neutral-200 text-neutral-700',
+                              STANDARD: 'bg-primary-100 text-primary-700',
+                            };
+                            return (
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${colors[tier] ?? colors.STANDARD}`}>
+                                {tier}
+                              </span>
+                            );
+                          })()}
+                        </td>
                         <td className="px-4 py-3 text-neutral-600">
-                          {a.commissionRate ? `${Number(a.commissionRate)}%` : '20% (default)'}
+                          {a.commissionRate
+                            ? `${Number(a.commissionRate)}%`
+                            : (() => {
+                                const rates: Record<string, number> = { STANDARD: 20, SILVER: 25, GOLD: 30 };
+                                return `${rates[a.commissionTier ?? 'STANDARD'] ?? 20}%`;
+                              })()}
                         </td>
                         <td className="px-4 py-3 text-neutral-600">{a.referrals.length}</td>
                         <td className="px-4 py-3">

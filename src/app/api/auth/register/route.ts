@@ -49,7 +49,8 @@ const registrationSchema = z.object({
   // New optional fields
   relationshipToRecipient: z.enum(["SELF", "PARENT", "SPOUSE", "SIBLING", "OTHER"]).optional(),
   carePreferences: z.string().max(1000, "Care preferences must be under 1000 characters").optional(),
-  preferredContactMethod: z.enum(["EMAIL", "PHONE", "BOTH"]).optional()
+  preferredContactMethod: z.enum(["EMAIL", "PHONE", "BOTH"]).optional(),
+  referredByCode: z.string().max(20).optional(), // affiliate ?ref= code captured from URL
 });
 
 /**
@@ -185,7 +186,8 @@ export async function POST(request: NextRequest) {
       agreeToTerms,
       relationshipToRecipient,
       carePreferences,
-      preferredContactMethod
+      preferredContactMethod,
+      referredByCode,
     } = validationResult.data;
     
     // Normalize email to lowercase
@@ -276,7 +278,10 @@ export async function POST(request: NextRequest) {
             console.log("[REGISTER API] Adding careNotes from carePreferences");
             familyData.careNotes = carePreferences;
           }
-          
+          if (referredByCode) {
+            familyData.referredByCode = referredByCode.toUpperCase();
+          }
+
           console.log("[REGISTER API] Family data:", JSON.stringify(familyData));
           console.log("[REGISTER API] Calling tx.family.create...");
           await tx.family.create({ data: familyData });

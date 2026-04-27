@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { findCaregiverMatchesForShift } from '@/lib/ai/shift-autofill';
+import { planHasFeature } from '@/lib/subscription';
 import { UserRole } from '@prisma/client';
 import { z } from 'zod';
 
@@ -35,6 +36,13 @@ export async function POST(request: NextRequest) {
   const operator = await prisma.operator.findUnique({ where: { userId: user.id } });
   if (!operator) {
     return NextResponse.json({ error: 'Operator not found' }, { status: 404 });
+  }
+
+  if (!planHasFeature(operator.subscriptionPlan, 'PROFESSIONAL')) {
+    return NextResponse.json(
+      { error: 'Shift Autofill requires the Professional plan or higher.' },
+      { status: 403 }
+    );
   }
 
   const body = BodySchema.safeParse(await request.json().catch(() => ({})));

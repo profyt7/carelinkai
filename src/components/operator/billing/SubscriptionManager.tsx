@@ -21,22 +21,23 @@ interface InvoiceData {
 
 interface SubscriptionData {
   id: string;
-  subscriptionPlan: 'STARTER' | 'PROFESSIONAL' | 'GROWTH' | 'ENTERPRISE' | null;
+  subscriptionPlan: 'STARTER' | 'PROFESSIONAL' | 'GROWTH' | 'AGENCY' | 'ENTERPRISE' | null;
   subscriptionStatus: 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'INCOMPLETE' | 'INCOMPLETE_EXPIRED' | 'PAUSED' | null;
   trialEndsAt: string | null;
   currentPeriodEndsAt: string | null;
 }
 
 const PLAN_DETAILS = {
-  STARTER:      { label: 'Starter',      price: '$99/mo',  homes: '1 home',          features: ['Inquiry pipeline', 'Resident management', 'Email support'] },
-  PROFESSIONAL: { label: 'Professional', price: '$249/mo', homes: 'Up to 3 homes',   features: ['Everything in Starter', 'AI inquiry responses', 'Caregiver management', 'Tour scheduling + analytics'] },
-  GROWTH:       { label: 'Growth',       price: '$499/mo', homes: 'Up to 10 homes',  features: ['Everything in Professional', 'Discharge planner integration', 'Advanced analytics', 'Priority support'] },
-  ENTERPRISE:   { label: 'Enterprise',   price: 'Custom',  homes: 'Unlimited homes', features: ['Everything in Growth', 'White-label', 'Dedicated support'] },
+  STARTER:      { label: 'Starter',      price: '$99/mo',   homes: '1 home',            features: ['Inquiry pipeline', 'Resident management', 'Email support'] },
+  PROFESSIONAL: { label: 'Professional', price: '$249/mo',  homes: 'Up to 3 homes',     features: ['Everything in Starter', 'AI inquiry responses', 'On-Call AI', 'Caregiver management', 'Tour scheduling + analytics'] },
+  GROWTH:       { label: 'Growth',       price: '$499/mo',  homes: 'Up to 10 homes',    features: ['Everything in Professional', 'Discharge planner integration', 'Advanced analytics', 'Priority support', 'Unlimited marketplace hires'] },
+  AGENCY:       { label: 'Agency',       price: '$799/mo',  homes: 'Multi-location',    features: ['Everything in Growth', 'Agency staffing dashboard', 'Bulk caregiver hiring', 'Contractor & W2 management', 'Volume hire discounts'] },
+  ENTERPRISE:   { label: 'Enterprise',   price: 'Custom',   homes: 'Unlimited homes',   features: ['Everything in Agency', 'White-label', 'Dedicated support', 'EHR integration'] },
 };
 
-const PLAN_ORDER: Array<'STARTER' | 'PROFESSIONAL' | 'GROWTH'> = ['STARTER', 'PROFESSIONAL', 'GROWTH'];
+const PLAN_ORDER: Array<'STARTER' | 'PROFESSIONAL' | 'GROWTH' | 'AGENCY'> = ['STARTER', 'PROFESSIONAL', 'GROWTH', 'AGENCY'];
 
-const PLAN_RANK: Record<string, number> = { STARTER: 1, PROFESSIONAL: 2, GROWTH: 3, ENTERPRISE: 4 };
+const PLAN_RANK: Record<string, number> = { STARTER: 1, PROFESSIONAL: 2, GROWTH: 3, AGENCY: 3, ENTERPRISE: 4 };
 
 function StatusBadge({ status }: { status: SubscriptionData['subscriptionStatus'] }) {
   switch (status) {

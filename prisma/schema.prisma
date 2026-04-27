@@ -116,6 +116,7 @@ model Family {
   primaryDiagnosis        String?
   recipientAge            Int?
   relationshipToRecipient String?
+  referredByCode          String?               // affiliate ?ref= code captured at registration
   activities              ActivityFeedItem[]
   bookings                Booking[]
   emergencyPreferences    EmergencyPreference[]
@@ -238,19 +239,26 @@ model DemoRequest {
 }
 
 model Affiliate {
-  id             String              @id @default(cuid())
-  userId         String              @unique
-  affiliateCode  String              @unique
-  organization   String?
-  commissionRate Decimal?            @db.Decimal(5, 2)
-  paymentDetails Json?
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
-  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  referrals      AffiliateReferral[]
+  id              String              @id @default(cuid())
+  userId          String              @unique
+  affiliateCode   String              @unique
+  organization    String?
+  commissionRate  Decimal?            @db.Decimal(5, 2)
+  commissionTier  CommissionTier      @default(STANDARD)
+  paymentDetails  Json?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  referrals       AffiliateReferral[]
 
   @@index([userId])
   @@index([affiliateCode])
+}
+
+enum CommissionTier {
+  STANDARD  // 20%
+  SILVER    // 25%
+  GOLD      // 30%
 }
 
 model CaregiverCertification {
@@ -1116,17 +1124,18 @@ model Inspection {
 }
 
 model AffiliateReferral {
-  id               String    @id @default(cuid())
+  id               String                @id @default(cuid())
   affiliateId      String
   referredEmail    String
   referredUserId   String?
   status           String
+  referralType     AffiliateReferralType @default(OPERATOR)
   conversionDate   DateTime?
-  commissionAmount Decimal?  @db.Decimal(10, 2)
-  commissionPaid   Boolean   @default(false)
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-  affiliate        Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  commissionAmount Decimal?              @db.Decimal(10, 2)
+  commissionPaid   Boolean               @default(false)
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  affiliate        Affiliate             @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
 
   @@index([affiliateId])
   @@index([referredEmail])
@@ -2479,6 +2488,7 @@ enum SubscriptionPlan {
   STARTER
   PROFESSIONAL
   GROWTH
+  AGENCY
   ENTERPRISE
 }
 
@@ -2525,21 +2535,33 @@ model Invoice {
 
 /// Per-seat subscription profile for hospital discharge planners
 model DischargePlannerProfile {
-  id                   String              @id @default(cuid())
-  userId               String              @unique
+  id                   String                      @id @default(cuid())
+  userId               String                      @unique
   organization         String?
   title                String?
-  stripeCustomerId     String?             @unique
-  stripeSubscriptionId String?             @unique
+  stripeCustomerId     String?                     @unique
+  stripeSubscriptionId String?                     @unique
   subscriptionStatus   SubscriptionStatus?
+  licenseType          DischargePlannerLicenseType @default(INDIVIDUAL)
+  seatCount            Int                         @default(1)
   trialEndsAt          DateTime?
   currentPeriodEndsAt  DateTime?
-  createdAt            DateTime            @default(now())
-  updatedAt            DateTime            @updatedAt
-  user                 User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt            DateTime                    @default(now())
+  updatedAt            DateTime                    @updatedAt
+  user                 User                        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([stripeCustomerId])
+}
+
+enum DischargePlannerLicenseType {
+  INDIVIDUAL
+  DEPARTMENT
+}
+
+enum AffiliateReferralType {
+  OPERATOR
+  FAMILY
 }
 
 /// Families or prospects waiting for a bed at a specific home

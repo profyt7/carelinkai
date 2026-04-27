@@ -26,6 +26,8 @@ export async function GET() {
     where: { userId: user.id },
     select: {
       subscriptionStatus: true,
+      licenseType: true,
+      seatCount: true,
       trialEndsAt: true,
       currentPeriodEndsAt: true,
       organization: true,

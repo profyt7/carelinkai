@@ -233,10 +233,11 @@ async function triggerApplicationHireFee(
     select: { id: true, userId: true, stripeCustomerId: true, subscriptionPlan: true },
   });
 
-  // Professional and Growth plans include unlimited marketplace hires — no fee
+  // Professional, Growth, and Agency plans include unlimited marketplace hires — no fee
   if (
     operator?.subscriptionPlan === 'PROFESSIONAL' ||
-    operator?.subscriptionPlan === 'GROWTH'
+    operator?.subscriptionPlan === 'GROWTH' ||
+    operator?.subscriptionPlan === 'AGENCY'
   ) {
     console.log(`[HIRE_FEE] Plan ${operator.subscriptionPlan} — marketplace hire included, no fee`);
     return;

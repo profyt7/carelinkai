@@ -4,8 +4,10 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
 import OnCallQueue from '@/components/operator/oncall/OnCallQueue';
+import { planHasFeature } from '@/lib/subscription';
 
 export default async function OnCallAIPage() {
   const session = await getServerSession(authOptions);
@@ -13,6 +15,32 @@ export default async function OnCallAIPage() {
 
   const op = await prisma.operator.findUnique({ where: { userId: session.user.id } });
   if (!op) redirect('/dashboard');
+
+  // Gate: Professional+ only
+  if (!planHasFeature(op.subscriptionPlan, 'PROFESSIONAL')) {
+    return (
+      <div className="p-4 sm:p-6 max-w-2xl">
+        <Breadcrumbs items={[{ label: 'Operator', href: '/operator' }, { label: 'On-Call AI' }]} />
+        <div className="mt-6 rounded-xl border border-primary-200 bg-primary-50 p-8 text-center">
+          <div className="inline-flex items-center justify-center h-14 w-14 rounded-full bg-primary-100 mb-4">
+            <span className="text-2xl">⚡</span>
+          </div>
+          <h2 className="text-xl font-bold text-neutral-900 mb-2">On-Call AI — Professional Feature</h2>
+          <p className="text-neutral-600 mb-6 max-w-md mx-auto">
+            Automatically text and call your caregivers to fill open shifts. First to reply YES gets the shift.
+            Available on the <strong>Professional</strong> and <strong>Growth</strong> plans.
+          </p>
+          <Link
+            href="/operator/billing"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-lg font-semibold text-sm hover:bg-primary-700 transition-colors"
+          >
+            Upgrade to Professional
+          </Link>
+          <p className="text-xs text-neutral-400 mt-4">Current plan: {op.subscriptionPlan ?? 'No plan'}</p>
+        </div>
+      </div>
+    );
+  }
 
   const homes = await prisma.assistedLivingHome.findMany({
     where: { operatorId: op.id },

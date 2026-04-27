@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { dispatchWave } from '@/lib/oncall/dispatcher';
+import { planHasFeature } from '@/lib/subscription';
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
@@ -12,6 +13,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   const op = await prisma.operator.findUnique({ where: { userId: session.user.id } });
   if (!op) return NextResponse.json({ error: 'Operator only' }, { status: 403 });
+
+  if (!planHasFeature(op.subscriptionPlan, 'PROFESSIONAL')) {
+    return NextResponse.json({ error: 'On-Call AI requires the Professional plan or higher.' }, { status: 403 });
+  }
 
   const need = await prisma.shiftNeed.findFirst({ where: { id: params.id, home: { operatorId: op.id } } });
   if (!need) return NextResponse.json({ error: 'Not found' }, { status: 404 });

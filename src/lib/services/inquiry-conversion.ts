@@ -168,10 +168,16 @@ export async function convertInquiryToResident(
 
     // Fire affiliate commission — non-blocking
     if (inquiry.affiliateCode) {
+      // Determine referral type: if affiliateCode came from the family's stored referredByCode,
+      // it's a FAMILY referral; otherwise it's an OPERATOR referral (default)
+      const referralType = inquiry.family?.referredByCode === inquiry.affiliateCode
+        ? 'FAMILY'
+        : 'OPERATOR';
       triggerAffiliateCommission(
         inquiry.affiliateCode,
         inquiry.contactEmail || inquiry.family.user?.email || null,
-        validated.inquiryId
+        validated.inquiryId,
+        referralType as 'FAMILY' | 'OPERATOR'
       ).catch((err) => console.error('[AFFILIATE] Unexpected error:', err));
     }
 
@@ -275,7 +281,8 @@ async function triggerPlacementFee(
 async function triggerAffiliateCommission(
   affiliateCode: string,
   referredEmail: string | null,
-  inquiryId: string
+  inquiryId: string,
+  referralType: 'FAMILY' | 'OPERATOR' = 'OPERATOR'
 ): Promise<void> {
   const defaultPct = parseFloat(process.env.DEFAULT_AFFILIATE_COMMISSION_PCT ?? '20');
   const placementFeeCents = parseInt(process.env.PLACEMENT_FEE_CENTS ?? '50000', 10);
@@ -283,7 +290,7 @@ async function triggerAffiliateCommission(
   try {
     const affiliate = await prisma.affiliate.findUnique({
       where: { affiliateCode },
-      select: { id: true, userId: true, commissionRate: true },
+      select: { id: true, userId: true, commissionRate: true, commissionTier: true },
     });
 
     if (!affiliate) {
@@ -291,9 +298,12 @@ async function triggerAffiliateCommission(
       return;
     }
 
+    // Tier rates: STANDARD=20%, SILVER=25%, GOLD=30%
+    const TIER_RATES: Record<string, number> = { STANDARD: 20, SILVER: 25, GOLD: 30 };
+    const tierPct = TIER_RATES[affiliate.commissionTier ?? 'STANDARD'] ?? defaultPct;
     const commissionPct = affiliate.commissionRate
       ? parseFloat(affiliate.commissionRate.toString())
-      : defaultPct;
+      : tierPct;
     const commissionAmount = (placementFeeCents * commissionPct) / 100 / 100; // dollars
 
     // Upsert AffiliateReferral — create or update to CONVERTED
@@ -308,6 +318,7 @@ async function triggerAffiliateCommission(
         where: { id: existingReferral.id },
         data: {
           status: 'CONVERTED',
+          referralType,
           conversionDate: new Date(),
           commissionAmount,
         },
@@ -317,6 +328,7 @@ async function triggerAffiliateCommission(
         data: {
           affiliateId: affiliate.id,
           referredEmail: referredEmail ?? `inquiry:${inquiryId}`,
+          referralType,
           status: 'CONVERTED',
           conversionDate: new Date(),
           commissionAmount,
