@@ -6,10 +6,11 @@ import { useState, useEffect } from "react";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import { useRef } from "react";
 import { 
-  FiArrowRight, FiCheck, FiShield, FiUsers, FiHeart, FiActivity, 
-  FiSearch, FiStar, FiZap, FiBriefcase, FiMessageCircle, FiCalendar, 
+  FiArrowRight, FiCheck, FiShield, FiUsers, FiHeart, FiActivity,
+  FiSearch, FiStar, FiZap, FiBriefcase, FiMessageCircle, FiCalendar,
   FiFileText, FiClock, FiTarget, FiTrendingUp, FiAward, FiSmartphone,
-  FiVideo, FiGlobe, FiBarChart, FiChevronDown, FiPhone, FiMail, FiMapPin
+  FiVideo, FiGlobe, FiBarChart, FiChevronDown, FiPhone, FiMail, FiMapPin,
+  FiMenu, FiX
 } from "react-icons/fi";
 import { prefersReducedMotion, durations, easings } from "@/lib/animations";
 import DemoRequestForm from "@/components/marketing/DemoRequestForm";
@@ -38,6 +39,7 @@ export default function HomePage() {
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
   const [mounted, setMounted] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -74,55 +76,97 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-white overflow-x-hidden">
       {/* Navigation */}
-      <nav className="bg-white border-b border-neutral-200 px-4 md:px-6 py-4 sticky top-0 z-50 backdrop-blur-sm bg-white/90">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <Link href="/" className="flex items-center group">
-            <div className="relative h-16 w-64">
-              <Image 
-                src="/images/logo.png" 
-                alt="CareLinkAI"
-                fill
-                className="object-contain object-left"
-                priority
-              />
+      <nav className="bg-white/90 backdrop-blur-sm border-b border-neutral-200 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 md:px-6">
+          {/* Top row */}
+          <div className="flex justify-between items-center py-4">
+            <Link href="/" className="flex items-center group">
+              <div className="relative h-16 w-64">
+                <Image
+                  src="/images/logo.png"
+                  alt="CareLinkAI"
+                  fill
+                  className="object-contain object-left"
+                  priority
+                />
+              </div>
+            </Link>
+
+            {/* Desktop links */}
+            <div className="hidden lg:flex items-center space-x-6">
+              <Link href="#features" className="text-neutral-500 hover:text-primary-500 font-medium transition-colors">Features</Link>
+              <Link href="#how-it-works" className="text-neutral-500 hover:text-primary-500 font-medium transition-colors">How It Works</Link>
+              <Link href="#benefits" className="text-neutral-500 hover:text-primary-500 font-medium transition-colors">Who It Serves</Link>
+              <Link href="#pricing" className="text-neutral-500 hover:text-primary-500 font-medium transition-colors">Pricing</Link>
+              <Link href="#roadmap" className="text-neutral-500 hover:text-primary-500 font-medium transition-colors">Roadmap</Link>
+              <Link href="/learn" className="text-neutral-500 hover:text-primary-500 font-medium transition-colors">Learn</Link>
             </div>
-          </Link>
-          
-          <div className="hidden lg:flex items-center space-x-6">
-            <Link href="#features" className="text-neutral-500 hover:text-primary-500 font-medium transition-colors">
-              Features
-            </Link>
-            <Link href="#how-it-works" className="text-neutral-500 hover:text-primary-500 font-medium transition-colors">
-              How It Works
-            </Link>
-            <Link href="#benefits" className="text-neutral-500 hover:text-primary-500 font-medium transition-colors">
-              Who It Serves
-            </Link>
-            <Link href="#pricing" className="text-neutral-500 hover:text-primary-500 font-medium transition-colors">
-              Pricing
-            </Link>
-            <Link href="#roadmap" className="text-neutral-500 hover:text-primary-500 font-medium transition-colors">
-              Roadmap
-            </Link>
-            <Link href="/learn" className="text-neutral-500 hover:text-primary-500 font-medium transition-colors">
-              Learn
-            </Link>
+
+            {/* Right side: auth buttons + hamburger */}
+            <div className="flex items-center space-x-3">
+              <Link
+                href="/auth/login"
+                className="hidden lg:block text-primary-500 hover:text-primary-600 font-medium transition-colors"
+              >
+                Log in
+              </Link>
+              <Link
+                href="/auth/register"
+                className="bg-gradient-to-r from-primary-500 to-secondary-500 hover:opacity-90 text-white px-5 py-2.5 rounded-lg font-medium transition-opacity shadow-lg text-sm"
+              >
+                Sign up
+              </Link>
+              <button
+                className="lg:hidden p-2 rounded-md text-neutral-600 hover:bg-neutral-100 transition-colors"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+                aria-expanded={mobileMenuOpen}
+              >
+                {mobileMenuOpen ? <FiX size={22} /> : <FiMenu size={22} />}
+              </button>
+            </div>
           </div>
-          
-          <div className="flex items-center space-x-4">
-            <Link 
-              href="/auth/login" 
-              className="text-primary-500 hover:text-primary-600 font-medium transition-colors"
-            >
-              Log in
-            </Link>
-            <Link 
-              href="/auth/register" 
-              className="bg-gradient-to-r from-primary-500 to-secondary-500 hover:opacity-90 text-white px-6 py-2.5 rounded-lg font-medium transition-opacity shadow-lg"
-            >
-              Sign up
-            </Link>
-          </div>
+
+          {/* Mobile menu panel */}
+          {mobileMenuOpen && (
+            <div className="lg:hidden border-t border-neutral-100 pb-5">
+              <div className="space-y-1 pt-3">
+                {[
+                  { href: '#features', label: 'Features' },
+                  { href: '#how-it-works', label: 'How It Works' },
+                  { href: '#benefits', label: 'Who It Serves' },
+                  { href: '#pricing', label: 'Pricing' },
+                  { href: '#roadmap', label: 'Roadmap' },
+                  { href: '/learn', label: 'Learn' },
+                ].map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block px-3 py-3 rounded-lg text-neutral-700 hover:bg-primary-50 hover:text-primary-600 font-medium transition-colors text-base"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+              <div className="border-t border-neutral-100 pt-4 mt-2 flex flex-col gap-3">
+                <Link
+                  href="/auth/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block w-full text-center py-3 rounded-lg border-2 border-primary-500 text-primary-500 font-semibold hover:bg-primary-50 transition-colors"
+                >
+                  Log in
+                </Link>
+                <Link
+                  href="/auth/register"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block w-full text-center py-3 rounded-lg bg-gradient-to-r from-primary-500 to-secondary-500 text-white font-semibold shadow-lg hover:opacity-90 transition-opacity"
+                >
+                  Sign up free
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
       </nav>
 
