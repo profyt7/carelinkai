@@ -678,8 +678,13 @@ export default function HomePage() {
                   </div>
                 </div>
               </div>
+              <div className="mt-4 pt-4 border-t border-neutral-200">
+                <p className="text-xs text-neutral-400 text-center">
+                  Plans from <span className="font-semibold text-neutral-600">$99/mo</span> · 14-day free trial
+                </p>
+              </div>
             </div>
-            
+
             {/* For Caregivers */}
             <div className="bg-gradient-to-br from-primary-50 to-white p-6 rounded-2xl border border-primary-500/20">
               <div className="text-center mb-6">
