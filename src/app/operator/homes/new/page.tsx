@@ -124,8 +124,8 @@ export default function NewHomePage() {
       }
 
       const data = await res.json();
-      toast.success('Home created successfully');
-      router.push(`/operator/homes/${data.home.id}/edit`);
+      toast.success('Home created! Now generate your AI profile description.');
+      router.push(`/operator/homes/${data.home.id}/edit?ai=1`);
     } catch (e: any) {
       toast.error(e.message || 'Failed to create home');
     } finally {

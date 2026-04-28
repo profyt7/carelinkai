@@ -3,7 +3,7 @@
 import PhotoGalleryManager from '@/components/operator/homes/PhotoGalleryManager';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
 import { useEffect, useState } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 
 const CARE_LEVELS = [
@@ -34,8 +34,16 @@ const AMENITIES_OPTIONS = [
 export default function EditHomePage() {
   const router = useRouter();
   const params = useParams() as Record<string, string>;
+  const searchParams = useSearchParams();
   const id = params['id'];
   const operatorId = (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('operatorId') : null);
+  const [showAIBanner, setShowAIBanner] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get('ai') === '1') {
+      setShowAIBanner(true);
+    }
+  }, [searchParams]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [photos, setPhotos] = useState<any[]>([]);
@@ -303,6 +311,25 @@ export default function EditHomePage() {
           { label: form.name || 'Edit' }
         ]} />
 
+        {showAIBanner && (
+          <div className="mb-6 bg-gradient-to-r from-primary-50 to-secondary-50 border-2 border-primary-300 rounded-xl p-5 flex items-start gap-4">
+            <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center">
+              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <div className="font-bold text-primary-900 text-base mb-1">Your home was created — now let AI write your profile!</div>
+              <p className="text-sm text-primary-700">Scroll down to the <strong>Description</strong> field and click <strong>"Generate Profile with AI"</strong> to instantly create a compelling, professional listing description based on your home's details.</p>
+            </div>
+            <button onClick={() => setShowAIBanner(false)} className="text-primary-400 hover:text-primary-600 flex-shrink-0">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        )}
+
         <div className="rounded-lg border border-neutral-200 bg-white p-6">
           <h2 className="text-xl font-semibold text-neutral-800 mb-6">Edit Home Details</h2>
 
@@ -341,12 +368,12 @@ export default function EditHomePage() {
                 {errors.description && <p className="mt-1 text-sm text-error-600">{errors.description}</p>}
                 
                 {/* AI Profile Generation */}
-                <div className="mt-3">
+                <div className="mt-3 flex items-center gap-3 flex-wrap">
                   <button
                     type="button"
                     onClick={handleGenerateProfile}
                     disabled={generatingProfile}
-                    className="inline-flex items-center px-3 py-2 border border-primary-300 rounded-md text-sm font-medium text-primary-700 bg-primary-50 hover:bg-primary-100 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex items-center px-4 py-2.5 rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-primary-500 to-secondary-500 hover:opacity-90 shadow-md focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
                   >
                     <svg className={`w-4 h-4 mr-2 ${generatingProfile ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       {generatingProfile ? (
@@ -355,8 +382,9 @@ export default function EditHomePage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                       )}
                     </svg>
-                    {generatingProfile ? 'Generating...' : 'Generate Profile with AI'}
+                    {generatingProfile ? 'Generating...' : '⚡ Generate Profile with AI'}
                   </button>
+                  <span className="text-xs text-neutral-500">Saves 5+ hours of writing</span>
                   
                   {aiGeneratedData && aiGeneratedData.lastGenerated && (
                     <span className="ml-3 text-xs text-neutral-500">
