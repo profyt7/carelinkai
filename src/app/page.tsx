@@ -1332,7 +1332,7 @@ export default function HomePage() {
                 <div className="h-px w-16 bg-neutral-200"></div>
               </div>
             </div>
-            <div className="grid sm:grid-cols-2 gap-6 max-w-2xl mx-auto">
+            <div className="grid sm:grid-cols-2 gap-6 max-w-2xl mx-auto pt-6">
               {/* Individual */}
               <div className="border-2 border-neutral-200 rounded-2xl p-7 flex flex-col hover:border-secondary-500 hover:shadow-lg transition-all">
                 <div className="mb-4">
@@ -1354,7 +1354,7 @@ export default function HomePage() {
               {/* Department */}
               <div className="border-2 border-secondary-500 rounded-2xl p-7 flex flex-col shadow-xl relative bg-gradient-to-b from-secondary-50 to-white">
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                  <span className="bg-gradient-to-r from-secondary-500 to-primary-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow">BEST FOR HOSPITALS</span>
+                  <span className="bg-gradient-to-r from-secondary-500 to-primary-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow whitespace-nowrap">BEST FOR HOSPITALS</span>
                 </div>
                 <div className="mb-4">
                   <div className="text-sm font-semibold text-secondary-500 uppercase tracking-wide mb-2">Department</div>
