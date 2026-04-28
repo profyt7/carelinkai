@@ -714,7 +714,7 @@ export default function HomePage() {
                 </div>
               </div>
               <div className="mt-4 pt-4 border-t border-secondary-500/20 text-xs text-neutral-500 text-center">
-                Individual license <span className="font-semibold text-neutral-700">$99/mo</span> · Department (unlimited seats) <span className="font-semibold text-neutral-700">$499/mo</span>
+                Individual license <span className="font-semibold text-neutral-700">$99/mo</span> · Department (up to 10 seats) <span className="font-semibold text-neutral-700">$499/mo</span>
               </div>
             </div>
           </div>
@@ -1026,8 +1026,8 @@ export default function HomePage() {
               </div>
               <div className="mt-8 bg-gradient-to-r from-secondary-500/10 to-primary-500/10 rounded-xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4 border border-secondary-500/20">
                 <div>
-                  <div className="font-bold text-neutral-900 text-lg">Individual license: $99/mo · Department license: $499/mo</div>
-                  <div className="text-sm text-neutral-500 mt-1">Individual planners and hospital department teams both covered. Cancel anytime.</div>
+                  <div className="font-bold text-neutral-900 text-lg">Individual: $99/mo · Department (up to 10 seats): $499/mo</div>
+                  <div className="text-sm text-neutral-500 mt-1">14-day free trial. Individual planners or entire hospital departments — one invoice. Cancel anytime.</div>
                 </div>
                 <Link href="/auth/register?role=discharge_planner" className="bg-gradient-to-r from-secondary-500 to-primary-500 text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity whitespace-nowrap shadow-lg">
                   Start Free →
@@ -1190,7 +1190,7 @@ export default function HomePage() {
               Simple, Transparent Pricing
             </h2>
             <p className="text-xl text-neutral-500 max-w-3xl mx-auto">
-              Operators pay. Everyone else is free.
+              Families and caregivers are always free. Operators and discharge planners subscribe.
             </p>
           </div>
 
@@ -1319,8 +1319,60 @@ export default function HomePage() {
               <a href="mailto:hello@getcarelinkai.com" className="text-primary-500 font-semibold hover:underline">Contact us for Enterprise pricing.</a>
             </p>
             <p className="text-sm text-neutral-500 mt-3">
-              Families · Caregivers · Discharge Planners — always free to use CareLinkAI
+              Families &amp; Caregivers always use CareLinkAI free.
             </p>
+          </div>
+
+          {/* Discharge Planner pricing */}
+          <div className="max-w-6xl mx-auto mt-14">
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center gap-2 text-neutral-500 text-sm">
+                <div className="h-px w-16 bg-neutral-200"></div>
+                <span className="font-semibold uppercase tracking-widest text-xs">Discharge Planner &amp; Case Manager Plans</span>
+                <div className="h-px w-16 bg-neutral-200"></div>
+              </div>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-6 max-w-2xl mx-auto">
+              {/* Individual */}
+              <div className="border-2 border-neutral-200 rounded-2xl p-7 flex flex-col hover:border-secondary-500 hover:shadow-lg transition-all">
+                <div className="mb-4">
+                  <div className="text-sm font-semibold text-neutral-500 uppercase tracking-wide mb-2">Individual</div>
+                  <div className="text-4xl font-bold text-neutral-900">$99<span className="text-lg font-normal text-neutral-500">/mo</span></div>
+                  <div className="text-sm text-neutral-500 mt-1">1 planner · 14-day free trial</div>
+                </div>
+                <ul className="space-y-3 mb-8 flex-1">
+                  {['AI placement search', 'Multi-facility requests', 'Real-time bed availability', 'Placement history & analytics', 'HIPAA-compliant'].map((f) => (
+                    <li key={f} className="flex items-center gap-2 text-sm text-neutral-500">
+                      <FiCheck className="text-success-500 flex-shrink-0" /> {f}
+                    </li>
+                  ))}
+                </ul>
+                <Link href="/auth/register?role=discharge_planner&plan=individual" className="w-full text-center border-2 border-secondary-500 text-secondary-500 px-6 py-3 rounded-lg font-semibold hover:bg-secondary-500 hover:text-white transition-all">
+                  Start Free Trial
+                </Link>
+              </div>
+              {/* Department */}
+              <div className="border-2 border-secondary-500 rounded-2xl p-7 flex flex-col shadow-xl relative bg-gradient-to-b from-secondary-50 to-white">
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                  <span className="bg-gradient-to-r from-secondary-500 to-primary-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow">BEST FOR HOSPITALS</span>
+                </div>
+                <div className="mb-4">
+                  <div className="text-sm font-semibold text-secondary-500 uppercase tracking-wide mb-2">Department</div>
+                  <div className="text-4xl font-bold text-neutral-900">$499<span className="text-lg font-normal text-neutral-500">/mo</span></div>
+                  <div className="text-sm text-neutral-500 mt-1">Up to 10 planner seats · one invoice</div>
+                </div>
+                <ul className="space-y-3 mb-8 flex-1">
+                  {['Everything in Individual', 'Up to 10 planner seats', 'Shared department dashboard', 'Centralized billing', '14-day free trial'].map((f) => (
+                    <li key={f} className="flex items-center gap-2 text-sm text-neutral-500">
+                      <FiCheck className="text-secondary-500 flex-shrink-0" /> {f}
+                    </li>
+                  ))}
+                </ul>
+                <Link href="/auth/register?role=discharge_planner&plan=department" className="w-full text-center bg-gradient-to-r from-secondary-500 to-primary-500 text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity shadow-lg">
+                  Start Free Trial
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </section>
