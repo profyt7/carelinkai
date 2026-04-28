@@ -178,11 +178,13 @@ export default function HomePage() {
             src="/images/hero-bg.jpg"
             alt=""
             fill
-            className="object-cover object-center"
+            className="object-cover object-right"
             priority
           />
-          {/* Overlay: heavy on left for text readability, fades to transparent on right so image shows through */}
-          <div className="absolute inset-0 bg-gradient-to-r from-white/92 via-white/70 to-primary-50/25" />
+          {/* Layer 1: subtle dark tint across full image for depth and contrast */}
+          <div className="absolute inset-0 bg-black/30" />
+          {/* Layer 2: white panel on left so text is fully readable */}
+          <div className="absolute inset-0 bg-gradient-to-r from-white from-30% via-white/95 via-50% to-transparent" />
         </div>
 
         {/* Subtle decorative blobs on top of image */}
@@ -207,7 +209,7 @@ export default function HomePage() {
                 </span>
               </h1>
               
-              <p className="mt-6 text-xl text-neutral-500 max-w-xl leading-relaxed">
+              <p className="mt-6 text-xl text-neutral-700 max-w-xl leading-relaxed">
                 The all-in-one AI platform for senior care — intelligent matching for families, smart shift coverage for operators, and instant placements for discharge planners. HIPAA-compliant and live today.
               </p>
               
