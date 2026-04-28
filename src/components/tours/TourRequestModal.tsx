@@ -42,22 +42,16 @@ export default function TourRequestModal({
   homeName,
   onSuccess,
 }: TourRequestModalProps) {
-  // Step management
   const [currentStep, setCurrentStep] = useState<Step>("date-range");
-  
-  // Form data
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<string>("");
   const [familyNotes, setFamilyNotes] = useState("");
-  
-  // UI state
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  
-  // Initialize dates to next 30 days
+
   useEffect(() => {
     if (isOpen) {
       const today = startOfDay(new Date());
@@ -67,51 +61,8 @@ export default function TourRequestModal({
     }
   }, [isOpen]);
 
-  // Component mount logging (using console.error for production visibility)
-  useEffect(() => {
-    console.error("\n╔══════════════════════════════════════════════════════════╗");
-    console.error("║  🟢 TourRequestModal - COMPONENT MOUNTED               ║");
-    console.error("╚══════════════════════════════════════════════════════════╝\n");
-    console.error("📍 [MOUNT] Component initialized with props:");
-    console.error("  ├─ isOpen:", isOpen);
-    console.error("  ├─ homeId:", homeId);
-    console.error("  ├─ homeName:", homeName);
-    console.error("  └─ onSuccess callback:", !!onSuccess);
-    
-    return () => {
-      console.error("\n🔴 [UNMOUNT] TourRequestModal component unmounting\n");
-    };
-  }, []);
-
-  // Log when modal opens/closes
-  useEffect(() => {
-    if (isOpen) {
-      console.error("\n╔══════════════════════════════════════════════════════════╗");
-      console.error("║  🚪 MODAL OPENED                                        ║");
-      console.error("╚══════════════════════════════════════════════════════════╝\n");
-      console.error("📍 [MODAL OPEN] State at open:");
-      console.error("  ├─ homeId:", homeId);
-      console.error("  ├─ homeName:", homeName);
-      console.error("  ├─ currentStep:", currentStep);
-      console.error("  └─ isLoading:", isLoading);
-    } else {
-      console.error("\n🚪 [MODAL CLOSE] Modal closed\n");
-    }
-  }, [isOpen]);
-
-  // Reset state when modal closes
   const handleClose = () => {
-    console.error("\n🚪 [HANDLE CLOSE] handleClose() called");
-    console.error("  ├─ isLoading:", isLoading);
-    console.error("  └─ success:", success);
-    
-    // Prevent closing during submission
-    if (isLoading) {
-      console.error("⚠️ [HANDLE CLOSE] BLOCKED - Cannot close during submission");
-      return;
-    }
-    
-    console.error("✅ [HANDLE CLOSE] Closing modal and resetting state");
+    if (isLoading) return;
     setTimeout(() => {
       setCurrentStep("date-range");
       setStartDate("");
@@ -125,428 +76,140 @@ export default function TourRequestModal({
     onClose();
   };
 
-  // Fetch available time slots
   const fetchTimeSlots = async () => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
-      console.error("[TourRequestModal] Fetching time slots...");
-      console.error("[TourRequestModal] startDate:", startDate);
-      console.error("[TourRequestModal] endDate:", endDate);
-      console.error("[TourRequestModal] homeId:", homeId);
-      
       const startISO = new Date(startDate).toISOString();
       const endISO = new Date(endDate).toISOString();
-      
-      console.error("[TourRequestModal] startISO:", startISO);
-      console.error("[TourRequestModal] endISO:", endISO);
-      
       const url = `/api/family/tours/available-slots/${homeId}?startDate=${startISO}&endDate=${endISO}`;
-      console.error("[TourRequestModal] Fetching from:", url);
-      
       const response = await fetch(url);
-      
-      console.error("[TourRequestModal] Available slots response status:", response.status);
-      
+
       if (!response.ok) {
-        console.error("[TourRequestModal] Failed to fetch slots, status:", response.status);
         throw new Error("Failed to fetch available time slots");
       }
-      
+
       const data = await response.json();
-      console.error("[TourRequestModal] Available slots data:", data);
-      
-      if (data.success && data.suggestions) {
-        // DEFENSIVE: Validate suggestions is an array
-        if (!Array.isArray(data.suggestions)) {
-          console.error("[TourRequestModal] Suggestions is not an array:", data.suggestions);
-          throw new Error("Invalid response format: suggestions must be an array");
-        }
-        
-        // Convert suggestions to TimeSlot format with validation
-        console.error("[TourRequestModal] Raw suggestions from API:", data.suggestions);
-        console.error("[TourRequestModal] Number of suggestions:", data.suggestions.length);
-        
+
+      if (data.success && Array.isArray(data.suggestions)) {
         const slots: TimeSlot[] = data.suggestions
           .filter((suggestion: any) => {
-            // Validate slot has required time field
-            if (!suggestion) {
-              console.error("[TourRequestModal] Slot is null/undefined");
-              return false;
-            }
-            
-            if (!suggestion.time) {
-              console.error("[TourRequestModal] Slot missing time field:", suggestion);
-              return false;
-            }
-            
-            // Validate time is a string
-            if (typeof suggestion.time !== 'string') {
-              console.error("[TourRequestModal] Time field is not a string:", typeof suggestion.time, suggestion);
-              return false;
-            }
-            
-            // Validate time is a valid date
+            if (!suggestion?.time || typeof suggestion.time !== "string") return false;
             const date = new Date(suggestion.time);
-            if (isNaN(date.getTime())) {
-              console.error("[TourRequestModal] Invalid date string:", suggestion.time);
-              return false;
-            }
-            
-            // NOTE: reasoning/reason field is INFORMATIONAL only - not used for validation
-            // NOTE: available field is set by frontend - not used for validation
-            console.error("[TourRequestModal] ✅ Valid slot:", suggestion.time);
-            return true;
+            return !isNaN(date.getTime());
           })
           .map((suggestion: any) => ({
             time: suggestion.time,
             available: true,
             reason: suggestion.reason || "Available",
-            score: suggestion.score || 0, // AI confidence score
+            score: suggestion.score || 0,
           }));
-        
-        console.error("[TourRequestModal] Filtered valid slots:", slots.length);
-        console.error("[TourRequestModal] Converted slots:", slots);
-        
-        // DEFENSIVE: Check if we have any valid slots
-        if (slots.length === 0) {
-          console.error("[TourRequestModal] ❌ WARNING: No valid slots after filtering!");
-          console.error("[TourRequestModal] Original suggestions:", data.suggestions);
-        }
-        
+
         setAvailableSlots(slots);
         setCurrentStep("time-slots");
       } else {
-        console.error("[TourRequestModal] Invalid response format:", data);
         throw new Error("Invalid response format");
       }
     } catch (err) {
-      console.error("[TourRequestModal] Error fetching time slots:", err);
-      if (err instanceof Error) {
-        console.error("[TourRequestModal] Error stack:", err.stack);
-      }
       setError(err instanceof Error ? err.message : "Failed to load time slots");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Submit tour request
   const submitTourRequest = async () => {
-    console.error("\n╔══════════════════════════════════════════════════════════╗");
-    console.error("║  🚀 TOUR SUBMISSION - FRONTEND START                    ║");
-    console.error("╚══════════════════════════════════════════════════════════╝\n");
-    
     setIsLoading(true);
     setError(null);
-    
+
     try {
-      // === STEP 1: Validate Input Data ===
-      console.error("📋 [STEP 1] Validating Input Data");
-      console.error("  ├─ homeId:", homeId);
-      console.error("  ├─ homeName:", homeName);
-      console.error("  ├─ selectedSlot:", selectedSlot);
-      console.error("  ├─ familyNotes:", familyNotes || "(empty)");
-      console.error("  └─ familyNotes length:", familyNotes?.length || 0);
-      
-      if (!homeId) {
-        const errorMsg = "Home ID is missing";
-        console.error("  ❌ VALIDATION FAILED:", errorMsg);
-        throw new Error(errorMsg);
-      }
-      console.error("  ✅ homeId is valid");
-      
-      if (!selectedSlot) {
-        const errorMsg = "No time slot selected";
-        console.error("  ❌ VALIDATION FAILED:", errorMsg);
-        throw new Error(errorMsg);
-      }
-      console.error("  ✅ selectedSlot is present");
-      
-      // === STEP 2: Convert Date/Time ===
-      console.error("\n🕐 [STEP 2] Converting Date/Time");
-      console.error("  ├─ Input selectedSlot:", selectedSlot);
-      console.error("  ├─ Type of selectedSlot:", typeof selectedSlot);
-      
-      let isoDateTime: string;
-      try {
-        const dateObj = new Date(selectedSlot);
-        console.error("  ├─ Created Date object:", dateObj);
-        console.error("  ├─ Date is valid:", !isNaN(dateObj.getTime()));
-        
-        isoDateTime = dateObj.toISOString();
-        console.error("  ├─ Converted to ISO:", isoDateTime);
-        console.error("  └─ ISO string length:", isoDateTime.length);
-      } catch (dateErr) {
-        const errorMsg = "Invalid time slot format";
-        console.error("  ❌ DATE CONVERSION FAILED:", errorMsg);
-        console.error("  ├─ Error:", dateErr);
-        throw new Error(errorMsg);
-      }
-      console.error("  ✅ Date conversion successful");
-      
-      // === STEP 3: Prepare Request Body ===
-      console.error("\n📦 [STEP 3] Preparing Request Body");
-      
+      if (!homeId) throw new Error("Home ID is missing");
+      if (!selectedSlot) throw new Error("No time slot selected");
+
+      const dateObj = new Date(selectedSlot);
+      if (isNaN(dateObj.getTime())) throw new Error("Invalid time slot format");
+      const isoDateTime = dateObj.toISOString();
+
       const requestBody = {
         homeId,
         requestedTimes: [isoDateTime],
         familyNotes: familyNotes || undefined,
       };
-      
-      console.error("  ├─ Request body structure:");
-      console.error("  │  ├─ homeId:", requestBody.homeId);
-      console.error("  │  ├─ requestedTimes:", requestBody.requestedTimes);
-      console.error("  │  └─ familyNotes:", requestBody.familyNotes || "(undefined)");
-      console.error("  ├─ Full JSON:");
-      console.error(JSON.stringify(requestBody, null, 2));
-      console.error("  └─ JSON string length:", JSON.stringify(requestBody).length);
-      console.error("  ✅ Request body prepared");
-      
-      // === STEP 4: Make API Call ===
-      console.error("\n🌐 [STEP 4] Making API Call");
-      console.error("  ├─ URL: /api/family/tours/request");
-      console.error("  ├─ Method: POST");
-      console.error("  ├─ Content-Type: application/json");
-      console.error("  └─ Sending request...");
-      
-      const requestStartTime = Date.now();
-      
+
       let response;
       try {
         response = await fetch("/api/family/tours/request", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(requestBody),
         });
-        
-        const requestDuration = Date.now() - requestStartTime;
-        console.error("  ├─ Request completed in:", requestDuration, "ms");
       } catch (fetchErr) {
-        console.error("  ❌ FETCH FAILED:", fetchErr);
-        if (fetchErr instanceof Error) {
-          console.error("  ├─ Error name:", fetchErr.name);
-          console.error("  ├─ Error message:", fetchErr.message);
-          console.error("  └─ Error stack:", fetchErr.stack);
-        }
-        throw new Error("Network request failed: " + (fetchErr instanceof Error ? fetchErr.message : "Unknown error"));
+        throw new Error(
+          "Network request failed: " +
+            (fetchErr instanceof Error ? fetchErr.message : "Unknown error")
+        );
       }
-      
-      // === STEP 5: Process Response ===
-      console.error("\n📨 [STEP 5] Processing Response");
-      console.error("  ├─ Response status:", response.status);
-      console.error("  ├─ Response statusText:", response.statusText);
-      console.error("  ├─ Response ok:", response.ok);
-      console.error("  ├─ Response type:", response.type);
-      console.error("  ├─ Response headers:");
-      
-      response.headers.forEach((value, key) => {
-        console.error(`  │  ├─ ${key}: ${value}`);
-      });
-      
+
       if (!response.ok) {
-        console.error("  ❌ RESPONSE NOT OK - Status:", response.status);
-        
         let errorData;
         try {
-          const errorText = await response.text();
-          console.error("  ├─ Raw error response:", errorText);
-          
-          try {
-            errorData = JSON.parse(errorText);
-            console.error("  ├─ Parsed error data:", errorData);
-          } catch (jsonErr) {
-            console.error("  ├─ Could not parse as JSON");
-            errorData = { error: errorText };
-          }
-        } catch (parseErr) {
-          console.error("  ├─ Failed to read error response:", parseErr);
+          errorData = await response.json();
+        } catch {
           throw new Error(`Server error (${response.status})`);
         }
-        
-        const errorMsg = errorData.error || `Failed to submit tour request (${response.status})`;
-        console.error("  └─ Error message:", errorMsg);
-        throw new Error(errorMsg);
+        throw new Error(
+          errorData.error || `Failed to submit tour request (${response.status})`
+        );
       }
-      
-      console.error("  ✅ Response status is OK");
-      
-      // === STEP 6: Parse Response Data ===
-      console.error("\n📄 [STEP 6] Parsing Response Data");
-      
-      let data;
-      try {
-        const responseText = await response.text();
-        console.error("  ├─ Raw response text:", responseText);
-        console.error("  ├─ Response text length:", responseText.length);
-        
-        data = JSON.parse(responseText);
-        console.error("  ├─ Parsed JSON successfully");
-        console.error("  ├─ Response data:");
-        console.error(JSON.stringify(data, null, 2));
-      } catch (parseErr) {
-        console.error("  ❌ JSON PARSE FAILED:", parseErr);
-        throw new Error("Failed to parse server response");
-      }
-      
-      console.error("  ✅ Response data parsed");
-      
-      // === STEP 7: Verify Success ===
-      console.error("\n✅ [STEP 7] Verifying Success");
-      console.error("  ├─ data.success:", data.success);
-      console.error("  ├─ data.tourRequest:", !!data.tourRequest);
-      
+
+      const data = await response.json();
+
       if (data.success) {
-        console.error("  ├─ Tour request details:");
-        if (data.tourRequest) {
-          console.error("  │  ├─ id:", data.tourRequest.id);
-          console.error("  │  ├─ homeId:", data.tourRequest.homeId);
-          console.error("  │  ├─ homeName:", data.tourRequest.homeName);
-          console.error("  │  ├─ status:", data.tourRequest.status);
-          console.error("  │  └─ requestedTimes:", data.tourRequest.requestedTimes);
-        }
-        
-        console.error("\n╔══════════════════════════════════════════════════════════╗");
-        console.error("║  ✅ TOUR SUBMISSION - SUCCESS!                          ║");
-        console.error("╚══════════════════════════════════════════════════════════╝\n");
-        
         setSuccess(true);
         setCurrentStep("confirmation");
-        
-        // Call onSuccess callback after a short delay
         setTimeout(() => {
-          if (onSuccess) {
-            console.error("  └─ Calling onSuccess callback");
-            onSuccess();
-          }
-          console.error("  └─ Closing modal");
+          if (onSuccess) onSuccess();
           handleClose();
         }, 2000);
       } else {
-        const errorMsg = "API returned success=false";
-        console.error("  ❌ SUCCESS CHECK FAILED:", errorMsg);
-        console.error("  └─ Response data:", data);
-        throw new Error(errorMsg);
+        throw new Error("Failed to submit tour request");
       }
     } catch (err) {
-      console.error("\n╔══════════════════════════════════════════════════════════╗");
-      console.error("║  ❌ TOUR SUBMISSION - ERROR CAUGHT                       ║");
-      console.error("╚══════════════════════════════════════════════════════════╝\n");
-      
-      console.error("🚨 [ERROR HANDLER] Caught exception in tour submission");
-      console.error("  ├─ Error type:", err?.constructor?.name || "Unknown");
-      console.error("  ├─ Error:", err);
-      
-      if (err instanceof Error) {
-        console.error("  ├─ Error name:", err.name);
-        console.error("  ├─ Error message:", err.message);
-        console.error("  ├─ Error stack:");
-        console.error(err.stack);
-      }
-      
-      const errorMessage = err instanceof Error ? err.message : "Failed to submit request";
-      console.error("  ├─ Setting error message:", errorMessage);
-      console.error("  └─ Displaying error to user");
-      
-      setError(errorMessage);
+      setError(err instanceof Error ? err.message : "Failed to submit request");
     } finally {
       setIsLoading(false);
-      console.error("\n🏁 [FINALLY] Tour submission process completed");
-      console.error("  └─ Loading state cleared\n");
     }
   };
 
-  // Navigation handlers
   const handleNext = () => {
-    try {
-      // 🔴🔴🔴 CRITICAL: LOG AT THE VERY FIRST LINE TO CATCH BUTTON CLICK
-      console.error("\n╔══════════════════════════════════════════════════════════╗");
-      console.error("║  🔴 BUTTON CLICKED - handleNext() CALLED               ║");
-      console.error("╚══════════════════════════════════════════════════════════╝\n");
-      
-      console.error("🔴 [BUTTON CLICK] Function entry - handler is executing!");
-      console.error("🔴 [STATE SNAPSHOT] Current state at button click:");
-      console.error("  ├─ currentStep:", currentStep);
-      console.error("  ├─ homeId:", homeId);
-      console.error("  ├─ homeName:", homeName);
-      console.error("  ├─ selectedSlot:", selectedSlot);
-      console.error("  ├─ familyNotes:", familyNotes || "(empty)");
-      console.error("  ├─ startDate:", startDate);
-      console.error("  ├─ endDate:", endDate);
-      console.error("  ├─ isLoading:", isLoading);
-      console.error("  ├─ error:", error);
-      console.error("  └─ success:", success);
-      
-      console.error("\n🔴 [FLOW CHECK] Checking which step we're in...");
-      console.error("[TourRequestModal] handleNext called, currentStep:", currentStep);
-    
+    setError(null);
+
     if (currentStep === "date-range") {
-      console.error("🔴 [FLOW] Inside date-range branch");
       if (!startDate || !endDate) {
-        const errorMsg = "Please select both start and end dates";
-        console.error("[TourRequestModal] Validation error:", errorMsg);
-        setError(errorMsg);
+        setError("Please select both start and end dates");
         return;
       }
       if (new Date(startDate) > new Date(endDate)) {
-        const errorMsg = "End date must be after start date";
-        console.error("[TourRequestModal] Validation error:", errorMsg);
-        setError(errorMsg);
+        setError("End date must be after start date");
         return;
       }
-      console.error("[TourRequestModal] Date range valid, fetching time slots");
       fetchTimeSlots();
     } else if (currentStep === "time-slots") {
-      console.error("🔴 [FLOW] Inside time-slots branch");
       if (!selectedSlot) {
-        const errorMsg = "Please select a time slot";
-        console.error("🔴 [VALIDATION ERROR] No time slot selected:", errorMsg);
-        setError(errorMsg);
+        setError("Please select a time slot");
         return;
       }
-      console.error("🔴 [FLOW] Time slot selected:", selectedSlot);
-      console.error("🔴 [FLOW] Moving to notes step");
       setCurrentStep("notes");
     } else if (currentStep === "notes") {
-      console.error("🔴 [FLOW] Inside notes branch - ABOUT TO SUBMIT!");
-      console.error("🔴 [PRE-SUBMIT CHECK]");
-      console.error("  ├─ homeId exists:", !!homeId);
-      console.error("  ├─ selectedSlot exists:", !!selectedSlot);
-      console.error("  ├─ isLoading:", isLoading);
-      console.error("  └─ About to call submitTourRequest()...");
-      
-      console.error("\n🔴 [CALLING] submitTourRequest() NOW...\n");
       submitTourRequest();
-      console.error("🔴 [AFTER CALL] submitTourRequest() was invoked (may be async)");
-    } else {
-      console.error("🔴 [ERROR] Unknown step:", currentStep);
-    }
-    } catch (err) {
-      console.error("\n╔══════════════════════════════════════════════════════════╗");
-      console.error("║  🚨 CRITICAL ERROR IN handleNext()                      ║");
-      console.error("╚══════════════════════════════════════════════════════════╝\n");
-      console.error("🚨 [EXCEPTION CAUGHT] Error in handleNext:", err);
-      if (err instanceof Error) {
-        console.error("  ├─ Error name:", err.name);
-        console.error("  ├─ Error message:", err.message);
-        console.error("  └─ Error stack:", err.stack);
-      }
-      setError(err instanceof Error ? err.message : "An unexpected error occurred");
     }
   };
 
   const handleBack = () => {
-    if (currentStep === "time-slots") {
-      setCurrentStep("date-range");
-    } else if (currentStep === "notes") {
-      setCurrentStep("time-slots");
-    }
+    if (currentStep === "time-slots") setCurrentStep("date-range");
+    else if (currentStep === "notes") setCurrentStep("time-slots");
   };
 
-  // Step indicator
   const steps = [
     { id: "date-range", label: "Date Range", number: 1 },
     { id: "time-slots", label: "Select Time", number: 2 },
@@ -562,7 +225,6 @@ export default function TourRequestModal({
         className="relative z-50"
         onClose={isLoading ? () => {} : handleClose}
       >
-        {/* Backdrop */}
         <Transition.Child
           as={Fragment}
           enter="ease-out duration-300"
@@ -617,9 +279,7 @@ export default function TourRequestModal({
                         {steps.map((step, index) => (
                           <li
                             key={step.id}
-                            className={`relative ${
-                              index !== steps.length - 1 ? "flex-1" : ""
-                            }`}
+                            className={`relative ${index !== steps.length - 1 ? "flex-1" : ""}`}
                           >
                             <div className="flex items-center">
                               <div
@@ -719,7 +379,7 @@ export default function TourRequestModal({
                   {/* Step 2: Time Slots */}
                   {currentStep === "time-slots" && (
                     <div className="space-y-4">
-                      {/* AI Branding Section */}
+                      {/* AI Branding Banner */}
                       <div className="rounded-lg border-2 border-success-200 bg-gradient-to-r from-success-50 to-emerald-50 p-4">
                         <div className="flex items-start">
                           <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-success-600">
@@ -731,7 +391,9 @@ export default function TourRequestModal({
                               AI-Powered Tour Recommendations
                             </h4>
                             <p className="mt-1 text-sm text-success-800">
-                              Our intelligent system has analyzed home availability, tour duration, and optimal scheduling patterns to suggest the best times for your visit. Times are ranked by confidence level.
+                              Our intelligent system has analyzed home availability, tour duration,
+                              and optimal scheduling patterns to suggest the best times for your
+                              visit. Times are ranked by confidence level.
                             </p>
                           </div>
                         </div>
@@ -746,6 +408,7 @@ export default function TourRequestModal({
                           Choose from AI-recommended times sorted by best match
                         </p>
                       </div>
+
                       {availableSlots.length > 0 ? (
                         <TimeSlotSelector
                           slots={availableSlots}
@@ -758,8 +421,8 @@ export default function TourRequestModal({
                             <FiAlertCircle className="h-5 w-5 text-warning-400" />
                             <div className="ml-3">
                               <p className="text-sm text-warning-700">
-                                No available time slots found for the selected date
-                                range. Please try a different date range.
+                                No available time slots found for the selected date range.
+                                Please try a different date range.
                               </p>
                             </div>
                           </div>
@@ -788,12 +451,10 @@ export default function TourRequestModal({
                           disabled={isLoading}
                         />
                       </div>
-                      
-                      {/* Summary */}
+
+                      {/* Tour Summary */}
                       <div className="rounded-md bg-neutral-50 p-4">
-                        <h4 className="text-sm font-medium text-neutral-900">
-                          Tour Summary
-                        </h4>
+                        <h4 className="text-sm font-medium text-neutral-900">Tour Summary</h4>
                         <dl className="mt-2 space-y-1 text-sm">
                           <div className="flex justify-between">
                             <dt className="text-neutral-600">Home:</dt>
@@ -803,10 +464,7 @@ export default function TourRequestModal({
                             <dt className="text-neutral-600">Requested Time:</dt>
                             <dd className="font-medium text-neutral-900">
                               {selectedSlot
-                                ? format(
-                                    new Date(selectedSlot),
-                                    "EEEE, MMMM d, yyyy 'at' h:mm a"
-                                  )
+                                ? format(new Date(selectedSlot), "EEEE, MMMM d, yyyy 'at' h:mm a")
                                 : "Not selected"}
                             </dd>
                           </div>
@@ -825,8 +483,8 @@ export default function TourRequestModal({
                         Tour Request Submitted!
                       </h3>
                       <p className="mt-2 text-sm text-neutral-600">
-                        Your tour request has been sent to {homeName}. They will
-                        confirm your appointment shortly.
+                        Your tour request has been sent to {homeName}. They will confirm your
+                        appointment shortly.
                       </p>
                       <p className="mt-4 text-xs text-neutral-500">
                         You'll receive an email confirmation once the tour is confirmed.
@@ -872,9 +530,7 @@ export default function TourRequestModal({
                       {isLoading ? (
                         <>
                           <FiLoader className="mr-2 h-4 w-4 animate-spin" />
-                          {currentStep === "date-range"
-                            ? "Loading..."
-                            : "Submitting..."}
+                          {currentStep === "date-range" ? "Loading..." : "Submitting..."}
                         </>
                       ) : currentStep === "notes" ? (
                         <>
