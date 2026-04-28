@@ -114,7 +114,7 @@ export default function HomePage() {
                 href="/auth/register"
                 className="bg-gradient-to-r from-primary-500 to-secondary-500 hover:opacity-90 text-white px-5 py-2.5 rounded-lg font-medium transition-opacity shadow-lg text-sm"
               >
-                Sign up
+                Sign up free
               </Link>
               <button
                 className="lg:hidden p-2 rounded-md text-neutral-600 hover:bg-neutral-100 transition-colors"
@@ -209,11 +209,11 @@ export default function HomePage() {
                   whileHover={reducedMotion ? undefined : { scale: 1.02, y: -2 }}
                   whileTap={reducedMotion ? undefined : { scale: 0.98 }}
                 >
-                  <Link 
-                    href="/auth/register" 
+                  <Link
+                    href="/auth/register"
                     className="group bg-gradient-to-r from-primary-500 to-secondary-500 hover:shadow-xl text-white px-8 py-4 rounded-lg font-semibold text-center flex items-center justify-center shadow-lg transition-all duration-300"
                   >
-                    Get Started Free
+                    Get Started — It&apos;s Free
                     <FiArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
                   </Link>
                 </motion.div>
@@ -244,6 +244,10 @@ export default function HomePage() {
                 <div className="flex items-center">
                   <FiZap className="text-secondary-500 mr-2 flex-shrink-0" />
                   <span>Instant matches</span>
+                </div>
+                <div className="flex items-center font-semibold text-success-700 bg-success-50 border border-success-200 rounded-full px-3 py-1">
+                  <FiHeart className="mr-1.5 flex-shrink-0" />
+                  <span>Free for families &amp; caregivers</span>
                 </div>
               </div>
             </div>
@@ -309,7 +313,10 @@ export default function HomePage() {
               <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-400 flex items-center justify-center mb-6">
                 <FiUsers className="text-white text-3xl" />
               </div>
-              <h3 className="text-2xl font-bold text-neutral-900 mb-3">For Families</h3>
+              <div className="flex items-center gap-3 mb-3">
+                <h3 className="text-2xl font-bold text-neutral-900">For Families</h3>
+                <span className="text-xs font-bold bg-success-100 text-success-700 border border-success-200 rounded-full px-2.5 py-1 uppercase tracking-wide">Always Free</span>
+              </div>
               <p className="text-neutral-500 mb-4">
                 Find the perfect care home or caregiver for your loved one through our AI matching engine.
               </p>
@@ -552,7 +559,10 @@ export default function HomePage() {
                 <div className="inline-flex h-16 w-16 rounded-full bg-gradient-to-br from-primary-500 to-primary-400 items-center justify-center mb-4">
                   <FiUsers className="text-white text-2xl" />
                 </div>
-                <h3 className="text-xl font-bold text-neutral-900">For Families</h3>
+                <div className="flex items-center justify-center gap-2">
+                  <h3 className="text-xl font-bold text-neutral-900">For Families</h3>
+                  <span className="text-xs font-bold bg-success-100 text-success-700 border border-success-200 rounded-full px-2.5 py-1 uppercase tracking-wide">Free</span>
+                </div>
               </div>
               <div className="space-y-4">
                 <div className="flex items-start">
@@ -630,7 +640,10 @@ export default function HomePage() {
                 <div className="inline-flex h-16 w-16 rounded-full bg-gradient-to-br from-primary-500 to-secondary-500 items-center justify-center mb-4">
                   <FiHeart className="text-white text-2xl" />
                 </div>
-                <h3 className="text-xl font-bold text-neutral-900">For Caregivers</h3>
+                <div className="flex items-center justify-center gap-2">
+                  <h3 className="text-xl font-bold text-neutral-900">For Caregivers</h3>
+                  <span className="text-xs font-bold bg-success-100 text-success-700 border border-success-200 rounded-full px-2.5 py-1 uppercase tracking-wide">Free</span>
+                </div>
               </div>
               <div className="space-y-4">
                 <div className="flex items-start">
@@ -787,6 +800,14 @@ export default function HomePage() {
           {/* Tab Content */}
           <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12 border border-neutral-200">
             {activeBenefitTab === 'families' && (
+              <div>
+              <div className="mb-8 bg-success-50 border border-success-200 rounded-xl px-6 py-4 flex items-start gap-3">
+                <FiCheck className="text-success-600 flex-shrink-0 text-xl mt-0.5" />
+                <div>
+                  <span className="font-bold text-success-800 text-base">100% free for families — no subscription, no credit card, no catch.</span>
+                  <span className="text-success-700 ml-2 text-sm">Search care homes, connect with caregivers, and book tours at absolutely no cost. CareLinkAI is funded by care home operators, not families.</span>
+                </div>
+              </div>
               <div className="grid md:grid-cols-2 gap-8">
                 <div className="flex items-start space-x-4">
                   <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-br from-primary-500 to-primary-400 flex items-center justify-center">
@@ -834,8 +855,9 @@ export default function HomePage() {
                   </div>
                 </div>
               </div>
+              </div>
             )}
-            
+
             {activeBenefitTab === 'operators' && (
               <div>
                 <div className="grid md:grid-cols-3 gap-6 mb-8">
@@ -877,6 +899,14 @@ export default function HomePage() {
             )}
             
             {activeBenefitTab === 'caregivers' && (
+              <div>
+              <div className="mb-8 bg-success-50 border border-success-200 rounded-xl px-6 py-4 flex items-start gap-3">
+                <FiCheck className="text-success-600 flex-shrink-0 text-xl mt-0.5" />
+                <div>
+                  <span className="font-bold text-success-800 text-base">Free for caregivers — create your profile, apply for jobs, and get hired at no cost.</span>
+                  <span className="text-success-700 ml-2 text-sm">No subscription fees ever. Build your reputation, earn points, and grow your career without paying a dime.</span>
+                </div>
+              </div>
               <div className="grid md:grid-cols-2 gap-8">
                 <div className="flex items-start space-x-4">
                   <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center">
@@ -932,6 +962,7 @@ export default function HomePage() {
                     <p className="text-neutral-500">Your 0-100 reliability score is visible to operators — built from reviews, shift history, and on-time record. High scores mean more job offers.</p>
                   </div>
                 </div>
+              </div>
               </div>
             )}
 
@@ -1151,7 +1182,7 @@ export default function HomePage() {
       {/* 6. PRICING SECTION */}
       <section id="pricing" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 md:px-6">
-          <div className="text-center mb-14">
+          <div className="text-center mb-10">
             <div className="inline-flex items-center bg-success-100 text-success-800 rounded-full px-4 py-2 mb-6 text-sm font-semibold">
               <FiCheck className="mr-2" /> 14-day free trial · No credit card required
             </div>
@@ -1159,8 +1190,46 @@ export default function HomePage() {
               Simple, Transparent Pricing
             </h2>
             <p className="text-xl text-neutral-500 max-w-3xl mx-auto">
-              For care home operators. Families and caregivers always search free.
+              Operators pay. Everyone else is free.
             </p>
+          </div>
+
+          {/* Free tier callout */}
+          <div className="max-w-6xl mx-auto mb-10">
+            <div className="bg-gradient-to-r from-success-50 to-success-100 border-2 border-success-300 rounded-2xl p-6 md:p-8">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 h-14 w-14 rounded-xl bg-success-500 flex items-center justify-center shadow-lg">
+                    <FiHeart className="text-white text-2xl" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-3 mb-1">
+                      <h3 className="text-xl font-bold text-success-900">Families &amp; Caregivers — Always Free</h3>
+                      <span className="bg-success-500 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">$0 Forever</span>
+                    </div>
+                    <p className="text-success-800 text-sm leading-relaxed max-w-xl">
+                      Search care homes, connect with caregivers, book tours, apply for jobs, build your profile, and earn rewards — completely free, always. No hidden fees, no freemium gotcha, no credit card required.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-3 flex-shrink-0">
+                  <Link href="/auth/register?role=family" className="bg-success-600 hover:bg-success-700 text-white px-6 py-3 rounded-lg font-semibold text-center transition-colors shadow-md whitespace-nowrap">
+                    I&apos;m a Family →
+                  </Link>
+                  <Link href="/auth/register?role=caregiver" className="bg-white hover:bg-success-50 text-success-700 border-2 border-success-400 px-6 py-3 rounded-lg font-semibold text-center transition-colors whitespace-nowrap">
+                    I&apos;m a Caregiver →
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center gap-2 text-neutral-500 text-sm">
+              <div className="h-px w-16 bg-neutral-200"></div>
+              <span className="font-semibold uppercase tracking-widest text-xs">Care Home Operator Plans</span>
+              <div className="h-px w-16 bg-neutral-200"></div>
+            </div>
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
