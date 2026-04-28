@@ -1896,10 +1896,11 @@ export default function HomePage() {
             <div>
               <h3 className="text-white font-bold mb-4">Company</h3>
               <ul className="space-y-3">
-                <li><Link href="/about" className="hover:text-white transition-colors">About Us</Link></li>
-                <li><Link href="/careers" className="hover:text-white transition-colors">Careers</Link></li>
-                <li><Link href="/blog" className="hover:text-white transition-colors">Blog</Link></li>
-                <li><Link href="/press" className="hover:text-white transition-colors">Press Kit</Link></li>
+                <li><a href="mailto:hello@getcarelinkai.com" className="hover:text-white transition-colors">About Us</a></li>
+                <li><a href="mailto:hello@getcarelinkai.com?subject=Press%20Inquiry" className="hover:text-white transition-colors">Press Inquiries</a></li>
+                <li><a href="mailto:hello@getcarelinkai.com?subject=Careers" className="hover:text-white transition-colors">Careers</a></li>
+                <li><Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
+                <li><Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link></li>
               </ul>
             </div>
             
