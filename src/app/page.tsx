@@ -322,8 +322,8 @@ export default function HomePage() {
             </p>
           </div>
           
-          {/* Three-channel strategy */}
-          <div className="grid md:grid-cols-3 gap-8 mt-12">
+          {/* Four-segment strategy */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mt-12">
             <div className="bg-gradient-to-br from-primary-50 to-white p-8 rounded-2xl border border-primary-500/20 hover:shadow-lg transition-shadow">
               <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-400 flex items-center justify-center mb-6">
                 <FiUsers className="text-white text-3xl" />
@@ -399,6 +399,37 @@ export default function HomePage() {
                 <li className="flex items-start">
                   <FiCheck className="text-primary-500 mt-1 mr-2 flex-shrink-0" />
                   <span className="text-sm text-neutral-500">Real-time bed availability</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="bg-gradient-to-br from-success-50 to-white p-8 rounded-2xl border border-success-500/20 hover:shadow-lg transition-shadow">
+              <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-success-500 to-success-400 flex items-center justify-center mb-6">
+                <FiHeart className="text-white text-3xl" />
+              </div>
+              <div className="flex items-center gap-3 mb-3">
+                <h3 className="text-2xl font-bold text-neutral-900">For Caregivers</h3>
+                <span className="text-xs font-bold bg-success-100 text-success-700 border border-success-200 rounded-full px-2.5 py-1 uppercase tracking-wide">Always Free</span>
+              </div>
+              <p className="text-neutral-500 mb-4">
+                Find shifts, build your career, and get matched to care homes that need your skills.
+              </p>
+              <ul className="space-y-2">
+                <li className="flex items-start">
+                  <FiCheck className="text-success-500 mt-1 mr-2 flex-shrink-0" />
+                  <span className="text-sm text-neutral-500">AI job matching to nearby shifts</span>
+                </li>
+                <li className="flex items-start">
+                  <FiCheck className="text-success-500 mt-1 mr-2 flex-shrink-0" />
+                  <span className="text-sm text-neutral-500">Build your professional profile</span>
+                </li>
+                <li className="flex items-start">
+                  <FiCheck className="text-success-500 mt-1 mr-2 flex-shrink-0" />
+                  <span className="text-sm text-neutral-500">Instant shift notifications</span>
+                </li>
+                <li className="flex items-start">
+                  <FiCheck className="text-success-500 mt-1 mr-2 flex-shrink-0" />
+                  <span className="text-sm text-neutral-500">Apply directly to care homes</span>
                 </li>
               </ul>
             </div>
