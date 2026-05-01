@@ -19,6 +19,7 @@ import {
   FiHeart
 } from "react-icons/fi";
 import RequestCareButton from "@/components/marketplace/RequestCareButton";
+import ProviderReviewsListClient from "@/components/marketplace/ProviderReviewsListClient";
 
 type Provider = {
   id: string;
@@ -279,6 +280,11 @@ export default function ProviderDetailPage() {
                 )}
               </div>
             </div>
+          </div>
+
+          {/* Reviews Section */}
+          <div className="bg-white rounded-lg shadow border border-neutral-200 p-6">
+            <ProviderReviewsListClient providerId={provider.id} />
           </div>
 
           {/* About Section */}

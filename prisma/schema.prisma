@@ -396,6 +396,7 @@ model Provider {
   leads                 Lead[]               @relation("LeadToProvider")
   user                  User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   credentials           ProviderCredential[]
+  reviews               ProviderReview[]
 
   @@index([userId])
   @@index([businessName])
@@ -403,6 +404,22 @@ model Provider {
   @@index([isActive])
   @@index([serviceTypes])
   @@index([createdAt])
+}
+
+model ProviderReview {
+  id         String   @id @default(cuid())
+  providerId String
+  reviewerId String
+  rating     Int
+  title      String?
+  content    String?
+  isPublic   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  provider   Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([providerId])
+  @@index([rating])
 }
 
 model ProviderCredential {
