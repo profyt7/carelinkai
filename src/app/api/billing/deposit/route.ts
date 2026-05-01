@@ -94,9 +94,9 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Handle development environment without Stripe keys
-    if (process.env.NODE_ENV !== 'production' && !process.env['STRIPE_SECRET_KEY']) {
-      console.log('Using mock Stripe response in development');
+    // Return a mock response when Stripe is not configured
+    if (!process.env['STRIPE_SECRET_KEY'] || process.env['STRIPE_SECRET_KEY'] === 'sk_test_dummy_key_for_development_only') {
+      console.log('[Billing] Stripe not configured — returning mock deposit response');
       return NextResponse.json({
         clientSecret: null,
         mock: true,
