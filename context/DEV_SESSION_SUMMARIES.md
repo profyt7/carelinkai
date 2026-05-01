@@ -2,6 +2,37 @@
 
 ---
 
+### 2026-05-01 — Bug Blitz: Cards, Calendar, Ops Nav, Messaging, Billing, Provider Reviews, SMS
+
+- **Objective:** Work through 24-item bug list from founder review, covering marketplace UI, calendar, navigation, family portal, provider reviews, and notifications.
+- **Work completed:**
+  1. **Provider/job cards visual parity:** Rewrote provider and job cards in `src/app/marketplace/page.tsx` to match CaregiverCard layout (64px avatar, badge row, prominent rate, service tags, action button).
+  2. **Calendar "New Appointment" button:** Replaced stub modal with `openNew` counter prop on CalendarView; CalendarView opens its internal appointment modal when counter increments.
+  3. **Calendar appointments not appearing:** Root cause was `key={`calendar-view-${refreshKey}`}` remounting CalendarView and destroying hook state. Removed the key prop.
+  4. **Calendar export (iCal):** Implemented real RFC 5545-compliant `.ics` file download from appointments state.
+  5. **Calendar Settings button:** Now routes to `/settings`.
+  6. **Operations Finances nav:** Split into two role-restricted entries (CAREGIVER → `/settings/payouts`, OPERATOR/ADMIN/STAFF → `/settings/payouts/operator`).
+  7. **My Saved / My Hires nav:** Added both links under Listings in `DashboardLayout.tsx`.
+  8. **Family portal messages (conversations):** Created missing `GET /api/messages/conversations` endpoint that groups messages by partner and returns conversation list.
+  9. **Billing "Add Funds" in production:** Fixed mock bypass logic in `/api/billing/deposit` — was keyed on `NODE_ENV !== 'production'` (never triggered in prod). Now checks only for absent/dummy Stripe key.
+  10. **Provider reviews system (full stack):**
+      - Added `ProviderReview` model to Prisma schema
+      - `GET/POST /api/reviews/providers` — paginated reviews with stats; duplicate prevention
+      - `ProviderReviewsListClient.tsx` — interactive reviews list + write-a-review form
+      - Wired into provider detail page (`/marketplace/providers/[id]/page.tsx`)
+  11. **SMS job application notifications:** Wired `SMSService` into:
+      - `POST /api/marketplace/applications` — listing owner gets SMS when someone applies
+      - `PATCH /api/marketplace/applications/[id]` — caregiver gets SMS on status changes
+      - Added `phone` field to user select query in status update route
+- **Files changed:** `src/app/marketplace/page.tsx`, `src/components/marketplace/ProviderCard.tsx`, `src/app/calendar/page.tsx`, `src/components/calendar/CalendarView.tsx`, `src/components/layout/DashboardLayout.tsx`, `src/app/api/messages/conversations/route.ts` (new), `src/app/api/billing/deposit/route.ts`, `prisma/schema.prisma`, `src/app/api/reviews/providers/route.ts` (new), `src/components/marketplace/ProviderReviewsListClient.tsx` (new), `src/components/marketplace/ProviderReviewsList.tsx` (new), `src/app/marketplace/providers/[id]/page.tsx`, `src/app/marketplace/hires/page.tsx` (new), `src/app/api/marketplace/applications/route.ts`, `src/app/api/marketplace/applications/[id]/route.ts`
+- **Commands run:** `npx prisma generate`, `git commit` × 4, `git push origin main`
+- **Tests/build status:** 5 pre-existing TS errors (BackgroundCheckOrder.package, NotificationType enum, AffiliateMaterial) — not introduced this session. All new files type-check clean.
+- **Deployment impact:** **Requires `npx prisma migrate deploy` in Render shell** for new `ProviderReview` table (and prior `BackgroundCheckOrder`/`AffiliateMaterial`/`DemoRequest` tables from previous session that are also pending).
+- **New risks/blockers:** SMS for job applications requires Twilio credentials (`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER`) — silently no-ops if absent. Provider reviews API will fail until `ProviderReview` migration is deployed.
+- **Recommended next step:** Run `npx prisma migrate deploy` in Render shell to apply all pending migrations. Then set Twilio env vars for SMS to go live.
+
+---
+
 ### 2026-05-01 — Background Checks, Home Comparison, HIPAA Audit, Affiliate Materials, Hero Update
 
 - **Objective:** Build all PARTIAL/COPY-ONLY features from landing page audit; switch hero to hero-bg2.jpg; compress both hero images.

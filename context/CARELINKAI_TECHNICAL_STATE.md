@@ -1,5 +1,5 @@
 # CareLinkAI — Technical State
-_Last updated: 2026-04-27_
+_Last updated: 2026-05-01_
 
 ## Active Branch
 `main` (all features merged — Stripe billing fully verified end-to-end in test mode)
@@ -71,7 +71,8 @@ FAMILY, OPERATOR, CAREGIVER, ADMIN, STAFF, PROVIDER, AFFILIATE, DISCHARGE_PLANNE
 - **Caregiver reliability score:** 0-100 computed from reviews (30%) + shifts (25%) + BG check (20%) + call-offs (25%); updates on review create, timesheet approval, and call-off record
 - **Aide gamification (points/tiers):** BRONZE/SILVER/GOLD/PLATINUM tiers; points auto-awarded on timesheet approval and reviews; penalized on call-off; PointsDashboard at /caregiver/points
 - **Caregiver My Applications:** `GET /api/caregiver/applications` + `/caregiver/applications` page — lists all job applications with status badges, listing details, rate, location, applied-ago; Quick Action card + sidebar nav link
-- **Application status notifications:** In-app notification links to `/caregiver/applications`; non-blocking email sent to caregiver on every status change (invite/interview/offer/hire/reject)
+- **Application status notifications:** In-app notification + email + SMS (if Twilio configured) to caregiver on every status change; listing owner gets email + SMS on new application
+- **Provider reviews:** `ProviderReview` Prisma model; `GET/POST /api/reviews/providers`; `ProviderReviewsListClient` component; wired into provider detail page — full star rating, write-a-review form, duplicate prevention
 - **Operator Caregiver Reviews (`/operator/reviews`):** Lists all marketplace-hired caregivers with aggregate stars, rating breakdown bars, latest reviews inline, Leave Review modal, sidebar nav link
 - **Caregiver rating dashboard:** 4th stat tile on `/caregiver` shows avg star rating + review count; "My Reviews" section shows 3 most recent reviews
 - **Shift bidding:** Caregivers bid on open shifts; operators accept/decline; on accept: shift assigned + MarketplaceHire + hire fee triggered atomically
@@ -82,7 +83,7 @@ FAMILY, OPERATOR, CAREGIVER, ADMIN, STAFF, PROVIDER, AFFILIATE, DISCHARGE_PLANNE
 - **Financing CTAs:** CareCredit affiliate links on /learn and home listing pricing tab
 - **Compliance document kits:** 3 Ohio ALF kits ($149-$199); one-time Stripe checkout; ComplianceKitPurchase model; /operator/compliance-kits
 
-## Known Issues (as of 2026-04-25)
+## Known Issues (as of 2026-05-01)
 1. 2 pre-existing test failures RESOLVED — calendar and emergency tests both fixed
 2. Demo accounts use test Stripe data — when switching to live Stripe, all operator `stripeCustomerId` fields must be cleared and operators re-subscribed
 3. seed-demo.ts `update:{}` bug fixed for all 7 top-level user accounts; nested operator/caregiver/etc upserts still use `update:{}`

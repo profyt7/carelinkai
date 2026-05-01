@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-04-27_
+_Last updated: 2026-05-01_
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -10,9 +10,10 @@ Each loop: what it is, why it matters, what done looks like.
 
 ### OL-021: Prisma migrations not yet deployed to production
 - **Status:** 🔴 OPEN
-- **What:** Two pending migrations must be deployed:
+- **What:** Three pending migrations must be deployed:
   1. `20260427000000_revenue_model_expansion` — CommissionTier, AffiliateReferralType, DischargePlannerLicenseType enums + new fields
-  2. New migration for BackgroundCheckOrder, AffiliateMaterial, DemoRequest models + checkrCandidateId on Caregiver (added 2026-05-01)
+  2. Migration for BackgroundCheckOrder, AffiliateMaterial, DemoRequest models + checkrCandidateId on Caregiver (added 2026-05-01)
+  3. Migration for **ProviderReview** model (added 2026-05-01) — provider ratings will fail until deployed
 - **Done when:** `npx prisma migrate deploy` run in Render shell with no errors.
 
 ### OL-023: Checkr API not yet configured
@@ -98,9 +99,10 @@ Each loop: what it is, why it matters, what done looks like.
 - **Status:** ✅ CLOSED (2026-04-24) — added plain text instruction to SYSTEM_PROMPT in `src/app/api/carebot/chat/route.ts`
 
 ### OL-009: SMS (Twilio) not implemented
-- **Status:** ✅ CLOSED (2026-04-24) — 5 triggers live via SMSService
+- **Status:** ✅ CLOSED (2026-04-24; extended 2026-05-01) — 7 triggers live via SMSService
 - Operator: new inquiry, tour booked, payment failed
 - Family: inquiry response received, tour reminder 24hr (Render cron daily 9am)
+- Marketplace: listing owner on new application, caregiver on status change (invite/interview/offer/hire/reject)
 - All calls non-blocking; gracefully no-ops if Twilio not configured
 
 ### OL-010: Invoice model missing from schema
