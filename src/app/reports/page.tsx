@@ -314,10 +314,24 @@ export default function ReportsPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button size="sm" variant="ghost">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        title="Preview in browser"
+                        onClick={() => window.open(`/api/reports/${report?.id}/download?inline=1`, '_blank')}
+                      >
                         <Eye className="h-4 w-4" />
                       </Button>
-                      <Button size="sm" variant="ghost">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        title="Download"
+                        onClick={() => {
+                          const a = document.createElement('a');
+                          a.href = `/api/reports/${report?.id}/download`;
+                          a.click();
+                        }}
+                      >
                         <Download className="h-4 w-4" />
                       </Button>
                       <Button

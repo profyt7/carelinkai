@@ -1830,19 +1830,41 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-            {/* Left — what you'll see */}
+            {/* Left — inline video embed */}
             <div>
-              <h3 className="text-xl font-semibold text-neutral-900 mb-4">What's covered in the demo</h3>
-              <ul className="space-y-3">
+              {process.env.NEXT_PUBLIC_DEMO_VIDEO_ID ? (
+                <div className="aspect-video rounded-xl overflow-hidden shadow-lg border border-neutral-200">
+                  <iframe
+                    src={`https://www.youtube.com/embed/${process.env.NEXT_PUBLIC_DEMO_VIDEO_ID}?rel=0`}
+                    title="CareLinkAI Product Demo"
+                    className="w-full h-full"
+                    allow="fullscreen"
+                    allowFullScreen
+                  />
+                </div>
+              ) : (
+                <button
+                  onClick={() => setDemoVideoOpen(true)}
+                  className="group relative w-full aspect-video rounded-xl overflow-hidden shadow-lg border border-neutral-200 bg-gradient-to-br from-primary-900 to-secondary-900 flex items-center justify-center"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary-600/30 to-secondary-600/30" />
+                  <div className="relative text-center px-8">
+                    <div className="h-16 w-16 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-4 group-hover:bg-white/30 transition-colors">
+                      <FiPlay size={28} className="text-white ml-1" />
+                    </div>
+                    <p className="text-white font-semibold text-lg">Watch the 5-min overview</p>
+                    <p className="text-white/70 text-sm mt-1">See every feature in action</p>
+                  </div>
+                </button>
+              )}
+              <ul className="mt-5 space-y-2">
                 {[
                   "Operator dashboard: shifts, residents, billing, analytics",
-                  "On-Call AI auto-fill — contacts caregivers within minutes",
-                  "Live marketplace with caregiver applications & direct hire",
+                  "On-Call AI auto-fill — texts caregivers within minutes",
+                  "Marketplace: applications, direct hire, per-diem shifts",
                   "Family portal: placement search, documents, messaging",
-                  "Discharge planner AI placement search",
-                  "No commitment. No credit card. Just the product.",
                 ].map((item) => (
-                  <li key={item} className="flex items-start gap-3 text-sm text-neutral-600">
+                  <li key={item} className="flex items-start gap-2.5 text-sm text-neutral-600">
                     <span className="h-5 w-5 rounded-full bg-success-100 text-success-600 flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold">✓</span>
                     {item}
                   </li>

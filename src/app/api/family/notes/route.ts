@@ -8,6 +8,7 @@ import { requireAuth } from '@/lib/auth-utils';
 import { z } from 'zod';
 import { AuditAction } from '@prisma/client';
 import { createAuditLogFromRequest } from '@/lib/audit';
+import { publish } from '@/lib/server/sse';
 
 const createNoteSchema = z.object({
   familyId: z.string().cuid(),
@@ -172,7 +173,7 @@ export async function POST(request: NextRequest) {
       { userId: user.id, title: data.title }
     );
 
-    // Log to activity feed
+    // Log to activity feed + notify live listeners
     await prisma.activityFeedItem.create({
       data: {
         familyId: data.familyId,
@@ -183,6 +184,7 @@ export async function POST(request: NextRequest) {
         description: `Added a note: "${data.title}"`,
       },
     }).catch(() => {});
+    publish(`family:${data.familyId}`, 'activity:created', { type: 'NOTE_CREATED' });
 
     return NextResponse.json({ note }, { status: 201 });
   } catch (error: any) {

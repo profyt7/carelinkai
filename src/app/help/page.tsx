@@ -2,8 +2,55 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { FiMail, FiMessageCircle, FiBook, FiHelpCircle, FiVideo, FiFileText, FiChevronDown, FiChevronUp } from 'react-icons/fi';
+import { useSession } from 'next-auth/react';
+import { FiMail, FiBook, FiHelpCircle, FiVideo, FiFileText, FiChevronDown, FiChevronUp, FiCheckCircle, FiArrowRight } from 'react-icons/fi';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+
+const ROLE_GUIDES: Record<string, { title: string; steps: Array<{ label: string; href: string }> }> = {
+  OPERATOR: {
+    title: 'Getting Started as an Operator',
+    steps: [
+      { label: 'Complete your home profile', href: '/operator/homes' },
+      { label: 'Add your first resident', href: '/operator/residents' },
+      { label: 'Set up your caregiver roster', href: '/operator/caregivers' },
+      { label: 'Create your first open shift', href: '/operator/shifts' },
+      { label: 'Review marketplace applications', href: '/marketplace/listings' },
+      { label: 'Configure billing & payouts', href: '/settings/payouts/operator' },
+    ],
+  },
+  CAREGIVER: {
+    title: 'Getting Started as a Caregiver',
+    steps: [
+      { label: 'Complete your caregiver profile', href: '/settings/aide' },
+      { label: 'Upload your certifications', href: '/settings/credentials' },
+      { label: 'Get background verified', href: '/caregiver/verification' },
+      { label: 'Browse open job listings', href: '/marketplace?tab=jobs' },
+      { label: 'Apply for your first position', href: '/marketplace?tab=jobs' },
+      { label: 'Check your applications status', href: '/caregiver/applications' },
+    ],
+  },
+  FAMILY: {
+    title: 'Getting Started as a Family Member',
+    steps: [
+      { label: 'Set up your family profile', href: '/settings/family' },
+      { label: 'Browse assisted living homes', href: '/discharge-planner' },
+      { label: 'Browse caregivers', href: '/marketplace/aides' },
+      { label: 'Submit a care inquiry', href: '/marketplace/aides' },
+      { label: 'Upload care documents', href: '/family' },
+      { label: 'Set up emergency contacts', href: '/family' },
+    ],
+  },
+  PROVIDER: {
+    title: 'Getting Started as a Provider',
+    steps: [
+      { label: 'Complete your provider profile', href: '/settings/provider' },
+      { label: 'Add your service offerings', href: '/settings/provider' },
+      { label: 'Browse families and operators', href: '/marketplace?tab=providers' },
+      { label: 'Respond to care inquiries', href: '/messages' },
+      { label: 'View your reviews', href: '/marketplace/providers' },
+    ],
+  },
+};
 
 const FAQS = [
   {
@@ -57,6 +104,10 @@ function FAQItem({ q, a }: { q: string; a: string }) {
 }
 
 export default function HelpPage() {
+  const { data: session } = useSession();
+  const role = (session?.user as any)?.role as string | undefined;
+  const guide = role ? ROLE_GUIDES[role] : null;
+
   return (
     <DashboardLayout title="Help & Support" showSearch={false}>
       <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6">
@@ -84,16 +135,16 @@ export default function HelpPage() {
           </a>
 
           <a
-            href="mailto:support@getcarelinkai.com?subject=Live Chat Request"
+            href="mailto:support@getcarelinkai.com?subject=Onboarding Support"
             className="flex items-start gap-4 rounded-xl border border-neutral-200 bg-white p-5 hover:border-primary-400 hover:shadow-sm transition-all"
           >
             <div className="rounded-lg bg-success-50 p-2.5">
-              <FiMessageCircle className="h-5 w-5 text-success-600" />
+              <FiCheckCircle className="h-5 w-5 text-success-600" />
             </div>
             <div>
-              <h3 className="font-semibold text-neutral-900">Chat Support</h3>
-              <p className="text-sm text-neutral-500 mt-0.5">Email us to start a conversation</p>
-              <p className="text-sm text-success-600 font-medium mt-1">Start Chat via Email →</p>
+              <h3 className="font-semibold text-neutral-900">Onboarding Support</h3>
+              <p className="text-sm text-neutral-500 mt-0.5">Getting started? We'll walk you through it</p>
+              <p className="text-sm text-success-600 font-medium mt-1">Email us →</p>
             </div>
           </a>
         </div>
@@ -112,7 +163,7 @@ export default function HelpPage() {
           </Link>
 
           <Link
-            href="#request-demo"
+            href="/?demo=1#request-demo"
             className="flex items-center gap-3 rounded-xl border border-neutral-200 bg-white p-4 hover:border-primary-400 hover:bg-primary-50 transition-all"
           >
             <FiVideo className="h-5 w-5 text-secondary-600 shrink-0" />
@@ -144,6 +195,29 @@ export default function HelpPage() {
             </div>
           </a>
         </div>
+
+        {/* Step-by-step guide for logged-in role */}
+        {guide && (
+          <div className="rounded-xl border border-primary-200 bg-primary-50 p-6 mb-10">
+            <h2 className="text-lg font-semibold text-primary-900 mb-4">{guide.title}</h2>
+            <ol className="space-y-3">
+              {guide.steps.map((step, i) => (
+                <li key={step.href + i} className="flex items-center gap-3">
+                  <span className="h-6 w-6 rounded-full bg-primary-100 text-primary-700 text-xs font-bold flex items-center justify-center shrink-0">
+                    {i + 1}
+                  </span>
+                  <Link
+                    href={step.href}
+                    className="text-sm text-primary-800 hover:text-primary-600 font-medium flex items-center gap-1 group"
+                  >
+                    {step.label}
+                    <FiArrowRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </Link>
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
 
         {/* FAQ */}
         <div className="rounded-xl border border-neutral-200 bg-white p-6">

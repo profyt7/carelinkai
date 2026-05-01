@@ -8,6 +8,7 @@ import { requireAuth } from '@/lib/auth-utils';
 import { z } from 'zod';
 import { AuditAction } from '@prisma/client';
 import { createAuditLogFromRequest } from '@/lib/audit';
+import { publish } from '@/lib/server/sse';
 
 const updatePreferencesSchema = z.object({
   familyId: z.string().cuid(),
@@ -161,7 +162,7 @@ export async function PUT(request: NextRequest) {
       { familyId: data.familyId, userId: user.id }
     );
 
-    // Log to activity feed
+    // Log to activity feed + notify live listeners
     await prisma.activityFeedItem.create({
       data: {
         familyId: data.familyId,
@@ -172,6 +173,7 @@ export async function PUT(request: NextRequest) {
         description: 'Updated emergency contacts and preferences',
       },
     }).catch(() => {});
+    publish(`family:${data.familyId}`, 'activity:created', { type: 'OTHER' });
 
     return NextResponse.json({ preferences });
   } catch (error: any) {

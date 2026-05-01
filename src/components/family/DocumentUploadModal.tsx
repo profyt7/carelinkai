@@ -794,7 +794,7 @@ export default function DocumentUploadModal({
                       />
                       <label htmlFor="encrypt" className="ml-2 flex items-center text-sm text-neutral-700">
                         <FiLock className="mr-1 h-4 w-4 text-neutral-500" />
-                        Mark as sensitive (stored securely in Cloudinary)
+                        Mark as sensitive (restricts visibility to family members only)
                       </label>
                     </div>
                   </div>

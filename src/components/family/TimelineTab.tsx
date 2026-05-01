@@ -102,9 +102,9 @@ export default function TimelineTab({ familyId, showMock = false }: TimelineTabP
     if (!familyId) return;
 
     const controller = new AbortController();
-    const load = async () => {
+    const load = async (silent = false) => {
       try {
-        setLoading(true);
+        if (!silent) setLoading(true);
         const res = await fetch(
           `/api/family/activity?familyId=${familyId}&limit=50`,
           { signal: controller.signal }
@@ -117,7 +117,7 @@ export default function TimelineTab({ familyId, showMock = false }: TimelineTabP
           setError(err.message ?? 'Error loading activity');
         }
       } finally {
-        setLoading(false);
+        if (!silent) setLoading(false);
       }
     };
     load();
@@ -125,15 +125,8 @@ export default function TimelineTab({ familyId, showMock = false }: TimelineTabP
     const es = new EventSource(
       `/api/sse?topics=${encodeURIComponent(`family:${familyId}`)}`
     );
-    es.addEventListener('activity:created', (e) => {
-      try {
-        const data = JSON.parse((e as MessageEvent).data);
-        if (data?.activity) {
-          setActivities((prev) => [data.activity, ...prev]);
-        }
-      } catch {
-        /* ignore */
-      }
+    es.addEventListener('activity:created', () => {
+      load(true);
     });
 
     return () => {

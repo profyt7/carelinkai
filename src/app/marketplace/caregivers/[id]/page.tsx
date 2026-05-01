@@ -477,12 +477,12 @@ export default async function CaregiverDetailPage({
             >
               Message
             </Link>
-            <Link 
-              href={`/dashboard/inquiries?caregiverId=${caregiver.id}`}
+            <RequestCareButton
+              targetType="AIDE"
+              targetId={caregiver.id}
+              targetName={caregiver.name}
               className="flex-1 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 font-medium py-2 px-4 rounded-md transition-colors text-center"
-            >
-              Request interview/shift
-            </Link>
+            />
           </div>
 
           {/* Per-diem shift booking */}
