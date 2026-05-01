@@ -19,6 +19,7 @@ interface ReportGeneratorProps {
   open: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  initialType?: string;
 }
 
 const REPORT_TEMPLATES = [
@@ -45,9 +46,14 @@ export function ReportGenerator({
   open,
   onClose,
   onSuccess,
+  initialType,
 }: ReportGeneratorProps) {
   const [loading, setLoading] = useState(false);
-  const [type, setType] = useState('OCCUPANCY');
+  const [type, setType] = useState(initialType || 'OCCUPANCY');
+
+  useEffect(() => {
+    if (initialType) setType(initialType);
+  }, [initialType]);
   const [title, setTitle] = useState('');
   const [format, setFormat] = useState('PDF');
   const [dateRange, setDateRange] = useState('30');

@@ -9,6 +9,7 @@ import { authOptions } from '@/lib/auth';
 import { z, ZodError } from 'zod';
 import { rateLimit, getClientIp } from '@/lib/rateLimit';
 import { Prisma } from '@prisma/client';
+import EmailService from '@/lib/email-service';
 
 /**
  * GET /api/marketplace/applications
@@ -196,7 +197,7 @@ export async function POST(request: Request) {
       }
     });
 
-    // Notify listing owner of new application (in-app notification only)
+    // Notify listing owner of new application (in-app + email)
     try {
       await (prisma as any).notification.create({
         data: {
@@ -210,8 +211,28 @@ export async function POST(request: Request) {
           }
         }
       });
+
+      // Send email to the listing owner
+      const poster = await prisma.user.findUnique({
+        where: { id: listing.postedByUserId },
+        select: { email: true, firstName: true },
+      });
+      const applicant = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { firstName: true, lastName: true },
+      });
+      if (poster?.email) {
+        await EmailService.sendEmail({
+          to: poster.email,
+          subject: `New application for "${listing.title}"`,
+          html: `<p>Hi ${poster.firstName ?? 'there'},</p>
+<p><strong>${applicant?.firstName ?? ''} ${applicant?.lastName ?? ''}</strong> just applied for your job listing <strong>"${listing.title}"</strong>.</p>
+<p><a href="${process.env.NEXTAUTH_URL}/marketplace/listings/${listing.id}/applications" style="background:#2563eb;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;display:inline-block;margin-top:8px;">View Application</a></p>
+<p style="color:#6b7280;font-size:12px;margin-top:16px;">CareLinkAI · <a href="mailto:support@getcarelinkai.com">support@getcarelinkai.com</a></p>`,
+          text: `${applicant?.firstName ?? ''} ${applicant?.lastName ?? ''} applied for "${listing.title}". View at ${process.env.NEXTAUTH_URL}/marketplace/listings/${listing.id}/applications`,
+        }).catch((e: unknown) => console.error('[Applications] Email send error:', e));
+      }
     } catch (notifyErr) {
-      // Log and swallow notification errors so they don't block application creation
       console.error('Failed to create notification for new application:', notifyErr);
     }
     

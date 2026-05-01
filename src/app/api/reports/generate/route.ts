@@ -129,22 +129,13 @@ export async function POST(request: NextRequest) {
 
     // Create audit log
     await createAuditLogFromRequest(
-
       request,
-
       AuditAction.REPORT_GENERATED,
-
       'Report',
-
       report.id,
-
-      'Modified report',
-
-      {userId: user.id,
-                        details: `Generated ${type}
-
-    )`,
-    });
+      `Generated ${type} report`,
+      { userId: user.id },
+    );
 
     // Return file as download
     return new NextResponse(new Uint8Array(fileBuffer), {

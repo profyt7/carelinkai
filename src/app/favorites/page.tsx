@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { getBlurDataURL } from "@/lib/imageBlur";
 import { FiHeart, FiHome, FiUsers, FiBriefcase, FiMapPin, FiDollarSign, FiStar, FiX, FiRefreshCw } from "react-icons/fi";
+import DashboardLayout from "@/components/layout/DashboardLayout";
 
 type FavoriteHome = {
   id: string;
@@ -219,20 +220,23 @@ export default function UnifiedFavoritesPage() {
 
   if (!session?.user) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="rounded-lg border bg-white p-8 text-center">
-          <FiHeart size={48} className="mx-auto text-neutral-300 mb-4" />
-          <h2 className="text-xl font-semibold text-neutral-900 mb-2">Sign in to view your favorites</h2>
-          <p className="text-neutral-600 mb-4">Save homes, caregivers, providers, and jobs to access them later.</p>
-          <Link href="/auth/login" className="inline-flex items-center justify-center rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700">
-            Sign In
-          </Link>
+      <DashboardLayout title="My Favorites" showSearch={false}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="rounded-lg border bg-white p-8 text-center">
+            <FiHeart size={48} className="mx-auto text-neutral-300 mb-4" />
+            <h2 className="text-xl font-semibold text-neutral-900 mb-2">Sign in to view your favorites</h2>
+            <p className="text-neutral-600 mb-4">Save homes, caregivers, providers, and jobs to access them later.</p>
+            <Link href="/auth/login" className="inline-flex items-center justify-center rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700">
+              Sign In
+            </Link>
+          </div>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
   return (
+    <DashboardLayout title="My Favorites" showSearch={false}>
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* Header */}
       <div className="mb-6">
@@ -336,6 +340,7 @@ export default function UnifiedFavoritesPage() {
         </div>
       )}
     </div>
+    </DashboardLayout>
   );
 }
 

@@ -172,6 +172,18 @@ export async function POST(request: NextRequest) {
       { userId: user.id, title: data.title }
     );
 
+    // Log to activity feed
+    await prisma.activityFeedItem.create({
+      data: {
+        familyId: data.familyId,
+        actorId: user.id,
+        type: 'NOTE_CREATED' as any,
+        resourceType: 'FamilyNote',
+        resourceId: note.id,
+        description: `Added a note: "${data.title}"`,
+      },
+    }).catch(() => {});
+
     return NextResponse.json({ note }, { status: 201 });
   } catch (error: any) {
     console.error('Error creating note:', error);

@@ -197,13 +197,13 @@ const navItems: NavItem[] = [
     roleRestriction: ["AFFILIATE", "ADMIN"],
   },
 
-  // 8c. Education Hub (families and caregivers)
+  // 8c. Education Hub (all roles)
   {
     name: "Education Hub",
     icon: <FiBook size={20} />,
     href: "/learn",
     showInMobileBar: false,
-    roleRestriction: ["FAMILY", "CAREGIVER"],
+    roleRestriction: ["FAMILY", "CAREGIVER", "OPERATOR", "ADMIN", "STAFF", "AFFILIATE", "DISCHARGE_PLANNER", "PROVIDER"],
   },
 
   // 9. Settings (collapsible)

@@ -31,11 +31,12 @@ export function canSubmitInquiry(
     };
   }
 
-  // Case 2: Wrong role (not FAMILY)
-  if (session.user.role !== "FAMILY") {
+  // Case 2: Wrong role — FAMILY, OPERATOR, ADMIN, and STAFF can all submit inquiries/requests
+  const allowedRoles = ["FAMILY", "OPERATOR", "ADMIN", "STAFF"];
+  if (!allowedRoles.includes(session.user.role as string)) {
     return {
       canSubmit: false,
-      reason: "Only family members can submit care inquiries. Please register as a family member to continue.",
+      reason: "Only family members and operators can submit care requests. Please register with the appropriate role.",
       actionRequired: "upgrade_role",
     };
   }

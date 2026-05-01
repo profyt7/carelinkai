@@ -161,6 +161,18 @@ export async function PUT(request: NextRequest) {
       { familyId: data.familyId, userId: user.id }
     );
 
+    // Log to activity feed
+    await prisma.activityFeedItem.create({
+      data: {
+        familyId: data.familyId,
+        actorId: user.id,
+        type: 'OTHER' as any,
+        resourceType: 'EmergencyPreference',
+        resourceId: preferences.id,
+        description: 'Updated emergency contacts and preferences',
+      },
+    }).catch(() => {});
+
     return NextResponse.json({ preferences });
   } catch (error: any) {
     if (error?.name === 'UnauthenticatedError') {

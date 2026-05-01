@@ -47,13 +47,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. Role-based access control (only FAMILY can create leads)
-    if (session.user.role !== "FAMILY") {
+    // 2. Role-based access control (FAMILY and OPERATOR/ADMIN/STAFF can submit requests)
+    const allowedRoles = ["FAMILY", "OPERATOR", "ADMIN", "STAFF"];
+    if (!allowedRoles.includes(session.user.role as string)) {
       return NextResponse.json(
-        {
-          error:
-            "Only family members can submit care inquiries. Please register as a family member.",
-        },
+        { error: "Only family members and operators can submit care requests." },
         { status: 403 }
       );
     }

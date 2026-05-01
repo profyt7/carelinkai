@@ -10,10 +10,11 @@ import {
   FiSearch, FiStar, FiZap, FiBriefcase, FiMessageCircle, FiCalendar,
   FiFileText, FiClock, FiTarget, FiTrendingUp, FiAward, FiSmartphone,
   FiVideo, FiGlobe, FiBarChart, FiChevronDown, FiPhone, FiMail, FiMapPin,
-  FiMenu, FiX
+  FiMenu, FiX, FiPlay
 } from "react-icons/fi";
 import { prefersReducedMotion, durations, easings } from "@/lib/animations";
 import DemoRequestForm from "@/components/marketing/DemoRequestForm";
+import DemoVideoModal from "@/components/marketing/DemoVideoModal";
 
 // Animation variants
 const fadeInUp = {
@@ -40,6 +41,7 @@ export default function HomePage() {
   const [mounted, setMounted] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [demoVideoOpen, setDemoVideoOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -1802,26 +1804,43 @@ export default function HomePage() {
       </section>
 
       {/* 9. REQUEST A DEMO SECTION */}
+      <DemoVideoModal open={demoVideoOpen} onClose={() => setDemoVideoOpen(false)} />
       <section id="request-demo" className="py-20 bg-white border-t border-neutral-100">
         <div className="max-w-5xl mx-auto px-4 md:px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            {/* Left — pitch */}
-            <div>
-              <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-primary-100 text-primary-700 mb-4 uppercase tracking-wide">
-                Personalized Demo
+          {/* Video-first row */}
+          <div className="text-center mb-12">
+            <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-primary-100 text-primary-700 mb-4 uppercase tracking-wide">
+              Live Demo
+            </span>
+            <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 mb-4 leading-tight">
+              See CareLinkAI in action
+            </h2>
+            <p className="text-neutral-500 text-lg mb-8 max-w-2xl mx-auto">
+              Watch our 5-minute overview or request a personalized walkthrough. We'll show you exactly how operators fill shifts faster, reduce no-shows, and manage residents — all in one platform.
+            </p>
+            <button
+              onClick={() => setDemoVideoOpen(true)}
+              className="group inline-flex items-center gap-3 bg-primary-600 hover:bg-primary-700 text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg transition-all duration-200 hover:-translate-y-0.5"
+            >
+              <span className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center group-hover:bg-white/30 transition-colors">
+                <FiPlay className="ml-0.5" />
               </span>
-              <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 mb-4 leading-tight">
-                See CareLinkAI in action — built for your facility
-              </h2>
-              <p className="text-neutral-500 text-lg mb-8">
-                Get a free 20-minute walkthrough tailored to your operation. We'll show you how operators are using CareLinkAI to fill shifts faster, reduce call-off chaos, and build a reliable caregiver pipeline.
-              </p>
+              Watch Demo (5 min)
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+            {/* Left — what you'll see */}
+            <div>
+              <h3 className="text-xl font-semibold text-neutral-900 mb-4">What's covered in the demo</h3>
               <ul className="space-y-3">
                 {[
-                  "Live marketplace demo with real caregiver applications",
-                  "On-Call AI auto-fill — watch it contact caregivers instantly",
-                  "Full operator dashboard: shifts, residents, billing, analytics",
-                  "No commitment. No credit card. Just a conversation.",
+                  "Operator dashboard: shifts, residents, billing, analytics",
+                  "On-Call AI auto-fill — contacts caregivers within minutes",
+                  "Live marketplace with caregiver applications & direct hire",
+                  "Family portal: placement search, documents, messaging",
+                  "Discharge planner AI placement search",
+                  "No commitment. No credit card. Just the product.",
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-3 text-sm text-neutral-600">
                     <span className="h-5 w-5 rounded-full bg-success-100 text-success-600 flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold">✓</span>
@@ -1831,10 +1850,10 @@ export default function HomePage() {
               </ul>
             </div>
 
-            {/* Right — form */}
+            {/* Right — personalized demo request form */}
             <div className="bg-neutral-50 border border-neutral-200 rounded-2xl p-8">
-              <h3 className="text-lg font-semibold text-neutral-900 mb-1">Request your demo</h3>
-              <p className="text-sm text-neutral-400 mb-6">We respond within one business day.</p>
+              <h3 className="text-lg font-semibold text-neutral-900 mb-1">Request a personalized walkthrough</h3>
+              <p className="text-sm text-neutral-400 mb-6">We tailor the demo to your role and facility. Response within one business day.</p>
               <DemoRequestForm />
             </div>
           </div>
@@ -1959,8 +1978,6 @@ export default function HomePage() {
               <ul className="space-y-3">
                 <li><Link href="/help" className="hover:text-white transition-colors">Help Center</Link></li>
                 <li><Link href="#request-demo" className="hover:text-white transition-colors">Request a Demo</Link></li>
-                <li><Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
-                <li><Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link></li>
               </ul>
             </div>
           </div>

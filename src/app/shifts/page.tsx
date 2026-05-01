@@ -141,6 +141,7 @@ function BidButton({ shiftId }: { shiftId: string }) {
 
 export default function ShiftsPage() {
   const { data: session, status: authStatus } = useSession();
+  const role = (session?.user as any)?.role as string | undefined;
   const [activeTab, setActiveTab] = useState<'open' | 'my'>('open');
   const [showMock, setShowMock] = useState(false);
 
@@ -180,7 +181,9 @@ export default function ShiftsPage() {
         }
         if (response.status === 403) {
           if (data.error.includes('not registered as a caregiver')) {
-            return 'You need to be registered as a caregiver to view shifts.';
+            return role === 'OPERATOR' || role === 'ADMIN' || role === 'STAFF'
+              ? 'To manage your facility\'s shifts, go to Operator → Shifts.'
+              : 'You need a caregiver profile to view available shifts.';
           }
           return 'You do not have permission to view this content.';
         }

@@ -86,9 +86,15 @@ const REPORT_TEMPLATES = [
 
 export default function ReportsPage() {
   const [showGenerator, setShowGenerator] = useState(false);
+  const [generatorInitialType, setGeneratorInitialType] = useState<string | undefined>(undefined);
   const [recentReports, setRecentReports] = useState<any[]>([]);
   const [scheduledReports, setScheduledReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const openGenerator = (type?: string) => {
+    setGeneratorInitialType(type);
+    setShowGenerator(true);
+  };
 
   useEffect(() => {
     fetchRecentReports();
@@ -154,7 +160,7 @@ export default function ReportsPage() {
           <Button
             size="lg"
             className="h-auto py-6 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700"
-            onClick={() => setShowGenerator(true)}
+            onClick={() => openGenerator()}
           >
             <div className="flex flex-col items-center gap-2">
               <FileText className="h-6 w-6" />
@@ -212,7 +218,7 @@ export default function ReportsPage() {
                 <Card
                   key={template?.type}
                   className="group relative overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer border-2 hover:border-primary-400"
-                  onClick={() => setShowGenerator(true)}
+                  onClick={() => openGenerator(template?.type)}
                 >
                   <div className="p-6 space-y-4">
                     {/* Icon with gradient */}
@@ -240,21 +246,10 @@ export default function ReportsPage() {
                         className="text-xs"
                         onClick={(e) => {
                           e?.stopPropagation();
-                          setShowGenerator(true);
+                          openGenerator(template?.type);
                         }}
                       >
                         Generate
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-xs"
-                        onClick={(e) => {
-                          e?.stopPropagation();
-                          toast.success('Preview coming soon!');
-                        }}
-                      >
-                        Preview
                       </Button>
                     </div>
                   </div>
@@ -385,7 +380,8 @@ export default function ReportsPage() {
       {/* Report Generator Modal */}
       <ReportGenerator
         open={showGenerator}
-        onClose={() => setShowGenerator(false)}
+        initialType={generatorInitialType}
+        onClose={() => { setShowGenerator(false); setGeneratorInitialType(undefined); }}
         onSuccess={() => {
           fetchRecentReports();
         }}
