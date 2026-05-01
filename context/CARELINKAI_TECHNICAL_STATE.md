@@ -1,8 +1,8 @@
 # CareLinkAI — Technical State
-_Last updated: 2026-04-25_
+_Last updated: 2026-05-01_
 
 ## Active Branch
-`main` (all features merged — Stripe billing fully verified end-to-end in test mode)
+`claude/review-carelink-docs-49Ycv` (background checks, home comparison, HIPAA audit, affiliate materials — needs merge + Prisma migration before deploy)
 
 ## Production URL
 https://carelinkai.onrender.com (also: https://getcarelinkai.com)
@@ -31,7 +31,7 @@ https://carelinkai.onrender.com (also: https://getcarelinkai.com)
 | AI — All features | Anthropic Claude API (`claude-sonnet-4-6`, `claude-haiku-4-5-20251001`) |
 
 ## Schema Summary
-67 Prisma models + enums. New since 2026-04-25: CallOff, CaregiverPoints, PointTransaction, ShiftBid, ShiftNeed, CoverageAttempt. New enums: CallOffType, PointsTier, PointsEventType, BidStatus, ShiftNeedStatus, CoverageChannel, CoverageOutcome. New caregiver fields: homeLat/homeLng, reliabilityScore (now includes call-off weight). PaymentType enum: + MARKETPLACE_HIRE_FEE, FEATURED_LISTING_FEE, COMPLIANCE_KIT.
+70 Prisma models + enums. New since 2026-05-01: BackgroundCheckOrder, AffiliateMaterial, DemoRequest. New enums: BackgroundCheckPackage (BASIC/ENHANCED/MVR/PREMIUM), BackgroundCheckOrderer (SELF/FAMILY), CommissionTier (STANDARD/SILVER/GOLD). New Caregiver field: checkrCandidateId. **Migration pending: `npx prisma migrate deploy` needed on Render.**
 
 ## User Roles
 FAMILY, OPERATOR, CAREGIVER, ADMIN, STAFF, PROVIDER, AFFILIATE, DISCHARGE_PLANNER
@@ -78,12 +78,15 @@ FAMILY, OPERATOR, CAREGIVER, ADMIN, STAFF, PROVIDER, AFFILIATE, DISCHARGE_PLANNE
 - **Financing CTAs:** CareCredit affiliate links on /learn and home listing pricing tab
 - **Compliance document kits:** 3 Ohio ALF kits ($149-$199); one-time Stripe checkout; ComplianceKitPurchase model; /operator/compliance-kits
 
-## Known Issues (as of 2026-04-25)
+## Known Issues (as of 2026-05-01)
 1. 2 pre-existing test failures RESOLVED — calendar and emergency tests both fixed
 2. Demo accounts use test Stripe data — when switching to live Stripe, all operator `stripeCustomerId` fields must be cleared and operators re-subscribed
 3. seed-demo.ts `update:{}` bug fixed for all 7 top-level user accounts; nested operator/caregiver/etc upserts still use `update:{}`
 4. **One-time production action needed:** Admin must click "Fix Demo Caregiver Employment" in Admin Tools (`/admin/tools`) on production to link demo caregivers to the demo operator in the production DB — otherwise Operator caregiver tab shows blank
 5. Landing page still uses some raw hex literals (`#3978FC`, `#7253B7`) in inline styles — acceptable but not ideal; Tailwind tokens preferred
+6. **BackgroundCheckOrderPanel** shows a message on `requiresPayment` but Stripe Elements UI for paid BG check tiers is not yet complete
+7. **HomeCompareModal** component built but not yet wired into family search results page
+8. **hero-bg2.jpg** is 19MB — compress via squoosh.app before production
 
 ## Pending Deployment Actions (before subscription billing goes live)
 1. **Merge branch to main** — triggers Render auto-deploy
@@ -161,8 +164,10 @@ See `REVENUE_MODEL.md` for the full breakdown. 12 streams finalized:
 - **Components polished:** StatCard (left-border accent + trend), skeleton-loader (shimmer + HomeCardSkeleton), tabs (real tokens), breadcrumbs, confirm-dialog, error, not-found, login page, search page.
 
 ## Immediate Next Priorities
-1. **One-time production DB fix:** Click "Fix Demo Caregiver Employment" in `/admin/tools` on production — links demo caregivers to demo operator
-2. **Verify on production after Render deploy:** bulk token unification visual check (no style regressions), StatCard new design, skeleton shimmer, search card lift
-3. **Landing page token pass:** `src/app/page.tsx` still uses `blue-*`/`gray-*` and raw hex inline styles; needs a careful pass
-4. **Switch Stripe to live mode** — follow runbook in `context/STRIPE_SETUP_RUNBOOK.md`
-5. **Text to Place (roadmap):** Twilio integration already exists; family texts to inquire about a home
+1. **Merge `claude/review-carelink-docs-49Ycv` → main** and run `npx prisma migrate deploy` in Render shell (new models: BackgroundCheckOrder, AffiliateMaterial, DemoRequest)
+2. **Add env vars to Render:** `CHECKR_API_KEY`, `CHECKR_WEBHOOK_SECRET` (when ready to go live with real background checks)
+3. **Register Checkr webhook** in Checkr dashboard → `https://getcarelinkai.com/api/webhooks/checkr`
+4. **Compress hero images** — hero-bg2.jpg (19MB) and hero-bg.jpg (9.5MB) via squoosh.app
+5. **Wire HomeCompareModal** into family search results page (`/family/search` or `/marketplace/homes`)
+6. **Complete Stripe Elements UI** for paid background check tiers in BackgroundCheckOrderPanel
+7. **Switch Stripe to live mode** — follow runbook in `context/STRIPE_SETUP_RUNBOOK.md`

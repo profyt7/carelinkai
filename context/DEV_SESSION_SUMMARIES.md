@@ -2,6 +2,41 @@
 
 ---
 
+### 2026-05-01 — Background Checks, Home Comparison, HIPAA Audit, Affiliate Materials, Hero Update
+
+- **Objective:** Build all PARTIAL/COPY-ONLY features identified in landing page audit: background checks (Care.com-style tiers), real-time discharge planner bed availability, home comparison, affiliate marketing materials, HIPAA PHI audit logging, and switch hero to hero-bg2.jpg.
+- **Work completed:**
+  1. **Hero image:** Switched to `hero-bg2.jpg` (right-weighted lighter photo). Overlay changed to single left-anchored gradient `from-white from-35% via-white/75 via-55% to-white/10` — preserves text readability without washing out the image.
+  2. **Landing page audits:** Added 4th Caregivers card to "Why CareLinkAI?" section (`md:grid-cols-2 lg:grid-cols-4`); added pricing footer to Care Homes "How It Works" card.
+  3. **Background check system (4 tiers):**
+     - `src/lib/checkr.ts` — Checkr API client with graceful mock fallback; `CHECKR_PACKAGES` with BASIC (free), ENHANCED ($19.99), MVR ($9.99), PREMIUM ($39.99)
+     - `src/app/api/caregiver/background-checks/start/route.ts` — updated: GET returns status, POST creates candidate + report, blocks re-order if active
+     - `src/app/api/family/background-checks/order/[caregiverId]/route.ts` — new: POST runs check (free) or creates Stripe PaymentIntent (paid); PUT confirms paid check
+     - `src/app/api/webhooks/checkr/route.ts` — updated: HMAC verification, real webhook format, updates order + caregiver status, notifies caregiver
+     - `src/components/caregiver/BackgroundCheckBadge.tsx` — status-aware badge (CLEAR/PENDING/CONSIDER/FAILED/EXPIRED)
+     - `src/components/marketplace/BackgroundCheckOrderPanel.tsx` — 4-tier order panel on caregiver marketplace profile
+     - `src/app/caregiver/verification/page.tsx` — new: full verification page with tier comparison table
+     - `src/app/caregiver/page.tsx` — updated: BG check tile conditional styling + "Get Verified →" link
+     - `src/app/marketplace/caregivers/[id]/page.tsx` — updated: BackgroundCheckBadge in header; BackgroundCheckOrderPanel in family CTA section
+  4. **Real-time bed availability:** `src/app/api/discharge-planner/availability/route.ts` (new) + "Refresh Availability" button with live timestamp in `SearchResults.tsx`
+  5. **Home comparison:** `src/app/api/family/homes/compare/route.ts` (new, GET with ?ids=) + `src/components/family/HomeCompareModal.tsx` (new, 3-home table modal)
+  6. **Affiliate marketing materials:** `src/app/api/admin/affiliate/materials/route.ts` (POST/DELETE) + `src/app/api/affiliate/materials/route.ts` (GET) + affiliate dashboard download section
+  7. **HIPAA PHI audit:** `src/lib/phi-audit.ts` (new: `logPhiAccess` + `auditPhiRead`) + wired into `src/app/api/residents/[id]/route.ts` GET handler
+  8. **Schema additions:** `BackgroundCheckOrder`, `AffiliateMaterial`, `DemoRequest` models; `BackgroundCheckPackage`, `BackgroundCheckOrderer`, `CommissionTier` enums; `checkrCandidateId` on Caregiver
+  9. **AI document classification verified:** `src/lib/documents/classification.ts` confirmed fully wired — real Claude API call (`claude-sonnet-4-6`), JSON parse, confidence thresholds, not a stub.
+- **Files changed:** `prisma/schema.prisma`, `src/app/page.tsx`, `src/app/caregiver/page.tsx`, `src/app/affiliate/dashboard/page.tsx`, `src/app/marketplace/caregivers/[id]/page.tsx`, `src/app/discharge-planner/search/_components/SearchResults.tsx`, `src/app/api/caregiver/background-checks/start/route.ts`, `src/app/api/webhooks/checkr/route.ts`, `src/app/api/residents/[id]/route.ts` (8 modified); plus 12 new files (see commit a7a016c on `claude/review-carelink-docs-49Ycv`)
+- **Commands run:** `git stash`, `git checkout claude/review-carelink-docs-49Ycv`, `git stash pop`, conflict resolution, `git commit`, `git push -u origin claude/review-carelink-docs-49Ycv`
+- **Tests/build status:** No type-check run this session (no local DB for prisma generate). Prisma schema conflict-free.
+- **Deployment impact:** Requires `npx prisma migrate deploy` in Render shell for new models (`BackgroundCheckOrder`, `AffiliateMaterial`, `DemoRequest`) and new fields (`checkrCandidateId` on Caregiver).
+- **New risks/blockers:**
+  - Checkr API keys not yet configured (`CHECKR_API_KEY`, `CHECKR_WEBHOOK_SECRET`) — system uses mock fallback until set in Render
+  - Stripe PaymentIntents UI for paid BG check tiers incomplete — `BackgroundCheckOrderPanel` shows a message on `requiresPayment` but doesn't yet open Stripe Elements
+  - `HomeCompareModal` built but not yet wired into any search results page
+  - hero-bg2.jpg is 19MB — should be compressed via squoosh.app before production
+- **Recommended next step:** (1) Merge `claude/review-carelink-docs-49Ycv` to main and run `npx prisma migrate deploy` in Render shell. (2) Compress hero images. (3) Wire `HomeCompareModal` into family search results. (4) Add `CHECKR_API_KEY` + `CHECKR_WEBHOOK_SECRET` to Render env vars when ready to go live.
+
+---
+
 ### 2026-04-26 — Marketplace Improvements: Design Tokens, Direction B, Create Listing, Hire Fee Modal, Messaging
 
 - **Objective:** Close OL-020 (landing page tokens), apply Direction B design across app, build all 4 marketplace feature improvements.

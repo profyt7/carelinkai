@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-04-26_
+_Last updated: 2026-05-01_
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -54,6 +54,24 @@ Each loop: what it is, why it matters, what done looks like.
 
 ### OL-020: Landing page (src/app/page.tsx) still has legacy color tokens
 - **Status:** ✅ CLOSED (2026-04-26) — All raw hex Tailwind classes replaced with design tokens. TypeScript 0 errors confirmed.
+
+---
+
+### OL-021: Prisma migration for background check + affiliate models not yet deployed
+- **Status:** 🔴 OPEN — `claude/review-carelink-docs-49Ycv` branch has 3 new models + new enum types. Must run `npx prisma migrate deploy` in Render shell after merging to main.
+- **Models affected:** BackgroundCheckOrder, AffiliateMaterial, DemoRequest; new Caregiver field: checkrCandidateId
+
+### OL-022: Stripe Elements UI for paid background check tiers incomplete
+- **Status:** 🟡 OPEN — `BackgroundCheckOrderPanel` detects `requiresPayment` from API but shows a text message instead of Stripe Elements payment form.
+- **Done looks like:** Stripe.js loaded, CardElement rendered inline in panel, payment confirmed before order completes.
+
+### OL-023: HomeCompareModal not wired into any page
+- **Status:** 🟡 OPEN — component at `src/components/family/HomeCompareModal.tsx` is fully built but no entry point exists.
+- **Done looks like:** Family search results page has a "Compare" checkbox on home cards, opens modal when 2-3 selected.
+
+### OL-024: Hero images need compression before production
+- **Status:** 🟡 OPEN — `public/images/hero-bg2.jpg` is 19MB; `hero-bg.jpg` is 9.5MB. Unacceptable for production LCP.
+- **Done looks like:** Both compressed to <300KB via squoosh.app or similar, re-uploaded.
 
 ---
 
@@ -159,3 +177,10 @@ Each loop: what it is, why it matters, what done looks like.
 | Marketplace Create Listing form | /marketplace/listings/new with full form + pill toggles for care types/services/specialties | 2026-04-26 |
 | Hire fee confirmation UI | HIRE action in ApplicationActions shows $250 fee modal before submitting; API queues Stripe invoice item | 2026-04-26 |
 | Message Caregiver on application page | "Message Caregiver" button links to /messages?with={userId} on application detail page | 2026-04-26 |
+| Background check system (4 tiers) | Checkr API + BASIC/ENHANCED/MVR/PREMIUM tiers; caregiver verification page; family order panel; HMAC webhooks | 2026-05-01 |
+| Affiliate marketing materials | Admin upload via Cloudinary; affiliate download panel on dashboard | 2026-05-01 |
+| HIPAA PHI audit logging | logPhiAccess/auditPhiRead helpers wired into resident records GET | 2026-05-01 |
+| Real-time discharge planner availability | GET /api/discharge-planner/availability + refresh button in SearchResults | 2026-05-01 |
+| Home comparison API + modal | GET /api/family/homes/compare + HomeCompareModal component | 2026-05-01 |
+| Hero image switched to hero-bg2.jpg | Right-weighted photo with lighter left-anchored gradient overlay | 2026-05-01 |
+| AI document classification verified | classifyDocument() confirmed wired to Claude API — not a stub | 2026-05-01 |
