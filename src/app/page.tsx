@@ -175,16 +175,14 @@ export default function HomePage() {
         {/* Background image */}
         <div className="absolute inset-0">
           <Image
-            src="/images/hero-bg.jpg"
+            src="/images/hero-bg2.jpg"
             alt=""
             fill
-            className="object-cover object-right"
+            className="object-cover object-center"
             priority
           />
-          {/* Layer 1: subtle dark tint across full image for depth and contrast */}
-          <div className="absolute inset-0 bg-black/30" />
-          {/* Layer 2: white panel on left so text is fully readable */}
-          <div className="absolute inset-0 bg-gradient-to-r from-white from-30% via-white/95 via-50% to-transparent" />
+          {/* Light gradient — image already has a bright background so minimal overlay needed */}
+          <div className="absolute inset-0 bg-gradient-to-r from-white from-35% via-white/75 via-55% to-white/10" />
         </div>
 
         {/* Subtle decorative blobs on top of image */}

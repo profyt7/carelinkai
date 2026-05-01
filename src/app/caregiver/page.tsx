@@ -141,15 +141,37 @@ export default async function CaregiverDashboard() {
           description={data.isVisible ? 'Active in marketplace' : 'Not shown to families'}
           href="/settings/profile"
         />
-        <div className="bg-white p-6 rounded-lg border border-neutral-200">
-          <div className="flex items-center justify-between mb-4">
-            <div className="text-3xl">🔒</div>
-            <span className={`px-3 py-1 text-sm rounded-full font-medium ${backgroundCheckStatus}`}>
-              {data.backgroundCheckStatus.replace(/_/g, ' ')}
-            </span>
+        <div className={`p-6 rounded-lg border ${
+          data.backgroundCheckStatus === 'CLEAR'
+            ? 'bg-success-50 border-success-200'
+            : data.backgroundCheckStatus === 'PENDING'
+            ? 'bg-warning-50 border-warning-200'
+            : 'bg-white border-primary-200'
+        }`}>
+          <div className="flex items-center justify-between mb-3">
+            <div className="text-3xl">
+              {data.backgroundCheckStatus === 'CLEAR' ? '✅' : data.backgroundCheckStatus === 'PENDING' ? '⏳' : '🔒'}
+            </div>
+            {data.backgroundCheckStatus === 'CLEAR' && (
+              <span className="text-xs font-bold bg-success-500 text-white px-2 py-0.5 rounded-full">Verified</span>
+            )}
           </div>
-          <h3 className="text-sm font-medium text-neutral-600 mb-1">Background Check</h3>
-          <p className="text-xs text-neutral-500">Verification status</p>
+          <h3 className="text-sm font-medium text-neutral-700 mb-1">Background Check</h3>
+          <p className="text-xs text-neutral-500 mb-3">
+            {data.backgroundCheckStatus === 'CLEAR'
+              ? 'Cleared — badge shows on your profile'
+              : data.backgroundCheckStatus === 'PENDING'
+              ? 'In progress (1–3 business days)'
+              : 'Get verified to unlock more job offers'}
+          </p>
+          {data.backgroundCheckStatus === 'NOT_STARTED' && (
+            <Link
+              href="/caregiver/verification"
+              className="text-xs font-semibold text-primary-700 hover:text-primary-600 underline"
+            >
+              Get Verified →
+            </Link>
+          )}
         </div>
         <StatTile
           title="Active Requests"

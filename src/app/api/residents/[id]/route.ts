@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic';
 import { PrismaClient, UserRole, ResidentStatus } from '@prisma/client';
 import { requireOperatorOrAdmin } from '@/lib/rbac';
 import { updateHomeCapacity } from '@/lib/utils/capacity-tracker';
+import { auditPhiRead, logPhiAccess } from '@/lib/phi-audit';
 
 const prisma = new PrismaClient();
 
@@ -31,6 +32,9 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     if (error) return error;
     const access = await ensureAccess(session!.user!.email!, params.id);
     if (access.status !== 200) return NextResponse.json({ error: 'Forbidden' }, { status: access.status });
+
+    // HIPAA: log every PHI access
+    await auditPhiRead(session!.user!.id!, "ResidentRecord", params.id, "Operator accessed resident health record", _req);
 
     const resident = await prisma.resident.findUnique({
       where: { id: params.id },

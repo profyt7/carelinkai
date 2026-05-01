@@ -8,10 +8,25 @@ Each loop: what it is, why it matters, what done looks like.
 
 ## 🔴 Critical (Blocking Revenue / Demos)
 
-### OL-021: Revenue model migration not deployed to production
+### OL-021: Prisma migrations not yet deployed to production
 - **Status:** 🔴 OPEN
-- **What:** `20260427000000_revenue_model_expansion` adds CommissionTier, AffiliateReferralType, DischargePlannerLicenseType enums + new fields on Affiliate, AffiliateReferral, DischargePlannerProfile, Family. Must be deployed before any new revenue features work in production.
+- **What:** Two pending migrations must be deployed:
+  1. `20260427000000_revenue_model_expansion` — CommissionTier, AffiliateReferralType, DischargePlannerLicenseType enums + new fields
+  2. New migration for BackgroundCheckOrder, AffiliateMaterial, DemoRequest models + checkrCandidateId on Caregiver (added 2026-05-01)
 - **Done when:** `npx prisma migrate deploy` run in Render shell with no errors.
+
+### OL-023: Checkr API not yet configured
+- **Status:** 🟡 OPEN — system uses mock fallback until keys are set
+- **What:** Set `CHECKR_API_KEY` and `CHECKR_WEBHOOK_SECRET` in Render env vars; register webhook at `https://getcarelinkai.com/api/webhooks/checkr`
+- **Done when:** Real background checks process end-to-end in production.
+
+### OL-024: BackgroundCheckOrderPanel Stripe Elements UI incomplete
+- **Status:** 🟡 OPEN — shows message on requiresPayment but no payment form
+- **Done when:** Stripe.js + CardElement inline in panel; payment confirmed before order completes.
+
+### OL-025: HomeCompareModal not wired into search results
+- **Status:** 🟡 OPEN — component built at `src/components/family/HomeCompareModal.tsx`
+- **Done when:** Family search results page has "Compare" checkboxes on home cards; modal opens when 2–3 selected.
 
 ### OL-022: STRIPE_PRICE_AGENCY and STRIPE_PRICE_DISCHARGE_PLANNER_DEPT not set
 - **Status:** ✅ FIXED (2026-04-27) — Chris confirmed both env vars already set in Render dashboard.

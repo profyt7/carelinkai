@@ -176,6 +176,7 @@ model Caregiver {
   backgroundCheckStatus    BackgroundCheckStatus    @default(NOT_STARTED)
   backgroundCheckProvider  String?
   backgroundCheckReportUrl String?
+  checkrCandidateId        String?                  @unique
   specialties              String[]
   createdAt                DateTime                 @default(now())
   updatedAt                DateTime                 @updatedAt
@@ -212,6 +213,7 @@ model Caregiver {
   callOffs                 CallOff[]
   pointsAccount            CaregiverPoints?
   shiftBids                ShiftBid[]
+  backgroundCheckOrders    BackgroundCheckOrder[]
 
   @@index([userId])
   @@index([hourlyRate])
@@ -238,6 +240,37 @@ model DemoRequest {
   @@index([createdAt])
 }
 
+// Tracks individual background check orders — either self-ordered by caregiver or ordered by a family
+model BackgroundCheckOrder {
+  id                String                 @id @default(cuid())
+  caregiverId       String
+  orderedByType     BackgroundCheckOrderer
+  orderedByUserId   String?
+  status            BackgroundCheckStatus  @default(PENDING)
+  packageType       BackgroundCheckPackage @default(BASIC)
+  checkrPackageName String                 @default("basic")
+  checkrReportId    String?                @unique
+  reportUrl         String?
+  pricePaid         Decimal?               @db.Decimal(10, 2)
+  stripePaymentId   String?
+  completedAt       DateTime?
+  expiresAt         DateTime?
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  caregiver         Caregiver              @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+
+  @@index([caregiverId])
+  @@index([orderedByUserId])
+  @@index([status])
+  @@index([packageType])
+}
+
+enum BackgroundCheckPackage {
+  BASIC      // Free — SSN trace, national criminal, sex offender, watchlist
+  ENHANCED   // $19.99 — adds county criminal (7yr), federal criminal
+  MVR        // $9.99 — motor vehicle report (driving history)
+  PREMIUM    // $39.99 — Enhanced + MVR + employment verification
+}
 model Affiliate {
   id              String              @id @default(cuid())
   userId          String              @unique
@@ -255,12 +288,26 @@ model Affiliate {
   @@index([affiliateCode])
 }
 
+// Marketing materials uploaded by admin, downloadable by affiliates
+model AffiliateMaterial {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  category    String   // e.g. "flyer", "email_template", "social_media", "banner"
+  fileUrl     String   // Cloudinary URL
+  fileType    String   // "pdf", "png", "jpg", "docx"
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
+  @@index([isActive])
+}
 enum CommissionTier {
   STANDARD  // 20%
   SILVER    // 25%
   GOLD      // 30%
 }
-
 model CaregiverCertification {
   id                  String              @id @default(cuid())
   caregiverId         String
@@ -1983,6 +2030,11 @@ enum BackgroundCheckStatus {
   CONSIDER
   EXPIRED
   FAILED
+}
+
+enum BackgroundCheckOrderer {
+  SELF
+  FAMILY
 }
 
 enum CertificationType {

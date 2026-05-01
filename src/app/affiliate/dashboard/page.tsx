@@ -2,7 +2,16 @@
 
 import { useEffect, useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { FiLink, FiDollarSign, FiUsers, FiCopy, FiCheck } from "react-icons/fi";
+import { FiLink, FiDollarSign, FiUsers, FiCopy, FiCheck, FiDownload, FiFileText } from "react-icons/fi";
+
+interface Material {
+  id: string;
+  title: string;
+  description: string | null;
+  category: string;
+  fileUrl: string;
+  fileType: string;
+}
 
 interface DashboardData {
   affiliateCode: string;
@@ -40,6 +49,14 @@ export default function AffiliateDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [materials, setMaterials] = useState<Material[]>([]);
+
+  useEffect(() => {
+    fetch("/api/affiliate/materials")
+      .then((r) => r.json())
+      .then((d) => { if (d.success) setMaterials(d.materials); })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetch("/api/affiliate/dashboard")
@@ -161,6 +178,43 @@ export default function AffiliateDashboardPage() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              )}
+            </div>
+
+            {/* Marketing Materials */}
+            <div className="rounded-xl border border-neutral-200 bg-white overflow-hidden">
+              <div className="px-6 py-4 border-b border-neutral-100 flex items-center gap-2">
+                <FiFileText className="text-primary-600" />
+                <h2 className="font-semibold text-neutral-900">Marketing Materials</h2>
+              </div>
+              {materials.length === 0 ? (
+                <div className="px-6 py-10 text-center text-neutral-500 text-sm">
+                  Marketing materials are being prepared. Check back soon.
+                </div>
+              ) : (
+                <div className="divide-y divide-neutral-100">
+                  {materials.map((m) => (
+                    <div key={m.id} className="flex items-center justify-between px-6 py-4 hover:bg-neutral-50">
+                      <div>
+                        <p className="font-medium text-neutral-900 text-sm">{m.title}</p>
+                        {m.description && <p className="text-xs text-neutral-500 mt-0.5">{m.description}</p>}
+                        <span className="text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full mt-1 inline-block capitalize">
+                          {m.category.replace(/_/g, " ")}
+                        </span>
+                      </div>
+                      <a
+                        href={m.fileUrl}
+                        download
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-sm font-medium text-primary-700 bg-primary-50 border border-primary-200 hover:bg-primary-100 px-4 py-2 rounded-lg transition-colors ml-4 shrink-0"
+                      >
+                        <FiDownload className="h-4 w-4" />
+                        Download {m.fileType.toUpperCase()}
+                      </a>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

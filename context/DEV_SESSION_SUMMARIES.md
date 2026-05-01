@@ -2,6 +2,27 @@
 
 ---
 
+### 2026-05-01 — Background Checks, Home Comparison, HIPAA Audit, Affiliate Materials, Hero Update
+
+- **Objective:** Build all PARTIAL/COPY-ONLY features from landing page audit; switch hero to hero-bg2.jpg; compress both hero images.
+- **Work completed:**
+  1. **Hero:** Switched to `hero-bg2.jpg` (right-weighted) with lighter left-anchored gradient. Both hero images compressed from 9.5–19MB → 268–284KB (98% reduction, 1920px wide).
+  2. **Background check system (4 tiers):** `src/lib/checkr.ts` Checkr API client + mock fallback; BASIC (free)/ENHANCED ($19.99)/MVR ($9.99)/PREMIUM ($39.99); caregiver self-verify at `/caregiver/verification`; family order panel on caregiver marketplace profile; Stripe PaymentIntents for paid tiers; HMAC webhook handler.
+  3. **Real-time bed availability:** `GET /api/discharge-planner/availability` + Refresh button with live timestamp in SearchResults.
+  4. **Home comparison:** `GET /api/family/homes/compare` + `HomeCompareModal` component (3-home table, needs wiring into search results page).
+  5. **Affiliate marketing materials:** Admin upload via Cloudinary at `/api/admin/affiliate/materials`; affiliate download panel on dashboard.
+  6. **HIPAA PHI audit:** `src/lib/phi-audit.ts` (`logPhiAccess`/`auditPhiRead`); wired into resident records GET.
+  7. **Schema additions:** `BackgroundCheckOrder`, `AffiliateMaterial`, `DemoRequest` models; new enums; `checkrCandidateId` on Caregiver.
+  8. **AI document classification:** Verified `src/lib/documents/classification.ts` makes real Claude API calls — not a stub.
+- **Files changed:** `prisma/schema.prisma`, `src/app/page.tsx`, `src/app/caregiver/page.tsx`, `src/app/affiliate/dashboard/page.tsx`, `src/app/marketplace/caregivers/[id]/page.tsx`, `src/app/discharge-planner/search/_components/SearchResults.tsx`, plus 12 new files (routes, components, lib).
+- **Commands run:** Branch work on `claude/review-carelink-docs-49Ycv`; merged to main; `git push origin main`.
+- **Tests/build status:** No type-check run (no local DB). Schema conflict-free after merge.
+- **Deployment impact:** **Requires `npx prisma migrate deploy` in Render shell** for BackgroundCheckOrder, AffiliateMaterial, DemoRequest models + checkrCandidateId field.
+- **New risks/blockers:** `CHECKR_API_KEY`/`CHECKR_WEBHOOK_SECRET` not set (mock fallback active); BackgroundCheckOrderPanel Stripe Elements UI incomplete; HomeCompareModal not wired into search results.
+- **Recommended next step:** Run `npx prisma migrate deploy` in Render shell. Then set Checkr env vars when ready for real checks.
+
+---
+
 ### 2026-04-27 — Landing Page Overhaul (Benefits, FAQ, How It Works) + Playwright Smoke Tests
 
 - **Objective:** Complete landing page update for newly shipped features; add Playwright smoke test suite covering all 3 demo logins.
