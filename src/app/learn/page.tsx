@@ -1,5 +1,8 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import DashboardLayout from '@/components/layout/DashboardLayout';
 import { GUIDES } from './guides/content';
 
 export const metadata: Metadata = {
@@ -9,9 +12,12 @@ export const metadata: Metadata = {
 };
 
 
-export default function LearnPage() {
-  return (
-    <div className="min-h-screen bg-neutral-50">
+export default async function LearnPage() {
+  const session = await getServerSession(authOptions);
+  const isLoggedIn = !!session?.user;
+
+  const content = (
+    <div className={isLoggedIn ? '' : 'min-h-screen bg-neutral-50'}>
       {/* Hero */}
       <div className="bg-white border-b border-neutral-200">
         <div className="max-w-4xl mx-auto px-6 py-16 text-center">
@@ -89,4 +95,9 @@ export default function LearnPage() {
       </div>
     </div>
   );
+
+  if (isLoggedIn) {
+    return <DashboardLayout title="Education Hub" showSearch={false}>{content}</DashboardLayout>;
+  }
+  return content;
 }

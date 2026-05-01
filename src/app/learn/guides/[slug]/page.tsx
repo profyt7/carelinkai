@@ -1,6 +1,9 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import DashboardLayout from '@/components/layout/DashboardLayout';
 import { getGuide, GUIDES } from '../content';
 
 interface Props {
@@ -20,12 +23,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default function GuidePage({ params }: Props) {
+export default async function GuidePage({ params }: Props) {
   const guide = getGuide(params.slug);
   if (!guide) notFound();
 
-  return (
-    <div className="min-h-screen bg-neutral-50">
+  const session = await getServerSession(authOptions);
+  const isLoggedIn = !!session?.user;
+
+  const content = (
+    <div className={isLoggedIn ? '' : 'min-h-screen bg-neutral-50'}>
       {/* Header */}
       <div className="bg-white border-b border-neutral-200">
         <div className="max-w-3xl mx-auto px-6 py-10">
@@ -100,4 +106,9 @@ export default function GuidePage({ params }: Props) {
       </div>
     </div>
   );
+
+  if (isLoggedIn) {
+    return <DashboardLayout title={guide.title} showSearch={false}>{content}</DashboardLayout>;
+  }
+  return content;
 }
