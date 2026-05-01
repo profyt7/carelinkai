@@ -5,6 +5,11 @@ const nextConfig = {
   // MEMORY OPTIMIZATION: Standalone output mode for smaller runtime footprint
   // This reduces memory usage significantly on constrained environments like Render's 512MB plan
   output: 'standalone',
+
+  // pdfkit reads .afm font files at runtime — include them in the standalone output
+  outputFileTracingIncludes: {
+    '**': ['./node_modules/pdfkit/js/data/**'],
+  },
   
   // Force new build ID on each deployment for cache busting
   generateBuildId: async () => {
