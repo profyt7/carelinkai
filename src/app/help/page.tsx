@@ -4,7 +4,6 @@ import React from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { FiMail, FiBook, FiHelpCircle, FiVideo, FiFileText, FiChevronDown, FiChevronUp, FiCheckCircle, FiArrowRight } from 'react-icons/fi';
-import DashboardLayout from '@/components/layout/DashboardLayout';
 
 const ROLE_GUIDES: Record<string, { title: string; steps: Array<{ label: string; href: string }> }> = {
   OPERATOR: {
@@ -109,7 +108,6 @@ export default function HelpPage() {
   const guide = role ? ROLE_GUIDES[role] : null;
 
   return (
-    <DashboardLayout title="Help & Support" showSearch={false}>
       <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6">
         {/* Header */}
         <div className="text-center mb-10">
@@ -237,6 +235,5 @@ export default function HelpPage() {
           and we'll get back to you within one business day.
         </p>
       </div>
-    </DashboardLayout>
   );
 }

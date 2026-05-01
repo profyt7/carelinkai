@@ -132,16 +132,11 @@ export default function middleware(req: NextRequest) {
           return applySecurityHeaders(req, res);
         }
 
-        // Public paths that don't require authentication
-        const publicPaths = [
-          '/',                        // marketing / landing page
-          '/search',                  // public search page
-        ];
+        // Always-public paths (must match the authorized callback list above)
+        const publicPaths = ['/', '/help', '/search', '/privacy', '/terms', '/learn'];
+        const mockPublicPrefixes = ['/marketplace'];
 
-        // In mock mode, also allow marketplace and search to be publicly viewable
-        const mockPublicPrefixes = ['/marketplace', '/search'];
-
-        if (publicPaths.includes(pathname) || (showMocks && mockPublicPrefixes.some(p => pathname === p || pathname.startsWith(p + '/')))) {
+        if (publicPaths.some(p => pathname === p || pathname.startsWith(p + '/')) || (showMocks && mockPublicPrefixes.some(p => pathname === p || pathname.startsWith(p + '/')))) {
           const res = NextResponse.next();
           return applySecurityHeaders(req, res);
         }
@@ -165,8 +160,13 @@ export default function middleware(req: NextRequest) {
               return true;
             }
 
-            // Allow public access to selected routes when runtime mock mode is enabled
-            // NOTE: NEXT_PUBLIC_SHOW_MOCK_DASHBOARD intentionally ignored
+            // Always-public paths — no auth required regardless of mock mode
+            const alwaysPublic = ['/', '/help', '/search', '/privacy', '/terms', '/learn'];
+            if (alwaysPublic.some(p => pathname === p || pathname.startsWith(p + '/'))) {
+              return true;
+            }
+
+            // Allow public access to marketplace routes when mock mode is enabled
             const cookieRaw = req?.cookies?.get?.('carelink_mock_mode')?.value?.toString().trim().toLowerCase() || '';
             const cookieOn = ['1', 'true', 'yes', 'on'].includes(cookieRaw);
             const cookieOff = ['0', 'false', 'no', 'off'].includes(cookieRaw);
@@ -179,7 +179,7 @@ export default function middleware(req: NextRequest) {
             const envOn = ['1', 'true', 'yes', 'on'].includes(rawMock);
             const showMocks = cookieOff ? false : (cookieOn || envOn || qsOn);
             if (showMocks) {
-              if (pathname === '/' || pathname === '/search' || pathname.startsWith('/marketplace')) {
+              if (pathname.startsWith('/marketplace')) {
                 return true;
               }
             }
