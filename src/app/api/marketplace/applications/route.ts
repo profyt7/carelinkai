@@ -10,6 +10,7 @@ import { z, ZodError } from 'zod';
 import { rateLimit, getClientIp } from '@/lib/rateLimit';
 import { Prisma } from '@prisma/client';
 import EmailService from '@/lib/email-service';
+import { SMSService } from '@/lib/sms/sms-service';
 
 /**
  * GET /api/marketplace/applications
@@ -212,10 +213,10 @@ export async function POST(request: Request) {
         }
       });
 
-      // Send email to the listing owner
+      // Send email + SMS to the listing owner
       const poster = await prisma.user.findUnique({
         where: { id: listing.postedByUserId },
-        select: { email: true, firstName: true },
+        select: { email: true, firstName: true, phone: true },
       });
       const applicant = await prisma.user.findUnique({
         where: { id: session.user.id },
@@ -231,6 +232,15 @@ export async function POST(request: Request) {
 <p style="color:#6b7280;font-size:12px;margin-top:16px;">CareLinkAI · <a href="mailto:support@getcarelinkai.com">support@getcarelinkai.com</a></p>`,
           text: `${applicant?.firstName ?? ''} ${applicant?.lastName ?? ''} applied for "${listing.title}". View at ${process.env.NEXTAUTH_URL}/marketplace/listings/${listing.id}/applications`,
         }).catch((e: unknown) => console.error('[Applications] Email send error:', e));
+      }
+      if (poster?.phone) {
+        const sms = new SMSService();
+        if (sms.isConfigured()) {
+          sms.sendSMS(
+            poster.phone,
+            `CareLinkAI: ${applicant?.firstName ?? ''} ${applicant?.lastName ?? ''} applied for "${listing.title}". Log in to review.`
+          ).catch((e: unknown) => console.error('[Applications] SMS send error:', e));
+        }
       }
     } catch (notifyErr) {
       console.error('Failed to create notification for new application:', notifyErr);

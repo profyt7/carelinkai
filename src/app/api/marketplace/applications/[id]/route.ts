@@ -8,6 +8,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { stripe } from '@/lib/stripe';
 import EmailService from '@/lib/email-service';
+import { SMSService } from '@/lib/sms/sms-service';
 
 /**
  * PATCH /api/marketplace/applications/[id]
@@ -137,7 +138,8 @@ export async function PATCH(
                 id: true,
                 firstName: true,
                 lastName: true,
-                email: true
+                email: true,
+                phone: true
               }
             }
           }
@@ -184,13 +186,24 @@ export async function PATCH(
       }
     });
     
-    // Send status-change email to caregiver (non-blocking)
+    // Send status-change email + SMS to caregiver (non-blocking)
     sendApplicationStatusEmail(
       updatedApplication.caregiver.user,
       application.listing.title,
       notificationTitle,
       message || defaultMessage
     ).catch((err) => console.error('[APP_EMAIL] Non-blocking error:', err));
+
+    const caregiverPhone = updatedApplication.caregiver.user.phone;
+    if (caregiverPhone) {
+      const sms = new SMSService();
+      if (sms.isConfigured()) {
+        sms.sendSMS(
+          caregiverPhone,
+          `CareLinkAI: ${notificationTitle} — "${application.listing.title}". Log in to view: ${process.env.NEXTAUTH_URL ?? 'https://getcarelinkai.com'}/caregiver/applications`
+        ).catch((err) => console.error('[APP_SMS] Non-blocking error:', err));
+      }
+    }
 
     // Trigger hire fee if action is HIRE (non-blocking)
     if (action === 'HIRE') {
