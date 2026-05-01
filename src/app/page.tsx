@@ -123,9 +123,22 @@ export default function HomePage() {
       </nav>
 
       {/* 1. HERO SECTION - Enhanced */}
-      <section className="relative bg-gradient-to-br from-primary-50 via-white to-secondary-50 py-20 md:py-28 overflow-hidden">
-        {/* Background decoration */}
-        <div className="absolute inset-0 overflow-hidden">
+      <section className="relative py-20 md:py-28 overflow-hidden">
+        {/* Background image */}
+        <div className="absolute inset-0">
+          <Image
+            src="/images/hero-bg2.jpg"
+            alt=""
+            fill
+            className="object-cover object-center"
+            priority
+          />
+          {/* Light gradient — image already has a bright background so minimal overlay needed */}
+          <div className="absolute inset-0 bg-gradient-to-r from-white from-35% via-white/75 via-55% to-white/10" />
+        </div>
+
+        {/* Subtle decorative blobs on top of image */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute -top-40 -right-40 w-80 h-80 bg-secondary-500 rounded-full opacity-10 blur-3xl"></div>
           <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-primary-500 rounded-full opacity-10 blur-3xl"></div>
         </div>

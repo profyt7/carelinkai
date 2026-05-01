@@ -9,6 +9,9 @@ import RequestShiftForm from "@/components/marketplace/RequestShiftForm";
 import CaregiverReviewForm from "@/components/marketplace/CaregiverReviewForm";
 import CaregiverReviewsList from "@/components/marketplace/CaregiverReviewsList";
 import RequestCareButton from "@/components/marketplace/RequestCareButton";
+import DirectHireButton from "@/components/marketplace/DirectHireButton";
+import BackgroundCheckOrderPanel from "@/components/marketplace/BackgroundCheckOrderPanel";
+import BackgroundCheckBadge from "@/components/caregiver/BackgroundCheckBadge";
 import { getCloudinaryAvatar, isCloudinaryUrl } from "@/lib/cloudinaryUrl";
 
 export const dynamic = "force-dynamic";
@@ -252,22 +255,25 @@ export default async function CaregiverDetailPage({
               </div>
               
               <div className="flex flex-wrap gap-2 mt-3">
-                {caregiver.badges.map((badge, index) => (
-                  <span 
-                    key={index} 
-                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      badge === 'Background Check Clear' 
-                        ? 'bg-success-100 text-success-800' 
-                        : badge === 'Top Rated'
-                        ? 'bg-warning-100 text-warning-800'
-                        : 'bg-primary-100 text-primary-800'
-                    }`}
-                  >
-                    {badge === 'Background Check Clear' && <FiCheckCircle className="mr-1" size={12} />}
-                    {badge === 'Experienced' && <FiClock className="mr-1" size={12} />}
-                    {badge}
-                  </span>
-                ))}
+                <BackgroundCheckBadge
+                  status={caregiver.backgroundCheckStatus as any}
+                  size="sm"
+                />
+                {caregiver.badges
+                  .filter((b) => b !== "Background Check Clear")
+                  .map((badge, index) => (
+                    <span
+                      key={index}
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        badge === "Top Rated"
+                          ? "bg-warning-100 text-warning-800"
+                          : "bg-primary-100 text-primary-800"
+                      }`}
+                    >
+                      {badge === "Experienced" && <FiClock className="mr-1" size={12} />}
+                      {badge}
+                    </span>
+                  ))}
               </div>
             </div>
           </div>
@@ -277,17 +283,52 @@ export default async function CaregiverDetailPage({
         <div className="p-6">
           {/* Request Care CTA - Prominent placement */}
           <div className="mb-6 bg-primary-50 border border-primary-200 rounded-lg p-4">
-            <h3 className="text-lg font-semibold text-neutral-900 mb-2">
-              Interested in hiring {caregiver.name}?
-            </h3>
-            <p className="text-sm text-neutral-600 mb-4">
-              Submit a care inquiry to connect with this caregiver and discuss your needs.
-            </p>
-            <RequestCareButton
-              targetType="AIDE"
-              targetId={caregiver.id}
-              targetName={caregiver.name}
-            />
+            {isOperator ? (
+              <>
+                <h3 className="text-lg font-semibold text-neutral-900 mb-2">
+                  Ready to hire {caregiver.name}?
+                </h3>
+                <p className="text-sm text-neutral-600 mb-4">
+                  Add {caregiver.name.split(' ')[0]} to your team. An employment record will be created and they'll be notified immediately.
+                </p>
+                {operatorPlan && ['PROFESSIONAL', 'GROWTH', 'AGENCY'].includes(operatorPlan) ? (
+                  <p className="text-xs text-success-700 font-medium mb-3">
+                    ✓ Marketplace hire included in your {operatorPlan} plan — no additional fee.
+                  </p>
+                ) : (
+                  <p className="text-xs text-amber-700 font-medium mb-3">
+                    A $99 marketplace access fee applies on the Starter plan.
+                  </p>
+                )}
+                <DirectHireButton
+                  caregiverId={caregiver.id}
+                  caregiverName={caregiver.name}
+                  operatorPlan={operatorPlan}
+                  isMock={caregiver.id.startsWith('cg_')}
+                />
+              </>
+            ) : (
+              <>
+                <h3 className="text-lg font-semibold text-neutral-900 mb-2">
+                  Interested in hiring {caregiver.name}?
+                </h3>
+                <p className="text-sm text-neutral-600 mb-4">
+                  Submit a care inquiry to connect with this caregiver and discuss your needs.
+                </p>
+                <RequestCareButton
+                  targetType="AIDE"
+                  targetId={caregiver.id}
+                  targetName={caregiver.name}
+                />
+                {!caregiver.id.startsWith("cg_") && (
+                  <BackgroundCheckOrderPanel
+                    caregiverId={caregiver.id}
+                    caregiverFirstName={caregiver.name.split(" ")[0]}
+                    existingStatus={caregiver.backgroundCheckStatus}
+                  />
+                )}
+              </>
+            )}
           </div>
 
           {/* Details section */}

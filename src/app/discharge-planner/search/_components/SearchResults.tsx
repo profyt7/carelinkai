@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { MapPin, Bed, DollarSign, CheckCircle, Send, Phone, Mail, Star } from 'lucide-react';
+import { useState, useCallback } from 'react';
+import { MapPin, Bed, DollarSign, CheckCircle, Send, Phone, Mail, Star, RefreshCw } from 'lucide-react';
 import PlacementRequestModal from './PlacementRequestModal';
 
 interface SearchResult {
@@ -28,6 +28,9 @@ interface SearchResultsProps {
 export default function SearchResults({ searchId, query, matches, totalMatches }: SearchResultsProps) {
   const [selectedHome, setSelectedHome] = useState<SearchResult | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [liveAvailability, setLiveAvailability] = useState<Record<string, number>>({});
+  const [refreshingAvailability, setRefreshingAvailability] = useState(false);
+  const [availabilityFetchedAt, setAvailabilityFetchedAt] = useState<string | null>(null);
 
   const handleSendRequest = (home: SearchResult) => {
     setSelectedHome(home);
@@ -39,16 +42,54 @@ export default function SearchResults({ searchId, query, matches, totalMatches }
     setSelectedHome(null);
   };
 
+  const refreshAvailability = useCallback(async () => {
+    const homeIds = matches?.map((m) => m.homeId).filter(Boolean).join(",");
+    if (!homeIds) return;
+    setRefreshingAvailability(true);
+    try {
+      const res = await fetch(`/api/discharge-planner/availability?homeIds=${homeIds}`);
+      const data = await res.json();
+      if (data.success) {
+        const map: Record<string, number> = {};
+        data.availability.forEach((a: { homeId: string; availableBeds: number }) => {
+          map[a.homeId] = a.availableBeds;
+        });
+        setLiveAvailability(map);
+        setAvailabilityFetchedAt(data.fetchedAt);
+      }
+    } catch {
+      // silently fail — fall back to search result data
+    } finally {
+      setRefreshingAvailability(false);
+    }
+  }, [matches]);
+
   return (
     <div className="space-y-6">
       {/* Results Header */}
       <div className="bg-white rounded-2xl shadow-lg p-6">
-        <h2 className="text-2xl font-bold text-neutral-900 mb-2">
-          Search Results
-        </h2>
-        <p className="text-neutral-600">
-          Found <span className="font-semibold text-primary-600">{totalMatches}</span> matching homes for your query
-        </p>
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <h2 className="text-2xl font-bold text-neutral-900 mb-2">Search Results</h2>
+            <p className="text-neutral-600">
+              Found <span className="font-semibold text-primary-600">{totalMatches}</span> matching homes for your query
+            </p>
+          </div>
+          <button
+            onClick={refreshAvailability}
+            disabled={refreshingAvailability}
+            className="flex items-center gap-2 text-sm font-medium text-primary-700 bg-primary-50 border border-primary-200 hover:bg-primary-100 px-4 py-2 rounded-lg transition-colors disabled:opacity-60"
+          >
+            <RefreshCw className={`h-4 w-4 ${refreshingAvailability ? "animate-spin" : ""}`} />
+            {refreshingAvailability ? "Refreshing..." : "Refresh Availability"}
+          </button>
+        </div>
+        {availabilityFetchedAt && (
+          <p className="text-xs text-success-600 mt-2 flex items-center gap-1">
+            <CheckCircle className="h-3 w-3" />
+            Live availability updated at {new Date(availabilityFetchedAt).toLocaleTimeString()}
+          </p>
+        )}
         <div className="mt-4 p-4 bg-neutral-50 rounded-lg">
           <p className="text-sm text-neutral-700">
             <span className="font-semibold">Your search:</span> {query}
@@ -94,13 +135,20 @@ export default function SearchResults({ searchId, query, matches, totalMatches }
 
               {/* Details Grid */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                {/* Available Beds */}
-                <div className="p-4 bg-neutral-50 rounded-xl">
+                {/* Available Beds — live if refreshed */}
+                <div className={`p-4 rounded-xl ${home?.homeId && liveAvailability[home.homeId] !== undefined ? 'bg-success-50 border border-success-200' : 'bg-neutral-50'}`}>
                   <div className="flex items-center gap-2 mb-1">
-                    <Bed className="h-5 w-5 text-primary-600" />
+                    <Bed className={`h-5 w-5 ${home?.homeId && liveAvailability[home.homeId] !== undefined ? 'text-success-600' : 'text-primary-600'}`} />
                     <span className="text-sm font-semibold text-neutral-700">Available Beds</span>
+                    {home?.homeId && liveAvailability[home.homeId] !== undefined && (
+                      <span className="text-xs text-success-600 font-medium">● Live</span>
+                    )}
                   </div>
-                  <p className="text-2xl font-bold text-neutral-900">{home?.availableBeds || 0}</p>
+                  <p className="text-2xl font-bold text-neutral-900">
+                    {home?.homeId && liveAvailability[home.homeId] !== undefined
+                      ? liveAvailability[home.homeId]
+                      : (home?.availableBeds || 0)}
+                  </p>
                 </div>
 
                 {/* Starting Price */}
