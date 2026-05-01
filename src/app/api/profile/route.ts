@@ -19,7 +19,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient, UserRole, AuditAction, CategoryType } from "@prisma/client";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth-db-simple";
+import { authOptions } from "@/lib/auth";
 import { z } from "zod";
 
 // Initialize Prisma client

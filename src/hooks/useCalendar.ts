@@ -264,7 +264,7 @@ export function useCalendar(): CalendarHook {
         const mockRes = await fetch('/api/runtime/mocks', { cache: 'no-store', credentials: 'include' as RequestCredentials });
         if (mockRes.ok) {
           const mj = await mockRes.json();
-          if (mj?.show || mj?.showMarketplace) {
+          if (mj?.show) {
             const all = getMockAppointments();
             const filtered = filterMockAppointments(all, currentFilter);
             setState(prev => ({

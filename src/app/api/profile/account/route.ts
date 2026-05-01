@@ -3,7 +3,7 @@ export const revalidate = 0;
 
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth-db-simple";
+import { authOptions } from "@/lib/auth";
 import { PrismaClient, AuditAction } from "@prisma/client";
 
 // Local Prisma client (pattern used by other working routes)

@@ -64,7 +64,14 @@ export default async function ResidentsPage({ searchParams }: { searchParams?: {
   const familyId = searchParams?.familyId?.toString() || '';
   const cursor = searchParams?.cursor?.toString() || '';
   const showArchived = searchParams?.showArchived?.toString() || '';
-  const data = showMock && !forceLive ? MOCK_RESIDENTS : await fetchResidents({ q, status, homeId, familyId, cursor, showArchived });
+  let data: any;
+  let fetchError: string | null = null;
+  try {
+    data = showMock && !forceLive ? MOCK_RESIDENTS : await fetchResidents({ q, status, homeId, familyId, cursor, showArchived });
+  } catch (err) {
+    fetchError = err instanceof Error ? err.message : 'Failed to load residents';
+    data = { items: [], nextCursor: null };
+  }
   const { homes } = showMock ? { homes: [] as Array<{ id: string; name: string }> } : await fetchHomes();
   const items: ResidentItem[] = Array.isArray(data) ? data : (data.items ?? []);
   const nextCursor = Array.isArray(data) ? null : (data.nextCursor ?? null);
@@ -76,6 +83,12 @@ export default async function ResidentsPage({ searchParams }: { searchParams?: {
         { label: 'Residents' }
       ]} />
       
+      {fetchError && (
+        <div className="mb-4 rounded-lg border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700">
+          Error loading residents: {fetchError}
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>

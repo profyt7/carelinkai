@@ -15,7 +15,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient, AuditAction } from "@prisma/client";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth-db-simple";
+import { authOptions } from "@/lib/auth";
 import { z } from "zod";
 import { compare, hash } from "bcryptjs";
 import { rateLimit } from "@/lib/rate-limit";

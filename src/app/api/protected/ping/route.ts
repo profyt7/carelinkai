@@ -3,7 +3,7 @@ export const revalidate = 0;
 
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth-db-simple';
+import { authOptions } from '@/lib/auth';
 
 /**
  * Protected ping endpoint used by post-deploy synthetics.

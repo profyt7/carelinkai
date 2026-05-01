@@ -110,14 +110,14 @@ export default function CaregiversPage() {
       
       const res = await fetch(`/api/operator/caregivers?${params.toString()}`);
       if (!res.ok) {
+        let errorMessage = `Failed to fetch caregivers (${res.status})`;
         try {
           const errorData = await res.json();
-          const errorMessage = errorData.message || errorData.error || 'Failed to fetch caregivers';
-          const errorDetails = errorData.type ? ` (${errorData.type})` : '';
-          throw new Error(errorMessage + errorDetails);
-        } catch (parseError) {
-          throw new Error(`Failed to fetch caregivers (${res.status})`);
-        }
+          const msg = errorData.message || errorData.error;
+          const detail = errorData.type ? ` [${errorData.type}]` : '';
+          if (msg) errorMessage = msg + detail;
+        } catch {}
+        throw new Error(errorMessage);
       }
       const data = await res.json();
       setCaregivers(data.caregivers || []);

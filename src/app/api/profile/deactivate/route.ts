@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth-db-simple";
+import { authOptions } from "@/lib/auth";
 import { PrismaClient, AuditAction, UserStatus } from "@prisma/client";
 
 // Local Prisma client (consistent pattern across routes)

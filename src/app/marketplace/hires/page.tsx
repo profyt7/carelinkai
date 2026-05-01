@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { format, parseISO } from "date-fns";
 import { FiCheckCircle, FiCalendar, FiBriefcase, FiHome } from "react-icons/fi";
-import DashboardLayout from "@/components/layout/DashboardLayout";
+
 
 type Hire = {
   id: string;
@@ -66,7 +66,6 @@ export default function MyHiresPage() {
   }, [status]);
 
   return (
-    <DashboardLayout title="My Hires" showSearch={false}>
       <div className="max-w-4xl mx-auto px-4 py-6">
         <div className="flex items-center gap-3 mb-6">
           <FiCheckCircle size={28} className="text-success-600" />
@@ -178,6 +177,5 @@ export default function MyHiresPage() {
           </div>
         )}
       </div>
-    </DashboardLayout>
   );
 }

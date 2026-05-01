@@ -19,7 +19,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient, AuditAction, Prisma } from "@prisma/client";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth-db-simple";
+import { authOptions } from "@/lib/auth";
 import { mkdir, writeFile, unlink } from "fs/promises";
 import { existsSync } from "fs";
 import { join, dirname } from "path";
