@@ -1,7 +1,6 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
-import { cookies, headers } from 'next/headers';
-import { getBaseUrl } from '@/lib/http';
+import { cookies } from 'next/headers';
 import { MOCK_RESIDENTS } from '@/lib/mock/residents';
 import { InlineActions, StatusPill } from '@/components/operator/residents/InlineActions';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
@@ -10,34 +9,81 @@ import { FiUsers, FiSearch, FiDownload, FiPlus } from 'react-icons/fi';
 import Image from 'next/image';
 import { NewResidentButton, ExportResidentsButton, ResidentRowActions } from '@/components/operator/residents/ResidentsListActions';
 import { ResidentsPageContent } from '@/components/operator/residents/ResidentsPageContent';
+import { prisma } from '@/lib/prisma';
+import { requirePermission, getUserScope } from '@/lib/auth-utils';
+import { PERMISSIONS } from '@/lib/permissions';
 
-async function fetchResidents(params: { q?: string; status?: string; homeId?: string; familyId?: string; cursor?: string; showArchived?: string }) {
-  const cookieHeader = (await cookies()).toString();
-  const qParam = params.q ? `&q=${encodeURIComponent(params.q)}` : '';
-  const sParam = params.status ? `&status=${encodeURIComponent(params.status)}` : '';
-  const hParam = params.homeId ? `&homeId=${encodeURIComponent(params.homeId)}` : '';
-  const fParam = params.familyId ? `&familyId=${encodeURIComponent(params.familyId)}` : '';
-  const cParam = params.cursor ? `&cursor=${encodeURIComponent(params.cursor)}` : '';
-  const aParam = params.showArchived === 'true' ? '&showArchived=true' : '';
-  const h = await headers();
-  const base = getBaseUrl(h);
-  const res = await fetch(`${base}/api/residents?limit=50${qParam}${sParam}${hParam}${fParam}${cParam}${aParam}`, {
-    cache: 'no-store',
-    headers: { cookie: cookieHeader },
-  });
-  if (!res.ok) throw new Error('Failed to load residents');
-  return res.json();
+async function fetchResidentsDirect(params: { q?: string; status?: string; homeId?: string; familyId?: string; cursor?: string; showArchived?: string }) {
+  const user = await requirePermission(PERMISSIONS.RESIDENTS_VIEW);
+  const scope = await getUserScope(user.id);
+
+  let allowedHomeIds: string[] | null = null;
+  if (scope.homeIds === 'ALL') {
+    allowedHomeIds = null;
+  } else if (scope.role === 'FAMILY') {
+    allowedHomeIds = null;
+  } else {
+    allowedHomeIds = scope.homeIds as string[];
+    if (allowedHomeIds.length === 0) return { items: [], nextCursor: null };
+  }
+
+  const where: any = {};
+  if (params.q) {
+    where.OR = [
+      { firstName: { contains: params.q, mode: 'insensitive' } },
+      { lastName: { contains: params.q, mode: 'insensitive' } },
+    ];
+  }
+  if (params.status) where.status = params.status;
+  if (params.homeId) where.homeId = params.homeId;
+  if (params.familyId) where.familyId = params.familyId;
+  if (params.showArchived !== 'true') where.archivedAt = null;
+
+  if (scope.role === 'FAMILY' && Array.isArray(scope.residentIds) && scope.residentIds.length > 0) {
+    where.id = { in: scope.residentIds };
+  } else if (allowedHomeIds !== null) {
+    where.homeId = where.homeId ?? { in: allowedHomeIds };
+  }
+
+  const limit = 50;
+  const queryOpts: any = {
+    where,
+    take: limit + 1,
+    orderBy: { id: 'asc' as const },
+    select: {
+      id: true, firstName: true, lastName: true, status: true,
+      photoUrl: true, dateOfBirth: true, admissionDate: true, careNeeds: true,
+      home: { select: { id: true, name: true } },
+    },
+  };
+  if (params.cursor) { queryOpts.cursor = { id: params.cursor }; queryOpts.skip = 1; }
+
+  const rows = await prisma.resident.findMany(queryOpts);
+  let nextCursor: string | null = null;
+  let items = rows;
+  if (rows.length > limit) {
+    const last = rows[rows.length - 1];
+    if (last) nextCursor = (last as any).id as string;
+    items = rows.slice(0, limit);
+  }
+  return { items, nextCursor };
 }
 
 async function fetchHomes() {
-  // Server-side same-origin fetch with cookies for RBAC scoping to operator homes
-  const cookieHeader = (await cookies()).toString();
-  const h = await headers();
-  const base = getBaseUrl(h);
-  const res = await fetch(`${base}/api/operator/homes`, { cache: 'no-store', headers: { cookie: cookieHeader } });
-  if (!res.ok) return { homes: [] as Array<{ id: string; name: string }> };
-  const json = await res.json();
-  return { homes: (json.homes ?? []).map((h: any) => ({ id: h.id, name: h.name })) };
+  const user = await requirePermission(PERMISSIONS.RESIDENTS_VIEW);
+  const scope = await getUserScope(user.id);
+  if (scope.homeIds === 'ALL') {
+    const homes = await prisma.assistedLivingHome.findMany({ select: { id: true, name: true }, orderBy: { name: 'asc' } });
+    return { homes };
+  }
+  const homeIds = scope.homeIds as string[];
+  if (homeIds.length === 0) return { homes: [] as Array<{ id: string; name: string }> };
+  const homes = await prisma.assistedLivingHome.findMany({
+    where: { id: { in: homeIds } },
+    select: { id: true, name: true },
+    orderBy: { name: 'asc' },
+  });
+  return { homes };
 }
 
 type ResidentItem = {
@@ -67,8 +113,15 @@ export default async function ResidentsPage({ searchParams }: { searchParams?: {
   let data: any;
   let fetchError: string | null = null;
   try {
-    data = showMock && !forceLive ? MOCK_RESIDENTS : await fetchResidents({ q, status, homeId, familyId, cursor, showArchived });
-  } catch (err) {
+    if (showMock && !forceLive) {
+      data = MOCK_RESIDENTS;
+    } else {
+      data = await fetchResidentsDirect({ q, status, homeId, familyId, cursor, showArchived });
+    }
+  } catch (err: any) {
+    if (err?.name === 'UnauthenticatedError' || err?.status === 401) {
+      redirect('/auth/login');
+    }
     fetchError = err instanceof Error ? err.message : 'Failed to load residents';
     data = { items: [], nextCursor: null };
   }
