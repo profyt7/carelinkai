@@ -22,7 +22,7 @@ import { UserRole } from "@prisma/client";
 export default function CalendarPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [isCreatingAppointment, setIsCreatingAppointment] = useState(false);
+  const [newAppointmentTrigger, setNewAppointmentTrigger] = useState(0);
   const [activeTab, setActiveTab] = useState<"calendar" | "upcoming" | "availability">("calendar");
   const [calendarHeight, setCalendarHeight] = useState<string>("700px");
   const [isLoading, setIsLoading] = useState(true);
@@ -49,8 +49,8 @@ export default function CalendarPage() {
 
   /**
    * Callback fired by CalendarView whenever it creates / updates / cancels
-   * an appointment.  We immediately refetch appointments and bump the
-   * refreshKey so all child components (e.g., Upcoming sidebar) rerender.
+   * an appointment.  We refetch the sidebar appointments list without
+   * remounting CalendarView (which would lose its FullCalendar state).
    */
   const handleDataChange = useCallback(async () => {
     await fetchAppointments();
@@ -138,10 +138,40 @@ export default function CalendarPage() {
     .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
     .slice(0, 5); // Show only next 5 appointments
 
-  // Handle export calendar
+  // Handle export calendar — generates an iCal (.ics) file in the browser
   const handleExportCalendar = () => {
-    // This would be implemented to export to iCal/Google Calendar
-    toast.success("Calendar export feature coming soon!");
+    if (appointments.length === 0) {
+      toast.error("No appointments to export.");
+      return;
+    }
+    const escape = (s: string) => s.replace(/[\\;,]/g, (c) => `\\${c}`).replace(/\n/g, '\\n');
+    const dt = (iso: string) => iso.replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+    const lines: string[] = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//CareLinkAI//Calendar Export//EN',
+      'CALSCALE:GREGORIAN',
+    ];
+    for (const apt of appointments) {
+      lines.push('BEGIN:VEVENT');
+      lines.push(`UID:${apt.id}@carelinkai`);
+      lines.push(`SUMMARY:${escape(apt.title)}`);
+      lines.push(`DTSTART:${dt(apt.startTime)}`);
+      lines.push(`DTEND:${dt(apt.endTime)}`);
+      if (apt.description) lines.push(`DESCRIPTION:${escape(apt.description)}`);
+      if ((apt.location as any)?.address) lines.push(`LOCATION:${escape((apt.location as any).address)}`);
+      lines.push(`STATUS:${apt.status}`);
+      lines.push('END:VEVENT');
+    }
+    lines.push('END:VCALENDAR');
+    const blob = new Blob([lines.join('\r\n')], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'carelinkai-calendar.ics';
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${appointments.length} appointment${appointments.length !== 1 ? 's' : ''}.`);
   };
 
   // Loading state
@@ -249,7 +279,7 @@ export default function CalendarPage() {
 
         <div className="flex space-x-2">
           <button
-            onClick={() => setIsCreatingAppointment(true)}
+            onClick={() => setNewAppointmentTrigger((n) => n + 1)}
             className="flex items-center rounded-md bg-primary-500 px-3 py-2 text-sm font-medium text-white hover:bg-primary-600"
           >
             <FiPlus className="mr-1.5" /> New Appointment
@@ -261,7 +291,7 @@ export default function CalendarPage() {
             <FiDownload className="mr-1.5" /> Export
           </button>
           <button
-            onClick={() => toast.success("Calendar settings coming soon!")}
+            onClick={() => router.push('/settings')}
             className="flex items-center rounded-md bg-white px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
           >
             <FiSettings className="mr-1.5" /> Settings
@@ -362,22 +392,20 @@ export default function CalendarPage() {
           }`}
         >
           <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
-            <CalendarView 
-              key={`calendar-view-${refreshKey}`} // Force re-render when data changes
+            <CalendarView
               height={calendarHeight}
               showHeader={true}
               showFilters={true}
               showSearch={true}
               showToolbar={true}
               userId={session?.user?.id}
-              /* Only pass filter state, not data */
+              openNew={newAppointmentTrigger}
               searchQuery={searchQuery}
               onSearchChange={handleSearchChange}
               typeFilters={typeFilters}
               onTypeFiltersChange={handleTypeFilterChange}
               statusFilters={statusFilters}
               onStatusFiltersChange={handleStatusFilterChange}
-              /* notify parent when calendar data mutates */
               onDataChange={handleDataChange}
             />
           </div>
@@ -463,7 +491,7 @@ export default function CalendarPage() {
                   <FiCalendar size={32} className="mb-2 text-neutral-400" />
                   <p className="text-neutral-500">No upcoming appointments found</p>
                   <button
-                    onClick={() => setIsCreatingAppointment(true)}
+                    onClick={() => { setActiveTab("calendar"); setNewAppointmentTrigger((n) => n + 1); }}
                     className="mt-4 rounded-md bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600"
                   >
                     <FiPlus className="mr-1.5 inline-block" /> Schedule New Appointment
@@ -502,35 +530,6 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      {/* Calendar creation modal would be implemented here */}
-      {isCreatingAppointment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-            <h2 className="mb-4 text-xl font-bold">Create New Appointment</h2>
-            <p className="mb-4 text-neutral-600">
-              This modal would contain the appointment creation form.
-              For now, we're using the calendar's built-in appointment creation.
-            </p>
-            <div className="flex justify-end space-x-2">
-              <button
-                onClick={() => setIsCreatingAppointment(false)}
-                className="rounded-md bg-white px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  setIsCreatingAppointment(false);
-                  toast.success("Please use the calendar to create appointments");
-                }}
-                className="rounded-md bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </DashboardLayout>
   );
 }

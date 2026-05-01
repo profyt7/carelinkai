@@ -65,6 +65,8 @@ interface CalendarViewProps {
    * (e.g., the Upcoming-Appointments sidebar).
    */
   onDataChange?: () => void;
+  /** Increment this counter to programmatically open the new-appointment modal. */
+  openNew?: number;
 }
 
 /**
@@ -92,6 +94,7 @@ export default function CalendarView({
   statusFilters: propStatusFilters,
   onStatusFiltersChange,
   onDataChange,
+  openNew,
 }: CalendarViewProps) {
   // Get session for user info
   const { data: session } = useSession();
@@ -212,6 +215,27 @@ export default function CalendarView({
     setFilter(initialFilter);
   }, [homeId, residentId, userId, session?.user?.id, setFilter]);
   
+  // Open new-appointment modal when parent increments openNew
+  useEffect(() => {
+    if (!openNew) return;
+    const now = new Date();
+    const end = addMinutes(now, 60);
+    setAppointmentForm({
+      type: AppointmentType.CONSULTATION,
+      title: '',
+      description: '',
+      startTime: now.toISOString(),
+      endTime: end.toISOString(),
+      status: AppointmentStatus.CONFIRMED,
+      participants: [],
+      location: { address: '' },
+      homeId: homeId,
+      residentId: residentId,
+    });
+    setIsEditMode(false);
+    setIsAppointmentModalOpen(true);
+  }, [openNew]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Handle calendar view change
   const handleViewChange = useCallback((view: CalendarViewOption) => {
     setCurrentView(view);

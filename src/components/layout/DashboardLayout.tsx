@@ -148,7 +148,8 @@ const navItems: NavItem[] = [
       { name: "Documents", icon: <FiFolder size={18} />, href: "/operator/documents", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
       { name: "Compliance", icon: <FiClipboard size={18} />, href: "/operator/compliance", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
       { name: "Compliance Kits", icon: <FiFolder size={18} />, href: "/operator/compliance-kits", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN"] },
-      { name: "Finances", icon: <FiDollarSign size={18} />, href: "/settings/payouts", showInMobileBar: true },
+      { name: "Finances", icon: <FiDollarSign size={18} />, href: "/settings/payouts", showInMobileBar: true, roleRestriction: ["CAREGIVER"] },
+      { name: "Finances", icon: <FiDollarSign size={18} />, href: "/settings/payouts/operator", showInMobileBar: true, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
     ]
   },
 

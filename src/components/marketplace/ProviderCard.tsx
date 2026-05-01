@@ -24,6 +24,7 @@ interface ProviderCardProps {
     hourlyRate?: number | null;
     perMileRate?: number | null;
     distanceMiles?: number;
+    badges?: string[];
   };
   serviceTypeOptions?: { value: string; label: string }[];
   isFavorite?: boolean;
@@ -71,6 +72,10 @@ const ProviderCard: React.FC<ProviderCardProps> = ({ provider, serviceTypeOption
   // Get visible service types and count of hidden ones
   const visibleServiceTypes = provider.serviceTypes.slice(0, 3);
   const hiddenServiceTypesCount = Math.max(0, provider.serviceTypes.length - 3);
+
+  // Dynamic badges (gamification / achievements)
+  const additionalBadges = provider.badges ?? [];
+  const badgeLabels = new Set<string>();
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden relative">
@@ -158,6 +163,20 @@ const ProviderCard: React.FC<ProviderCardProps> = ({ provider, serviceTypeOption
             </span>
           )}
         </div>
+
+        {/* Dynamic badges (gamification etc.) */}
+        {additionalBadges.map((label) => {
+          if (badgeLabels.has(label)) return null;
+          badgeLabels.add(label);
+          return (
+            <span
+              key={label}
+              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-800 mr-2 mb-2"
+            >
+              {label}
+            </span>
+          );
+        })}
 
         {/* Hourly rate */}
         {provider.hourlyRate && (

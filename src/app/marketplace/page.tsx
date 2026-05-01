@@ -12,6 +12,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { VirtuosoGrid } from "react-virtuoso";
 import { MOCK_CATEGORIES as SHARED_MOCK_CATEGORIES, MOCK_CAREGIVERS as SHARED_MOCK_CAREGIVERS, MOCK_LISTINGS as SHARED_MOCK_LISTINGS, MOCK_PROVIDERS as SHARED_MOCK_PROVIDERS } from "@/lib/mock/marketplace";
 import MarketplaceTabs from "@/components/marketplace/MarketplaceTabs";
+import { FiMapPin, FiDollarSign, FiCheckCircle, FiUsers } from "react-icons/fi";
 
 const LAST_TAB_KEY = "marketplace:lastTab";
 const LS_KEYS = {
@@ -175,6 +176,8 @@ export default function MarketplacePage() {
     reviewCount: number;
     badges: string[];
     distanceMiles?: number;
+    isVerified?: boolean;
+    yearsInBusiness?: number | null;
   };
 
   const [providers, setProviders] = useState<Provider[]>([]);
@@ -1972,50 +1975,69 @@ export default function MarketplacePage() {
                     overscan={200}
                     components={{ List: GridList as any, Item: GridItem as any, Footer: () => (!jobHasMoreRender && jobsToRender.length > 0 ? <div className="py-6 text-center text-neutral-400">End of results</div> : null) as any }}
                     itemContent={(_, job) => (
-                      <Link href={`/marketplace/listings/${job.id}`} className={`relative block bg-white border rounded-md p-4 transition-shadow ${job.status === 'CLOSED' || job.status === 'HIRED' ? 'opacity-80' : 'hover:shadow-md'}`}>
-                        {/* Status badge */}
-                        {job.status && (
-                          <span className={`absolute right-3 top-3 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${job.status === 'OPEN' ? 'bg-success-100 text-success-800' : job.status === 'HIRED' ? 'bg-primary-100 text-primary-800' : 'bg-neutral-100 text-neutral-700'}`}>
-                            {job.status}
-                          </span>
-                        )}
-                        <div className="flex items-start mb-2">
-                          <div className="h-12 w-12 rounded-md overflow-hidden bg-neutral-100 flex-shrink-0 mr-3">
-                            <Image
-                              src={`https://ui-avatars.com/api/?name=${encodeURIComponent(job.title)}&background=random&size=128`}
-                              alt={job.title}
-                              width={48}
-                              height={48}
-                              placeholder="blur"
-                              blurDataURL={getBlurDataURL(48, 48)}
-                              sizes="48px"
-                              loading="lazy"
-                            />
-                          </div>
-                          <div>
-                            <h3 className="font-semibold text-neutral-900">{job.title}</h3>
-                            <div className="text-sm text-neutral-600">
-                              {[job.city, job.state].filter(Boolean).join(", ") || "Location"}
-                              {typeof job.distanceMiles === 'number' && isFinite(job.distanceMiles) && (
-                                <span className="ml-2 text-neutral-500">• {job.distanceMiles.toFixed(1)} mi</span>
-                              )}
+                      <div className={`bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden${job.status === 'CLOSED' || job.status === 'HIRED' ? ' opacity-80' : ''}`}>
+                        <div className="p-4">
+                          {/* Header */}
+                          <div className="flex items-center mb-4">
+                            <div className="h-16 w-16 rounded-full overflow-hidden bg-neutral-100 flex-shrink-0">
+                              <Image
+                                src={`https://ui-avatars.com/api/?name=${encodeURIComponent(job.title)}&background=random&size=128`}
+                                alt={job.title}
+                                width={64}
+                                height={64}
+                                placeholder="blur"
+                                blurDataURL={getBlurDataURL(64, 64)}
+                                sizes="64px"
+                                loading="lazy"
+                              />
+                            </div>
+                            <div className="ml-3">
+                              <h3 className="font-medium text-neutral-900">{job.title}</h3>
+                              <div className="flex items-center text-sm text-neutral-500">
+                                <FiMapPin className="mr-1" size={14} />
+                                <span>
+                                  {[job.city, job.state].filter(Boolean).join(", ") || "Location"}
+                                  {typeof job.distanceMiles === 'number' && isFinite(job.distanceMiles) && (
+                                    <span className="ml-2">• {job.distanceMiles.toFixed(1)} mi</span>
+                                  )}
+                                </span>
+                              </div>
                             </div>
                           </div>
+                          {/* Badges row */}
+                          <div className="flex flex-wrap gap-2 mb-3">
+                            {job.status && (
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${job.status === 'OPEN' ? 'bg-success-100 text-success-800' : job.status === 'HIRED' ? 'bg-primary-100 text-primary-800' : 'bg-neutral-100 text-neutral-700'}`}>
+                                {job.status === 'OPEN' ? 'Hiring Now' : job.status}
+                              </span>
+                            )}
+                            {typeof job.applicationCount === 'number' && (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-700">
+                                <FiUsers className="mr-1" size={12} />
+                                {job.applicationCount} applicant{job.applicationCount !== 1 ? 's' : ''}
+                              </span>
+                            )}
+                            {job.appliedByMe && (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">Applied</span>
+                            )}
+                          </div>
+                          {/* Rate */}
+                          {(job.hourlyRateMin || job.hourlyRateMax) && (
+                            <div className="flex items-center text-lg font-semibold text-neutral-900 mb-3">
+                              <FiDollarSign className="mr-1" size={18} />
+                              {job.hourlyRateMin && job.hourlyRateMax ? `${job.hourlyRateMin} – ${job.hourlyRateMax}/hr` : job.hourlyRateMin ? `${job.hourlyRateMin}/hr` : `Up to ${job.hourlyRateMax}/hr`}
+                            </div>
+                          )}
+                          {/* Description */}
+                          <div className="mb-4">
+                            <p className="text-sm text-neutral-600 line-clamp-2">{job.description}</p>
+                          </div>
+                          {/* CTA */}
+                          <Link href={`/marketplace/listings/${job.id}`} className="block bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md transition-colors text-center text-sm">
+                            View Posting
+                          </Link>
                         </div>
-                        {(job.hourlyRateMin || job.hourlyRateMax) && (
-                          <div className="text-sm text-neutral-800 mb-2">
-                            {job.hourlyRateMin && job.hourlyRateMax ? `$${job.hourlyRateMin} - $${job.hourlyRateMax}/hr` : job.hourlyRateMin ? `From $${job.hourlyRateMin}/hr` : `Up to $${job.hourlyRateMax}/hr`}
-                          </div>
-                        )}
-                        {(typeof job.applicationCount === 'number' || typeof job.hireCount === 'number') && (
-                          <div className="mb-2 text-xs text-neutral-600">
-                            {typeof job.applicationCount === 'number' && <span>{job.applicationCount} appl</span>}
-                            {typeof job.applicationCount === 'number' && typeof job.hireCount === 'number' && <span className="mx-1">•</span>}
-                            {typeof job.hireCount === 'number' && <span>{job.hireCount} hires</span>}
-                          </div>
-                        )}
-                        <p className="text-sm text-neutral-700 line-clamp-2">{job.description}</p>
-                      </Link>
+                      </div>
                     )}
                   />
                 </>
@@ -2039,62 +2061,91 @@ export default function MarketplacePage() {
                   overscan={200}
                   components={{ List: GridList as any, Item: GridItem as any, Footer: () => (!prHasMore && providers.length > 0 ? <div className="py-6 text-center text-neutral-400">End of results</div> : null) as any }}
                   itemContent={(_, p) => (p ? (
-                    <Link href={`/marketplace/providers/${p.id}`} className="relative block bg-white border rounded-md p-4 hover:shadow-md transition-shadow">
-                      {/* Favorite (local) */}
+                    <div className="relative bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden">
+                      {/* Favorite button */}
                       <button
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleProviderFavorite(p.id); }}
+                        onClick={() => toggleProviderFavorite(p.id)}
                         aria-label={providerFavorites.has(p.id) ? 'Unfavorite provider' : 'Favorite provider'}
                         aria-pressed={providerFavorites.has(p.id)}
-                        className="absolute right-3 bottom-3 z-10 inline-flex items-center justify-center h-8 w-8 rounded-full bg-white/90 border hover:bg-white"
-                        title={providerFavorites.has(p.id) ? 'Unfavorite' : 'Favorite'}
+                        className="absolute top-3 right-3 z-10 p-2 rounded-full bg-white/90 hover:bg-white shadow-sm transition-colors"
                       >
-                        <svg viewBox="0 0 24 24" className={`h-5 w-5 ${providerFavorites.has(p.id) ? 'text-rose-600' : 'text-neutral-400'}`} fill={providerFavorites.has(p.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg viewBox="0 0 24 24" className={`h-5 w-5 transition-colors ${providerFavorites.has(p.id) ? 'text-error-500' : 'text-neutral-400 hover:text-error-400'}`} fill={providerFavorites.has(p.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" />
                         </svg>
                       </button>
-                      <div className="flex items-start mb-2">
-                        <div className="h-12 w-12 rounded-full overflow-hidden bg-neutral-100 flex-shrink-0 mr-3">
-                          <Image
-                            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(p.name)}&background=random&size=128`}
-                            alt={p.name}
-                            width={48}
-                            height={48}
-                            placeholder="blur"
-                            blurDataURL={getBlurDataURL(48, 48)}
-                            sizes="48px"
-                            loading="lazy"
-                          />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-neutral-900">{p.name}</h3>
-                          <div className="text-sm text-neutral-600">
-                            {[p.city, p.state].filter(Boolean).join(", ")}
-                            {typeof p.distanceMiles === 'number' && isFinite(p.distanceMiles) && (
-                              <span className="ml-2 text-neutral-500">• {p.distanceMiles.toFixed(1)} mi</span>
-                            )}
+                      <div className="p-4">
+                        {/* Header */}
+                        <div className="flex items-center mb-4">
+                          <div className="h-16 w-16 rounded-full overflow-hidden bg-neutral-100 flex-shrink-0">
+                            <Image
+                              src={`https://ui-avatars.com/api/?name=${encodeURIComponent(p.name)}&background=random&size=128`}
+                              alt={p.name}
+                              width={64}
+                              height={64}
+                              placeholder="blur"
+                              blurDataURL={getBlurDataURL(64, 64)}
+                              sizes="64px"
+                              loading="lazy"
+                            />
+                          </div>
+                          <div className="ml-3">
+                            <h3 className="font-medium text-neutral-900">{p.name}</h3>
+                            <div className="flex items-center text-sm text-neutral-500">
+                              <FiMapPin className="mr-1" size={14} />
+                              <span>
+                                {[p.city, p.state].filter(Boolean).join(", ") || "Location"}
+                                {typeof p.distanceMiles === 'number' && isFinite(p.distanceMiles) && (
+                                  <span className="ml-2">• {p.distanceMiles.toFixed(1)} mi</span>
+                                )}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="flex items-center text-sm mb-2">
-                        <span className="mr-1 flex">
-                          {Array.from({ length: 5 }).map((_, idx) => (
-                            <span key={idx} className={idx < Math.round(p.ratingAverage) ? "text-warning-400" : "text-neutral-300"}>★</span>
-                          ))}
-                        </span>
-                        <span className="text-neutral-600">{p.ratingAverage.toFixed(1)} ({p.reviewCount})</span>
-                      </div>
-                      <div className="flex flex-wrap gap-2 mb-2">
-                        {(p.services || []).slice(0, 4).map((s: string) => (
-                          <span key={s} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">{s.replace(/-/g, " ")}</span>
-                        ))}
-                        {(p.services?.length || 0) > 4 && (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-800">+{(p.services?.length || 0) - 4} more</span>
+                        {/* Rating row */}
+                        <div className="mb-2 flex items-center text-sm">
+                          <span className="mr-2 flex">
+                            {Array.from({ length: 5 }).map((_, idx) => (
+                              <span key={idx} className={idx < Math.round(p.ratingAverage ?? 0) ? "text-warning-400" : "text-neutral-300"} aria-hidden="true">★</span>
+                            ))}
+                          </span>
+                          <span className="text-neutral-600">{(p.ratingAverage ?? 0).toFixed(1)} ({p.reviewCount ?? 0})</span>
+                        </div>
+                        {/* Badges row */}
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${p.isVerified ? 'bg-success-100 text-success-800' : 'bg-amber-100 text-amber-800'}`}>
+                            <FiCheckCircle className="mr-1" size={12} />
+                            {p.isVerified ? 'Verified Provider' : 'Verification Pending'}
+                          </span>
+                          {p.yearsInBusiness && (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
+                              {p.yearsInBusiness} {p.yearsInBusiness === 1 ? 'Year' : 'Years'} in Business
+                            </span>
+                          )}
+                        </div>
+                        {/* Rate */}
+                        {(p.hourlyRate !== null && p.hourlyRate !== undefined) && (
+                          <div className="flex items-center text-lg font-semibold text-neutral-900 mb-3">
+                            <FiDollarSign className="mr-1" size={18} />
+                            {p.hourlyRate}/hr
+                          </div>
                         )}
+                        {/* Service tags */}
+                        {(p.services?.length ?? 0) > 0 && (
+                          <div className="mb-4 flex flex-wrap gap-2">
+                            {(p.services || []).slice(0, 3).map((s: string) => (
+                              <span key={s} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">{s.replace(/-/g, " ")}</span>
+                            ))}
+                            {(p.services?.length || 0) > 3 && (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-800">+{(p.services?.length || 0) - 3} more</span>
+                            )}
+                          </div>
+                        )}
+                        {/* CTA */}
+                        <Link href={`/marketplace/providers/${p.id}`} className="block bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md transition-colors text-center text-sm">
+                          View Profile
+                        </Link>
                       </div>
-                      {(p.hourlyRate !== null || p.perMileRate !== null) && (
-                        <div className="text-sm text-neutral-800 mb-2">{p.hourlyRate !== null ? `$${p.hourlyRate}/hr` : `$${p.perMileRate?.toFixed(2)}/mi`}</div>
-                      )}
-                    </Link>
+                    </div>
                   ) : null)}
                 />
               )
