@@ -82,7 +82,7 @@ export function ReportGenerator({
 
   const fetchHomes = async () => {
     try {
-      const response = await fetch('/api/homes?status=ACTIVE&limit=100');
+      const response = await fetch('/api/operator/homes?status=ACTIVE&limit=100');
       if (response?.ok) {
         const data = await response?.json();
         setHomes(data?.homes || []);
