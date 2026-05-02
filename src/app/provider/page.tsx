@@ -3,259 +3,227 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { StatTile } from "@/components/dashboard/StatTile";
-import { QuickActionCard } from "@/components/dashboard/QuickActionCard";
+import { FiInbox, FiMessageCircle, FiEdit, FiCheckCircle, FiAlertCircle, FiCreditCard, FiMapPin } from "react-icons/fi";
 
 async function getProviderDashboardData(userId: string) {
-  // Get provider record
   const provider = await prisma.provider.findUnique({
     where: { userId },
     select: {
       id: true,
       isVerified: true,
       isActive: true,
-      businessName: true
-    }
+      businessName: true,
+      listingStatus: true,
+      city: true,
+      state: true,
+    },
   });
 
   if (!provider) {
-    return {
-      isVerified: false,
-      isActive: false,
-      newLeads: 0,
-      activeLeads: 0,
-      recentLeads: []
-    };
+    return { provider: null, newLeads: 0, activeLeads: 0, recentLeads: [] };
   }
 
-  const now = new Date();
-  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-  // Count new leads (last 7 days)
-  const newLeads = await prisma.lead.count({
-    where: {
-      providerId: provider.id,
-      targetType: 'PROVIDER',
-      status: 'NEW',
-      createdAt: { gte: sevenDaysAgo }
-    }
-  });
+  const [newLeads, activeLeads, recentLeads] = await Promise.all([
+    prisma.lead.count({
+      where: { providerId: provider.id, targetType: "PROVIDER", createdAt: { gte: sevenDaysAgo } },
+    }),
+    prisma.lead.count({
+      where: { providerId: provider.id, targetType: "PROVIDER", status: { notIn: ["CLOSED", "CANCELLED"] } },
+    }),
+    prisma.lead.findMany({
+      where: { providerId: provider.id, targetType: "PROVIDER" },
+      orderBy: { createdAt: "desc" },
+      take: 5,
+      include: {
+        family: { select: { user: { select: { firstName: true, lastName: true } } } },
+      },
+    }),
+  ]);
 
-  // Count active leads
-  const activeLeads = await prisma.lead.count({
-    where: {
-      providerId: provider.id,
-      targetType: 'PROVIDER',
-      status: { notIn: ['CLOSED', 'CANCELLED'] }
-    }
-  });
-
-  // Get recent leads
-  const recentLeads = await prisma.lead.findMany({
-    where: { 
-      providerId: provider.id,
-      targetType: 'PROVIDER'
-    },
-    orderBy: { createdAt: 'desc' },
-    take: 5,
-    include: {
-      family: { 
-        select: { 
-          user: { select: { firstName: true, lastName: true } } 
-        } 
-      }
-    }
-  });
-
-  return {
-    isVerified: provider.isVerified,
-    isActive: provider.isActive,
-    newLeads,
-    activeLeads,
-    recentLeads
-  };
-}
-
-function getVerificationStatusDisplay(isVerified: boolean) {
-  return isVerified 
-    ? { label: 'VERIFIED', color: 'bg-success-100 text-success-700' }
-    : { label: 'PENDING', color: 'bg-warning-100 text-warning-700' };
+  return { provider, newLeads, activeLeads, recentLeads };
 }
 
 export default async function ProviderDashboard() {
   const session = await getServerSession(authOptions);
 
-  if (!session?.user) {
-    redirect('/auth/login');
-  }
+  if (!session?.user) redirect("/auth/login");
+  if (session.user.role !== "PROVIDER") redirect("/unauthorized");
 
-  if (session.user.role !== 'PROVIDER') {
-    redirect('/unauthorized');
-  }
+  const { provider, newLeads, activeLeads, recentLeads } = await getProviderDashboardData(session.user.id);
+  const displayName = session.user.firstName || session.user.name?.split(" ")[0] || "there";
 
-  const data = await getProviderDashboardData(session.user.id);
-  const displayName = session.user.firstName || session.user.name?.split(' ')[0] || 'there';
-  const verificationStatus = getVerificationStatusDisplay(data.isVerified);
+  const listingActive = provider?.listingStatus === "ACTIVE" || provider?.listingStatus === "TRIALING";
+  const listingPastDue = provider?.listingStatus === "PAST_DUE";
+  const listingNone = !provider?.listingStatus || provider?.listingStatus === "CANCELED";
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-neutral-900 mb-2">
-          Welcome back, {displayName}
-        </h1>
-        <p className="text-neutral-600">
-          Manage your services and track inquiries
-        </p>
+        <h1 className="text-3xl font-bold text-neutral-900 mb-1">Welcome back, {displayName}</h1>
+        {provider?.businessName && (
+          <p className="text-neutral-500 flex items-center gap-1 text-sm">
+            {provider.city && provider.state && (
+              <><FiMapPin size={13} className="shrink-0" />{provider.city}, {provider.state} · </>
+            )}
+            {provider.businessName}
+          </p>
+        )}
       </div>
 
-      {/* Verification Alert */}
-      {!data.isVerified && (
-        <div className="mb-8 bg-warning-50 border border-warning-200 rounded-lg p-4">
-          <div className="flex items-start gap-3">
-            <span className="text-2xl">⚠️</span>
-            <div>
-              <h3 className="font-semibold text-warning-900 mb-1">Verification Pending</h3>
-              <p className="text-sm text-warning-800 mb-2">
-                Complete your profile and upload required credentials to get verified and appear in marketplace searches.
-              </p>
-              <Link
-                href="/settings/provider"
-                className="text-sm font-medium text-warning-900 hover:underline"
-              >
-                Complete Profile →
-              </Link>
-            </div>
+      {/* Listing status banners */}
+      {listingNone && (
+        <div className="mb-6 p-4 bg-primary-50 border border-primary-200 rounded-lg flex items-start gap-3">
+          <FiCreditCard className="h-5 w-5 text-primary-600 mt-0.5 shrink-0" />
+          <div>
+            <p className="font-medium text-primary-900">Activate your marketplace listing</p>
+            <p className="text-sm text-primary-700 mt-0.5">Subscribe at $99/mo to appear in searches by families and care homes.</p>
+            <Link href="/settings/provider/billing" className="mt-2 inline-block text-sm font-semibold text-primary-700 underline underline-offset-2">
+              Manage listing →
+            </Link>
           </div>
         </div>
       )}
 
-      {/* Tiles */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        <StatTile
-          title="New Inquiries (7 days)"
-          value={data.newLeads}
-          icon="🆕"
-          description="Recent family requests"
-        />
-        <StatTile
-          title="Active Inquiries"
-          value={data.activeLeads}
-          icon="📋"
-          description="Open conversations"
-        />
-        <div className="bg-white p-6 rounded-lg border border-neutral-200">
-          <div className="flex items-center justify-between mb-4">
-            <div className="text-3xl">{data.isVerified ? '✅' : '⏳'}</div>
-            <span className={`px-3 py-1 text-sm rounded-full font-medium ${verificationStatus.color}`}>
-              {verificationStatus.label}
+      {listingPastDue && (
+        <div className="mb-6 p-4 bg-error-50 border border-error-200 rounded-lg flex items-start gap-3">
+          <FiAlertCircle className="h-5 w-5 text-error-600 mt-0.5 shrink-0" />
+          <div>
+            <p className="font-medium text-error-900">Listing payment past due</p>
+            <p className="text-sm text-error-700 mt-0.5">Your marketplace listing is paused. Update your payment method to restore visibility.</p>
+            <Link href="/settings/provider/billing" className="mt-2 inline-block text-sm font-semibold text-error-700 underline underline-offset-2">
+              Update payment →
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {!provider?.isVerified && (
+        <div className="mb-6 p-4 bg-warning-50 border border-warning-200 rounded-lg flex items-start gap-3">
+          <FiAlertCircle className="h-5 w-5 text-warning-600 mt-0.5 shrink-0" />
+          <div>
+            <p className="font-medium text-warning-900">Profile verification pending</p>
+            <p className="text-sm text-warning-700 mt-0.5">Complete your profile to get verified and build trust with clients.</p>
+            <Link href="/settings/provider" className="mt-2 inline-block text-sm font-semibold text-warning-700 underline underline-offset-2">
+              Complete profile →
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* Stat tiles */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <div className="bg-white rounded-lg border border-neutral-200 p-5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="rounded-lg bg-primary-100 p-2.5">
+              <FiInbox className="h-5 w-5 text-primary-600" />
+            </div>
+            <span className="text-3xl font-bold text-neutral-900">{newLeads}</span>
+          </div>
+          <p className="text-sm font-medium text-neutral-700">New Inquiries</p>
+          <p className="text-xs text-neutral-500 mt-0.5">Last 7 days</p>
+        </div>
+
+        <div className="bg-white rounded-lg border border-neutral-200 p-5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="rounded-lg bg-secondary-100 p-2.5">
+              <FiMessageCircle className="h-5 w-5 text-secondary-600" />
+            </div>
+            <span className="text-3xl font-bold text-neutral-900">{activeLeads}</span>
+          </div>
+          <p className="text-sm font-medium text-neutral-700">Active Inquiries</p>
+          <p className="text-xs text-neutral-500 mt-0.5">Open conversations</p>
+        </div>
+
+        <div className="bg-white rounded-lg border border-neutral-200 p-5">
+          <div className="flex items-center justify-between mb-3">
+            <div className={`rounded-lg p-2.5 ${listingActive ? "bg-success-100" : "bg-neutral-100"}`}>
+              <FiCheckCircle className={`h-5 w-5 ${listingActive ? "text-success-600" : "text-neutral-400"}`} />
+            </div>
+            <span className={`text-sm font-semibold px-2.5 py-1 rounded-full ${
+              listingActive ? "bg-success-100 text-success-800" :
+              listingPastDue ? "bg-error-100 text-error-800" :
+              "bg-neutral-100 text-neutral-600"
+            }`}>
+              {listingActive ? "Active" : listingPastDue ? "Past Due" : "Inactive"}
             </span>
           </div>
-          <h3 className="text-sm font-medium text-neutral-600 mb-1">Verification Status</h3>
-          <p className="text-xs text-neutral-500">
-            {data.isVerified ? 'Your business is verified' : 'Awaiting admin review'}
+          <p className="text-sm font-medium text-neutral-700">Marketplace Listing</p>
+          <p className="text-xs text-neutral-500 mt-0.5">
+            {listingActive ? "Visible in search results" : "Not visible to clients"}
           </p>
         </div>
       </div>
 
       {/* Quick Actions */}
       <div className="mb-8">
-        <h2 className="text-xl font-semibold text-neutral-900 mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <QuickActionCard
-            title="Edit Profile"
-            description="Update business info and services"
-            href="/settings/provider"
-            icon="✏️"
-          />
-          <QuickActionCard
-            title="Upload Documents"
-            description="Add licenses and insurance"
-            href="/settings/provider/credentials"
-            icon="📄"
-          />
-          <QuickActionCard
-            title="Messages"
-            description="Check your conversations"
-            href="/messages"
-            icon="💬"
-          />
+        <h2 className="text-lg font-semibold text-neutral-900 mb-3">Quick Actions</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {[
+            { href: "/messages", icon: <FiMessageCircle className="h-5 w-5 text-primary-600" />, bg: "bg-primary-100", title: "Messages", desc: "Check your conversations" },
+            { href: "/settings/provider", icon: <FiEdit className="h-5 w-5 text-secondary-600" />, bg: "bg-secondary-100", title: "Edit Profile", desc: "Update services and info" },
+            { href: "/settings/provider/billing", icon: <FiCreditCard className="h-5 w-5 text-success-600" />, bg: "bg-success-100", title: "Listing & Billing", desc: listingActive ? "Manage subscription" : "Activate listing" },
+            { href: "/marketplace?tab=providers", icon: <FiMapPin className="h-5 w-5 text-warning-600" />, bg: "bg-warning-100", title: "View Marketplace", desc: "See your public profile" },
+          ].map((a) => (
+            <Link key={a.href} href={a.href} className="group bg-white rounded-lg border border-neutral-200 p-4 hover:border-primary-300 hover:shadow-sm transition-all flex items-center gap-3">
+              <div className={`rounded-lg p-2 shrink-0 ${a.bg}`}>{a.icon}</div>
+              <div>
+                <p className="text-sm font-medium text-neutral-900 group-hover:text-primary-700">{a.title}</p>
+                <p className="text-xs text-neutral-500">{a.desc}</p>
+              </div>
+            </Link>
+          ))}
         </div>
       </div>
 
-      {/* Recent Activity */}
-      {data.recentLeads.length > 0 && (
-        <div>
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-neutral-900">Recent Inquiries</h2>
-          </div>
-          <div className="bg-white rounded-lg border border-neutral-200 overflow-hidden">
-            <div className="divide-y divide-neutral-200">
-              {data.recentLeads.map((lead) => (
-                <div
-                  key={lead.id}
-                  className="p-4 hover:bg-neutral-50 transition-colors"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-lg">👤</span>
-                        <h3 className="text-sm font-medium text-neutral-900">
-                          {lead.family.user.firstName} {lead.family.user.lastName}
-                        </h3>
-                      </div>
-                      <p className="text-xs text-neutral-500 mb-1">
-                        {new Date(lead.createdAt).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric'
-                        })}
-                      </p>
-                      {lead.location && (
-                        <p className="text-xs text-neutral-500">📍 {lead.location}</p>
-                      )}
-                      {lead.message && (
-                        <p className="text-sm text-neutral-600 mt-2 line-clamp-2">
-                          {lead.message}
-                        </p>
-                      )}
-                    </div>
-                    <span className={`px-2 py-1 text-xs rounded-full ${
-                      lead.status === 'NEW' ? 'bg-primary-100 text-primary-700' :
-                      lead.status === 'CONTACTED' ? 'bg-warning-100 text-warning-700' :
-                      lead.status === 'IN_REVIEW' ? 'bg-warning-100 text-warning-700' :
-                      'bg-neutral-100 text-neutral-700'
-                    }`}>
-                      {lead.status.replace(/_/g, ' ')}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Recent Inquiries */}
+      <div>
+        <h2 className="text-lg font-semibold text-neutral-900 mb-3">Recent Inquiries</h2>
 
-      {/* Empty State */}
-      {data.recentLeads.length === 0 && (
-        <div className="bg-primary-50 border border-primary-200 rounded-lg p-8 text-center">
-          <div className="text-5xl mb-4">📬</div>
-          <h3 className="text-lg font-semibold text-neutral-900 mb-2">
-            No inquiries yet
-          </h3>
-          <p className="text-neutral-600 mb-4">
-            {data.isVerified 
-              ? "Complete your profile to attract more families" 
-              : "Get verified to start receiving inquiries from families"}
-          </p>
-          <Link
-            href="/settings/provider"
-            className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-          >
-            Complete Profile →
-          </Link>
-        </div>
-      )}
+        {recentLeads.length === 0 ? (
+          <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-8 text-center">
+            <FiInbox className="h-10 w-10 text-neutral-300 mx-auto mb-3" />
+            <p className="font-medium text-neutral-700">No inquiries yet</p>
+            <p className="text-sm text-neutral-500 mt-1">
+              {listingActive
+                ? "Families will contact you here once they find your listing."
+                : "Activate your marketplace listing to start receiving inquiries."}
+            </p>
+            {!listingActive && (
+              <Link href="/settings/provider/billing" className="mt-4 inline-flex items-center px-4 py-2 bg-primary-600 text-white text-sm font-semibold rounded-lg hover:bg-primary-700 transition-colors">
+                Activate Listing →
+              </Link>
+            )}
+          </div>
+        ) : (
+          <div className="bg-white rounded-lg border border-neutral-200 divide-y divide-neutral-100">
+            {recentLeads.map((lead) => (
+              <div key={lead.id} className="p-4 hover:bg-neutral-50 transition-colors flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium text-neutral-900">
+                    {lead.family.user.firstName} {lead.family.user.lastName}
+                  </p>
+                  {lead.message && (
+                    <p className="text-sm text-neutral-500 mt-1 line-clamp-2">{lead.message}</p>
+                  )}
+                  <p className="text-xs text-neutral-400 mt-1">
+                    {new Date(lead.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                  </p>
+                </div>
+                <span className={`shrink-0 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                  lead.status === "NEW" ? "bg-primary-100 text-primary-700" :
+                  lead.status === "CONTACTED" ? "bg-warning-100 text-warning-700" :
+                  "bg-neutral-100 text-neutral-600"
+                }`}>
+                  {lead.status.replace(/_/g, " ")}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
