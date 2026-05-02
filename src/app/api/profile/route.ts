@@ -82,6 +82,12 @@ const providerProfileSchema = baseProfileSchema.extend({
   serviceTypes: z.array(z.string()).max(50).optional(),
   coverageArea: z.record(z.any()).optional(),
   isActive: z.boolean().optional(),
+  // Transport fields
+  rideTypes: z.array(z.string()).optional(),
+  wheelchairAccessible: z.boolean().optional(),
+  acceptsMedicaid: z.boolean().optional(),
+  serviceRadius: z.number().int().min(1).max(500).optional().nullable(),
+  allowsRecurring: z.boolean().optional(),
 });
 
 /**
@@ -241,6 +247,11 @@ export async function GET(request: NextRequest) {
             isActive: true,
             serviceTypes: true,
             coverageArea: true,
+            rideTypes: true,
+            wheelchairAccessible: true,
+            acceptsMedicaid: true,
+            serviceRadius: true,
+            allowsRecurring: true,
             credentials: {
               select: {
                 id: true,
@@ -547,6 +558,11 @@ export async function PATCH(request: NextRequest) {
             if (rs.serviceTypes !== undefined) updateData.serviceTypes = rs.serviceTypes;
             if (rs.coverageArea !== undefined) updateData.coverageArea = rs.coverageArea;
             if (rs.isActive !== undefined) updateData.isActive = rs.isActive;
+            if (rs.rideTypes !== undefined) updateData.rideTypes = rs.rideTypes;
+            if (rs.wheelchairAccessible !== undefined) updateData.wheelchairAccessible = rs.wheelchairAccessible;
+            if (rs.acceptsMedicaid !== undefined) updateData.acceptsMedicaid = rs.acceptsMedicaid;
+            if (rs.serviceRadius !== undefined) updateData.serviceRadius = rs.serviceRadius;
+            if (rs.allowsRecurring !== undefined) updateData.allowsRecurring = rs.allowsRecurring;
             
             roleSpecificUpdate = await prisma.provider.update({
               where: { userId },

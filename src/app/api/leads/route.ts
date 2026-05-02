@@ -32,6 +32,14 @@ const createLeadSchema = z.object({
     .max(168, "Hours per week cannot exceed 168")
     .optional(),
   location: z.string().max(255).optional(),
+  transportDetails: z.object({
+    tripPurpose: z.string().optional(),
+    mobilityNeeds: z.string().optional(),
+    isRecurring: z.boolean().optional(),
+    recurringDays: z.array(z.string()).optional(),
+    pickupAddress: z.string().optional(),
+    dropoffAddress: z.string().optional(),
+  }).optional(),
 });
 
 type CreateLeadInput = z.infer<typeof createLeadSchema>;
@@ -145,6 +153,7 @@ export async function POST(req: NextRequest) {
           : null,
         expectedHoursPerWeek: data.expectedHoursPerWeek || null,
         location: data.location || null,
+        transportDetails: (data.transportDetails ?? null) as any,
         status: "NEW",
       },
     });

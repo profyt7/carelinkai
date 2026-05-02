@@ -138,6 +138,8 @@ export default function MarketplacePage() {
 
   /* ---------------- Provider-specific filters ----------------------- */
   const [providerServices, setProviderServices] = useState<string[]>([]);
+  const [prWheelchair, setPrWheelchair] = useState(false);
+  const [prMedicaid, setPrMedicaid] = useState(false);
 
   const [caregivers, setCaregivers] = useState<Caregiver[]>([]);
   const [caregiversLoading, setCaregiversLoading] = useState(false);
@@ -772,6 +774,8 @@ export default function MarketplacePage() {
     setOrDel("city", debouncedCity);
     setOrDel("state", debouncedState);
     setOrDel("services", providerServices.join(","));
+    if (prWheelchair) params.set("wheelchairAccessible", "true"); else params.delete("wheelchairAccessible");
+    if (prMedicaid) params.set("acceptsMedicaid", "true"); else params.delete("acceptsMedicaid");
     params.set("page", String(providerPage));
     params.set("sortBy", providerSort);
     if (prRadius && prGeoLat !== null && prGeoLng !== null) {
@@ -785,7 +789,7 @@ export default function MarketplacePage() {
     }
     try { localStorage.setItem(LAST_TAB_KEY, "providers"); localStorage.setItem(LS_KEYS.providers, params.toString()); } catch {}
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, providerServices, providerPage, providerSort, prRadius, prGeoLat, prGeoLng, router, pathname, searchParams]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, providerServices, prWheelchair, prMedicaid, providerPage, providerSort, prRadius, prGeoLat, prGeoLng, router, pathname, searchParams]);
 
   useEffect(() => {
     // Load marketplace categories once
@@ -1007,9 +1011,9 @@ export default function MarketplacePage() {
   ----------------------------------------------------------------------*/
   const prQueryKey = useMemo(() => JSON.stringify({
     q: debouncedSearch, city: debouncedCity, state: debouncedState,
-    services: providerServices,
+    services: providerServices, wheelchair: prWheelchair, medicaid: prMedicaid,
     radius: prRadius, lat: prGeoLat, lng: prGeoLng, sort: providerSort
-  }), [debouncedSearch, debouncedCity, debouncedState, providerServices, prRadius, prGeoLat, prGeoLng, providerSort]);
+  }), [debouncedSearch, debouncedCity, debouncedState, providerServices, prWheelchair, prMedicaid, prRadius, prGeoLat, prGeoLng, providerSort]);
   const prPrevKeyRef = useRef<string>(prQueryKey);
   // Reset providers list when non-page filters change (runs BEFORE fetch)
   useEffect(() => {
@@ -1042,6 +1046,8 @@ export default function MarketplacePage() {
         if (debouncedCity) params.set("city", debouncedCity);
         if (debouncedState) params.set("state", debouncedState);
         if (providerServices.length > 0) params.set("services", providerServices.join(","));
+        if (prWheelchair) params.set("wheelchairAccessible", "true");
+        if (prMedicaid) params.set("acceptsMedicaid", "true");
         if (prRadius && prGeoLat !== null && prGeoLng !== null) {
           params.set("radiusMiles", prRadius);
           params.set("lat", String(prGeoLat));
@@ -1069,7 +1075,7 @@ export default function MarketplacePage() {
     return () => {
       controller.abort();
     };
-  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, providerServices, providerPage, providerSort, prRadius, prGeoLat, prGeoLng, providerCursor, showMock, MOCK_PROVIDERS]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, providerServices, prWheelchair, prMedicaid, providerPage, providerSort, prRadius, prGeoLat, prGeoLng, providerCursor, showMock, MOCK_PROVIDERS]);
 
   // Infinite scroll flags
   // Prefer server-provided hasMore when available (cursor pagination)
@@ -1153,6 +1159,8 @@ export default function MarketplacePage() {
     setCareTypes([]);
     setServices([]);
     setProviderServices([]);
+    setPrWheelchair(false);
+    setPrMedicaid(false);
     setPostedByMe(false);
     setCgPage(1);
     setCgSort('recency');
@@ -1193,10 +1201,12 @@ export default function MarketplacePage() {
 
     if (activeTab === 'providers') {
       providerServices.forEach((srv) => list.push({ key: `psvc:${srv}`, label: (categories['SERVICE']?.find(x => x.slug === srv)?.name) || srv, remove: () => { toggleProviderService(srv); setProviderPage(1); } }));
+      if (prWheelchair) list.push({ key: 'wheelchair', label: 'Wheelchair Accessible', remove: () => { setPrWheelchair(false); setProviderPage(1); } });
+      if (prMedicaid) list.push({ key: 'medicaid', label: 'Accepts Medicaid', remove: () => { setPrMedicaid(false); setProviderPage(1); } });
     }
 
     return list;
-  }, [search, city, state, activeTab, minRate, maxRate, minExperience, settings, specialties, careTypes, services, providerServices, categories, zip, postedByMe, hideClosed, favoritesOnly, cgShortlistOnly, toggleSetting]);
+  }, [search, city, state, activeTab, minRate, maxRate, minExperience, settings, specialties, careTypes, services, providerServices, prWheelchair, prMedicaid, categories, zip, postedByMe, hideClosed, favoritesOnly, cgShortlistOnly, toggleSetting]);
 
   return (
       <div className="px-4 md:px-6 py-4">
@@ -1556,14 +1566,25 @@ export default function MarketplacePage() {
                       <h4 className="font-medium text-sm mb-2">Services</h4>
                       {(categories['SERVICE'] || []).map((service) => (
                         <label key={service.slug} className="flex items-center gap-2 text-sm whitespace-nowrap">
-                          <input 
-                            type="checkbox" 
-                            checked={providerServices.includes(service.slug)} 
-                            onChange={() => toggleProviderService(service.slug)} 
+                          <input
+                            type="checkbox"
+                            checked={providerServices.includes(service.slug)}
+                            onChange={() => toggleProviderService(service.slug)}
                           />
                           <span>{service.name}</span>
                         </label>
                       ))}
+                    </div>
+                    <div className="mt-4">
+                      <h4 className="font-medium text-sm mb-2">Accessibility</h4>
+                      <label className="flex items-center gap-2 text-sm whitespace-nowrap">
+                        <input type="checkbox" checked={prWheelchair} onChange={(e) => { setPrWheelchair(e.target.checked); setProviderPage(1); }} />
+                        <span>Wheelchair Accessible</span>
+                      </label>
+                      <label className="flex items-center gap-2 text-sm whitespace-nowrap mt-1">
+                        <input type="checkbox" checked={prMedicaid} onChange={(e) => { setPrMedicaid(e.target.checked); setProviderPage(1); }} />
+                        <span>Accepts Medicaid</span>
+                      </label>
                     </div>
                   </>
                 )}
@@ -1872,14 +1893,26 @@ export default function MarketplacePage() {
                   
                   {activeTab === "providers" && (categories['SERVICE'] || []).map((service) => (
                     <label key={service.slug} className="flex items-center gap-1 text-sm whitespace-nowrap">
-                      <input 
-                        type="checkbox" 
-                        checked={providerServices.includes(service.slug)} 
-                        onChange={() => toggleProviderService(service.slug)} 
+                      <input
+                        type="checkbox"
+                        checked={providerServices.includes(service.slug)}
+                        onChange={() => toggleProviderService(service.slug)}
                       />
                       <span>{service.name}</span>
                     </label>
                   ))}
+                  {activeTab === "providers" && (
+                    <>
+                      <label className="flex items-center gap-1 text-sm whitespace-nowrap">
+                        <input type="checkbox" checked={prWheelchair} onChange={(e) => { setPrWheelchair(e.target.checked); setProviderPage(1); }} />
+                        <span>Wheelchair Accessible</span>
+                      </label>
+                      <label className="flex items-center gap-1 text-sm whitespace-nowrap">
+                        <input type="checkbox" checked={prMedicaid} onChange={(e) => { setPrMedicaid(e.target.checked); setProviderPage(1); }} />
+                        <span>Accepts Medicaid</span>
+                      </label>
+                    </>
+                  )}
                 </div>
             {/* Sticky Apply/Clear bar for mobile */}
             <div className="fixed bottom-3 left-3 right-3 z-30 md:hidden">

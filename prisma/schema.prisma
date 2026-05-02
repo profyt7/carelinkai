@@ -390,6 +390,12 @@ model Provider {
   isActive              Boolean              @default(true)
   serviceTypes          String[]
   coverageArea          Json?
+  // Transport-specific fields (Phase 1)
+  rideTypes             String[]             // STANDARD | WHEELCHAIR | STRETCHER | ESCORT
+  wheelchairAccessible  Boolean              @default(false)
+  acceptsMedicaid       Boolean              @default(false)
+  serviceRadius         Int?                 // miles
+  allowsRecurring       Boolean              @default(false)
   createdAt             DateTime             @default(now())
   updatedAt             DateTime             @updatedAt
   shortlistedByFamilies FavoriteProvider[]
@@ -883,6 +889,7 @@ model Lead {
   location             String?
   operatorNotes        String?
   assignedOperatorId   String?
+  transportDetails     Json?
   deletedAt            DateTime?
   createdAt            DateTime       @default(now())
   updatedAt            DateTime       @updatedAt

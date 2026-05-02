@@ -12,6 +12,7 @@ type InquiryFormProps = {
   targetType: "AIDE" | "PROVIDER";
   targetId: string;
   targetName: string;
+  serviceTypes?: string[];
   onSuccess?: (leadId: string) => void;
   onClose: () => void;
 };
@@ -21,6 +22,12 @@ type FormData = {
   preferredStartDate: string;
   expectedHoursPerWeek: string;
   location: string;
+  tripPurpose: string;
+  mobilityNeeds: string;
+  isRecurring: boolean;
+  recurringDays: string[];
+  pickupAddress: string;
+  dropoffAddress: string;
 };
 
 type ValidationErrors = {
@@ -28,18 +35,37 @@ type ValidationErrors = {
   expectedHoursPerWeek?: string;
 };
 
+const DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+const TRIP_PURPOSES = [
+  { value: "medical_appointment", label: "Medical Appointment" },
+  { value: "dialysis", label: "Dialysis" },
+  { value: "therapy", label: "Therapy / Rehab" },
+  { value: "grocery", label: "Grocery / Errands" },
+  { value: "other", label: "Other" },
+];
+
 export default function InquiryForm({
   targetType,
   targetId,
   targetName,
+  serviceTypes,
   onSuccess,
   onClose,
 }: InquiryFormProps) {
+  const isTransport = serviceTypes?.includes("transportation") ?? false;
+
   const [formData, setFormData] = useState<FormData>({
     message: "",
     preferredStartDate: "",
     expectedHoursPerWeek: "",
     location: "",
+    tripPurpose: "",
+    mobilityNeeds: "",
+    isRecurring: false,
+    recurringDays: [],
+    pickupAddress: "",
+    dropoffAddress: "",
   });
 
   const [errors, setErrors] = useState<ValidationErrors>({});
@@ -101,6 +127,20 @@ export default function InquiryForm({
         payload.location = formData.location;
       }
 
+      // Include transport details when booking a transportation provider
+      if (isTransport) {
+        const td: Record<string, any> = {};
+        if (formData.tripPurpose) td.tripPurpose = formData.tripPurpose;
+        if (formData.mobilityNeeds) td.mobilityNeeds = formData.mobilityNeeds;
+        if (formData.pickupAddress) td.pickupAddress = formData.pickupAddress;
+        if (formData.dropoffAddress) td.dropoffAddress = formData.dropoffAddress;
+        td.isRecurring = formData.isRecurring;
+        if (formData.isRecurring && formData.recurringDays.length > 0) {
+          td.recurringDays = formData.recurringDays;
+        }
+        if (Object.keys(td).length > 0) payload.transportDetails = td;
+      }
+
       const res = await fetch("/api/leads", {
         method: "POST",
         headers: {
@@ -135,16 +175,23 @@ export default function InquiryForm({
     }
   };
 
-  // Handle input changes
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    // Clear error for this field
     if (errors[name as keyof ValidationErrors]) {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
     }
+  };
+
+  const toggleRecurringDay = (day: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      recurringDays: prev.recurringDays.includes(day)
+        ? prev.recurringDays.filter((d) => d !== day)
+        : [...prev.recurringDays, day],
+    }));
   };
 
   return (
@@ -307,6 +354,115 @@ export default function InquiryForm({
                   className="w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 />
               </div>
+
+              {/* Transport Details — only shown when booking a transportation provider */}
+              {isTransport && (
+                <div className="space-y-4 rounded-lg border border-primary-100 bg-primary-50 p-4">
+                  <h3 className="text-sm font-semibold text-primary-800">Trip Details</h3>
+
+                  {/* Trip Purpose */}
+                  <div>
+                    <label htmlFor="tripPurpose" className="block text-sm font-medium text-neutral-700 mb-1">
+                      Trip Purpose (Optional)
+                    </label>
+                    <select
+                      id="tripPurpose"
+                      name="tripPurpose"
+                      value={formData.tripPurpose}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    >
+                      <option value="">Select a purpose...</option>
+                      {TRIP_PURPOSES.map((p) => (
+                        <option key={p.value} value={p.value}>{p.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Pickup / Dropoff */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="pickupAddress" className="block text-sm font-medium text-neutral-700 mb-1">
+                        Pickup Address (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        id="pickupAddress"
+                        name="pickupAddress"
+                        value={formData.pickupAddress}
+                        onChange={handleChange}
+                        placeholder="123 Main St, Cleveland OH"
+                        className="w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="dropoffAddress" className="block text-sm font-medium text-neutral-700 mb-1">
+                        Dropoff Address (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        id="dropoffAddress"
+                        name="dropoffAddress"
+                        value={formData.dropoffAddress}
+                        onChange={handleChange}
+                        placeholder="456 Clinic Ave, Cleveland OH"
+                        className="w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Mobility Needs */}
+                  <div>
+                    <label htmlFor="mobilityNeeds" className="block text-sm font-medium text-neutral-700 mb-1">
+                      Mobility / Accessibility Needs (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      id="mobilityNeeds"
+                      name="mobilityNeeds"
+                      value={formData.mobilityNeeds}
+                      onChange={handleChange}
+                      placeholder="e.g., wheelchair, walker, door-to-door assistance"
+                      className="w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+
+                  {/* Recurring */}
+                  <div>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.isRecurring}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, isRecurring: e.target.checked }))}
+                        className="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                      />
+                      <span className="text-sm font-medium text-neutral-700">This is a recurring trip</span>
+                    </label>
+                  </div>
+
+                  {formData.isRecurring && (
+                    <div>
+                      <p className="text-sm font-medium text-neutral-700 mb-2">Which days? (Optional)</p>
+                      <div className="flex flex-wrap gap-2">
+                        {DAYS_OF_WEEK.map((day) => (
+                          <button
+                            key={day}
+                            type="button"
+                            onClick={() => toggleRecurringDay(day)}
+                            className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                              formData.recurringDays.includes(day)
+                                ? "bg-primary-600 text-white border-primary-600"
+                                : "bg-white text-neutral-700 border-neutral-300 hover:border-primary-400"
+                            }`}
+                          >
+                            {day.slice(0, 3)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Submit Button */}
               <div className="flex justify-end space-x-3 pt-4 border-t border-neutral-200">

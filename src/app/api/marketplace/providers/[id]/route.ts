@@ -168,6 +168,11 @@ export async function GET(
       photoUrl,
       credentials: provider.credentials,
       memberSince: provider.createdAt,
+      rideTypes: provider.rideTypes || [],
+      wheelchairAccessible: provider.wheelchairAccessible,
+      acceptsMedicaid: provider.acceptsMedicaid,
+      serviceRadius: provider.serviceRadius,
+      allowsRecurring: provider.allowsRecurring,
     };
     
     return NextResponse.json(

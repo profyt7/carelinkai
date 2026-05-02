@@ -52,6 +52,11 @@ type Provider = {
     lastName: string;
     email: string;
   };
+  rideTypes: string[];
+  wheelchairAccessible: boolean;
+  acceptsMedicaid: boolean;
+  serviceRadius: number | null;
+  allowsRecurring: boolean;
 };
 
 const serviceTypeOptions = [
@@ -382,6 +387,55 @@ export default function ProviderDetailPage() {
             </div>
           )}
 
+          {/* Transportation Capabilities */}
+          {provider.serviceTypes.includes("transportation") && (
+            <div className="bg-white rounded-lg shadow border border-neutral-200 overflow-hidden">
+              <div className="p-6">
+                <h2 className="text-xl font-semibold text-neutral-900 mb-4">
+                  🚗 Transportation Capabilities
+                </h2>
+                <div className="grid grid-cols-2 gap-4">
+                  {provider.wheelchairAccessible && (
+                    <div className="flex items-center gap-2 text-sm text-neutral-700">
+                      <FiCheckCircle className="h-4 w-4 text-success-500 flex-shrink-0" />
+                      Wheelchair Accessible
+                    </div>
+                  )}
+                  {provider.acceptsMedicaid && (
+                    <div className="flex items-center gap-2 text-sm text-neutral-700">
+                      <FiCheckCircle className="h-4 w-4 text-success-500 flex-shrink-0" />
+                      Accepts Medicaid
+                    </div>
+                  )}
+                  {provider.allowsRecurring && (
+                    <div className="flex items-center gap-2 text-sm text-neutral-700">
+                      <FiCheckCircle className="h-4 w-4 text-success-500 flex-shrink-0" />
+                      Recurring Rides Available
+                    </div>
+                  )}
+                  {provider.serviceRadius && (
+                    <div className="flex items-center gap-2 text-sm text-neutral-700">
+                      <FiMapPin className="h-4 w-4 text-primary-500 flex-shrink-0" />
+                      Serves up to {provider.serviceRadius} miles
+                    </div>
+                  )}
+                </div>
+                {provider.rideTypes.length > 0 && (
+                  <div className="mt-4">
+                    <h3 className="text-sm font-medium text-neutral-700 mb-2">Ride Types</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {provider.rideTypes.map((type) => (
+                        <span key={type} className="px-3 py-1 rounded-full text-xs font-medium bg-primary-50 text-primary-700 border border-primary-200">
+                          {type.charAt(0) + type.slice(1).toLowerCase()}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Licensing & Insurance */}
           {(provider.licenseNumber || provider.insuranceInfo) && (
             <div className="bg-white rounded-lg shadow border border-neutral-200 overflow-hidden">
@@ -485,6 +539,7 @@ export default function ProviderDetailPage() {
                     targetType="PROVIDER"
                     targetId={provider.id}
                     targetName={provider.businessName}
+                    serviceTypes={provider.serviceTypes}
                     className="w-full inline-flex items-center justify-center px-4 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
                   />
 
