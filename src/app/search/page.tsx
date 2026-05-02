@@ -39,6 +39,7 @@ import {
 } from "@/lib/favoritesService";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import SearchFilters from "@/components/search/SearchFilters";
+import HomeCompareModal from "@/components/family/HomeCompareModal";
 import dynamic from "next/dynamic";
 import { getCloudinaryThumbnail, isCloudinaryUrl } from "@/lib/cloudinaryUrl";
 import { HomeCardSkeleton } from "@/components/ui/skeleton-loader";
@@ -140,6 +141,24 @@ export default function SearchPage() {
   const [isLoading, setIsLoading] = useState(false);
   // Guard against stale async responses overwriting newer results
   const latestRequestId = useRef(0);
+
+  // ---- Compare -------------------------------------------------------------------
+  const [compareIds, setCompareIds] = useState<Set<string>>(new Set());
+  const [showCompareModal, setShowCompareModal] = useState(false);
+
+  const toggleCompare = (homeId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setCompareIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(homeId)) {
+        next.delete(homeId);
+      } else if (next.size < 3) {
+        next.add(homeId);
+      }
+      return next;
+    });
+  };
 
   // ---- Favorites -----------------------------------------------------------------
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
@@ -908,6 +927,31 @@ export default function SearchPage() {
               </div>
             )}
             
+            {/* Compare bar */}
+            {compareIds.size > 0 && (
+              <div className="mb-4 flex items-center justify-between rounded-lg border border-primary-200 bg-primary-50 px-4 py-3">
+                <span className="text-sm font-medium text-primary-800">
+                  {compareIds.size} home{compareIds.size > 1 ? "s" : ""} selected for comparison
+                  {compareIds.size < 2 && " — select at least 2"}
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCompareIds(new Set())}
+                    className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50"
+                  >
+                    Clear
+                  </button>
+                  <button
+                    disabled={compareIds.size < 2}
+                    onClick={() => setShowCompareModal(true)}
+                    className="rounded-md bg-primary-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Compare
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Grid view */}
             {!isLoading && viewType === "grid" && searchResults.length > 0 && (
               <div>
@@ -1007,6 +1051,18 @@ export default function SearchPage() {
                                       : "text-neutral-400 group-hover:text-primary-500"
                                   }`}
                                 />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => toggleCompare(home.id, e)}
+                                title={compareIds.has(home.id) ? "Remove from compare" : compareIds.size >= 3 ? "Max 3 homes" : "Add to compare"}
+                                className={`rounded-md border px-3 py-1.5 text-xs font-medium ${
+                                  compareIds.has(home.id)
+                                    ? "border-primary-500 bg-primary-50 text-primary-700"
+                                    : "border-neutral-300 text-neutral-600 hover:bg-neutral-50"
+                                }`}
+                              >
+                                {compareIds.has(home.id) ? "✓ Compare" : "Compare"}
                               </button>
                               <button
                                 type="button"
@@ -1171,6 +1227,18 @@ export default function SearchPage() {
                                       : "text-neutral-400 hover:text-primary-500"
                                   }`}
                                 />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => toggleCompare(home.id, e)}
+                                title={compareIds.has(home.id) ? "Remove from compare" : compareIds.size >= 3 ? "Max 3 homes" : "Add to compare"}
+                                className={`rounded-md border px-3 py-2 text-sm font-medium ${
+                                  compareIds.has(home.id)
+                                    ? "border-primary-500 bg-primary-50 text-primary-700"
+                                    : "border-neutral-300 text-neutral-600 hover:bg-neutral-50"
+                                }`}
+                              >
+                                {compareIds.has(home.id) ? "✓ Compare" : "Compare"}
                               </button>
                               <button className="rounded-md bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600">
                                 View Listing
@@ -1457,6 +1525,14 @@ export default function SearchPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Home Compare Modal */}
+      {showCompareModal && compareIds.size >= 2 && (
+        <HomeCompareModal
+          homeIds={Array.from(compareIds)}
+          onClose={() => setShowCompareModal(false)}
+        />
       )}
 
       {/* Explain Match Drawer */}
