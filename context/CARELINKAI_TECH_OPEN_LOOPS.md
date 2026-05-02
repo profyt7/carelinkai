@@ -9,21 +9,16 @@ Each loop: what it is, why it matters, what done looks like.
 ## 🔴 Critical (Blocking Revenue / Demos)
 
 ### OL-027: Provider listing fee ($99/mo) — subscription gate on marketplace visibility
-- **Status:** 🟡 IN PROGRESS (2026-05-02)
-- **What:** Providers (NEMT, home care agencies) pay $99/mo to be listed. Add billing fields to Provider schema, Stripe checkout + portal, webhook handling, visibility gate, billing UI at /settings/provider/billing.
-- **Pricing rationale:** Care.com enterprise = contact sales; Caring.com = $50-150/lead; flat $99/mo is far lower friction and competitive.
-- **Done when:** A new provider must pay before appearing in marketplace; existing active providers have a grace period or are grandfathered.
+- **Status:** ✅ CLOSED (2026-05-02)
+- Schema fields + migration, Stripe Checkout + Customer Portal APIs, webhook handler, visibility gate in marketplace API, billing UI at `/settings/provider/billing`. Requires `STRIPE_PRICE_PROVIDER_LISTING` env var in Render.
 
 ### OL-028: Pro Caregiver tier ($19/mo)
-- **Status:** 🟡 IN PROGRESS (2026-05-02)
-- **What:** Add isPro + billing fields to Caregiver, Stripe checkout + portal, webhook handling, search boost (pro caregivers rank above basic), Pro badge on profile, application cap for basic (5-10/mo), billing UI.
-- **Pricing rationale:** Care.com charges caregivers $20/mo. $19/mo is competitive and familiar to anyone who's used Care.com.
-- **Done when:** Pro caregivers appear boosted in search with badge; basic caregivers see upsell prompt when they hit application cap.
+- **Status:** ✅ CLOSED (2026-05-02)
+- Schema fields + migration, Stripe Checkout + Customer Portal APIs, webhook handler, `isPro: desc` search boost in all sort orders, ★ Pro badge on CaregiverCard, billing UI at `/settings/billing`. `applicationCount` tracked in DB — enforcement (block/reset cron) still pending. Requires `STRIPE_PRICE_PRO_CAREGIVER` env var in Render.
 
-### OL-029: Background check markup — charge $49, cost ~$8-30 (Checkr wholesale)
-- **Status:** 🟡 IN PROGRESS (2026-05-02)
-- **What:** Update displayed/charged price in BackgroundCheckOrderPanel to $49 per check. Wholesale Checkr cost is $8-30, so margin is $19-41 per check.
-- **Done when:** UI shows $49 and Stripe PaymentIntent is created for $49.
+### OL-029: Background check markup
+- **Status:** ✅ CLOSED (2026-05-02)
+- BackgroundCheckOrderPanel updated: ENHANCED $34.99, MVR $19.99, PREMIUM $59.99. Basic remains $0 (lead magnet).
 
 ### OL-030: Raise placement fee — update PLACEMENT_FEE_CENTS env var in Render
 - **Status:** 🟡 PENDING CHRIS ACTION
