@@ -83,6 +83,15 @@ FAMILY, OPERATOR, CAREGIVER, ADMIN, STAFF, PROVIDER, AFFILIATE, DISCHARGE_PLANNE
 - **Financing CTAs:** CareCredit affiliate links on /learn and home listing pricing tab
 - **Compliance document kits:** 3 Ohio ALF kits ($149-$199); one-time Stripe checkout; ComplianceKitPurchase model; /operator/compliance-kits
 
+## Transport Marketplace (Phase 1 — as of 2026-05-02)
+- **Provider transport fields:** `rideTypes[]`, `wheelchairAccessible`, `acceptsMedicaid`, `serviceRadius`, `allowsRecurring` on Provider model. Migration: `20260502000002_add_transport_fields`.
+- **Lead transport context:** `transportDetails Json?` on Lead — stores tripPurpose, mobilityNeeds, isRecurring, recurringDays, pickupAddress, dropoffAddress.
+- **Provider detail page:** Shows "Transportation Capabilities" section when `serviceTypes` includes `transportation`.
+- **InquiryForm:** Shows trip details section (purpose, pickup/dropoff, mobility, recurring days) when booking a transport provider.
+- **Marketplace filters:** Wheelchair Accessible + Accepts Medicaid checkboxes added to provider tab.
+- **Provider settings:** `/settings/provider` self-service profile editor with transport capabilities section.
+- **Phase 2 (future):** Ride booking calendar, dispatch integration, per-ride payment/commission flow.
+
 ## Known Issues (as of 2026-05-02)
 1. Demo accounts use test Stripe data — when switching to live Stripe, all operator `stripeCustomerId` fields must be cleared and operators re-subscribed
 2. seed-demo.ts `update:{}` bug fixed for all 7 top-level user accounts; nested operator/caregiver/etc upserts still use `update:{}`

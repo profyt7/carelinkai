@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-05-02_
+_Last updated: 2026-05-02 (session 2)_
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -7,6 +7,11 @@ Each loop: what it is, why it matters, what done looks like.
 ---
 
 ## 🔴 Critical (Blocking Revenue / Demos)
+
+### OL-026: Transport Phase 2 — ride booking + dispatch
+- **Status:** 🟡 OPEN — Phase 1 (metadata + inquiry) is complete. Phase 2 adds real booking.
+- **What:** Ride calendar, per-ride payment flow (10-15% platform fee), dispatch confirmation, SMS/email confirmations to rider and driver.
+- **Done when:** Family can book a ride with a transport provider end-to-end and CareLinkAI collects a commission.
 
 ### OL-023: Checkr API not yet configured
 - **Status:** 🟡 OPEN — system uses mock fallback until keys are set
