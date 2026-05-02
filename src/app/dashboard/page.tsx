@@ -20,6 +20,8 @@ export default async function DashboardPage() {
       redirect('/caregiver');
     case 'DISCHARGE_PLANNER':
       redirect('/discharge-planner');
+    case 'PROVIDER':
+      redirect('/provider');
     case 'FAMILY':
       return <FamilyDashboardContent />;
     default:

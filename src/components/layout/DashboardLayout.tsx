@@ -34,7 +34,8 @@ import {
   FiLink,
   FiStar,
   FiBook,
-  FiCheckCircle
+  FiCheckCircle,
+  FiCreditCard
 } from "react-icons/fi";
 import { MessageSquare, Stethoscope } from "lucide-react";
 // Real-time notification center
@@ -191,6 +192,24 @@ const navItems: NavItem[] = [
     href: "/discharge-planner/billing",
     showInMobileBar: false,
     roleRestriction: ["DISCHARGE_PLANNER"],
+  },
+
+  // 8b-i. Provider Listing Billing
+  {
+    name: "Listing & Billing",
+    icon: <FiCreditCard size={20} />,
+    href: "/settings/provider/billing",
+    showInMobileBar: false,
+    roleRestriction: ["PROVIDER"],
+  },
+
+  // 8b-ii. Caregiver Pro Membership
+  {
+    name: "Pro Membership",
+    icon: <FiCreditCard size={20} />,
+    href: "/settings/billing",
+    showInMobileBar: false,
+    roleRestriction: ["CAREGIVER"],
   },
 
   // 8b. Affiliate Dashboard (affiliate-only)
