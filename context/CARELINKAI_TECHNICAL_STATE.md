@@ -126,9 +126,9 @@ These MUST be set on Render for production to work:
 - [ ] `STRIPE_PRICE_STARTER` ← required for subscription checkout
 - [ ] `STRIPE_PRICE_PROFESSIONAL` ← required for subscription checkout
 - [ ] `STRIPE_PRICE_GROWTH` ← required for subscription checkout
-- [ ] `PLACEMENT_FEE_CENTS` = `150000` (**raise from $500 → $1,500** — OL-030)
-- [ ] `STRIPE_PRICE_PROVIDER_LISTING` ← **NEW — $99/mo provider marketplace listing**
-- [ ] `STRIPE_PRICE_PRO_CAREGIVER` ← **NEW — $19/mo pro caregiver subscription**
+- [x] `PLACEMENT_FEE_CENTS` = `150000` ✅ updated 2026-05-02 — placement fee now $1,500
+- [x] `STRIPE_PRICE_PROVIDER_LISTING` ✅ set 2026-05-02 — $99/mo provider listing
+- [x] `STRIPE_PRICE_PRO_CAREGIVER` ✅ set 2026-05-02 — $19/mo pro caregiver
 - [ ] `WALLET_FEE_PCT` = `2.5` ← **NEW — Care Wallet service fee**
 - [ ] `DEFAULT_AFFILIATE_COMMISSION_PCT` = `20` ← **NEW — affiliate commission %**
 - [ ] `TWILIO_ACCOUNT_SID` ← **NEW — SMS notifications**
@@ -182,9 +182,8 @@ See `REVENUE_MODEL.md` for the full breakdown. 12 streams finalized:
 - **Components polished:** StatCard (left-border accent + trend), skeleton-loader (shimmer + HomeCardSkeleton), tabs (real tokens), breadcrumbs, confirm-dialog, error, not-found, login page, search page.
 
 ## Immediate Next Priorities
-1. **Set new Stripe price env vars in Render** — Create $99/mo (Provider Listing) and $19/mo (Pro Caregiver) products in Stripe dashboard; set `STRIPE_PRICE_PROVIDER_LISTING` + `STRIPE_PRICE_PRO_CAREGIVER` in Render.
-2. **Raise placement fee** — Update `PLACEMENT_FEE_CENTS` to `150000` in Render (OL-030).
-3. **Build application cap enforcement** — Increment `applicationCount` on caregiver apply, block when over limit, monthly reset cron.
+1. **Build application cap enforcement** — Increment `applicationCount` on caregiver job application, block when `>= 10`, monthly reset cron (OL-031).
+2. **Test provider + caregiver billing end-to-end** — Verify Stripe Checkout and Customer Portal flows with the newly set price IDs in test mode before going live.
 4. **Run Playwright smoke tests** across all 7 demo roles: `npm run test:e2e:prod`
 5. **Switch Stripe to live mode** when ready — follow runbook in `context/STRIPE_SETUP_RUNBOOK.md`
 6. **Set Checkr API keys** in Render: `CHECKR_API_KEY`, `CHECKR_WEBHOOK_SECRET`; register webhook at `https://getcarelinkai.com/api/webhooks/checkr`

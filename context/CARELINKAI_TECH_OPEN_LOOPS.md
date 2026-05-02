@@ -21,9 +21,7 @@ Each loop: what it is, why it matters, what done looks like.
 - BackgroundCheckOrderPanel: ENHANCED $34.99, MVR $19.99, PREMIUM $59.99. Basic remains $0 (lead magnet).
 
 ### OL-030: Raise placement fee — update PLACEMENT_FEE_CENTS to $1,500 in Render
-- **Status:** 🟡 PENDING CHRIS ACTION
-- Change `PLACEMENT_FEE_CENTS` from `50000` to `150000` in Render dashboard. A Place for Mom charges $5,000-7,000 — $1,500 is still 75% cheaper and 3x our current rate.
-- **No code change needed** — just update the env var in Render → Environment.
+- **Status:** ✅ CLOSED (2026-05-02) — Chris updated `PLACEMENT_FEE_CENTS` to `150000` in Render dashboard. Placement fee is now $1,500.
 
 ### OL-031: Application cap enforcement for basic caregivers
 - **Status:** 🟡 OPEN — `applicationCount` field exists in DB but enforcement not built
