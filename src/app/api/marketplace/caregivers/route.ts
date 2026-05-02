@@ -135,6 +135,7 @@ export async function GET(request: Request) {
           ratingAverage: Number((ratingInfo.avg ?? 0).toFixed(1)) || 0,
           reviewCount: ratingInfo.count,
           badges: deriveBadges(ratingInfo.avg ?? 0, ratingInfo.count, caregiver.yearsExperience, caregiver.backgroundCheckStatus),
+          isPro: caregiver.isPro,
         };
       });
 
@@ -309,11 +310,12 @@ export async function GET(request: Request) {
       caregivers = filtered.slice(skip, skip + pageSize);
     } else {
       // Prefer cursor-based pagination when possible
+      // Pro caregivers always sort first within each sort bucket
       const orderBy = (
-        sortBy === 'rateAsc' ? [{ hourlyRate: 'asc' as const }, { id: 'asc' as const }] :
-        sortBy === 'rateDesc' ? [{ hourlyRate: 'desc' as const }, { id: 'asc' as const }] :
-        sortBy === 'experienceDesc' ? [{ yearsExperience: 'desc' as const }, { id: 'asc' as const }] :
-        [{ createdAt: 'desc' as const }, { id: 'asc' as const }]
+        sortBy === 'rateAsc' ? [{ isPro: 'desc' as const }, { hourlyRate: 'asc' as const }, { id: 'asc' as const }] :
+        sortBy === 'rateDesc' ? [{ isPro: 'desc' as const }, { hourlyRate: 'desc' as const }, { id: 'asc' as const }] :
+        sortBy === 'experienceDesc' ? [{ isPro: 'desc' as const }, { yearsExperience: 'desc' as const }, { id: 'asc' as const }] :
+        [{ isPro: 'desc' as const }, { createdAt: 'desc' as const }, { id: 'asc' as const }]
       );
 
       if (cursor) {
@@ -432,6 +434,7 @@ export async function GET(request: Request) {
           caregiver.yearsExperience,
           caregiver.backgroundCheckStatus
         ),
+        isPro: caregiver.isPro,
         ...(useRadius ? { distanceMiles: caregiver.distanceMiles } : {})
       };
     });
