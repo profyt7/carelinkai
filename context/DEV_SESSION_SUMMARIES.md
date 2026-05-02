@@ -2,6 +2,29 @@
 
 ---
 
+### 2026-05-02 — Bug Fixes, Feature Wiring, Reports Fix, Open Loop Closure
+
+- **Objective:** Close remaining open loops (HomeCompareModal, Stripe Elements for background checks, ProviderReview migration), fix critical runtime bugs (residents page server-to-self HTTP fetch, double nav on /help, landing page auth wall, checkrCandidateId P2022 error, TypeScript CI failures, PDFKit ENOENT in standalone mode), and merge everything to main for production deploy.
+- **Work completed:**
+  1. **Residents page server-to-self HTTP fetch eliminated:** Replaced fragile `fetch('/api/operator/residents')` in server component with direct Prisma queries via `requirePermission` + `getUserScope`. Created `fetchResidentsDirect()` and self-authenticating `fetchHomes()`.
+  2. **Double nav on /help fixed:** `help/page.tsx` was wrapping in `<DashboardLayout>` while `help/layout.tsx` already did the same. Removed inner wrapper from page.tsx.
+  3. **Landing page auth wall fixed:** `authorized` callback in `src/middleware.ts` only allowed `/` when mock mode was on. Added permanent `alwaysPublic` array (`/`, `/help`, `/search`, `/privacy`, `/terms`, `/learn`) checked before any mock logic.
+  4. **P2022 Sentry error fixed (checkrCandidateId):** Column existed in schema but had no migration. Created `prisma/migrations/20260502000000_add_background_check_order/migration.sql` — adds `checkrCandidateId` to Caregiver, `BackgroundCheckOrderer`/`BackgroundCheckPackage` enums, full `BackgroundCheckOrder` table with FK + indexes.
+  5. **TypeScript CI errors fixed (6 pre-existing):** `package→checkrPackageName+packageType`, `totalBeds→capacity`, Stripe `apiVersion "2024-04-10"→"2023-10-16"`, `NotificationType "GENERAL"→"SYSTEM"` (×2 files).
+  6. **Docker CI fixed:** GitHub repo workflow permissions were read-only blocking GHCR push. User changed to read/write in GitHub → Settings → Actions → General.
+  7. **ProviderReview migration:** Created `prisma/migrations/20260502000001_add_provider_review/migration.sql` — `ProviderReview` table, FK to Provider CASCADE, indexes on providerId + rating.
+  8. **HomeCompareModal wired into search/page.tsx:** Added `compareIds: Set<string>` state, `toggleCompare` handler (max 3), "Compare" button on grid and list cards with active styling, compare bar above results (shows count, clear + compare buttons), `<HomeCompareModal>` rendered when ≥2 selected.
+  9. **BackgroundCheckOrderPanel — real Stripe Elements:** Replaced placeholder message with `<Elements>` + `<PaymentForm>` component. POST returns `clientSecret` → Stripe Elements renders inline → `stripe.confirmPayment()` → PUT `/confirm` endpoint triggers Checkr. Cancel button returns to package selection.
+  10. **PDFKit ENOENT in standalone mode fixed:** Added `serverExternalPackages: ['pdfkit']` to `next.config.js`. Webpack was bundling pdfkit and transforming `__dirname` to point to `.next/server/chunks/data/` instead of `node_modules`, causing `Helvetica.afm` not found on every report generation.
+  11. **ReportGenerator homes 404 fixed:** `fetchHomes()` was calling `/api/homes?status=ACTIVE&limit=100` (no root handler). Changed to `/api/operator/homes`.
+  12. **NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY added to Render:** User added env var to enable Stripe Elements in BackgroundCheckOrderPanel.
+- **Files changed:** `src/app/operator/residents/page.tsx`, `src/app/help/page.tsx`, `src/middleware.ts`, `src/app/api/caregiver/background-checks/start/route.ts`, `src/app/api/discharge-planner/availability/route.ts`, `src/app/api/family/background-checks/order/[caregiverId]/route.ts`, `src/app/api/webhooks/checkr/route.ts`, `src/app/search/page.tsx`, `src/components/marketplace/BackgroundCheckOrderPanel.tsx`, `src/components/reports/ReportGenerator.tsx`, `next.config.js`, `prisma/migrations/20260502000000_add_background_check_order/migration.sql` (new), `prisma/migrations/20260502000001_add_provider_review/migration.sql` (new)
+- **Commands run:** `git commit` × 6, `git push origin main` × multiple, `npx prisma migrate deploy` (Render shell — confirmed "No pending migrations to apply" meaning auto-migration on deploy worked)
+- **Tests/build status:** `npx tsc --noEmit` passes 0 errors. All migrations deployed. Production deploy confirmed green on Render.
+- **Deployment impact:** Reports now generate correctly. Landing page accessible without login. /help no longer double-wraps nav. Background check Stripe payment flow live (needs live keys to process real payments). HomeCompareModal functional in search.
+- **New risks/blockers:** None critical. NEXT_PUBLIC_SOCKET_URL warning in console (SSE works, no WebSocket server). Landing page has minor raw hex values in inline styles (cosmetic only).
+- **Recommended next step:** Run `npm run test:e2e:prod` Playwright smoke tests across all 7 demo roles. Then set live Stripe keys + Checkr API keys when ready to go live.
+
 ### 2026-05-01 — Bug Blitz: Cards, Calendar, Ops Nav, Messaging, Billing, Provider Reviews, SMS
 
 - **Objective:** Work through 24-item bug list from founder review, covering marketplace UI, calendar, navigation, family portal, provider reviews, and notifications.

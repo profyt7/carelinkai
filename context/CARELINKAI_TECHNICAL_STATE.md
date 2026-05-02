@@ -83,12 +83,12 @@ FAMILY, OPERATOR, CAREGIVER, ADMIN, STAFF, PROVIDER, AFFILIATE, DISCHARGE_PLANNE
 - **Financing CTAs:** CareCredit affiliate links on /learn and home listing pricing tab
 - **Compliance document kits:** 3 Ohio ALF kits ($149-$199); one-time Stripe checkout; ComplianceKitPurchase model; /operator/compliance-kits
 
-## Known Issues (as of 2026-05-01)
-1. 2 pre-existing test failures RESOLVED — calendar and emergency tests both fixed
-2. Demo accounts use test Stripe data — when switching to live Stripe, all operator `stripeCustomerId` fields must be cleared and operators re-subscribed
-3. seed-demo.ts `update:{}` bug fixed for all 7 top-level user accounts; nested operator/caregiver/etc upserts still use `update:{}`
-4. **One-time production action needed:** Admin must click "Fix Demo Caregiver Employment" in Admin Tools (`/admin/tools`) on production to link demo caregivers to the demo operator in the production DB — otherwise Operator caregiver tab shows blank
-5. Landing page still uses some raw hex literals (`#3978FC`, `#7253B7`) in inline styles — acceptable but not ideal; Tailwind tokens preferred
+## Known Issues (as of 2026-05-02)
+1. Demo accounts use test Stripe data — when switching to live Stripe, all operator `stripeCustomerId` fields must be cleared and operators re-subscribed
+2. seed-demo.ts `update:{}` bug fixed for all 7 top-level user accounts; nested operator/caregiver/etc upserts still use `update:{}`
+3. **One-time production action needed:** Admin must click "Fix Demo Caregiver Employment" in Admin Tools (`/admin/tools`) on production to link demo caregivers to the demo operator in the production DB — otherwise Operator caregiver tab shows blank
+4. Landing page still uses some raw hex literals (`#3978FC`, `#7253B7`) in inline styles — cosmetic only
+5. `NEXT_PUBLIC_SOCKET_URL` console warning — SSE works fine, no WebSocket server configured (not blocking anything)
 
 ## Pending Deployment Actions (before subscription billing goes live)
 1. **Merge branch to main** — triggers Render auto-deploy
@@ -166,6 +166,7 @@ See `REVENUE_MODEL.md` for the full breakdown. 12 streams finalized:
 - **Components polished:** StatCard (left-border accent + trend), skeleton-loader (shimmer + HomeCardSkeleton), tabs (real tokens), breadcrumbs, confirm-dialog, error, not-found, login page, search page.
 
 ## Immediate Next Priorities
-1. **Run migration in Render shell:** `npx prisma migrate deploy` — applies `20260427000000_revenue_model_expansion` (OL-021 — still open)
-2. **Switch Stripe to live mode** — follow runbook in `context/STRIPE_SETUP_RUNBOOK.md`
-3. **Run Playwright smoke tests** before each deploy: `npx playwright test tests/demo-verification.spec.ts --workers=1`
+1. **Run Playwright smoke tests** across all 7 demo roles: `npm run test:e2e:prod`
+2. **Switch Stripe to live mode** when ready — follow runbook in `context/STRIPE_SETUP_RUNBOOK.md`
+3. **Set Checkr API keys** in Render: `CHECKR_API_KEY`, `CHECKR_WEBHOOK_SECRET`; register webhook at `https://getcarelinkai.com/api/webhooks/checkr`
+4. Continue manual testing across all portals and report bugs as found

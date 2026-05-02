@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-05-01_
+_Last updated: 2026-05-02_
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -8,26 +8,10 @@ Each loop: what it is, why it matters, what done looks like.
 
 ## 🔴 Critical (Blocking Revenue / Demos)
 
-### OL-021: Prisma migrations not yet deployed to production
-- **Status:** 🔴 OPEN
-- **What:** Three pending migrations must be deployed:
-  1. `20260427000000_revenue_model_expansion` — CommissionTier, AffiliateReferralType, DischargePlannerLicenseType enums + new fields
-  2. Migration for BackgroundCheckOrder, AffiliateMaterial, DemoRequest models + checkrCandidateId on Caregiver (added 2026-05-01)
-  3. Migration for **ProviderReview** model (added 2026-05-01) — provider ratings will fail until deployed
-- **Done when:** `npx prisma migrate deploy` run in Render shell with no errors.
-
 ### OL-023: Checkr API not yet configured
 - **Status:** 🟡 OPEN — system uses mock fallback until keys are set
 - **What:** Set `CHECKR_API_KEY` and `CHECKR_WEBHOOK_SECRET` in Render env vars; register webhook at `https://getcarelinkai.com/api/webhooks/checkr`
 - **Done when:** Real background checks process end-to-end in production.
-
-### OL-024: BackgroundCheckOrderPanel Stripe Elements UI incomplete
-- **Status:** 🟡 OPEN — shows message on requiresPayment but no payment form
-- **Done when:** Stripe.js + CardElement inline in panel; payment confirmed before order completes.
-
-### OL-025: HomeCompareModal not wired into search results
-- **Status:** 🟡 OPEN — component built at `src/components/family/HomeCompareModal.tsx`
-- **Done when:** Family search results page has "Compare" checkboxes on home cards; modal opens when 2–3 selected.
 
 ### OL-022: STRIPE_PRICE_AGENCY and STRIPE_PRICE_DISCHARGE_PLANNER_DEPT not set
 - **Status:** ✅ FIXED (2026-04-27) — Chris confirmed both env vars already set in Render dashboard.
@@ -201,3 +185,12 @@ Each loop: what it is, why it matters, what done looks like.
 | Caregiver dashboard showing wrong page | /dashboard now redirects CAREGIVER → /caregiver, DISCHARGE_PLANNER → /discharge-planner | 2026-04-27 |
 | Discharge planner double nav | Removed erroneous layout.tsx; billing page now has its own DashboardLayout wrapper | 2026-04-27 |
 | Demo operator on Starter plan | seed-demo.ts forces PROFESSIONAL plan on upsert + explicit update; re-seeded on Render | 2026-04-27 |
+| OL-021: Prisma migrations | All migrations deployed — confirmed "No pending migrations" in Render shell 2026-05-02 | 2026-05-02 |
+| OL-024: BackgroundCheckOrderPanel Stripe Elements | Real Stripe Elements wired — Elements/PaymentForm inline; POST→clientSecret→confirmPayment→PUT confirm | 2026-05-02 |
+| OL-025: HomeCompareModal wired | compareIds state + toggleCompare + compare bar + modal render in search/page.tsx | 2026-05-02 |
+| ProviderReview migration | migration.sql created and auto-deployed on build | 2026-05-02 |
+| Residents page server-to-self HTTP fetch | Replaced with direct Prisma via requirePermission + getUserScope | 2026-05-02 |
+| /help double nav | Removed duplicate DashboardLayout wrapper from help/page.tsx | 2026-05-02 |
+| Landing page auth wall | Added alwaysPublic paths in middleware authorized callback | 2026-05-02 |
+| PDFKit Helvetica.afm ENOENT in standalone | Added serverExternalPackages: ['pdfkit'] to next.config.js | 2026-05-02 |
+| ReportGenerator homes 404 | Changed /api/homes to /api/operator/homes in fetchHomes() | 2026-05-02 |
