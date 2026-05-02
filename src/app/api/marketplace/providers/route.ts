@@ -86,6 +86,8 @@ export async function GET(request: Request) {
     const city = searchParams.get('city');
     const state = searchParams.get('state');
     const verified = searchParams.get('verified');
+    const wheelchairAccessible = searchParams.get('wheelchairAccessible');
+    const acceptsMedicaid = searchParams.get('acceptsMedicaid');
     
     // Pagination parameters
     const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : 1;
@@ -191,6 +193,10 @@ export async function GET(request: Request) {
     if (verified !== null) {
       where.isVerified = verified === 'true';
     }
+
+    // Transport filters
+    if (wheelchairAccessible === 'true') where.wheelchairAccessible = true;
+    if (acceptsMedicaid === 'true') where.acceptsMedicaid = true;
     
     // Location filters using coverageArea JSON
     // Note: This is a simplified version. For production, you might want to use proper GIS queries
@@ -282,8 +288,14 @@ export async function GET(request: Request) {
         photoUrl,
         credentialCount: provider.credentials.length,
         verifiedCredentialCount: provider.credentials.filter((c: any) => c.status === 'VERIFIED').length,
-        ratingAverage: 0, // Placeholder - TODO: calculate from reviews
-        reviewCount: 0, // Placeholder - TODO: count from reviews
+        ratingAverage: 0,
+        reviewCount: 0,
+        // Transport fields
+        rideTypes: provider.rideTypes || [],
+        wheelchairAccessible: provider.wheelchairAccessible,
+        acceptsMedicaid: provider.acceptsMedicaid,
+        serviceRadius: provider.serviceRadius,
+        allowsRecurring: provider.allowsRecurring,
       };
     });
     

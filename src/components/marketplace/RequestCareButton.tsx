@@ -18,6 +18,7 @@ type RequestCareButtonProps = {
   targetId: string;
   targetName: string;
   className?: string;
+  serviceTypes?: string[];
 };
 
 export default function RequestCareButton({
@@ -25,6 +26,7 @@ export default function RequestCareButton({
   targetId,
   targetName,
   className = "",
+  serviceTypes,
 }: RequestCareButtonProps) {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -99,6 +101,7 @@ export default function RequestCareButton({
           targetType={targetType}
           targetId={targetId}
           targetName={targetName}
+          serviceTypes={serviceTypes}
           onSuccess={handleSuccess}
           onClose={handleClose}
         />

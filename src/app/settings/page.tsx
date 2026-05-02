@@ -20,6 +20,9 @@ export default function SettingsIndexPage() {
       { href: "/settings/operator", title: "Operator Profile", desc: "Company & business info", icon: <FiUser className="h-5 w-5" /> },
       { href: "/operator/billing", title: "Billing & Subscription", desc: "Plan, trial, invoices", icon: <FiCreditCard className="h-5 w-5" /> },
     ] : []),
+    ...(role === "PROVIDER" ? [
+      { href: "/settings/provider", title: "Provider Profile", desc: "Business info & services", icon: <FiUser className="h-5 w-5" /> },
+    ] : []),
     { href: "/settings/account", title: "Account", desc: "Password, security", icon: <FiShield className="h-5 w-5" /> },
     { href: "/settings/notifications", title: "Notifications", desc: "Email & in-app", icon: <FiBell className="h-5 w-5" /> },
     { href: payoutsHref, title: "Payouts", desc: "Payments & transfers", icon: <FiDollarSign className="h-5 w-5" /> },

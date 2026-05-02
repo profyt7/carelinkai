@@ -2,6 +2,26 @@
 
 ---
 
+### 2026-05-02 — Phase 1 Transport Marketplace UI Complete
+
+- **Objective:** Complete the UI layer for Phase 1 NEMT transportation marketplace features (schema and APIs were already done in the same day's earlier session segment).
+- **Work completed:**
+  1. **RequestCareButton** — added `serviceTypes?: string[]` prop, passed through to InquiryForm.
+  2. **InquiryForm** — added transport section (trip purpose dropdown, pickup/dropoff address fields, mobility needs, recurring checkbox + day selector) shown conditionally when `serviceTypes.includes("transportation")`. Transport details sent as `transportDetails` JSON to `/api/leads`.
+  3. **Marketplace page** — added `prWheelchair` + `prMedicaid` boolean state; wired into URL sync, provider API fetch, reset logic, chips, and `clearAllFilters`. Wheelchair Accessible + Accepts Medicaid checkboxes added to both desktop sidebar and mobile filter sheet under new "Accessibility" heading.
+  4. **`/settings/provider/page.tsx`** (new file) — provider self-service profile editor with business info, service type checkboxes, and full transport capabilities section (ride types, accessibility toggles, service radius) that reveals only when "Transportation / NEMT" is selected as a service type.
+  5. **`/settings/page.tsx`** — added Provider Profile card for PROVIDER role users (parallel to Operator Profile card).
+  6. **Prisma client regenerated** — ran `npx prisma generate` to pick up transport fields added in earlier migration.
+  7. **TypeScript** — fixed `transportDetails` Json cast in leads route, `DashboardLayout title` prop in provider settings page. Final `tsc --noEmit` → 0 errors.
+- **Files changed:** `src/components/marketplace/RequestCareButton.tsx`, `src/components/marketplace/InquiryForm.tsx`, `src/app/marketplace/page.tsx`, `src/app/settings/provider/page.tsx` (new), `src/app/settings/page.tsx`, `src/app/api/leads/route.ts`
+- **Commands run:** `npx prisma generate`, `npx tsc --noEmit`, `git commit`, `git push origin HEAD:claude/review-carelink-docs-49Ycv`
+- **Tests/build status:** `npx tsc --noEmit` → 0 errors. No Playwright run (blocked by sandbox).
+- **Deployment impact:** No schema changes this session (migration was already in earlier commit). Transport UI is complete — providers who set `serviceTypes: ['transportation']` will show a Capabilities section on their detail page, and families booking them will see trip detail fields in the inquiry form.
+- **New risks/blockers:** None. Checkr and live Stripe keys still deferred.
+- **Recommended next step:** Deploy to production (push to `main`), run Playwright smoke tests, then set Checkr + live Stripe keys when ready.
+
+---
+
 ### 2026-05-02 — Bug Fixes, Feature Wiring, Reports Fix, Open Loop Closure
 
 - **Objective:** Close remaining open loops (HomeCompareModal, Stripe Elements for background checks, ProviderReview migration), fix critical runtime bugs (residents page server-to-self HTTP fetch, double nav on /help, landing page auth wall, checkrCandidateId P2022 error, TypeScript CI failures, PDFKit ENOENT in standalone mode), and merge everything to main for production deploy.
