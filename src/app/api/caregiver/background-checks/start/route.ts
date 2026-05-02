@@ -58,7 +58,8 @@ export async function POST(request: NextRequest) {
         orderedByType: "SELF",
         orderedByUserId: session!.user!.id!,
         status: "PENDING",
-        package: "basic",
+        packageType: "BASIC",
+        checkrPackageName: "basic",
         checkrReportId: report.id,
         expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
       },

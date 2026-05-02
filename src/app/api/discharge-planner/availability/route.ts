@@ -29,14 +29,14 @@ export async function GET(request: NextRequest) {
       select: {
         id: true,
         name: true,
-        totalBeds: true,
+        capacity: true,
         currentOccupancy: true,
         updatedAt: true,
       },
     });
 
     const availability = homes.map((home) => {
-      const totalBeds = home.totalBeds ?? 0;
+      const totalBeds = home.capacity ?? 0;
       const occupied = home.currentOccupancy ?? 0;
       const available = Math.max(0, totalBeds - occupied);
       return {

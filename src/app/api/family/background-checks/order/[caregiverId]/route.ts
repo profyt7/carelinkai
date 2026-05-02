@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { createCandidate, createReport, CHECKR_PACKAGES, CheckrPackageKey } from "@/lib/checkr";
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2024-04-10" });
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2023-10-16" });
 
 /**
  * POST /api/family/background-checks/order/[caregiverId]
@@ -186,7 +186,7 @@ async function runCheck(
   await prisma.notification.create({
     data: {
       userId: caregiver.userId,
-      type: "GENERAL",
+      type: "SYSTEM",
       title: "Background Check Ordered",
       message: `A family ordered a ${pkg.label} on your profile. Results in ${pkg.turnaround}.`,
       isRead: false,

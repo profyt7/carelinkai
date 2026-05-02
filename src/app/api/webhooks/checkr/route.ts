@@ -107,7 +107,7 @@ async function updateCaregiverStatus(
       await prisma.notification.create({
         data: {
           userId: caregiver.userId,
-          type: "GENERAL",
+          type: "SYSTEM",
           title: "Background Check Update",
           message: messages[status] ?? "Your background check status has been updated.",
           isRead: false,
