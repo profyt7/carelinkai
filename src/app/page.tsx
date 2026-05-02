@@ -954,8 +954,8 @@ export default function HomePage() {
               <div className="mb-8 bg-success-50 border border-success-200 rounded-xl px-6 py-4 flex items-start gap-3">
                 <FiCheck className="text-success-600 flex-shrink-0 text-xl mt-0.5" />
                 <div>
-                  <span className="font-bold text-success-800 text-base">Free for caregivers — create your profile, apply for jobs, and get hired at no cost.</span>
-                  <span className="text-success-700 ml-2 text-sm">No subscription fees ever. Build your reputation, earn points, and grow your career without paying a dime.</span>
+                  <span className="font-bold text-success-800 text-base">Free to join — create your profile, apply for jobs, and get hired at no cost.</span>
+                  <span className="text-success-700 ml-2 text-sm">Build your reputation, earn points, and grow your career. Optional: upgrade to Pro ($19/mo) for boosted search placement, a Pro badge, and unlimited applications.</span>
                 </div>
               </div>
               <div className="grid md:grid-cols-2 gap-8">
@@ -1143,11 +1143,11 @@ export default function HomePage() {
                 </div>
                 <div className="bg-gradient-to-r from-primary-500/10 to-secondary-500/10 rounded-xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 border border-primary-500/20">
                   <div>
-                    <div className="font-bold text-neutral-900">Your services, found by the right clients — live now</div>
-                    <div className="text-sm text-neutral-500 mt-1">List your business on the CareLinkAI marketplace and get discovered by care homes and families searching in your area.</div>
+                    <div className="font-bold text-neutral-900">Marketplace listing — $99/mo</div>
+                    <div className="text-sm text-neutral-500 mt-1">Get discovered by care homes and families searching in your area. Cancel anytime. No contracts.</div>
                   </div>
-                  <Link href="/marketplace?tab=providers" className="bg-gradient-to-r from-primary-500 to-secondary-500 text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity whitespace-nowrap shadow-lg">
-                    View Provider Listings →
+                  <Link href="/auth/register?role=provider" className="bg-gradient-to-r from-primary-500 to-secondary-500 text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity whitespace-nowrap shadow-lg">
+                    List Your Business →
                   </Link>
                 </div>
               </div>
@@ -1241,7 +1241,7 @@ export default function HomePage() {
               Simple, Transparent Pricing
             </h2>
             <p className="text-xl text-neutral-500 max-w-3xl mx-auto">
-              Families and caregivers are always free. Operators and discharge planners subscribe.
+              Families are always free. Caregivers are free to start, Pro optional. Operators, providers, and discharge planners subscribe.
             </p>
           </div>
 
@@ -1255,11 +1255,11 @@ export default function HomePage() {
                   </div>
                   <div>
                     <div className="flex items-center gap-3 mb-1">
-                      <h3 className="text-xl font-bold text-success-900">Families &amp; Caregivers — Always Free</h3>
-                      <span className="bg-success-500 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">$0 Forever</span>
+                      <h3 className="text-xl font-bold text-success-900">Families Always Free · Caregivers Free to Start</h3>
+                      <span className="bg-success-500 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">$0 to Join</span>
                     </div>
                     <p className="text-success-800 text-sm leading-relaxed max-w-xl">
-                      Search care homes, connect with caregivers, book tours, apply for jobs, build your profile, and earn rewards — completely free, always. No hidden fees, no freemium gotcha, no credit card required.
+                      Families search, book tours, and connect at no cost — forever. Caregivers create profiles, apply for jobs, and get hired free. Caregivers can optionally upgrade to Pro ($19/mo) for boosted search placement and unlimited applications.
                     </p>
                   </div>
                 </div>
@@ -1370,7 +1370,7 @@ export default function HomePage() {
               <a href="mailto:hello@getcarelinkai.com" className="text-primary-500 font-semibold hover:underline">Contact us for Enterprise pricing.</a>
             </p>
             <p className="text-sm text-neutral-500 mt-3">
-              Families &amp; Caregivers always use CareLinkAI free.
+              Families always free. Caregivers free to start — Pro optional at $19/mo.
             </p>
           </div>
 
