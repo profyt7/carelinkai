@@ -194,6 +194,10 @@ export async function GET(request: NextRequest) {
             settings: true,
             careTypes: true,
             isVisibleInMarketplace: true,
+            isPro: true,
+            proStatus: true,
+            proPeriodEndsAt: true,
+            applicationCount: true,
             credentials: {
               select: {
                 id: true,
@@ -252,6 +256,8 @@ export async function GET(request: NextRequest) {
             acceptsMedicaid: true,
             serviceRadius: true,
             allowsRecurring: true,
+            listingStatus: true,
+            listingPeriodEndsAt: true,
             credentials: {
               select: {
                 id: true,

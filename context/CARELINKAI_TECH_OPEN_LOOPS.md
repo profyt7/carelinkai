@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-05-02 (session 2)_
+_Last updated: 2026-05-02 (session 3)_
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -7,6 +7,49 @@ Each loop: what it is, why it matters, what done looks like.
 ---
 
 ## 🔴 Critical (Blocking Revenue / Demos)
+
+### OL-027: Provider listing fee ($99/mo) — subscription gate on marketplace visibility
+- **Status:** 🟡 IN PROGRESS (2026-05-02)
+- **What:** Providers (NEMT, home care agencies) pay $99/mo to be listed. Add billing fields to Provider schema, Stripe checkout + portal, webhook handling, visibility gate, billing UI at /settings/provider/billing.
+- **Pricing rationale:** Care.com enterprise = contact sales; Caring.com = $50-150/lead; flat $99/mo is far lower friction and competitive.
+- **Done when:** A new provider must pay before appearing in marketplace; existing active providers have a grace period or are grandfathered.
+
+### OL-028: Pro Caregiver tier ($19/mo)
+- **Status:** 🟡 IN PROGRESS (2026-05-02)
+- **What:** Add isPro + billing fields to Caregiver, Stripe checkout + portal, webhook handling, search boost (pro caregivers rank above basic), Pro badge on profile, application cap for basic (5-10/mo), billing UI.
+- **Pricing rationale:** Care.com charges caregivers $20/mo. $19/mo is competitive and familiar to anyone who's used Care.com.
+- **Done when:** Pro caregivers appear boosted in search with badge; basic caregivers see upsell prompt when they hit application cap.
+
+### OL-029: Background check markup — charge $49, cost ~$8-30 (Checkr wholesale)
+- **Status:** 🟡 IN PROGRESS (2026-05-02)
+- **What:** Update displayed/charged price in BackgroundCheckOrderPanel to $49 per check. Wholesale Checkr cost is $8-30, so margin is $19-41 per check.
+- **Done when:** UI shows $49 and Stripe PaymentIntent is created for $49.
+
+### OL-030: Raise placement fee — update PLACEMENT_FEE_CENTS env var in Render
+- **Status:** 🟡 PENDING CHRIS ACTION
+- **What:** Change `PLACEMENT_FEE_CENTS` from `50000` ($500) to `150000` ($1,500) in Render dashboard. A Place for Mom charges $5,000-7,000 per placement — $1,500 is still 75% cheaper.
+- **No code change needed** — just update the env var in Render → Environment.
+- **Done when:** Chris updates the value in Render dashboard.
+
+### OL-031: Family subscription tier ($19-29/mo "CareLinkAI Plus")
+- **Status:** 🟡 ROADMAP — build after provider + caregiver tiers validated
+- **What:** Families pay for priority matching, unlimited saves, document storage, Care Concierge priority. Free tier still works fully — paid is about speed and white-glove service.
+- **Done when:** Families can subscribe and get tangible benefits vs. free tier.
+
+### OL-032: Corporate elder care B2B (employee benefit)
+- **Status:** 🟡 ROADMAP — requires sales conversations before build
+- **What:** Pitch HR departments: $X/employee/month, employees get CareLinkAI access. One mid-size company = $5K-20K/year. Fastest path to MRR spikes.
+- **Done when:** First enterprise contract signed and billing wired.
+
+### OL-033: Caregiver CE training / certification courses
+- **Status:** 🟡 ROADMAP — partnership-dependent
+- **What:** Caregivers pay $15-30/course for CE credits needed to maintain certifications. Partner with an accredited CE provider or host short courses. Existing aide audience in app.
+- **Done when:** At least one purchasable CE course live with payment.
+
+### OL-034: Insurance/benefits navigation service
+- **Status:** 🟡 ROADMAP — needs human process designed first
+- **What:** Flat-fee ($99-199) navigation help for Medicaid waiver, VA Aid & Attendance, LTC insurance claims. Families desperately need this; no good self-serve product exists.
+- **Done when:** Families can purchase navigation assistance and get connected to a coordinator.
 
 ### OL-026: Transport Phase 2 — ride booking + dispatch
 - **Status:** 🟡 OPEN — Phase 1 (metadata + inquiry) is complete. Phase 2 adds real booking.

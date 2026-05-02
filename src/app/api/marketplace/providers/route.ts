@@ -171,7 +171,12 @@ export async function GET(request: Request) {
     }
 
     // Build where clause for filtering
-    const where: any = { isActive: true };
+    // Gate: only show providers with an active/trialing listing subscription (or no subscription yet during grace period)
+    // Providers with CANCELED or PAST_DUE status are hidden
+    const where: any = {
+      isActive: true,
+      NOT: { listingStatus: { in: ['CANCELED', 'PAST_DUE', 'INCOMPLETE', 'INCOMPLETE_EXPIRED'] } },
+    };
     
     // Text search in bio, business name, or contact name
     if (q) {

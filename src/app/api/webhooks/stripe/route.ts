@@ -85,6 +85,20 @@ async function findDischargePlannerByCustomer(customerId: string) {
 }
 
 /**
+ * Finds a Provider by Stripe customer ID (listing subscription).
+ */
+async function findProviderByCustomer(customerId: string) {
+  return prisma.provider.findUnique({ where: { stripeCustomerId: customerId } });
+}
+
+/**
+ * Finds a Caregiver by Stripe customer ID (pro subscription).
+ */
+async function findCaregiverByProCustomer(customerId: string) {
+  return prisma.caregiver.findUnique({ where: { proStripeCustomerId: customerId } });
+}
+
+/**
  * POST /api/webhooks/stripe
  *
  * Handles Stripe webhook events:
@@ -210,6 +224,38 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ received: true }, { status: 200 });
       }
 
+      // Check provider listing subscription
+      const provider = await findProviderByCustomer(customerId);
+      if (provider) {
+        await prisma.provider.update({
+          where: { id: provider.id },
+          data: {
+            stripeSubscriptionId: sub.id,
+            listingStatus: status,
+            ...(currentPeriodEndsAt !== null && { listingPeriodEndsAt: currentPeriodEndsAt }),
+          },
+        });
+        logger.info("Provider listing subscription updated", { providerId: provider.id, status, subscriptionId: sub.id });
+        return NextResponse.json({ received: true }, { status: 200 });
+      }
+
+      // Check caregiver pro subscription
+      const caregiver = await findCaregiverByProCustomer(customerId);
+      if (caregiver) {
+        const isActive = status === SubscriptionStatus.ACTIVE || status === SubscriptionStatus.TRIALING;
+        await prisma.caregiver.update({
+          where: { id: caregiver.id },
+          data: {
+            proStripeSubscriptionId: sub.id,
+            proStatus: status,
+            isPro: isActive,
+            ...(currentPeriodEndsAt !== null && { proPeriodEndsAt: currentPeriodEndsAt }),
+          },
+        });
+        logger.info("Caregiver pro subscription updated", { caregiverId: caregiver.id, status, isPro: isActive });
+        return NextResponse.json({ received: true }, { status: 200 });
+      }
+
       logger.info("Subscription event for unknown customer", { customerId, subscriptionId: sub.id });
       return NextResponse.json({ received: true }, { status: 200 });
     }
@@ -235,6 +281,28 @@ export async function POST(request: NextRequest) {
           data: { subscriptionStatus: SubscriptionStatus.CANCELED },
         });
         logger.info("Discharge planner subscription canceled", { profileId: dpProfile.id });
+        return NextResponse.json({ received: true }, { status: 200 });
+      }
+
+      // Provider listing canceled
+      const providerCanceled = await findProviderByCustomer(customerId);
+      if (providerCanceled) {
+        await prisma.provider.update({
+          where: { id: providerCanceled.id },
+          data: { listingStatus: SubscriptionStatus.CANCELED },
+        });
+        logger.info("Provider listing subscription canceled", { providerId: providerCanceled.id });
+        return NextResponse.json({ received: true }, { status: 200 });
+      }
+
+      // Caregiver pro canceled
+      const caregiverCanceled = await findCaregiverByProCustomer(customerId);
+      if (caregiverCanceled) {
+        await prisma.caregiver.update({
+          where: { id: caregiverCanceled.id },
+          data: { proStatus: SubscriptionStatus.CANCELED, isPro: false },
+        });
+        logger.info("Caregiver pro subscription canceled", { caregiverId: caregiverCanceled.id });
         return NextResponse.json({ received: true }, { status: 200 });
       }
 

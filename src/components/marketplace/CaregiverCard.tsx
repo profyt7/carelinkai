@@ -21,6 +21,7 @@ interface CaregiverCardProps {
     reviewCount?: number | null;
     badges?: string[];
     distanceMiles?: number;
+    isPro?: boolean;
   };
 }
 
@@ -151,6 +152,12 @@ const CaregiverCard: React.FC<CaregiverCardProps> = ({ caregiver }) => {
         
         {/* Badges row */}
         <div className="flex flex-wrap gap-2 mb-3">
+          {/* Pro badge */}
+          {caregiver.isPro && (
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-secondary-600 text-white">
+              ★ Pro
+            </span>
+          )}
           {/* Background check status */}
           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getBackgroundCheckBadgeColor(caregiver.backgroundCheckStatus)}`}>
             <FiCheckCircle className="mr-1" size={12} />
