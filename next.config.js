@@ -10,6 +10,10 @@ const nextConfig = {
   outputFileTracingIncludes: {
     '**': ['./node_modules/pdfkit/js/data/**'],
   },
+
+  // Don't bundle pdfkit with webpack — it resolves font paths via __dirname
+  // which breaks when bundled into .next/server/chunks. Keep it as a real node_modules dep.
+  serverExternalPackages: ['pdfkit'],
   
   // Force new build ID on each deployment for cache busting
   generateBuildId: async () => {
