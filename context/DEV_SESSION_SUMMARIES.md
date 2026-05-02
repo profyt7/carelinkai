@@ -2,6 +2,32 @@
 
 ---
 
+### 2026-05-02 — Provider Listing Fee, Pro Caregiver Tier, Background Check Markup
+
+- **Objective:** Implement three new revenue streams from competitive research: Provider marketplace listing fee ($99/mo), Pro Caregiver subscription ($19/mo), and background check price markup.
+- **Work completed:**
+  1. **Background check markup** — BackgroundCheckOrderPanel: ENHANCED $19.99→$34.99, MVR $9.99→$19.99, PREMIUM $39.99→$59.99.
+  2. **Prisma schema** — Provider: `stripeCustomerId`, `stripeSubscriptionId`, `listingStatus`, `listingPeriodEndsAt`. Caregiver: `isPro`, `proStripeCustomerId`, `proStripeSubscriptionId`, `proStatus`, `proPeriodEndsAt`, `applicationCount`, `applicationCountResetAt`.
+  3. **Migration** — `20260502000003_add_provider_listing_and_pro_caregiver`.
+  4. **Provider billing APIs** — `POST /api/provider/billing/subscribe` + `POST /api/provider/billing/portal`.
+  5. **Caregiver billing APIs** — `POST /api/caregiver/billing/subscribe` + `POST /api/caregiver/billing/portal`.
+  6. **Webhook** — Extended `customer.subscription.*` handlers to sync Provider `listingStatus` and Caregiver `isPro`/`proStatus`.
+  7. **Marketplace visibility gate** — Provider API WHERE excludes CANCELED/PAST_DUE/INCOMPLETE; null = grace period.
+  8. **Caregiver search boost** — `isPro: 'desc'` prepended to all Prisma orderBy; ★ Pro badge on CaregiverCard.
+  9. **Billing UI** — `/settings/provider/billing` (Provider Marketplace Listing) + `/settings/billing` (Pro Caregiver).
+  10. **Profile API** — Exposed billing fields for Provider and Caregiver.
+  11. **Settings index** — Billing cards for PROVIDER and CAREGIVER roles.
+  12. **Open loops OL-027 through OL-034** added; OL-027/028/029 closed.
+  13. **TypeScript** — 0 errors. Squash-merged as PR #503 (commit `214035b` on main).
+- **Files changed:** `prisma/schema.prisma`, migration (new), 4 new API routes, `src/app/api/webhooks/stripe/route.ts`, `src/app/api/marketplace/providers/route.ts`, `src/app/api/marketplace/caregivers/route.ts`, `src/app/api/profile/route.ts`, `src/components/marketplace/CaregiverCard.tsx`, `src/components/marketplace/BackgroundCheckOrderPanel.tsx`, `src/app/settings/provider/billing/page.tsx` (new), `src/app/settings/billing/page.tsx` (new), `src/app/settings/page.tsx`
+- **Commands run:** `npx prisma generate`, `npx tsc --noEmit`, `git commit`, `git push`, PR #503 squash-merged
+- **Tests/build status:** TypeScript 0 errors. No Playwright run (sandbox).
+- **Deployment impact:** Migration auto-runs on Render deploy. Two new env vars needed: `STRIPE_PRICE_PROVIDER_LISTING` + `STRIPE_PRICE_PRO_CAREGIVER`.
+- **New risks/blockers:** Application cap display-only — enforcement (block API, monthly reset cron) not yet built.
+- **Recommended next step:** (1) Create Stripe products + set `STRIPE_PRICE_PROVIDER_LISTING`/`STRIPE_PRICE_PRO_CAREGIVER` in Render. (2) Update `PLACEMENT_FEE_CENTS` to `150000` in Render. (3) Build application cap enforcement.
+
+---
+
 ### 2026-05-02 — Phase 1 Transport Marketplace UI Complete
 
 - **Objective:** Complete the UI layer for Phase 1 NEMT transportation marketplace features (schema and APIs were already done in the same day's earlier session segment).

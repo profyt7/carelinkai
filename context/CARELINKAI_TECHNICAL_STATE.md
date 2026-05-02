@@ -31,7 +31,7 @@ https://carelinkai.onrender.com (also: https://getcarelinkai.com)
 | AI — All features | Anthropic Claude API (`claude-sonnet-4-6`, `claude-haiku-4-5-20251001`) |
 
 ## Schema Summary
-67+ Prisma models + enums. New since 2026-04-27: `DischargePlannerLicenseType` enum (INDIVIDUAL/DEPARTMENT), `AffiliateReferralType` enum (OPERATOR/FAMILY), `CommissionTier` enum (STANDARD/SILVER/GOLD). New fields: `DischargePlannerProfile.licenseType + seatCount`, `Family.referredByCode`, `AffiliateReferral.referralType`, `Affiliate.commissionTier`. `SubscriptionPlan` enum: +AGENCY. Migration: `20260427000000_revenue_model_expansion`.
+67+ Prisma models + enums. New since 2026-04-27: `DischargePlannerLicenseType` enum (INDIVIDUAL/DEPARTMENT), `AffiliateReferralType` enum (OPERATOR/FAMILY), `CommissionTier` enum (STANDARD/SILVER/GOLD). New fields: `DischargePlannerProfile.licenseType + seatCount`, `Family.referredByCode`, `AffiliateReferral.referralType`, `Affiliate.commissionTier`. `SubscriptionPlan` enum: +AGENCY. Migration: `20260427000000_revenue_model_expansion`. **2026-05-02:** `Provider` adds `stripeCustomerId`, `stripeSubscriptionId`, `listingStatus`, `listingPeriodEndsAt`; `Caregiver` adds `isPro`, `proStripeCustomerId`, `proStripeSubscriptionId`, `proStatus`, `proPeriodEndsAt`, `applicationCount`, `applicationCountResetAt`. Migration: `20260502000003_add_provider_listing_and_pro_caregiver`.
 
 ## User Roles
 FAMILY, OPERATOR, CAREGIVER, ADMIN, STAFF, PROVIDER, AFFILIATE, DISCHARGE_PLANNER
@@ -83,6 +83,11 @@ FAMILY, OPERATOR, CAREGIVER, ADMIN, STAFF, PROVIDER, AFFILIATE, DISCHARGE_PLANNE
 - **Financing CTAs:** CareCredit affiliate links on /learn and home listing pricing tab
 - **Compliance document kits:** 3 Ohio ALF kits ($149-$199); one-time Stripe checkout; ComplianceKitPurchase model; /operator/compliance-kits
 
+## Provider Listing + Pro Caregiver Billing (as of 2026-05-02)
+- **Provider Marketplace Listing ($99/mo):** Stripe Checkout + Customer Portal at `/settings/provider/billing`. Webhook syncs `listingStatus`. CANCELED/PAST_DUE/INCOMPLETE providers hidden from marketplace. Null = grace period. Requires `STRIPE_PRICE_PROVIDER_LISTING` env var.
+- **Pro Caregiver ($19/mo):** Stripe Checkout + Customer Portal at `/settings/billing`. `isPro=true` on ACTIVE/TRIALING. Pro caregivers rank first in all searches (`isPro: desc` orderBy). ★ Pro badge on CaregiverCard. `applicationCount` tracked (enforcement not yet built). Requires `STRIPE_PRICE_PRO_CAREGIVER` env var.
+- **Background check markup:** ENHANCED $34.99, MVR $19.99, PREMIUM $59.99.
+
 ## Transport Marketplace (Phase 1 — as of 2026-05-02)
 - **Provider transport fields:** `rideTypes[]`, `wheelchairAccessible`, `acceptsMedicaid`, `serviceRadius`, `allowsRecurring` on Provider model. Migration: `20260502000002_add_transport_fields`.
 - **Lead transport context:** `transportDetails Json?` on Lead — stores tripPurpose, mobilityNeeds, isRecurring, recurringDays, pickupAddress, dropoffAddress.
@@ -121,7 +126,9 @@ These MUST be set on Render for production to work:
 - [ ] `STRIPE_PRICE_STARTER` ← required for subscription checkout
 - [ ] `STRIPE_PRICE_PROFESSIONAL` ← required for subscription checkout
 - [ ] `STRIPE_PRICE_GROWTH` ← required for subscription checkout
-- [ ] `PLACEMENT_FEE_CENTS` = `50000` (default $500)
+- [ ] `PLACEMENT_FEE_CENTS` = `150000` (**raise from $500 → $1,500** — OL-030)
+- [ ] `STRIPE_PRICE_PROVIDER_LISTING` ← **NEW — $99/mo provider marketplace listing**
+- [ ] `STRIPE_PRICE_PRO_CAREGIVER` ← **NEW — $19/mo pro caregiver subscription**
 - [ ] `WALLET_FEE_PCT` = `2.5` ← **NEW — Care Wallet service fee**
 - [ ] `DEFAULT_AFFILIATE_COMMISSION_PCT` = `20` ← **NEW — affiliate commission %**
 - [ ] `TWILIO_ACCOUNT_SID` ← **NEW — SMS notifications**
@@ -175,7 +182,9 @@ See `REVENUE_MODEL.md` for the full breakdown. 12 streams finalized:
 - **Components polished:** StatCard (left-border accent + trend), skeleton-loader (shimmer + HomeCardSkeleton), tabs (real tokens), breadcrumbs, confirm-dialog, error, not-found, login page, search page.
 
 ## Immediate Next Priorities
-1. **Run Playwright smoke tests** across all 7 demo roles: `npm run test:e2e:prod`
-2. **Switch Stripe to live mode** when ready — follow runbook in `context/STRIPE_SETUP_RUNBOOK.md`
-3. **Set Checkr API keys** in Render: `CHECKR_API_KEY`, `CHECKR_WEBHOOK_SECRET`; register webhook at `https://getcarelinkai.com/api/webhooks/checkr`
-4. Continue manual testing across all portals and report bugs as found
+1. **Set new Stripe price env vars in Render** — Create $99/mo (Provider Listing) and $19/mo (Pro Caregiver) products in Stripe dashboard; set `STRIPE_PRICE_PROVIDER_LISTING` + `STRIPE_PRICE_PRO_CAREGIVER` in Render.
+2. **Raise placement fee** — Update `PLACEMENT_FEE_CENTS` to `150000` in Render (OL-030).
+3. **Build application cap enforcement** — Increment `applicationCount` on caregiver apply, block when over limit, monthly reset cron.
+4. **Run Playwright smoke tests** across all 7 demo roles: `npm run test:e2e:prod`
+5. **Switch Stripe to live mode** when ready — follow runbook in `context/STRIPE_SETUP_RUNBOOK.md`
+6. **Set Checkr API keys** in Render: `CHECKR_API_KEY`, `CHECKR_WEBHOOK_SECRET`; register webhook at `https://getcarelinkai.com/api/webhooks/checkr`

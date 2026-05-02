@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-05-02 (session 2)_
+_Last updated: 2026-05-02 (session 3)_
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -7,6 +7,43 @@ Each loop: what it is, why it matters, what done looks like.
 ---
 
 ## 🔴 Critical (Blocking Revenue / Demos)
+
+### OL-027: Provider listing fee ($99/mo)
+- **Status:** ✅ CLOSED (2026-05-02)
+- Schema fields + migration, Stripe Checkout + Customer Portal APIs, webhook handler, visibility gate in marketplace API, billing UI at `/settings/provider/billing`. Requires `STRIPE_PRICE_PROVIDER_LISTING` env var in Render.
+
+### OL-028: Pro Caregiver tier ($19/mo)
+- **Status:** ✅ CLOSED (2026-05-02)
+- Schema fields + migration, Stripe Checkout + Customer Portal APIs, webhook handler, `isPro: desc` search boost in all sort orders, ★ Pro badge on CaregiverCard, billing UI at `/settings/billing`. `applicationCount` tracked — enforcement (block/reset cron) still pending. Requires `STRIPE_PRICE_PRO_CAREGIVER` env var in Render.
+
+### OL-029: Background check markup
+- **Status:** ✅ CLOSED (2026-05-02)
+- BackgroundCheckOrderPanel: ENHANCED $34.99, MVR $19.99, PREMIUM $59.99. Basic remains $0 (lead magnet).
+
+### OL-030: Raise placement fee — update PLACEMENT_FEE_CENTS to $1,500 in Render
+- **Status:** 🟡 PENDING CHRIS ACTION
+- Change `PLACEMENT_FEE_CENTS` from `50000` to `150000` in Render dashboard. A Place for Mom charges $5,000-7,000 — $1,500 is still 75% cheaper and 3x our current rate.
+- **No code change needed** — just update the env var in Render → Environment.
+
+### OL-031: Application cap enforcement for basic caregivers
+- **Status:** 🟡 OPEN — `applicationCount` field exists in DB but enforcement not built
+- **What:** Increment `applicationCount` on every job application submitted by a basic caregiver; block when `applicationCount >= 10`; monthly reset cron on 1st of month; surface remaining count in the app form.
+
+### OL-032: Family subscription tier ($19-29/mo "CareLinkAI Plus")
+- **Status:** 🟡 ROADMAP — build after provider + caregiver tiers validated
+- Priority matching, unlimited saves, document storage, Care Concierge priority.
+
+### OL-033: Corporate elder care B2B (employee benefit)
+- **Status:** 🟡 ROADMAP — requires sales conversations before build
+- Pitch HR departments: $X/employee/month. One mid-size company = $5K-20K/year MRR spike.
+
+### OL-034: Caregiver CE training / certification courses
+- **Status:** 🟡 ROADMAP — partnership-dependent
+- $15-30/course for CE credits. Partner with accredited CE provider.
+
+### OL-035: Insurance/benefits navigation service
+- **Status:** 🟡 ROADMAP — needs human process designed first
+- Flat-fee ($99-199) for Medicaid waiver, VA Aid & Attendance, LTC insurance claims navigation.
 
 ### OL-026: Transport Phase 2 — ride booking + dispatch
 - **Status:** 🟡 OPEN — Phase 1 (metadata + inquiry) is complete. Phase 2 adds real booking.
