@@ -14,8 +14,6 @@ async function getProviderDashboardData(userId: string) {
       isActive: true,
       businessName: true,
       listingStatus: true,
-      city: true,
-      state: true,
     },
   });
 
@@ -65,9 +63,7 @@ export default async function ProviderDashboard() {
         <h1 className="text-3xl font-bold text-neutral-900 mb-1">Welcome back, {displayName}</h1>
         {provider?.businessName && (
           <p className="text-neutral-500 flex items-center gap-1 text-sm">
-            {provider.city && provider.state && (
-              <><FiMapPin size={13} className="shrink-0" />{provider.city}, {provider.state} · </>
-            )}
+            <FiMapPin size={13} className="shrink-0" />
             {provider.businessName}
           </p>
         )}

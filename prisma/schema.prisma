@@ -200,6 +200,14 @@ model Caregiver {
   /// Home address coordinates for proximity-based shift ranking
   homeLat                  Float?
   homeLng                  Float?
+  // Pro Caregiver subscription ($19/mo)
+  isPro                    Boolean                  @default(false)
+  proStripeCustomerId      String?                  @unique
+  proStripeSubscriptionId  String?                  @unique
+  proStatus                SubscriptionStatus?
+  proPeriodEndsAt          DateTime?
+  applicationCount         Int                      @default(0)
+  applicationCountResetAt  DateTime?
   user                     User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
   assignments              CaregiverAssignment[]
   certifications           CaregiverCertification[]
@@ -402,6 +410,11 @@ model Provider {
   acceptsMedicaid       Boolean              @default(false)
   serviceRadius         Int?                 // miles
   allowsRecurring       Boolean              @default(false)
+  // Marketplace listing subscription ($99/mo)
+  stripeCustomerId      String?              @unique
+  stripeSubscriptionId  String?              @unique
+  listingStatus         SubscriptionStatus?
+  listingPeriodEndsAt   DateTime?
   createdAt             DateTime             @default(now())
   updatedAt             DateTime             @updatedAt
   shortlistedByFamilies FavoriteProvider[]
@@ -415,6 +428,7 @@ model Provider {
   @@index([isVerified])
   @@index([isActive])
   @@index([serviceTypes])
+  @@index([listingStatus])
   @@index([createdAt])
 }
 

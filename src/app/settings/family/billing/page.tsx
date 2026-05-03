@@ -99,7 +99,7 @@ export default function FamilyBillingPage() {
   const isPastDue = billing?.plusStatus === "PAST_DUE";
 
   return (
-    <DashboardLayout>
+    <DashboardLayout title="CareLinkAI Plus">
       <div className="max-w-2xl mx-auto p-6">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-neutral-900">CareLinkAI Plus</h1>
