@@ -148,6 +148,9 @@ export async function GET(request: NextRequest) {
             id: true,
             emergencyContact: true,
             emergencyPhone: true,
+            plusStatus: true,
+            plusPeriodEndsAt: true,
+            isPlus: true,
             residents: {
               select: {
                 id: true,
@@ -306,9 +309,13 @@ export async function GET(request: NextRequest) {
       }
     });
     
-    // Return combined profile data
+    // Return combined profile data.
+    // Also expose roleSpecificData under a named key (e.g. "provider", "caregiver", "family")
+    // so billing pages can access data.provider?.listingStatus etc. directly.
+    const roleKey = user.role.toLowerCase();
     return NextResponse.json({
       success: true,
+      [roleKey]: roleSpecificData,
       data: {
         user,
         roleSpecificData,

@@ -20,6 +20,7 @@ async function getAdminStats() {
     activeProvidersCount,
     dpIndividualSeats,
     dpDepartmentCount,
+    familyPlusCount,
   ] = await Promise.all([
     prisma.user.count(),
     prisma.assistedLivingHome.count(),
@@ -42,6 +43,7 @@ async function getAdminStats() {
     (prisma as any).dischargePlannerProfile.count({
       where: { subscriptionStatus: { in: ['ACTIVE', 'TRIALING'] }, licenseType: 'DEPARTMENT' },
     }),
+    prisma.family.count({ where: { plusStatus: { in: ['ACTIVE', 'TRIALING'] } } }),
   ]);
 
   const operatorMRR = (activeOperators as any[]).reduce((sum: number, op: any) => {
@@ -53,7 +55,8 @@ async function getAdminStats() {
   const providerMRR = (activeProvidersCount as number) * 99;
   const caregiverProMRR = (proCaregiversCount as number) * 19;
   const dpMRR = ((dpIndividualSeats as any)._sum?.seatCount ?? 0) * 99 + (dpDepartmentCount as number) * 499;
-  const totalMRR = operatorMRR + providerMRR + caregiverProMRR + dpMRR;
+  const familyPlusMRR = (familyPlusCount as number) * 19;
+  const totalMRR = operatorMRR + providerMRR + caregiverProMRR + dpMRR + familyPlusMRR;
 
   return {
     userCount,
@@ -62,13 +65,14 @@ async function getAdminStats() {
     inquiryCount,
     placementCount,
     activeUsers,
-    mrr: { operator: operatorMRR, provider: providerMRR, caregiver: caregiverProMRR, dp: dpMRR, total: totalMRR },
+    mrr: { operator: operatorMRR, provider: providerMRR, caregiver: caregiverProMRR, dp: dpMRR, familyPlus: familyPlusMRR, total: totalMRR },
     mrrCounts: {
       operators: (activeOperators as any[]).length,
       providers: activeProvidersCount as number,
       proCaregiversCount: proCaregiversCount as number,
       dpIndividualSeats: (dpIndividualSeats as any)._sum?.seatCount ?? 0,
       dpDepartment: dpDepartmentCount as number,
+      familyPlus: familyPlusCount as number,
     },
   };
 }
@@ -232,7 +236,7 @@ export default async function AdminDashboard() {
             <FiDollarSign className="text-success-600 text-xl" />
             <h2 className="text-xl font-bold text-neutral-900">Revenue Overview (Est. MRR)</h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
             <div className="lg:col-span-1 bg-gradient-to-br from-success-500 to-success-600 rounded-lg p-5 text-white">
               <p className="text-sm font-medium text-success-100">Total MRR</p>
               <p className="text-3xl font-bold mt-1">${stats.mrr.total.toLocaleString()}</p>
@@ -271,6 +275,14 @@ export default async function AdminDashboard() {
               <p className="text-xs text-neutral-500 mt-1">
                 {stats.mrrCounts.dpIndividualSeats} seats · {stats.mrrCounts.dpDepartment} dept
               </p>
+            </div>
+            <div className="bg-white rounded-lg border border-neutral-200 p-5">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Families Plus</p>
+                <FiCreditCard className="text-pink-400 text-sm" />
+              </div>
+              <p className="text-2xl font-bold text-neutral-900">${stats.mrr.familyPlus.toLocaleString()}</p>
+              <p className="text-xs text-neutral-500 mt-1">{stats.mrrCounts.familyPlus} active · $19/mo</p>
             </div>
           </div>
         </div>

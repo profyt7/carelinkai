@@ -15,6 +15,7 @@ export default function SettingsIndexPage() {
     { href: "/settings/profile", title: "Profile", desc: "Personal info, photo", icon: <FiUser className="h-5 w-5" /> },
     ...(role === "FAMILY" ? [
       { href: "/settings/family", title: "Family Profile", desc: "Care context & details", icon: <FiUser className="h-5 w-5" /> },
+      { href: "/settings/family/billing", title: "CareLinkAI Plus", desc: "Priority matching · $19/mo", icon: <FiCreditCard className="h-5 w-5" /> },
     ] : []),
     ...(role === "OPERATOR" ? [
       { href: "/settings/operator", title: "Operator Profile", desc: "Company & business info", icon: <FiUser className="h-5 w-5" /> },

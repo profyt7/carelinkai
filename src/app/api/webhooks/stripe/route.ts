@@ -99,6 +99,13 @@ async function findCaregiverByProCustomer(customerId: string) {
 }
 
 /**
+ * Finds a Family by Stripe customer ID (Plus subscription).
+ */
+async function findFamilyByCustomer(customerId: string) {
+  return prisma.family.findUnique({ where: { stripeCustomerId: customerId } });
+}
+
+/**
  * POST /api/webhooks/stripe
  *
  * Handles Stripe webhook events:
@@ -256,6 +263,23 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ received: true }, { status: 200 });
       }
 
+      // Check family Plus subscription
+      const family = await findFamilyByCustomer(customerId);
+      if (family) {
+        const isActive = status === SubscriptionStatus.ACTIVE || status === SubscriptionStatus.TRIALING;
+        await prisma.family.update({
+          where: { id: family.id },
+          data: {
+            stripeSubscriptionId: sub.id,
+            plusStatus: status,
+            isPlus: isActive,
+            ...(currentPeriodEndsAt !== null && { plusPeriodEndsAt: currentPeriodEndsAt }),
+          },
+        });
+        logger.info("Family Plus subscription updated", { familyId: family.id, status, isPlus: isActive });
+        return NextResponse.json({ received: true }, { status: 200 });
+      }
+
       logger.info("Subscription event for unknown customer", { customerId, subscriptionId: sub.id });
       return NextResponse.json({ received: true }, { status: 200 });
     }
@@ -303,6 +327,17 @@ export async function POST(request: NextRequest) {
           data: { proStatus: SubscriptionStatus.CANCELED, isPro: false },
         });
         logger.info("Caregiver pro subscription canceled", { caregiverId: caregiverCanceled.id });
+        return NextResponse.json({ received: true }, { status: 200 });
+      }
+
+      // Family Plus canceled
+      const familyCanceled = await findFamilyByCustomer(customerId);
+      if (familyCanceled) {
+        await prisma.family.update({
+          where: { id: familyCanceled.id },
+          data: { plusStatus: SubscriptionStatus.CANCELED, isPlus: false },
+        });
+        logger.info("Family Plus subscription canceled", { familyId: familyCanceled.id });
         return NextResponse.json({ received: true }, { status: 200 });
       }
 

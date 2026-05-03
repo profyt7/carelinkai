@@ -15,6 +15,7 @@ import {
 } from "react-icons/fi";
 import ApplicationActions from "../ApplicationActions";
 import LeaveReviewButton from "./LeaveReviewButton";
+import BackgroundCheckOrderPanel from "@/components/marketplace/BackgroundCheckOrderPanel";
 import Image from "next/image";
 
 export const dynamic = "force-dynamic";
@@ -266,6 +267,15 @@ export default async function ApplicationDetailPage({
               operatorPlan={operatorPlan}
               onActionComplete={() => {}}
             />
+
+            {/* Background check — operators can order directly from the application */}
+            <div className="pt-2">
+              <BackgroundCheckOrderPanel
+                caregiverId={application.caregiver.id}
+                caregiverFirstName={application.caregiver.user.firstName ?? ""}
+                existingStatus={application.caregiver.backgroundCheckStatus}
+              />
+            </div>
           </div>
         </div>
       </div>

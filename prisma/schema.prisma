@@ -117,6 +117,12 @@ model Family {
   recipientAge            Int?
   relationshipToRecipient String?
   referredByCode          String?               // affiliate ?ref= code captured at registration
+  // CareLinkAI Plus subscription ($19/mo)
+  stripeCustomerId        String?               @unique
+  stripeSubscriptionId    String?               @unique
+  plusStatus              SubscriptionStatus?
+  plusPeriodEndsAt        DateTime?
+  isPlus                  Boolean               @default(false)
   activities              ActivityFeedItem[]
   bookings                Booking[]
   emergencyPreferences    EmergencyPreference[]

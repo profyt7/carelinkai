@@ -212,6 +212,15 @@ const navItems: NavItem[] = [
     roleRestriction: ["CAREGIVER"],
   },
 
+  // 8b-iii. Family Plus
+  {
+    name: "CareLinkAI Plus",
+    icon: <FiCreditCard size={20} />,
+    href: "/settings/family/billing",
+    showInMobileBar: false,
+    roleRestriction: ["FAMILY"],
+  },
+
   // 8b. Affiliate Dashboard (affiliate-only)
   {
     name: "Affiliate Dashboard",

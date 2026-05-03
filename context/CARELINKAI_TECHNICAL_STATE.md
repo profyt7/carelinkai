@@ -130,6 +130,7 @@ These MUST be set on Render for production to work:
 - [x] `PLACEMENT_FEE_CENTS` = `150000` ✅ updated 2026-05-02 — placement fee now $1,500
 - [x] `STRIPE_PRICE_PROVIDER_LISTING` ✅ set 2026-05-02 — $99/mo provider listing
 - [x] `STRIPE_PRICE_PRO_CAREGIVER` ✅ set 2026-05-02 — $19/mo pro caregiver
+- [ ] `STRIPE_PRICE_FAMILY_PLUS` ← **NEW — $19/mo CareLinkAI Plus family subscription**
 - [ ] `WALLET_FEE_PCT` = `2.5` ← **NEW — Care Wallet service fee**
 - [ ] `DEFAULT_AFFILIATE_COMMISSION_PCT` = `20` ← **NEW — affiliate commission %**
 - [ ] `TWILIO_ACCOUNT_SID` ← **NEW — SMS notifications**
