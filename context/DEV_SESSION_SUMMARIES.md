@@ -2,6 +2,62 @@
 
 ---
 
+### 2026-05-03 — Admin MRR Dashboard, Application Cap Enforcement, Provider Dashboard Fix
+
+- **Objective:** (1) Add full MRR visibility to admin dashboard across all 4 revenue streams. (2) Enforce the 10-application cap for basic caregivers (enforcement was display-only since 2026-05-02). (3) Fix provider dashboard routing + billing nav gaps. (4) Update landing page copy for freemium accuracy.
+- **Work completed:**
+  1. **Provider dashboard routing** — `/dashboard/page.tsx` was missing `case 'PROVIDER'` in the switch statement, causing providers to see the family UI. Added `case 'PROVIDER': redirect('/provider')`.
+  2. **Billing nav for PROVIDER + CAREGIVER** — Added "Listing & Billing" (`/settings/provider/billing`) for PROVIDER and "Pro Membership" (`/settings/billing`) for CAREGIVER to `DashboardLayout.tsx` navItems. Audited all 8 roles — OPERATOR, ADMIN, DISCHARGE_PLANNER, PROVIDER, CAREGIVER all have billing links; FAMILY/AFFILIATE/STAFF correctly have none.
+  3. **Provider dashboard redesign** — `/provider/page.tsx` fully rewritten: 3 stat tiles (New Inquiries 7d, Active Inquiries, Listing status badge), smart banners (activate listing / payment past due / verification pending), 4-card quick actions grid, Recent Inquiries table with status badges and empty state CTAs.
+  4. **Landing page freemium copy** — Updated 5 spots that said "caregivers always free" to reflect the freemium model (free to join, Pro $19/mo optional). Updated provider tab to show $99/mo listing fee.
+  5. **Admin MRR dashboard** — `src/app/admin/page.tsx` now queries all 4 revenue streams: Operator subscriptions (STARTER=$99, PROFESSIONAL=$249, GROWTH=$499), Provider listings ($99 × active count), Pro Caregivers ($19 × active count), Discharge Planners ($99/seat INDIVIDUAL + $499 flat DEPARTMENT). Renders a 5-tile Revenue Overview section (Total MRR green gradient tile + one tile per stream with subscriber counts).
+  6. **Application cap enforcement** — `POST /api/marketplace/applications` now: (a) blocks basic caregivers when `applicationCount >= 10` with 403 + `upgradeRequired: true` + `upgradeUrl: /settings/billing`; (b) increments `applicationCount` on every successful submission (both Pro and basic — tracked for all, enforced for basic only).
+  7. **Monthly reset cron** — New endpoint `GET /api/cron/reset-application-counts`: resets `applicationCount = 0` and stamps `applicationCountResetAt` for all non-Pro caregivers. Protected by `CRON_SECRET` Bearer header. Render cron job created by Chris (`0 0 1 * *`).
+  8. **Upsell banner** — `ListingActions.tsx` now detects `upgradeRequired: true` in 403 response and replaces the form with a Pro upsell card: "You've reached your 10-application limit" + "Upgrade to Pro — $19/mo" CTA → `/settings/billing`. Dismiss button clears the banner.
+- **Files changed:**
+  - `src/app/dashboard/page.tsx` — added PROVIDER case
+  - `src/components/layout/DashboardLayout.tsx` — billing nav for PROVIDER + CAREGIVER
+  - `src/app/provider/page.tsx` — full rewrite
+  - `src/app/page.tsx` — 5 landing page copy changes
+  - `src/app/admin/page.tsx` — MRR revenue section added
+  - `src/app/api/marketplace/applications/route.ts` — cap check + count increment
+  - `src/app/api/cron/reset-application-counts/route.ts` — new file
+  - `src/app/marketplace/listings/[id]/ListingActions.tsx` — upsell banner
+  - `context/DEV_SESSION_SUMMARIES.md`, `context/CARELINKAI_TECHNICAL_STATE.md`, `context/CARELINKAI_TECH_OPEN_LOOPS.md`
+- **Commands run:** `npx tsc --noEmit` (0 errors), `git commit`, `git push origin claude/review-carelink-docs-49Ycv`
+- **Tests/build status:** TypeScript 0 errors. No Playwright run (sandbox).
+- **Deployment impact:** No new migrations. No new env vars required. Render cron job for `/api/cron/reset-application-counts` created by Chris (schedule: `0 0 1 * *`).
+- **New risks/blockers:** None. All OL-031 work is complete.
+- **Recommended next step:** (1) Merge `claude/review-carelink-docs-49Ycv` and `fix/provider-dashboard-and-billing-nav` branches into main (or cherry-pick to a clean PR). (2) Test the 10-app cap end-to-end with the demo.aide account. (3) Test provider + caregiver Stripe billing flows with the newly set price IDs. (4) Set Checkr API keys once account review completes (OL-023).
+
+---
+
+### 2026-05-02 — Provider Listing Fee, Pro Caregiver Tier, Background Check Markup
+
+- **Objective:** Implement three new revenue streams from competitive research: Provider marketplace listing fee ($99/mo), Pro Caregiver subscription ($19/mo), and background check price markup.
+- **Work completed:**
+  1. **Background check markup** — BackgroundCheckOrderPanel: ENHANCED $19.99→$34.99, MVR $9.99→$19.99, PREMIUM $39.99→$59.99.
+  2. **Prisma schema** — Provider: `stripeCustomerId`, `stripeSubscriptionId`, `listingStatus`, `listingPeriodEndsAt`. Caregiver: `isPro`, `proStripeCustomerId`, `proStripeSubscriptionId`, `proStatus`, `proPeriodEndsAt`, `applicationCount`, `applicationCountResetAt`.
+  3. **Migration** — `20260502000003_add_provider_listing_and_pro_caregiver`.
+  4. **Provider billing APIs** — `POST /api/provider/billing/subscribe` + `POST /api/provider/billing/portal`.
+  5. **Caregiver billing APIs** — `POST /api/caregiver/billing/subscribe` + `POST /api/caregiver/billing/portal`.
+  6. **Webhook** — Extended `customer.subscription.*` handlers to sync Provider `listingStatus` and Caregiver `isPro`/`proStatus`.
+  7. **Marketplace visibility gate** — Provider API WHERE excludes CANCELED/PAST_DUE/INCOMPLETE; null = grace period.
+  8. **Caregiver search boost** — `isPro: 'desc'` prepended to all Prisma orderBy; ★ Pro badge on CaregiverCard.
+  9. **Billing UI** — `/settings/provider/billing` (Provider Marketplace Listing) + `/settings/billing` (Pro Caregiver).
+  10. **Profile API** — Exposed billing fields for Provider and Caregiver.
+  11. **Settings index** — Billing cards for PROVIDER and CAREGIVER roles.
+  12. **Open loops OL-027 through OL-034** added; OL-027/028/029 closed.
+  13. **TypeScript** — 0 errors. Squash-merged as PR #503 (commit `214035b` on main).
+- **Files changed:** `prisma/schema.prisma`, migration (new), 4 new API routes, `src/app/api/webhooks/stripe/route.ts`, `src/app/api/marketplace/providers/route.ts`, `src/app/api/marketplace/caregivers/route.ts`, `src/app/api/profile/route.ts`, `src/components/marketplace/CaregiverCard.tsx`, `src/components/marketplace/BackgroundCheckOrderPanel.tsx`, `src/app/settings/provider/billing/page.tsx` (new), `src/app/settings/billing/page.tsx` (new), `src/app/settings/page.tsx`
+- **Commands run:** `npx prisma generate`, `npx tsc --noEmit`, `git commit`, `git push`, PR #503 squash-merged
+- **Tests/build status:** TypeScript 0 errors. No Playwright run (sandbox).
+- **Deployment impact:** Migration auto-runs on Render deploy. Two new env vars needed: `STRIPE_PRICE_PROVIDER_LISTING` + `STRIPE_PRICE_PRO_CAREGIVER`.
+- **New risks/blockers:** Application cap display-only — enforcement (block API, monthly reset cron) not yet built.
+- **Recommended next step:** (1) Create Stripe products + set `STRIPE_PRICE_PROVIDER_LISTING`/`STRIPE_PRICE_PRO_CAREGIVER` in Render. (2) Update `PLACEMENT_FEE_CENTS` to `150000` in Render. (3) Build application cap enforcement.
+
+---
+
 ### 2026-05-02 — Phase 1 Transport Marketplace UI Complete
 
 - **Objective:** Complete the UI layer for Phase 1 NEMT transportation marketplace features (schema and APIs were already done in the same day's earlier session segment).

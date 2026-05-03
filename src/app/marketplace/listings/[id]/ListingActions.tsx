@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { FiUser, FiCheckCircle, FiAlertCircle } from "react-icons/fi";
+import { FiUser, FiCheckCircle, FiAlertCircle, FiZap } from "react-icons/fi";
 
 interface ListingActionsProps {
   listingId: string;
@@ -30,6 +30,7 @@ export default function ListingActions({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [capReached, setCapReached] = useState(false);
 
   // Check if listing is closed or hired
   const isListingClosed = status === "CLOSED" || status === "HIRED";
@@ -60,6 +61,11 @@ export default function ListingActions({
       
       if (!response.ok) {
         const errorData = await response.json();
+        if (errorData.upgradeRequired) {
+          setCapReached(true);
+          setIsApplying(false);
+          return;
+        }
         throw new Error(errorData.error || "Failed to submit application");
       }
       
@@ -160,6 +166,42 @@ export default function ListingActions({
             >
               Withdraw
             </button>
+          </div>
+        </div>
+      );
+    }
+
+    // Show upsell banner if cap reached
+    if (capReached) {
+      return (
+        <div className="mt-6 border-t border-neutral-200 pt-6">
+          <div className="bg-primary-50 border border-primary-200 rounded-lg p-5">
+            <div className="flex items-start gap-3">
+              <div className="rounded-full bg-primary-100 p-2 shrink-0">
+                <FiZap className="text-primary-600 h-5 w-5" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-primary-900">You've reached your 10-application limit</h3>
+                <p className="text-sm text-primary-700 mt-1">
+                  Free accounts can submit up to 10 applications per month. Upgrade to Pro to apply to unlimited jobs, get a Pro badge, and appear higher in caregiver search results.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <Link
+                    href="/settings/billing"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary-600 text-white text-sm font-semibold rounded-lg hover:bg-primary-700 transition-colors"
+                  >
+                    <FiZap className="h-4 w-4" />
+                    Upgrade to Pro — $19/mo
+                  </Link>
+                  <button
+                    onClick={() => setCapReached(false)}
+                    className="px-4 py-2 text-sm font-medium text-primary-700 bg-white border border-primary-200 rounded-lg hover:bg-primary-50 transition-colors"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       );

@@ -22,10 +22,6 @@ export default function SettingsIndexPage() {
     ] : []),
     ...(role === "PROVIDER" ? [
       { href: "/settings/provider", title: "Provider Profile", desc: "Business info & services", icon: <FiUser className="h-5 w-5" /> },
-      { href: "/settings/provider/billing", title: "Marketplace Listing", desc: "Listing subscription ($99/mo)", icon: <FiCreditCard className="h-5 w-5" /> },
-    ] : []),
-    ...(role === "CAREGIVER" ? [
-      { href: "/settings/billing", title: "Pro Membership", desc: "Upgrade to Pro ($19/mo)", icon: <FiCreditCard className="h-5 w-5" /> },
     ] : []),
     { href: "/settings/account", title: "Account", desc: "Password, security", icon: <FiShield className="h-5 w-5" /> },
     { href: "/settings/notifications", title: "Notifications", desc: "Email & in-app", icon: <FiBell className="h-5 w-5" /> },

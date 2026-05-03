@@ -1,8 +1,8 @@
 # CareLinkAI — Technical State
-_Last updated: 2026-05-01_
+_Last updated: 2026-05-03_
 
 ## Active Branch
-`main` (all features merged — Stripe billing fully verified end-to-end in test mode)
+`claude/review-carelink-docs-49Ycv` (pending merge to main — contains provider dashboard fix, billing nav, admin MRR dashboard, application cap enforcement, upsell UI, landing page copy)
 
 ## Production URL
 https://carelinkai.onrender.com (also: https://getcarelinkai.com)
@@ -31,7 +31,7 @@ https://carelinkai.onrender.com (also: https://getcarelinkai.com)
 | AI — All features | Anthropic Claude API (`claude-sonnet-4-6`, `claude-haiku-4-5-20251001`) |
 
 ## Schema Summary
-67+ Prisma models + enums. New since 2026-04-27: `DischargePlannerLicenseType` enum (INDIVIDUAL/DEPARTMENT), `AffiliateReferralType` enum (OPERATOR/FAMILY), `CommissionTier` enum (STANDARD/SILVER/GOLD). New fields: `DischargePlannerProfile.licenseType + seatCount`, `Family.referredByCode`, `AffiliateReferral.referralType`, `Affiliate.commissionTier`. `SubscriptionPlan` enum: +AGENCY. Migration: `20260427000000_revenue_model_expansion`.
+67+ Prisma models + enums. New since 2026-04-27: `DischargePlannerLicenseType` enum (INDIVIDUAL/DEPARTMENT), `AffiliateReferralType` enum (OPERATOR/FAMILY), `CommissionTier` enum (STANDARD/SILVER/GOLD). New fields: `DischargePlannerProfile.licenseType + seatCount`, `Family.referredByCode`, `AffiliateReferral.referralType`, `Affiliate.commissionTier`. `SubscriptionPlan` enum: +AGENCY. Migration: `20260427000000_revenue_model_expansion`. **2026-05-02:** `Provider` adds `stripeCustomerId`, `stripeSubscriptionId`, `listingStatus`, `listingPeriodEndsAt`; `Caregiver` adds `isPro`, `proStripeCustomerId`, `proStripeSubscriptionId`, `proStatus`, `proPeriodEndsAt`, `applicationCount`, `applicationCountResetAt`. Migration: `20260502000003_add_provider_listing_and_pro_caregiver`.
 
 ## User Roles
 FAMILY, OPERATOR, CAREGIVER, ADMIN, STAFF, PROVIDER, AFFILIATE, DISCHARGE_PLANNER
@@ -83,6 +83,12 @@ FAMILY, OPERATOR, CAREGIVER, ADMIN, STAFF, PROVIDER, AFFILIATE, DISCHARGE_PLANNE
 - **Financing CTAs:** CareCredit affiliate links on /learn and home listing pricing tab
 - **Compliance document kits:** 3 Ohio ALF kits ($149-$199); one-time Stripe checkout; ComplianceKitPurchase model; /operator/compliance-kits
 
+## Provider Listing + Pro Caregiver Billing (as of 2026-05-03)
+- **Provider Marketplace Listing ($99/mo):** Stripe Checkout + Customer Portal at `/settings/provider/billing`. Webhook syncs `listingStatus`. CANCELED/PAST_DUE/INCOMPLETE providers hidden from marketplace. Null = grace period. Requires `STRIPE_PRICE_PROVIDER_LISTING` env var. ✅ Billing nav link added to DashboardLayout.
+- **Pro Caregiver ($19/mo):** Stripe Checkout + Customer Portal at `/settings/billing`. `isPro=true` on ACTIVE/TRIALING. Pro caregivers rank first in all searches (`isPro: desc` orderBy). ★ Pro badge on CaregiverCard. `applicationCount` **fully enforced** — basic caregivers blocked at 10 apps/month with upsell banner; Pro caregivers uncapped. Monthly reset cron live (`0 0 1 * *`). Requires `STRIPE_PRICE_PRO_CAREGIVER` env var. ✅ Billing nav link added to DashboardLayout.
+- **Background check markup:** ENHANCED $34.99, MVR $19.99, PREMIUM $59.99.
+- **Admin MRR dashboard:** `/admin/page.tsx` now shows 5-tile Revenue Overview: Total MRR + per-stream breakdown (Operators, Providers, Pro Caregivers, Discharge Planners) with live counts.
+
 ## Transport Marketplace (Phase 1 — as of 2026-05-02)
 - **Provider transport fields:** `rideTypes[]`, `wheelchairAccessible`, `acceptsMedicaid`, `serviceRadius`, `allowsRecurring` on Provider model. Migration: `20260502000002_add_transport_fields`.
 - **Lead transport context:** `transportDetails Json?` on Lead — stores tripPurpose, mobilityNeeds, isRecurring, recurringDays, pickupAddress, dropoffAddress.
@@ -121,7 +127,9 @@ These MUST be set on Render for production to work:
 - [ ] `STRIPE_PRICE_STARTER` ← required for subscription checkout
 - [ ] `STRIPE_PRICE_PROFESSIONAL` ← required for subscription checkout
 - [ ] `STRIPE_PRICE_GROWTH` ← required for subscription checkout
-- [ ] `PLACEMENT_FEE_CENTS` = `50000` (default $500)
+- [x] `PLACEMENT_FEE_CENTS` = `150000` ✅ updated 2026-05-02 — placement fee now $1,500
+- [x] `STRIPE_PRICE_PROVIDER_LISTING` ✅ set 2026-05-02 — $99/mo provider listing
+- [x] `STRIPE_PRICE_PRO_CAREGIVER` ✅ set 2026-05-02 — $19/mo pro caregiver
 - [ ] `WALLET_FEE_PCT` = `2.5` ← **NEW — Care Wallet service fee**
 - [ ] `DEFAULT_AFFILIATE_COMMISSION_PCT` = `20` ← **NEW — affiliate commission %**
 - [ ] `TWILIO_ACCOUNT_SID` ← **NEW — SMS notifications**
@@ -175,7 +183,9 @@ See `REVENUE_MODEL.md` for the full breakdown. 12 streams finalized:
 - **Components polished:** StatCard (left-border accent + trend), skeleton-loader (shimmer + HomeCardSkeleton), tabs (real tokens), breadcrumbs, confirm-dialog, error, not-found, login page, search page.
 
 ## Immediate Next Priorities
-1. **Run Playwright smoke tests** across all 7 demo roles: `npm run test:e2e:prod`
-2. **Switch Stripe to live mode** when ready — follow runbook in `context/STRIPE_SETUP_RUNBOOK.md`
-3. **Set Checkr API keys** in Render: `CHECKR_API_KEY`, `CHECKR_WEBHOOK_SECRET`; register webhook at `https://getcarelinkai.com/api/webhooks/checkr`
-4. Continue manual testing across all portals and report bugs as found
+1. **Merge pending branches to main** — `claude/review-carelink-docs-49Ycv` + `fix/provider-dashboard-and-billing-nav` contain provider dashboard fix, billing nav, admin MRR, app cap enforcement, upsell UI, landing page copy. Merge → triggers Render deploy.
+2. **Test application cap end-to-end** — Use `demo.aide@carelinkai.test` to submit 10 applications and verify upsell banner appears on the 11th.
+3. **Test provider + caregiver billing end-to-end** — Verify Stripe Checkout and Customer Portal flows with the newly set price IDs in test mode before going live.
+4. **Run Playwright smoke tests** across all 7 demo roles: `npm run test:e2e:prod`
+5. **Switch Stripe to live mode** when ready — follow runbook in `context/STRIPE_SETUP_RUNBOOK.md`
+6. **Set Checkr API keys** in Render: `CHECKR_API_KEY`, `CHECKR_WEBHOOK_SECRET`; register webhook at `https://getcarelinkai.com/api/webhooks/checkr` (OL-023, unblocked once account review completes)

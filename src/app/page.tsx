@@ -1259,7 +1259,7 @@ export default function HomePage() {
                       <span className="bg-success-500 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">$0 to Join</span>
                     </div>
                     <p className="text-success-800 text-sm leading-relaxed max-w-xl">
-                      Families search, book tours, and connect at no cost — forever. Caregivers create profiles, apply for jobs, and get hired free. Optionally upgrade to Pro ($19/mo) for boosted search placement and unlimited applications.
+                      Families search, book tours, and connect at no cost — forever. Caregivers create profiles, apply for jobs, and get hired free. Caregivers can optionally upgrade to Pro ($19/mo) for boosted search placement and unlimited applications.
                     </p>
                   </div>
                 </div>
