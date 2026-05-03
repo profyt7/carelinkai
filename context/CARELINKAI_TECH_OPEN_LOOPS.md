@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-05-02 (session 3)_
+_Last updated: 2026-05-03_
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -24,8 +24,8 @@ Each loop: what it is, why it matters, what done looks like.
 - **Status:** ✅ CLOSED (2026-05-02) — Chris updated `PLACEMENT_FEE_CENTS` to `150000` in Render dashboard. Placement fee is now $1,500.
 
 ### OL-031: Application cap enforcement for basic caregivers
-- **Status:** 🟡 OPEN — `applicationCount` field exists in DB but enforcement not built
-- **What:** Increment `applicationCount` on every job application submitted by a basic caregiver; block when `applicationCount >= 10`; monthly reset cron on 1st of month; surface remaining count in the app form.
+- **Status:** ✅ CLOSED (2026-05-03)
+- POST route blocks at 10 apps with 403 + `upgradeRequired: true`; `applicationCount` incremented on every submit; monthly reset cron at `/api/cron/reset-application-counts` (Render cron `0 0 1 * *` created); `ListingActions.tsx` shows Pro upsell banner with CTA to `/settings/billing`.
 
 ### OL-032: Family subscription tier ($19-29/mo "CareLinkAI Plus")
 - **Status:** 🟡 ROADMAP — build after provider + caregiver tiers validated
@@ -234,3 +234,9 @@ Each loop: what it is, why it matters, what done looks like.
 | Landing page auth wall | Added alwaysPublic paths in middleware authorized callback | 2026-05-02 |
 | PDFKit Helvetica.afm ENOENT in standalone | Added serverExternalPackages: ['pdfkit'] to next.config.js | 2026-05-02 |
 | ReportGenerator homes 404 | Changed /api/homes to /api/operator/homes in fetchHomes() | 2026-05-02 |
+| Provider dashboard routing | /dashboard switch missing PROVIDER case — fell through to family UI; fixed | 2026-05-03 |
+| Billing nav missing for PROVIDER + CAREGIVER | Added "Listing & Billing" + "Pro Membership" nav entries to DashboardLayout | 2026-05-03 |
+| Provider dashboard design | Full rewrite with stat tiles, smart banners, quick actions, inquiries table | 2026-05-03 |
+| Landing page freemium inaccuracy | Updated 5 "always free" references to reflect free-to-join + Pro $19/mo optional model | 2026-05-03 |
+| Admin MRR visibility | Admin dashboard now shows 5-tile MRR breakdown across all 4 revenue streams | 2026-05-03 |
+| OL-031: Application cap enforcement | Full enforcement built: block at 10, increment on submit, reset cron, upsell banner | 2026-05-03 |

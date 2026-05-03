@@ -2,6 +2,36 @@
 
 ---
 
+### 2026-05-03 — Admin MRR Dashboard, Application Cap Enforcement, Provider Dashboard Fix
+
+- **Objective:** (1) Add full MRR visibility to admin dashboard across all 4 revenue streams. (2) Enforce the 10-application cap for basic caregivers (enforcement was display-only since 2026-05-02). (3) Fix provider dashboard routing + billing nav gaps. (4) Update landing page copy for freemium accuracy.
+- **Work completed:**
+  1. **Provider dashboard routing** — `/dashboard/page.tsx` was missing `case 'PROVIDER'` in the switch statement, causing providers to see the family UI. Added `case 'PROVIDER': redirect('/provider')`.
+  2. **Billing nav for PROVIDER + CAREGIVER** — Added "Listing & Billing" (`/settings/provider/billing`) for PROVIDER and "Pro Membership" (`/settings/billing`) for CAREGIVER to `DashboardLayout.tsx` navItems. Audited all 8 roles — OPERATOR, ADMIN, DISCHARGE_PLANNER, PROVIDER, CAREGIVER all have billing links; FAMILY/AFFILIATE/STAFF correctly have none.
+  3. **Provider dashboard redesign** — `/provider/page.tsx` fully rewritten: 3 stat tiles (New Inquiries 7d, Active Inquiries, Listing status badge), smart banners (activate listing / payment past due / verification pending), 4-card quick actions grid, Recent Inquiries table with status badges and empty state CTAs.
+  4. **Landing page freemium copy** — Updated 5 spots that said "caregivers always free" to reflect the freemium model (free to join, Pro $19/mo optional). Updated provider tab to show $99/mo listing fee.
+  5. **Admin MRR dashboard** — `src/app/admin/page.tsx` now queries all 4 revenue streams: Operator subscriptions (STARTER=$99, PROFESSIONAL=$249, GROWTH=$499), Provider listings ($99 × active count), Pro Caregivers ($19 × active count), Discharge Planners ($99/seat INDIVIDUAL + $499 flat DEPARTMENT). Renders a 5-tile Revenue Overview section (Total MRR green gradient tile + one tile per stream with subscriber counts).
+  6. **Application cap enforcement** — `POST /api/marketplace/applications` now: (a) blocks basic caregivers when `applicationCount >= 10` with 403 + `upgradeRequired: true` + `upgradeUrl: /settings/billing`; (b) increments `applicationCount` on every successful submission (both Pro and basic — tracked for all, enforced for basic only).
+  7. **Monthly reset cron** — New endpoint `GET /api/cron/reset-application-counts`: resets `applicationCount = 0` and stamps `applicationCountResetAt` for all non-Pro caregivers. Protected by `CRON_SECRET` Bearer header. Render cron job created by Chris (`0 0 1 * *`).
+  8. **Upsell banner** — `ListingActions.tsx` now detects `upgradeRequired: true` in 403 response and replaces the form with a Pro upsell card: "You've reached your 10-application limit" + "Upgrade to Pro — $19/mo" CTA → `/settings/billing`. Dismiss button clears the banner.
+- **Files changed:**
+  - `src/app/dashboard/page.tsx` — added PROVIDER case
+  - `src/components/layout/DashboardLayout.tsx` — billing nav for PROVIDER + CAREGIVER
+  - `src/app/provider/page.tsx` — full rewrite
+  - `src/app/page.tsx` — 5 landing page copy changes
+  - `src/app/admin/page.tsx` — MRR revenue section added
+  - `src/app/api/marketplace/applications/route.ts` — cap check + count increment
+  - `src/app/api/cron/reset-application-counts/route.ts` — new file
+  - `src/app/marketplace/listings/[id]/ListingActions.tsx` — upsell banner
+  - `context/DEV_SESSION_SUMMARIES.md`, `context/CARELINKAI_TECHNICAL_STATE.md`, `context/CARELINKAI_TECH_OPEN_LOOPS.md`
+- **Commands run:** `npx tsc --noEmit` (0 errors), `git commit`, `git push origin claude/review-carelink-docs-49Ycv`
+- **Tests/build status:** TypeScript 0 errors. No Playwright run (sandbox).
+- **Deployment impact:** No new migrations. No new env vars required. Render cron job for `/api/cron/reset-application-counts` created by Chris (schedule: `0 0 1 * *`).
+- **New risks/blockers:** None. All OL-031 work is complete.
+- **Recommended next step:** (1) Merge `claude/review-carelink-docs-49Ycv` and `fix/provider-dashboard-and-billing-nav` branches into main (or cherry-pick to a clean PR). (2) Test the 10-app cap end-to-end with the demo.aide account. (3) Test provider + caregiver Stripe billing flows with the newly set price IDs. (4) Set Checkr API keys once account review completes (OL-023).
+
+---
+
 ### 2026-05-02 — Provider Listing Fee, Pro Caregiver Tier, Background Check Markup
 
 - **Objective:** Implement three new revenue streams from competitive research: Provider marketplace listing fee ($99/mo), Pro Caregiver subscription ($19/mo), and background check price markup.
