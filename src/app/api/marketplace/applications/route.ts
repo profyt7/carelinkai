@@ -144,10 +144,24 @@ export async function POST(request: Request) {
     const caregiver = await (prisma as any).caregiver.findUnique({
       where: { userId: session.user.id }
     });
-    
+
     if (!caregiver) {
       return NextResponse.json(
         { error: 'Only caregivers can apply for listings' },
+        { status: 403 }
+      );
+    }
+
+    // Enforce application cap for basic (non-Pro) caregivers
+    const APP_LIMIT = 10;
+    if (!caregiver.isPro && (caregiver.applicationCount ?? 0) >= APP_LIMIT) {
+      return NextResponse.json(
+        {
+          error: `You've reached the ${APP_LIMIT}-application limit for free accounts. Upgrade to Pro to apply to unlimited jobs.`,
+          upgradeRequired: true,
+          limit: APP_LIMIT,
+          upgradeUrl: '/settings/billing',
+        },
         { status: 403 }
       );
     }
@@ -196,6 +210,12 @@ export async function POST(request: Request) {
         note: body.note || null,
         status: 'APPLIED'
       }
+    });
+
+    // Increment application count for basic caregivers (Pro caregivers are uncapped but still tracked)
+    await (prisma as any).caregiver.update({
+      where: { id: caregiver.id },
+      data: { applicationCount: { increment: 1 } },
     });
 
     // Notify listing owner of new application (in-app + email)

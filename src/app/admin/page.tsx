@@ -1,27 +1,59 @@
 import { redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth';
 import authOptions from '@/lib/auth';
-import { FiUsers, FiHome, FiActivity, FiTrendingUp, FiMessageSquare, FiFileText, FiAlertCircle } from 'react-icons/fi';
+import { FiUsers, FiHome, FiActivity, FiTrendingUp, FiMessageSquare, FiFileText, FiAlertCircle, FiDollarSign, FiCreditCard } from 'react-icons/fi';
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
 async function getAdminStats() {
-  const [userCount, homeCount, caregiverCount, inquiryCount, placementCount, activeUsers] = await Promise.all([
+  const [
+    userCount,
+    homeCount,
+    caregiverCount,
+    inquiryCount,
+    placementCount,
+    activeUsers,
+    activeOperators,
+    proCaregiversCount,
+    activeProvidersCount,
+    dpIndividualSeats,
+    dpDepartmentCount,
+  ] = await Promise.all([
     prisma.user.count(),
     prisma.assistedLivingHome.count(),
     prisma.user.count({ where: { role: 'CAREGIVER' } }),
     prisma.inquiry.count(),
     prisma.placementSearch.count(),
     prisma.user.count({
-      where: {
-        lastLoginAt: {
-          gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
-        },
-      },
+      where: { lastLoginAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
+    }),
+    prisma.operator.findMany({
+      where: { subscriptionStatus: { in: ['ACTIVE', 'TRIALING'] } },
+      select: { subscriptionPlan: true },
+    }),
+    (prisma as any).caregiver.count({ where: { proStatus: { in: ['ACTIVE', 'TRIALING'] } } }),
+    (prisma as any).provider.count({ where: { listingStatus: { in: ['ACTIVE', 'TRIALING'] } } }),
+    (prisma as any).dischargePlannerProfile.aggregate({
+      where: { subscriptionStatus: { in: ['ACTIVE', 'TRIALING'] }, licenseType: 'INDIVIDUAL' },
+      _sum: { seatCount: true },
+    }),
+    (prisma as any).dischargePlannerProfile.count({
+      where: { subscriptionStatus: { in: ['ACTIVE', 'TRIALING'] }, licenseType: 'DEPARTMENT' },
     }),
   ]);
+
+  const operatorMRR = (activeOperators as any[]).reduce((sum: number, op: any) => {
+    const price = op.subscriptionPlan === 'STARTER' ? 99
+      : op.subscriptionPlan === 'PROFESSIONAL' ? 249
+      : op.subscriptionPlan === 'GROWTH' ? 499 : 0;
+    return sum + price;
+  }, 0);
+  const providerMRR = (activeProvidersCount as number) * 99;
+  const caregiverProMRR = (proCaregiversCount as number) * 19;
+  const dpMRR = ((dpIndividualSeats as any)._sum?.seatCount ?? 0) * 99 + (dpDepartmentCount as number) * 499;
+  const totalMRR = operatorMRR + providerMRR + caregiverProMRR + dpMRR;
 
   return {
     userCount,
@@ -30,6 +62,14 @@ async function getAdminStats() {
     inquiryCount,
     placementCount,
     activeUsers,
+    mrr: { operator: operatorMRR, provider: providerMRR, caregiver: caregiverProMRR, dp: dpMRR, total: totalMRR },
+    mrrCounts: {
+      operators: (activeOperators as any[]).length,
+      providers: activeProvidersCount as number,
+      proCaregiversCount: proCaregiversCount as number,
+      dpIndividualSeats: (dpIndividualSeats as any)._sum?.seatCount ?? 0,
+      dpDepartment: dpDepartmentCount as number,
+    },
   };
 }
 
@@ -182,6 +222,55 @@ export default async function AdminDashboard() {
               <div className="p-3 bg-warning-100 rounded-lg">
                 <FiFileText className="text-warning-600 text-2xl" />
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* MRR Revenue Overview */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <FiDollarSign className="text-success-600 text-xl" />
+            <h2 className="text-xl font-bold text-neutral-900">Revenue Overview (Est. MRR)</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="lg:col-span-1 bg-gradient-to-br from-success-500 to-success-600 rounded-lg p-5 text-white">
+              <p className="text-sm font-medium text-success-100">Total MRR</p>
+              <p className="text-3xl font-bold mt-1">${stats.mrr.total.toLocaleString()}</p>
+              <p className="text-xs text-success-200 mt-1">Active + trialing</p>
+            </div>
+            <div className="bg-white rounded-lg border border-neutral-200 p-5">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Operators</p>
+                <FiCreditCard className="text-primary-400 text-sm" />
+              </div>
+              <p className="text-2xl font-bold text-neutral-900">${stats.mrr.operator.toLocaleString()}</p>
+              <p className="text-xs text-neutral-500 mt-1">{stats.mrrCounts.operators} active · $99–$499/mo</p>
+            </div>
+            <div className="bg-white rounded-lg border border-neutral-200 p-5">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Providers</p>
+                <FiCreditCard className="text-secondary-400 text-sm" />
+              </div>
+              <p className="text-2xl font-bold text-neutral-900">${stats.mrr.provider.toLocaleString()}</p>
+              <p className="text-xs text-neutral-500 mt-1">{stats.mrrCounts.providers} active · $99/mo</p>
+            </div>
+            <div className="bg-white rounded-lg border border-neutral-200 p-5">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Pro Caregivers</p>
+                <FiCreditCard className="text-warning-400 text-sm" />
+              </div>
+              <p className="text-2xl font-bold text-neutral-900">${stats.mrr.caregiver.toLocaleString()}</p>
+              <p className="text-xs text-neutral-500 mt-1">{stats.mrrCounts.proCaregiversCount} active · $19/mo</p>
+            </div>
+            <div className="bg-white rounded-lg border border-neutral-200 p-5">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Discharge Planners</p>
+                <FiCreditCard className="text-teal-400 text-sm" />
+              </div>
+              <p className="text-2xl font-bold text-neutral-900">${stats.mrr.dp.toLocaleString()}</p>
+              <p className="text-xs text-neutral-500 mt-1">
+                {stats.mrrCounts.dpIndividualSeats} seats · {stats.mrrCounts.dpDepartment} dept
+              </p>
             </div>
           </div>
         </div>
