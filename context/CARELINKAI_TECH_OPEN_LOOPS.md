@@ -36,6 +36,40 @@ Each loop: what it is, why it matters, what done looks like.
 - **Status:** ✅ CLOSED (prior session — exact date unknown)
 - `plusStatus` + `isPlus` on Family model; `POST /api/family/billing/subscribe` (Stripe Checkout); `POST /api/family/billing/portal`; webhook syncs `plusStatus` on subscription events; billing UI at `/settings/family/billing` with feature list ($19/mo, 14-day trial); Plus nav item in sidebar with amber highlight; admin MRR tile shows `familyPlusMRR`. Requires `STRIPE_PRICE_FAMILY_PLUS` env var.
 
+### OL-042: Operator transport bundle / subscription pricing
+- **Status:** 🟡 ROADMAP — build after 2-3 operators are running 15+ rides/month
+- **What:** Optional "Transport Pass" add-on to operator SaaS subscription. Facility pays $X/month for Y rides; CareLinkAI fulfills at provider rates and pockets the margin. Requires knowing real usage patterns before pricing correctly.
+- **Why not now:** Need provider supply depth to guarantee fulfillment before selling bundles. Current transactional model is correct for families and early-stage operators.
+- **Done when:** 2-3 operators actively using transport → price a pilot bundle → build billing UI + ride quota tracking.
+
+### OL-043: Provider compliance-as-a-service
+- **Status:** 🟡 ROADMAP — needed before payer/Medicaid contracts
+- **What:** Providers upload driver credentials (background check, drug test, CPR cert, vehicle inspection, insurance). System tracks expiration dates, auto-flags approaching expiry, auto-deactivates on expiry. "CareLinkAI Certified" badge on marketplace listing.
+- **Why it matters:** Contract eligibility for Medicaid brokers (MTM, Modivcare) requires proof of credentialing. Positions CareLinkAI as the gatekeeper/compliance layer.
+- **Done when:** Provider can upload + track expiry on 5+ credential types; expired providers hidden from marketplace.
+
+### OL-044: Guaranteed Ride SLA
+- **Status:** 🟡 ROADMAP — positioning differentiator, needs supply depth first
+- **What:** "If we miss a ride, it's free + $50 credit." Requires: fallback provider network, SLA breach detection (cron checks rides 30 min before scheduled time with no driver confirmed), automatic credit issuance.
+- **Why it matters:** Nobody in NEMT confidently offers this. Becomes a no-brainer for facilities choosing between CareLinkAI and legacy brokers.
+- **Done when:** Fallback network exists (3+ providers in market) + SLA breach cron + credit logic built.
+
+### OL-045: SMS text-to-book dispatch
+- **Status:** 🟡 ROADMAP — requires Twilio + NLP integration
+- **What:** Staff texts "Ride for Margaret tomorrow 2pm to Cleveland Clinic dialysis" → system parses and books. No app required. Removes last barrier for non-tech staff at facilities.
+- **Done when:** Twilio webhook parses inbound SMS → confirms booking → replies with confirmation text.
+
+### OL-046: Medicaid / payer billing architecture
+- **Status:** 🟡 ROADMAP — design now, build when first payer contract is in hand
+- **What:** Trip verification data (actualPickupAt, actualDropoffAt, GPS) formatted for Medicaid claim submission. Prior authorization workflow. Eligibility verification before booking. EDI 837 claim format or broker API (Modivcare, MTM).
+- **Why:** This is where the real scale is — $16B NEMT market runs through payer contracts, not consumer credit cards. Current schema (trip verification, ride classification, no-show cause) is designed to support this.
+- **Done when:** First payer/broker contract signed → build claims pipeline.
+
+### OL-047: Health outcomes data layer
+- **Status:** 🟡 ROADMAP — long-term strategic asset
+- **What:** Aggregate: missed appointment rate, ride frequency, no-show patterns. Generate report: "CareLinkAI reduced missed appointments by 18% for [Facility]." Sell this story to Medicare Advantage plans as a readmission-reduction tool.
+- **Done when:** 6+ months of ride data + reporting dashboard built for facility admins.
+
 ### OL-033: Corporate elder care B2B (employee benefit)
 - **Status:** 🟡 ROADMAP — requires sales conversations before build
 - Pitch HR departments: $X/employee/month. One mid-size company = $5K-20K/year MRR spike.
