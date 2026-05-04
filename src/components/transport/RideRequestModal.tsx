@@ -78,8 +78,14 @@ export default function RideRequestModal({
   const [tripPurpose, setTripPurpose] = useState("medical_appointment");
   const [passengerCount, setPassengerCount] = useState(1);
 
+  // Step 2 — Passenger needs
+  const [mobilityLevel, setMobilityLevel] = useState("AMBULATORY");
+  const [doorToDoorLevel, setDoorToDoorLevel] = useState("DOOR_TO_DOOR");
+  const [needsOxygen, setNeedsOxygen] = useState(false);
+  const [hasCompanion, setHasCompanion] = useState(false);
+  const [cognitionNote, setCognitionNote] = useState(false);
+  const [hasServiceAnimal, setHasServiceAnimal] = useState(false);
   // Step 2 — Ride options
-  const [wheelchairRequired, setWheelchairRequired] = useState(false);
   const [waitTimeMinutes, setWaitTimeMinutes] = useState(0);
   const [needsReturn, setNeedsReturn] = useState(false);
   const [returnScheduledAt, setReturnScheduledAt] = useState("");
@@ -145,8 +151,14 @@ export default function RideRequestModal({
           tripPurpose,
           passengerCount,
           specialRequests: specialRequests.trim() || undefined,
-          // options
-          wheelchairRequired,
+          // passenger needs
+          mobilityLevel,
+          doorToDoorLevel,
+          needsOxygen,
+          hasCompanion,
+          cognitionNote,
+          hasServiceAnimal,
+          // ride options
           waitTimeMinutes: waitTimeMinutes || undefined,
           // return trip
           needsReturn,
@@ -340,21 +352,111 @@ export default function RideRequestModal({
                 Step 2 of 3 — Ride Options
               </p>
 
-              {/* Wheelchair */}
-              <label className="flex items-start gap-3 p-3 rounded-lg border border-neutral-200 hover:border-primary-300 cursor-pointer transition-colors">
-                <input
-                  type="checkbox"
-                  checked={wheelchairRequired}
-                  onChange={(e) => setWheelchairRequired(e.target.checked)}
-                  className="h-4 w-4 mt-0.5 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
-                />
-                <span>
-                  <span className="text-sm font-medium text-neutral-800">Wheelchair accessible vehicle needed</span>
-                  <span className="block text-xs text-neutral-500 mt-0.5">
-                    Driver will arrive with a wheelchair-accessible van
-                  </span>
-                </span>
-              </label>
+              {/* Mobility level */}
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-2">Passenger Mobility</label>
+                <div className="grid grid-cols-1 gap-2">
+                  {[
+                    { value: "AMBULATORY",  label: "Walks independently",          desc: "No mobility aid needed" },
+                    { value: "ASSISTED",    label: "Needs walking assistance",      desc: "Driver helps passenger walk" },
+                    { value: "WHEELCHAIR",  label: "Uses a wheelchair",             desc: "Wheelchair-accessible vehicle required" },
+                    { value: "STRETCHER",   label: "Stretcher / gurney transport",  desc: "Reclined transport only" },
+                    { value: "BARIATRIC",   label: "Bariatric — extra space needed", desc: "Oversized vehicle or lift required" },
+                  ].map((opt) => (
+                    <label
+                      key={opt.value}
+                      className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                        mobilityLevel === opt.value
+                          ? "border-primary-500 bg-primary-50"
+                          : "border-neutral-200 hover:border-primary-300"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="mobilityLevel"
+                        value={opt.value}
+                        checked={mobilityLevel === opt.value}
+                        onChange={() => setMobilityLevel(opt.value)}
+                        className="mt-0.5 text-primary-600 focus:ring-primary-500"
+                      />
+                      <span>
+                        <span className="text-sm font-medium text-neutral-800">{opt.label}</span>
+                        <span className="block text-xs text-neutral-500">{opt.desc}</span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Service level */}
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-1">
+                  Driver Service Level
+                </label>
+                <select
+                  value={doorToDoorLevel}
+                  onChange={(e) => setDoorToDoorLevel(e.target.value)}
+                  className="form-input w-full"
+                >
+                  <option value="CURB_TO_CURB">Curb-to-curb — driver waits at the vehicle</option>
+                  <option value="DOOR_TO_DOOR">Door-to-door — driver walks to/from the door</option>
+                  <option value="DOOR_THROUGH_DOOR">Door-through-door — driver assists through the doorway</option>
+                  <option value="BED_TO_BED">Bed-to-bed — full in-home assistance to/from bed</option>
+                </select>
+              </div>
+
+              {/* Additional needs checkboxes */}
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-2">Additional Needs</label>
+                <div className="space-y-2">
+                  {[
+                    {
+                      key: "needsOxygen",
+                      checked: needsOxygen,
+                      onChange: setNeedsOxygen,
+                      label: "Portable oxygen equipment",
+                      desc: "Passenger travels with an oxygen tank or concentrator",
+                    },
+                    {
+                      key: "hasCompanion",
+                      checked: hasCompanion,
+                      onChange: setHasCompanion,
+                      label: "Companion / escort riding along",
+                      desc: "A family member or caregiver will accompany the passenger",
+                    },
+                    {
+                      key: "cognitionNote",
+                      checked: cognitionNote,
+                      onChange: setCognitionNote,
+                      label: "Memory condition — needs patient driver",
+                      desc: "Dementia, Alzheimer's, or cognitive impairment; driver should not leave passenger unattended",
+                    },
+                    {
+                      key: "hasServiceAnimal",
+                      checked: hasServiceAnimal,
+                      onChange: setHasServiceAnimal,
+                      label: "Service animal",
+                      desc: "Passenger travels with a certified service animal",
+                    },
+                  ].map((item) => (
+                    <label
+                      key={item.key}
+                      className="flex items-start gap-3 p-3 rounded-lg border border-neutral-200 hover:border-primary-300 cursor-pointer transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={item.checked}
+                        onChange={(e) => item.onChange(e.target.checked)}
+                        className="h-4 w-4 mt-0.5 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                      />
+                      <span>
+                        <span className="text-sm font-medium text-neutral-800">{item.label}</span>
+                        <span className="block text-xs text-neutral-500 mt-0.5">{item.desc}</span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
 
               {/* Wait time */}
               <div>
@@ -519,10 +621,53 @@ export default function RideRequestModal({
                     {new Date(scheduledAt).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}
                   </span>
                 </div>
-                {wheelchairRequired && (
+                {mobilityLevel !== "AMBULATORY" && (
                   <div className="flex gap-2">
                     <FiCheckCircle className="text-primary-500 mt-0.5 flex-shrink-0" size={14} />
-                    <span className="text-neutral-700">Wheelchair accessible vehicle</span>
+                    <span className="text-neutral-700">
+                      {{
+                        ASSISTED: "Needs walking assistance",
+                        WHEELCHAIR: "Wheelchair-accessible vehicle",
+                        STRETCHER: "Stretcher transport",
+                        BARIATRIC: "Bariatric vehicle needed",
+                      }[mobilityLevel]}
+                    </span>
+                  </div>
+                )}
+                {doorToDoorLevel !== "DOOR_TO_DOOR" && (
+                  <div className="flex gap-2">
+                    <FiCheckCircle className="text-neutral-400 mt-0.5 flex-shrink-0" size={14} />
+                    <span className="text-neutral-700">
+                      {{
+                        CURB_TO_CURB: "Curb-to-curb service",
+                        DOOR_THROUGH_DOOR: "Door-through-door service",
+                        BED_TO_BED: "Bed-to-bed service",
+                      }[doorToDoorLevel]}
+                    </span>
+                  </div>
+                )}
+                {needsOxygen && (
+                  <div className="flex gap-2">
+                    <FiCheckCircle className="text-amber-500 mt-0.5 flex-shrink-0" size={14} />
+                    <span className="text-neutral-700">Portable oxygen required</span>
+                  </div>
+                )}
+                {hasCompanion && (
+                  <div className="flex gap-2">
+                    <FiCheckCircle className="text-neutral-400 mt-0.5 flex-shrink-0" size={14} />
+                    <span className="text-neutral-700">Companion riding along</span>
+                  </div>
+                )}
+                {cognitionNote && (
+                  <div className="flex gap-2">
+                    <FiCheckCircle className="text-amber-500 mt-0.5 flex-shrink-0" size={14} />
+                    <span className="text-neutral-700">Memory condition — patient driver needed</span>
+                  </div>
+                )}
+                {hasServiceAnimal && (
+                  <div className="flex gap-2">
+                    <FiCheckCircle className="text-neutral-400 mt-0.5 flex-shrink-0" size={14} />
+                    <span className="text-neutral-700">Service animal</span>
                   </div>
                 )}
                 {waitTimeMinutes > 0 && (
