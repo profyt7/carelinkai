@@ -58,6 +58,15 @@ type Provider = {
   acceptsMedicaid: boolean;
   serviceRadius: number | null;
   allowsRecurring: boolean;
+  rideStats: {
+    totalRides: number;
+    completedRides: number;
+    completionRate: number;
+    onTimeRate: number;
+    reliabilityScore: number;
+    hasEnoughData: boolean;
+    noShowBreakdown: Record<string, number>;
+  } | null;
 };
 
 const serviceTypeOptions = [
@@ -434,6 +443,51 @@ export default function ProviderDetailPage() {
                     </div>
                   </div>
                 )}
+
+                {/* Dispatch Reliability */}
+                {provider.rideStats && (
+                  <div className="mt-5 pt-4 border-t border-neutral-100">
+                    <h3 className="text-sm font-medium text-neutral-700 mb-3">Dispatch Reliability</h3>
+                    {provider.rideStats.hasEnoughData ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-neutral-500">Ride Completion</span>
+                          <div className="flex items-center gap-2 flex-1 ml-4">
+                            <div className="flex-1 h-1.5 bg-neutral-200 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full ${provider.rideStats.completionRate >= 90 ? "bg-success-500" : provider.rideStats.completionRate >= 75 ? "bg-amber-500" : "bg-error-500"}`}
+                                style={{ width: `${provider.rideStats.completionRate}%` }}
+                              />
+                            </div>
+                            <span className="text-xs font-semibold text-neutral-700 w-9 text-right">{provider.rideStats.completionRate}%</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-neutral-500">On-Time Pickup</span>
+                          <div className="flex items-center gap-2 flex-1 ml-4">
+                            <div className="flex-1 h-1.5 bg-neutral-200 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full ${provider.rideStats.onTimeRate >= 90 ? "bg-success-500" : provider.rideStats.onTimeRate >= 75 ? "bg-amber-500" : "bg-error-500"}`}
+                                style={{ width: `${provider.rideStats.onTimeRate}%` }}
+                              />
+                            </div>
+                            <span className="text-xs font-semibold text-neutral-700 w-9 text-right">{provider.rideStats.onTimeRate}%</span>
+                          </div>
+                        </div>
+                        <p className="text-xs text-neutral-400 mt-1">
+                          Based on {provider.rideStats.completedRides} completed ride{provider.rideStats.completedRides !== 1 ? "s" : ""}
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-neutral-400">
+                        {provider.rideStats.completedRides > 0
+                          ? `${provider.rideStats.completedRides} ride${provider.rideStats.completedRides !== 1 ? "s" : ""} completed — building reputation`
+                          : "No completed rides yet — be the first to book!"}
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 {status === "authenticated" && (session?.user?.role === "FAMILY" || session?.user?.role === "OPERATOR" || session?.user?.role === "STAFF") && (
                   <button
                     onClick={() => setShowRideModal(true)}
