@@ -92,6 +92,7 @@ export default function RideRequestModal({
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringFrequency, setRecurringFrequency] = useState("WEEKLY");
   const [recurringEndDate, setRecurringEndDate] = useState("");
+  const [isSharedRide, setIsSharedRide] = useState(false);
   const [specialRequests, setSpecialRequests] = useState("");
 
   // Step 3 — Fare estimate + submit
@@ -171,7 +172,8 @@ export default function RideRequestModal({
           recurringEndDate: isRecurring && recurringEndDate
             ? new Date(recurringEndDate).toISOString()
             : undefined,
-          // fare
+          // shared / fare
+          isSharedRide,
           estimatedMiles: estimate?.miles ?? undefined,
           estimatedFare: estimate?.fare?.total ?? undefined,
           instantBook: estimate?.instantBook ?? false,
@@ -563,6 +565,24 @@ export default function RideRequestModal({
                   </div>
                 </div>
               )}
+
+              {/* Shared ride */}
+              <label className="flex items-start gap-3 p-3 rounded-lg border border-neutral-200 hover:border-primary-300 cursor-pointer transition-colors">
+                <input
+                  type="checkbox"
+                  checked={isSharedRide}
+                  onChange={(e) => setIsSharedRide(e.target.checked)}
+                  className="h-4 w-4 mt-0.5 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                />
+                <span>
+                  <span className="text-sm font-medium text-neutral-800 flex items-center gap-1.5">
+                    <FiUsers size={13} /> Open to shared ride
+                  </span>
+                  <span className="block text-xs text-neutral-500 mt-0.5">
+                    Provider may batch with other passengers heading the same way — typically saves 10–15%
+                  </span>
+                </span>
+              </label>
 
               {/* Notes */}
               <div>

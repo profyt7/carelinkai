@@ -47,6 +47,7 @@ type ProviderForm = {
   ratePerMile: string;
   rateWaitPerHour: string;
   instantBook: boolean;
+  vehicleCapacity: string;
 };
 
 export default function ProviderSettingsPage() {
@@ -73,6 +74,7 @@ export default function ProviderSettingsPage() {
     ratePerMile: "",
     rateWaitPerHour: "",
     instantBook: false,
+    vehicleCapacity: "4",
   });
 
   const isTransport = form.serviceTypes.includes("transportation");
@@ -108,6 +110,7 @@ export default function ProviderSettingsPage() {
             ratePerMile: p.ratePerMile != null ? String(p.ratePerMile) : "",
             rateWaitPerHour: p.rateWaitPerHour != null ? String(p.rateWaitPerHour) : "",
             instantBook: p.instantBook || false,
+            vehicleCapacity: p.vehicleCapacity != null ? String(p.vehicleCapacity) : "4",
           });
         }
       } catch {
@@ -146,6 +149,7 @@ export default function ProviderSettingsPage() {
         ratePerMile: form.ratePerMile ? parseFloat(form.ratePerMile) : null,
         rateWaitPerHour: form.rateWaitPerHour ? parseFloat(form.rateWaitPerHour) : null,
         instantBook: form.instantBook,
+        vehicleCapacity: form.vehicleCapacity ? parseInt(form.vehicleCapacity) : 4,
       };
 
       const res = await fetch("/api/profile", {
@@ -364,6 +368,24 @@ export default function ProviderSettingsPage() {
 
               {/* Pricing & Instant Booking */}
               <div className="border-t border-primary-200 pt-4 space-y-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-primary-900 mb-1">Vehicle & Capacity</h3>
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-40">
+                      <label className="block text-xs font-medium text-neutral-700 mb-1">Max Passengers</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="20"
+                        value={form.vehicleCapacity}
+                        onChange={(e) => setForm((p) => ({ ...p, vehicleCapacity: e.target.value }))}
+                        placeholder="4"
+                        className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
+                      />
+                      <p className="text-xs text-neutral-400 mt-1">Per vehicle run</p>
+                    </div>
+                  </div>
+                </div>
                 <div>
                   <h3 className="text-sm font-semibold text-primary-900 mb-1">Instant Booking Pricing</h3>
                   <p className="text-xs text-primary-700 mb-3">

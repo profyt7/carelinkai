@@ -93,6 +93,7 @@ const providerProfileSchema = baseProfileSchema.extend({
   ratePerMile: z.number().min(0).optional().nullable(),
   rateWaitPerHour: z.number().min(0).optional().nullable(),
   instantBook: z.boolean().optional(),
+  vehicleCapacity: z.number().int().min(1).max(20).optional(),
 });
 
 /**
@@ -264,6 +265,7 @@ export async function GET(request: NextRequest) {
             ratePerMile: true,
             rateWaitPerHour: true,
             instantBook: true,
+            vehicleCapacity: true,
             credentials: {
               select: {
                 id: true,
@@ -583,6 +585,7 @@ export async function PATCH(request: NextRequest) {
             if (rs.ratePerMile !== undefined) updateData.ratePerMile = rs.ratePerMile;
             if (rs.rateWaitPerHour !== undefined) updateData.rateWaitPerHour = rs.rateWaitPerHour;
             if (rs.instantBook !== undefined) updateData.instantBook = rs.instantBook;
+            if (rs.vehicleCapacity !== undefined) updateData.vehicleCapacity = rs.vehicleCapacity;
 
             roleSpecificUpdate = await prisma.provider.update({
               where: { userId },

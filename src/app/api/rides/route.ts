@@ -38,6 +38,7 @@ const createRideSchema = z.object({
   estimatedMiles: z.number().optional(),
   estimatedFare: z.number().optional(),
   instantBook: z.boolean().optional().default(false),
+  isSharedRide: z.boolean().optional().default(false),
 });
 
 export async function POST(req: NextRequest) {
@@ -120,6 +121,7 @@ export async function POST(req: NextRequest) {
       isRecurring: d.isRecurring ?? false,
       recurringFrequency: d.recurringFrequency ?? null,
       recurringEndDate: d.recurringEndDate ? new Date(d.recurringEndDate) : null,
+      isSharedRide: d.isSharedRide ?? false,
       estimatedMiles: d.estimatedMiles ?? null,
       estimatedFare: d.estimatedFare ?? null,
       baseFare: d.estimatedFare ?? null,
@@ -263,7 +265,10 @@ export async function GET(req: NextRequest) {
   }
 
   if (role === "PROVIDER") {
-    const provider = await prisma.provider.findUnique({ where: { userId: session.user.id }, select: { id: true } });
+    const provider = await prisma.provider.findUnique({
+      where: { userId: session.user.id },
+      select: { id: true, vehicleCapacity: true },
+    });
     if (!provider) return NextResponse.json({ rides: [], total: 0 });
     const where = { providerId: provider.id, ...(status ? { status: status as any } : {}) };
     const [rides, total] = await Promise.all([
@@ -276,7 +281,7 @@ export async function GET(req: NextRequest) {
       }),
       prisma.ride.count({ where }),
     ]);
-    return NextResponse.json({ rides, total, page, pageSize });
+    return NextResponse.json({ rides, total, page, pageSize, vehicleCapacity: provider.vehicleCapacity });
   }
 
   return NextResponse.json({ error: "Not supported for this role" }, { status: 403 });
