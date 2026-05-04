@@ -1,8 +1,8 @@
 # CareLinkAI — Technical State
-_Last updated: 2026-05-03_
+_Last updated: 2026-05-04_
 
 ## Active Branch
-`claude/review-carelink-docs-49Ycv` (pending merge to main — contains provider dashboard fix, billing nav, admin MRR dashboard, application cap enforcement, upsell UI, landing page copy)
+`main` — all Transport Phase 2 work + landing page updates committed directly to main (auto-deploys to Render)
 
 ## Production URL
 https://carelinkai.onrender.com (also: https://getcarelinkai.com)
@@ -89,14 +89,16 @@ FAMILY, OPERATOR, CAREGIVER, ADMIN, STAFF, PROVIDER, AFFILIATE, DISCHARGE_PLANNE
 - **Background check markup:** ENHANCED $34.99, MVR $19.99, PREMIUM $59.99.
 - **Admin MRR dashboard:** `/admin/page.tsx` now shows 5-tile Revenue Overview: Total MRR + per-stream breakdown (Operators, Providers, Pro Caregivers, Discharge Planners) with live counts.
 
-## Transport Marketplace (Phase 1 — as of 2026-05-02)
-- **Provider transport fields:** `rideTypes[]`, `wheelchairAccessible`, `acceptsMedicaid`, `serviceRadius`, `allowsRecurring` on Provider model. Migration: `20260502000002_add_transport_fields`.
-- **Lead transport context:** `transportDetails Json?` on Lead — stores tripPurpose, mobilityNeeds, isRecurring, recurringDays, pickupAddress, dropoffAddress.
-- **Provider detail page:** Shows "Transportation Capabilities" section when `serviceTypes` includes `transportation`.
-- **InquiryForm:** Shows trip details section (purpose, pickup/dropoff, mobility, recurring days) when booking a transport provider.
-- **Marketplace filters:** Wheelchair Accessible + Accepts Medicaid checkboxes added to provider tab.
-- **Provider settings:** `/settings/provider` self-service profile editor with transport capabilities section.
-- **Phase 2 (future):** Ride booking calendar, dispatch integration, per-ride payment/commission flow.
+## Transport — Full End-to-End Booking (Phase 2 — as of 2026-05-04)
+- **Phase 1 (complete):** Provider transport fields (`rideTypes[]`, `wheelchairAccessible`, `acceptsMedicaid`, `serviceRadius`), marketplace filters, inquiry form trip details, provider detail transport section.
+- **Ride model:** `Ride` table with full lifecycle enum `REQUESTED → CONFIRMED → PAID → IN_PROGRESS → COMPLETED → CANCELED`. Fields: `familyId?`, `operatorId?`, `providerId`, `residentName?`, `bookedByRole` (FAMILY/OPERATOR), `baseFare`, `platformFeePercent` (default 12%), `platformFee`, `totalAmount`, `stripePaymentIntentId`, `stripeCheckoutSessionId`, `canceledBy`, `cancelReason`. Migrations: `20260504000001` (Ride model) + `20260504000002` (operator fields, nullable familyId).
+- **API routes:** `POST/GET /api/rides` (book + list, role-scoped), `GET/PATCH /api/rides/[id]` (view + cancel + Stripe refund if PAID), `POST /api/rides/[id]/confirm` (provider sets fare), `POST /api/rides/[id]/pay` (Stripe Checkout), `POST /api/rides/[id]/start` (PAID→IN_PROGRESS), `POST /api/rides/[id]/complete` (IN_PROGRESS→COMPLETED).
+- **Stripe integration:** Checkout Session with `metadata.type="RIDE_PAYMENT"`; webhook handler in `/api/webhooks/stripe` sets status→PAID + stores `stripePaymentIntentId`; PAID cancellations trigger `stripe.refunds.create()`.
+- **Email notifications:** Provider notified on new booking; family notified when confirmed (with payment link); provider notified when ride paid; booker (family or operator) notified on completion; cancellation emails to opposing party.
+- **Cron:** `GET /api/cron/ride-reminders` — sends reminder emails to booker + provider for rides within 23–25h window. Protected by `CRON_SECRET`. Render cron added by Chris.
+- **UI:** `/rides` management page with role-adaptive views (provider: Confirm/Decline/Start/Complete; family/operator: Pay/Cancel); `RideRequestModal` with resident name field for operators; `BookTransportButton` on resident detail page; "Book Ride for Resident" button on provider detail page.
+- **Nav:** "My Rides" sidebar nav item added for FAMILY + PROVIDER roles.
+- **Admin:** Transport commissions (12% platform fee × completed rides MTD) in 7th MRR tile on admin dashboard.
 
 ## Known Issues (as of 2026-05-02)
 1. Demo accounts use test Stripe data — when switching to live Stripe, all operator `stripeCustomerId` fields must be cleared and operators re-subscribed
@@ -184,9 +186,10 @@ See `REVENUE_MODEL.md` for the full breakdown. 12 streams finalized:
 - **Components polished:** StatCard (left-border accent + trend), skeleton-loader (shimmer + HomeCardSkeleton), tabs (real tokens), breadcrumbs, confirm-dialog, error, not-found, login page, search page.
 
 ## Immediate Next Priorities
-1. **Merge pending branches to main** — `claude/review-carelink-docs-49Ycv` + `fix/provider-dashboard-and-billing-nav` contain provider dashboard fix, billing nav, admin MRR, app cap enforcement, upsell UI, landing page copy. Merge → triggers Render deploy.
-2. **Test application cap end-to-end** — Use `demo.aide@carelinkai.test` to submit 10 applications and verify upsell banner appears on the 11th.
-3. **Test provider + caregiver billing end-to-end** — Verify Stripe Checkout and Customer Portal flows with the newly set price IDs in test mode before going live.
+1. **Switch Stripe to live mode** — swap all `STRIPE_*` env vars to live keys in Render, re-register webhook at live endpoint, create new Products/Prices in live Stripe dashboard, update `STRIPE_PRICE_*` vars. Runbook: `context/STRIPE_SETUP_RUNBOOK.md`.
+2. **Set Checkr live keys** — set `CHECKR_API_KEY` + `CHECKR_WEBHOOK_SECRET` in Render once account approval received (OL-023).
+3. **Test ride booking end-to-end** — Use `demo.provider@carelinkai.test` + `demo.family@carelinkai.test` to verify full REQUESTED→CONFIRMED→PAID→COMPLETED flow including Stripe Checkout and email notifications.
+4. **Verify ride-reminders cron** — confirm Render cron is firing and emails are delivered for PAID rides within 23–25h window.
 4. **Run Playwright smoke tests** across all 7 demo roles: `npm run test:e2e:prod`
 5. **Switch Stripe to live mode** when ready — follow runbook in `context/STRIPE_SETUP_RUNBOOK.md`
 6. **Set Checkr API keys** in Render: `CHECKR_API_KEY`, `CHECKR_WEBHOOK_SECRET`; register webhook at `https://getcarelinkai.com/api/webhooks/checkr` (OL-023, unblocked once account review completes)

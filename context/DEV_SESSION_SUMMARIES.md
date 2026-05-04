@@ -2,6 +2,49 @@
 
 ---
 
+### 2026-05-04 — Transport Phase 2 (Full Ride Booking) + Landing Page Transport Update
+
+- **Objective:** Build end-to-end transport ride booking (Phase 2) — real bookings with Stripe payment, full lifecycle management, operator booking for residents, and update the landing page to reflect the new capability.
+- **Work completed:**
+  1. **CareLinkAI Plus nav** — Moved Plus subscription link to always-visible nav position with amber upsell gradient for FAMILY users; added `highlight?: boolean` to NavItem interface; mobile tab bar amber color for highlighted items.
+  2. **Ride model (Prisma)** — `Ride` model with `RideStatus` enum (REQUESTED/CONFIRMED/PAID/IN_PROGRESS/COMPLETED/CANCELED), `familyId?` (nullable for operator bookings), `operatorId?`, `bookedByRole`, `platformFeePercent` (default 12%), `baseFare`, `platformFee`, `totalAmount`, `stripePaymentIntentId`, `stripeCheckoutSessionId`. Two migrations: `20260504000001` (base model) + `20260504000002` (operator fields, make familyId nullable).
+  3. **API routes (5):** `POST/GET /api/rides` (create + list, role-scoped), `GET/PATCH /api/rides/[id]` (view + cancel + Stripe refund on PAID), `POST /api/rides/[id]/confirm` (provider sets fare, calculates 12% fee), `POST /api/rides/[id]/pay` (Stripe Checkout Session), `POST /api/rides/[id]/start` (PAID→IN_PROGRESS), `POST /api/rides/[id]/complete` (IN_PROGRESS→COMPLETED + completion email).
+  4. **Stripe integration** — Checkout Session with `metadata.type="RIDE_PAYMENT"`; webhook handler handles `checkout.session.completed` for RIDE_PAYMENT type (sets PAID, stores paymentIntentId, emails provider); PAID cancellations trigger `stripe.refunds.create()`.
+  5. **Email notifications** — Provider: new booking, ride paid; Family/Operator: confirmed (with payment link), completed, canceled; 5 fire-and-forget helpers.
+  6. **Cron** — `GET /api/cron/ride-reminders`: 23–25h window, PAID/IN_PROGRESS rides, emails both booker and provider. Protected by `CRON_SECRET`. Render cron added by Chris.
+  7. **UI** — `/rides` page (role-adaptive: provider Confirm/Start/Complete, family/operator Pay/Cancel); `RideRequestModal` with `isOperator` + `defaultResidentName` props; `BookTransportButton` on `/operator/residents/[id]`; "Book Ride for Resident" button on provider detail page with role-aware modal.
+  8. **Nav** — "My Rides" sidebar item for FAMILY + PROVIDER.
+  9. **Admin MRR** — 7th tile "Transport Fees" showing 12% commission MTD on COMPLETED rides.
+  10. **Landing page** — Families tab: added "Book Transport Rides" benefit; Operators tab: added "Resident Transport Booking" feature; Providers tab: renamed "Qualified Referrals" → "Real Bookings — Not Just Referrals"; Roadmap Now Live: updated Provider Marketplace desc + added "Transport Ride Booking" tile.
+  11. **TypeScript** — 0 errors throughout.
+- **Files changed:**
+  - `src/components/layout/DashboardLayout.tsx` — Plus nav + My Rides nav + highlight styling
+  - `prisma/schema.prisma` — Ride model + RideStatus enum
+  - `prisma/migrations/20260504000001_add_ride_model/migration.sql` (new)
+  - `prisma/migrations/20260504000002_ride_operator_fields/migration.sql` (new)
+  - `src/app/api/rides/route.ts` (new)
+  - `src/app/api/rides/[id]/route.ts` (new)
+  - `src/app/api/rides/[id]/confirm/route.ts` (new)
+  - `src/app/api/rides/[id]/pay/route.ts` (new)
+  - `src/app/api/rides/[id]/start/route.ts` (new)
+  - `src/app/api/rides/[id]/complete/route.ts` (new)
+  - `src/app/api/cron/ride-reminders/route.ts` (new)
+  - `src/app/api/webhooks/stripe/route.ts` — RIDE_PAYMENT handler + notifyProviderRidePaid
+  - `src/app/rides/page.tsx` (new)
+  - `src/components/transport/RideRequestModal.tsx` (new)
+  - `src/components/transport/BookTransportButton.tsx` (new)
+  - `src/app/marketplace/providers/[id]/page.tsx` — Book Ride button + modal
+  - `src/app/operator/residents/[id]/page.tsx` — BookTransportButton
+  - `src/app/admin/page.tsx` — 7th MRR tile + transport commission query
+  - `src/app/page.tsx` — 4 landing page copy updates
+- **Commands run:** `npx tsc --noEmit` (0 errors), multiple `git commit`, `git push origin main`
+- **Tests/build status:** TypeScript 0 errors. No Playwright run (sandbox). Render cron added for ride-reminders.
+- **Deployment impact:** Two new migrations auto-apply on Render deploy. No new env vars required (uses existing `STRIPE_SECRET_KEY`, `RESEND_API_KEY`, `CRON_SECRET`).
+- **New risks/blockers:** None blocking. Transport booking requires both a transport provider AND a family/operator in the network — feature grows with provider network. PAID cancellation refund needs live Stripe keys to test in production.
+- **Recommended next step:** (1) Switch to live Stripe (runbook: `context/STRIPE_SETUP_RUNBOOK.md`). (2) Set Checkr live keys once approved (OL-023). (3) End-to-end test ride booking with demo accounts after Render deploy. (4) Optionally add "Book Transport" to the care home resident detail page for operators (currently only on `/operator/residents/[id]` — not on the standalone resident card).
+
+---
+
 ### 2026-05-03 — Admin MRR Dashboard, Application Cap Enforcement, Provider Dashboard Fix
 
 - **Objective:** (1) Add full MRR visibility to admin dashboard across all 4 revenue streams. (2) Enforce the 10-application cap for basic caregivers (enforcement was display-only since 2026-05-02). (3) Fix provider dashboard routing + billing nav gaps. (4) Update landing page copy for freemium accuracy.

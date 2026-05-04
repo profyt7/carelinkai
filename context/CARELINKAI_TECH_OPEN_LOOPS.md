@@ -44,9 +44,8 @@ Each loop: what it is, why it matters, what done looks like.
 - Flat-fee ($99-199) for Medicaid waiver, VA Aid & Attendance, LTC insurance claims navigation.
 
 ### OL-026: Transport Phase 2 — ride booking + dispatch
-- **Status:** 🟡 OPEN — Phase 1 (metadata + inquiry) is complete. Phase 2 adds real booking.
-- **What:** Ride calendar, per-ride payment flow (10-15% platform fee), dispatch confirmation, SMS/email confirmations to rider and driver.
-- **Done when:** Family can book a ride with a transport provider end-to-end and CareLinkAI collects a commission.
+- **Status:** ✅ CLOSED (2026-05-04)
+- Full end-to-end ride booking live: REQUESTED→CONFIRMED→PAID→IN_PROGRESS→COMPLETED→CANCELED lifecycle. Stripe Checkout payment, 12% platform commission, Stripe refund on PAID cancellation, 5 email triggers, day-of reminder cron, operator resident booking, admin MRR tile, landing page updated. Ride model with 2 migrations deployed.
 
 ### OL-023: Checkr API not yet configured
 - **Status:** 🟡 OPEN — system uses mock fallback until keys are set
