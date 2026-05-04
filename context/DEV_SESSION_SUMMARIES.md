@@ -2,6 +2,29 @@
 
 ---
 
+### 2026-05-04 — Marketplace Filter End-to-End Fix (Providers, Jobs, Categories)
+
+- **Objective:** Fix marketplace filters so transportation and other service type filters actually work for providers, jobs, and caregivers tabs.
+- **Work completed:**
+  1. **Root cause analysis** — Identified 3 provider API bugs: (a) `NOT IN` with NULL listingStatus incorrectly excluded providers without a Stripe subscription; (b) serviceTypes filter only used first value from CSV; (c) `verified` filter applied on empty string. Also identified slug format mismatches between provider settings (underscore) and marketplace categories (hyphen).
+  2. **Provider API fix** — `src/app/api/marketplace/providers/route.ts`: replaced `NOT: { listingStatus: { in: [...] } }` with `OR: [null, notIn([...])]` in AND block to correctly handle NULL. Changed serviceTypes filter from `has: first` to `hasSome: all`. Fixed `verified` to only apply on explicit 'true'/'false'.
+  3. **Provider settings slugs** — `src/app/settings/provider/page.tsx`: changed all underscore service type values to hyphen format (`home_care` → `home-care`, `personal_care` → `personal-care`, etc.) to match marketplace category slug format.
+  4. **Seed categories expanded** — `prisma/seed.ts`: SERVICE categories now include all provider service types + job service types. SETTING, CARE_TYPE, SPECIALTY expanded. All slugs verified globally unique across types.
+  5. **Job listing form** — `src/app/marketplace/listings/new/page.tsx`: SETTINGS/CARE_TYPES/SERVICES/SPECIALTIES constants converted from display strings to `{value: slug, label: displayName}` format. CheckGroup updated to handle new format. New listings now store slugs → filterable by marketplace filter.
+- **Files changed:**
+  - `src/app/api/marketplace/providers/route.ts` — 3 filter bugs fixed
+  - `src/app/settings/provider/page.tsx` — underscore → hyphen service type slugs
+  - `src/app/marketplace/listings/new/page.tsx` — slug-based form values
+  - `prisma/seed.ts` — expanded categories
+  - `context/DEV_SESSION_SUMMARIES.md`, `context/CARELINKAI_TECH_OPEN_LOOPS.md`
+- **Commands run:** `npx tsc --noEmit` (0 errors), `git commit`, `git push origin claude/review-carelink-docs-49Ycv`
+- **Tests/build status:** TypeScript 0 errors.
+- **Deployment impact:** No schema changes. Run `npx prisma db seed` in production to populate new categories. Existing providers with underscore serviceTypes in DB need to re-save their settings page to update to new hyphen slugs.
+- **New risks/blockers:** Existing providers in production DB have old underscore slugs (e.g., `personal_care`). These won't match marketplace filter until provider re-saves settings. Chris needs to log in as demo.provider and re-save `/settings/provider` after seed runs.
+- **Recommended next step:** (1) Merge to main and let Render deploy. (2) Run `npx prisma db seed` in Render shell to add new marketplace categories. (3) Log in as demo.provider → `/settings/provider` → save to update serviceTypes to new slug format. (4) Test transportation filter end-to-end. (5) Switch Stripe to live mode.
+
+---
+
 ### 2026-05-04 — Transport Phase 2 (Full Ride Booking) + Landing Page Transport Update
 
 - **Objective:** Build end-to-end transport ride booking (Phase 2) — real bookings with Stripe payment, full lifecycle management, operator booking for residents, and update the landing page to reflect the new capability.
