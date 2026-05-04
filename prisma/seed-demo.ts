@@ -162,7 +162,7 @@ async function main() {
           yearsInBusiness: 15,
           isVerified: true,
           isActive: true,
-          serviceTypes: ['Personal Care', 'Companionship', 'Medication Management', 'Dementia Care', 'Respite Care'],
+          serviceTypes: ['personal_care', 'companionship', 'transportation'],
           coverageArea: {
             cities: ['San Francisco', 'Oakland', 'San Jose', 'Berkeley', 'Palo Alto'],
             states: ['CA'],

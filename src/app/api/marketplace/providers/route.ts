@@ -187,10 +187,10 @@ export async function GET(request: Request) {
       ];
     }
     
-    // Service type filter
+    // Service type filter (case-insensitive: normalize to lowercase)
     if (serviceType) {
       where.serviceTypes = {
-        has: serviceType
+        has: serviceType.toLowerCase()
       };
     }
     
