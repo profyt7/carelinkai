@@ -82,7 +82,8 @@ export async function GET(request: Request) {
     const idsParam = searchParams.get('ids');
     const ids = idsParam ? idsParam.split(',').map((s) => s.trim()).filter(Boolean) : null;
     const q = searchParams.get('q');
-    const serviceType = searchParams.get('serviceType');
+    // Accept both 'serviceType' (single, from direct links) and 'services' (csv, from marketplace filter UI)
+    const serviceType = searchParams.get('serviceType') || searchParams.get('services')?.split(',')[0] || null;
     const city = searchParams.get('city');
     const state = searchParams.get('state');
     const verified = searchParams.get('verified');

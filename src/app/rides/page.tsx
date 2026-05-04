@@ -168,7 +168,7 @@ export default function RidesPage() {
           </div>
           {!isProvider && (
             <Link
-              href="/marketplace?tab=providers&serviceType=transportation"
+              href="/marketplace?tab=providers&services=transportation"
               className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-lg transition-colors shrink-0"
             >
               <FiPlus size={15} />
@@ -205,7 +205,7 @@ export default function RidesPage() {
               <div className="mt-3">
                 <p className="text-sm mb-4">Find a transportation provider in the marketplace and book your first ride.</p>
                 <Link
-                  href="/marketplace?tab=providers&serviceType=transportation"
+                  href="/marketplace?tab=providers&services=transportation"
                   className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-lg transition-colors"
                 >
                   <FiPlus size={15} />
@@ -213,7 +213,7 @@ export default function RidesPage() {
                 </Link>
               </div>
             ) : activeTab === "upcoming" && isOperator ? (
-              <p className="text-sm mt-1">Book transport rides for residents from their profile page, or browse <Link href="/marketplace?tab=providers&serviceType=transportation" className="text-primary-600 underline">transport providers</Link>.</p>
+              <p className="text-sm mt-1">Book transport rides for residents from their profile page, or browse <Link href="/marketplace?tab=providers&services=transportation" className="text-primary-600 underline">transport providers</Link>.</p>
             ) : (
               <p className="text-sm mt-1">Nothing here yet.</p>
             )}

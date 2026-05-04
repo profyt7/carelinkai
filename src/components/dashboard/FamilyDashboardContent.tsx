@@ -233,7 +233,7 @@ export function FamilyDashboardContent() {
           </Link>
           {isPlus && (
             <Link
-              href="/marketplace?tab=providers&serviceType=transportation"
+              href="/marketplace?tab=providers&services=transportation"
               className="sm:col-span-2 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded-lg p-4 transition-colors duration-200"
             >
               <div className="flex items-center space-x-3">
