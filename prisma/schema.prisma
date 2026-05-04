@@ -964,8 +964,14 @@ model Ride {
   // Instant pricing
   estimatedMiles          Decimal?    @db.Decimal(8, 2)
   estimatedFare           Decimal?    @db.Decimal(10, 2)
+  // Passenger needs
+  mobilityLevel           String?                        // AMBULATORY | ASSISTED | WHEELCHAIR | STRETCHER | BARIATRIC
+  doorToDoorLevel         String?                        // CURB_TO_CURB | DOOR_TO_DOOR | DOOR_THROUGH_DOOR | BED_TO_BED
+  needsOxygen             Boolean     @default(false)    // passenger uses portable oxygen
+  hasCompanion            Boolean     @default(false)    // companion/escort riding along
+  cognitionNote           Boolean     @default(false)    // memory condition — needs patient/supervised driver
+  hasServiceAnimal        Boolean     @default(false)
   // Ride options
-  wheelchairRequired      Boolean     @default(false)
   waitTimeMinutes         Int?                           // driver wait time at destination
   waitFare                Decimal?    @db.Decimal(10, 2) // fare for waiting
   // Return trip
