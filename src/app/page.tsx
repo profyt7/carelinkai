@@ -905,6 +905,15 @@ export default function HomePage() {
                     <p className="text-neutral-500">See costs upfront with no hidden fees. Compare options side-by-side easily.</p>
                   </div>
                 </div>
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-br from-primary-500 to-primary-400 flex items-center justify-center">
+                    <FiCalendar className="text-white text-xl" />
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-bold text-neutral-900 mb-2">Book Transport Rides</h4>
+                    <p className="text-neutral-500">Find and book NEMT and transportation providers directly on the platform — secure payment, ride confirmation, and day-of reminders handled for you.</p>
+                  </div>
+                </div>
               </div>
               </div>
             )}
@@ -925,6 +934,7 @@ export default function HomePage() {
                     { icon: <FiSmartphone />, title: 'On-Call AI Shift Coverage', desc: 'Automatically contacts available caregivers via SMS when a shift opens. Average fill time under 15 minutes.' },
                     { icon: <FiZap />, title: 'AI Shift Auto-fill', desc: 'Describe a shift in plain text — AI instantly finds the best-matched available caregivers and ranks them.' },
                     { icon: <FiAward />, title: 'Direct Caregiver Hire', desc: 'Browse the marketplace and hire caregivers to your facility in 3 clicks — no job posting required.' },
+                    { icon: <FiCalendar />, title: 'Resident Transport Booking', desc: 'Book NEMT and transport rides for residents directly from the platform. Provider confirms, Stripe handles payment — zero phone calls.' },
                   ].map((item, i) => (
                     <div key={i} className="flex items-start space-x-3">
                       <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-gradient-to-br from-secondary-500 to-secondary-400 flex items-center justify-center text-white">
@@ -1113,8 +1123,8 @@ export default function HomePage() {
                       <FiTarget className="text-white text-xl" />
                     </div>
                     <div>
-                      <h4 className="text-lg font-bold text-neutral-900 mb-2">Qualified Referrals</h4>
-                      <p className="text-neutral-500">Receive referrals from operators and families who have verified needs — no cold prospecting required.</p>
+                      <h4 className="text-lg font-bold text-neutral-900 mb-2">Real Bookings — Not Just Referrals</h4>
+                      <p className="text-neutral-500">Transport providers receive actual ride bookings with Stripe payment — not just leads. Confirm the fare, get paid, and manage every ride in one dashboard.</p>
                     </div>
                   </div>
                   <div className="flex items-start space-x-4">
@@ -1462,7 +1472,8 @@ export default function HomePage() {
                 { icon: <FiBarChart />, title: 'Compliance Document Kits', desc: 'Ohio ALF compliance kits ($149–$199) — one-click purchase, instant access' },
                 { icon: <FiTrendingUp />, title: 'Affiliate Program', desc: 'Tiered commissions (20/25/30%) with family referral tracking and live dashboard' },
                 { icon: <FiShield />, title: 'Caregiver Marketplace', desc: 'Browse, shortlist, and hire verified caregivers with background check badges and reviews' },
-                { icon: <FiGlobe />, title: 'Provider Marketplace', desc: 'Transportation, meal services, housekeeping, and more — listed and discoverable by care homes and families' },
+                { icon: <FiGlobe />, title: 'Provider Marketplace', desc: 'Transportation, meal services, housekeeping, and more — listed and bookable by care homes and families' },
+                { icon: <FiCalendar />, title: 'Transport Ride Booking', desc: 'End-to-end NEMT booking — families and operators book, provider confirms + sets fare, Stripe collects payment, day-of reminders sent automatically' },
               ].map((item) => (
                 <div key={item.title} className="bg-white p-5 rounded-xl border border-neutral-200 shadow-sm flex items-start gap-4">
                   <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-success-50 text-success-600 flex items-center justify-center text-lg">
