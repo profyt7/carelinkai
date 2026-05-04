@@ -90,6 +90,12 @@ FAMILY, OPERATOR, CAREGIVER, ADMIN, STAFF, PROVIDER, AFFILIATE, DISCHARGE_PLANNE
 - **Background check markup:** ENHANCED $34.99, MVR $19.99, PREMIUM $59.99.
 - **Admin MRR dashboard:** `/admin/page.tsx` now shows 5-tile Revenue Overview: Total MRR + per-stream breakdown (Operators, Providers, Pro Caregivers, Discharge Planners) with live counts.
 
+## Transport — Phase 3: Manifest, Shared Rides, Capacity (as of 2026-05-04)
+- **Provider manifest view:** `/rides` page redesigned for PROVIDER role — day-grouped cards showing time, passenger name, route, status badge, collapsible detail (contact, purpose, return/recurring, fare). PassengerNeedsRow shows NEMT tags (mobility level, door level, O₂, companion, cognition, service animal, wait time). Day-level CapacityBar (green→amber→red) vs `vehicleCapacity`.
+- **Batch opportunity detection:** Client-side — rides within 90 min of each other going to same destination flagged with amber "Batch possible" banner at the day level and gold star on individual cards.
+- **Shared rides:** `isSharedRide Boolean` + `sharedRideGroupId String?` on Ride model. Family can opt in at booking (step 2 of RideRequestModal). Provider can toggle per card in manifest. `PATCH /api/rides/[id]/shared` endpoint. Migration: `20260504000005`.
+- **Vehicle capacity:** `vehicleCapacity Int @default(4)` on Provider. Editable in `/settings/provider` (Vehicle & Capacity section). Returned by `GET /api/rides` for PROVIDER role. Used by CapacityBar in manifest.
+
 ## Transport — Full End-to-End Booking (Phase 2 — as of 2026-05-04)
 - **Phase 1 (complete):** Provider transport fields (`rideTypes[]`, `wheelchairAccessible`, `acceptsMedicaid`, `serviceRadius`), marketplace filters, inquiry form trip details, provider detail transport section.
 - **Ride model:** `Ride` table with full lifecycle enum `REQUESTED → CONFIRMED → PAID → IN_PROGRESS → COMPLETED → CANCELED`. Fields: `familyId?`, `operatorId?`, `providerId`, `residentName?`, `bookedByRole` (FAMILY/OPERATOR), `baseFare`, `platformFeePercent` (default 12%), `platformFee`, `totalAmount`, `stripePaymentIntentId`, `stripeCheckoutSessionId`, `canceledBy`, `cancelReason`. Migrations: `20260504000001` (Ride model) + `20260504000002` (operator fields, nullable familyId).

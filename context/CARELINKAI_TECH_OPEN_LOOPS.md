@@ -48,6 +48,16 @@ Each loop: what it is, why it matters, what done looks like.
 - **Status:** 🟡 ROADMAP — needs human process designed first
 - Flat-fee ($99-199) for Medicaid waiver, VA Aid & Attendance, LTC insurance claims navigation.
 
+### OL-038: Transport migration 20260504000005 deploy
+- **Status:** 🟡 OPEN — needs `npx prisma migrate deploy` in Render shell after next merge
+- **What:** Adds `isSharedRide`, `sharedRideGroupId` to Ride + `vehicleCapacity` to Provider. All columns have safe defaults.
+- **Done when:** Migration runs without error; `vehicleCapacity` appears in provider settings.
+
+### OL-037: Provider real-time new booking notification
+- **Status:** 🟡 OPEN — providers currently must refresh /rides to see new bookings
+- **What:** SSE push or polling to alert provider in real-time when a new REQUESTED ride appears. Could use existing SSE infrastructure or a simple long-poll interval.
+- **Done when:** Provider sees a toast/notification within seconds of a family booking without refreshing.
+
 ### OL-026: Transport Phase 2 — ride booking + dispatch
 - **Status:** ✅ CLOSED (2026-05-04)
 - Full end-to-end ride booking live: REQUESTED→CONFIRMED→PAID→IN_PROGRESS→COMPLETED→CANCELED lifecycle. Stripe Checkout payment, 12% platform commission, Stripe refund on PAID cancellation, 5 email triggers, day-of reminder cron, operator resident booking, admin MRR tile, landing page updated. Ride model with 2 migrations deployed.
