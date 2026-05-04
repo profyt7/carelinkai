@@ -88,6 +88,11 @@ const providerProfileSchema = baseProfileSchema.extend({
   acceptsMedicaid: z.boolean().optional(),
   serviceRadius: z.number().int().min(1).max(500).optional().nullable(),
   allowsRecurring: z.boolean().optional(),
+  // Instant booking / pricing
+  rateBaseFare: z.number().min(0).optional().nullable(),
+  ratePerMile: z.number().min(0).optional().nullable(),
+  rateWaitPerHour: z.number().min(0).optional().nullable(),
+  instantBook: z.boolean().optional(),
 });
 
 /**
@@ -255,6 +260,10 @@ export async function GET(request: NextRequest) {
             acceptsMedicaid: true,
             serviceRadius: true,
             allowsRecurring: true,
+            rateBaseFare: true,
+            ratePerMile: true,
+            rateWaitPerHour: true,
+            instantBook: true,
             credentials: {
               select: {
                 id: true,
@@ -570,7 +579,11 @@ export async function PATCH(request: NextRequest) {
             if (rs.acceptsMedicaid !== undefined) updateData.acceptsMedicaid = rs.acceptsMedicaid;
             if (rs.serviceRadius !== undefined) updateData.serviceRadius = rs.serviceRadius;
             if (rs.allowsRecurring !== undefined) updateData.allowsRecurring = rs.allowsRecurring;
-            
+            if (rs.rateBaseFare !== undefined) updateData.rateBaseFare = rs.rateBaseFare;
+            if (rs.ratePerMile !== undefined) updateData.ratePerMile = rs.ratePerMile;
+            if (rs.rateWaitPerHour !== undefined) updateData.rateWaitPerHour = rs.rateWaitPerHour;
+            if (rs.instantBook !== undefined) updateData.instantBook = rs.instantBook;
+
             roleSpecificUpdate = await prisma.provider.update({
               where: { userId },
               data: updateData

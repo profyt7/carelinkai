@@ -9,7 +9,6 @@ import { z } from "zod";
 const createRideSchema = z.object({
   providerId: z.string().min(1),
   leadId: z.string().optional(),
-  // Operator-only fields
   residentName: z.string().max(200).optional(),
   residentId: z.string().optional(),
   // Trip details
@@ -17,9 +16,22 @@ const createRideSchema = z.object({
   dropoffAddress: z.string().min(3).max(500),
   scheduledAt: z.string().datetime(),
   tripPurpose: z.string().max(100).optional(),
-  mobilityNeeds: z.string().max(500).optional(),
   passengerCount: z.number().int().min(1).max(8).optional().default(1),
   specialRequests: z.string().max(500).optional(),
+  // Ride options
+  wheelchairRequired: z.boolean().optional().default(false),
+  waitTimeMinutes: z.number().int().min(0).max(480).optional(),
+  // Return trip
+  needsReturn: z.boolean().optional().default(false),
+  returnScheduledAt: z.string().datetime().optional(),
+  // Recurring
+  isRecurring: z.boolean().optional().default(false),
+  recurringFrequency: z.enum(["DAILY", "WEEKLY", "BIWEEKLY", "MONTHLY"]).optional(),
+  recurringEndDate: z.string().datetime().optional(),
+  // Pre-calculated fare (from /api/rides/estimate)
+  estimatedMiles: z.number().optional(),
+  estimatedFare: z.number().optional(),
+  instantBook: z.boolean().optional().default(false),
 });
 
 export async function POST(req: NextRequest) {
@@ -27,8 +39,7 @@ export async function POST(req: NextRequest) {
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const role = session.user.role as string;
-  const allowedRoles = ["FAMILY", "OPERATOR", "STAFF", "ADMIN"];
-  if (!allowedRoles.includes(role))
+  if (!["FAMILY", "OPERATOR", "STAFF", "ADMIN"].includes(role))
     return NextResponse.json({ error: "Not authorized to request rides" }, { status: 403 });
 
   const body = await req.json();
@@ -36,16 +47,17 @@ export async function POST(req: NextRequest) {
   if (!parsed.success)
     return NextResponse.json({ error: "Invalid input", details: parsed.error.flatten() }, { status: 400 });
 
-  const { providerId, leadId, residentName, residentId, pickupAddress, dropoffAddress,
-          scheduledAt, tripPurpose, mobilityNeeds, passengerCount, specialRequests } = parsed.data;
-
-  const scheduled = new Date(scheduledAt);
+  const d = parsed.data;
+  const scheduled = new Date(d.scheduledAt);
   if (scheduled <= new Date())
     return NextResponse.json({ error: "Scheduled time must be in the future" }, { status: 400 });
 
   const provider = await prisma.provider.findUnique({
-    where: { id: providerId },
-    select: { id: true, businessName: true, contactEmail: true, contactName: true },
+    where: { id: d.providerId },
+    select: {
+      id: true, businessName: true, contactEmail: true, contactName: true,
+      rateBaseFare: true, ratePerMile: true, rateWaitPerHour: true, instantBook: true,
+    },
   });
   if (!provider) return NextResponse.json({ error: "Provider not found" }, { status: 404 });
 
@@ -57,38 +69,140 @@ export async function POST(req: NextRequest) {
     const family = await prisma.family.findUnique({ where: { userId: session.user.id }, select: { id: true } });
     if (!family) return NextResponse.json({ error: "Family profile not found" }, { status: 404 });
     familyId = family.id;
-    bookedByRole = "FAMILY";
   } else {
     const operator = await prisma.operator.findUnique({ where: { userId: session.user.id }, select: { id: true } });
     if (!operator) return NextResponse.json({ error: "Operator profile not found" }, { status: 404 });
     operatorId = operator.id;
     bookedByRole = "OPERATOR";
-
-    if (!residentName?.trim())
+    if (!d.residentName?.trim())
       return NextResponse.json({ error: "Resident name is required for operator bookings" }, { status: 400 });
   }
 
+  // Determine platform fee / amounts
+  const platformFeePercent = 12;
+  let waitFare: number | null = null;
+  if (d.waitTimeMinutes && provider.rateWaitPerHour) {
+    waitFare = Math.round(Number(provider.rateWaitPerHour) * (d.waitTimeMinutes / 60) * 100) / 100;
+  }
+
+  // Create the primary ride
   const ride = await prisma.ride.create({
     data: {
       familyId,
       operatorId,
       bookedByRole,
-      providerId,
-      leadId: leadId ?? null,
-      residentName: residentName?.trim() ?? null,
-      residentId: residentId ?? null,
-      pickupAddress,
-      dropoffAddress,
+      providerId: d.providerId,
+      leadId: d.leadId ?? null,
+      residentName: d.residentName?.trim() ?? null,
+      residentId: d.residentId ?? null,
+      pickupAddress: d.pickupAddress,
+      dropoffAddress: d.dropoffAddress,
       scheduledAt: scheduled,
-      tripPurpose: tripPurpose ?? null,
-      mobilityNeeds: mobilityNeeds ?? null,
-      passengerCount: passengerCount ?? 1,
-      specialRequests: specialRequests ?? null,
+      tripPurpose: d.tripPurpose ?? null,
+      passengerCount: d.passengerCount ?? 1,
+      specialRequests: d.specialRequests ?? null,
+      wheelchairRequired: d.wheelchairRequired ?? false,
+      waitTimeMinutes: d.waitTimeMinutes ?? null,
+      waitFare: waitFare ?? null,
+      needsReturn: d.needsReturn ?? false,
+      returnScheduledAt: d.returnScheduledAt ? new Date(d.returnScheduledAt) : null,
+      isRecurring: d.isRecurring ?? false,
+      recurringFrequency: d.recurringFrequency ?? null,
+      recurringEndDate: d.recurringEndDate ? new Date(d.recurringEndDate) : null,
+      estimatedMiles: d.estimatedMiles ?? null,
+      estimatedFare: d.estimatedFare ?? null,
+      baseFare: d.estimatedFare ?? null,
+      platformFeePercent,
+      platformFee: d.estimatedFare
+        ? Math.round(d.estimatedFare * (platformFeePercent / 100) * 100) / 100
+        : null,
+      totalAmount: d.estimatedFare
+        ? Math.round(d.estimatedFare * (1 + platformFeePercent / 100) * 100) / 100
+        : null,
     },
   });
 
-  notifyProviderNewRide(provider, session.user, ride, bookedByRole, residentName).catch(() => {});
+  // Create return ride if requested
+  if (d.needsReturn && d.returnScheduledAt) {
+    const returnRide = await prisma.ride.create({
+      data: {
+        familyId,
+        operatorId,
+        bookedByRole,
+        providerId: d.providerId,
+        residentName: d.residentName?.trim() ?? null,
+        residentId: d.residentId ?? null,
+        pickupAddress: d.dropoffAddress, // reversed
+        dropoffAddress: d.pickupAddress,
+        scheduledAt: new Date(d.returnScheduledAt),
+        tripPurpose: d.tripPurpose ?? null,
+        passengerCount: d.passengerCount ?? 1,
+        specialRequests: d.specialRequests ?? null,
+        wheelchairRequired: d.wheelchairRequired ?? false,
+        parentRideId: ride.id,
+        estimatedMiles: d.estimatedMiles ?? null,
+        estimatedFare: d.estimatedFare ?? null,
+        baseFare: d.estimatedFare ?? null,
+        platformFeePercent,
+        platformFee: d.estimatedFare
+          ? Math.round(d.estimatedFare * (platformFeePercent / 100) * 100) / 100
+          : null,
+        totalAmount: d.estimatedFare
+          ? Math.round(d.estimatedFare * (1 + platformFeePercent / 100) * 100) / 100
+          : null,
+      },
+    });
+    // Link primary ride to return ride
+    await prisma.ride.update({
+      where: { id: ride.id },
+      data: { returnRideId: returnRide.id },
+    });
+  }
 
+  // Instant booking: create Stripe Checkout Session immediately
+  if (d.instantBook && provider.instantBook && d.estimatedFare && d.estimatedFare > 0) {
+    try {
+      const stripe = new (await import("stripe")).default(process.env.STRIPE_SECRET_KEY!, {
+        apiVersion: "2023-10-16",
+      });
+      const APP_URL = process.env.NEXTAUTH_URL || "https://getcarelinkai.com";
+      const totalCents = Math.round(d.estimatedFare * (1 + platformFeePercent / 100) * 100);
+
+      const checkoutSession = await stripe.checkout.sessions.create({
+        mode: "payment",
+        line_items: [
+          {
+            price_data: {
+              currency: "usd",
+              product_data: {
+                name: `Ride with ${provider.businessName}`,
+                description: `${d.pickupAddress} → ${d.dropoffAddress} · ${new Date(d.scheduledAt).toLocaleDateString()}`,
+              },
+              unit_amount: totalCents,
+            },
+            quantity: 1,
+          },
+        ],
+        metadata: { type: "RIDE_PAYMENT", rideId: ride.id },
+        success_url: `${APP_URL}/rides?booked=1`,
+        cancel_url: `${APP_URL}/rides`,
+      });
+
+      // Store checkout session ID on the ride
+      await prisma.ride.update({
+        where: { id: ride.id },
+        data: { stripeCheckoutSessionId: checkoutSession.id },
+      });
+
+      notifyProviderNewRide(provider, session.user, ride, bookedByRole, d.residentName, true).catch(() => {});
+      return NextResponse.json({ ride, checkoutUrl: checkoutSession.url }, { status: 201 });
+    } catch (err) {
+      console.error("Stripe checkout creation failed:", err);
+      // Fall through to standard request flow
+    }
+  }
+
+  notifyProviderNewRide(provider, session.user, ride, bookedByRole, d.residentName, false).catch(() => {});
   return NextResponse.json({ ride }, { status: 201 });
 }
 
@@ -157,16 +271,18 @@ async function notifyProviderNewRide(
   user: { firstName?: string | null; lastName?: string | null; email?: string | null },
   ride: { id: string; scheduledAt: Date; pickupAddress: string; dropoffAddress: string },
   bookedByRole: string,
-  residentName?: string | null
+  residentName?: string | null,
+  isPaid?: boolean,
 ) {
   if (!process.env.RESEND_API_KEY) return;
   const { Resend } = await import("resend");
   const resend = new Resend(process.env.RESEND_API_KEY);
   const APP_URL = process.env.NEXTAUTH_URL || "https://getcarelinkai.com";
   const bookerName = [user.firstName, user.lastName].filter(Boolean).join(" ") || "A client";
-  const passengerInfo = bookedByRole === "OPERATOR" && residentName
-    ? `Resident: <strong>${residentName}</strong><br>Booked by: ${bookerName} (facility)`
-    : `Family: <strong>${bookerName}</strong>`;
+  const passengerInfo =
+    bookedByRole === "OPERATOR" && residentName
+      ? `Resident: <strong>${residentName}</strong><br>Booked by: ${bookerName} (facility)`
+      : `Family: <strong>${bookerName}</strong>`;
   const scheduledStr = ride.scheduledAt.toLocaleString("en-US", {
     weekday: "long", month: "long", day: "numeric", year: "numeric",
     hour: "numeric", minute: "2-digit", timeZoneName: "short",
@@ -175,23 +291,25 @@ async function notifyProviderNewRide(
   await resend.emails.send({
     from: `CareLinkAI <${process.env.EMAIL_FROM || "noreply@getcarelinkai.com"}>`,
     to: [provider.contactEmail],
-    subject: `New Ride Request — ${bookedByRole === "OPERATOR" ? residentName ?? bookerName : bookerName}`,
+    subject: isPaid
+      ? `✅ Confirmed & Paid Ride — ${bookedByRole === "OPERATOR" ? residentName ?? bookerName : bookerName}`
+      : `New Ride Request — ${bookedByRole === "OPERATOR" ? residentName ?? bookerName : bookerName}`,
     html: `
       <div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#111">
-        <div style="background:#4f46e5;padding:24px;border-radius:8px 8px 0 0">
-          <h1 style="color:#fff;margin:0;font-size:20px">New Ride Request</h1>
+        <div style="background:${isPaid ? "#16a34a" : "#4f46e5"};padding:24px;border-radius:8px 8px 0 0">
+          <h1 style="color:#fff;margin:0;font-size:20px">${isPaid ? "✅ Confirmed & Paid Ride" : "New Ride Request"}</h1>
         </div>
         <div style="padding:24px;border:1px solid #e5e7eb;border-top:0;border-radius:0 0 8px 8px">
           <p>Hi ${provider.contactName},</p>
-          <p>You have a new ride request through CareLinkAI.</p>
+          <p>${isPaid ? "A ride has been <strong>confirmed and paid</strong>. Just show up!" : "You have a new ride request through CareLinkAI."}</p>
           <table style="width:100%;border-collapse:collapse;margin:16px 0">
             <tr><td style="padding:8px 0;color:#6b7280;width:140px">Passenger</td><td style="padding:8px 0">${passengerInfo}</td></tr>
             <tr><td style="padding:8px 0;color:#6b7280">Scheduled</td><td style="padding:8px 0;font-weight:600">${scheduledStr}</td></tr>
             <tr><td style="padding:8px 0;color:#6b7280">Pickup</td><td style="padding:8px 0">${ride.pickupAddress}</td></tr>
             <tr><td style="padding:8px 0;color:#6b7280">Dropoff</td><td style="padding:8px 0">${ride.dropoffAddress}</td></tr>
           </table>
-          <a href="${APP_URL}/rides" style="display:inline-block;background:#4f46e5;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;margin-top:8px">
-            View &amp; Confirm Ride →
+          <a href="${APP_URL}/rides" style="display:inline-block;background:${isPaid ? "#16a34a" : "#4f46e5"};color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;margin-top:8px">
+            ${isPaid ? "View Ride Details →" : "View & Confirm Ride →"}
           </a>
           <p style="color:#9ca3af;font-size:12px;margin-top:24px">CareLinkAI · Cleveland, OH</p>
         </div>

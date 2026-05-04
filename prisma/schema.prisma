@@ -412,6 +412,11 @@ model Provider {
   acceptsMedicaid       Boolean              @default(false)
   serviceRadius         Int?                 // miles
   allowsRecurring       Boolean              @default(false)
+  // Pricing (enables instant booking)
+  rateBaseFare          Decimal?             @db.Decimal(10, 2) // flat base charge per ride
+  ratePerMile           Decimal?             @db.Decimal(10, 2) // per-mile rate
+  rateWaitPerHour       Decimal?             @db.Decimal(10, 2) // hourly wait rate
+  instantBook           Boolean              @default(false)    // skip confirm step, family pays at booking
   // Marketplace listing subscription ($99/mo)
   stripeCustomerId      String?              @unique
   stripeSubscriptionId  String?              @unique
@@ -956,6 +961,22 @@ model Ride {
   stripeCheckoutSessionId String?
   canceledBy              String?
   cancelReason            String?
+  // Instant pricing
+  estimatedMiles          Decimal?    @db.Decimal(8, 2)
+  estimatedFare           Decimal?    @db.Decimal(10, 2)
+  // Ride options
+  wheelchairRequired      Boolean     @default(false)
+  waitTimeMinutes         Int?                           // driver wait time at destination
+  waitFare                Decimal?    @db.Decimal(10, 2) // fare for waiting
+  // Return trip
+  needsReturn             Boolean     @default(false)
+  returnScheduledAt       DateTime?                      // when driver picks up for return
+  returnRideId            String?     @unique
+  parentRideId            String?                        // set on return rides
+  // Recurring
+  isRecurring             Boolean     @default(false)
+  recurringFrequency      String?                        // DAILY | WEEKLY | BIWEEKLY | MONTHLY
+  recurringEndDate        DateTime?
   createdAt               DateTime    @default(now())
   updatedAt               DateTime    @updatedAt
   family                  Family?     @relation(fields: [familyId], references: [id], onDelete: Cascade)
@@ -968,6 +989,7 @@ model Ride {
   @@index([status])
   @@index([scheduledAt])
   @@index([leadId])
+  @@index([parentRideId])
 }
 
 model Booking {
