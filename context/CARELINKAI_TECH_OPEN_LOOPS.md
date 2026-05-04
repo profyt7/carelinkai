@@ -48,6 +48,21 @@ Each loop: what it is, why it matters, what done looks like.
 - **Status:** 🟡 ROADMAP — needs human process designed first
 - Flat-fee ($99-199) for Medicaid waiver, VA Aid & Attendance, LTC insurance claims navigation.
 
+### OL-039: Add Render cron for recurring rides
+- **Status:** 🟡 OPEN — cron endpoint built, not yet registered in Render
+- **What:** Add cron job in Render dashboard: `0 7 * * *` → `GET https://getcarelinkai.com/api/cron/recurring-rides?secret=CRON_SECRET` (or via `x-cron-secret` header). Spawns next 14-day occurrences of all active recurring ride series.
+- **Done when:** Cron registered + first successful run in Render logs.
+
+### OL-040: Transport migration 20260504000006 deploy
+- **Status:** 🟡 OPEN — needs `npx prisma migrate deploy` after next merge
+- **What:** Adds actualPickupAt, actualDropoffAt, noShowCausedBy, recurringRootId to Ride. All nullable — no data risk.
+- **Done when:** Migration runs cleanly.
+
+### OL-041: Provider reliability score dashboard
+- **Status:** 🟡 OPEN — data now being collected (noShowCausedBy, actualPickupAt, actualDropoffAt)
+- **What:** Build a reliability summary per provider: on-time pickup %, ride completion rate, no-show cause breakdown. Show in provider dashboard + marketplace listing. Critical for payer contract pitches ("we reduce missed appointments by X%").
+- **Done when:** Provider dashboard tile shows reliability score; marketplace card shows it.
+
 ### OL-038: Transport migration 20260504000005 deploy
 - **Status:** 🟡 OPEN — needs `npx prisma migrate deploy` in Render shell after next merge
 - **What:** Adds `isSharedRide`, `sharedRideGroupId` to Ride + `vehicleCapacity` to Provider. All columns have safe defaults.

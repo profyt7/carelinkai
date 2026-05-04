@@ -2,6 +2,29 @@
 
 ---
 
+### 2026-05-04 — NEMT Anti-Fraud: Trip Verification, No-Show Accountability, Recurring Scheduler
+
+- **Objective:** Fill gaps identified in uber_lyft.txt — implement the three most critical NEMT operating-layer features: proof of presence (anti-fraud), no-show accountability, and recurring ride auto-scheduling.
+- **Work completed:**
+  1. **Trip verification:** Added `actualPickupAt` (set when provider taps Start Ride) and `actualDropoffAt` (set when Complete Ride). System-owned — cannot be edited by driver. Shown as ✓ green timestamps in manifest expanded card. Directly addresses fraudulent "ghost ride" completions.
+  2. **No-show accountability:** Added `noShowCausedBy` field (PROVIDER/RIDER/FACILITY/WEATHER/OTHER). Replaced `window.confirm()` cancel flow with a proper modal showing radio buttons for cause selection. Active on CONFIRMED/PAID/IN_PROGRESS ride cancels for both provider and family views. Data foundation for future reliability scoring and payer fraud reporting.
+  3. **Recurring ride auto-scheduler:** New cron at `GET /api/cron/recurring-rides`. Finds all seed rides (`isRecurring=true`, `recurringRootId=null`), finds latest child, spawns next occurrences up to 14 days ahead. Respects `recurringEndDate`. Each spawned ride gets `recurringRootId=seed.id`, `status=REQUESTED`. Return trip time offset preserved across all occurrences. **Add Render cron: `0 7 * * *` → `/api/cron/recurring-rides?secret=CRON_SECRET`**
+- **Files changed:**
+  - `prisma/schema.prisma` — 4 new fields + recurringRootId index
+  - `prisma/migrations/20260504000006_trip_verification_and_recurring/migration.sql` — new
+  - `src/app/api/rides/[id]/start/route.ts` — sets actualPickupAt
+  - `src/app/api/rides/[id]/complete/route.ts` — sets actualDropoffAt
+  - `src/app/api/rides/[id]/route.ts` — PATCH accepts noShowCausedBy
+  - `src/app/api/cron/recurring-rides/route.ts` — new file
+  - `src/app/rides/page.tsx` — Ride interface updated, cancel cause modal, timestamps in manifest
+- **Commands run:** `npx prisma generate`, `npx tsc --noEmit` (0 errors), `git commit`, `git push`
+- **Tests/build status:** TypeScript 0 errors.
+- **Deployment impact:** Migration 20260504000006 needed. Add Render cron job for recurring-rides. All additive — no breaking changes.
+- **New risks/blockers:** None.
+- **Recommended next step:** Add Render cron for recurring-rides. Then build provider reliability score dashboard (on-time %, completion %, no-show cause breakdown) — this is the data foundation for payer contract pitches.
+
+---
+
 ### 2026-05-04 — Provider Manifest View + Shared Rides + Vehicle Capacity
 
 - **Objective:** Build the provider dispatch manifest (day-grouped ride schedule), shared ride batching, and vehicle capacity tracking so NEMT providers can see and fill their van runs efficiently.
