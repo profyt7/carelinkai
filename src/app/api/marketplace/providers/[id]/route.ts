@@ -71,11 +71,17 @@ export async function GET(
         licenseNumber: mockProvider.licenseNumber,
         yearsInBusiness: mockProvider.yearsInBusiness,
         isVerified: mockProvider.isVerified,
+        isActive: true,
         serviceTypes: mockProvider.serviceTypes,
         coverageArea: mockProvider.coverageArea,
         photoUrl: mockProvider.photoUrl,
         credentials: mockProvider.credentials,
         memberSince: mockProvider.memberSince,
+        rideTypes: (mockProvider as any).rideTypes ?? [],
+        wheelchairAccessible: (mockProvider as any).wheelchairAccessible ?? false,
+        acceptsMedicaid: (mockProvider as any).acceptsMedicaid ?? false,
+        serviceRadius: (mockProvider as any).serviceRadius ?? null,
+        allowsRecurring: (mockProvider as any).allowsRecurring ?? false,
       };
       
       return NextResponse.json(

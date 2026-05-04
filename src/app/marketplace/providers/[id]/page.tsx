@@ -422,7 +422,7 @@ export default function ProviderDetailPage() {
                     </div>
                   )}
                 </div>
-                {provider.rideTypes.length > 0 && (
+                {(provider.rideTypes ?? []).length > 0 && (
                   <div className="mt-4">
                     <h3 className="text-sm font-medium text-neutral-700 mb-2">Ride Types</h3>
                     <div className="flex flex-wrap gap-2">
