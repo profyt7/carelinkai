@@ -23,7 +23,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   const updated = await prisma.ride.update({
     where: { id: params.id },
-    data: { status: "IN_PROGRESS" },
+    data: { status: "IN_PROGRESS", actualPickupAt: new Date() },
   });
 
   return NextResponse.json({ ride: updated });

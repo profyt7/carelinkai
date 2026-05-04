@@ -987,6 +987,13 @@ model Ride {
   // Shared / batched rides
   isSharedRide            Boolean     @default(false)    // provider batches multiple passengers in one vehicle
   sharedRideGroupId       String?                        // groups rides sharing the same vehicle run
+  // Trip verification (anti-fraud)
+  actualPickupAt          DateTime?                      // timestamped when driver checks in at pickup
+  actualDropoffAt         DateTime?                      // timestamped when driver marks dropoff complete
+  // Accountability
+  noShowCausedBy          String?                        // PROVIDER | RIDER | FACILITY | WEATHER | OTHER
+  // Recurring series
+  recurringRootId         String?                        // null on seed ride; set to seed id on all spawned rides
   createdAt               DateTime    @default(now())
   updatedAt               DateTime    @updatedAt
   family                  Family?     @relation(fields: [familyId], references: [id], onDelete: Cascade)
@@ -1000,6 +1007,7 @@ model Ride {
   @@index([scheduledAt])
   @@index([leadId])
   @@index([parentRideId])
+  @@index([recurringRootId])
 }
 
 model Booking {

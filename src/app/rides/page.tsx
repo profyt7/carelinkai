@@ -47,6 +47,13 @@ interface Ride {
   // Shared
   isSharedRide: boolean;
   sharedRideGroupId: string | null;
+  // Trip verification
+  actualPickupAt: string | null;
+  actualDropoffAt: string | null;
+  // Accountability
+  noShowCausedBy: string | null;
+  // Recurring
+  recurringRootId: string | null;
   provider?: { id: string; businessName: string; contactEmail: string; contactPhone: string | null };
   family?: { id: string; user: { firstName: string; lastName: string; email: string; phone: string | null } };
 }
@@ -59,6 +66,14 @@ const STATUS_CONFIG: Record<RideStatus, { label: string; color: string; icon: Re
   COMPLETED:   { label: "Done",          color: "bg-neutral-100 text-neutral-600", icon: <FiCheckCircle size={11} /> },
   CANCELED:    { label: "Canceled",      color: "bg-error-100 text-error-700",     icon: <FiX size={11} /> },
 };
+
+const NO_SHOW_CAUSES = [
+  { value: "PROVIDER", label: "Driver didn't show / late" },
+  { value: "RIDER",    label: "Passenger wasn't available" },
+  { value: "FACILITY", label: "Facility not ready / no notice" },
+  { value: "WEATHER",  label: "Weather or emergency" },
+  { value: "OTHER",    label: "Other" },
+];
 
 const MOBILITY_LABELS: Record<string, string> = {
   AMBULATORY: "Ambulatory",
@@ -141,7 +156,7 @@ function ManifestCard({
   onConfirm: (id: string, fare: number) => void;
   onStart: (id: string) => void;
   onComplete: (id: string) => void;
-  onCancel: (id: string) => void;
+  onCancel: (id: string, status: RideStatus) => void;
   onToggleShared: (id: string, val: boolean) => void;
   hasBatchOpportunity: boolean;
   fareInput: Record<string, string>;
@@ -241,10 +256,24 @@ function ManifestCard({
                 {ride.recurringFrequency?.toLowerCase() ?? "yes"}
               </p>
             )}
+            {ride.recurringRootId && (
+              <p className="text-neutral-500 text-xs">Auto-scheduled recurring ride</p>
+            )}
             {ride.totalAmount != null && (
               <p className="text-neutral-800 font-medium">
                 <span className="text-neutral-400 text-xs font-normal">Total fare </span>
                 ${Number(ride.totalAmount).toFixed(2)}
+              </p>
+            )}
+            {/* Trip verification timestamps */}
+            {ride.actualPickupAt && (
+              <p className="text-success-700 text-xs font-medium">
+                ✓ Picked up {new Date(ride.actualPickupAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+              </p>
+            )}
+            {ride.actualDropoffAt && (
+              <p className="text-success-700 text-xs font-medium">
+                ✓ Dropped off {new Date(ride.actualDropoffAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
               </p>
             )}
             {/* Shared ride toggle */}
@@ -284,7 +313,7 @@ function ManifestCard({
               {actionLoading[ride.id] ? "..." : "Confirm"}
             </button>
             <button
-              onClick={() => onCancel(ride.id)}
+              onClick={() => onCancel(ride.id, ride.status)}
               disabled={actionLoading[ride.id]}
               className="px-3 py-2 border border-neutral-200 text-neutral-600 text-xs rounded-lg hover:bg-neutral-50 transition-colors disabled:opacity-50"
             >
@@ -317,7 +346,7 @@ function ManifestCard({
 
         {["CONFIRMED", "PAID", "IN_PROGRESS"].includes(ride.status) && (
           <button
-            onClick={() => onCancel(ride.id)}
+            onClick={() => onCancel(ride.id, ride.status)}
             disabled={actionLoading[ride.id]}
             className="mt-2 text-xs text-neutral-400 hover:text-error-600 transition-colors w-full text-center"
           >
@@ -359,6 +388,9 @@ export default function RidesPage() {
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
   const [paying, setPaying] = useState<string | null>(null);
   const [canceling, setCanceling] = useState<string | null>(null);
+  // Cancel cause modal state
+  const [cancelTarget, setCancelTarget] = useState<{ id: string; needsCause: boolean } | null>(null);
+  const [cancelCause, setCancelCause] = useState("OTHER");
 
   const role = session?.user?.role;
   const isProvider = role === "PROVIDER";
@@ -416,16 +448,29 @@ export default function RidesPage() {
     fetchRides();
   });
 
-  const handleCancel = (rideId: string) => withLoading(rideId, async () => {
-    if (!window.confirm("Cancel this ride?")) return;
-    const res = await fetch(`/api/rides/${rideId}`, {
-      method: "PATCH", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}),
-    });
-    if (!res.ok) { toast.error("Failed to cancel ride"); return; }
-    toast.success("Ride canceled.");
-    fetchRides();
-  });
+  const handleCancel = (rideId: string, rideStatus: RideStatus) => {
+    const needsCause = ["CONFIRMED", "PAID", "IN_PROGRESS"].includes(rideStatus);
+    setCancelCause("OTHER");
+    setCancelTarget({ id: rideId, needsCause });
+  };
+
+  const submitCancel = async () => {
+    if (!cancelTarget) return;
+    setCanceling(cancelTarget.id);
+    try {
+      const body: Record<string, string> = {};
+      if (cancelTarget.needsCause) body.noShowCausedBy = cancelCause;
+      const res = await fetch(`/api/rides/${cancelTarget.id}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) { toast.error("Failed to cancel ride"); return; }
+      toast.success("Ride canceled.");
+      setCancelTarget(null);
+      fetchRides();
+    } catch { toast.error("Failed to cancel ride"); }
+    finally { setCanceling(null); }
+  };
 
   const handleToggleShared = async (rideId: string, val: boolean) => {
     const res = await fetch(`/api/rides/${rideId}/shared`, {
@@ -552,6 +597,52 @@ export default function RidesPage() {
             </div>
           )}
         </div>
+
+        {/* Cancel cause modal — shown for confirmed/paid ride cancellations */}
+        {cancelTarget && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
+              <h3 className="font-semibold text-neutral-900 mb-1">Cancel Ride</h3>
+              {cancelTarget.needsCause ? (
+                <>
+                  <p className="text-sm text-neutral-500 mb-4">Who caused this cancellation? This helps us track reliability.</p>
+                  <div className="space-y-2 mb-5">
+                    {NO_SHOW_CAUSES.map((c) => (
+                      <label key={c.value} className="flex items-center gap-3 cursor-pointer p-2.5 rounded-lg hover:bg-neutral-50 border border-neutral-200">
+                        <input
+                          type="radio"
+                          name="cancelCause"
+                          value={c.value}
+                          checked={cancelCause === c.value}
+                          onChange={() => setCancelCause(c.value)}
+                          className="h-4 w-4 text-primary-600 border-neutral-300 focus:ring-primary-500"
+                        />
+                        <span className="text-sm text-neutral-700">{c.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm text-neutral-500 mb-5">Are you sure you want to cancel this ride?</p>
+              )}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setCancelTarget(null)}
+                  className="flex-1 px-4 py-2 border border-neutral-200 text-neutral-600 text-sm rounded-lg hover:bg-neutral-50 transition-colors"
+                >
+                  Keep ride
+                </button>
+                <button
+                  onClick={submitCancel}
+                  disabled={canceling !== null}
+                  className="flex-1 px-4 py-2 bg-error-600 text-white text-sm font-semibold rounded-lg hover:bg-error-700 transition-colors disabled:opacity-50"
+                >
+                  {canceling ? "Canceling..." : "Confirm Cancel"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </DashboardLayout>
     );
   }
@@ -693,7 +784,7 @@ export default function RidesPage() {
 
                   {!isProvider && ["REQUESTED", "CONFIRMED"].includes(ride.status) && (
                     <button
-                      onClick={() => handleCancel(ride.id)} disabled={canceling === ride.id}
+                      onClick={() => handleCancel(ride.id, ride.status)} disabled={canceling === ride.id}
                       className="mt-2 text-xs text-neutral-400 hover:text-error-600 transition-colors w-full text-center"
                     >
                       {canceling === ride.id ? "Canceling..." : "Cancel ride"}
@@ -705,6 +796,52 @@ export default function RidesPage() {
           </div>
         )}
       </div>
+
+      {/* Cancel cause modal */}
+      {cancelTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
+            <h3 className="font-semibold text-neutral-900 mb-1">Cancel Ride</h3>
+            {cancelTarget.needsCause ? (
+              <>
+                <p className="text-sm text-neutral-500 mb-4">What caused this cancellation?</p>
+                <div className="space-y-2 mb-5">
+                  {NO_SHOW_CAUSES.map((c) => (
+                    <label key={c.value} className="flex items-center gap-3 cursor-pointer p-2.5 rounded-lg hover:bg-neutral-50 border border-neutral-200">
+                      <input
+                        type="radio"
+                        name="cancelCauseFam"
+                        value={c.value}
+                        checked={cancelCause === c.value}
+                        onChange={() => setCancelCause(c.value)}
+                        className="h-4 w-4 text-primary-600 border-neutral-300 focus:ring-primary-500"
+                      />
+                      <span className="text-sm text-neutral-700">{c.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-neutral-500 mb-5">Are you sure you want to cancel this ride?</p>
+            )}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setCancelTarget(null)}
+                className="flex-1 px-4 py-2 border border-neutral-200 text-neutral-600 text-sm rounded-lg hover:bg-neutral-50 transition-colors"
+              >
+                Keep ride
+              </button>
+              <button
+                onClick={submitCancel}
+                disabled={canceling !== null}
+                className="flex-1 px-4 py-2 bg-error-600 text-white text-sm font-semibold rounded-lg hover:bg-error-700 transition-colors disabled:opacity-50"
+              >
+                {canceling ? "Canceling..." : "Confirm Cancel"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

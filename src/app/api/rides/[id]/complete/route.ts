@@ -23,7 +23,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   const updated = await prisma.ride.update({
     where: { id: params.id },
-    data: { status: "COMPLETED" },
+    data: { status: "COMPLETED", actualDropoffAt: new Date() },
   });
 
   // Notify booker that ride is complete
