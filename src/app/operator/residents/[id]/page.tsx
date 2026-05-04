@@ -35,6 +35,7 @@ import { StatCard } from '@/components/ui/StatCard';
 import Image from 'next/image';
 import { FiEdit, FiFileText, FiUser, FiClipboard, FiAlertTriangle, FiShield, FiUsers, FiFolder, FiCalendar } from 'react-icons/fi';
 import { getDaysSinceAdmission } from '@/lib/resident-analytics';
+import BookTransportButton from '@/components/transport/BookTransportButton';
 
 function AccessDenied() {
   return (
@@ -261,13 +262,14 @@ export default async function ResidentDetail({ params, searchParams }: { params:
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
-            <ResidentDetailActionsBar 
-              residentId={resident.id} 
+          <div className="flex items-center gap-2 flex-wrap">
+            <BookTransportButton residentName={`${resident.firstName} ${resident.lastName}`} />
+            <ResidentDetailActionsBar
+              residentId={resident.id}
               residentName={`${resident.firstName} ${resident.lastName}`}
               showArchiveButton={!resident.archivedAt}
             />
-            <ResidentQuickActionsMenu 
+            <ResidentQuickActionsMenu
               residentId={resident.id}
               residentName={`${resident.firstName} ${resident.lastName}`}
             />

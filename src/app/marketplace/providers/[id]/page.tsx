@@ -434,12 +434,12 @@ export default function ProviderDetailPage() {
                     </div>
                   </div>
                 )}
-                {status === "authenticated" && session?.user?.role === "FAMILY" && (
+                {status === "authenticated" && (session?.user?.role === "FAMILY" || session?.user?.role === "OPERATOR" || session?.user?.role === "STAFF") && (
                   <button
                     onClick={() => setShowRideModal(true)}
                     className="mt-5 w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 text-white text-sm font-semibold rounded-lg hover:bg-primary-700 transition-colors"
                   >
-                    🚗 Book a Ride
+                    🚗 {session?.user?.role === "FAMILY" ? "Book a Ride" : "Book Ride for Resident"}
                   </button>
                 )}
               </div>
@@ -603,6 +603,7 @@ export default function ProviderDetailPage() {
         <RideRequestModal
           providerId={provider.id}
           providerName={provider.businessName}
+          isOperator={session?.user?.role === "OPERATOR" || session?.user?.role === "STAFF"}
           onClose={() => setShowRideModal(false)}
           onRequested={() => setShowRideModal(false)}
         />

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { FiCheckCircle, FiAlertCircle, FiClock, FiMapPin, FiCalendar, FiX, FiDollarSign, FiZap } from "react-icons/fi";
+import { FiCheckCircle, FiClock, FiMapPin, FiCalendar, FiX, FiDollarSign, FiZap, FiPlay, FiFlag } from "react-icons/fi";
 import toast from "react-hot-toast";
 
 type RideStatus = "REQUESTED" | "CONFIRMED" | "PAID" | "IN_PROGRESS" | "COMPLETED" | "CANCELED";
@@ -25,19 +25,19 @@ interface Ride {
   totalAmount: number | null;
   canceledBy: string | null;
   cancelReason: string | null;
-  // for family view
+  residentName: string | null;
+  bookedByRole: string;
   provider?: { id: string; businessName: string; contactEmail: string; contactPhone: string | null };
-  // for provider view
   family?: { id: string; user: { firstName: string; lastName: string; email: string; phone: string | null } };
 }
 
 const STATUS_CONFIG: Record<RideStatus, { label: string; color: string; icon: React.ReactNode }> = {
-  REQUESTED: { label: "Pending Confirmation", color: "bg-amber-100 text-amber-800", icon: <FiClock size={13} /> },
-  CONFIRMED: { label: "Confirmed — Pay Now", color: "bg-primary-100 text-primary-800", icon: <FiDollarSign size={13} /> },
-  PAID: { label: "Paid & Scheduled", color: "bg-success-100 text-success-800", icon: <FiCheckCircle size={13} /> },
-  IN_PROGRESS: { label: "In Progress", color: "bg-blue-100 text-blue-800", icon: <FiZap size={13} /> },
-  COMPLETED: { label: "Completed", color: "bg-neutral-100 text-neutral-600", icon: <FiCheckCircle size={13} /> },
-  CANCELED: { label: "Canceled", color: "bg-error-100 text-error-700", icon: <FiX size={13} /> },
+  REQUESTED:   { label: "Pending Confirmation", color: "bg-amber-100 text-amber-800",     icon: <FiClock size={13} /> },
+  CONFIRMED:   { label: "Confirmed — Pay Now",  color: "bg-primary-100 text-primary-800", icon: <FiDollarSign size={13} /> },
+  PAID:        { label: "Paid & Scheduled",     color: "bg-success-100 text-success-800", icon: <FiCheckCircle size={13} /> },
+  IN_PROGRESS: { label: "In Progress",          color: "bg-blue-100 text-blue-800",       icon: <FiPlay size={13} /> },
+  COMPLETED:   { label: "Completed",            color: "bg-neutral-100 text-neutral-600", icon: <FiCheckCircle size={13} /> },
+  CANCELED:    { label: "Canceled",             color: "bg-error-100 text-error-700",     icon: <FiX size={13} /> },
 };
 
 export default function RidesPage() {
@@ -48,13 +48,16 @@ export default function RidesPage() {
   const [rides, setRides] = useState<Ride[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"upcoming" | "completed">("upcoming");
-  const [confirming, setConfirming] = useState<string | null>(null);
-  const [fareInput, setFareInput] = useState<Record<string, string>>({});
-  const [canceling, setCanceling] = useState<string | null>(null);
-  const [paying, setPaying] = useState<string | null>(null);
+  const [confirming, setConfirming]   = useState<string | null>(null);
+  const [fareInput, setFareInput]     = useState<Record<string, string>>({});
+  const [canceling, setCanceling]     = useState<string | null>(null);
+  const [paying, setPaying]           = useState<string | null>(null);
+  const [starting, setStarting]       = useState<string | null>(null);
+  const [completing, setCompleting]   = useState<string | null>(null);
 
   const role = session?.user?.role;
   const isProvider = role === "PROVIDER";
+  const isOperator = role === "OPERATOR" || role === "STAFF";
 
   const fetchRides = useCallback(async () => {
     setLoading(true);
@@ -64,16 +67,11 @@ export default function RidesPage() {
         const data = await res.json();
         setRides(data.rides ?? []);
       }
-    } catch {
-      toast.error("Failed to load rides");
-    } finally {
-      setLoading(false);
-    }
+    } catch { toast.error("Failed to load rides"); }
+    finally { setLoading(false); }
   }, []);
 
-  useEffect(() => {
-    if (session?.user) fetchRides();
-  }, [session, fetchRides]);
+  useEffect(() => { if (session?.user) fetchRides(); }, [session, fetchRides]);
 
   useEffect(() => {
     if (paymentResult === "success") toast.success("Payment complete! Your ride is confirmed.");
@@ -82,11 +80,8 @@ export default function RidesPage() {
 
   const upcomingStatuses: RideStatus[] = ["REQUESTED", "CONFIRMED", "PAID", "IN_PROGRESS"];
   const completedStatuses: RideStatus[] = ["COMPLETED", "CANCELED"];
-
   const visible = rides.filter((r) =>
-    activeTab === "upcoming"
-      ? upcomingStatuses.includes(r.status)
-      : completedStatuses.includes(r.status)
+    activeTab === "upcoming" ? upcomingStatuses.includes(r.status) : completedStatuses.includes(r.status)
   );
 
   const handleConfirm = async (rideId: string) => {
@@ -95,26 +90,46 @@ export default function RidesPage() {
     setConfirming(rideId);
     try {
       const res = await fetch(`/api/rides/${rideId}/confirm`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ baseFare: fare }),
       });
       const data = await res.json();
       if (!res.ok) { toast.error(data.error || "Failed to confirm ride"); return; }
-      toast.success("Ride confirmed! Family has been notified.");
-      setFareInput((prev) => { const n = { ...prev }; delete n[rideId]; return n; });
+      toast.success("Ride confirmed — family notified to complete payment.");
+      setFareInput((p) => { const n = { ...p }; delete n[rideId]; return n; });
       fetchRides();
     } catch { toast.error("Failed to confirm ride"); }
     finally { setConfirming(null); }
   };
 
+  const handleStart = async (rideId: string) => {
+    setStarting(rideId);
+    try {
+      const res = await fetch(`/api/rides/${rideId}/start`, { method: "POST" });
+      if (!res.ok) { toast.error("Failed to start ride"); return; }
+      toast.success("Ride marked as in progress.");
+      fetchRides();
+    } catch { toast.error("Failed to start ride"); }
+    finally { setStarting(null); }
+  };
+
+  const handleComplete = async (rideId: string) => {
+    setCompleting(rideId);
+    try {
+      const res = await fetch(`/api/rides/${rideId}/complete`, { method: "POST" });
+      if (!res.ok) { toast.error("Failed to complete ride"); return; }
+      toast.success("Ride marked complete.");
+      fetchRides();
+    } catch { toast.error("Failed to complete ride"); }
+    finally { setCompleting(null); }
+  };
+
   const handleCancel = async (rideId: string) => {
-    if (!window.confirm("Cancel this ride?")) return;
+    if (!window.confirm("Cancel this ride? If payment was made, a refund will be issued.")) return;
     setCanceling(rideId);
     try {
       const res = await fetch(`/api/rides/${rideId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        method: "PATCH", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
       });
       if (!res.ok) { toast.error("Failed to cancel ride"); return; }
@@ -135,21 +150,21 @@ export default function RidesPage() {
     finally { setPaying(null); }
   };
 
+  const pageTitle = isProvider ? "Ride Dispatch" : isOperator ? "Resident Rides" : "My Rides";
+  const pageDesc = isProvider
+    ? "Confirm requests, start rides, and mark completions."
+    : isOperator
+    ? "Manage transport rides booked for your residents."
+    : "Track your ride requests and upcoming bookings.";
+
   return (
-    <DashboardLayout title="My Rides">
+    <DashboardLayout title={pageTitle}>
       <div className="max-w-3xl mx-auto p-6">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-neutral-900">
-            {isProvider ? "Ride Dispatch" : "My Rides"}
-          </h1>
-          <p className="text-neutral-500 mt-1 text-sm">
-            {isProvider
-              ? "Manage incoming ride requests and your upcoming schedule."
-              : "Track your ride requests and upcoming bookings."}
-          </p>
+          <h1 className="text-2xl font-bold text-neutral-900">{pageTitle}</h1>
+          <p className="text-neutral-500 mt-1 text-sm">{pageDesc}</p>
         </div>
 
-        {/* Tabs */}
         <div className="flex gap-1 mb-6 border-b border-neutral-200">
           {(["upcoming", "completed"] as const).map((tab) => (
             <button
@@ -161,24 +176,24 @@ export default function RidesPage() {
                   : "border-transparent text-neutral-500 hover:text-neutral-700"
               }`}
             >
-              {tab}
+              {tab === "upcoming" ? `Upcoming (${rides.filter(r => upcomingStatuses.includes(r.status)).length})` : "Completed"}
             </button>
           ))}
         </div>
 
         {loading ? (
           <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-32 bg-neutral-100 rounded-xl animate-pulse" />
-            ))}
+            {[1, 2, 3].map((i) => <div key={i} className="h-32 bg-neutral-100 rounded-xl animate-pulse" />)}
           </div>
         ) : visible.length === 0 ? (
           <div className="text-center py-16 text-neutral-400">
             <FiCalendar size={36} className="mx-auto mb-3 opacity-40" />
             <p className="font-medium text-neutral-600">No {activeTab} rides</p>
             <p className="text-sm mt-1">
-              {activeTab === "upcoming" && !isProvider
+              {activeTab === "upcoming" && !isProvider && !isOperator
                 ? "Request a ride from a transportation provider in the marketplace."
+                : activeTab === "upcoming" && isOperator
+                ? "Book transport rides for residents from their profile page."
                 : "Nothing here yet."}
             </p>
           </div>
@@ -186,20 +201,26 @@ export default function RidesPage() {
           <div className="space-y-4">
             {visible.map((ride) => {
               const cfg = STATUS_CONFIG[ride.status];
-              const scheduled = new Date(ride.scheduledAt);
-              const scheduledStr = scheduled.toLocaleString("en-US", {
+              const scheduledStr = new Date(ride.scheduledAt).toLocaleString("en-US", {
                 weekday: "short", month: "short", day: "numeric", year: "numeric",
                 hour: "numeric", minute: "2-digit",
               });
 
+              // Determine displayed passenger name
+              const passengerLabel = ride.residentName
+                ?? (ride.family ? `${ride.family.user.firstName} ${ride.family.user.lastName}` : null);
+
               return (
                 <div key={ride.id} className="bg-white border border-neutral-200 rounded-xl p-5">
-                  {/* Status + name */}
+                  {/* Header row */}
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div>
-                      {isProvider && ride.family && (
+                      {(isProvider || isOperator) && passengerLabel && (
                         <p className="font-semibold text-neutral-900 text-sm">
-                          {ride.family.user.firstName} {ride.family.user.lastName}
+                          {passengerLabel}
+                          {ride.bookedByRole === "OPERATOR" && (
+                            <span className="ml-2 text-xs text-neutral-400 font-normal">(facility booking)</span>
+                          )}
                         </p>
                       )}
                       {!isProvider && ride.provider && (
@@ -218,59 +239,54 @@ export default function RidesPage() {
                   <div className="space-y-1.5 mb-3">
                     <div className="flex items-start gap-2 text-sm text-neutral-700">
                       <FiMapPin size={14} className="text-primary-500 mt-0.5 shrink-0" />
-                      <span><span className="text-neutral-400 text-xs">From</span> {ride.pickupAddress}</span>
+                      <span><span className="text-neutral-400 text-xs">From </span>{ride.pickupAddress}</span>
                     </div>
                     <div className="flex items-start gap-2 text-sm text-neutral-700">
                       <FiMapPin size={14} className="text-success-500 mt-0.5 shrink-0" />
-                      <span><span className="text-neutral-400 text-xs">To</span> {ride.dropoffAddress}</span>
+                      <span><span className="text-neutral-400 text-xs">To </span>{ride.dropoffAddress}</span>
                     </div>
                   </div>
 
                   {/* Fare summary */}
                   {ride.totalAmount != null && (
-                    <div className="flex items-center gap-3 text-sm mb-3 p-2.5 bg-neutral-50 rounded-lg">
+                    <div className="flex items-center gap-3 text-sm mb-3 p-2.5 bg-neutral-50 rounded-lg flex-wrap">
                       <span className="text-neutral-500">Base fare</span>
-                      <span className="text-neutral-700">${Number(ride.baseFare).toFixed(2)}</span>
+                      <span>${Number(ride.baseFare).toFixed(2)}</span>
                       <span className="text-neutral-400">+</span>
                       <span className="text-neutral-500">Service fee</span>
-                      <span className="text-neutral-700">${Number(ride.platformFee).toFixed(2)}</span>
-                      <span className="text-neutral-400 ml-auto">Total</span>
+                      <span>${Number(ride.platformFee).toFixed(2)}</span>
+                      <span className="ml-auto text-neutral-500">Total</span>
                       <span className="font-semibold text-neutral-900">${Number(ride.totalAmount).toFixed(2)}</span>
                     </div>
                   )}
 
-                  {/* Mobility / special notes */}
+                  {/* Accessibility / notes */}
                   {(ride.mobilityNeeds || ride.specialRequests) && (
                     <p className="text-xs text-neutral-500 mb-3 italic">
                       {[ride.mobilityNeeds, ride.specialRequests].filter(Boolean).join(" · ")}
                     </p>
                   )}
 
-                  {/* Provider actions: confirm with fare input */}
+                  {/* ── Provider actions ── */}
                   {isProvider && ride.status === "REQUESTED" && (
                     <div className="flex gap-2 mt-3">
                       <div className="relative flex-1">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-sm">$</span>
                         <input
-                          type="number"
-                          min="1"
-                          step="0.01"
-                          placeholder="Set fare"
+                          type="number" min="1" step="0.01" placeholder="Set fare"
                           value={fareInput[ride.id] ?? ""}
                           onChange={(e) => setFareInput((p) => ({ ...p, [ride.id]: e.target.value }))}
                           className="form-input pl-7 w-full text-sm"
                         />
                       </div>
                       <button
-                        onClick={() => handleConfirm(ride.id)}
-                        disabled={confirming === ride.id}
+                        onClick={() => handleConfirm(ride.id)} disabled={confirming === ride.id}
                         className="px-4 py-2 bg-success-600 text-white text-sm font-semibold rounded-lg hover:bg-success-700 transition-colors disabled:opacity-50"
                       >
                         {confirming === ride.id ? "Confirming..." : "Confirm"}
                       </button>
                       <button
-                        onClick={() => handleCancel(ride.id)}
-                        disabled={canceling === ride.id}
+                        onClick={() => handleCancel(ride.id)} disabled={canceling === ride.id}
                         className="px-3 py-2 border border-neutral-200 text-neutral-600 text-sm rounded-lg hover:bg-neutral-50 transition-colors disabled:opacity-50"
                       >
                         Decline
@@ -278,35 +294,52 @@ export default function RidesPage() {
                     </div>
                   )}
 
-                  {/* Family actions: pay for confirmed ride */}
-                  {!isProvider && ride.status === "CONFIRMED" && (
+                  {isProvider && ride.status === "PAID" && (
                     <button
-                      onClick={() => handlePay(ride.id)}
-                      disabled={paying === ride.id}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 text-white text-sm font-semibold rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 mt-3"
+                      onClick={() => handleStart(ride.id)} disabled={starting === ride.id}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 mt-3"
                     >
-                      <FiDollarSign size={15} />
-                      {paying === ride.id ? "Redirecting to payment..." : `Pay $${Number(ride.totalAmount).toFixed(2)} to Confirm Ride`}
+                      <FiPlay size={14} />
+                      {starting === ride.id ? "Starting..." : "Start Ride"}
                     </button>
                   )}
 
-                  {/* Cancel option (family + provider for non-terminal rides) */}
-                  {["REQUESTED", "CONFIRMED"].includes(ride.status) && !isProvider && (
+                  {isProvider && ride.status === "IN_PROGRESS" && (
                     <button
-                      onClick={() => handleCancel(ride.id)}
-                      disabled={canceling === ride.id}
+                      onClick={() => handleComplete(ride.id)} disabled={completing === ride.id}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-success-600 text-white text-sm font-semibold rounded-lg hover:bg-success-700 transition-colors disabled:opacity-50 mt-3"
+                    >
+                      <FiFlag size={14} />
+                      {completing === ride.id ? "Completing..." : "Complete Ride"}
+                    </button>
+                  )}
+
+                  {/* Provider cancel (CONFIRMED or PAID) */}
+                  {isProvider && ["CONFIRMED", "PAID"].includes(ride.status) && (
+                    <button
+                      onClick={() => handleCancel(ride.id)} disabled={canceling === ride.id}
                       className="mt-2 text-xs text-neutral-400 hover:text-error-600 transition-colors w-full text-center"
                     >
                       {canceling === ride.id ? "Canceling..." : "Cancel ride"}
                     </button>
                   )}
 
-                  {/* Provider cancel for CONFIRMED (before payment) */}
-                  {isProvider && ["CONFIRMED", "PAID"].includes(ride.status) && (
+                  {/* ── Family / Operator pay action ── */}
+                  {!isProvider && ride.status === "CONFIRMED" && (
                     <button
-                      onClick={() => handleCancel(ride.id)}
-                      disabled={canceling === ride.id}
-                      className="mt-3 text-xs text-neutral-400 hover:text-error-600 transition-colors w-full text-center"
+                      onClick={() => handlePay(ride.id)} disabled={paying === ride.id}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 text-white text-sm font-semibold rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 mt-3"
+                    >
+                      <FiDollarSign size={15} />
+                      {paying === ride.id ? "Redirecting..." : `Pay $${Number(ride.totalAmount).toFixed(2)} to Confirm Ride`}
+                    </button>
+                  )}
+
+                  {/* Family / Operator cancel */}
+                  {!isProvider && ["REQUESTED", "CONFIRMED"].includes(ride.status) && (
+                    <button
+                      onClick={() => handleCancel(ride.id)} disabled={canceling === ride.id}
+                      className="mt-2 text-xs text-neutral-400 hover:text-error-600 transition-colors w-full text-center"
                     >
                       {canceling === ride.id ? "Canceling..." : "Cancel ride"}
                     </button>

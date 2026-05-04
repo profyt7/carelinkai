@@ -7,9 +7,12 @@ import toast from "react-hot-toast";
 interface Props {
   providerId: string;
   providerName: string;
+  /** Set to true when an operator (not family) is booking */
+  isOperator?: boolean;
   leadId?: string;
   defaultPickup?: string;
   defaultDropoff?: string;
+  defaultResidentName?: string;
   onClose: () => void;
   onRequested?: () => void;
 }
@@ -25,15 +28,18 @@ const TRIP_PURPOSES = [
 export default function RideRequestModal({
   providerId,
   providerName,
+  isOperator = false,
   leadId,
   defaultPickup = "",
   defaultDropoff = "",
+  defaultResidentName = "",
   onClose,
   onRequested,
 }: Props) {
   const [pickupAddress, setPickupAddress] = useState(defaultPickup);
   const [dropoffAddress, setDropoffAddress] = useState(defaultDropoff);
   const [scheduledAt, setScheduledAt] = useState("");
+  const [residentName, setResidentName] = useState(defaultResidentName);
   const [tripPurpose, setTripPurpose] = useState("medical_appointment");
   const [mobilityNeeds, setMobilityNeeds] = useState("");
   const [passengerCount, setPassengerCount] = useState(1);
@@ -51,6 +57,10 @@ export default function RideRequestModal({
       toast.error("Please fill in pickup, dropoff, and scheduled time.");
       return;
     }
+    if (isOperator && !residentName.trim()) {
+      toast.error("Please enter the resident's name.");
+      return;
+    }
 
     setLoading(true);
     try {
@@ -60,6 +70,7 @@ export default function RideRequestModal({
         body: JSON.stringify({
           providerId,
           leadId: leadId ?? undefined,
+          residentName: isOperator ? residentName.trim() : undefined,
           pickupAddress: pickupAddress.trim(),
           dropoffAddress: dropoffAddress.trim(),
           scheduledAt: new Date(scheduledAt).toISOString(),
@@ -103,6 +114,23 @@ export default function RideRequestModal({
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          {/* Resident name (operators only) */}
+          {isOperator && (
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">
+                Resident Name <span className="text-error-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={residentName}
+                onChange={(e) => setResidentName(e.target.value)}
+                placeholder="Full name of the resident being transported"
+                required
+                className="form-input w-full"
+              />
+            </div>
+          )}
+
           {/* Scheduled date/time */}
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-1">

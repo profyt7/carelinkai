@@ -46,6 +46,14 @@ async function getAdminStats() {
     prisma.family.count({ where: { plusStatus: { in: ['ACTIVE', 'TRIALING'] } } }),
   ]);
 
+  // Transport commissions: sum platformFee on COMPLETED rides this calendar month
+  const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  const transportCommissions = await prisma.ride.aggregate({
+    where: { status: 'COMPLETED', createdAt: { gte: monthStart } },
+    _sum: { platformFee: true },
+  });
+  const transportCommissionMTD = Number(transportCommissions._sum?.platformFee ?? 0);
+
   const operatorMRR = (activeOperators as any[]).reduce((sum: number, op: any) => {
     const price = op.subscriptionPlan === 'STARTER' ? 99
       : op.subscriptionPlan === 'PROFESSIONAL' ? 249
@@ -65,6 +73,7 @@ async function getAdminStats() {
     inquiryCount,
     placementCount,
     activeUsers,
+    transportCommissionMTD,
     mrr: { operator: operatorMRR, provider: providerMRR, caregiver: caregiverProMRR, dp: dpMRR, familyPlus: familyPlusMRR, total: totalMRR },
     mrrCounts: {
       operators: (activeOperators as any[]).length,
@@ -236,7 +245,7 @@ export default async function AdminDashboard() {
             <FiDollarSign className="text-success-600 text-xl" />
             <h2 className="text-xl font-bold text-neutral-900">Revenue Overview (Est. MRR)</h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
             <div className="lg:col-span-1 bg-gradient-to-br from-success-500 to-success-600 rounded-lg p-5 text-white">
               <p className="text-sm font-medium text-success-100">Total MRR</p>
               <p className="text-3xl font-bold mt-1">${stats.mrr.total.toLocaleString()}</p>
@@ -283,6 +292,14 @@ export default async function AdminDashboard() {
               </div>
               <p className="text-2xl font-bold text-neutral-900">${stats.mrr.familyPlus.toLocaleString()}</p>
               <p className="text-xs text-neutral-500 mt-1">{stats.mrrCounts.familyPlus} active · $19/mo</p>
+            </div>
+            <div className="bg-white rounded-lg border border-neutral-200 p-5">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Transport Fees</p>
+                <span className="text-sm">🚗</span>
+              </div>
+              <p className="text-2xl font-bold text-neutral-900">${stats.transportCommissionMTD.toFixed(2)}</p>
+              <p className="text-xs text-neutral-500 mt-1">12% commission · MTD</p>
             </div>
           </div>
         </div>

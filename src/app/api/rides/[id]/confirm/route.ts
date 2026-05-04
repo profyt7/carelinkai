@@ -58,12 +58,12 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 }
 
 async function notifyFamilyConfirmed(
-  ride: { id: string; scheduledAt: Date; pickupAddress: string; dropoffAddress: string; family: { user: { email: string; firstName: string } } },
+  ride: { id: string; scheduledAt: Date; pickupAddress: string; dropoffAddress: string; family: { user: { email: string; firstName: string } } | null },
   baseFare: number,
   platformFee: number,
   totalAmount: number
 ) {
-  if (!process.env.RESEND_API_KEY) return;
+  if (!process.env.RESEND_API_KEY || !ride.family) return;
   const { Resend } = await import("resend");
   const resend = new Resend(process.env.RESEND_API_KEY);
   const APP_URL = process.env.NEXTAUTH_URL || "https://getcarelinkai.com";
@@ -82,7 +82,7 @@ async function notifyFamilyConfirmed(
           <h1 style="color:#fff;margin:0;font-size:20px">Ride Confirmed!</h1>
         </div>
         <div style="padding:24px;border:1px solid #e5e7eb;border-top:0;border-radius:0 0 8px 8px">
-          <p>Hi ${ride.family.user.firstName},</p>
+          <p>Hi ${ride.family!.user.firstName},</p>
           <p>Your transport provider has confirmed your ride request. To secure your booking, please complete payment.</p>
           <table style="width:100%;border-collapse:collapse;margin:16px 0">
             <tr><td style="padding:8px 0;color:#6b7280;width:140px">Scheduled</td><td style="padding:8px 0;font-weight:600">${scheduledStr}</td></tr>

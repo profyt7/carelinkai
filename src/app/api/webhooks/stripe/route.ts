@@ -472,14 +472,22 @@ export async function POST(request: NextRequest) {
       if (type === "RIDE_PAYMENT") {
         const rideId = cs.metadata?.["rideId"];
         if (rideId) {
-          await prisma.ride.update({
+          const ride = await prisma.ride.update({
             where: { id: rideId },
             data: {
               status: "PAID",
               stripePaymentIntentId: cs.payment_intent as string ?? null,
             },
-          }).catch((err: any) => logger.error("Failed to mark ride PAID", { err: err?.message, rideId }));
-          logger.info("Ride payment completed", { rideId });
+            include: {
+              provider: { select: { contactEmail: true, contactName: true, businessName: true } },
+              family: { select: { user: { select: { firstName: true, lastName: true } } } },
+            },
+          }).catch((err: any) => { logger.error("Failed to mark ride PAID", { err: err?.message, rideId }); return null; });
+
+          if (ride) {
+            logger.info("Ride payment completed", { rideId });
+            notifyProviderRidePaid(ride).catch(() => {});
+          }
         }
         return NextResponse.json({ received: true }, { status: 200 });
       }
@@ -569,4 +577,45 @@ export async function POST(request: NextRequest) {
     logger.error("Error processing Stripe webhook", { err: error instanceof Error ? error.message : error });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
+}
+
+async function notifyProviderRidePaid(ride: {
+  id: string; scheduledAt: Date; pickupAddress: string; dropoffAddress: string;
+  totalAmount: any; residentName: string | null;
+  provider: { contactEmail: string; contactName: string; businessName: string };
+  family: { user: { firstName: string; lastName: string } } | null;
+}) {
+  if (!process.env.RESEND_API_KEY) return;
+  const { Resend } = await import("resend");
+  const resend = new Resend(process.env.RESEND_API_KEY);
+  const APP_URL = process.env.NEXTAUTH_URL || "https://getcarelinkai.com";
+  const passengerLabel = ride.residentName ?? (ride.family ? `${ride.family.user.firstName} ${ride.family.user.lastName}` : "Passenger");
+  const scheduledStr = ride.scheduledAt.toLocaleString("en-US", {
+    weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit",
+  });
+  await resend.emails.send({
+    from: `CareLinkAI <${process.env.EMAIL_FROM || "noreply@getcarelinkai.com"}>`,
+    to: [ride.provider.contactEmail],
+    subject: `Payment Received — Ride Confirmed for ${scheduledStr}`,
+    html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#111">
+      <div style="background:#16a34a;padding:24px;border-radius:8px 8px 0 0">
+        <h1 style="color:#fff;margin:0;font-size:20px">Payment Received — Ride Confirmed</h1>
+      </div>
+      <div style="padding:24px;border:1px solid #e5e7eb;border-top:0;border-radius:0 0 8px 8px">
+        <p>Hi ${ride.provider.contactName},</p>
+        <p>Payment has been received and the following ride is now confirmed:</p>
+        <table style="width:100%;border-collapse:collapse;margin:16px 0">
+          <tr><td style="padding:8px 0;color:#6b7280;width:140px">Passenger</td><td style="padding:8px 0;font-weight:600">${passengerLabel}</td></tr>
+          <tr><td style="padding:8px 0;color:#6b7280">Scheduled</td><td style="padding:8px 0;font-weight:600">${scheduledStr}</td></tr>
+          <tr><td style="padding:8px 0;color:#6b7280">Pickup</td><td style="padding:8px 0">${ride.pickupAddress}</td></tr>
+          <tr><td style="padding:8px 0;color:#6b7280">Dropoff</td><td style="padding:8px 0">${ride.dropoffAddress}</td></tr>
+          <tr><td style="padding:8px 0;color:#6b7280">Total Collected</td><td style="padding:8px 0;font-weight:700">$${Number(ride.totalAmount).toFixed(2)}</td></tr>
+        </table>
+        <a href="${APP_URL}/rides" style="display:inline-block;background:#16a34a;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600">
+          View Ride Dashboard →
+        </a>
+        <p style="color:#9ca3af;font-size:12px;margin-top:24px">CareLinkAI · Cleveland, OH</p>
+      </div>
+    </div>`,
+  });
 }
