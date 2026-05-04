@@ -75,6 +75,8 @@ interface NavItem {
    * Collapsible section with nested items
    */
   children?: NavItem[];
+  /** Renders with a highlighted/upsell style (amber gradient) */
+  highlight?: boolean;
 }
 
 // Navigation items with collapsible structure (8 main categories)
@@ -129,6 +131,16 @@ const navItems: NavItem[] = [
     ]
   },
   
+  // 4b. CareLinkAI Plus upsell (FAMILY only — always visible, acts as CTA when not subscribed)
+  {
+    name: "CareLinkAI Plus",
+    icon: <FiZap size={20} />,
+    href: "/settings/family/billing",
+    showInMobileBar: true,
+    roleRestriction: ["FAMILY"],
+    highlight: true,
+  },
+
   // 5. Residents & Family (collapsible)
   {
     name: "Residents & Family",
@@ -210,15 +222,6 @@ const navItems: NavItem[] = [
     href: "/settings/billing",
     showInMobileBar: false,
     roleRestriction: ["CAREGIVER"],
-  },
-
-  // 8b-iii. Family Plus
-  {
-    name: "CareLinkAI Plus",
-    icon: <FiCreditCard size={20} />,
-    href: "/settings/family/billing",
-    showInMobileBar: false,
-    roleRestriction: ["FAMILY"],
   },
 
   // 8b. Affiliate Dashboard (affiliate-only)
@@ -781,13 +784,17 @@ export default function DashboardLayout({
                 // Render standalone item (no children)
                 const itemHref = getComputedHref(item);
                 const isActive = isPathActive(itemHref);
-                
+
                 return (
                   <Link
                     key={item.name}
                     href={itemHref}
                     className={`flex items-center px-3 py-2.5 rounded-lg mb-1 transition-all duration-200 ${
-                      isActive
+                      item.highlight
+                        ? isActive
+                          ? 'bg-amber-500 text-white font-semibold'
+                          : 'bg-gradient-to-r from-amber-500/20 to-amber-400/10 text-amber-300 hover:from-amber-500/30 hover:to-amber-400/20 hover:text-amber-200 font-medium border border-amber-500/20'
+                        : isActive
                         ? 'bg-primary-500 text-white font-medium'
                         : 'text-neutral-400 hover:bg-white/10 hover:text-neutral-100'
                     }`}
@@ -1175,10 +1182,10 @@ export default function DashboardLayout({
               const isActive = item.href === longestMatch || pathname === item.href;
               const itemHref = item.href || '/dashboard';
               return (
-              <Link 
+              <Link
                 key={item.name}
                 href={itemHref}
-                className={`mobile-tab-item ${isActive ? 'mobile-tab-item-active' : ''}`}
+                className={`mobile-tab-item ${isActive ? 'mobile-tab-item-active' : ''} ${item.highlight && !isActive ? 'text-amber-500' : ''}`}
                 aria-current={isActive ? "page" : undefined}
                 onClick={() => {
                   // Workaround for Next.js router context bug on property pages
