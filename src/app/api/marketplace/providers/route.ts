@@ -82,8 +82,12 @@ export async function GET(request: Request) {
     const idsParam = searchParams.get('ids');
     const ids = idsParam ? idsParam.split(',').map((s) => s.trim()).filter(Boolean) : null;
     const q = searchParams.get('q');
-    // Accept both 'serviceType' (single, from direct links) and 'services' (csv, from marketplace filter UI)
-    const serviceType = searchParams.get('serviceType') || searchParams.get('services')?.split(',')[0] || null;
+    // Accept both 'serviceType' (single) and 'services' (csv) — normalize to lowercase array
+    const serviceTypeSingle = searchParams.get('serviceType');
+    const serviceTypesRaw = serviceTypeSingle
+      ? [serviceTypeSingle]
+      : (searchParams.get('services')?.split(',').filter(Boolean) || []);
+    const serviceTypeFilters = serviceTypesRaw.map((s) => s.toLowerCase()).filter(Boolean);
     const city = searchParams.get('city');
     const state = searchParams.get('state');
     const verified = searchParams.get('verified');
@@ -172,13 +176,21 @@ export async function GET(request: Request) {
     }
 
     // Build where clause for filtering
-    // Gate: only show providers with an active/trialing listing subscription (or no subscription yet during grace period)
-    // Providers with CANCELED or PAST_DUE status are hidden
+    // NULL listingStatus = no subscription yet (grace period) — must be explicitly included
+    // because Postgres NULL NOT IN (...) evaluates to NULL (falsy), which would wrongly exclude them.
     const where: any = {
       isActive: true,
-      NOT: { listingStatus: { in: ['CANCELED', 'PAST_DUE', 'INCOMPLETE', 'INCOMPLETE_EXPIRED'] } },
+      AND: [
+        {
+          OR: [
+            { listingStatus: null },
+            { listingStatus: { notIn: ['CANCELED', 'PAST_DUE', 'INCOMPLETE', 'INCOMPLETE_EXPIRED'] } },
+          ],
+        },
+      ],
     };
-    
+
+
     // Text search in bio, business name, or contact name
     if (q) {
       where.OR = [
@@ -187,16 +199,16 @@ export async function GET(request: Request) {
         { contactName: { contains: q, mode: 'insensitive' } }
       ];
     }
-    
-    // Service type filter (case-insensitive: normalize to lowercase)
-    if (serviceType) {
-      where.serviceTypes = {
-        has: serviceType.toLowerCase()
-      };
+
+    // Service type filter — supports multiple selected services (any match)
+    if (serviceTypeFilters.length === 1) {
+      where.serviceTypes = { has: serviceTypeFilters[0] };
+    } else if (serviceTypeFilters.length > 1) {
+      where.serviceTypes = { hasSome: serviceTypeFilters };
     }
-    
-    // Verified filter
-    if (verified !== null) {
+
+    // Verified filter — only apply when explicitly set to "true" or "false"
+    if (verified === 'true' || verified === 'false') {
       where.isVerified = verified === 'true';
     }
 
