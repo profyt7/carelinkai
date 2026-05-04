@@ -141,6 +141,15 @@ const navItems: NavItem[] = [
     highlight: true,
   },
 
+  // 4c. My Rides (FAMILY + PROVIDER transport)
+  {
+    name: "My Rides",
+    icon: <FiCalendar size={20} />,
+    href: "/rides",
+    showInMobileBar: false,
+    roleRestriction: ["FAMILY", "PROVIDER"],
+  },
+
   // 5. Residents & Family (collapsible)
   {
     name: "Residents & Family",

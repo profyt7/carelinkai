@@ -463,22 +463,39 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ received: true }, { status: 200 });
     }
 
-    // ─── checkout.session.completed: compliance kit one-time purchases ────────
+    // ─── checkout.session.completed ──────────────────────────────────────────
     if (event.type === "checkout.session.completed") {
       const cs = event.data.object as Stripe.Checkout.Session;
+      const type = cs.metadata?.["type"];
+
+      // Ride payment
+      if (type === "RIDE_PAYMENT") {
+        const rideId = cs.metadata?.["rideId"];
+        if (rideId) {
+          await prisma.ride.update({
+            where: { id: rideId },
+            data: {
+              status: "PAID",
+              stripePaymentIntentId: cs.payment_intent as string ?? null,
+            },
+          }).catch((err: any) => logger.error("Failed to mark ride PAID", { err: err?.message, rideId }));
+          logger.info("Ride payment completed", { rideId });
+        }
+        return NextResponse.json({ received: true }, { status: 200 });
+      }
+
+      // Compliance kit purchase
       const purchaseId = cs.metadata?.["purchaseId"];
       if (purchaseId) {
         await prisma.complianceKitPurchase.update({
           where: { id: purchaseId },
-          data: {
-            status: 'COMPLETED',
-            // downloadUrl set manually or via a future document generation step
-          },
+          data: { status: 'COMPLETED' },
         }).catch((err: any) => logger.error("Failed to mark compliance kit COMPLETED", { err: err?.message }));
         logger.info("Compliance kit purchase completed", { purchaseId });
         return NextResponse.json({ received: true }, { status: 200 });
       }
-      return NextResponse.json({ received: true, message: "Checkout session without purchaseId" }, { status: 200 });
+
+      return NextResponse.json({ received: true, message: "Checkout session without known type" }, { status: 200 });
     }
 
     // ─── payment_intent.succeeded: family wallet deposits ───────────────────

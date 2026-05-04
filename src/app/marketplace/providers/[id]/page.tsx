@@ -20,6 +20,7 @@ import {
 } from "react-icons/fi";
 import RequestCareButton from "@/components/marketplace/RequestCareButton";
 import ProviderReviewsListClient from "@/components/marketplace/ProviderReviewsListClient";
+import RideRequestModal from "@/components/transport/RideRequestModal";
 
 type Provider = {
   id: string;
@@ -79,6 +80,7 @@ export default function ProviderDetailPage() {
   const [provider, setProvider] = useState<Provider | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showRideModal, setShowRideModal] = useState(false);
   
   // Favorite state
   const PR_FAV_KEY = 'marketplace:provider-favorites:v1';
@@ -432,6 +434,14 @@ export default function ProviderDetailPage() {
                     </div>
                   </div>
                 )}
+                {status === "authenticated" && session?.user?.role === "FAMILY" && (
+                  <button
+                    onClick={() => setShowRideModal(true)}
+                    className="mt-5 w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 text-white text-sm font-semibold rounded-lg hover:bg-primary-700 transition-colors"
+                  >
+                    🚗 Book a Ride
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -588,6 +598,15 @@ export default function ProviderDetailPage() {
           </div>
         </div>
       </div>
+
+      {showRideModal && (
+        <RideRequestModal
+          providerId={provider.id}
+          providerName={provider.businessName}
+          onClose={() => setShowRideModal(false)}
+          onRequested={() => setShowRideModal(false)}
+        />
+      )}
     </div>
   );
 }
