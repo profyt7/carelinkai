@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { FiCheckCircle, FiClock, FiMapPin, FiCalendar, FiX, FiDollarSign, FiZap, FiPlay, FiFlag } from "react-icons/fi";
+import { FiCheckCircle, FiClock, FiMapPin, FiCalendar, FiX, FiDollarSign, FiZap, FiPlay, FiFlag, FiPlus } from "react-icons/fi";
+import Link from "next/link";
 import toast from "react-hot-toast";
 
 type RideStatus = "REQUESTED" | "CONFIRMED" | "PAID" | "IN_PROGRESS" | "COMPLETED" | "CANCELED";
@@ -160,9 +161,20 @@ export default function RidesPage() {
   return (
     <DashboardLayout title={pageTitle}>
       <div className="max-w-3xl mx-auto p-6">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-neutral-900">{pageTitle}</h1>
-          <p className="text-neutral-500 mt-1 text-sm">{pageDesc}</p>
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-neutral-900">{pageTitle}</h1>
+            <p className="text-neutral-500 mt-1 text-sm">{pageDesc}</p>
+          </div>
+          {!isProvider && (
+            <Link
+              href="/marketplace?tab=providers&serviceType=transportation"
+              className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-lg transition-colors shrink-0"
+            >
+              <FiPlus size={15} />
+              Book a Ride
+            </Link>
+          )}
         </div>
 
         <div className="flex gap-1 mb-6 border-b border-neutral-200">
@@ -189,13 +201,22 @@ export default function RidesPage() {
           <div className="text-center py-16 text-neutral-400">
             <FiCalendar size={36} className="mx-auto mb-3 opacity-40" />
             <p className="font-medium text-neutral-600">No {activeTab} rides</p>
-            <p className="text-sm mt-1">
-              {activeTab === "upcoming" && !isProvider && !isOperator
-                ? "Request a ride from a transportation provider in the marketplace."
-                : activeTab === "upcoming" && isOperator
-                ? "Book transport rides for residents from their profile page."
-                : "Nothing here yet."}
-            </p>
+            {activeTab === "upcoming" && !isProvider && !isOperator ? (
+              <div className="mt-3">
+                <p className="text-sm mb-4">Find a transportation provider in the marketplace and book your first ride.</p>
+                <Link
+                  href="/marketplace?tab=providers&serviceType=transportation"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-lg transition-colors"
+                >
+                  <FiPlus size={15} />
+                  Find a Transport Provider
+                </Link>
+              </div>
+            ) : activeTab === "upcoming" && isOperator ? (
+              <p className="text-sm mt-1">Book transport rides for residents from their profile page, or browse <Link href="/marketplace?tab=providers&serviceType=transportation" className="text-primary-600 underline">transport providers</Link>.</p>
+            ) : (
+              <p className="text-sm mt-1">Nothing here yet.</p>
+            )}
           </div>
         ) : (
           <div className="space-y-4">
