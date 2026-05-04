@@ -13,19 +13,27 @@ async function seedMarketplaceTaxonomy() {
   const groups: { type: CategoryType; names: string[] }[] = [
     {
       type: 'SETTING',
-      names: ['In-home','Assisted Living','Independent Living','Memory Care','Senior Living Community'],
+      // slug = lowercase-hyphen; must be globally unique across all category types
+      names: ['In-home','Assisted Living','Independent Living','Memory Care','Senior Living Community','Skilled Nursing','Hospice'],
     },
     {
       type: 'CARE_TYPE',
-      names: ['Companion Care','Personal Care',"Dementia/Alzheimer's",'Hospice Support','Post-Surgery Support','Special Needs Adult Care','Respite Care'],
+      // avoid apostrophes so slugs stay clean; avoid slugs already used in SETTING/SPECIALTY
+      // 'Dementia Care' excluded here — its slug (dementia-care) already exists in SPECIALTY
+      names: ['Senior Care','Alzheimers Care','Parkinsons Care','Post-Surgery Care','Disability Care','Overnight Care','Live-In Care','Respite Care','Companion Care','Hospice Support','Special Needs Adult Care','Personal Care'],
     },
     {
       type: 'SERVICE',
-      names: ['Transportation','Errands','Household Tasks','Medication Prompting','Mobility Assistance'],
+      // slugs must not conflict with SETTING/CARE_TYPE/SPECIALTY slugs above;
+      // personal-care/companionship/memory-care/skilled-nursing/hospice are excluded here
+      // because they already exist in other types (globally unique slug constraint).
+      // Provider filter still works via hasSome query even if they aren't in SERVICE type.
+      names: ['Transportation','Home Care','Adult Day','Medication Management','Meal Preparation','Light Housekeeping','Wound Care','Bathing Grooming','Incontinence Care','Mobility Assistance','Errands','Household Tasks','Medication Prompting'],
     },
     {
       type: 'SPECIALTY',
-      names: ['Companionship','Dementia Care'],
+      // avoid slugs used in other types; companionship/dementia-care are kept here from original
+      names: ['Companionship','Dementia Alzheimers','Parkinsons','Stroke Recovery','Diabetes Management','Hospice End Of Life','Autism Support','Veteran Care','Pediatric Special Needs','Behavioral Health'],
     },
   ];
 

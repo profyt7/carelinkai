@@ -27,6 +27,11 @@ Each loop: what it is, why it matters, what done looks like.
 - **Status:** ✅ CLOSED (2026-05-03)
 - POST route blocks at 10 apps with 403 + `upgradeRequired: true`; `applicationCount` incremented on every submit; monthly reset cron at `/api/cron/reset-application-counts` (Render cron `0 0 1 * *` created); `ListingActions.tsx` shows Pro upsell banner with CTA to `/settings/billing`.
 
+### OL-036: Marketplace filter slug alignment for existing providers
+- **Status:** 🟡 OPEN — requires production action
+- **What:** Provider settings service type slugs changed from underscore to hyphen format (2026-05-04). Existing providers in production DB have old `personal_care`, `home_care` etc. stored. They need to re-save their settings page to update. Also: run `npx prisma db seed` in Render shell to populate new marketplace categories.
+- **Done when:** Demo provider re-saves settings, all new categories appear in marketplace filter.
+
 ### OL-032: Family subscription tier ($19/mo "CareLinkAI Plus")
 - **Status:** ✅ CLOSED (prior session — exact date unknown)
 - `plusStatus` + `isPlus` on Family model; `POST /api/family/billing/subscribe` (Stripe Checkout); `POST /api/family/billing/portal`; webhook syncs `plusStatus` on subscription events; billing UI at `/settings/family/billing` with feature list ($19/mo, 14-day trial); Plus nav item in sidebar with amber highlight; admin MRR tile shows `familyPlusMRR`. Requires `STRIPE_PRICE_FAMILY_PLUS` env var.

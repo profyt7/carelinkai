@@ -16,14 +16,14 @@ const RIDE_TYPE_OPTIONS = [
 ];
 
 const SERVICE_TYPE_OPTIONS = [
-  { value: "home_care", label: "Home Care" },
-  { value: "personal_care", label: "Personal Care" },
+  { value: "home-care", label: "Home Care" },
+  { value: "personal-care", label: "Personal Care" },
   { value: "companionship", label: "Companionship" },
-  { value: "skilled_nursing", label: "Skilled Nursing" },
+  { value: "skilled-nursing", label: "Skilled Nursing" },
   { value: "transportation", label: "Transportation / NEMT" },
   { value: "hospice", label: "Hospice Support" },
-  { value: "memory_care", label: "Memory Care" },
-  { value: "adult_day", label: "Adult Day Services" },
+  { value: "memory-care", label: "Memory Care" },
+  { value: "adult-day", label: "Adult Day Services" },
 ];
 
 type ProviderForm = {

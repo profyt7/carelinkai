@@ -8,30 +8,54 @@ import {
   FiMapPin, FiCalendar, FiFileText, FiBriefcase,
 } from "react-icons/fi";
 
-// ─── static option lists ───────────────────────────────────────────────────
+// ─── static option lists (value = slug stored in DB, label = display text) ─
 
-const SETTINGS = [
-  "In-Home", "Assisted Living", "Memory Care",
-  "Independent Living", "Skilled Nursing", "Hospice",
+const SETTINGS: { value: string; label: string }[] = [
+  { value: 'in-home', label: 'In-Home' },
+  { value: 'assisted-living', label: 'Assisted Living' },
+  { value: 'memory-care', label: 'Memory Care' },
+  { value: 'independent-living', label: 'Independent Living' },
+  { value: 'skilled-nursing', label: 'Skilled Nursing' },
+  { value: 'hospice', label: 'Hospice' },
+  { value: 'senior-living-community', label: 'Senior Living' },
 ];
 
-const CARE_TYPES = [
-  "Senior Care", "Dementia Care", "Alzheimer's Care", "Parkinson's Care",
-  "Post-Surgery Care", "Disability Care", "Pediatric Care",
-  "Overnight Care", "Live-In Care", "Respite Care",
+const CARE_TYPES: { value: string; label: string }[] = [
+  { value: 'senior-care', label: 'Senior Care' },
+  { value: 'dementia-care', label: 'Dementia Care' },
+  { value: 'alzheimers-care', label: "Alzheimer's Care" },
+  { value: 'parkinsons-care', label: "Parkinson's Care" },
+  { value: 'post-surgery-care', label: 'Post-Surgery Care' },
+  { value: 'disability-care', label: 'Disability Care' },
+  { value: 'overnight-care', label: 'Overnight Care' },
+  { value: 'live-in-care', label: 'Live-In Care' },
+  { value: 'respite-care', label: 'Respite Care' },
+  { value: 'companion-care', label: 'Companion Care' },
 ];
 
-const SERVICES = [
-  "Personal Care / ADLs", "Medication Management", "Meal Preparation",
-  "Light Housekeeping", "Transportation", "Companionship",
-  "Physical Therapy Assistance", "Wound Care", "Bathing & Grooming",
-  "Incontinence Care", "Mobility Assistance",
+const SERVICES: { value: string; label: string }[] = [
+  { value: 'personal-care', label: 'Personal Care / ADLs' },
+  { value: 'medication-management', label: 'Medication Management' },
+  { value: 'meal-preparation', label: 'Meal Preparation' },
+  { value: 'light-housekeeping', label: 'Light Housekeeping' },
+  { value: 'transportation', label: 'Transportation' },
+  { value: 'companionship', label: 'Companionship' },
+  { value: 'wound-care', label: 'Wound Care' },
+  { value: 'bathing-grooming', label: 'Bathing & Grooming' },
+  { value: 'incontinence-care', label: 'Incontinence Care' },
+  { value: 'mobility-assistance', label: 'Mobility Assistance' },
 ];
 
-const SPECIALTIES = [
-  "Dementia / Alzheimer's", "Parkinson's Disease", "Stroke Recovery",
-  "Diabetes Management", "Hospice / End of Life", "Autism Support",
-  "Veteran Care", "Pediatric Special Needs", "Behavioral Health",
+const SPECIALTIES: { value: string; label: string }[] = [
+  { value: 'dementia-alzheimers', label: "Dementia / Alzheimer's" },
+  { value: 'parkinsons', label: "Parkinson's Disease" },
+  { value: 'stroke-recovery', label: 'Stroke Recovery' },
+  { value: 'diabetes-management', label: 'Diabetes Management' },
+  { value: 'hospice-end-of-life', label: 'Hospice / End of Life' },
+  { value: 'autism-support', label: 'Autism Support' },
+  { value: 'veteran-care', label: 'Veteran Care' },
+  { value: 'pediatric-special-needs', label: 'Pediatric Special Needs' },
+  { value: 'behavioral-health', label: 'Behavioral Health' },
 ];
 
 const US_STATES = [
@@ -50,19 +74,22 @@ function toggle(arr: string[], val: string): string[] {
 function CheckGroup({
   label, options, selected, onChange,
 }: {
-  label: string; options: string[]; selected: string[]; onChange: (v: string[]) => void;
+  label: string;
+  options: { value: string; label: string }[];
+  selected: string[];
+  onChange: (v: string[]) => void;
 }) {
   return (
     <div>
       <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-3">{label}</p>
       <div className="flex flex-wrap gap-2">
         {options.map((opt) => {
-          const active = selected.includes(opt);
+          const active = selected.includes(opt.value);
           return (
             <button
-              key={opt}
+              key={opt.value}
               type="button"
-              onClick={() => onChange(toggle(selected, opt))}
+              onClick={() => onChange(toggle(selected, opt.value))}
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${
                 active
                   ? "bg-primary-500 border-primary-500 text-white"
@@ -70,7 +97,7 @@ function CheckGroup({
               }`}
             >
               {active && <FiCheck className="h-3 w-3" />}
-              {opt}
+              {opt.label}
             </button>
           );
         })}
@@ -271,16 +298,16 @@ export default function NewListingPage() {
             <div className="flex flex-wrap gap-2">
               {SETTINGS.map((s) => (
                 <button
-                  key={s}
+                  key={s.value}
                   type="button"
-                  onClick={() => setSetting(setting === s ? "" : s)}
+                  onClick={() => setSetting(setting === s.value ? "" : s.value)}
                   className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${
-                    setting === s
+                    setting === s.value
                       ? "bg-primary-500 border-primary-500 text-white"
                       : "bg-white border-neutral-200 text-neutral-600 hover:border-primary-300 hover:text-primary-600"
                   }`}
                 >
-                  {s}
+                  {s.label}
                 </button>
               ))}
             </div>
