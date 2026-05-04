@@ -42,6 +42,11 @@ type ProviderForm = {
   acceptsMedicaid: boolean;
   serviceRadius: string;
   allowsRecurring: boolean;
+  // Pricing / instant booking
+  rateBaseFare: string;
+  ratePerMile: string;
+  rateWaitPerHour: string;
+  instantBook: boolean;
 };
 
 export default function ProviderSettingsPage() {
@@ -64,6 +69,10 @@ export default function ProviderSettingsPage() {
     acceptsMedicaid: false,
     serviceRadius: "",
     allowsRecurring: false,
+    rateBaseFare: "",
+    ratePerMile: "",
+    rateWaitPerHour: "",
+    instantBook: false,
   });
 
   const isTransport = form.serviceTypes.includes("transportation");
@@ -95,6 +104,10 @@ export default function ProviderSettingsPage() {
             acceptsMedicaid: p.acceptsMedicaid || false,
             serviceRadius: p.serviceRadius != null ? String(p.serviceRadius) : "",
             allowsRecurring: p.allowsRecurring || false,
+            rateBaseFare: p.rateBaseFare != null ? String(p.rateBaseFare) : "",
+            ratePerMile: p.ratePerMile != null ? String(p.ratePerMile) : "",
+            rateWaitPerHour: p.rateWaitPerHour != null ? String(p.rateWaitPerHour) : "",
+            instantBook: p.instantBook || false,
           });
         }
       } catch {
@@ -129,6 +142,10 @@ export default function ProviderSettingsPage() {
         acceptsMedicaid: form.acceptsMedicaid,
         serviceRadius: form.serviceRadius ? parseInt(form.serviceRadius) : null,
         allowsRecurring: form.allowsRecurring,
+        rateBaseFare: form.rateBaseFare ? parseFloat(form.rateBaseFare) : null,
+        ratePerMile: form.ratePerMile ? parseFloat(form.ratePerMile) : null,
+        rateWaitPerHour: form.rateWaitPerHour ? parseFloat(form.rateWaitPerHour) : null,
+        instantBook: form.instantBook,
       };
 
       const res = await fetch("/api/profile", {
@@ -343,6 +360,71 @@ export default function ProviderSettingsPage() {
                   placeholder="e.g., 25"
                   className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
+              </div>
+
+              {/* Pricing & Instant Booking */}
+              <div className="border-t border-primary-200 pt-4 space-y-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-primary-900 mb-1">Instant Booking Pricing</h3>
+                  <p className="text-xs text-primary-700 mb-3">
+                    Set your rates so families can see the fare upfront and pay at booking — no back-and-forth required.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-neutral-700 mb-1">Base Fare ($)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={form.rateBaseFare}
+                        onChange={(e) => setForm((p) => ({ ...p, rateBaseFare: e.target.value }))}
+                        placeholder="e.g., 15.00"
+                        className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
+                      />
+                      <p className="text-xs text-neutral-400 mt-1">Flat charge per ride</p>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-neutral-700 mb-1">Per Mile Rate ($/mi)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={form.ratePerMile}
+                        onChange={(e) => setForm((p) => ({ ...p, ratePerMile: e.target.value }))}
+                        placeholder="e.g., 2.50"
+                        className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
+                      />
+                      <p className="text-xs text-neutral-400 mt-1">Added to base fare</p>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-neutral-700 mb-1">Wait Rate ($/hr)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={form.rateWaitPerHour}
+                        onChange={(e) => setForm((p) => ({ ...p, rateWaitPerHour: e.target.value }))}
+                        placeholder="e.g., 18.00"
+                        className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
+                      />
+                      <p className="text-xs text-neutral-400 mt-1">While waiting at appointment</p>
+                    </div>
+                  </div>
+                </div>
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.instantBook}
+                    onChange={(e) => setForm((p) => ({ ...p, instantBook: e.target.checked }))}
+                    className="h-4 w-4 mt-0.5 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                  />
+                  <span>
+                    <span className="text-sm font-medium text-neutral-800">Enable Instant Booking</span>
+                    <span className="block text-xs text-neutral-500 mt-0.5">
+                      Families can pay at the time of booking. You'll receive confirmed, paid rides — no confirmation step required. Requires base fare and per-mile rate above.
+                    </span>
+                  </span>
+                </label>
               </div>
             </section>
           )}
