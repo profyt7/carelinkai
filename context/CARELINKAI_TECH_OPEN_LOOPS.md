@@ -27,9 +27,9 @@ Each loop: what it is, why it matters, what done looks like.
 - **Status:** ✅ CLOSED (2026-05-03)
 - POST route blocks at 10 apps with 403 + `upgradeRequired: true`; `applicationCount` incremented on every submit; monthly reset cron at `/api/cron/reset-application-counts` (Render cron `0 0 1 * *` created); `ListingActions.tsx` shows Pro upsell banner with CTA to `/settings/billing`.
 
-### OL-032: Family subscription tier ($19-29/mo "CareLinkAI Plus")
-- **Status:** 🟡 ROADMAP — build after provider + caregiver tiers validated
-- Priority matching, unlimited saves, document storage, Care Concierge priority.
+### OL-032: Family subscription tier ($19/mo "CareLinkAI Plus")
+- **Status:** ✅ CLOSED (prior session — exact date unknown)
+- `plusStatus` + `isPlus` on Family model; `POST /api/family/billing/subscribe` (Stripe Checkout); `POST /api/family/billing/portal`; webhook syncs `plusStatus` on subscription events; billing UI at `/settings/family/billing` with feature list ($19/mo, 14-day trial); Plus nav item in sidebar with amber highlight; admin MRR tile shows `familyPlusMRR`. Requires `STRIPE_PRICE_FAMILY_PLUS` env var.
 
 ### OL-033: Corporate elder care B2B (employee benefit)
 - **Status:** 🟡 ROADMAP — requires sales conversations before build

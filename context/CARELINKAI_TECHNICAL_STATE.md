@@ -82,6 +82,7 @@ FAMILY, OPERATOR, CAREGIVER, ADMIN, STAFF, PROVIDER, AFFILIATE, DISCHARGE_PLANNE
 - **Family onboarding wizard:** /get-started 3-step wizard (role → need → timeline) routes families to the right destination
 - **Financing CTAs:** CareCredit affiliate links on /learn and home listing pricing tab
 - **Compliance document kits:** 3 Ohio ALF kits ($149-$199); one-time Stripe checkout; ComplianceKitPurchase model; /operator/compliance-kits
+- **CareLinkAI Plus ($19/mo):** `plusStatus` + `isPlus` on Family model; Stripe Checkout + Customer Portal at `/settings/family/billing`; webhook syncs status; Plus nav item with amber highlight in sidebar; features: priority matching, unlimited saves, Care Concierge priority, advanced filters, early access; admin MRR tile tracks familyPlusMRR. `STRIPE_PRICE_FAMILY_PLUS` env var confirmed set.
 
 ## Provider Listing + Pro Caregiver Billing (as of 2026-05-03)
 - **Provider Marketplace Listing ($99/mo):** Stripe Checkout + Customer Portal at `/settings/provider/billing`. Webhook syncs `listingStatus`. CANCELED/PAST_DUE/INCOMPLETE providers hidden from marketplace. Null = grace period. Requires `STRIPE_PRICE_PROVIDER_LISTING` env var. ✅ Billing nav link added to DashboardLayout.
@@ -132,7 +133,7 @@ These MUST be set on Render for production to work:
 - [x] `PLACEMENT_FEE_CENTS` = `150000` ✅ updated 2026-05-02 — placement fee now $1,500
 - [x] `STRIPE_PRICE_PROVIDER_LISTING` ✅ set 2026-05-02 — $99/mo provider listing
 - [x] `STRIPE_PRICE_PRO_CAREGIVER` ✅ set 2026-05-02 — $19/mo pro caregiver
-- [ ] `STRIPE_PRICE_FAMILY_PLUS` ← **NEW — $19/mo CareLinkAI Plus family subscription**
+- [x] `STRIPE_PRICE_FAMILY_PLUS` ✅ set — $19/mo CareLinkAI Plus family subscription
 - [ ] `WALLET_FEE_PCT` = `2.5` ← **NEW — Care Wallet service fee**
 - [ ] `DEFAULT_AFFILIATE_COMMISSION_PCT` = `20` ← **NEW — affiliate commission %**
 - [ ] `TWILIO_ACCOUNT_SID` ← **NEW — SMS notifications**
