@@ -43,10 +43,8 @@ Each loop: what it is, why it matters, what done looks like.
 - **Done when:** 2-3 operators actively using transport → price a pilot bundle → build billing UI + ride quota tracking.
 
 ### OL-043: Provider compliance-as-a-service
-- **Status:** 🟡 ROADMAP — needed before payer/Medicaid contracts
-- **What:** Providers upload driver credentials (background check, drug test, CPR cert, vehicle inspection, insurance). System tracks expiration dates, auto-flags approaching expiry, auto-deactivates on expiry. "CareLinkAI Certified" badge on marketplace listing.
-- **Why it matters:** Contract eligibility for Medicaid brokers (MTM, Modivcare) requires proof of credentialing. Positions CareLinkAI as the gatekeeper/compliance layer.
-- **Done when:** Provider can upload + track expiry on 5+ credential types; expired providers hidden from marketplace.
+- **Status:** ✅ CLOSED (2026-05-05)
+- Provider credentials UI at `/settings/provider/credentials` (8 types, status lifecycle). Admin credentials queue at `/admin/credentials` (Verify/Reject with reason). Expiry cron `GET /api/cron/credential-expiry` marks EXPIRED + deactivates critical-type providers + sends 30-day warning emails. CareLinkAI Certified badge (3+ VERIFIED) on ProviderCard + provider detail page. Render cron registered `0 6 * * *`. PR #515.
 
 ### OL-044: Guaranteed Ride SLA
 - **Status:** 🟡 ROADMAP — positioning differentiator, needs supply depth first
@@ -95,9 +93,8 @@ Each loop: what it is, why it matters, what done looks like.
 - **Status:** ✅ CLOSED (2026-05-04) — PR #512 squash-merged to main. Migration auto-runs via `start` script. `vehicleCapacity` and shared ride fields live in production.
 
 ### OL-037: Provider real-time new booking notification
-- **Status:** 🟡 IN PROGRESS — building polling-based toast notification for new REQUESTED rides
-- **What:** 30-second poll on `/rides` page; compares `latestRequestedRideId` from API; shows toast when new REQUESTED ride arrives. No new infra required.
-- **Done when:** Provider sees a toast/notification within 30 seconds of a family booking without refreshing.
+- **Status:** ✅ CLOSED (2026-05-05)
+- 30-second interval on `/rides` page (PROVIDER role only). `knownRequestedIds` ref seeded on initial load to prevent false alarms. `pollRides` callback diffs new REQUESTED ids → shows toast for genuinely new arrivals. PR #513.
 
 ### OL-026: Transport Phase 2 — ride booking + dispatch
 - **Status:** ✅ CLOSED (2026-05-04)
