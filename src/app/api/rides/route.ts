@@ -183,7 +183,11 @@ export async function POST(req: NextRequest) {
       const stripe = new (await import("stripe")).default(process.env.STRIPE_SECRET_KEY!, {
         apiVersion: "2023-10-16",
       });
-      const APP_URL = process.env.NEXTAUTH_URL || "https://getcarelinkai.com";
+      const APP_URL = (() => {
+        const proto = req.headers.get("x-forwarded-proto") || "https";
+        const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "getcarelinkai.com";
+        return `${proto}://${host}`;
+      })();
       const totalCents = Math.round(d.estimatedFare * (1 + platformFeePercent / 100) * 100);
 
       const checkoutSession = await stripe.checkout.sessions.create({
@@ -202,8 +206,8 @@ export async function POST(req: NextRequest) {
           },
         ],
         metadata: { type: "RIDE_PAYMENT", rideId: ride.id },
-        success_url: `${APP_URL}/rides?booked=1`,
-        cancel_url: `${APP_URL}/rides`,
+        success_url: `${APP_URL}/rides?payment=success`,
+        cancel_url: `${APP_URL}/rides?payment=canceled`,
       });
 
       // Store checkout session ID on the ride
