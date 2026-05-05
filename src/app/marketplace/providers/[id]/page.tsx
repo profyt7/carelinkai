@@ -16,7 +16,8 @@ import {
   FiBriefcase,
   FiCalendar,
   FiAward,
-  FiHeart
+  FiHeart,
+  FiShield,
 } from "react-icons/fi";
 import RequestCareButton from "@/components/marketplace/RequestCareButton";
 import ProviderReviewsListClient from "@/components/marketplace/ProviderReviewsListClient";
@@ -252,6 +253,12 @@ export default function ProviderDetailPage() {
                       <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-success-100 text-success-800">
                         <FiCheckCircle className="mr-1 h-4 w-4" />
                         Verified
+                      </span>
+                    )}
+                    {provider.credentials.filter((c) => c.status === "VERIFIED").length >= 3 && (
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 text-primary-800">
+                        <FiShield className="mr-1 h-4 w-4" />
+                        CareLinkAI Certified
                       </span>
                     )}
                   </div>

@@ -35,7 +35,8 @@ import {
   FiStar,
   FiBook,
   FiCheckCircle,
-  FiCreditCard
+  FiCreditCard,
+  FiShield,
 } from "react-icons/fi";
 import { MessageSquare, Stethoscope } from "lucide-react";
 // Real-time notification center
@@ -220,6 +221,15 @@ const navItems: NavItem[] = [
     name: "Listing & Billing",
     icon: <FiCreditCard size={20} />,
     href: "/settings/provider/billing",
+    showInMobileBar: false,
+    roleRestriction: ["PROVIDER"],
+  },
+
+  // 8b-iii. Provider Credentials
+  {
+    name: "Credentials",
+    icon: <FiShield size={20} />,
+    href: "/settings/provider/credentials",
     showInMobileBar: false,
     roleRestriction: ["PROVIDER"],
   },
