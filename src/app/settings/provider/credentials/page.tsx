@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import toast from "react-hot-toast";
 import {
-  FiCheckCircle, FiClock, FiAlertCircle, FiX, FiPlus, FiExternalLink, FiShield,
+  FiCheckCircle, FiClock, FiAlertCircle, FiX, FiPlus, FiExternalLink, FiShield, FiUpload, FiFile,
 } from "react-icons/fi";
 
 const CREDENTIAL_TYPES = [
@@ -50,6 +50,9 @@ export default function ProviderCredentialsPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/auth/login");
@@ -73,6 +76,34 @@ export default function ProviderCredentialsPage() {
     if (status === "authenticated") fetchCredentials();
   }, [status]);
 
+  const handleFileUpload = async (file: File) => {
+    setUploading(true);
+    try {
+      const urlRes = await fetch("/api/provider/credentials/upload-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileName: file.name, contentType: file.type || "application/octet-stream" }),
+      });
+      if (!urlRes.ok) { toast.error("Failed to get upload URL"); return; }
+      const { url, fileUrl } = await urlRes.json();
+
+      const uploadRes = await fetch(url, {
+        method: "PUT",
+        body: file,
+        headers: { "Content-Type": file.type || "application/octet-stream" },
+      });
+      if (!uploadRes.ok) { toast.error("File upload failed"); return; }
+
+      setForm((f) => ({ ...f, documentUrl: fileUrl }));
+      setUploadedFileName(file.name);
+      toast.success("File uploaded.");
+    } catch {
+      toast.error("Upload error — please try again.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.type) return;
@@ -91,6 +122,7 @@ export default function ProviderCredentialsPage() {
       if (!res.ok) { toast.error("Failed to add credential"); return; }
       toast.success("Credential submitted for review.");
       setForm(EMPTY_FORM);
+      setUploadedFileName(null);
       setShowForm(false);
       fetchCredentials();
     } finally {
@@ -179,15 +211,55 @@ export default function ProviderCredentialsPage() {
 
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1">
-                Document URL <span className="text-neutral-400 font-normal">(optional — link to your document)</span>
+                Document <span className="text-neutral-400 font-normal">(optional)</span>
               </label>
+
+              {/* File upload */}
               <input
-                type="url"
-                placeholder="https://..."
-                value={form.documentUrl}
-                onChange={(e) => setForm((f) => ({ ...f, documentUrl: e.target.value }))}
-                className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                className="hidden"
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(f); }}
               />
+
+              {uploadedFileName ? (
+                <div className="flex items-center gap-2 px-3 py-2 bg-success-50 border border-success-200 rounded-lg text-sm">
+                  <FiFile className="text-success-600 shrink-0" size={14} />
+                  <span className="flex-1 truncate text-success-900">{uploadedFileName}</span>
+                  <button
+                    type="button"
+                    onClick={() => { setUploadedFileName(null); setForm((f) => ({ ...f, documentUrl: "" })); if (fileInputRef.current) fileInputRef.current.value = ""; }}
+                    className="text-success-600 hover:text-error-600 transition-colors shrink-0"
+                  >
+                    <FiX size={14} />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2.5 border border-dashed border-neutral-300 rounded-lg text-sm text-neutral-500 hover:border-primary-400 hover:text-primary-600 hover:bg-primary-50 transition-colors disabled:opacity-50"
+                >
+                  <FiUpload size={14} />
+                  {uploading ? "Uploading…" : "Upload file (PDF, JPG, PNG, DOC)"}
+                </button>
+              )}
+
+              {/* URL fallback */}
+              {!uploadedFileName && (
+                <div className="mt-2">
+                  <p className="text-xs text-neutral-400 text-center mb-2">— or paste a link —</p>
+                  <input
+                    type="url"
+                    placeholder="https://..."
+                    value={form.documentUrl}
+                    onChange={(e) => setForm((f) => ({ ...f, documentUrl: e.target.value }))}
+                    className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+              )}
             </div>
 
             <div>
@@ -225,7 +297,7 @@ export default function ProviderCredentialsPage() {
               </button>
               <button
                 type="button"
-                onClick={() => { setShowForm(false); setForm(EMPTY_FORM); }}
+                onClick={() => { setShowForm(false); setForm(EMPTY_FORM); setUploadedFileName(null); }}
                 className="px-5 py-2 text-sm font-medium text-neutral-600 hover:text-neutral-900 transition-colors"
               >
                 Cancel
