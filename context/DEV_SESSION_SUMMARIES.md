@@ -2,6 +2,47 @@
 
 ---
 
+### 2026-05-05 — Provider Credentialing, Admin Credentials Queue, Onboarding Checklist
+
+- **Objective:** Close OL-037 + OL-043, build admin credentials queue, add provider welcome email, fix Stripe redirect bug, and drive provider activation with a profile completeness checklist.
+- **Work completed:**
+  1. **OL-037 closed** — 30s polling on `/rides` page for PROVIDER role. `knownRequestedIds` ref seeded on load to prevent false alarms. Toast appears within 30s of new REQUESTED ride. PR #513 merged.
+  2. **Stripe redirect bug fixed** — After Stripe Checkout, users were sent to `/auth/login` instead of `/rides`. Root cause: APP_URL was built from `NEXTAUTH_URL` env var, causing cross-domain redirect that dropped `SameSite=Lax` session cookie. Fixed by deriving APP_URL from `x-forwarded-host`/`host` request headers in both `/api/rides` (POST) and `/api/rides/[id]/pay`. Also fixed `?booked=1` → `?payment=success` query param alignment.
+  3. **Admin transport dashboard** — `/admin/rides` server component with stat tiles (total/completed/active/canceled), platform fee + gross volume MTD, provider performance list, recent rides table. Quick-action card on admin dashboard.
+  4. **OL-043 closed — Provider credentialing (full stack):** `GET/POST /api/provider/credentials` + `DELETE /api/provider/credentials/[id]`. `/settings/provider/credentials` UI with 8 credential types, status badges, add form, doc URL, expiry date. Certified banner when 3+ VERIFIED. CareLinkAI Certified badge on ProviderCard + provider detail page. PR #515 merged.
+  5. **Credential expiry cron** — `GET /api/cron/credential-expiry`: marks EXPIRED, auto-deactivates providers with critical expired types (BG check, insurance, vehicle inspection, NEMT license), sends grouped 30-day warning emails via Resend. Render cron `0 6 * * *` registered by Chris.
+  6. **Admin credentials queue** — `GET /api/admin/provider-credentials` list endpoint. `/admin/credentials` queue UI: status tabs, Verify (one-click), Reject (prompt for reason), expiry warning, doc link, provider name links to `/admin/providers/[id]`. Quick-action card on admin dashboard. Merged to main.
+  7. **Provider welcome email** — fires fire-and-forget after PROVIDER registration. 3 steps: complete profile → upload credentials → activate listing. Links corrected to actual routes.
+  8. **Ride booking smoke tests** — `tests/ride-booking.spec.ts`: family rides page, booking form opens, API 200, `?payment=success` banner, admin `/admin/rides` + `/admin/credentials` load, credentials API shape validation.
+  9. **Provider profile completeness checklist** — 8-step widget on provider dashboard with progress bar + per-item CTAs. Steps: business name, bio, service types, coverage area, rate, 1+ credential, 3 credentials (Certified), listing activated. Disappears at 100%. Credentials quick-action tile added (shows X/3 verified). On `feat/provider-onboarding-checklist` — not yet merged.
+- **Files changed:**
+  - `src/app/rides/page.tsx` (polling)
+  - `src/app/api/rides/route.ts` (APP_URL fix, SMS, `?payment=success`)
+  - `src/app/api/rides/[id]/pay/route.ts` (APP_URL fix)
+  - `src/app/admin/rides/page.tsx` (new)
+  - `src/app/admin/page.tsx` (Transport + Credentials Queue cards, FiShield import)
+  - `src/app/api/provider/credentials/route.ts` (new)
+  - `src/app/api/provider/credentials/[id]/route.ts` (new)
+  - `src/app/settings/provider/credentials/page.tsx` (new)
+  - `src/components/layout/DashboardLayout.tsx` (Credentials nav item)
+  - `src/components/marketplace/ProviderCard.tsx` (Certified badge)
+  - `src/app/marketplace/providers/[id]/page.tsx` (Certified badge)
+  - `src/app/api/cron/credential-expiry/route.ts` (new)
+  - `src/app/api/admin/provider-credentials/route.ts` (new)
+  - `src/app/admin/credentials/page.tsx` (new)
+  - `src/app/api/auth/register/route.ts` (welcome email + link fixes)
+  - `tests/ride-booking.spec.ts` (new)
+  - `src/app/provider/page.tsx` (completeness checklist)
+  - `context/CARELINKAI_TECHNICAL_STATE.md`
+  - `context/CARELINKAI_TECH_OPEN_LOOPS.md`
+- **Commands run:** `git rebase --abort`, `git cherry-pick 82ae190`, `npx tsc --noEmit`, `git merge --no-ff`
+- **Tests/build status:** TypeScript 0 errors. Playwright smoke test file created. No Playwright run (browser not available in sandbox).
+- **Deployment impact:** Auto-deploys from main. All merged changes live on Render. `feat/provider-onboarding-checklist` branch pending merge.
+- **New risks/blockers:** None. OL-036 still needs production action (demo provider re-saves settings page to fix slug format).
+- **Recommended next step:** Merge `feat/provider-onboarding-checklist` → main, then have Chris log in as `demo.provider@carelinkai.test` and walk the checklist end-to-end. After that: switch Stripe to live mode (runbook in context/STRIPE_SETUP_RUNBOOK.md).
+
+---
+
 ### 2026-05-04 — NEMT Anti-Fraud: Trip Verification, No-Show Accountability, Recurring Scheduler
 
 - **Objective:** Fill gaps identified in uber_lyft.txt — implement the three most critical NEMT operating-layer features: proof of presence (anti-fraud), no-show accountability, and recurring ride auto-scheduling.

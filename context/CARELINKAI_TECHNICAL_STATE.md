@@ -2,7 +2,7 @@
 _Last updated: 2026-05-05_
 
 ## Active Branch
-`main` — all Transport Phase 2 work + landing page updates committed directly to main (auto-deploys to Render)
+`feat/provider-onboarding-checklist` — in progress (provider completeness widget). Main is current and clean as of 2026-05-05.
 
 ## Production URL
 https://carelinkai.onrender.com (also: https://getcarelinkai.com)
@@ -198,11 +198,18 @@ See `REVENUE_MODEL.md` for the full breakdown. 12 streams finalized:
 - **Color tokens:** Fully unified across all 259 source files. Design system tokens only: `primary-*`, `neutral-*`, `error-*`, `success-*`, `warning-*`, `secondary-*`. No raw `red-*`/`green-*`/`blue-*`/`gray-*`/`purple-*` in any component (except `src/app/page.tsx` landing page, intentionally deferred).
 - **Components polished:** StatCard (left-border accent + trend), skeleton-loader (shimmer + HomeCardSkeleton), tabs (real tokens), breadcrumbs, confirm-dialog, error, not-found, login page, search page.
 
+## Provider Credentialing + Compliance (as of 2026-05-05)
+- **Provider credentials CRUD:** `ProviderCredential` model (already in schema). `GET/POST /api/provider/credentials`, `DELETE /api/provider/credentials/[id]`. Status lifecycle: PENDING → VERIFIED / REJECTED / EXPIRED. Providers can upload background check, drug test, CPR cert, vehicle inspection, insurance, driver's license, NEMT license, other.
+- **Provider credentials UI:** `/settings/provider/credentials` — status tabs, add form, expiry date, doc URL, notes. Certified banner when 3+ VERIFIED. CareLinkAI Certified badge on ProviderCard + provider detail page when verifiedCredentialCount >= 3.
+- **Admin credentials queue:** `GET /api/admin/provider-credentials?status=PENDING&limit=100` — list endpoint across all providers. `/admin/credentials` — queue UI with status tabs (PENDING/VERIFIED/REJECTED/EXPIRED/ALL), one-click Verify, Reject with optional reason prompt. Links to `/admin/providers/[id]`. Quick-action card added to admin dashboard.
+- **Credential expiry cron:** `GET /api/cron/credential-expiry` — marks EXPIRED, deactivates providers with critical expired types (BG check, insurance, vehicle inspection, NEMT license), sends 30-day warning emails via Resend. Chris registered Render cron `0 6 * * *`.
+- **Provider onboarding welcome email:** Fires after PROVIDER registration (fire-and-forget). 3 steps: complete profile → upload credentials → activate listing. Links corrected to `/settings/provider`, `/settings/provider/credentials`, `/settings/provider/billing`.
+- **Provider profile completeness checklist:** 8-step progress widget on provider dashboard. Shows % complete + progress bar + per-item checklist with direct CTAs. Disappears when all 8 steps done. Credentials quick-action tile added (shows X/3 verified).
+
 ## Immediate Next Priorities
-1. **Switch Stripe to live mode** — swap all `STRIPE_*` env vars to live keys in Render, re-register webhook at live endpoint, create new Products/Prices in live Stripe dashboard, update `STRIPE_PRICE_*` vars. Runbook: `context/STRIPE_SETUP_RUNBOOK.md`.
-2. **Set Checkr live keys** — set `CHECKR_API_KEY` + `CHECKR_WEBHOOK_SECRET` in Render once account approval received (OL-023).
-3. **Test ride booking end-to-end** — Use `demo.provider@carelinkai.test` + `demo.family@carelinkai.test` to verify full REQUESTED→CONFIRMED→PAID→COMPLETED flow including Stripe Checkout and email notifications.
-4. **Verify ride-reminders cron** — confirm Render cron is firing and emails are delivered for PAID rides within 23–25h window.
-4. **Run Playwright smoke tests** across all 7 demo roles: `npm run test:e2e:prod`
-5. **Switch Stripe to live mode** when ready — follow runbook in `context/STRIPE_SETUP_RUNBOOK.md`
-6. **Set Checkr API keys** in Render: `CHECKR_API_KEY`, `CHECKR_WEBHOOK_SECRET`; register webhook at `https://getcarelinkai.com/api/webhooks/checkr` (OL-023, unblocked once account review completes)
+1. **Merge feat/provider-onboarding-checklist → main** — provider completeness widget + welcome email link fix.
+2. **OL-036 production action** — demo provider at `demo.provider@carelinkai.test` must re-save Settings → Profile to migrate service type slugs from underscore to hyphen format.
+3. **Switch Stripe to live mode** — swap all `STRIPE_*` env vars to live keys in Render, re-register webhook, create live Products/Prices. Runbook: `context/STRIPE_SETUP_RUNBOOK.md`.
+4. **Set Checkr live keys** — `CHECKR_API_KEY` + `CHECKR_WEBHOOK_SECRET` in Render once account approved (OL-023).
+5. **Run Playwright smoke tests** across all 7 demo roles: `npm run test:e2e:prod`. New `tests/ride-booking.spec.ts` covers transport + credentials flows.
+6. **OL-044 Guaranteed Ride SLA** — needs 3+ providers in market first before building fallback network.
