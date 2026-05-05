@@ -692,10 +692,10 @@ export default function MarketplacePage() {
   useEffect(() => {
     if (!didInitFromUrl.current) return;
     if (activeTab !== "caregivers") return;
-    const params = new URLSearchParams(Array.from((searchParams ?? new URLSearchParams()).entries()));
+    const params = new URLSearchParams();
     params.set("tab", "caregivers");
     const setOrDel = (k: string, v?: string) => {
-      if (v && v.length > 0) params.set(k, v); else params.delete(k);
+      if (v && v.length > 0) params.set(k, v);
     };
     setOrDel("q", debouncedSearch);
     setOrDel("city", debouncedCity);
@@ -709,30 +709,26 @@ export default function MarketplacePage() {
     setOrDel("availableDate", availableDate);
     setOrDel("availableStartTime", availableStartTime);
     setOrDel("availableEndTime", availableEndTime);
-    if (cgShortlistOnly) params.set("shortlist", "1"); else params.delete("shortlist");
+    if (cgShortlistOnly) params.set("shortlist", "1");
     params.set("page", String(cgPage));
     params.set("sortBy", cgSort);
     if (cgRadius && cgGeoLat !== null && cgGeoLng !== null) {
       params.set("radiusMiles", cgRadius);
       params.set("lat", String(cgGeoLat));
       params.set("lng", String(cgGeoLng));
-    } else {
-      params.delete("radiusMiles");
-      params.delete("lat");
-      params.delete("lng");
     }
     try { localStorage.setItem(LAST_TAB_KEY, "caregivers"); localStorage.setItem(LS_KEYS.caregivers, params.toString()); } catch {}
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, settings, careTypes, debouncedMinRate, debouncedMaxRate, debouncedMinExperience, availableDate, availableStartTime, availableEndTime, cgPage, cgSort, cgRadius, cgGeoLat, cgGeoLng, cgShortlistOnly, router, pathname, searchParams]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, settings, careTypes, debouncedMinRate, debouncedMaxRate, debouncedMinExperience, availableDate, availableStartTime, availableEndTime, cgPage, cgSort, cgRadius, cgGeoLat, cgGeoLng, cgShortlistOnly, router, pathname]);
 
   // Keep URL in sync when on jobs tab (debounced inputs)
   useEffect(() => {
     if (!didInitFromUrl.current) return;
     if (activeTab !== "jobs") return;
-    const params = new URLSearchParams(Array.from((searchParams ?? new URLSearchParams()).entries()));
+    const params = new URLSearchParams();
     params.set("tab", "jobs");
     const setOrDel = (k: string, v?: string) => {
-      if (v && v.length > 0) params.set(k, v); else params.delete(k);
+      if (v && v.length > 0) params.set(k, v);
     };
     setOrDel("q", debouncedSearch);
     setOrDel("city", debouncedCity);
@@ -742,53 +738,45 @@ export default function MarketplacePage() {
     setOrDel("settings", settings.join(","));
     setOrDel("careTypes", careTypes.join(","));
     setOrDel("services", services.join(","));
-    if (postedByMe) params.set("postedByMe", "true"); else params.delete("postedByMe");
-    if (hideClosed) params.set("status", "OPEN"); else params.delete("status");
-    if (favoritesOnly) params.set("favorites", "1"); else params.delete("favorites");
+    if (postedByMe) params.set("postedByMe", "true");
+    if (hideClosed) params.set("status", "OPEN");
+    if (favoritesOnly) params.set("favorites", "1");
     params.set("page", String(jobPage));
     params.set("sortBy", jobSort);
     if (jobRadius && geoLat !== null && geoLng !== null) {
       params.set("radiusMiles", jobRadius);
       params.set("lat", String(geoLat));
       params.set("lng", String(geoLng));
-    } else {
-      params.delete("radiusMiles");
-      params.delete("lat");
-      params.delete("lng");
     }
     try { localStorage.setItem(LAST_TAB_KEY, "jobs"); localStorage.setItem(LS_KEYS.jobs, params.toString()); } catch {}
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, debouncedZip, settings, careTypes, services, postedByMe, hideClosed, favoritesOnly, jobPage, jobSort, jobRadius, geoLat, geoLng, router, pathname, searchParams]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, debouncedZip, settings, careTypes, services, postedByMe, hideClosed, favoritesOnly, jobPage, jobSort, jobRadius, geoLat, geoLng, router, pathname]);
 
   // Keep URL in sync when on providers tab (debounced inputs)
   useEffect(() => {
     if (!didInitFromUrl.current) return;
     if (activeTab !== "providers") return;
-    const params = new URLSearchParams(Array.from((searchParams ?? new URLSearchParams()).entries()));
+    const params = new URLSearchParams();
     params.set("tab", "providers");
     const setOrDel = (k: string, v?: string) => {
-      if (v && v.length > 0) params.set(k, v); else params.delete(k);
+      if (v && v.length > 0) params.set(k, v);
     };
     setOrDel("q", debouncedSearch);
     setOrDel("city", debouncedCity);
     setOrDel("state", debouncedState);
     setOrDel("services", providerServices.join(","));
-    if (prWheelchair) params.set("wheelchairAccessible", "true"); else params.delete("wheelchairAccessible");
-    if (prMedicaid) params.set("acceptsMedicaid", "true"); else params.delete("acceptsMedicaid");
+    if (prWheelchair) params.set("wheelchairAccessible", "true");
+    if (prMedicaid) params.set("acceptsMedicaid", "true");
     params.set("page", String(providerPage));
     params.set("sortBy", providerSort);
     if (prRadius && prGeoLat !== null && prGeoLng !== null) {
       params.set("radiusMiles", prRadius);
       params.set("lat", String(prGeoLat));
       params.set("lng", String(prGeoLng));
-    } else {
-      params.delete("radiusMiles");
-      params.delete("lat");
-      params.delete("lng");
     }
     try { localStorage.setItem(LAST_TAB_KEY, "providers"); localStorage.setItem(LS_KEYS.providers, params.toString()); } catch {}
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, providerServices, prWheelchair, prMedicaid, providerPage, providerSort, prRadius, prGeoLat, prGeoLng, router, pathname, searchParams]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, providerServices, prWheelchair, prMedicaid, providerPage, providerSort, prRadius, prGeoLat, prGeoLng, router, pathname]);
 
   useEffect(() => {
     // Load marketplace categories once
