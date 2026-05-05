@@ -417,6 +417,7 @@ model Provider {
   ratePerMile           Decimal?             @db.Decimal(10, 2) // per-mile rate
   rateWaitPerHour       Decimal?             @db.Decimal(10, 2) // hourly wait rate
   instantBook           Boolean              @default(false)    // skip confirm step, family pays at booking
+  vehicleCapacity       Int                  @default(4)        // max passengers per vehicle
   // Marketplace listing subscription ($99/mo)
   stripeCustomerId      String?              @unique
   stripeSubscriptionId  String?              @unique
@@ -983,6 +984,16 @@ model Ride {
   isRecurring             Boolean     @default(false)
   recurringFrequency      String?                        // DAILY | WEEKLY | BIWEEKLY | MONTHLY
   recurringEndDate        DateTime?
+  // Shared / batched rides
+  isSharedRide            Boolean     @default(false)    // provider batches multiple passengers in one vehicle
+  sharedRideGroupId       String?                        // groups rides sharing the same vehicle run
+  // Trip verification (anti-fraud)
+  actualPickupAt          DateTime?                      // timestamped when driver checks in at pickup
+  actualDropoffAt         DateTime?                      // timestamped when driver marks dropoff complete
+  // Accountability
+  noShowCausedBy          String?                        // PROVIDER | RIDER | FACILITY | WEATHER | OTHER
+  // Recurring series
+  recurringRootId         String?                        // null on seed ride; set to seed id on all spawned rides
   createdAt               DateTime    @default(now())
   updatedAt               DateTime    @updatedAt
   family                  Family?     @relation(fields: [familyId], references: [id], onDelete: Cascade)
@@ -996,6 +1007,7 @@ model Ride {
   @@index([scheduledAt])
   @@index([leadId])
   @@index([parentRideId])
+  @@index([recurringRootId])
 }
 
 model Booking {

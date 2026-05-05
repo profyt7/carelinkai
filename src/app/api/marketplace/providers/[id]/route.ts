@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { isMockModeEnabled } from '@/lib/mockMode';
 import { getMockProviderDetail } from '@/lib/mock/providers';
+import { computeProviderRideStats } from '@/lib/rideStats';
 
 /**
  * GET /api/marketplace/providers/[id]
@@ -155,6 +156,9 @@ export async function GET(
       }
     }
     
+    const isTransport = (provider.serviceTypes ?? []).includes("transportation");
+    const rideStats = isTransport ? await computeProviderRideStats(provider.id) : null;
+
     // Format response
     const formattedProvider = {
       id: provider.id,
@@ -179,6 +183,7 @@ export async function GET(
       acceptsMedicaid: provider.acceptsMedicaid,
       serviceRadius: provider.serviceRadius,
       allowsRecurring: provider.allowsRecurring,
+      rideStats,
     };
     
     return NextResponse.json(

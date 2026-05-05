@@ -2,6 +2,65 @@
 
 ---
 
+### 2026-05-04 — NEMT Anti-Fraud: Trip Verification, No-Show Accountability, Recurring Scheduler
+
+- **Objective:** Fill gaps identified in uber_lyft.txt — implement the three most critical NEMT operating-layer features: proof of presence (anti-fraud), no-show accountability, and recurring ride auto-scheduling.
+- **Work completed:**
+  1. **Trip verification:** Added `actualPickupAt` (set when provider taps Start Ride) and `actualDropoffAt` (set when Complete Ride). System-owned — cannot be edited by driver. Shown as ✓ green timestamps in manifest expanded card. Directly addresses fraudulent "ghost ride" completions.
+  2. **No-show accountability:** Added `noShowCausedBy` field (PROVIDER/RIDER/FACILITY/WEATHER/OTHER). Replaced `window.confirm()` cancel flow with a proper modal showing radio buttons for cause selection. Active on CONFIRMED/PAID/IN_PROGRESS ride cancels for both provider and family views. Data foundation for future reliability scoring and payer fraud reporting.
+  3. **Recurring ride auto-scheduler:** New cron at `GET /api/cron/recurring-rides`. Finds all seed rides (`isRecurring=true`, `recurringRootId=null`), finds latest child, spawns next occurrences up to 14 days ahead. Respects `recurringEndDate`. Each spawned ride gets `recurringRootId=seed.id`, `status=REQUESTED`. Return trip time offset preserved across all occurrences. **Add Render cron: `0 7 * * *` → `/api/cron/recurring-rides?secret=CRON_SECRET`**
+- **Files changed:**
+  - `prisma/schema.prisma` — 4 new fields + recurringRootId index
+  - `prisma/migrations/20260504000006_trip_verification_and_recurring/migration.sql` — new
+  - `src/app/api/rides/[id]/start/route.ts` — sets actualPickupAt
+  - `src/app/api/rides/[id]/complete/route.ts` — sets actualDropoffAt
+  - `src/app/api/rides/[id]/route.ts` — PATCH accepts noShowCausedBy
+  - `src/app/api/cron/recurring-rides/route.ts` — new file
+  - `src/app/rides/page.tsx` — Ride interface updated, cancel cause modal, timestamps in manifest
+- **Commands run:** `npx prisma generate`, `npx tsc --noEmit` (0 errors), `git commit`, `git push`
+- **Tests/build status:** TypeScript 0 errors.
+- **Deployment impact:** Migration 20260504000006 needed. Add Render cron job for recurring-rides. All additive — no breaking changes.
+- **New risks/blockers:** None.
+- **Recommended next step:** Add Render cron for recurring-rides. Then build provider reliability score dashboard (on-time %, completion %, no-show cause breakdown) — this is the data foundation for payer contract pitches.
+
+---
+
+### 2026-05-04 — Provider Manifest View + Shared Rides + Vehicle Capacity
+
+- **Objective:** Build the provider dispatch manifest (day-grouped ride schedule), shared ride batching, and vehicle capacity tracking so NEMT providers can see and fill their van runs efficiently.
+- **Work completed:**
+  1. **Schema:** Added `isSharedRide Boolean @default(false)` and `sharedRideGroupId String?` to Ride model. Added `vehicleCapacity Int @default(4)` to Provider model. Migration `20260504000005_ride_shared_and_manifest`.
+  2. **`/api/rides` GET (PROVIDER):** Now returns `vehicleCapacity` alongside rides array.
+  3. **`/api/rides/[id]/shared` PATCH:** New endpoint — provider toggles `isSharedRide` on any active ride. Auth-gated to PROVIDER role with ownership check.
+  4. **`/api/rides` POST:** Accepts `isSharedRide` from booking modal, persists on Ride.
+  5. **`/api/profile`:** Added `vehicleCapacity` to Zod schema, GET select, and PATCH handler.
+  6. **Provider Settings page (`/settings/provider`):** Added "Vehicle & Capacity" section with max-passengers input above the Instant Booking Pricing section.
+  7. **`RideRequestModal` (Step 2):** Added "Open to shared ride" checkbox — families can opt in; provider may batch with other passengers heading the same way.
+  8. **`/rides` page — complete provider-view redesign:**
+     - Day-grouped manifest: rides sorted chronologically within each day group
+     - ManifestCard: time + name + status badge at top; pickup/dropoff route; collapsible detail panel (contact, purpose, notes, return/recurring, total fare, shared ride toggle)
+     - PassengerNeedsRow: inline amber tags for mobility level, door level, O₂, companion, cognition, service animal, wait time
+     - CapacityBar: per-day progress bar green→amber→red showing total passengers / vehicle capacity
+     - Batch opportunity detection: highlights rides within 90 min of each other going to same destination
+     - Shared ride toggle inside expanded card (PATCH to /api/rides/[id]/shared)
+     - Family/operator view fully preserved below provider branch
+- **Files changed:**
+  - `prisma/schema.prisma` — isSharedRide + sharedRideGroupId on Ride
+  - `prisma/migrations/20260504000005_ride_shared_and_manifest/migration.sql` — new file
+  - `src/app/api/rides/route.ts` — isSharedRide in POST + vehicleCapacity in GET
+  - `src/app/api/rides/[id]/shared/route.ts` — new file
+  - `src/app/api/profile/route.ts` — vehicleCapacity added
+  - `src/app/settings/provider/page.tsx` — Vehicle & Capacity UI section
+  - `src/components/transport/RideRequestModal.tsx` — shared ride checkbox on step 2
+  - `src/app/rides/page.tsx` — full provider manifest rewrite
+- **Commands run:** `npx prisma generate` (0 errors), `npx tsc --noEmit` (0 errors), `git commit`, `git push`
+- **Tests/build status:** TypeScript 0 errors.
+- **Deployment impact:** Migration 20260504000005 must run on Render. Safe — all new columns with defaults. Demo provider should re-save `/settings/provider` to get `vehicleCapacity` persisted explicitly.
+- **New risks/blockers:** None — migration is additive only; no existing data affected.
+- **Recommended next step:** Merge to main → deploy → run migration → demo the manifest view to a provider prospect. Next feature candidate: provider real-time push (SSE) for new booking notifications so dispatch doesn't have to poll.
+
+---
+
 ### 2026-05-04 — Marketplace Filter End-to-End Fix (Providers, Jobs, Categories)
 
 - **Objective:** Fix marketplace filters so transportation and other service type filters actually work for providers, jobs, and caregivers tabs.

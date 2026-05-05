@@ -3,7 +3,8 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { FiInbox, FiMessageCircle, FiEdit, FiCheckCircle, FiAlertCircle, FiCreditCard, FiMapPin } from "react-icons/fi";
+import { FiInbox, FiMessageCircle, FiEdit, FiCheckCircle, FiAlertCircle, FiCreditCard, FiMapPin, FiTruck } from "react-icons/fi";
+import { computeProviderRideStats, scoreLabel, type RideStats } from "@/lib/rideStats";
 
 async function getProviderDashboardData(userId: string) {
   const provider = await prisma.provider.findUnique({
@@ -14,16 +15,18 @@ async function getProviderDashboardData(userId: string) {
       isActive: true,
       businessName: true,
       listingStatus: true,
+      serviceTypes: true,
     },
   });
 
   if (!provider) {
-    return { provider: null, newLeads: 0, activeLeads: 0, recentLeads: [] };
+    return { provider: null, newLeads: 0, activeLeads: 0, recentLeads: [], rideStats: null };
   }
 
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const isTransport = provider.serviceTypes.includes("transportation");
 
-  const [newLeads, activeLeads, recentLeads] = await Promise.all([
+  const [newLeads, activeLeads, recentLeads, rideStats] = await Promise.all([
     prisma.lead.count({
       where: { providerId: provider.id, targetType: "PROVIDER", createdAt: { gte: sevenDaysAgo } },
     }),
@@ -38,9 +41,10 @@ async function getProviderDashboardData(userId: string) {
         family: { select: { user: { select: { firstName: true, lastName: true } } } },
       },
     }),
+    isTransport ? computeProviderRideStats(provider.id) : Promise.resolve(null),
   ]);
 
-  return { provider, newLeads, activeLeads, recentLeads };
+  return { provider, newLeads, activeLeads, recentLeads, rideStats };
 }
 
 export default async function ProviderDashboard() {
@@ -49,7 +53,7 @@ export default async function ProviderDashboard() {
   if (!session?.user) redirect("/auth/login");
   if (session.user.role !== "PROVIDER") redirect("/unauthorized");
 
-  const { provider, newLeads, activeLeads, recentLeads } = await getProviderDashboardData(session.user.id);
+  const { provider, newLeads, activeLeads, recentLeads, rideStats } = await getProviderDashboardData(session.user.id);
   const displayName = session.user.firstName || session.user.name?.split(" ")[0] || "there";
 
   const listingActive = provider?.listingStatus === "ACTIVE" || provider?.listingStatus === "TRIALING";
@@ -110,7 +114,7 @@ export default async function ProviderDashboard() {
       )}
 
       {/* Stat tiles */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+      <div className={`grid grid-cols-1 gap-4 mb-8 ${rideStats ? "sm:grid-cols-4" : "sm:grid-cols-3"}`}>
         <div className="bg-white rounded-lg border border-neutral-200 p-5">
           <div className="flex items-center justify-between mb-3">
             <div className="rounded-lg bg-primary-100 p-2.5">
@@ -151,6 +155,39 @@ export default async function ProviderDashboard() {
             {listingActive ? "Visible in search results" : "Not visible to clients"}
           </p>
         </div>
+
+        {/* Transport reliability tile — only for transport providers */}
+        {rideStats && (() => {
+          const sl = rideStats.hasEnoughData ? scoreLabel(rideStats.reliabilityScore) : null;
+          return (
+            <div className="bg-white rounded-lg border border-neutral-200 p-5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="rounded-lg bg-primary-100 p-2.5">
+                  <FiTruck className="h-5 w-5 text-primary-600" />
+                </div>
+                {rideStats.hasEnoughData ? (
+                  <span className={`text-sm font-semibold px-2.5 py-1 rounded-full ${sl!.color}`}>
+                    {sl!.label}
+                  </span>
+                ) : (
+                  <span className="text-sm font-semibold px-2.5 py-1 rounded-full bg-neutral-100 text-neutral-500">
+                    Building
+                  </span>
+                )}
+              </div>
+              <p className="text-sm font-medium text-neutral-700">Dispatch Reliability</p>
+              {rideStats.hasEnoughData ? (
+                <p className="text-xs text-neutral-500 mt-0.5">
+                  {rideStats.completionRate}% completion · {rideStats.onTimeRate}% on-time
+                </p>
+              ) : (
+                <p className="text-xs text-neutral-500 mt-0.5">
+                  {rideStats.completedRides} ride{rideStats.completedRides !== 1 ? "s" : ""} completed so far
+                </p>
+              )}
+            </div>
+          );
+        })()}
       </div>
 
       {/* Quick Actions */}
@@ -162,6 +199,7 @@ export default async function ProviderDashboard() {
             { href: "/settings/provider", icon: <FiEdit className="h-5 w-5 text-secondary-600" />, bg: "bg-secondary-100", title: "Edit Profile", desc: "Update services and info" },
             { href: "/settings/provider/billing", icon: <FiCreditCard className="h-5 w-5 text-success-600" />, bg: "bg-success-100", title: "Listing & Billing", desc: listingActive ? "Manage subscription" : "Activate listing" },
             { href: "/marketplace?tab=providers", icon: <FiMapPin className="h-5 w-5 text-warning-600" />, bg: "bg-warning-100", title: "View Marketplace", desc: "See your public profile" },
+            ...(rideStats ? [{ href: "/rides", icon: <FiTruck className="h-5 w-5 text-primary-600" />, bg: "bg-primary-100", title: "Ride Dispatch", desc: "Manage today's runs" }] : []),
           ].map((a) => (
             <Link key={a.href} href={a.href} className="group bg-white rounded-lg border border-neutral-200 p-4 hover:border-primary-300 hover:shadow-sm transition-all flex items-center gap-3">
               <div className={`rounded-lg p-2 shrink-0 ${a.bg}`}>{a.icon}</div>

@@ -43,7 +43,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
-  const { cancelReason } = body as { cancelReason?: string };
+  const { cancelReason, noShowCausedBy } = body as { cancelReason?: string; noShowCausedBy?: string };
 
   const ride = await prisma.ride.findUnique({
     where: { id: params.id },
@@ -86,7 +86,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   const updated = await prisma.ride.update({
     where: { id: params.id },
-    data: { status: "CANCELED", canceledBy, cancelReason: cancelReason ?? null },
+    data: {
+      status: "CANCELED",
+      canceledBy,
+      cancelReason: cancelReason ?? null,
+      noShowCausedBy: noShowCausedBy ?? null,
+    },
   });
 
   // Notify the other party
