@@ -151,6 +151,7 @@ export default function MarketplacePage() {
   const [cgShortlistOnly, setCgShortlistOnly] = useState(false);
   // Server-driven pagination (cursor)
   const [cgCursor, setCgCursor] = useState<string | null>(null);
+  const cgCursorRef = useRef<string | null>(null);
   const [cgHasMoreSvr, setCgHasMoreSvr] = useState<boolean | null>(null);
 
   const [listings, setListings] = useState<Listing[]>([]);
@@ -162,6 +163,7 @@ export default function MarketplacePage() {
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   // Server-driven pagination (cursor)
   const [jobCursor, setJobCursor] = useState<string | null>(null);
+  const jobCursorRef = useRef<string | null>(null);
   const [jobHasMoreSvr, setJobHasMoreSvr] = useState<boolean | null>(null);
 
   // Providers state --------------------------------------------------------
@@ -189,6 +191,7 @@ export default function MarketplacePage() {
   const [prRadius, setPrRadius] = useState<string>("");
   // Server-driven pagination (cursor)
   const [providerCursor, setProviderCursor] = useState<string | null>(null);
+  const providerCursorRef = useRef<string | null>(null);
   const [providerHasMoreSvr, setProviderHasMoreSvr] = useState<boolean | null>(null);
   const [prGeoLat, setPrGeoLat] = useState<number | null>(null);
   const [prGeoLng, setPrGeoLng] = useState<number | null>(null);
@@ -852,6 +855,7 @@ export default function MarketplacePage() {
       setCaregivers([]);
       setCgPage(1);
       setCgCursor(null);
+      cgCursorRef.current = null;
       setCgHasMoreSvr(null);
     }
   }, [cgQueryKey, activeTab]);
@@ -892,14 +896,16 @@ export default function MarketplacePage() {
         params.set("pageSize", String(20));
         params.set("sortBy", cgSort);
         // Use cursor when available and not using radius search
-        if (!(cgRadius && cgGeoLat !== null && cgGeoLng !== null) && cgCursor) {
-          params.set('cursor', cgCursor);
+        if (cgPage > 1 && !(cgRadius && cgGeoLat !== null && cgGeoLng !== null) && cgCursorRef.current) {
+          params.set('cursor', cgCursorRef.current);
         }
         const json = await fetchJsonCached(`/api/marketplace/caregivers?${params.toString()}`, { signal: controller.signal }, 15000);
         setCaregivers((prev) => (cgPage > 1 ? [...prev, ...(json?.data ?? [])] : (json?.data ?? [])));
         setCgTotal(json?.pagination?.total ?? 0);
         setCgHasMoreSvr(typeof json?.pagination?.hasMore === 'boolean' ? json.pagination.hasMore : null);
-        setCgCursor(json?.pagination?.cursor ?? null);
+        const newCursor = json?.pagination?.cursor ?? null;
+        setCgCursor(newCursor);
+        cgCursorRef.current = newCursor;
       } catch (e: any) {
         if (e?.name === 'AbortError') return;
         if (cgPage === 1) setCaregivers([]);
@@ -911,7 +917,7 @@ export default function MarketplacePage() {
     return () => {
       controller.abort();
     };
-  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, settings, careTypes, debouncedMinRate, debouncedMaxRate, debouncedMinExperience, availableDate, availableStartTime, availableEndTime, cgPage, cgSort, cgRadius, cgGeoLat, cgGeoLng, cgCursor, showMock, MOCK_CAREGIVERS]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, settings, careTypes, debouncedMinRate, debouncedMaxRate, debouncedMinExperience, availableDate, availableStartTime, availableEndTime, cgPage, cgSort, cgRadius, cgGeoLat, cgGeoLng, showMock, MOCK_CAREGIVERS]);
 
   // JOBS: Reset effect MUST run before fetch effect to avoid race condition
   // where fetch sets data, then reset clears it on initial load
@@ -931,6 +937,7 @@ export default function MarketplacePage() {
       setListings([]);
       setJobPage(1);
       setJobCursor(null);
+      jobCursorRef.current = null;
       setJobHasMoreSvr(null);
     }
   }, [jobQueryKey, activeTab]);
@@ -968,15 +975,17 @@ export default function MarketplacePage() {
         params.set("page", String(jobPage));
         params.set("pageSize", String(20));
         params.set("sortBy", jobSort);
-        // Use cursor when available and not using radius search
-        if (!(jobRadius && geoLat !== null && geoLng !== null) && jobCursor) {
-          params.set('cursor', jobCursor);
+        // Use cursor only when loading subsequent pages (not on page 1 fresh fetch)
+        if (jobPage > 1 && !(jobRadius && geoLat !== null && geoLng !== null) && jobCursorRef.current) {
+          params.set('cursor', jobCursorRef.current);
         }
         const json = await fetchJsonCached(`/api/marketplace/listings?${params.toString()}`, { signal: controller.signal }, 15000);
         setListings((prev) => (jobPage > 1 ? [...prev, ...(json?.data ?? [])] : (json?.data ?? [])));
         setJobTotal(json?.pagination?.total ?? 0);
         setJobHasMoreSvr(typeof json?.pagination?.hasMore === 'boolean' ? json.pagination.hasMore : null);
-        setJobCursor(json?.pagination?.cursor ?? null);
+        const newJobCursor = json?.pagination?.cursor ?? null;
+        setJobCursor(newJobCursor);
+        jobCursorRef.current = newJobCursor;
       } catch (e: any) {
         if (e?.name === 'AbortError') return;
         if (jobPage === 1) setListings([]);
@@ -988,7 +997,7 @@ export default function MarketplacePage() {
     return () => {
       controller.abort();
     };
-  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, debouncedZip, settings, careTypes, services, postedByMe, hideClosed, session, jobPage, jobSort, jobRadius, geoLat, geoLng, jobCursor, showMock, MOCK_LISTINGS]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, debouncedZip, settings, careTypes, services, postedByMe, hideClosed, session?.user?.id, jobPage, jobSort, jobRadius, geoLat, geoLng, showMock, MOCK_LISTINGS]);
 
   /* ----------------------------------------------------------------------
      PROVIDERS: Reset effect MUST run before fetch effect to avoid race condition
@@ -1010,6 +1019,7 @@ export default function MarketplacePage() {
       setProviders([]);
       setProviderPage(1);
       setProviderCursor(null);
+      providerCursorRef.current = null;
       setProviderHasMoreSvr(null);
     }
   }, [prQueryKey, activeTab]);
@@ -1043,14 +1053,16 @@ export default function MarketplacePage() {
         params.set("page", String(providerPage));
         params.set("pageSize", String(20));
         params.set("sortBy", providerSort);
-        if (!(prRadius && prGeoLat !== null && prGeoLng !== null) && providerCursor) {
-          params.set('cursor', providerCursor);
+        if (providerPage > 1 && !(prRadius && prGeoLat !== null && prGeoLng !== null) && providerCursorRef.current) {
+          params.set('cursor', providerCursorRef.current);
         }
         const json = await fetchJsonCached(`/api/marketplace/providers?${params.toString()}`, { signal: controller.signal }, 15000);
         setProviders((prev) => (providerPage > 1 ? [...prev, ...(json?.data ?? [])] : (json?.data ?? [])));
         setProviderTotal(json?.pagination?.total ?? 0);
         setProviderHasMoreSvr(typeof json?.pagination?.hasMore === 'boolean' ? json.pagination.hasMore : null);
-        setProviderCursor(json?.pagination?.cursor ?? null);
+        const newPrCursor = json?.pagination?.cursor ?? null;
+        setProviderCursor(newPrCursor);
+        providerCursorRef.current = newPrCursor;
       } catch (e: any) {
         if (e?.name === 'AbortError') return;
         if (providerPage === 1) setProviders([]);
@@ -1062,7 +1074,7 @@ export default function MarketplacePage() {
     return () => {
       controller.abort();
     };
-  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, providerServices, prWheelchair, prMedicaid, providerPage, providerSort, prRadius, prGeoLat, prGeoLng, providerCursor, showMock, MOCK_PROVIDERS]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, providerServices, prWheelchair, prMedicaid, providerPage, providerSort, prRadius, prGeoLat, prGeoLng, showMock, MOCK_PROVIDERS]);
 
   // Infinite scroll flags
   // Prefer server-provided hasMore when available (cursor pagination)

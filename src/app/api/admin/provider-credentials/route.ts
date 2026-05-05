@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
   const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "50", 10)));
   const skip = (page - 1) * limit;
 
-  const whereStatus =
+  const whereStatus: any =
     statusParam === "ALL"
       ? {}
       : { status: statusParam };
