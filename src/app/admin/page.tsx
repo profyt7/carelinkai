@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth';
 import authOptions from '@/lib/auth';
-import { FiUsers, FiHome, FiActivity, FiTrendingUp, FiMessageSquare, FiFileText, FiAlertCircle, FiDollarSign, FiCreditCard, FiTruck } from 'react-icons/fi';
+import { FiUsers, FiHome, FiActivity, FiTrendingUp, FiMessageSquare, FiFileText, FiAlertCircle, FiDollarSign, FiCreditCard, FiTruck, FiShield } from 'react-icons/fi';
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 
@@ -144,6 +144,13 @@ export default async function AdminDashboard() {
       icon: FiTruck,
       href: '/admin/rides',
       color: 'from-primary-500 to-primary-600',
+    },
+    {
+      title: 'Credentials Queue',
+      description: 'Review and verify provider-submitted credentials',
+      icon: FiShield,
+      href: '/admin/credentials',
+      color: 'from-violet-500 to-violet-600',
     },
     {
       title: 'System Analytics',

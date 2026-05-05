@@ -413,6 +413,34 @@ export async function POST(request: NextRequest) {
       // Log but do not abort user creation
       console.error("[registration] Email verification step failed:", emailErr);
     }
+
+    // Provider onboarding welcome email (fire-and-forget)
+    if (role === "PROVIDER" && process.env.RESEND_API_KEY) {
+      const { Resend } = await import("resend");
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      const appUrl = process.env.NEXTAUTH_URL || "https://getcarelinkai.com";
+      resend.emails.send({
+        from: `CareLinkAI <${process.env.EMAIL_FROM || "noreply@getcarelinkai.com"}>`,
+        to: [normalizedEmail],
+        subject: "Welcome to CareLinkAI — let's get you listed",
+        html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#1f2937">
+          <h2 style="color:#0066cc">Welcome, ${firstName}!</h2>
+          <p>You're now registered as a provider on <strong>CareLinkAI</strong> — Cleveland's platform for senior care and NEMT transport. Here's how to get visible to families and facilities:</p>
+          <ol style="padding-left:20px;line-height:2">
+            <li><strong>Complete your profile</strong> — add your bio, service types, hourly rate, and coverage area.<br>
+              <a href="${appUrl}/settings/provider/profile" style="color:#0066cc">Go to Profile Settings →</a></li>
+            <li><strong>Add your credentials</strong> — background check, insurance, CPR cert, and more. 3 verified credentials earns you the <em>CareLinkAI Certified</em> badge.<br>
+              <a href="${appUrl}/settings/provider/credentials" style="color:#0066cc">Upload Credentials →</a></li>
+            <li><strong>Activate your listing</strong> — once your profile is complete, turn on your listing to appear in marketplace search.<br>
+              <a href="${appUrl}/settings/provider/listing" style="color:#0066cc">Activate Listing →</a></li>
+          </ol>
+          <p style="margin-top:24px">Questions? Reply to this email — we're a small team and we read everything.</p>
+          <p style="color:#9ca3af;font-size:12px;margin-top:32px">CareLinkAI · Cleveland, OH</p>
+        </div>`,
+      }).catch((err: unknown) => {
+        console.error("[registration] Provider welcome email failed:", err);
+      });
+    }
     
     // Return success response (excluding sensitive data)
     await prisma.$disconnect(); // disconnect after all async work is done
