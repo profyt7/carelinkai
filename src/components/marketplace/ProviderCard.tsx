@@ -1,7 +1,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { getBlurDataURL } from '@/lib/imageBlur';
-import { FiUser, FiMapPin, FiCheckCircle, FiClock, FiDollarSign, FiHeart } from 'react-icons/fi';
+import { FiUser, FiMapPin, FiCheckCircle, FiClock, FiDollarSign, FiHeart, FiShield } from 'react-icons/fi';
 import Link from 'next/link';
 
 interface ProviderCardProps {
@@ -155,6 +155,14 @@ const ProviderCard: React.FC<ProviderCardProps> = ({ provider, serviceTypeOption
             {formatVerificationStatus(provider.isVerified)}
           </span>
           
+          {/* CareLinkAI Certified (3+ verified credentials) */}
+          {(provider.verifiedCredentialCount ?? 0) >= 3 && (
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
+              <FiShield className="mr-1" size={12} />
+              CareLinkAI Certified
+            </span>
+          )}
+
           {/* Years in business */}
           {provider.yearsInBusiness && (
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
