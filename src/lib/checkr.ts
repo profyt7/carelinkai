@@ -100,6 +100,58 @@ export interface CheckrReport {
   turnaroundTime?: number;
 }
 
+// ─── Invitation (standalone "check anyone" flow) ─────────────────────────────
+
+export interface CheckrInvitation {
+  id: string;
+  status: string;
+  invitationUrl: string;
+  expiresAt?: string;
+}
+
+export async function createInvitation(params: {
+  firstName: string;
+  lastName: string;
+  email: string;
+  packageName: string;
+}): Promise<CheckrInvitation> {
+  if (!CHECKR_API_KEY) {
+    return {
+      id: `mock_inv_${Date.now()}`,
+      status: "pending",
+      invitationUrl: `https://apply.checkr.com/mock/${Date.now()}`,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    };
+  }
+
+  const res = await fetch(`${CHECKR_BASE}/invitations`, {
+    method: "POST",
+    headers: checkrHeaders(),
+    body: JSON.stringify({
+      package: params.packageName,
+      candidate: {
+        first_name: params.firstName,
+        last_name: params.lastName,
+        email: params.email,
+      },
+      work_locations: [{ country: "US", state: "OH" }],
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Checkr createInvitation failed (${res.status}): ${err}`);
+  }
+
+  const data = await res.json();
+  return {
+    id: data.id,
+    status: data.status,
+    invitationUrl: data.invitation_url,
+    expiresAt: data.expires_at,
+  };
+}
+
 // ─── Candidate ───────────────────────────────────────────────────────────────
 
 export async function createCandidate(input: CheckrCandidateInput): Promise<CheckrCandidate> {

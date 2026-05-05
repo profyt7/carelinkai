@@ -2964,3 +2964,34 @@ enum RideStatus {
   COMPLETED
   CANCELED
 }
+
+model BackgroundCheckInvitation {
+  id                 String    @id @default(cuid())
+  orderedByUserId    String
+  orderedByRole      String
+
+  subjectFirstName   String
+  subjectLastName    String
+  subjectEmail       String
+  subjectRole        String?
+
+  packageType        String
+  pricePaid          Decimal?  @db.Decimal(10, 2)
+  stripePaymentId    String?
+
+  checkrInvitationId String?   @unique
+  checkrCandidateId  String?
+  checkrReportId     String?   @unique
+  invitationUrl      String?
+
+  status             String    @default("INVITED")
+  reportUrl          String?
+
+  expiresAt          DateTime?
+  completedAt        DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([orderedByUserId])
+  @@index([status])
+}

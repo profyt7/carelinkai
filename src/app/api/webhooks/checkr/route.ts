@@ -23,7 +23,21 @@ export async function POST(request: NextRequest) {
     const reportData = payload.data?.object;
 
     // Only handle report completion events
-    if (!type.startsWith("report.") || !reportData) {
+    if (!type.startsWith("report.") && !type.startsWith("invitation.") || !reportData) {
+      return NextResponse.json({ received: true });
+    }
+
+    // Handle invitation status updates (candidate accepted/declined)
+    if (type.startsWith("invitation.")) {
+      const invId: string = reportData.id;
+      const invStatus: string = reportData.status; // pending | expired | cancelled
+      const inv = await prisma.backgroundCheckInvitation.findUnique({ where: { checkrInvitationId: invId }, select: { id: true, checkrInvitationId: true } });
+      if (inv) {
+        await prisma.backgroundCheckInvitation.update({
+          where: { id: inv.id },
+          data: { status: invStatus === "expired" ? "EXPIRED" : invStatus === "cancelled" ? "CANCELLED" : "PENDING" },
+        });
+      }
       return NextResponse.json({ received: true });
     }
 
@@ -67,6 +81,30 @@ export async function POST(request: NextRequest) {
             message: messages[mappedStatus],
             isRead: false,
           },
+        });
+      }
+      return NextResponse.json({ received: true });
+    }
+
+    // Check if this is a standalone invitation-based check
+    const invitation = await prisma.backgroundCheckInvitation.findUnique({
+      where: { checkrReportId },
+      select: { id: true, orderedByUserId: true, subjectFirstName: true, subjectLastName: true },
+    });
+    if (invitation) {
+      const newStatus = mappedStatus === "CLEAR" ? "CLEAR" : mappedStatus === "FAILED" ? "FAILED" : mappedStatus === "CONSIDER" ? "CONSIDER" : "PENDING";
+      await prisma.backgroundCheckInvitation.update({
+        where: { id: invitation.id },
+        data: { status: newStatus, reportUrl: reportUrl ?? undefined, completedAt: completedAt ? new Date(completedAt) : new Date() },
+      });
+      const msgs: Record<string, string> = {
+        CLEAR: `Background check on ${invitation.subjectFirstName} ${invitation.subjectLastName} came back clear.`,
+        CONSIDER: `Background check on ${invitation.subjectFirstName} ${invitation.subjectLastName} requires manual review.`,
+        FAILED: `Background check on ${invitation.subjectFirstName} ${invitation.subjectLastName} could not be cleared. Contact support for details.`,
+      };
+      if (msgs[newStatus]) {
+        await prisma.notification.create({
+          data: { userId: invitation.orderedByUserId, type: "SYSTEM", title: "Background Check Complete", message: msgs[newStatus], isRead: false },
         });
       }
       return NextResponse.json({ received: true });

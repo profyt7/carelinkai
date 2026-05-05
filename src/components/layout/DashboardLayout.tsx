@@ -151,6 +151,15 @@ const navItems: NavItem[] = [
     roleRestriction: ["FAMILY", "PROVIDER"],
   },
 
+  // 4d. Background Checks (FAMILY + OPERATOR)
+  {
+    name: "Background Checks",
+    icon: <FiShield size={20} />,
+    href: "/background-checks",
+    showInMobileBar: false,
+    roleRestriction: ["FAMILY", "OPERATOR", "ADMIN"],
+  },
+
   // 5. Residents & Family (collapsible)
   {
     name: "Residents & Family",
