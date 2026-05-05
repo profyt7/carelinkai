@@ -1,5 +1,5 @@
 # CareLinkAI — Technical State
-_Last updated: 2026-05-04_
+_Last updated: 2026-05-05_
 
 ## Active Branch
 `main` — all Transport Phase 2 work + landing page updates committed directly to main (auto-deploys to Render)
@@ -89,6 +89,12 @@ FAMILY, OPERATOR, CAREGIVER, ADMIN, STAFF, PROVIDER, AFFILIATE, DISCHARGE_PLANNE
 - **Pro Caregiver ($19/mo):** Stripe Checkout + Customer Portal at `/settings/billing`. `isPro=true` on ACTIVE/TRIALING. Pro caregivers rank first in all searches (`isPro: desc` orderBy). ★ Pro badge on CaregiverCard. `applicationCount` **fully enforced** — basic caregivers blocked at 10 apps/month with upsell banner; Pro caregivers uncapped. Monthly reset cron live (`0 0 1 * *`). Requires `STRIPE_PRICE_PRO_CAREGIVER` env var. ✅ Billing nav link added to DashboardLayout.
 - **Background check markup:** ENHANCED $34.99, MVR $19.99, PREMIUM $59.99.
 - **Admin MRR dashboard:** `/admin/page.tsx` now shows 5-tile Revenue Overview: Total MRR + per-stream breakdown (Operators, Providers, Pro Caregivers, Discharge Planners) with live counts.
+
+## Transport — Phase 4: NEMT Anti-Fraud + Reliability Score (as of 2026-05-05)
+- **Trip verification:** `actualPickupAt` / `actualDropoffAt` set server-side on status transitions (`/api/rides/[id]/start` + `/complete`). Driver cannot edit. Supports Medicaid claim data.
+- **No-show accountability:** `noShowCausedBy` on Ride (PROVIDER/RIDER/FACILITY/WEATHER/OTHER). Cancel modal collects cause when status is IN_PROGRESS. Stored via PATCH `/api/rides/[id]`.
+- **Recurring ride auto-scheduler:** Cron `GET /api/cron/recurring-rides` (`0 7 * * *`). Finds all seed rides (`isRecurring=true, recurringRootId=null`), spawns children 14 days ahead. Respects `recurringEndDate`. Return trip offset preserved.
+- **Provider reliability score:** `src/lib/rideStats.ts` — transport-only gate, weighted 60% completion + 40% on-time. `scoreLabel()` returns Excellent/Very Good/Good/Fair/Needs Work with color classes. Provider dashboard: 4th tile + Ride Dispatch quick action (PROVIDER+transport only). Marketplace detail: progress bars in Transport Capabilities block. API: `rideStats` field in `/api/marketplace/providers/[id]` response.
 
 ## Transport — Phase 3: Manifest, Shared Rides, Capacity (as of 2026-05-04)
 - **Provider manifest view:** `/rides` page redesigned for PROVIDER role — day-grouped cards showing time, passenger name, route, status badge, collapsible detail (contact, purpose, return/recurring, fare). PassengerNeedsRow shows NEMT tags (mobility level, door level, O₂, companion, cognition, service animal, wait time). Day-level CapacityBar (green→amber→red) vs `vehicleCapacity`.

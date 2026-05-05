@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -396,20 +396,60 @@ export default function RidesPage() {
   const isProvider = role === "PROVIDER";
   const isOperator = role === "OPERATOR" || role === "STAFF";
 
+  // Track REQUESTED ride IDs seen so far; used for new-booking notifications
+  const knownRequestedIds = useRef<Set<string>>(new Set());
+  const pollingInitialized = useRef(false);
+
   const fetchRides = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch("/api/rides");
       if (res.ok) {
         const data = await res.json();
-        setRides(data.rides ?? []);
+        const incoming: Ride[] = data.rides ?? [];
+        setRides(incoming);
         if (data.vehicleCapacity) setVehicleCapacity(data.vehicleCapacity);
+        // Seed the known set on first load so we don't false-alarm
+        const requestedIds = incoming
+          .filter((r) => r.status === "REQUESTED")
+          .map((r) => r.id);
+        requestedIds.forEach((id) => knownRequestedIds.current.add(id));
+        pollingInitialized.current = true;
       }
     } catch { toast.error("Failed to load rides"); }
     finally { setLoading(false); }
   }, []);
 
+  // Silent background poll every 30 s — providers only
+  const pollRides = useCallback(async () => {
+    if (!pollingInitialized.current) return;
+    try {
+      const res = await fetch("/api/rides");
+      if (!res.ok) return;
+      const data = await res.json();
+      const incoming: Ride[] = data.rides ?? [];
+      const newRequested = incoming.filter(
+        (r) => r.status === "REQUESTED" && !knownRequestedIds.current.has(r.id)
+      );
+      if (newRequested.length > 0) {
+        newRequested.forEach((r) => knownRequestedIds.current.add(r.id));
+        const msg = newRequested.length === 1
+          ? "New ride request — tap to view"
+          : `${newRequested.length} new ride requests`;
+        toast(msg, { icon: "🚗", duration: 6000 });
+        setRides(incoming);
+        if (data.vehicleCapacity) setVehicleCapacity(data.vehicleCapacity);
+      }
+    } catch { /* silent — no error toast on background poll */ }
+  }, []);
+
   useEffect(() => { if (session?.user) fetchRides(); }, [session, fetchRides]);
+
+  useEffect(() => {
+    if (!isProvider) return;
+    const interval = setInterval(pollRides, 30_000);
+    return () => clearInterval(interval);
+  }, [isProvider, pollRides]);
 
   useEffect(() => {
     if (paymentResult === "success") toast.success("Payment complete! Your ride is confirmed.");
