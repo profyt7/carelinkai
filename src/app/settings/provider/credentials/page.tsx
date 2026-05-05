@@ -35,6 +35,8 @@ interface Credential {
   expiresAt: string | null;
   verifiedAt: string | null;
   notes: string | null;
+  aiReviewStatus: string | null;
+  aiReviewNotes: string | null;
   createdAt: string;
 }
 
@@ -53,6 +55,7 @@ export default function ProviderCredentialsPage() {
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [orderingBgCheck, setOrderingBgCheck] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/auth/login");
@@ -142,6 +145,24 @@ export default function ProviderCredentialsPage() {
     }
   };
 
+  const handleOrderBackgroundCheck = async () => {
+    setOrderingBgCheck(true);
+    try {
+      const res = await fetch("/api/provider/credentials/order-background-check", { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(`Background check ordered! Results in ${data.turnaround}.`);
+        fetchCredentials();
+      } else {
+        toast.error(data.error ?? "Failed to order background check.");
+      }
+    } catch {
+      toast.error("Network error — please try again.");
+    } finally {
+      setOrderingBgCheck(false);
+    }
+  };
+
   const verifiedCount = credentials.filter((c) => c.status === "VERIFIED").length;
   const isCertified = verifiedCount >= 3;
 
@@ -188,6 +209,30 @@ export default function ProviderCredentialsPage() {
                 Verified providers rank higher in search and build trust with families and facilities.
               </p>
             </div>
+          </div>
+        )}
+
+        {/* Background check order callout */}
+        {!loading && !credentials.some((c) => c.type === "BACKGROUND_CHECK" && ["PENDING", "VERIFIED"].includes(c.status)) && (
+          <div className="mb-6 p-4 bg-neutral-50 border border-neutral-200 rounded-xl flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <FiShield className="h-5 w-5 text-neutral-500 mt-0.5 shrink-0" />
+              <div>
+                <p className="font-medium text-neutral-800 text-sm">No background check on file</p>
+                <p className="text-xs text-neutral-500 mt-0.5">
+                  Order one through CareLinkAI powered by Checkr — Basic check is free.
+                  Results in 1–3 business days.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={handleOrderBackgroundCheck}
+              disabled={orderingBgCheck}
+              className="shrink-0 flex items-center gap-2 px-4 py-2 bg-primary-600 text-white text-sm font-semibold rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors"
+            >
+              {orderingBgCheck ? <FiUpload size={14} className="animate-spin" /> : <FiShield size={14} />}
+              {orderingBgCheck ? "Ordering…" : "Order Background Check"}
+            </button>
           </div>
         )}
 
@@ -343,7 +388,24 @@ export default function ProviderCredentialsPage() {
                         <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">Expiring soon</span>
                       )}
                     </div>
-                    {cred.notes && <p className="text-xs text-neutral-500 mt-1">{cred.notes}</p>}
+                    {cred.notes && !cred.notes.startsWith("Ordered via CareLinkAI") && (
+                      <p className="text-xs text-neutral-500 mt-1">{cred.notes}</p>
+                    )}
+                    {cred.aiReviewStatus && cred.aiReviewStatus !== "SKIPPED" && (
+                      <p className="text-xs mt-1">
+                        <span className={`font-medium ${
+                          cred.aiReviewStatus === "APPROVED" ? "text-success-700" :
+                          cred.aiReviewStatus === "FLAGGED" ? "text-error-600" : "text-amber-700"
+                        }`}>
+                          {cred.aiReviewStatus === "APPROVED" ? "AI Review: Looks good" :
+                           cred.aiReviewStatus === "FLAGGED" ? "AI Review: Flagged — " :
+                           "AI Review: Pending admin verification"}
+                        </span>
+                        {cred.aiReviewStatus === "FLAGGED" && cred.aiReviewNotes && (
+                          <span className="text-neutral-400">{cred.aiReviewNotes}</span>
+                        )}
+                      </p>
+                    )}
                     <div className="flex items-center gap-4 mt-1.5 text-xs text-neutral-400">
                       <span>Submitted {new Date(cred.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
                       {expiresDate && <span>Expires {expiresDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>}

@@ -458,23 +458,27 @@ model ProviderReview {
 }
 
 model ProviderCredential {
-  id          String           @id @default(cuid())
-  providerId  String
-  type        String
-  documentUrl String?
-  status      CredentialStatus @default(PENDING)
-  verifiedAt  DateTime?
-  verifiedBy  String?
-  expiresAt   DateTime?
-  notes       String?
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-  provider    Provider         @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  id              String           @id @default(cuid())
+  providerId      String
+  type            String
+  documentUrl     String?
+  status          CredentialStatus @default(PENDING)
+  verifiedAt      DateTime?
+  verifiedBy      String?
+  expiresAt       DateTime?
+  notes           String?
+  aiReviewStatus  String?          // APPROVED | FLAGGED | NEEDS_REVIEW | SKIPPED
+  aiReviewNotes   String?
+  checkrReportId  String?          @unique
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  provider        Provider         @relation(fields: [providerId], references: [id], onDelete: Cascade)
 
   @@index([providerId])
   @@index([type])
   @@index([status])
   @@index([expiresAt])
+  @@index([checkrReportId])
 }
 
 model AssistedLivingHome {

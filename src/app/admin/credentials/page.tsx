@@ -36,6 +36,8 @@ interface Credential {
   expiresAt: string | null;
   verifiedAt: string | null;
   notes: string | null;
+  aiReviewStatus: string | null;
+  aiReviewNotes: string | null;
   createdAt: string;
   provider: {
     id: string;
@@ -45,6 +47,13 @@ interface Credential {
     isVerified: boolean;
   };
 }
+
+const AI_REVIEW_CONFIG: Record<string, { label: string; color: string }> = {
+  APPROVED:     { label: "AI Approved",      color: "bg-success-100 text-success-800" },
+  FLAGGED:      { label: "AI Flagged",        color: "bg-error-100 text-error-700" },
+  NEEDS_REVIEW: { label: "AI: Review Needed", color: "bg-amber-100 text-amber-800" },
+  SKIPPED:      { label: "AI Skipped",        color: "bg-neutral-100 text-neutral-500" },
+};
 
 export default function AdminCredentialsPage() {
   const [activeTab, setActiveTab] = useState<StatusTab>("PENDING");
@@ -198,8 +207,20 @@ export default function AdminCredentialsPage() {
                     )}
                   </div>
 
-                  {/* Notes */}
-                  {cred.notes && (
+                  {/* AI review badge */}
+                  {cred.aiReviewStatus && AI_REVIEW_CONFIG[cred.aiReviewStatus] && (
+                    <div className="mt-1.5">
+                      <span className={`inline-block text-xs font-semibold px-2 py-0.5 rounded-full ${AI_REVIEW_CONFIG[cred.aiReviewStatus].color}`}>
+                        {AI_REVIEW_CONFIG[cred.aiReviewStatus].label}
+                      </span>
+                      {cred.aiReviewNotes && (
+                        <span className="ml-2 text-xs text-neutral-400">{cred.aiReviewNotes}</span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Provider notes */}
+                  {cred.notes && !cred.notes.startsWith("Ordered via CareLinkAI") && (
                     <p className="text-xs text-neutral-500 mt-1 italic">{cred.notes}</p>
                   )}
 

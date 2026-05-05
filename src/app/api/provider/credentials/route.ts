@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAnyRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { reviewProviderCredential } from "@/lib/ai/credential-review";
 
 const credentialCreateSchema = z.object({
   type: z.string().min(1, "Type is required").max(100),
@@ -36,18 +37,20 @@ export async function GET(request: NextRequest) {
         orderBy: { createdAt: "desc" }, 
         skip, 
         take: limit, 
-        select: { 
-          id: true, 
-          type: true, 
-          documentUrl: true, 
-          status: true, 
-          verifiedAt: true, 
+        select: {
+          id: true,
+          type: true,
+          documentUrl: true,
+          status: true,
+          verifiedAt: true,
           verifiedBy: true,
           expiresAt: true,
           notes: true,
-          createdAt: true, 
-          updatedAt: true 
-        } 
+          aiReviewStatus: true,
+          aiReviewNotes: true,
+          createdAt: true,
+          updatedAt: true
+        }
       }),
       prisma.providerCredential.count({ where: { providerId: provider.id } })
     ]);
@@ -76,16 +79,43 @@ export async function POST(request: NextRequest) {
     const provider = await prisma.provider.findUnique({ where: { userId: session!.user!.id! }, select: { id: true } });
     if (!provider) return NextResponse.json({ error: "User is not registered as a provider" }, { status: 403 });
 
-    const credential = await prisma.providerCredential.create({ 
-      data: { 
-        providerId: provider.id, 
-        type, 
+    const credential = await prisma.providerCredential.create({
+      data: {
+        providerId: provider.id,
+        type,
         expiresAt: expiresAt ? new Date(expiresAt) : null,
-        documentUrl, 
+        documentUrl,
         notes,
         status: "PENDING"
-      } 
+      }
     });
+
+    // Fire AI review async — does not block the response
+    void (async () => {
+      try {
+        const result = await reviewProviderCredential({
+          credentialId: credential.id,
+          type: credential.type,
+          documentUrl: credential.documentUrl ?? null,
+          notes: credential.notes ?? null,
+          expiresAt: credential.expiresAt ?? null,
+        });
+        await prisma.providerCredential.update({
+          where: { id: credential.id },
+          data: {
+            aiReviewStatus: result.status,
+            aiReviewNotes: result.notes,
+            ...(result.autoVerify && {
+              status: "VERIFIED",
+              verifiedAt: new Date(),
+              verifiedBy: "ai",
+            }),
+          },
+        });
+      } catch (e) {
+        console.error("AI credential review failed:", e);
+      }
+    })();
 
     return NextResponse.json({ success: true, credential });
   } catch (error) {

@@ -34,7 +34,17 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: "asc" },
       skip,
       take: limit,
-      include: {
+      select: {
+        id: true,
+        type: true,
+        status: true,
+        documentUrl: true,
+        expiresAt: true,
+        verifiedAt: true,
+        notes: true,
+        aiReviewStatus: true,
+        aiReviewNotes: true,
+        createdAt: true,
         provider: {
           select: {
             id: true,

@@ -34,7 +34,45 @@ export async function POST(request: NextRequest) {
 
     const mappedStatus = mapCheckrStatus(checkrStatus);
 
-    // Find the order by Checkr report ID
+    // Check if this is a provider credential background check
+    const providerCredential = await prisma.providerCredential.findUnique({
+      where: { checkrReportId },
+      select: { id: true, providerId: true, provider: { select: { userId: true } } },
+    });
+
+    if (providerCredential) {
+      const newCredStatus =
+        mappedStatus === "CLEAR" ? "VERIFIED" : mappedStatus === "FAILED" ? "REJECTED" : "PENDING";
+      await prisma.providerCredential.update({
+        where: { id: providerCredential.id },
+        data: {
+          status: newCredStatus,
+          ...(newCredStatus === "VERIFIED" && { verifiedAt: new Date(), verifiedBy: "checkr" }),
+          documentUrl: reportUrl ?? undefined,
+          aiReviewStatus: "SKIPPED",
+          aiReviewNotes: `Checkr result: ${mappedStatus}`,
+        },
+      });
+      const messages: Record<string, string> = {
+        CLEAR: "Your background check came back clear! Your credential has been verified.",
+        FAILED: "Your background check could not be cleared. Please contact support.",
+        CONSIDER: "Your background check requires manual review. A specialist will follow up.",
+      };
+      if (messages[mappedStatus]) {
+        await prisma.notification.create({
+          data: {
+            userId: providerCredential.provider.userId,
+            type: "SYSTEM",
+            title: "Background Check Update",
+            message: messages[mappedStatus],
+            isRead: false,
+          },
+        });
+      }
+      return NextResponse.json({ received: true });
+    }
+
+    // Find the order by Checkr report ID (caregiver path)
     const order = await prisma.backgroundCheckOrder.findUnique({
       where: { checkrReportId },
       select: { id: true, caregiverId: true },
