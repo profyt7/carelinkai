@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-05-03_
+_Last updated: 2026-05-05_
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -83,29 +83,21 @@ Each loop: what it is, why it matters, what done looks like.
 - Flat-fee ($99-199) for Medicaid waiver, VA Aid & Attendance, LTC insurance claims navigation.
 
 ### OL-039: Add Render cron for recurring rides
-- **Status:** 🟡 OPEN — cron endpoint built, not yet registered in Render
-- **What:** Add cron job in Render dashboard: `0 7 * * *` → `GET https://getcarelinkai.com/api/cron/recurring-rides?secret=CRON_SECRET` (or via `x-cron-secret` header). Spawns next 14-day occurrences of all active recurring ride series.
-- **Done when:** Cron registered + first successful run in Render logs.
+- **Status:** ✅ CLOSED (2026-05-04) — Chris registered cron in Render dashboard: `0 7 * * *` → `/api/cron/recurring-rides`. Endpoint live.
 
 ### OL-040: Transport migration 20260504000006 deploy
-- **Status:** 🟡 OPEN — needs `npx prisma migrate deploy` after next merge
-- **What:** Adds actualPickupAt, actualDropoffAt, noShowCausedBy, recurringRootId to Ride. All nullable — no data risk.
-- **Done when:** Migration runs cleanly.
+- **Status:** ✅ CLOSED (2026-05-04) — PR #512 squash-merged to main. Migration auto-runs via `start` script (`npm run migrate:deploy && node .next/standalone/server.js`). No manual Render shell step needed.
 
 ### OL-041: Provider reliability score dashboard
-- **Status:** 🟡 OPEN — data now being collected (noShowCausedBy, actualPickupAt, actualDropoffAt)
-- **What:** Build a reliability summary per provider: on-time pickup %, ride completion rate, no-show cause breakdown. Show in provider dashboard + marketplace listing. Critical for payer contract pitches ("we reduce missed appointments by X%").
-- **Done when:** Provider dashboard tile shows reliability score; marketplace card shows it.
+- **Status:** ✅ CLOSED (2026-05-04) — Built in full: `src/lib/rideStats.ts` (transport-only gate, weighted score 60% completion + 40% on-time), provider dashboard 4th tile + Ride Dispatch quick action, marketplace provider detail reliability section with progress bars, API route returns `rideStats`. PR #512 merged.
 
 ### OL-038: Transport migration 20260504000005 deploy
-- **Status:** 🟡 OPEN — needs `npx prisma migrate deploy` in Render shell after next merge
-- **What:** Adds `isSharedRide`, `sharedRideGroupId` to Ride + `vehicleCapacity` to Provider. All columns have safe defaults.
-- **Done when:** Migration runs without error; `vehicleCapacity` appears in provider settings.
+- **Status:** ✅ CLOSED (2026-05-04) — PR #512 squash-merged to main. Migration auto-runs via `start` script. `vehicleCapacity` and shared ride fields live in production.
 
 ### OL-037: Provider real-time new booking notification
-- **Status:** 🟡 OPEN — providers currently must refresh /rides to see new bookings
-- **What:** SSE push or polling to alert provider in real-time when a new REQUESTED ride appears. Could use existing SSE infrastructure or a simple long-poll interval.
-- **Done when:** Provider sees a toast/notification within seconds of a family booking without refreshing.
+- **Status:** 🟡 IN PROGRESS — building polling-based toast notification for new REQUESTED rides
+- **What:** 30-second poll on `/rides` page; compares `latestRequestedRideId` from API; shows toast when new REQUESTED ride arrives. No new infra required.
+- **Done when:** Provider sees a toast/notification within 30 seconds of a family booking without refreshing.
 
 ### OL-026: Transport Phase 2 — ride booking + dispatch
 - **Status:** ✅ CLOSED (2026-05-04)
@@ -303,3 +295,7 @@ Each loop: what it is, why it matters, what done looks like.
 | Landing page freemium inaccuracy | Updated 5 "always free" references to reflect free-to-join + Pro $19/mo optional model | 2026-05-03 |
 | Admin MRR visibility | Admin dashboard now shows 5-tile MRR breakdown across all 4 revenue streams | 2026-05-03 |
 | OL-031: Application cap enforcement | Full enforcement built: block at 10, increment on submit, reset cron, upsell banner | 2026-05-03 |
+| OL-038: Transport migration 20260504000005 | Auto-deployed via PR #512 merge → Render start script | 2026-05-04 |
+| OL-039: Recurring rides cron | Chris registered Render cron `0 7 * * *` → `/api/cron/recurring-rides` | 2026-05-04 |
+| OL-040: Transport migration 20260504000006 | Auto-deployed via PR #512 merge → Render start script | 2026-05-04 |
+| OL-041: Provider reliability score | `rideStats.ts` + dashboard tile + marketplace section + API; transport-only gate | 2026-05-04 |
