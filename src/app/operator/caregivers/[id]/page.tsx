@@ -24,6 +24,7 @@ import { OverviewTab } from '@/components/operator/caregivers/OverviewTab';
 import { CertificationsTab } from '@/components/operator/caregivers/CertificationsTab';
 import { AssignmentsTab } from '@/components/operator/caregivers/AssignmentsTab';
 import { DocumentsTab } from '@/components/operator/caregivers/DocumentsTab';
+import BackgroundCheckOrderPanel from '@/components/marketplace/BackgroundCheckOrderPanel';
 
 type Tab = 'overview' | 'certifications' | 'assignments' | 'documents';
 
@@ -49,6 +50,7 @@ type Caregiver = {
   languages?: string[];
   yearsOfExperience?: number | null;
   bio?: string | null;
+  backgroundCheckStatus?: string;
   certifications?: any[];
   assignments?: any[];
   createdAt: Date | string;
@@ -326,7 +328,16 @@ export default function CaregiverDetailPage() {
 
         <div className="p-6">
           {activeTab === 'overview' && (
-            <OverviewTab caregiver={caregiver} onUpdate={fetchCaregiver} />
+            <>
+              <OverviewTab caregiver={caregiver} onUpdate={fetchCaregiver} />
+              <div className="mt-4">
+                <BackgroundCheckOrderPanel
+                  caregiverId={caregiverId}
+                  caregiverFirstName={caregiver.user.firstName}
+                  existingStatus={caregiver.backgroundCheckStatus ?? 'NOT_STARTED'}
+                />
+              </div>
+            </>
           )}
           {activeTab === 'certifications' && <CertificationsTab caregiverId={caregiverId} />}
           {activeTab === 'assignments' && <AssignmentsTab caregiverId={caregiverId} />}

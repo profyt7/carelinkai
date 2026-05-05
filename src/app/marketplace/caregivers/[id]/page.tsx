@@ -315,6 +315,13 @@ export default async function CaregiverDetailPage({
                     A $99 marketplace access fee applies on the Starter plan.
                   </p>
                 )}
+                {!caregiver.id.startsWith("cg_") && (
+                  <BackgroundCheckOrderPanel
+                    caregiverId={caregiver.id}
+                    caregiverFirstName={caregiver.name.split(" ")[0]}
+                    existingStatus={caregiver.backgroundCheckStatus}
+                  />
+                )}
                 <DirectHireButton
                   caregiverId={caregiver.id}
                   caregiverName={caregiver.name}

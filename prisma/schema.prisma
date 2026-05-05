@@ -2165,6 +2165,7 @@ enum BackgroundCheckStatus {
 enum BackgroundCheckOrderer {
   SELF
   FAMILY
+  OPERATOR
 }
 
 enum CertificationType {

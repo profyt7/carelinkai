@@ -20,7 +20,7 @@ export async function POST(
   { params }: { params: { caregiverId: string } }
 ) {
   try {
-    const { session, error } = await requireAnyRole(["FAMILY"] as any);
+    const { session, error } = await requireAnyRole(["FAMILY", "OPERATOR"] as any);
     if (error) return error;
 
     const body = await request.json().catch(() => ({}));
@@ -103,7 +103,7 @@ export async function PUT(
   { params }: { params: { caregiverId: string } }
 ) {
   try {
-    const { session, error } = await requireAnyRole(["FAMILY"] as any);
+    const { session, error } = await requireAnyRole(["FAMILY", "OPERATOR"] as any);
     if (error) return error;
 
     const body = await request.json();
@@ -167,10 +167,13 @@ async function runCheck(
 
   const report = await createReport(candidateId, pkg.checkrName);
 
+  const userRole = await prisma.user.findUnique({ where: { id: orderedByUserId }, select: { role: true } });
+  const orderedByType = userRole?.role === "OPERATOR" ? "OPERATOR" : "FAMILY";
+
   const order = await prisma.backgroundCheckOrder.create({
     data: {
       caregiverId: caregiver.id,
-      orderedByType: "FAMILY",
+      orderedByType,
       orderedByUserId,
       status: "PENDING",
       packageType,
@@ -208,7 +211,7 @@ export async function GET(
   { params }: { params: { caregiverId: string } }
 ) {
   try {
-    const { session, error } = await requireAnyRole(["FAMILY"] as any);
+    const { session, error } = await requireAnyRole(["FAMILY", "OPERATOR"] as any);
     if (error) return error;
 
     const caregiver = await prisma.caregiver.findUnique({
