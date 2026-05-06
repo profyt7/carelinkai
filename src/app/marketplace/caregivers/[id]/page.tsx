@@ -479,10 +479,10 @@ export default async function CaregiverDetailPage({
           </div>
           
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <Link 
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Link
               href={`/messages?userId=${caregiver.userId}`}
-              className="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md transition-colors text-center"
+              className="flex-1 flex items-center justify-center gap-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 font-medium py-2.5 px-4 rounded-md transition-colors text-sm border border-neutral-300"
             >
               Message
             </Link>
@@ -490,7 +490,7 @@ export default async function CaregiverDetailPage({
               targetType="AIDE"
               targetId={caregiver.id}
               targetName={caregiver.name}
-              className="flex-1 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 font-medium py-2 px-4 rounded-md transition-colors text-center"
+              className="flex-1 flex items-center justify-center gap-2 bg-primary-600 hover:bg-primary-700 text-white font-medium py-2.5 px-4 rounded-md transition-colors text-sm"
             />
           </div>
 
