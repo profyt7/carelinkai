@@ -425,12 +425,14 @@ model Provider {
   listingPeriodEndsAt   DateTime?
   createdAt             DateTime             @default(now())
   updatedAt             DateTime             @updatedAt
-  shortlistedByFamilies FavoriteProvider[]
-  leads                 Lead[]               @relation("LeadToProvider")
-  rides                 Ride[]
-  user                  User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  credentials           ProviderCredential[]
-  reviews               ProviderReview[]
+  shortlistedByFamilies         FavoriteProvider[]
+  leads                         Lead[]               @relation("LeadToProvider")
+  rides                         Ride[]
+  user                          User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credentials                   ProviderCredential[]
+  reviews                       ProviderReview[]
+  checkrCandidateId             String?
+  providerBackgroundCheckOrders ProviderBackgroundCheckOrder[]
 
   @@index([userId])
   @@index([businessName])
@@ -2992,6 +2994,30 @@ model BackgroundCheckInvitation {
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
+  @@index([orderedByUserId])
+  @@index([status])
+}
+
+// Tracks background check orders placed by families/operators on a provider contact
+model ProviderBackgroundCheckOrder {
+  id                String                 @id @default(cuid())
+  providerId        String
+  orderedByType     BackgroundCheckOrderer
+  orderedByUserId   String?
+  status            BackgroundCheckStatus  @default(PENDING)
+  packageType       BackgroundCheckPackage @default(BASIC)
+  checkrPackageName String                 @default("basic")
+  checkrReportId    String?                @unique
+  reportUrl         String?
+  pricePaid         Decimal?               @db.Decimal(10, 2)
+  stripePaymentId   String?
+  completedAt       DateTime?
+  expiresAt         DateTime?
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  provider          Provider               @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([providerId])
   @@index([orderedByUserId])
   @@index([status])
 }

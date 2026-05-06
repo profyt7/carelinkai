@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import toast from "react-hot-toast";
 import Link from "next/link";
 import {
   FiMapPin,
@@ -21,6 +20,7 @@ import {
   FiShield,
 } from "react-icons/fi";
 import RequestCareButton from "@/components/marketplace/RequestCareButton";
+import BackgroundCheckOrderPanel from "@/components/marketplace/BackgroundCheckOrderPanel";
 import ProviderReviewsListClient from "@/components/marketplace/ProviderReviewsListClient";
 import RideRequestModal from "@/components/transport/RideRequestModal";
 
@@ -96,8 +96,6 @@ export default function ProviderDetailPage() {
   // Favorite state
   const PR_FAV_KEY = 'marketplace:provider-favorites:v1';
   const [isFavorite, setIsFavorite] = useState(false);
-  const [checkOrdering, setCheckOrdering] = useState(false);
-  const [checkOrdered, setCheckOrdered] = useState(false);
 
   useEffect(() => {
     if (providerId) {
@@ -194,45 +192,6 @@ export default function ProviderDetailPage() {
     // Navigate to messages page with provider's user ID
     if (provider?.userId) {
       router.push(`/messages?userId=${provider.userId}`);
-    }
-  };
-
-  const handleOrderProviderCheck = async () => {
-    if (status !== "authenticated") {
-      router.push(`/auth/login?callbackUrl=/marketplace/providers/${providerId}`);
-      return;
-    }
-    setCheckOrdering(true);
-    try {
-      const nameParts = (provider?.contactName ?? "").trim().split(/\s+/);
-      const firstName = nameParts[0] ?? "";
-      const lastName = (nameParts.slice(1).join(" ") || nameParts[0]) ?? "";
-      const res = await fetch("/api/background-checks", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          firstName,
-          lastName,
-          email: provider?.contactEmail,
-          role: "Other",
-          packageType: "BASIC",
-        }),
-      });
-      const data = await res.json();
-      if (data.requiresPayment) {
-        router.push("/background-checks");
-        return;
-      }
-      if (data.success) {
-        setCheckOrdered(true);
-        toast.success("Background check invitation sent to provider contact!");
-      } else {
-        toast.error(data.error ?? "Failed to order background check.");
-      }
-    } catch {
-      toast.error("Network error. Please try again.");
-    } finally {
-      setCheckOrdering(false);
     }
   };
 
@@ -699,51 +658,14 @@ export default function ProviderDetailPage() {
               </ul>
             </div>
 
-            {/* Background Check Card */}
-            <div className="bg-white rounded-lg shadow border border-neutral-200 overflow-hidden">
-              {/* Header — matches BackgroundCheckOrderPanel style */}
-              <div className="flex items-center gap-2 px-4 py-3 bg-neutral-50 border-b border-neutral-200">
-                <FiShield className="h-4 w-4 text-primary-600 flex-shrink-0" />
-                <span className="text-sm font-semibold text-neutral-900">Safety &amp; Background Checks</span>
-              </div>
-              <div className="p-4">
-                {checkOrdered ? (
-                  <div className="flex items-center gap-2 rounded-lg bg-success-50 border border-success-200 p-3 text-sm text-success-700">
-                    <FiCheckCircle className="h-4 w-4 flex-shrink-0" />
-                    Invitation sent to {provider.contactName}. They&apos;ll receive an email to complete the check.
-                  </div>
-                ) : (
-                  <>
-                    <p className="text-xs text-neutral-500 mb-3">
-                      Send {provider.contactName.split(" ")[0]} a free background check invitation via Checkr. They&apos;ll consent and complete it by email.
-                    </p>
-                    <button
-                      onClick={handleOrderProviderCheck}
-                      disabled={checkOrdering}
-                      className="w-full flex items-center justify-center gap-2 rounded-full border border-primary-400 text-primary-700 bg-primary-50 hover:bg-primary-100 py-2 text-xs font-semibold transition-colors disabled:opacity-50"
-                    >
-                      {checkOrdering ? (
-                        <FiLoader className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <FiShield className="h-3.5 w-3.5" />
-                      )}
-                      {checkOrdering ? "Sending..." : `Order Free — ${provider.contactName.split(" ")[0]}`}
-                    </button>
-                    <p className="mt-2 text-xs text-neutral-400 text-center">
-                      Enhanced checks on the{" "}
-                      <Link href="/background-checks" className="text-primary-500 hover:underline">
-                        Background Checks hub
-                      </Link>
-                    </p>
-                  </>
-                )}
-              </div>
-              <div className="px-4 py-2 bg-neutral-50 border-t border-neutral-100">
-                <p className="text-xs text-neutral-400 text-center">
-                  Powered by Checkr · Consent-based invitation flow
-                </p>
-              </div>
-            </div>
+            {/* Background Check Panel — same direct-report flow as caregivers */}
+            <BackgroundCheckOrderPanel
+              caregiverId={provider.id}
+              caregiverFirstName={provider.contactName.split(" ")[0]}
+              existingStatus="NOT_STARTED"
+              apiBasePath="/api/family/background-checks/order-provider"
+              defaultExpanded={true}
+            />
           </div>
         </div>
       </div>

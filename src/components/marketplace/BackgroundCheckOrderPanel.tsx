@@ -64,12 +64,15 @@ interface Props {
   caregiverId: string;
   caregiverFirstName: string;
   existingStatus: string;
+  /** Override the base API path. Defaults to /api/family/background-checks/order */
+  apiBasePath?: string;
   /** Unused — kept for API compatibility; component is always visible */
   defaultExpanded?: boolean;
 }
 
 function PaymentForm({
   caregiverId,
+  apiBasePath,
   packageType,
   label,
   price,
@@ -78,6 +81,7 @@ function PaymentForm({
   onCancel,
 }: {
   caregiverId: string;
+  apiBasePath: string;
   packageType: PackageKey;
   label: string;
   price: number;
@@ -105,7 +109,7 @@ function PaymentForm({
         return;
       }
       if (paymentIntent?.status === "succeeded") {
-        const res = await fetch(`/api/family/background-checks/order/${caregiverId}`, {
+        const res = await fetch(`${apiBasePath}/${caregiverId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ paymentIntentId: paymentIntent.id, packageType }),
@@ -169,6 +173,7 @@ export default function BackgroundCheckOrderPanel({
   caregiverId,
   caregiverFirstName,
   existingStatus,
+  apiBasePath = "/api/family/background-checks/order",
 }: Props) {
   const [loadingPackage, setLoadingPackage] = useState<PackageKey | null>(null);
   const [expandedDetail, setExpandedDetail] = useState<PackageKey | null>(null);
@@ -181,7 +186,7 @@ export default function BackgroundCheckOrderPanel({
     setLoadingPackage(key);
     setErrorPackage(null);
     try {
-      const res = await fetch(`/api/family/background-checks/order/${caregiverId}`, {
+      const res = await fetch(`${apiBasePath}/${caregiverId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ packageType: key }),
@@ -345,6 +350,7 @@ export default function BackgroundCheckOrderPanel({
                   <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: "stripe" } }}>
                     <PaymentForm
                       caregiverId={caregiverId}
+                      apiBasePath={apiBasePath}
                       packageType={key}
                       label={pkg.label}
                       price={pkg.price}
