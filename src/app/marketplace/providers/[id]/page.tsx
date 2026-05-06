@@ -701,11 +701,12 @@ export default function ProviderDetailPage() {
 
             {/* Background Check Card */}
             <div className="bg-white rounded-lg shadow border border-neutral-200 overflow-hidden">
+              {/* Header — matches BackgroundCheckOrderPanel style */}
+              <div className="flex items-center gap-2 px-4 py-3 bg-neutral-50 border-b border-neutral-200">
+                <FiShield className="h-4 w-4 text-primary-600 flex-shrink-0" />
+                <span className="text-sm font-semibold text-neutral-900">Safety &amp; Background Checks</span>
+              </div>
               <div className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <FiShield className="h-5 w-5 text-primary-600" />
-                  <h3 className="text-sm font-semibold text-neutral-900">Background Check</h3>
-                </div>
                 {checkOrdered ? (
                   <div className="flex items-center gap-2 rounded-lg bg-success-50 border border-success-200 p-3 text-sm text-success-700">
                     <FiCheckCircle className="h-4 w-4 flex-shrink-0" />
@@ -714,28 +715,33 @@ export default function ProviderDetailPage() {
                 ) : (
                   <>
                     <p className="text-xs text-neutral-500 mb-3">
-                      Run a free basic background check on {provider.contactName}, the contact person for this provider.
+                      Send {provider.contactName.split(" ")[0]} a free background check invitation via Checkr. They&apos;ll consent and complete it by email.
                     </p>
                     <button
                       onClick={handleOrderProviderCheck}
                       disabled={checkOrdering}
-                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-500 to-secondary-500 py-2.5 text-sm font-semibold text-white hover:opacity-90 transition-opacity disabled:opacity-60"
+                      className="w-full flex items-center justify-center gap-2 rounded-full border border-primary-400 text-primary-700 bg-primary-50 hover:bg-primary-100 py-2 text-xs font-semibold transition-colors disabled:opacity-50"
                     >
                       {checkOrdering ? (
-                        <FiLoader className="h-4 w-4 animate-spin" />
+                        <FiLoader className="h-3.5 w-3.5 animate-spin" />
                       ) : (
-                        <FiShield className="h-4 w-4" />
+                        <FiShield className="h-3.5 w-3.5" />
                       )}
-                      {checkOrdering ? "Processing..." : `Check ${provider.contactName.split(" ")[0]} — Free`}
+                      {checkOrdering ? "Sending..." : `Order Free — ${provider.contactName.split(" ")[0]}`}
                     </button>
                     <p className="mt-2 text-xs text-neutral-400 text-center">
-                      Powered by Checkr · Enhanced options on the{" "}
+                      Enhanced checks on the{" "}
                       <Link href="/background-checks" className="text-primary-500 hover:underline">
                         Background Checks hub
                       </Link>
                     </p>
                   </>
                 )}
+              </div>
+              <div className="px-4 py-2 bg-neutral-50 border-t border-neutral-100">
+                <p className="text-xs text-neutral-400 text-center">
+                  Powered by Checkr · Consent-based invitation flow
+                </p>
               </div>
             </div>
           </div>
