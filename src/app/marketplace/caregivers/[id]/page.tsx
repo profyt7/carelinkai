@@ -320,6 +320,7 @@ export default async function CaregiverDetailPage({
                     caregiverId={caregiver.id}
                     caregiverFirstName={caregiver.name.split(" ")[0]}
                     existingStatus={caregiver.backgroundCheckStatus}
+                    defaultExpanded={true}
                   />
                 )}
                 <DirectHireButton
@@ -347,6 +348,7 @@ export default async function CaregiverDetailPage({
                     caregiverId={caregiver.id}
                     caregiverFirstName={caregiver.name.split(" ")[0]}
                     existingStatus={caregiver.backgroundCheckStatus}
+                    defaultExpanded={true}
                   />
                 )}
               </>

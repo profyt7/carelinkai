@@ -52,6 +52,7 @@ interface Props {
   caregiverId: string;
   caregiverFirstName: string;
   existingStatus: string;
+  defaultExpanded?: boolean;
 }
 
 // Inner form rendered inside <Elements> provider
@@ -158,8 +159,8 @@ function PaymentForm({
   );
 }
 
-export default function BackgroundCheckOrderPanel({ caregiverId, caregiverFirstName, existingStatus }: Props) {
-  const [expanded, setExpanded] = useState(false);
+export default function BackgroundCheckOrderPanel({ caregiverId, caregiverFirstName, existingStatus, defaultExpanded = false }: Props) {
+  const [expanded, setExpanded] = useState(defaultExpanded);
   const [selected, setSelected] = useState<PackageKey>("ENHANCED");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ message: string; success: boolean } | null>(null);

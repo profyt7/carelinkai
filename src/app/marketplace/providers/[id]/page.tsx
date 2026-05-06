@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import toast from "react-hot-toast";
 import Link from "next/link";
 import {
   FiMapPin,
@@ -95,6 +96,8 @@ export default function ProviderDetailPage() {
   // Favorite state
   const PR_FAV_KEY = 'marketplace:provider-favorites:v1';
   const [isFavorite, setIsFavorite] = useState(false);
+  const [checkOrdering, setCheckOrdering] = useState(false);
+  const [checkOrdered, setCheckOrdered] = useState(false);
 
   useEffect(() => {
     if (providerId) {
@@ -191,6 +194,45 @@ export default function ProviderDetailPage() {
     // Navigate to messages page with provider's user ID
     if (provider?.userId) {
       router.push(`/messages?userId=${provider.userId}`);
+    }
+  };
+
+  const handleOrderProviderCheck = async () => {
+    if (status !== "authenticated") {
+      router.push(`/auth/login?callbackUrl=/marketplace/providers/${providerId}`);
+      return;
+    }
+    setCheckOrdering(true);
+    try {
+      const nameParts = (provider?.contactName ?? "").trim().split(/\s+/);
+      const firstName = nameParts[0] ?? "";
+      const lastName = (nameParts.slice(1).join(" ") || nameParts[0]) ?? "";
+      const res = await fetch("/api/background-checks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName,
+          lastName,
+          email: provider?.contactEmail,
+          role: "Other",
+          packageType: "BASIC",
+        }),
+      });
+      const data = await res.json();
+      if (data.requiresPayment) {
+        router.push("/background-checks");
+        return;
+      }
+      if (data.success) {
+        setCheckOrdered(true);
+        toast.success("Background check invitation sent to provider contact!");
+      } else {
+        toast.error(data.error ?? "Failed to order background check.");
+      }
+    } catch {
+      toast.error("Network error. Please try again.");
+    } finally {
+      setCheckOrdering(false);
     }
   };
 
@@ -655,6 +697,46 @@ export default function ProviderDetailPage() {
                   </li>
                 )}
               </ul>
+            </div>
+
+            {/* Background Check Card */}
+            <div className="bg-white rounded-lg shadow border border-neutral-200 overflow-hidden">
+              <div className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <FiShield className="h-5 w-5 text-primary-600" />
+                  <h3 className="text-sm font-semibold text-neutral-900">Background Check</h3>
+                </div>
+                {checkOrdered ? (
+                  <div className="flex items-center gap-2 rounded-lg bg-success-50 border border-success-200 p-3 text-sm text-success-700">
+                    <FiCheckCircle className="h-4 w-4 flex-shrink-0" />
+                    Invitation sent to {provider.contactName}. They&apos;ll receive an email to complete the check.
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-xs text-neutral-500 mb-3">
+                      Run a free basic background check on {provider.contactName}, the contact person for this provider.
+                    </p>
+                    <button
+                      onClick={handleOrderProviderCheck}
+                      disabled={checkOrdering}
+                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-500 to-secondary-500 py-2.5 text-sm font-semibold text-white hover:opacity-90 transition-opacity disabled:opacity-60"
+                    >
+                      {checkOrdering ? (
+                        <FiLoader className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <FiShield className="h-4 w-4" />
+                      )}
+                      {checkOrdering ? "Processing..." : `Check ${provider.contactName.split(" ")[0]} — Free`}
+                    </button>
+                    <p className="mt-2 text-xs text-neutral-400 text-center">
+                      Powered by Checkr · Enhanced options on the{" "}
+                      <Link href="/background-checks" className="text-primary-500 hover:underline">
+                        Background Checks hub
+                      </Link>
+                    </p>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
