@@ -1,7 +1,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { getBlurDataURL } from '@/lib/imageBlur';
-import { FiUser, FiMapPin, FiCheckCircle, FiClock, FiDollarSign } from 'react-icons/fi';
+import { FiUser, FiMapPin, FiCheckCircle, FiClock, FiDollarSign, FiShield } from 'react-icons/fi';
 import Link from 'next/link';
 
 interface CaregiverCardProps {
@@ -227,14 +227,14 @@ const CaregiverCard: React.FC<CaregiverCardProps> = ({ caregiver }) => {
         
         {/* CTA buttons */}
         <div className="grid grid-cols-2 gap-2">
-          <Link 
-            href={`/marketplace/caregivers/${caregiver.id}`} 
+          <Link
+            href={`/marketplace/caregivers/${caregiver.id}`}
             className="block bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md transition-colors text-center text-sm"
           >
             View Profile
           </Link>
           {caregiver.userId && (
-            <Link 
+            <Link
               href={`/messages?userId=${caregiver.userId}`}
               className="block bg-neutral-100 hover:bg-neutral-200 text-neutral-800 font-medium py-2 px-4 rounded-md transition-colors text-center text-sm border border-neutral-300"
             >
@@ -242,6 +242,15 @@ const CaregiverCard: React.FC<CaregiverCardProps> = ({ caregiver }) => {
             </Link>
           )}
         </div>
+        {caregiver.backgroundCheckStatus !== 'CLEAR' && (
+          <Link
+            href={`/marketplace/caregivers/${caregiver.id}`}
+            className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-md border border-primary-200 bg-primary-50 py-1.5 text-xs font-medium text-primary-700 hover:bg-primary-100 transition-colors"
+          >
+            <FiShield size={12} />
+            Run Background Check
+          </Link>
+        )}
       </div>
     </div>
   );
