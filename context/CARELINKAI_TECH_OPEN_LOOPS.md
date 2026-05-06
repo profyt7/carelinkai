@@ -100,6 +100,16 @@ Each loop: what it is, why it matters, what done looks like.
 - **Status:** ✅ CLOSED (2026-05-04)
 - Full end-to-end ride booking live: REQUESTED→CONFIRMED→PAID→IN_PROGRESS→COMPLETED→CANCELED lifecycle. Stripe Checkout payment, 12% platform commission, Stripe refund on PAID cancellation, 5 email triggers, day-of reminder cron, operator resident booking, admin MRR tile, landing page updated. Ride model with 2 migrations deployed.
 
+### OL-048: Prisma migrations 20260505000001/2/3 pending on Render DB
+- **Status:** 🔴 OPEN — schema changes not yet deployed to production
+- **What:** Three manual SQL migrations need to run: `aiReviewStatus/Notes` on `ProviderCredential`, `OPERATOR` in `BackgroundCheckOrderer` enum, new `BackgroundCheckInvitation` model. Run `npx prisma migrate deploy` via Render Shell.
+- **Done when:** Render deploy succeeds with no migration errors.
+
+### OL-049: CaregiverCard + ProviderCard "Run Check" quick-action
+- **Status:** 🟡 OPEN — cards don't surface check CTA from search results
+- **What:** Add small "Run Check" link/button on cards where `backgroundCheckStatus !== 'CLEAR'`. Navigates to profile (or opens check directly). Matches Care.com pattern from search results.
+- **Done when:** From marketplace search, a family/operator can initiate a check without entering profile.
+
 ### OL-023: Checkr API not yet configured
 - **Status:** 🟡 OPEN — system uses mock fallback until keys are set
 - **What:** Set `CHECKR_API_KEY` and `CHECKR_WEBHOOK_SECRET` in Render env vars; register webhook at `https://getcarelinkai.com/api/webhooks/checkr`

@@ -2,6 +2,48 @@
 
 ---
 
+### 2026-05-06 — Background Check Hub + Care.com UX Parity
+
+- **Objective:** Match Care.com's "background check visible on every profile" UX, build a standalone "check anyone" hub, enable operators to order checks, add AI credential review, and add file upload to provider credentials.
+- **Work completed:**
+  1. **File upload for provider credentials** — Replaced URL-only input with dashed upload button → presigned URL flow (`/api/provider/credentials/upload-url`). "Or paste a link" fallback retained.
+  2. **AI credential review (fire-and-forget)** — `src/lib/ai/credential-review.ts` uses Claude Haiku; analyzes image/PDF URLs. Returns `APPROVED | FLAGGED | NEEDS_REVIEW | SKIPPED`. `autoVerify` flag auto-sets status=VERIFIED for clearly valid docs. Metadata-only fallback for mock/unreachable URLs → always `NEEDS_REVIEW`. Result stored in `ProviderCredential.aiReviewStatus + aiReviewNotes`. Displayed in admin credentials queue and provider settings.
+  3. **Provider background check button** — `POST /api/provider/credentials/order-background-check` creates a Checkr report via direct candidate flow, stores `checkrReportId` on `ProviderCredential`. "No background check on file" callout added to provider credentials settings page.
+  4. **Operators can order checks on caregivers** — `POST/PUT/GET /api/family/background-checks/order/[caregiverId]` changed from FAMILY-only to `["FAMILY", "OPERATOR"]`. Dynamic `orderedByType` picks OPERATOR/FAMILY based on session role. `BackgroundCheckOrderer` enum extended with OPERATOR (new Prisma migration).
+  5. **Standalone background check hub** — `/background-checks` full page: "Run a Check" form (name/email/role/package), Stripe Elements payment flow, check history list, how-it-works explainer. 4 packages: Basic (free, invitation), Enhanced ($34.99), MVR ($19.99), Premium ($59.99). Nav entry added to DashboardLayout (FAMILY/OPERATOR/ADMIN). Two new API routes: `POST/GET /api/background-checks` and `PUT /api/background-checks/confirm`.
+  6. **`BackgroundCheckInvitation` Prisma model** — new model for standalone invitation flow. Webhook handler updated for `invitation.*` events.
+  7. **Checkr `createInvitation()` added** to `src/lib/checkr.ts` — sends consent email to subject, mock mode without API key.
+  8. **Care.com UX parity** — `BackgroundCheckOrderPanel` now accepts `defaultExpanded?: boolean` prop. Both caregiver profile instances open expanded by default. Provider profile gets a dedicated "Background Check" sidebar card with one-click free (BASIC) invite pre-filled with `contactName`/`contactEmail`.
+  9. **Operator caregiver detail API** — added `backgroundCheckStatus` to operator caregiver fetch response; `BackgroundCheckOrderPanel` added to operator caregiver detail page.
+- **Files changed:**
+  - `src/app/settings/provider/credentials/page.tsx` (file upload, BG check order button, AI review display)
+  - `src/lib/ai/credential-review.ts` (new)
+  - `src/app/api/provider/credentials/route.ts` (AI review fire-and-forget, aiReviewStatus/Notes in GET)
+  - `src/app/api/provider/credentials/order-background-check/route.ts` (new)
+  - `src/app/api/provider/credentials/upload-url/route.ts` (new)
+  - `src/app/api/family/background-checks/order/[caregiverId]/route.ts` (OPERATOR role, orderedByType)
+  - `src/app/api/operator/caregivers/[id]/route.ts` (backgroundCheckStatus in response)
+  - `src/app/operator/caregivers/[id]/page.tsx` (BackgroundCheckOrderPanel added)
+  - `src/app/api/webhooks/checkr/route.ts` (invitation.* events, providerCredential path)
+  - `src/app/api/background-checks/route.ts` (new)
+  - `src/app/api/background-checks/confirm/route.ts` (new)
+  - `src/app/background-checks/page.tsx` (new — standalone hub)
+  - `src/components/layout/DashboardLayout.tsx` (Background Checks nav entry)
+  - `src/lib/checkr.ts` (createInvitation added)
+  - `prisma/schema.prisma` (aiReviewStatus/Notes on ProviderCredential, OPERATOR enum, BackgroundCheckInvitation model)
+  - `prisma/migrations/20260505000001,2,3` (manual SQL migrations)
+  - `src/app/admin/credentials/page.tsx` (AI review badge + notes display)
+  - `src/components/marketplace/BackgroundCheckOrderPanel.tsx` (defaultExpanded prop)
+  - `src/app/marketplace/caregivers/[id]/page.tsx` (defaultExpanded=true on both panels)
+  - `src/app/marketplace/providers/[id]/page.tsx` (new BG check sidebar card + handler)
+- **Commands run:** `npx prisma generate`, `npx tsc --noEmit`
+- **Tests/build status:** TypeScript clean. No runtime test run (no local DB).
+- **Deployment impact:** 3 new Prisma migrations need to run on Render DB. Background check panel opens by default — visible change to caregiver/provider profile pages.
+- **New risks/blockers:** `CHECKR_API_KEY` still not set in Render — all check flows run in mock mode. Stripe must be in live mode before payments go live. Render DB migration must be run (`npx prisma migrate deploy` via Render Shell or deploy hook).
+- **Recommended next step:** (1) Run `npx prisma migrate deploy` on Render. (2) Add `CaregiverCard` / `ProviderCard` "Run Check" quick-action so users can act from search results without entering a profile. (3) Test provider dashboard checklist flow (was on `feat/provider-onboarding-checklist` branch — merge status unclear).
+
+---
+
 ### 2026-05-05 — Provider Credentialing, Admin Credentials Queue, Onboarding Checklist
 
 - **Objective:** Close OL-037 + OL-043, build admin credentials queue, add provider welcome email, fix Stripe redirect bug, and drive provider activation with a profile completeness checklist.

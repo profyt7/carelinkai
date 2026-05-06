@@ -1,8 +1,8 @@
 # CareLinkAI — Technical State
-_Last updated: 2026-05-05_
+_Last updated: 2026-05-06_
 
 ## Active Branch
-`feat/provider-onboarding-checklist` — in progress (provider completeness widget). Main is current and clean as of 2026-05-05.
+`main` — all background check hub + Care.com UX parity changes committed. `feat/provider-onboarding-checklist` was WIP (provider completeness widget) — merge status unclear; check before starting next session.
 
 ## Production URL
 https://carelinkai.onrender.com (also: https://getcarelinkai.com)
@@ -31,7 +31,7 @@ https://carelinkai.onrender.com (also: https://getcarelinkai.com)
 | AI — All features | Anthropic Claude API (`claude-sonnet-4-6`, `claude-haiku-4-5-20251001`) |
 
 ## Schema Summary
-67+ Prisma models + enums. New since 2026-04-27: `DischargePlannerLicenseType` enum (INDIVIDUAL/DEPARTMENT), `AffiliateReferralType` enum (OPERATOR/FAMILY), `CommissionTier` enum (STANDARD/SILVER/GOLD). New fields: `DischargePlannerProfile.licenseType + seatCount`, `Family.referredByCode`, `AffiliateReferral.referralType`, `Affiliate.commissionTier`. `SubscriptionPlan` enum: +AGENCY. Migration: `20260427000000_revenue_model_expansion`. **2026-05-02:** `Provider` adds `stripeCustomerId`, `stripeSubscriptionId`, `listingStatus`, `listingPeriodEndsAt`; `Caregiver` adds `isPro`, `proStripeCustomerId`, `proStripeSubscriptionId`, `proStatus`, `proPeriodEndsAt`, `applicationCount`, `applicationCountResetAt`. Migration: `20260502000003_add_provider_listing_and_pro_caregiver`.
+67+ Prisma models + enums. New since 2026-04-27: `DischargePlannerLicenseType` enum (INDIVIDUAL/DEPARTMENT), `AffiliateReferralType` enum (OPERATOR/FAMILY), `CommissionTier` enum (STANDARD/SILVER/GOLD). New fields: `DischargePlannerProfile.licenseType + seatCount`, `Family.referredByCode`, `AffiliateReferral.referralType`, `Affiliate.commissionTier`. `SubscriptionPlan` enum: +AGENCY. Migration: `20260427000000_revenue_model_expansion`. **2026-05-02:** `Provider` adds `stripeCustomerId`, `stripeSubscriptionId`, `listingStatus`, `listingPeriodEndsAt`; `Caregiver` adds `isPro`, `proStripeCustomerId`, `proStripeSubscriptionId`, `proStatus`, `proPeriodEndsAt`, `applicationCount`, `applicationCountResetAt`. Migration: `20260502000003_add_provider_listing_and_pro_caregiver`. **2026-05-06:** `ProviderCredential` adds `aiReviewStatus String?`, `aiReviewNotes String?`, `checkrReportId String? @unique`; `BackgroundCheckOrderer` enum adds `OPERATOR`; new `BackgroundCheckInvitation` model for standalone check-anyone flow. Three manual migrations: `20260505000001`, `20260505000002`, `20260505000003`. ⚠️ PENDING DEPLOY on Render DB.
 
 ## User Roles
 FAMILY, OPERATOR, CAREGIVER, ADMIN, STAFF, PROVIDER, AFFILIATE, DISCHARGE_PLANNER
