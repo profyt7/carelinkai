@@ -110,12 +110,24 @@ export async function GET(request: NextRequest) {
         orderBy: { createdAt: 'desc' }
       });
 
-      // Fetch favorite providers
+      // Fetch favorite providers — use select (not include) to avoid pulling new columns
+      // that may not yet exist in the database if a migration is mid-flight
       const favoriteProviders = await prisma.favoriteProvider.findMany({
         where: { familyId: user.family.id },
-        include: {
+        select: {
+          id: true,
+          providerId: true,
+          createdAt: true,
           provider: {
-            include: {
+            select: {
+              id: true,
+              businessName: true,
+              contactName: true,
+              bio: true,
+              serviceTypes: true,
+              website: true,
+              yearsInBusiness: true,
+              isVerified: true,
               user: {
                 select: {
                   firstName: true,
