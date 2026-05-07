@@ -2,6 +2,33 @@
 
 ---
 
+### 2026-05-07 — Option B: Household Shift Scheduling for FAMILY Users
+
+- **Objective:** Build the private household shift management layer for FAMILY users who hire caregivers directly via the marketplace (Option A), and close OL-050.
+- **Work completed:**
+  1. **HouseholdShift model** — added to `prisma/schema.prisma` with back-relations on `User` and `MarketplaceHire`. Status stored as String (SCHEDULED/COMPLETED/CANCELLED) — avoids adding a new Prisma enum.
+  2. **Migration SQL** — `prisma/migrations/20260507000001_household_shifts/migration.sql`: CREATE TABLE IF NOT EXISTS with familyUserId + hireId FK constraints + 3 indexes.
+  3. **API: GET/POST `/api/family/household`** — GET returns all hires (where `listing.postedByUserId = user`) with nested caregiver info and householdShifts. POST validates ownership of the hire + end > start and creates a shift.
+  4. **API: PATCH/DELETE `/api/family/household/shifts/[id]`** — PATCH updates status (and optionally notes); DELETE removes the shift. Both verify `familyUserId` ownership before acting.
+  5. **Dashboard page `/dashboard/household`** — full UI: care team grid (profile photo, name, listing title, upcoming shift count), schedule-a-shift form (caregiver selector + start/end datetime + notes), shift history list with Mark Complete / Cancel / Delete actions. Redirect guard sends non-FAMILY roles to /dashboard.
+  6. **DashboardLayout nav** — "My Household" link added to Operations section, FAMILY-only.
+  7. **Landing page** — Feature 9 card ("Household Shift Scheduling") in features grid; "Household Shift Management" benefit bullet in Families tab.
+  8. **TypeScript:** `npx tsc --noEmit` exit code 0.
+  9. **Commit + push** to `claude/review-carelink-docs-49Ycv` branch.
+- **Files changed:**
+  - `prisma/schema.prisma` (HouseholdShift model + back-relations)
+  - `prisma/migrations/20260507000001_household_shifts/migration.sql` (new)
+  - `src/app/api/family/household/route.ts` (new — GET + POST)
+  - `src/app/api/family/household/shifts/[id]/route.ts` (new — PATCH + DELETE)
+  - `src/app/dashboard/household/page.tsx` (new — full UI)
+  - `src/components/layout/DashboardLayout.tsx` ("My Household" nav)
+  - `src/app/page.tsx` (Feature 9 card + families benefit)
+- **Commands run:** `npx tsc --noEmit` (exit 0), `git push -u origin claude/review-carelink-docs-49Ycv`
+- **Tests/build status:** TypeScript clean. No test suite.
+- **Deployment impact:** New migration `20260507000001_household_shifts` will auto-run via `prisma migrate deploy` on next Render deploy. Uses `IF NOT EXISTS` + FK constraints — idempotent on first run.
+- **New risks/blockers:** Migration 20260507000001 is additive and idempotent. OL-048 (migrations 20260505000001/2/3 + 20260506000001) still open — must confirm those deployed cleanly before the new one runs.
+- **Recommended next step:** Monitor Render deploy logs for OL-048 migrations. Then: set Checkr live keys in Render (`CHECKR_API_KEY`, `CHECKR_WEBHOOK_SECRET`) and switch Stripe to live mode.
+
 ### 2026-05-07 — UX Polish, Background Check Hub Unification, Production Failure Triage
 
 - **Objective:** Follow-on polish from prior session — fix UI bugs, unify the background check hub across all three data sources, diagnose 4-page production failures.

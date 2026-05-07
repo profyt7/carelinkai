@@ -2,7 +2,7 @@
 _Last updated: 2026-05-07_
 
 ## Active Branch
-`main` — all 2026-05-07 session changes committed and pushed. Includes unified background check hub, provider card fixes, caregiver profile sidebar, notification z-index, tours/favorites graceful error fixes.
+`claude/review-carelink-docs-49Ycv` — Option B household scheduling feature (2026-05-07). Also includes all prior 2026-05-07 session changes (background check hub, provider card fixes, caregiver profile sidebar, notification z-index, tours/favorites graceful error fixes).
 
 ## Production URL
 https://carelinkai.onrender.com (also: https://getcarelinkai.com)
@@ -83,6 +83,7 @@ FAMILY, OPERATOR, CAREGIVER, ADMIN, STAFF, PROVIDER, AFFILIATE, DISCHARGE_PLANNE
 - **Financing CTAs:** CareCredit affiliate links on /learn and home listing pricing tab
 - **Compliance document kits:** 3 Ohio ALF kits ($149-$199); one-time Stripe checkout; ComplianceKitPurchase model; /operator/compliance-kits
 - **CareLinkAI Plus ($19/mo):** `plusStatus` + `isPlus` on Family model; Stripe Checkout + Customer Portal at `/settings/family/billing`; webhook syncs status; Plus nav item with amber highlight in sidebar; features: priority matching, unlimited saves, Care Concierge priority, advanced filters, early access; admin MRR tile tracks familyPlusMRR. `STRIPE_PRICE_FAMILY_PLUS` env var confirmed set.
+- **Household Shift Scheduling (Option B):** `HouseholdShift` model — linked to `MarketplaceHire` + `User(familyUserId)`; status String (SCHEDULED/COMPLETED/CANCELLED). Migration: `20260507000001_household_shifts`. API: GET/POST `/api/family/household` (list hires+shifts, create shift with ownership + date validation); PATCH/DELETE `/api/family/household/shifts/[id]` (update status, delete). UI: `/dashboard/household` — care team grid + schedule form + shift history with mark-complete/cancel/delete. DashboardLayout: "My Household" nav for FAMILY role. Landing page: Feature 9 card + families benefit bullet. Future: timesheet approval + Stripe Connect direct payout.
 
 ## Provider Listing + Pro Caregiver Billing (as of 2026-05-03)
 - **Provider Marketplace Listing ($99/mo):** Stripe Checkout + Customer Portal at `/settings/provider/billing`. Webhook syncs `listingStatus`. CANCELED/PAST_DUE/INCOMPLETE providers hidden from marketplace. Null = grace period. Requires `STRIPE_PRICE_PROVIDER_LISTING` env var. ✅ Billing nav link added to DashboardLayout.

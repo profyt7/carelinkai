@@ -112,10 +112,9 @@ Each loop: what it is, why it matters, what done looks like.
 - **Done when:** From marketplace search, a family/operator can initiate a check without entering profile.
 
 ### OL-050: Private household flow — Option B for direct-hire families
-- **Status:** 🟡 ROADMAP — build after Option A usage data validates demand
-- **What:** Lightweight "home management" mode for FAMILY users who regularly hire caregivers directly (not placing loved one in a facility). Includes: My Caregivers roster, simple schedule/calendar, timesheet approvals, direct payment via Stripe Connect. Think "operator dashboard but for a household." Currently FAMILY users can post jobs and hire via marketplace (Option A live 2026-05-07) — Option B adds the management layer.
-- **Why:** High LTV — a family managing 2-3 weekly caregivers would pay $49–99/mo for workflow tooling. Natural upsell from Option A.
-- **Done when:** 3+ families are actively posting and hiring via Option A → build the management dashboard around real usage patterns.
+- **Status:** ✅ CLOSED (2026-05-07) — MVP shipped
+- **What was built:** `HouseholdShift` model, migration, GET/POST `/api/family/household`, PATCH/DELETE `/api/family/household/shifts/[id]`, `/dashboard/household` full UI (care team grid + schedule form + shift history), DashboardLayout "My Household" nav, landing page feature card.
+- **Future expansion:** Timesheet approval, Stripe Connect direct payment to caregivers ($49–99/mo family tier). Build when 3+ families are actively using the schedule flow.
 
 ### OL-023: Checkr API not yet configured
 - **Status:** 🟡 OPEN — system uses mock fallback until keys are set
