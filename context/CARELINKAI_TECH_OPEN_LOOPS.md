@@ -100,10 +100,11 @@ Each loop: what it is, why it matters, what done looks like.
 - **Status:** ✅ CLOSED (2026-05-04)
 - Full end-to-end ride booking live: REQUESTED→CONFIRMED→PAID→IN_PROGRESS→COMPLETED→CANCELED lifecycle. Stripe Checkout payment, 12% platform commission, Stripe refund on PAID cancellation, 5 email triggers, day-of reminder cron, operator resident booking, admin MRR tile, landing page updated. Ride model with 2 migrations deployed.
 
-### OL-048: Prisma migrations 20260505000001/2/3 pending on Render DB
-- **Status:** 🔴 OPEN — schema changes not yet deployed to production
-- **What:** Three manual SQL migrations need to run: `aiReviewStatus/Notes` on `ProviderCredential`, `OPERATOR` in `BackgroundCheckOrderer` enum, new `BackgroundCheckInvitation` model. Run `npx prisma migrate deploy` via Render Shell.
-- **Done when:** Render deploy succeeds with no migration errors.
+### OL-048: Prisma migrations 20260505000001/2/3 + 20260506000001 pending on Render DB
+- **Status:** 🔴 OPEN — four schema changes not yet deployed to production
+- **What:** `aiReviewStatus/Notes` on `ProviderCredential`, `OPERATOR` in `BackgroundCheckOrderer` enum, new `BackgroundCheckInvitation` model, `checkrCandidateId` on `Provider`, new `ProviderBackgroundCheckOrder` model. Will auto-apply via `npm run start` → `prisma migrate deploy` on next Render deploy (triggered by our main push 2026-05-07).
+- **Risk:** If any of these migrations partially ran before and are stuck in "failed" state in `_prisma_migrations`, Render deploy will fail at start. Monitor deploy logs. If stuck: use Render Shell `npx prisma migrate resolve --rolled-back 20260505000001` (etc.) then `npx prisma migrate deploy`, then manually apply the SQL.
+- **Done when:** Render deploy logs show all four migrations applied with no errors.
 
 ### OL-049: CaregiverCard + ProviderCard "Run Check" quick-action
 - **Status:** 🟡 OPEN — cards don't surface check CTA from search results

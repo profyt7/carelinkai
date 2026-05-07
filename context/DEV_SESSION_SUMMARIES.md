@@ -2,6 +2,38 @@
 
 ---
 
+### 2026-05-07 — UX Polish, Background Check Hub Unification, Production Failure Triage
+
+- **Objective:** Follow-on polish from prior session — fix UI bugs, unify the background check hub across all three data sources, diagnose 4-page production failures.
+- **Work completed:**
+  1. **Caregiver profile sidebar layout** — committed `max-w-7xl` page grid, `lg:col-span-2` main + `lg:col-span-1` sticky sidebar, matching provider profile layout exactly.
+  2. **Checkr webhook extended** — `src/app/api/webhooks/checkr/route.ts` now handles `ProviderBackgroundCheckOrder` results (looks up by `checkrReportId`, updates status, notifies orderer and provider via `prisma.notification.create`).
+  3. **Notifications z-index fix** — `NotificationCenter.tsx` wrapper gets `z-40`, dropdown panel gets `z-50` so dropdown renders above all page content.
+  4. **Real profile photos** — `randomuser.me` URLs added to all 12 MOCK_CAREGIVERS and all 8 MOCK_PROVIDERS in `mock/marketplace.ts`. Provider mock photos switched from `Math.random()` to deterministic formula using index `i` to stop re-rolls on render. `mock/providers.ts` similarly fixed.
+  5. **Landing page update** — Added "Order Background Checks" feature card to Families tab + 4th bullet to For Families overview ("Run background checks from search — Basic free").
+  6. **Provider card name/avatar fix** — Real API returns `businessName` but inline `Provider` type expected `name`. Fixed by mapping at `setProviders` call site. Avatar falls back to initial-letter div instead of broken Image. Job card avatar replaced with CSS `FiBriefcase` icon (no external URL needed).
+  7. **Unified background check hub** — Rewrote `GET /api/background-checks` to merge `BackgroundCheckInvitation`, `BackgroundCheckOrder` (caregiver profile), and `ProviderBackgroundCheckOrder` (provider profile) into a single normalized list sorted newest-first. Page rebuilt with type badges, "View Profile" links, info banner, retitled form ("Check Someone Outside CareLinkAI"), empty state with two CTAs.
+  8. **Production 4-page failure triage** — Tours, Inquiries, Hires, Favorites failing for FAMILY user. Root cause: tours route returned 404 (not 200) when Family record absent → client threw error; favorites route used `include: { provider: true }` which selects ALL Provider columns including `checkrCandidateId` (added by pending migration) — query fails if migration not yet applied. Build confirmed clean (no TypeScript errors). Fixed both.
+  9. **Tours route fix** — Returns `{ success: true, tours: [] }` instead of 404 when Family record not found; page shows empty state instead of error banner.
+  10. **Favorites/all fix** — Switched `favoriteProvider.findMany` from `include: { provider: { include: {user} } }` to explicit `select` listing only the fields actually used — avoids schema-drift errors if DB is behind the Prisma client.
+- **Files changed:**
+  - `src/app/marketplace/caregivers/[id]/page.tsx` (sidebar grid)
+  - `src/app/api/webhooks/checkr/route.ts` (ProviderBackgroundCheckOrder handling)
+  - `src/components/notifications/NotificationCenter.tsx` (z-index)
+  - `src/lib/mock/marketplace.ts` (real photos, deterministic)
+  - `src/lib/mock/providers.ts` (deterministic photos)
+  - `src/app/page.tsx` (landing page feature card)
+  - `src/app/marketplace/page.tsx` (provider name map, avatar fallback, job icon)
+  - `src/app/api/background-checks/route.ts` (unified GET handler)
+  - `src/app/background-checks/page.tsx` (unified UI)
+  - `src/app/api/family/tours/route.ts` (404→200 graceful empty)
+  - `src/app/api/favorites/all/route.ts` (explicit Provider select)
+- **Commands run:** `npx tsc --noEmit` (clean), `npm run build` (succeeded, exit 0), `git push origin main`
+- **Tests/build status:** TypeScript clean. Next.js build succeeded locally. No test suite.
+- **Deployment impact:** All commits pushed to `main`; Render auto-deploy triggered. Migration `20260506000001_provider_background_checks` is new — will run via `prisma migrate deploy` on startup.
+- **New risks/blockers:** OL-048 now includes `20260506000001` (adds `checkrCandidateId` to Provider + creates `ProviderBackgroundCheckOrder`). If Render DB already has a partially applied version of these tables, `migrate:deploy` could fail. Migrations are mostly idempotent (`IF NOT EXISTS`) but the FK constraint `ADD CONSTRAINT` on `ProviderBackgroundCheckOrder` does not use `IF NOT EXISTS` — safe on first run, would fail if run twice (Prisma prevents double-runs via `_prisma_migrations` table).
+- **Recommended next step:** Monitor Render deploy logs after this push to confirm migrations 20260505000001/2/3 and 20260506000001 all applied cleanly. Then: set live Checkr API keys in Render (`CHECKR_API_KEY` + `CHECKR_WEBHOOK_SECRET`) and switch Stripe to live mode (runbook at `context/STRIPE_SETUP_RUNBOOK.md`).
+
 ### 2026-05-06 — Background Check Hub + Care.com UX Parity
 
 - **Objective:** Match Care.com's "background check visible on every profile" UX, build a standalone "check anyone" hub, enable operators to order checks, add AI credential review, and add file upload to provider credentials.
