@@ -37,6 +37,7 @@ import {
   FiCheckCircle,
   FiCreditCard,
   FiShield,
+  FiBriefcase,
 } from "react-icons/fi";
 import { MessageSquare, Stethoscope } from "lucide-react";
 // Real-time notification center
@@ -99,6 +100,8 @@ const navItems: NavItem[] = [
       { name: "Marketplace", icon: <FiUsers size={18} />, href: "/marketplace", showInMobileBar: true },
       { name: "My Applications", icon: <FiClipboard size={18} />, href: "/caregiver/applications", showInMobileBar: false, roleRestriction: ["CAREGIVER"] },
       { name: "My Saved", icon: <FiHeart size={18} />, href: "/favorites", showInMobileBar: false },
+      { name: "Post a Job", icon: <FiBriefcase size={18} />, href: "/marketplace/listings/new", showInMobileBar: false, roleRestriction: ["FAMILY", "OPERATOR", "ADMIN", "STAFF"] },
+      { name: "My Jobs", icon: <FiBriefcase size={18} />, href: "/marketplace?tab=jobs&postedByMe=true", showInMobileBar: false, roleRestriction: ["FAMILY", "OPERATOR", "ADMIN", "STAFF"] },
       { name: "My Hires", icon: <FiCheckCircle size={18} />, href: "/marketplace/hires", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF", "FAMILY", "CAREGIVER"] },
       { name: "Caregivers", icon: <FiUsers size={18} />, href: "/operator/caregivers", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
       { name: "Caregiver Reviews", icon: <FiStar size={18} />, href: "/operator/reviews", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
