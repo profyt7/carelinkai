@@ -395,7 +395,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
   return (
     <>
       {/* Notification Bell Button */}
-      <div className={`relative ${className}`} ref={dropdownRef}>
+      <div className={`relative z-40 ${className}`} ref={dropdownRef}>
         <button
           onClick={toggleDropdown}
           className="relative rounded-full p-1 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 focus:outline-none"
@@ -411,7 +411,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
         
         {/* Notification Dropdown */}
         {isOpen && (
-          <div className="absolute right-0 mt-2 w-80 rounded-md border border-neutral-200 bg-white shadow-lg sm:w-96">
+          <div className="absolute right-0 mt-2 w-80 rounded-md border border-neutral-200 bg-white shadow-lg sm:w-96 z-50">
             <div className="border-b border-neutral-200 p-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-medium text-neutral-800">Notifications</h3>
