@@ -177,7 +177,7 @@ const navItems: NavItem[] = [
     icon: <FiCalendar size={20} />,
     children: [
       { name: "Calendar", icon: <FiCalendar size={18} />, href: "/calendar", showInMobileBar: true },
-      { name: "Shifts", icon: <FiCalendar size={18} />, href: "/shifts", showInMobileBar: true, roleRestriction: ["CAREGIVER", "FAMILY"] },
+      { name: "Shifts", icon: <FiCalendar size={18} />, href: "/shifts", showInMobileBar: true, roleRestriction: ["CAREGIVER"] },
       { name: "Shifts", icon: <FiCalendar size={18} />, href: "/operator/shifts", showInMobileBar: true, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
       { name: "My Points", icon: <FiZap size={18} />, href: "/caregiver/points", showInMobileBar: false, roleRestriction: ["CAREGIVER"] },
       { name: "On-Call AI", icon: <FiZap size={18} />, href: "/operator/oncall", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
