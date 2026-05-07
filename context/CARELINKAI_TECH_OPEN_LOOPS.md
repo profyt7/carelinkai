@@ -111,6 +111,12 @@ Each loop: what it is, why it matters, what done looks like.
 - **What:** Add small "Run Check" link/button on cards where `backgroundCheckStatus !== 'CLEAR'`. Navigates to profile (or opens check directly). Matches Care.com pattern from search results.
 - **Done when:** From marketplace search, a family/operator can initiate a check without entering profile.
 
+### OL-050: Private household flow — Option B for direct-hire families
+- **Status:** 🟡 ROADMAP — build after Option A usage data validates demand
+- **What:** Lightweight "home management" mode for FAMILY users who regularly hire caregivers directly (not placing loved one in a facility). Includes: My Caregivers roster, simple schedule/calendar, timesheet approvals, direct payment via Stripe Connect. Think "operator dashboard but for a household." Currently FAMILY users can post jobs and hire via marketplace (Option A live 2026-05-07) — Option B adds the management layer.
+- **Why:** High LTV — a family managing 2-3 weekly caregivers would pay $49–99/mo for workflow tooling. Natural upsell from Option A.
+- **Done when:** 3+ families are actively posting and hiring via Option A → build the management dashboard around real usage patterns.
+
 ### OL-023: Checkr API not yet configured
 - **Status:** 🟡 OPEN — system uses mock fallback until keys are set
 - **What:** Set `CHECKR_API_KEY` and `CHECKR_WEBHOOK_SECRET` in Render env vars; register webhook at `https://getcarelinkai.com/api/webhooks/checkr`
