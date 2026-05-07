@@ -1058,7 +1058,8 @@ export default function MarketplacePage() {
           params.set('cursor', providerCursorRef.current);
         }
         const json = await fetchJsonCached(`/api/marketplace/providers?${params.toString()}`, { signal: controller.signal }, 15000);
-        setProviders((prev) => (providerPage > 1 ? [...prev, ...(json?.data ?? [])] : (json?.data ?? [])));
+        const mapped = (json?.data ?? []).map((p: any) => ({ ...p, name: p.name || p.businessName || p.contactName || 'Provider' }));
+        setProviders((prev) => (providerPage > 1 ? [...prev, ...mapped] : mapped));
         setProviderTotal(json?.pagination?.total ?? 0);
         setProviderHasMoreSvr(typeof json?.pagination?.hasMore === 'boolean' ? json.pagination.hasMore : null);
         const newPrCursor = json?.pagination?.cursor ?? null;
