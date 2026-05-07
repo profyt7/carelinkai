@@ -294,128 +294,63 @@ export default async function CaregiverDetailPage({
           </div>
         </div>
         
-        {/* Body */}
+        {/* Body — sidebar layout matching provider profile */}
         <div className="p-6">
-          {/* CTA — operator sees Hire button, families see Request Care */}
-          <div className="mb-6 bg-primary-50 border border-primary-200 rounded-lg p-4">
-            {isOperator ? (
-              <>
-                <h3 className="text-lg font-semibold text-neutral-900 mb-2">
-                  Ready to hire {caregiver.name}?
-                </h3>
-                <p className="text-sm text-neutral-600 mb-4">
-                  Add {caregiver.name.split(' ')[0]} to your team. An employment record will be created and they'll be notified immediately.
-                </p>
-                {operatorPlan && ['PROFESSIONAL', 'GROWTH', 'AGENCY'].includes(operatorPlan) ? (
-                  <p className="text-xs text-success-700 font-medium mb-3">
-                    ✓ Marketplace hire included in your {operatorPlan} plan — no additional fee.
-                  </p>
-                ) : (
-                  <p className="text-xs text-amber-700 font-medium mb-3">
-                    A $99 marketplace access fee applies on the Starter plan.
-                  </p>
-                )}
-                {!caregiver.id.startsWith("cg_") && (
-                  <BackgroundCheckOrderPanel
-                    caregiverId={caregiver.id}
-                    caregiverFirstName={caregiver.name.split(" ")[0]}
-                    existingStatus={caregiver.backgroundCheckStatus}
-                    defaultExpanded={true}
-                  />
-                )}
-                <DirectHireButton
-                  caregiverId={caregiver.id}
-                  caregiverName={caregiver.name}
-                  operatorPlan={operatorPlan}
-                  isMock={caregiver.id.startsWith('cg_')}
-                />
-              </>
-            ) : (
-              <>
-                <h3 className="text-lg font-semibold text-neutral-900 mb-2">
-                  Interested in hiring {caregiver.name}?
-                </h3>
-                <p className="text-sm text-neutral-600 mb-4">
-                  Submit a care inquiry to connect with this caregiver and discuss your needs.
-                </p>
-                <RequestCareButton
-                  targetType="AIDE"
-                  targetId={caregiver.id}
-                  targetName={caregiver.name}
-                />
-                {!caregiver.id.startsWith("cg_") && (
-                  <BackgroundCheckOrderPanel
-                    caregiverId={caregiver.id}
-                    caregiverFirstName={caregiver.name.split(" ")[0]}
-                    existingStatus={caregiver.backgroundCheckStatus}
-                    defaultExpanded={true}
-                  />
-                )}
-              </>
-            )}
-          </div>
+          <div className="lg:grid lg:grid-cols-3 lg:gap-6">
 
-          {/* Details section */}
-          <div className="mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              {/* Hourly Rate */}
-              {caregiver.hourlyRate && (
-                <div className="flex items-center">
-                  <FiDollarSign className="mr-2 text-neutral-500" size={20} />
-                  <div>
-                    <h3 className="text-sm font-medium text-neutral-500">Hourly Rate</h3>
-                    <p className="mt-1 text-lg font-semibold">${caregiver.hourlyRate.toFixed(2)}/hr</p>
+            {/* Main content */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Rate + Experience */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {caregiver.hourlyRate && (
+                  <div className="flex items-center">
+                    <FiDollarSign className="mr-2 text-neutral-500" size={20} />
+                    <div>
+                      <h3 className="text-sm font-medium text-neutral-500">Hourly Rate</h3>
+                      <p className="mt-1 text-lg font-semibold">${caregiver.hourlyRate.toFixed(2)}/hr</p>
+                    </div>
+                  </div>
+                )}
+                {caregiver.yearsExperience && (
+                  <div className="flex items-center">
+                    <FiClock className="mr-2 text-neutral-500" size={20} />
+                    <div>
+                      <h3 className="text-sm font-medium text-neutral-500">Experience</h3>
+                      <p className="mt-1 text-lg font-semibold">
+                        {caregiver.yearsExperience} {caregiver.yearsExperience === 1 ? 'Year' : 'Years'}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Bio */}
+              {caregiver.bio && (
+                <div>
+                  <h2 className="text-lg font-medium text-neutral-900 mb-2">About</h2>
+                  <div className="prose max-w-none text-neutral-700">{caregiver.bio}</div>
+                </div>
+              )}
+
+              {/* Specialties */}
+              {caregiver.specialties.length > 0 && (
+                <div>
+                  <h2 className="text-lg font-medium text-neutral-900 mb-2">Specialties</h2>
+                  <div className="flex flex-wrap gap-2">
+                    {caregiver.specialties.map((specialty: string, index: number) => (
+                      <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
+                        {specialty.replace(/-/g, ' ')}
+                      </span>
+                    ))}
                   </div>
                 </div>
               )}
-              
-              {/* Years Experience */}
-              {caregiver.yearsExperience && (
-                <div className="flex items-center">
-                  <FiClock className="mr-2 text-neutral-500" size={20} />
-                  <div>
-                    <h3 className="text-sm font-medium text-neutral-500">Experience</h3>
-                    <p className="mt-1 text-lg font-semibold">
-                      {caregiver.yearsExperience} {caregiver.yearsExperience === 1 ? 'Year' : 'Years'}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            {/* Bio */}
-            {caregiver.bio && (
-              <div className="mb-6">
-                <h2 className="text-lg font-medium text-neutral-900 mb-2">About</h2>
-                <div className="prose max-w-none text-neutral-700">
-                  {caregiver.bio}
-                </div>
-              </div>
-            )}
-            
-            {/* Specialties */}
-            {caregiver.specialties.length > 0 && (
-              <div className="mb-6">
-                <h2 className="text-lg font-medium text-neutral-900 mb-2">Specialties</h2>
-                <div className="flex flex-wrap gap-2">
-                  {caregiver.specialties.map((specialty: string, index: number) => (
-                    <span 
-                      key={index} 
-                      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800"
-                    >
-                      {specialty.replace(/-/g, ' ')}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            {/* Credentials & Certifications */}
-            {caregiver.credentials && caregiver.credentials.length > 0 && (
-              <div className="mb-6">
-                <h2 className="text-lg font-medium text-neutral-900 mb-2">Credentials & Certifications</h2>
-                <div className="bg-neutral-50 rounded-lg p-4">
-                  <div className="space-y-3">
+
+              {/* Credentials */}
+              {caregiver.credentials && caregiver.credentials.length > 0 && (
+                <div>
+                  <h2 className="text-lg font-medium text-neutral-900 mb-2">Credentials &amp; Certifications</h2>
+                  <div className="bg-neutral-50 rounded-lg p-4 space-y-3">
                     {caregiver.credentials.map((credential: any) => (
                       <div key={credential.id} className="flex items-start justify-between">
                         <div className="flex items-start">
@@ -436,20 +371,16 @@ export default async function CaregiverDetailPage({
                     ))}
                   </div>
                 </div>
-              </div>
-            )}
-            
-            {/* Availability Calendar */}
-            {caregiver.availabilitySlots && caregiver.availabilitySlots.length > 0 && (
-              <div className="mb-6">
-                <h2 className="text-lg font-medium text-neutral-900 mb-2">Availability (Next 7 Days)</h2>
-                <div className="bg-neutral-50 rounded-lg p-4">
-                  <div className="space-y-2">
+              )}
+
+              {/* Availability */}
+              {caregiver.availabilitySlots && caregiver.availabilitySlots.length > 0 && (
+                <div>
+                  <h2 className="text-lg font-medium text-neutral-900 mb-2">Availability (Next 7 Days)</h2>
+                  <div className="bg-neutral-50 rounded-lg p-4 space-y-2">
                     {caregiver.availabilitySlots.map((slot: any) => {
                       const startDate = new Date(slot.startTime);
                       const endDate = new Date(slot.endTime);
-                      const isSameDay = startDate.toDateString() === endDate.toDateString();
-                      
                       return (
                         <div key={slot.id} className="flex items-center justify-between bg-white rounded p-3 border border-neutral-200">
                           <div className="flex items-center">
@@ -459,7 +390,7 @@ export default async function CaregiverDetailPage({
                                 {startDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                               </p>
                               <p className="text-sm text-neutral-500">
-                                {startDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} - {endDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                                {startDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} – {endDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                               </p>
                             </div>
                           </div>
@@ -470,49 +401,102 @@ export default async function CaregiverDetailPage({
                       );
                     })}
                   </div>
+                  <p className="text-sm text-neutral-500 mt-2">
+                    Contact the caregiver to schedule a time or request additional availability.
+                  </p>
                 </div>
-                <p className="text-sm text-neutral-500 mt-2">
-                  Contact the caregiver to schedule a time or request additional availability.
-                </p>
-              </div>
-            )}
-          </div>
-          
-          {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Link
-              href={`/messages?userId=${caregiver.userId}`}
-              className="flex-1 flex items-center justify-center gap-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 font-medium py-2.5 px-4 rounded-md transition-colors text-sm border border-neutral-300"
-            >
-              Message
-            </Link>
-            <RequestCareButton
-              targetType="AIDE"
-              targetId={caregiver.id}
-              targetName={caregiver.name}
-              className="flex-1 flex items-center justify-center gap-2 bg-primary-600 hover:bg-primary-700 text-white font-medium py-2.5 px-4 rounded-md transition-colors text-sm"
-            />
-          </div>
+              )}
 
-          {/* Per-diem shift booking */}
-          <section className="mt-10">
-            <h2 className="text-lg font-medium text-neutral-900 mb-4">
-              Book a per-diem shift
-            </h2>
-            <RequestShiftForm
-              caregiverUserId={caregiver.userId}
-              caregiverId={caregiver.id}
-            />
-          </section>
+              {/* Per-diem shift booking */}
+              <section>
+                <h2 className="text-lg font-medium text-neutral-900 mb-4">Book a per-diem shift</h2>
+                <RequestShiftForm caregiverUserId={caregiver.userId} caregiverId={caregiver.id} />
+              </section>
 
-          {/* Reviews */}
-          <section className="mt-10">
-            <h2 className="text-lg font-medium text-neutral-900 mb-4">Reviews</h2>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <CaregiverReviewsList caregiverId={caregiver.id} />
-              <CaregiverReviewForm caregiverId={caregiver.id} />
+              {/* Reviews */}
+              <section>
+                <h2 className="text-lg font-medium text-neutral-900 mb-4">Reviews</h2>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <CaregiverReviewsList caregiverId={caregiver.id} />
+                  <CaregiverReviewForm caregiverId={caregiver.id} />
+                </div>
+              </section>
             </div>
-          </section>
+
+            {/* Sidebar */}
+            <div className="mt-6 lg:mt-0 lg:col-span-1">
+              <div className="sticky top-6 space-y-4">
+
+                {/* CTA card */}
+                <div className="bg-white rounded-lg border border-neutral-200 p-4">
+                  {isOperator ? (
+                    <>
+                      <h3 className="text-base font-semibold text-neutral-900 mb-1">
+                        Ready to hire {caregiver.name.split(' ')[0]}?
+                      </h3>
+                      <p className="text-sm text-neutral-500 mb-3">
+                        Add them to your team — they&apos;ll be notified immediately.
+                      </p>
+                      {operatorPlan && ['PROFESSIONAL', 'GROWTH', 'AGENCY'].includes(operatorPlan) ? (
+                        <p className="text-xs text-success-700 font-medium mb-3">
+                          ✓ Marketplace hire included in your {operatorPlan} plan
+                        </p>
+                      ) : (
+                        <p className="text-xs text-amber-700 font-medium mb-3">
+                          $99 marketplace access fee applies on Starter
+                        </p>
+                      )}
+                      <DirectHireButton
+                        caregiverId={caregiver.id}
+                        caregiverName={caregiver.name}
+                        operatorPlan={operatorPlan}
+                        isMock={caregiver.id.startsWith('cg_')}
+                      />
+                      <Link
+                        href={`/messages?userId=${caregiver.userId}`}
+                        className="mt-2 flex w-full items-center justify-center gap-2 rounded-md border border-neutral-300 bg-neutral-50 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100 transition-colors"
+                      >
+                        Message
+                      </Link>
+                    </>
+                  ) : (
+                    <>
+                      <h3 className="text-base font-semibold text-neutral-900 mb-1">
+                        Interested in {caregiver.name.split(' ')[0]}?
+                      </h3>
+                      <p className="text-sm text-neutral-500 mb-3">
+                        Submit a care inquiry to connect and discuss your needs.
+                      </p>
+                      <RequestCareButton
+                        targetType="AIDE"
+                        targetId={caregiver.id}
+                        targetName={caregiver.name}
+                        className="w-full flex items-center justify-center gap-2 bg-primary-600 hover:bg-primary-700 text-white font-medium py-2.5 px-4 rounded-md transition-colors text-sm"
+                      />
+                      <Link
+                        href={`/messages?userId=${caregiver.userId}`}
+                        className="mt-2 flex w-full items-center justify-center gap-2 rounded-md border border-neutral-300 bg-neutral-50 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100 transition-colors"
+                      >
+                        Message
+                      </Link>
+                    </>
+                  )}
+                </div>
+
+                {/* Background check panel */}
+                {!caregiver.id.startsWith("cg_") && (
+                  <BackgroundCheckOrderPanel
+                    caregiverId={caregiver.id}
+                    caregiverFirstName={caregiver.name.split(" ")[0]}
+                    existingStatus={caregiver.backgroundCheckStatus}
+                    defaultExpanded={true}
+                  />
+                )}
+
+              </div>
+            </div>
+
+          </div>
         </div>
       </div>
     </div>
