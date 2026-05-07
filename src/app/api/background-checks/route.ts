@@ -84,16 +84,88 @@ export async function POST(req: NextRequest) {
 
 /**
  * GET /api/background-checks
- * Returns all background check invitations ordered by the logged-in user.
+ * Returns all background checks ordered by the logged-in user across all three sources:
+ *  - BackgroundCheckInvitation (standalone — person outside CareLinkAI)
+ *  - BackgroundCheckOrder (caregiver profile check)
+ *  - ProviderBackgroundCheckOrder (provider profile check)
+ * Normalized to a unified shape and sorted newest-first.
  */
 export async function GET(req: NextRequest) {
   const { session, error } = await requireAnyRole(["FAMILY", "OPERATOR"] as any);
   if (error) return error;
 
-  const checks = await prisma.backgroundCheckInvitation.findMany({
-    where: { orderedByUserId: session!.user!.id! },
-    orderBy: { createdAt: "desc" },
-  });
+  const userId = session!.user!.id!;
+
+  const [invitations, caregiverOrders, providerOrders] = await Promise.all([
+    prisma.backgroundCheckInvitation.findMany({
+      where: { orderedByUserId: userId },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.backgroundCheckOrder.findMany({
+      where: { orderedByUserId: userId },
+      orderBy: { createdAt: "desc" },
+      include: {
+        caregiver: {
+          include: { user: { select: { firstName: true, lastName: true } } },
+        },
+      },
+    }),
+    prisma.providerBackgroundCheckOrder.findMany({
+      where: { orderedByUserId: userId },
+      orderBy: { createdAt: "desc" },
+      include: {
+        provider: { select: { id: true, contactName: true, businessName: true } },
+      },
+    }),
+  ]);
+
+  const checks = [
+    ...invitations.map((inv) => ({
+      id: inv.id,
+      type: "INVITATION" as const,
+      subjectName: `${inv.subjectFirstName} ${inv.subjectLastName}`,
+      subjectEmail: inv.subjectEmail,
+      subjectRole: inv.subjectRole,
+      subjectLink: null as string | null,
+      packageType: inv.packageType,
+      pricePaid: inv.pricePaid?.toString() ?? null,
+      status: inv.status,
+      invitationUrl: inv.invitationUrl,
+      reportUrl: inv.reportUrl ?? null,
+      createdAt: inv.createdAt.toISOString(),
+      completedAt: inv.completedAt?.toISOString() ?? null,
+    })),
+    ...caregiverOrders.map((o) => ({
+      id: o.id,
+      type: "CAREGIVER" as const,
+      subjectName: `${o.caregiver.user.firstName} ${o.caregiver.user.lastName}`,
+      subjectEmail: null as string | null,
+      subjectRole: "Caregiver",
+      subjectLink: `/marketplace/caregivers/${o.caregiverId}`,
+      packageType: o.packageType,
+      pricePaid: o.pricePaid?.toString() ?? null,
+      status: o.status,
+      invitationUrl: null as string | null,
+      reportUrl: o.reportUrl ?? null,
+      createdAt: o.createdAt.toISOString(),
+      completedAt: o.completedAt?.toISOString() ?? null,
+    })),
+    ...providerOrders.map((o) => ({
+      id: o.id,
+      type: "PROVIDER" as const,
+      subjectName: o.provider.contactName,
+      subjectEmail: null as string | null,
+      subjectRole: `Provider · ${o.provider.businessName}`,
+      subjectLink: `/marketplace/providers/${o.provider.id}`,
+      packageType: o.packageType,
+      pricePaid: o.pricePaid?.toString() ?? null,
+      status: o.status,
+      invitationUrl: null as string | null,
+      reportUrl: o.reportUrl ?? null,
+      createdAt: o.createdAt.toISOString(),
+      completedAt: o.completedAt?.toISOString() ?? null,
+    })),
+  ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   return NextResponse.json({ checks });
 }

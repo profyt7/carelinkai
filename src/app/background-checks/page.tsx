@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useCallback } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import Link from "next/link";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import toast from "react-hot-toast";
 import {
   FiShield, FiCheckCircle, FiAlertCircle, FiClock, FiX, FiChevronDown,
-  FiChevronUp, FiExternalLink, FiUser, FiMail, FiPlus,
+  FiChevronUp, FiExternalLink, FiUser, FiMail, FiPlus, FiArrowRight,
 } from "react-icons/fi";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
@@ -65,21 +66,28 @@ const ROLES = [
 ];
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  INVITED:   { label: "Invitation Sent",  color: "bg-blue-100 text-blue-800",     icon: <FiMail size={11} /> },
-  PENDING:   { label: "In Progress",      color: "bg-amber-100 text-amber-800",   icon: <FiClock size={11} /> },
+  INVITED:   { label: "Invitation Sent",  color: "bg-blue-100 text-blue-800",       icon: <FiMail size={11} /> },
+  PENDING:   { label: "In Progress",      color: "bg-amber-100 text-amber-800",     icon: <FiClock size={11} /> },
   CLEAR:     { label: "Clear",            color: "bg-success-100 text-success-800", icon: <FiCheckCircle size={11} /> },
-  CONSIDER:  { label: "Review Needed",    color: "bg-amber-100 text-amber-800",   icon: <FiAlertCircle size={11} /> },
-  FAILED:    { label: "Not Cleared",      color: "bg-error-100 text-error-700",   icon: <FiX size={11} /> },
+  CONSIDER:  { label: "Review Needed",    color: "bg-amber-100 text-amber-800",     icon: <FiAlertCircle size={11} /> },
+  FAILED:    { label: "Not Cleared",      color: "bg-error-100 text-error-700",     icon: <FiX size={11} /> },
   EXPIRED:   { label: "Expired",          color: "bg-neutral-100 text-neutral-500", icon: <FiClock size={11} /> },
   CANCELLED: { label: "Cancelled",        color: "bg-neutral-100 text-neutral-500", icon: <FiX size={11} /> },
 };
 
+const TYPE_BADGE: Record<string, { label: string; color: string }> = {
+  INVITATION: { label: "Outside Platform", color: "bg-neutral-100 text-neutral-600" },
+  CAREGIVER:  { label: "Caregiver Profile", color: "bg-primary-100 text-primary-700" },
+  PROVIDER:   { label: "Provider Profile",  color: "bg-secondary-100 text-secondary-700" },
+};
+
 interface Check {
   id: string;
-  subjectFirstName: string;
-  subjectLastName: string;
-  subjectEmail: string;
+  type: "INVITATION" | "CAREGIVER" | "PROVIDER";
+  subjectName: string;
+  subjectEmail: string | null;
   subjectRole: string | null;
+  subjectLink: string | null;
   packageType: string;
   pricePaid: string | null;
   status: string;
@@ -89,7 +97,6 @@ interface Check {
   completedAt: string | null;
 }
 
-// ── Stripe payment form ─────────────────────────────────────────────────────
 function PaymentForm({
   clientSecret,
   packageLabel,
@@ -143,7 +150,6 @@ function PaymentForm({
   );
 }
 
-// ── Main page ───────────────────────────────────────────────────────────────
 export default function BackgroundChecksPage() {
   const [checks, setChecks] = useState<Check[]>([]);
   const [loading, setLoading] = useState(true);
@@ -201,7 +207,7 @@ export default function BackgroundChecksPage() {
     fetchChecks();
   };
 
-  const pending = checks.filter(c => ["INVITED", "PENDING"].includes(c.status)).length;
+  const inProgress = checks.filter(c => ["INVITED", "PENDING"].includes(c.status)).length;
   const cleared = checks.filter(c => c.status === "CLEAR").length;
 
   return (
@@ -215,14 +221,14 @@ export default function BackgroundChecksPage() {
               <FiShield className="text-primary-600" /> Background Checks
             </h1>
             <p className="text-sm text-neutral-500 mt-1">
-              Run a background check on anyone — housekeepers, drivers, caregivers, contractors, and more. Powered by Checkr.
+              All your ordered checks in one place — caregivers, providers, and anyone outside the platform. Powered by Checkr.
             </p>
           </div>
           <button
             onClick={() => setShowForm(v => !v)}
             className="shrink-0 flex items-center gap-2 px-4 py-2 bg-primary-600 text-white text-sm font-semibold rounded-lg hover:bg-primary-700 transition-colors"
           >
-            <FiPlus size={15} /> Run a Check
+            <FiPlus size={15} /> Check Someone
           </button>
         </div>
 
@@ -231,8 +237,8 @@ export default function BackgroundChecksPage() {
           <div className="grid grid-cols-3 gap-4">
             {[
               { label: "Total Ordered", value: checks.length, color: "text-neutral-900" },
-              { label: "In Progress", value: pending, color: "text-amber-600" },
-              { label: "Cleared", value: cleared, color: "text-success-700" },
+              { label: "In Progress",   value: inProgress,    color: "text-amber-600" },
+              { label: "Cleared",       value: cleared,       color: "text-success-700" },
             ].map(s => (
               <div key={s.label} className="bg-white border border-neutral-200 rounded-xl p-4 text-center">
                 <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
@@ -242,12 +248,29 @@ export default function BackgroundChecksPage() {
           </div>
         )}
 
-        {/* Order form */}
+        {/* "Check someone on the platform" callout */}
+        {!showForm && (
+          <div className="flex items-start gap-3 bg-primary-50 border border-primary-200 rounded-xl px-4 py-3">
+            <FiShield className="text-primary-500 mt-0.5 shrink-0" size={16} />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-primary-900">Checking a caregiver or provider on CareLinkAI?</p>
+              <p className="text-xs text-primary-700 mt-0.5">Order checks directly from their profile — no email invite needed. Results show on their profile and here.</p>
+            </div>
+            <Link href="/marketplace" className="shrink-0 flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-800 transition-colors whitespace-nowrap">
+              Go to Marketplace <FiArrowRight size={12} />
+            </Link>
+          </div>
+        )}
+
+        {/* Order form — outside-platform only */}
         {showForm && (
           <div className="bg-white border border-neutral-200 rounded-xl overflow-hidden">
             <div className="px-5 py-4 border-b border-neutral-100 flex items-center justify-between">
-              <h2 className="font-semibold text-neutral-900">New Background Check</h2>
-              <button onClick={() => setShowForm(false)} className="text-neutral-400 hover:text-neutral-600"><FiX size={18} /></button>
+              <div>
+                <h2 className="font-semibold text-neutral-900">Check Someone Outside CareLinkAI</h2>
+                <p className="text-xs text-neutral-400 mt-0.5">Use this for private hires, contractors, or anyone not on the platform. They&apos;ll receive a Checkr consent link via email.</p>
+              </div>
+              <button onClick={() => setShowForm(false)} className="text-neutral-400 hover:text-neutral-600 ml-4"><FiX size={18} /></button>
             </div>
 
             {clientSecret && payingPkg ? (
@@ -264,7 +287,6 @@ export default function BackgroundChecksPage() {
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="p-5 space-y-5">
-                {/* Person info */}
                 <div>
                   <p className="text-sm font-semibold text-neutral-700 mb-3 flex items-center gap-2"><FiUser size={14} /> Person being checked</p>
                   <div className="grid grid-cols-2 gap-3">
@@ -293,7 +315,6 @@ export default function BackgroundChecksPage() {
                   </div>
                 </div>
 
-                {/* Package selection */}
                 <div>
                   <p className="text-sm font-semibold text-neutral-700 mb-3 flex items-center gap-2"><FiShield size={14} /> Select a package</p>
                   <div className="grid grid-cols-2 gap-3">
@@ -333,41 +354,50 @@ export default function BackgroundChecksPage() {
                 <div className="flex gap-3 pt-1">
                   <button type="submit" disabled={submitting} className="flex-1 py-2.5 bg-primary-600 text-white rounded-xl text-sm font-semibold hover:bg-primary-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
                     <FiShield size={14} />
-                    {submitting ? "Sending invitation…" : `Send Invitation${PACKAGES.find(p=>p.key===selectedPkg)?.price ? ` — $${PACKAGES.find(p=>p.key===selectedPkg)?.price}` : " — Free"}`}
+                    {submitting ? "Sending…" : `Send Checkr Invite${PACKAGES.find(p => p.key === selectedPkg)?.price ? ` — $${PACKAGES.find(p => p.key === selectedPkg)?.price}` : " — Free"}`}
                   </button>
                   <button type="button" onClick={() => setShowForm(false)} className="px-5 text-sm font-medium text-neutral-600 hover:text-neutral-900 transition-colors">Cancel</button>
                 </div>
                 <p className="text-xs text-neutral-400 text-center">
-                  The person will receive an email from Checkr. After they consent, the check typically completes in {PACKAGES.find(p=>p.key===selectedPkg)?.turnaround}. You&apos;ll be notified when results are ready.
+                  They&apos;ll receive an email from Checkr to consent. Results typically arrive in {PACKAGES.find(p => p.key === selectedPkg)?.turnaround} after consent. You&apos;ll be notified when ready.
                 </p>
               </form>
             )}
           </div>
         )}
 
-        {/* Checks list */}
+        {/* Unified checks list */}
         <div>
-          <h2 className="text-base font-semibold text-neutral-900 mb-3">Your Checks</h2>
+          <h2 className="text-base font-semibold text-neutral-900 mb-3">All Checks</h2>
 
           {loading ? (
             <div className="space-y-3">
-              {[1, 2].map(i => <div key={i} className="h-20 bg-neutral-100 rounded-xl animate-pulse" />)}
+              {[1, 2, 3].map(i => <div key={i} className="h-20 bg-neutral-100 rounded-xl animate-pulse" />)}
             </div>
           ) : checks.length === 0 ? (
             <div className="bg-neutral-50 border border-dashed border-neutral-300 rounded-xl p-12 text-center">
               <FiShield className="h-12 w-12 text-neutral-300 mx-auto mb-3" />
               <p className="font-semibold text-neutral-700">No background checks yet</p>
-              <p className="text-sm text-neutral-500 mt-1 max-w-sm mx-auto">Run a check on anyone who comes into your home or life — housekeepers, drivers, caregivers, and more. Basic check is free.</p>
-              <button onClick={() => setShowForm(true)} className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white text-sm font-semibold rounded-xl hover:bg-primary-700 transition-colors">
-                <FiShield size={14} /> Run Your First Check — Free
-              </button>
+              <p className="text-sm text-neutral-500 mt-1 max-w-sm mx-auto">
+                Order checks from a caregiver or provider profile, or use the button above to check anyone outside the platform. Basic check is free.
+              </p>
+              <div className="flex justify-center gap-3 mt-5">
+                <Link href="/marketplace" className="inline-flex items-center gap-2 px-4 py-2.5 border border-primary-400 text-primary-700 text-sm font-semibold rounded-xl hover:bg-primary-50 transition-colors">
+                  Browse Caregivers
+                </Link>
+                <button onClick={() => setShowForm(true)} className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-600 text-white text-sm font-semibold rounded-xl hover:bg-primary-700 transition-colors">
+                  <FiPlus size={14} /> Check Someone
+                </button>
+              </div>
             </div>
           ) : (
             <div className="space-y-3">
               {checks.map(check => {
                 const cfg = STATUS_CONFIG[check.status] ?? STATUS_CONFIG.INVITED;
+                const typeBadge = TYPE_BADGE[check.type];
                 const pkg = PACKAGES.find(p => p.key === check.packageType);
                 const isExpanded = expandedId === check.id;
+                const initials = check.subjectName.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
 
                 return (
                   <div key={check.id} className="bg-white border border-neutral-200 rounded-xl overflow-hidden">
@@ -377,22 +407,23 @@ export default function BackgroundChecksPage() {
                     >
                       <div className="flex items-center gap-3 flex-1 min-w-0">
                         <div className={`h-9 w-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${
-                          check.status === "CLEAR" ? "bg-success-100 text-success-700" :
+                          check.status === "CLEAR"  ? "bg-success-100 text-success-700" :
                           check.status === "FAILED" ? "bg-error-100 text-error-700" :
-                          "bg-primary-100 text-primary-700"
+                                                      "bg-primary-100 text-primary-700"
                         }`}>
-                          {check.subjectFirstName[0]}{check.subjectLastName[0]}
+                          {initials}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-semibold text-neutral-900 text-sm">{check.subjectFirstName} {check.subjectLastName}</span>
+                            <span className="font-semibold text-neutral-900 text-sm">{check.subjectName}</span>
                             {check.subjectRole && <span className="text-xs text-neutral-400">{check.subjectRole}</span>}
+                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${typeBadge.color}`}>{typeBadge.label}</span>
                             <span className={`flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${cfg.color}`}>
                               {cfg.icon} {cfg.label}
                             </span>
                           </div>
                           <p className="text-xs text-neutral-400 mt-0.5">
-                            {pkg?.label} · Ordered {new Date(check.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                            {pkg?.label ?? check.packageType} · {new Date(check.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                           </p>
                         </div>
                       </div>
@@ -402,37 +433,45 @@ export default function BackgroundChecksPage() {
                     {isExpanded && (
                       <div className="border-t border-neutral-100 px-4 py-4 space-y-3">
                         <div className="grid grid-cols-2 gap-3 text-xs text-neutral-600">
-                          <div><span className="text-neutral-400">Email</span><br />{check.subjectEmail}</div>
-                          <div><span className="text-neutral-400">Package</span><br />{pkg?.label} {check.pricePaid ? `($${check.pricePaid})` : "(Free)"}</div>
+                          {check.subjectEmail && <div><span className="text-neutral-400">Email</span><br />{check.subjectEmail}</div>}
+                          <div><span className="text-neutral-400">Package</span><br />{pkg?.label ?? check.packageType} {check.pricePaid ? `($${check.pricePaid})` : "(Free)"}</div>
                           {check.completedAt && <div><span className="text-neutral-400">Completed</span><br />{new Date(check.completedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</div>}
                         </div>
 
                         {check.status === "INVITED" && (
                           <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
-                            <strong>Waiting for {check.subjectFirstName}</strong> — They received an email from Checkr. Once they consent and verify their identity, the check will begin automatically.
+                            <strong>Waiting for {check.subjectName.split(" ")[0]}</strong> — They received an email from Checkr. Once they consent and verify their identity, the check will begin automatically.
                           </div>
                         )}
-
+                        {check.status === "PENDING" && (
+                          <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">
+                            Check is in progress. You&apos;ll be notified when results are ready.
+                          </div>
+                        )}
                         {check.status === "CLEAR" && (
                           <div className="p-3 bg-success-50 border border-success-200 rounded-lg text-xs text-success-700 flex items-center gap-2">
                             <FiCheckCircle size={14} className="shrink-0" />
                             Background check came back clear. No disqualifying records found.
                           </div>
                         )}
-
                         {check.status === "CONSIDER" && (
                           <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">
-                            Records were found that require your review. Contact Checkr support or review the full report for details.
+                            Records were found that require your review. View the full report for details.
                           </div>
                         )}
-
                         {check.status === "FAILED" && (
                           <div className="p-3 bg-error-50 border border-error-200 rounded-lg text-xs text-error-700">
                             This background check could not be cleared. Review the full report for details.
                           </div>
                         )}
 
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-wrap">
+                          {check.subjectLink && (
+                            <Link href={check.subjectLink}
+                              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-neutral-300 rounded-lg text-neutral-600 hover:bg-neutral-50 transition-colors">
+                              <FiExternalLink size={12} /> View Profile
+                            </Link>
+                          )}
                           {check.invitationUrl && check.status === "INVITED" && (
                             <a href={check.invitationUrl} target="_blank" rel="noopener noreferrer"
                               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-neutral-300 rounded-lg text-neutral-600 hover:bg-neutral-50 transition-colors">
@@ -456,23 +495,45 @@ export default function BackgroundChecksPage() {
         </div>
 
         {/* Explainer */}
-        <div className="bg-neutral-50 border border-neutral-200 rounded-xl p-5">
-          <h3 className="font-semibold text-neutral-800 text-sm mb-3">How it works</h3>
-          <ol className="space-y-2">
-            {[
-              "Enter the person's name and email address above.",
-              "They receive a secure email from Checkr to consent and verify their identity (SSN, DOB).",
-              "Checkr runs the check. You're notified when results are ready.",
-              "View the results here. Clear = no disqualifying records.",
-            ].map((step, i) => (
-              <li key={i} className="flex items-start gap-3 text-sm text-neutral-600">
-                <span className="h-5 w-5 rounded-full bg-primary-100 text-primary-700 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
-                {step}
-              </li>
-            ))}
-          </ol>
-          <p className="text-xs text-neutral-400 mt-4">Powered by Checkr · Background checks require consent from the person being checked. Results are FCRA compliant.</p>
+        <div className="bg-neutral-50 border border-neutral-200 rounded-xl p-5 space-y-4">
+          <h3 className="font-semibold text-neutral-800 text-sm">How background checks work</h3>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div>
+              <p className="text-xs font-semibold text-primary-700 mb-2">Checking a caregiver or provider on CareLinkAI</p>
+              <ol className="space-y-1.5">
+                {[
+                  "Go to their profile from the Marketplace.",
+                  "Open the Safety & Background Checks panel.",
+                  "Pick a package and order — no email needed.",
+                  "Results appear here and on their profile.",
+                ].map((step, i) => (
+                  <li key={i} className="flex items-start gap-2 text-xs text-neutral-600">
+                    <span className="h-4 w-4 rounded-full bg-primary-100 text-primary-700 font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
+                    {step}
+                  </li>
+                ))}
+              </ol>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-neutral-600 mb-2">Checking someone outside CareLinkAI</p>
+              <ol className="space-y-1.5">
+                {[
+                  "Click \"Check Someone\" and enter their name and email.",
+                  "They receive a Checkr consent link via email.",
+                  "After they consent, Checkr runs the check.",
+                  "You're notified when results are ready.",
+                ].map((step, i) => (
+                  <li key={i} className="flex items-start gap-2 text-xs text-neutral-600">
+                    <span className="h-4 w-4 rounded-full bg-neutral-200 text-neutral-600 font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
+                    {step}
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </div>
+          <p className="text-xs text-neutral-400">Powered by Checkr · Results are FCRA compliant · Consent is always required.</p>
         </div>
+
       </div>
     </DashboardLayout>
   );
