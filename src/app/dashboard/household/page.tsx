@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
   FiCalendar, FiUser, FiPlus, FiCheckCircle, FiXCircle, FiClock,
   FiTrash2, FiAlertCircle, FiRefreshCw,
@@ -187,8 +186,8 @@ export default function HouseholdPage() {
   ).sort((a, b) => new Date(b.scheduledStart).getTime() - new Date(a.scheduledStart).getTime());
 
   return (
-    <DashboardLayout title="My Household">
-      <div className="p-4 md:p-6 space-y-8 max-w-5xl mx-auto">
+    <div className="p-4 md:p-6 space-y-8 max-w-5xl mx-auto">
+      <h1 className="text-2xl font-bold text-neutral-900">My Household</h1>
 
         {/* ── Care Team ─────────────────────────────────────────────────── */}
         <section>
@@ -362,7 +361,6 @@ export default function HouseholdPage() {
             </div>
           </section>
         )}
-      </div>
-    </DashboardLayout>
+    </div>
   );
 }

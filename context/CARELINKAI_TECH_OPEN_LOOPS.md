@@ -107,9 +107,9 @@ Each loop: what it is, why it matters, what done looks like.
 - **Done when:** Render deploy logs show all four migrations applied with no errors.
 
 ### OL-049: CaregiverCard + ProviderCard "Run Check" quick-action
-- **Status:** 🟡 OPEN — cards don't surface check CTA from search results
-- **What:** Add small "Run Check" link/button on cards where `backgroundCheckStatus !== 'CLEAR'`. Navigates to profile (or opens check directly). Matches Care.com pattern from search results.
-- **Done when:** From marketplace search, a family/operator can initiate a check without entering profile.
+- **Status:** ✅ CLOSED (already built)
+- **CaregiverCard** (`src/components/marketplace/CaregiverCard.tsx` ~line 190): "Run Background Check" button shown when `backgroundCheckStatus !== 'CLEAR'`, links to caregiver profile.
+- **ProviderCard** (`src/components/marketplace/ProviderCard.tsx` ~line 247): "Run Background Check" button always visible, links to provider profile.
 
 ### OL-050: Private household flow — Option B for direct-hire families
 - **Status:** ✅ CLOSED (2026-05-07) — MVP shipped

@@ -140,7 +140,13 @@ export default function ResultsPage() {
         setFeedback(prev => ({ ...prev, [homeId]: feedbackType }));
         
         if (feedbackType === 'PLACEMENT_CONFIRMED') {
-          alert('🎉 Congratulations! We\'ve recorded your placement confirmation.');
+          // Auto-save the home to favorites so the family can find it again
+          await fetch('/api/favorites', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ homeId }),
+          }).catch(() => null); // best-effort — don't block on failure
+          alert('🎉 Congratulations! This home has been saved to your favorites.');
         }
       } else if (response.status === 409) {
         alert('You\'ve already submitted feedback for this home.');
