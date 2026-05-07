@@ -346,6 +346,10 @@ export default function HomePage() {
                 </li>
                 <li className="flex items-start">
                   <FiCheck className="text-primary-500 mt-1 mr-2 flex-shrink-0" />
+                  <span className="text-sm text-neutral-500">Run background checks from search — Basic free</span>
+                </li>
+                <li className="flex items-start">
+                  <FiCheck className="text-primary-500 mt-1 mr-2 flex-shrink-0" />
                   <span className="text-sm text-neutral-500">24/7 CareBot support</span>
                 </li>
               </ul>
@@ -912,6 +916,15 @@ export default function HomePage() {
                   <div>
                     <h4 className="text-lg font-bold text-neutral-900 mb-2">Book Transport Rides</h4>
                     <p className="text-neutral-500">Find and book NEMT and transportation providers directly on the platform — secure payment, ride confirmation, and day-of reminders handled for you.</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-br from-primary-500 to-primary-400 flex items-center justify-center">
+                    <FiShield className="text-white text-xl" />
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-bold text-neutral-900 mb-2">Order Background Checks</h4>
+                    <p className="text-neutral-500">Run Checkr-powered checks on any caregiver or provider directly from search results — no waiting for an invite. Basic is free; Enhanced, Motor Vehicle, and Premium bundles available from $19.99.</p>
                   </div>
                 </div>
               </div>
