@@ -12,7 +12,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { VirtuosoGrid } from "react-virtuoso";
 import { MOCK_CATEGORIES as SHARED_MOCK_CATEGORIES, MOCK_CAREGIVERS as SHARED_MOCK_CAREGIVERS, MOCK_LISTINGS as SHARED_MOCK_LISTINGS, MOCK_PROVIDERS as SHARED_MOCK_PROVIDERS } from "@/lib/mock/marketplace";
 import MarketplaceTabs from "@/components/marketplace/MarketplaceTabs";
-import { FiMapPin, FiDollarSign, FiCheckCircle, FiUsers } from "react-icons/fi";
+import { FiMapPin, FiDollarSign, FiCheckCircle, FiUsers, FiBriefcase } from "react-icons/fi";
 
 const LAST_TAB_KEY = "marketplace:lastTab";
 const LS_KEYS = {
@@ -181,6 +181,7 @@ export default function MarketplacePage() {
     distanceMiles?: number;
     isVerified?: boolean;
     yearsInBusiness?: number | null;
+    photoUrl?: string | null;
   };
 
   const [providers, setProviders] = useState<Provider[]>([]);
@@ -2011,17 +2012,8 @@ export default function MarketplacePage() {
                         <div className="p-4">
                           {/* Header */}
                           <div className="flex items-center mb-4">
-                            <div className="h-16 w-16 rounded-full overflow-hidden bg-neutral-100 flex-shrink-0">
-                              <Image
-                                src={`https://ui-avatars.com/api/?name=${encodeURIComponent(job.title)}&background=random&size=128`}
-                                alt={job.title}
-                                width={64}
-                                height={64}
-                                placeholder="blur"
-                                blurDataURL={getBlurDataURL(64, 64)}
-                                sizes="64px"
-                                loading="lazy"
-                              />
+                            <div className="h-16 w-16 rounded-full overflow-hidden bg-secondary-50 flex-shrink-0 flex items-center justify-center">
+                              <FiBriefcase className="h-7 w-7 text-secondary-400" />
                             </div>
                             <div className="ml-3">
                               <h3 className="font-medium text-neutral-900">{job.title}</h3>
@@ -2109,16 +2101,23 @@ export default function MarketplacePage() {
                         {/* Header */}
                         <div className="flex items-center mb-4">
                           <div className="h-16 w-16 rounded-full overflow-hidden bg-neutral-100 flex-shrink-0">
-                            <Image
-                              src={`https://ui-avatars.com/api/?name=${encodeURIComponent(p.name)}&background=random&size=128`}
-                              alt={p.name}
-                              width={64}
-                              height={64}
-                              placeholder="blur"
-                              blurDataURL={getBlurDataURL(64, 64)}
-                              sizes="64px"
-                              loading="lazy"
-                            />
+                            {p.photoUrl ? (
+                              <Image
+                                src={p.photoUrl}
+                                alt={p.name}
+                                width={64}
+                                height={64}
+                                placeholder="blur"
+                                blurDataURL={getBlurDataURL(64, 64)}
+                                sizes="64px"
+                                loading="lazy"
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="h-full w-full flex items-center justify-center bg-primary-100 text-primary-600 font-bold text-xl">
+                                {(p.name || '?').charAt(0).toUpperCase()}
+                              </div>
+                            )}
                           </div>
                           <div className="ml-3">
                             <h3 className="font-medium text-neutral-900">{p.name}</h3>
