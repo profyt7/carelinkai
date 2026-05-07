@@ -133,12 +133,12 @@ export default function ResultsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ homeId, feedbackType })
       });
-      
+
       const data = await response.json();
-      
+
       if (response.ok) {
         setFeedback(prev => ({ ...prev, [homeId]: feedbackType }));
-        
+
         if (feedbackType === 'PLACEMENT_CONFIRMED') {
           // Auto-save the home to favorites so the family can find it again
           await fetch('/api/favorites', {
@@ -146,16 +146,11 @@ export default function ResultsPage() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ homeId }),
           }).catch(() => null); // best-effort — don't block on failure
-          alert('🎉 Congratulations! This home has been saved to your favorites.');
         }
-      } else if (response.status === 409) {
-        alert('You\'ve already submitted feedback for this home.');
-      } else {
-        alert(data.error || 'Failed to submit feedback');
       }
+      // errors are shown via the feedback state — no alert() needed
     } catch (error) {
       console.error('Error submitting feedback:', error);
-      alert('An error occurred while submitting feedback');
     }
   };
   
@@ -381,11 +376,7 @@ export default function ResultsPage() {
                         </button>
                         
                         <button
-                          onClick={() => {
-                            if (confirm('Confirm that you have chosen this home?')) {
-                              submitFeedback(result.home.id, 'PLACEMENT_CONFIRMED');
-                            }
-                          }}
+                          onClick={() => submitFeedback(result.home.id, 'PLACEMENT_CONFIRMED')}
                           className="flex-1 px-4 py-2 bg-success-600 text-white rounded-md hover:bg-success-700 font-medium"
                         >
                           ✓ Chose This Home
@@ -424,7 +415,8 @@ export default function ResultsPage() {
           homeId={selectedHomeForTour.id}
           homeName={selectedHomeForTour.name}
           onSuccess={() => {
-            alert('Tour request submitted successfully! Check the Tours page to view your request.');
+            setTourModalOpen(false);
+            setSelectedHomeForTour(null);
           }}
         />
       )}

@@ -10,8 +10,14 @@ import {
 
 // ─── static option lists (value = slug stored in DB, label = display text) ─
 
+// Job type determines which category panels are shown
+const JOB_TYPES = [
+  { value: 'care', label: '🩺 Care Worker', desc: 'Caregiver, aide, nurse — hands-on personal or medical care' },
+  { value: 'household', label: '🏠 Household Services', desc: 'Housekeeper, chef, companion, errands, pet care, yard work' },
+];
+
 const SETTINGS: { value: string; label: string }[] = [
-  { value: 'in-home', label: 'In-Home' },
+  { value: 'in-home', label: 'Private Home' },
   { value: 'assisted-living', label: 'Assisted Living' },
   { value: 'memory-care', label: 'Memory Care' },
   { value: 'independent-living', label: 'Independent Living' },
@@ -56,6 +62,24 @@ const SPECIALTIES: { value: string; label: string }[] = [
   { value: 'veteran-care', label: 'Veteran Care' },
   { value: 'pediatric-special-needs', label: 'Pediatric Special Needs' },
   { value: 'behavioral-health', label: 'Behavioral Health' },
+];
+
+// Household service categories (separate from care roles)
+const HOUSEHOLD_SERVICES: { value: string; label: string }[] = [
+  { value: 'housekeeping', label: 'Housekeeping / Cleaning' },
+  { value: 'deep-cleaning', label: 'Deep Cleaning' },
+  { value: 'laundry', label: 'Laundry & Ironing' },
+  { value: 'personal-chef', label: 'Personal Chef / Cooking' },
+  { value: 'meal-prep', label: 'Meal Prep (batch cooking)' },
+  { value: 'grocery-shopping', label: 'Grocery Shopping' },
+  { value: 'errands', label: 'Errand Running' },
+  { value: 'companion', label: 'Companion / Sitter' },
+  { value: 'pet-care', label: 'Pet Care / Dog Walking' },
+  { value: 'yard-work', label: 'Yard Work / Outdoor Help' },
+  { value: 'handyman', label: 'Handyman / Minor Repairs' },
+  { value: 'childcare', label: 'Childcare / Babysitting' },
+  { value: 'transportation-errand', label: 'Driving / Errands' },
+  { value: 'other-household', label: 'Other Household Help' },
 ];
 
 const US_STATES = [
@@ -129,6 +153,7 @@ function Section({
 export default function NewListingPage() {
   const router = useRouter();
 
+  const [jobType, setJobType] = useState<"care" | "household">("care");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [rateMin, setRateMin] = useState("");
@@ -137,6 +162,7 @@ export default function NewListingPage() {
   const [careTypes, setCareTypes] = useState<string[]>([]);
   const [services, setServices] = useState<string[]>([]);
   const [specialties, setSpecialties] = useState<string[]>([]);
+  const [householdServices, setHouseholdServices] = useState<string[]>([]);
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
   const [zip, setZip] = useState("");
@@ -160,9 +186,10 @@ export default function NewListingPage() {
         title: title.trim(),
         description: description.trim(),
         setting: setting || undefined,
-        careTypes,
-        services,
-        specialties,
+        careTypes: jobType === "care" ? careTypes : [],
+        services: jobType === "care" ? services : householdServices,
+        specialties: jobType === "care" ? specialties : [],
+        jobType,
         city: city || undefined,
         state: state || undefined,
         zipCode: zip || undefined,
@@ -203,9 +230,9 @@ export default function NewListingPage() {
           <FiArrowLeft className="h-4 w-4" /> Back to Marketplace
         </Link>
         <p className="text-xs font-semibold text-neutral-400 uppercase tracking-widest mb-1">Marketplace</p>
-        <h1 className="text-2xl font-bold text-neutral-900">Post a Caregiver Job</h1>
+        <h1 className="text-2xl font-bold text-neutral-900">Post a Job</h1>
         <p className="text-sm text-neutral-500 mt-1">
-          Describe the role and caregivers will apply directly.
+          Describe what you need and qualified people will apply directly.
         </p>
       </div>
 
@@ -217,6 +244,28 @@ export default function NewListingPage() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Job type selector */}
+        <div className="bg-white rounded-xl border border-neutral-200 p-6">
+          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-3">What kind of help are you looking for?</p>
+          <div className="grid sm:grid-cols-2 gap-3">
+            {JOB_TYPES.map((jt) => (
+              <button
+                key={jt.value}
+                type="button"
+                onClick={() => setJobType(jt.value as "care" | "household")}
+                className={`text-left p-4 rounded-xl border-2 transition-all ${
+                  jobType === jt.value
+                    ? "border-primary-500 bg-primary-50"
+                    : "border-neutral-200 hover:border-primary-300"
+                }`}
+              >
+                <p className="font-semibold text-neutral-900 text-sm">{jt.label}</p>
+                <p className="text-xs text-neutral-500 mt-0.5">{jt.desc}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Job details */}
         <Section icon={FiFileText} title="Job Details">
           <div>
@@ -227,7 +276,7 @@ export default function NewListingPage() {
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Evening caregiver for mom with Alzheimer's"
+              placeholder={jobType === "care" ? "e.g. Evening caregiver for mom with Alzheimer's" : "e.g. Weekly housekeeper for 3-bedroom home"}
               className="w-full rounded-lg border border-neutral-200 px-3 py-2.5 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400"
               required
             />
@@ -289,11 +338,11 @@ export default function NewListingPage() {
           <p className="text-xs text-neutral-400">Leave blank if rate is negotiable.</p>
         </Section>
 
-        {/* Care setting */}
-        <Section icon={FiBriefcase} title="Care Setting">
+        {/* Setting + Categories */}
+        <Section icon={FiBriefcase} title={jobType === "care" ? "Care Setting" : "Job Details"}>
           <div>
             <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-1.5">
-              Setting Type
+              Location Setting
             </label>
             <div className="flex flex-wrap gap-2">
               {SETTINGS.map((s) => (
@@ -313,26 +362,15 @@ export default function NewListingPage() {
             </div>
           </div>
 
-          <CheckGroup
-            label="Care Types"
-            options={CARE_TYPES}
-            selected={careTypes}
-            onChange={setCareTypes}
-          />
-
-          <CheckGroup
-            label="Services Required"
-            options={SERVICES}
-            selected={services}
-            onChange={setServices}
-          />
-
-          <CheckGroup
-            label="Specialties"
-            options={SPECIALTIES}
-            selected={specialties}
-            onChange={setSpecialties}
-          />
+          {jobType === "care" ? (
+            <>
+              <CheckGroup label="Care Types" options={CARE_TYPES} selected={careTypes} onChange={setCareTypes} />
+              <CheckGroup label="Services Required" options={SERVICES} selected={services} onChange={setServices} />
+              <CheckGroup label="Specialties" options={SPECIALTIES} selected={specialties} onChange={setSpecialties} />
+            </>
+          ) : (
+            <CheckGroup label="Services Needed" options={HOUSEHOLD_SERVICES} selected={householdServices} onChange={setHouseholdServices} />
+          )}
         </Section>
 
         {/* Location */}
