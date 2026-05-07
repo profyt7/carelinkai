@@ -77,6 +77,7 @@ model User {
   placementSearches         PlacementSearch[]
   exports                   ExportHistory[]          @relation("UserExports")
   dischargePlannerProfile   DischargePlannerProfile?
+  householdShifts           HouseholdShift[]         @relation("FamilyHouseholdShifts")
 
   @@index([email])
   @@index([role])
@@ -1750,13 +1751,32 @@ model MarketplaceHire {
   application   MarketplaceApplication? @relation("ApplicationHire", fields: [applicationId], references: [id])
   caregiver     Caregiver               @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
   listing       MarketplaceListing?     @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  shift         CaregiverShift?         @relation("ShiftHire", fields: [shiftId], references: [id])
-  payment       Payment?
+  shift          CaregiverShift?         @relation("ShiftHire", fields: [shiftId], references: [id])
+  payment        Payment?
+  householdShifts HouseholdShift[]
 
   @@index([listingId])
   @@index([caregiverId])
   @@index([applicationId])
   @@index([shiftId])
+}
+
+model HouseholdShift {
+  id             String          @id @default(cuid())
+  familyUserId   String
+  hireId         String
+  scheduledStart DateTime
+  scheduledEnd   DateTime
+  status         String          @default("SCHEDULED")
+  notes          String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  familyUser     User            @relation("FamilyHouseholdShifts", fields: [familyUserId], references: [id], onDelete: Cascade)
+  hire           MarketplaceHire @relation(fields: [hireId], references: [id], onDelete: Cascade)
+
+  @@index([familyUserId])
+  @@index([hireId])
+  @@index([scheduledStart])
 }
 
 /// Favorites for marketplace listings (per caregiver)
