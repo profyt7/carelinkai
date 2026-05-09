@@ -31,6 +31,41 @@ Use them to understand:
 - Recent decisions
 - What was done in the last session
 
+### Vault references (cross-project / personal context)
+A private Obsidian vault is cloned at `/home/user/chrisos-vault`
+(GitHub: `profyt7/chrisos-vault`), used for cross-project knowledge:
+founder context, financial, legal, personal/family, multi-venture state,
+and the CareLinkAI risk register.
+
+At the start of any session that may need vault content, refresh:
+
+```bash
+git -C /home/user/chrisos-vault pull --quiet
+```
+
+If the vault directory does not exist, notify the user and skip the pull —
+do not error out.
+
+Key files to read when relevant:
+- `/home/user/chrisos-vault/02_Memory/FOUNDER_PROFILE.md`
+- `/home/user/chrisos-vault/02_Memory/CURRENT_STATE.md`
+- `/home/user/chrisos-vault/02_Memory/PERSONAL_FAMILY_CONTEXT.md`
+- `/home/user/chrisos-vault/02_Memory/FINANCIAL_CONTEXT.md`
+- `/home/user/chrisos-vault/02_Memory/LEGAL_DISSOLUTION_CONTEXT.md`
+- `/home/user/chrisos-vault/03_Execution/CARELINKAI_RISK_REGISTER.md` —
+  premortem risk register, 10 risks scored Sev × Lik. Anything 16+ is
+  "fix this quarter." Read before any architecture, compliance, or scope decision.
+- `/home/user/chrisos-vault/03_Execution/CARELINKAI_TECH_OPEN_LOOPS.md` —
+  vault copy of open loops (may be more current than the repo copy)
+- `/home/user/chrisos-vault/03_Execution/WEEK_TRACKER.md` —
+  weekly GTM milestone tracking
+- `/home/user/chrisos-vault/05_Agent_Logs/DEV_SESSION_SUMMARIES.md`
+
+Canonical-source rules:
+- The vault is canonical for cross-project state and the risk register.
+- `./context/` in this repo is canonical for code-coupled state
+  (technical state, dev session summaries tied to commits).
+
 ---
 
 ## Tech stack (current)
@@ -128,31 +163,6 @@ Keep current with: architecture changes, active branch/env, hosting status, know
 Path: `./context/CARELINKAI_TECH_OPEN_LOOPS.md`
 
 Close completed loops. Add any new ones discovered this session.
-
----
-
-## ChrisOS Vault
-The founder maintains a private strategy vault at `/home/user/chrisos-vault` (cloned from `profyt7/chrisos-vault`).
-
-**At the start of every session, pull the latest vault:**
-```bash
-git -C /home/user/chrisos-vault pull --quiet
-```
-
-**Key vault files to read when relevant:**
-- `/home/user/chrisos-vault/03_Execution/CARELINKAI_RISK_REGISTER.md` — premortem risk register, 10 risks scored Sev × Lik. Anything 16+ is "fix this quarter." Read this before any architecture, compliance, or scope decision.
-- `/home/user/chrisos-vault/03_Execution/CARELINKAI_TECH_OPEN_LOOPS.md` — vault copy of open loops (may be more current than the repo copy)
-- `/home/user/chrisos-vault/03_Execution/WEEK_TRACKER.md` — weekly GTM milestone tracking
-
-**Top 3 open risks (as of 2026-05-06):**
-
-| # | Risk | Score | Target Close |
-|---|------|------:|--------------|
-| 1 | HIPAA / PHI Breach | 20 | 2026-06-30 |
-| 2 | Two-sided marketplace cold-start failure | 20 | 2026-08-31 |
-| 3 | Solo founder bandwidth implosion | 16 | 2026-05-31 |
-
-If the vault directory does not exist, notify the user and skip the pull — do not error out.
 
 ---
 
