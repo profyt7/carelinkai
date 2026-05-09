@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { SMSService } from "@/lib/sms/sms-service";
 
 const createRideSchema = z.object({
   providerId: z.string().min(1),
@@ -62,7 +63,7 @@ export async function POST(req: NextRequest) {
   const provider = await prisma.provider.findUnique({
     where: { id: d.providerId },
     select: {
-      id: true, businessName: true, contactEmail: true, contactName: true,
+      id: true, businessName: true, contactEmail: true, contactName: true, contactPhone: true,
       rateBaseFare: true, ratePerMile: true, rateWaitPerHour: true, instantBook: true,
     },
   });
@@ -183,7 +184,11 @@ export async function POST(req: NextRequest) {
       const stripe = new (await import("stripe")).default(process.env.STRIPE_SECRET_KEY!, {
         apiVersion: "2023-10-16",
       });
-      const APP_URL = process.env.NEXTAUTH_URL || "https://getcarelinkai.com";
+      const APP_URL = (() => {
+        const proto = req.headers.get("x-forwarded-proto") || "https";
+        const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "getcarelinkai.com";
+        return `${proto}://${host}`;
+      })();
       const totalCents = Math.round(d.estimatedFare * (1 + platformFeePercent / 100) * 100);
 
       const checkoutSession = await stripe.checkout.sessions.create({
@@ -202,8 +207,8 @@ export async function POST(req: NextRequest) {
           },
         ],
         metadata: { type: "RIDE_PAYMENT", rideId: ride.id },
-        success_url: `${APP_URL}/rides?booked=1`,
-        cancel_url: `${APP_URL}/rides`,
+        success_url: `${APP_URL}/rides?payment=success`,
+        cancel_url: `${APP_URL}/rides?payment=canceled`,
       });
 
       // Store checkout session ID on the ride
@@ -288,18 +293,30 @@ export async function GET(req: NextRequest) {
 }
 
 async function notifyProviderNewRide(
-  provider: { businessName: string; contactEmail: string; contactName: string },
+  provider: { businessName: string; contactEmail: string; contactName: string; contactPhone?: string | null },
   user: { firstName?: string | null; lastName?: string | null; email?: string | null },
   ride: { id: string; scheduledAt: Date; pickupAddress: string; dropoffAddress: string },
   bookedByRole: string,
   residentName?: string | null,
   isPaid?: boolean,
 ) {
+  const sms = new SMSService();
+  const bookerName = [user.firstName, user.lastName].filter(Boolean).join(" ") || "A client";
+  const scheduledShort = ride.scheduledAt.toLocaleString("en-US", {
+    month: "short", day: "numeric", hour: "numeric", minute: "2-digit",
+  });
+  if (provider.contactPhone) {
+    const passengerLabel = bookedByRole === "OPERATOR" && residentName ? residentName : bookerName;
+    const smsBody = isPaid
+      ? `CareLinkAI: Confirmed paid ride for ${passengerLabel} on ${scheduledShort}. ${ride.pickupAddress} → ${ride.dropoffAddress}. Log in to view.`
+      : `CareLinkAI: New ride request from ${passengerLabel} on ${scheduledShort}. ${ride.pickupAddress} → ${ride.dropoffAddress}. Log in to confirm.`;
+    sms.sendSMS(provider.contactPhone, smsBody).catch(() => {});
+  }
+
   if (!process.env.RESEND_API_KEY) return;
   const { Resend } = await import("resend");
   const resend = new Resend(process.env.RESEND_API_KEY);
   const APP_URL = process.env.NEXTAUTH_URL || "https://getcarelinkai.com";
-  const bookerName = [user.firstName, user.lastName].filter(Boolean).join(" ") || "A client";
   const passengerInfo =
     bookedByRole === "OPERATOR" && residentName
       ? `Resident: <strong>${residentName}</strong><br>Booked by: ${bookerName} (facility)`

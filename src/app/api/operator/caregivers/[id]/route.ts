@@ -110,6 +110,7 @@ export async function GET(
       employmentType: caregiver.employmentType,
       employmentStatus: caregiver.employmentStatus,
       hireDate: caregiver.hireDate,
+      backgroundCheckStatus: caregiver.backgroundCheckStatus,
       employment: caregiver.employments[0] || null,
       certifications: caregiver.certifications,
       assignments: caregiver.assignments.map(assignment => ({

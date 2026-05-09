@@ -2,6 +2,148 @@
 
 ---
 
+### 2026-05-07 — Option B: Household Shift Scheduling for FAMILY Users
+
+- **Objective:** Build the private household shift management layer for FAMILY users who hire caregivers directly via the marketplace (Option A), and close OL-050.
+- **Work completed:**
+  1. **HouseholdShift model** — added to `prisma/schema.prisma` with back-relations on `User` and `MarketplaceHire`. Status stored as String (SCHEDULED/COMPLETED/CANCELLED) — avoids adding a new Prisma enum.
+  2. **Migration SQL** — `prisma/migrations/20260507000001_household_shifts/migration.sql`: CREATE TABLE IF NOT EXISTS with familyUserId + hireId FK constraints + 3 indexes.
+  3. **API: GET/POST `/api/family/household`** — GET returns all hires (where `listing.postedByUserId = user`) with nested caregiver info and householdShifts. POST validates ownership of the hire + end > start and creates a shift.
+  4. **API: PATCH/DELETE `/api/family/household/shifts/[id]`** — PATCH updates status (and optionally notes); DELETE removes the shift. Both verify `familyUserId` ownership before acting.
+  5. **Dashboard page `/dashboard/household`** — full UI: care team grid (profile photo, name, listing title, upcoming shift count), schedule-a-shift form (caregiver selector + start/end datetime + notes), shift history list with Mark Complete / Cancel / Delete actions. Redirect guard sends non-FAMILY roles to /dashboard.
+  6. **DashboardLayout nav** — "My Household" link added to Operations section, FAMILY-only.
+  7. **Landing page** — Feature 9 card ("Household Shift Scheduling") in features grid; "Household Shift Management" benefit bullet in Families tab.
+  8. **TypeScript:** `npx tsc --noEmit` exit code 0.
+  9. **Commit + push** to `claude/review-carelink-docs-49Ycv` branch.
+- **Files changed:**
+  - `prisma/schema.prisma` (HouseholdShift model + back-relations)
+  - `prisma/migrations/20260507000001_household_shifts/migration.sql` (new)
+  - `src/app/api/family/household/route.ts` (new — GET + POST)
+  - `src/app/api/family/household/shifts/[id]/route.ts` (new — PATCH + DELETE)
+  - `src/app/dashboard/household/page.tsx` (new — full UI)
+  - `src/components/layout/DashboardLayout.tsx` ("My Household" nav)
+  - `src/app/page.tsx` (Feature 9 card + families benefit)
+- **Commands run:** `npx tsc --noEmit` (exit 0), `git push -u origin claude/review-carelink-docs-49Ycv`
+- **Tests/build status:** TypeScript clean. No test suite.
+- **Deployment impact:** New migration `20260507000001_household_shifts` will auto-run via `prisma migrate deploy` on next Render deploy. Uses `IF NOT EXISTS` + FK constraints — idempotent on first run.
+- **New risks/blockers:** Migration 20260507000001 is additive and idempotent. OL-048 (migrations 20260505000001/2/3 + 20260506000001) still open — must confirm those deployed cleanly before the new one runs.
+- **Recommended next step:** Monitor Render deploy logs for OL-048 migrations. Then: set Checkr live keys in Render (`CHECKR_API_KEY`, `CHECKR_WEBHOOK_SECRET`) and switch Stripe to live mode.
+
+### 2026-05-07 — UX Polish, Background Check Hub Unification, Production Failure Triage
+
+- **Objective:** Follow-on polish from prior session — fix UI bugs, unify the background check hub across all three data sources, diagnose 4-page production failures.
+- **Work completed:**
+  1. **Caregiver profile sidebar layout** — committed `max-w-7xl` page grid, `lg:col-span-2` main + `lg:col-span-1` sticky sidebar, matching provider profile layout exactly.
+  2. **Checkr webhook extended** — `src/app/api/webhooks/checkr/route.ts` now handles `ProviderBackgroundCheckOrder` results (looks up by `checkrReportId`, updates status, notifies orderer and provider via `prisma.notification.create`).
+  3. **Notifications z-index fix** — `NotificationCenter.tsx` wrapper gets `z-40`, dropdown panel gets `z-50` so dropdown renders above all page content.
+  4. **Real profile photos** — `randomuser.me` URLs added to all 12 MOCK_CAREGIVERS and all 8 MOCK_PROVIDERS in `mock/marketplace.ts`. Provider mock photos switched from `Math.random()` to deterministic formula using index `i` to stop re-rolls on render. `mock/providers.ts` similarly fixed.
+  5. **Landing page update** — Added "Order Background Checks" feature card to Families tab + 4th bullet to For Families overview ("Run background checks from search — Basic free").
+  6. **Provider card name/avatar fix** — Real API returns `businessName` but inline `Provider` type expected `name`. Fixed by mapping at `setProviders` call site. Avatar falls back to initial-letter div instead of broken Image. Job card avatar replaced with CSS `FiBriefcase` icon (no external URL needed).
+  7. **Unified background check hub** — Rewrote `GET /api/background-checks` to merge `BackgroundCheckInvitation`, `BackgroundCheckOrder` (caregiver profile), and `ProviderBackgroundCheckOrder` (provider profile) into a single normalized list sorted newest-first. Page rebuilt with type badges, "View Profile" links, info banner, retitled form ("Check Someone Outside CareLinkAI"), empty state with two CTAs.
+  8. **Production 4-page failure triage** — Tours, Inquiries, Hires, Favorites failing for FAMILY user. Root cause: tours route returned 404 (not 200) when Family record absent → client threw error; favorites route used `include: { provider: true }` which selects ALL Provider columns including `checkrCandidateId` (added by pending migration) — query fails if migration not yet applied. Build confirmed clean (no TypeScript errors). Fixed both.
+  9. **Tours route fix** — Returns `{ success: true, tours: [] }` instead of 404 when Family record not found; page shows empty state instead of error banner.
+  10. **Favorites/all fix** — Switched `favoriteProvider.findMany` from `include: { provider: { include: {user} } }` to explicit `select` listing only the fields actually used — avoids schema-drift errors if DB is behind the Prisma client.
+- **Files changed:**
+  - `src/app/marketplace/caregivers/[id]/page.tsx` (sidebar grid)
+  - `src/app/api/webhooks/checkr/route.ts` (ProviderBackgroundCheckOrder handling)
+  - `src/components/notifications/NotificationCenter.tsx` (z-index)
+  - `src/lib/mock/marketplace.ts` (real photos, deterministic)
+  - `src/lib/mock/providers.ts` (deterministic photos)
+  - `src/app/page.tsx` (landing page feature card)
+  - `src/app/marketplace/page.tsx` (provider name map, avatar fallback, job icon)
+  - `src/app/api/background-checks/route.ts` (unified GET handler)
+  - `src/app/background-checks/page.tsx` (unified UI)
+  - `src/app/api/family/tours/route.ts` (404→200 graceful empty)
+  - `src/app/api/favorites/all/route.ts` (explicit Provider select)
+- **Commands run:** `npx tsc --noEmit` (clean), `npm run build` (succeeded, exit 0), `git push origin main`
+- **Tests/build status:** TypeScript clean. Next.js build succeeded locally. No test suite.
+- **Deployment impact:** All commits pushed to `main`; Render auto-deploy triggered. Migration `20260506000001_provider_background_checks` is new — will run via `prisma migrate deploy` on startup.
+- **New risks/blockers:** OL-048 now includes `20260506000001` (adds `checkrCandidateId` to Provider + creates `ProviderBackgroundCheckOrder`). If Render DB already has a partially applied version of these tables, `migrate:deploy` could fail. Migrations are mostly idempotent (`IF NOT EXISTS`) but the FK constraint `ADD CONSTRAINT` on `ProviderBackgroundCheckOrder` does not use `IF NOT EXISTS` — safe on first run, would fail if run twice (Prisma prevents double-runs via `_prisma_migrations` table).
+- **Recommended next step:** Monitor Render deploy logs after this push to confirm migrations 20260505000001/2/3 and 20260506000001 all applied cleanly. Then: set live Checkr API keys in Render (`CHECKR_API_KEY` + `CHECKR_WEBHOOK_SECRET`) and switch Stripe to live mode (runbook at `context/STRIPE_SETUP_RUNBOOK.md`).
+
+### 2026-05-06 — Background Check Hub + Care.com UX Parity
+
+- **Objective:** Match Care.com's "background check visible on every profile" UX, build a standalone "check anyone" hub, enable operators to order checks, add AI credential review, and add file upload to provider credentials.
+- **Work completed:**
+  1. **File upload for provider credentials** — Replaced URL-only input with dashed upload button → presigned URL flow (`/api/provider/credentials/upload-url`). "Or paste a link" fallback retained.
+  2. **AI credential review (fire-and-forget)** — `src/lib/ai/credential-review.ts` uses Claude Haiku; analyzes image/PDF URLs. Returns `APPROVED | FLAGGED | NEEDS_REVIEW | SKIPPED`. `autoVerify` flag auto-sets status=VERIFIED for clearly valid docs. Metadata-only fallback for mock/unreachable URLs → always `NEEDS_REVIEW`. Result stored in `ProviderCredential.aiReviewStatus + aiReviewNotes`. Displayed in admin credentials queue and provider settings.
+  3. **Provider background check button** — `POST /api/provider/credentials/order-background-check` creates a Checkr report via direct candidate flow, stores `checkrReportId` on `ProviderCredential`. "No background check on file" callout added to provider credentials settings page.
+  4. **Operators can order checks on caregivers** — `POST/PUT/GET /api/family/background-checks/order/[caregiverId]` changed from FAMILY-only to `["FAMILY", "OPERATOR"]`. Dynamic `orderedByType` picks OPERATOR/FAMILY based on session role. `BackgroundCheckOrderer` enum extended with OPERATOR (new Prisma migration).
+  5. **Standalone background check hub** — `/background-checks` full page: "Run a Check" form (name/email/role/package), Stripe Elements payment flow, check history list, how-it-works explainer. 4 packages: Basic (free, invitation), Enhanced ($34.99), MVR ($19.99), Premium ($59.99). Nav entry added to DashboardLayout (FAMILY/OPERATOR/ADMIN). Two new API routes: `POST/GET /api/background-checks` and `PUT /api/background-checks/confirm`.
+  6. **`BackgroundCheckInvitation` Prisma model** — new model for standalone invitation flow. Webhook handler updated for `invitation.*` events.
+  7. **Checkr `createInvitation()` added** to `src/lib/checkr.ts` — sends consent email to subject, mock mode without API key.
+  8. **Care.com UX parity** — `BackgroundCheckOrderPanel` now accepts `defaultExpanded?: boolean` prop. Both caregiver profile instances open expanded by default. Provider profile gets a dedicated "Background Check" sidebar card with one-click free (BASIC) invite pre-filled with `contactName`/`contactEmail`.
+  9. **Operator caregiver detail API** — added `backgroundCheckStatus` to operator caregiver fetch response; `BackgroundCheckOrderPanel` added to operator caregiver detail page.
+- **Files changed:**
+  - `src/app/settings/provider/credentials/page.tsx` (file upload, BG check order button, AI review display)
+  - `src/lib/ai/credential-review.ts` (new)
+  - `src/app/api/provider/credentials/route.ts` (AI review fire-and-forget, aiReviewStatus/Notes in GET)
+  - `src/app/api/provider/credentials/order-background-check/route.ts` (new)
+  - `src/app/api/provider/credentials/upload-url/route.ts` (new)
+  - `src/app/api/family/background-checks/order/[caregiverId]/route.ts` (OPERATOR role, orderedByType)
+  - `src/app/api/operator/caregivers/[id]/route.ts` (backgroundCheckStatus in response)
+  - `src/app/operator/caregivers/[id]/page.tsx` (BackgroundCheckOrderPanel added)
+  - `src/app/api/webhooks/checkr/route.ts` (invitation.* events, providerCredential path)
+  - `src/app/api/background-checks/route.ts` (new)
+  - `src/app/api/background-checks/confirm/route.ts` (new)
+  - `src/app/background-checks/page.tsx` (new — standalone hub)
+  - `src/components/layout/DashboardLayout.tsx` (Background Checks nav entry)
+  - `src/lib/checkr.ts` (createInvitation added)
+  - `prisma/schema.prisma` (aiReviewStatus/Notes on ProviderCredential, OPERATOR enum, BackgroundCheckInvitation model)
+  - `prisma/migrations/20260505000001,2,3` (manual SQL migrations)
+  - `src/app/admin/credentials/page.tsx` (AI review badge + notes display)
+  - `src/components/marketplace/BackgroundCheckOrderPanel.tsx` (defaultExpanded prop)
+  - `src/app/marketplace/caregivers/[id]/page.tsx` (defaultExpanded=true on both panels)
+  - `src/app/marketplace/providers/[id]/page.tsx` (new BG check sidebar card + handler)
+- **Commands run:** `npx prisma generate`, `npx tsc --noEmit`
+- **Tests/build status:** TypeScript clean. No runtime test run (no local DB).
+- **Deployment impact:** 3 new Prisma migrations need to run on Render DB. Background check panel opens by default — visible change to caregiver/provider profile pages.
+- **New risks/blockers:** `CHECKR_API_KEY` still not set in Render — all check flows run in mock mode. Stripe must be in live mode before payments go live. Render DB migration must be run (`npx prisma migrate deploy` via Render Shell or deploy hook).
+- **Recommended next step:** (1) Run `npx prisma migrate deploy` on Render. (2) Add `CaregiverCard` / `ProviderCard` "Run Check" quick-action so users can act from search results without entering a profile. (3) Test provider dashboard checklist flow (was on `feat/provider-onboarding-checklist` branch — merge status unclear).
+
+---
+
+### 2026-05-05 — Provider Credentialing, Admin Credentials Queue, Onboarding Checklist
+
+- **Objective:** Close OL-037 + OL-043, build admin credentials queue, add provider welcome email, fix Stripe redirect bug, and drive provider activation with a profile completeness checklist.
+- **Work completed:**
+  1. **OL-037 closed** — 30s polling on `/rides` page for PROVIDER role. `knownRequestedIds` ref seeded on load to prevent false alarms. Toast appears within 30s of new REQUESTED ride. PR #513 merged.
+  2. **Stripe redirect bug fixed** — After Stripe Checkout, users were sent to `/auth/login` instead of `/rides`. Root cause: APP_URL was built from `NEXTAUTH_URL` env var, causing cross-domain redirect that dropped `SameSite=Lax` session cookie. Fixed by deriving APP_URL from `x-forwarded-host`/`host` request headers in both `/api/rides` (POST) and `/api/rides/[id]/pay`. Also fixed `?booked=1` → `?payment=success` query param alignment.
+  3. **Admin transport dashboard** — `/admin/rides` server component with stat tiles (total/completed/active/canceled), platform fee + gross volume MTD, provider performance list, recent rides table. Quick-action card on admin dashboard.
+  4. **OL-043 closed — Provider credentialing (full stack):** `GET/POST /api/provider/credentials` + `DELETE /api/provider/credentials/[id]`. `/settings/provider/credentials` UI with 8 credential types, status badges, add form, doc URL, expiry date. Certified banner when 3+ VERIFIED. CareLinkAI Certified badge on ProviderCard + provider detail page. PR #515 merged.
+  5. **Credential expiry cron** — `GET /api/cron/credential-expiry`: marks EXPIRED, auto-deactivates providers with critical expired types (BG check, insurance, vehicle inspection, NEMT license), sends grouped 30-day warning emails via Resend. Render cron `0 6 * * *` registered by Chris.
+  6. **Admin credentials queue** — `GET /api/admin/provider-credentials` list endpoint. `/admin/credentials` queue UI: status tabs, Verify (one-click), Reject (prompt for reason), expiry warning, doc link, provider name links to `/admin/providers/[id]`. Quick-action card on admin dashboard. Merged to main.
+  7. **Provider welcome email** — fires fire-and-forget after PROVIDER registration. 3 steps: complete profile → upload credentials → activate listing. Links corrected to actual routes.
+  8. **Ride booking smoke tests** — `tests/ride-booking.spec.ts`: family rides page, booking form opens, API 200, `?payment=success` banner, admin `/admin/rides` + `/admin/credentials` load, credentials API shape validation.
+  9. **Provider profile completeness checklist** — 8-step widget on provider dashboard with progress bar + per-item CTAs. Steps: business name, bio, service types, coverage area, rate, 1+ credential, 3 credentials (Certified), listing activated. Disappears at 100%. Credentials quick-action tile added (shows X/3 verified). On `feat/provider-onboarding-checklist` — not yet merged.
+- **Files changed:**
+  - `src/app/rides/page.tsx` (polling)
+  - `src/app/api/rides/route.ts` (APP_URL fix, SMS, `?payment=success`)
+  - `src/app/api/rides/[id]/pay/route.ts` (APP_URL fix)
+  - `src/app/admin/rides/page.tsx` (new)
+  - `src/app/admin/page.tsx` (Transport + Credentials Queue cards, FiShield import)
+  - `src/app/api/provider/credentials/route.ts` (new)
+  - `src/app/api/provider/credentials/[id]/route.ts` (new)
+  - `src/app/settings/provider/credentials/page.tsx` (new)
+  - `src/components/layout/DashboardLayout.tsx` (Credentials nav item)
+  - `src/components/marketplace/ProviderCard.tsx` (Certified badge)
+  - `src/app/marketplace/providers/[id]/page.tsx` (Certified badge)
+  - `src/app/api/cron/credential-expiry/route.ts` (new)
+  - `src/app/api/admin/provider-credentials/route.ts` (new)
+  - `src/app/admin/credentials/page.tsx` (new)
+  - `src/app/api/auth/register/route.ts` (welcome email + link fixes)
+  - `tests/ride-booking.spec.ts` (new)
+  - `src/app/provider/page.tsx` (completeness checklist)
+  - `context/CARELINKAI_TECHNICAL_STATE.md`
+  - `context/CARELINKAI_TECH_OPEN_LOOPS.md`
+- **Commands run:** `git rebase --abort`, `git cherry-pick 82ae190`, `npx tsc --noEmit`, `git merge --no-ff`
+- **Tests/build status:** TypeScript 0 errors. Playwright smoke test file created. No Playwright run (browser not available in sandbox).
+- **Deployment impact:** Auto-deploys from main. All merged changes live on Render. `feat/provider-onboarding-checklist` branch pending merge.
+- **New risks/blockers:** None. OL-036 still needs production action (demo provider re-saves settings page to fix slug format).
+- **Recommended next step:** Merge `feat/provider-onboarding-checklist` → main, then have Chris log in as `demo.provider@carelinkai.test` and walk the checklist end-to-end. After that: switch Stripe to live mode (runbook in context/STRIPE_SETUP_RUNBOOK.md).
+
+---
+
 ### 2026-05-04 — NEMT Anti-Fraud: Trip Verification, No-Show Accountability, Recurring Scheduler
 
 - **Objective:** Fill gaps identified in uber_lyft.txt — implement the three most critical NEMT operating-layer features: proof of presence (anti-fraud), no-show accountability, and recurring ride auto-scheduling.

@@ -31,7 +31,8 @@ export async function GET(request: NextRequest) {
     });
 
     if (!family) {
-      return NextResponse.json({ error: "Family not found" }, { status: 404 });
+      // No family profile yet — return empty list so the page shows a useful empty state
+      return NextResponse.json({ success: true, tours: [] });
     }
 
     // 4. Get query parameters for filtering

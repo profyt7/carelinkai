@@ -43,10 +43,8 @@ Each loop: what it is, why it matters, what done looks like.
 - **Done when:** 2-3 operators actively using transport → price a pilot bundle → build billing UI + ride quota tracking.
 
 ### OL-043: Provider compliance-as-a-service
-- **Status:** 🟡 ROADMAP — needed before payer/Medicaid contracts
-- **What:** Providers upload driver credentials (background check, drug test, CPR cert, vehicle inspection, insurance). System tracks expiration dates, auto-flags approaching expiry, auto-deactivates on expiry. "CareLinkAI Certified" badge on marketplace listing.
-- **Why it matters:** Contract eligibility for Medicaid brokers (MTM, Modivcare) requires proof of credentialing. Positions CareLinkAI as the gatekeeper/compliance layer.
-- **Done when:** Provider can upload + track expiry on 5+ credential types; expired providers hidden from marketplace.
+- **Status:** ✅ CLOSED (2026-05-05)
+- Provider credentials UI at `/settings/provider/credentials` (8 types, status lifecycle). Admin credentials queue at `/admin/credentials` (Verify/Reject with reason). Expiry cron `GET /api/cron/credential-expiry` marks EXPIRED + deactivates critical-type providers + sends 30-day warning emails. CareLinkAI Certified badge (3+ VERIFIED) on ProviderCard + provider detail page. Render cron registered `0 6 * * *`. PR #515.
 
 ### OL-044: Guaranteed Ride SLA
 - **Status:** 🟡 ROADMAP — positioning differentiator, needs supply depth first
@@ -95,13 +93,28 @@ Each loop: what it is, why it matters, what done looks like.
 - **Status:** ✅ CLOSED (2026-05-04) — PR #512 squash-merged to main. Migration auto-runs via `start` script. `vehicleCapacity` and shared ride fields live in production.
 
 ### OL-037: Provider real-time new booking notification
-- **Status:** 🟡 IN PROGRESS — building polling-based toast notification for new REQUESTED rides
-- **What:** 30-second poll on `/rides` page; compares `latestRequestedRideId` from API; shows toast when new REQUESTED ride arrives. No new infra required.
-- **Done when:** Provider sees a toast/notification within 30 seconds of a family booking without refreshing.
+- **Status:** ✅ CLOSED (2026-05-05)
+- 30-second interval on `/rides` page (PROVIDER role only). `knownRequestedIds` ref seeded on initial load to prevent false alarms. `pollRides` callback diffs new REQUESTED ids → shows toast for genuinely new arrivals. PR #513.
 
 ### OL-026: Transport Phase 2 — ride booking + dispatch
 - **Status:** ✅ CLOSED (2026-05-04)
 - Full end-to-end ride booking live: REQUESTED→CONFIRMED→PAID→IN_PROGRESS→COMPLETED→CANCELED lifecycle. Stripe Checkout payment, 12% platform commission, Stripe refund on PAID cancellation, 5 email triggers, day-of reminder cron, operator resident booking, admin MRR tile, landing page updated. Ride model with 2 migrations deployed.
+
+### OL-048: Prisma migrations 20260505000001/2/3 + 20260506000001 pending on Render DB
+- **Status:** 🔴 OPEN — four schema changes not yet deployed to production
+- **What:** `aiReviewStatus/Notes` on `ProviderCredential`, `OPERATOR` in `BackgroundCheckOrderer` enum, new `BackgroundCheckInvitation` model, `checkrCandidateId` on `Provider`, new `ProviderBackgroundCheckOrder` model. Will auto-apply via `npm run start` → `prisma migrate deploy` on next Render deploy (triggered by our main push 2026-05-07).
+- **Risk:** If any of these migrations partially ran before and are stuck in "failed" state in `_prisma_migrations`, Render deploy will fail at start. Monitor deploy logs. If stuck: use Render Shell `npx prisma migrate resolve --rolled-back 20260505000001` (etc.) then `npx prisma migrate deploy`, then manually apply the SQL.
+- **Done when:** Render deploy logs show all four migrations applied with no errors.
+
+### OL-049: CaregiverCard + ProviderCard "Run Check" quick-action
+- **Status:** ✅ CLOSED (already built)
+- **CaregiverCard** (`src/components/marketplace/CaregiverCard.tsx` ~line 190): "Run Background Check" button shown when `backgroundCheckStatus !== 'CLEAR'`, links to caregiver profile.
+- **ProviderCard** (`src/components/marketplace/ProviderCard.tsx` ~line 247): "Run Background Check" button always visible, links to provider profile.
+
+### OL-050: Private household flow — Option B for direct-hire families
+- **Status:** ✅ CLOSED (2026-05-07) — MVP shipped
+- **What was built:** `HouseholdShift` model, migration, GET/POST `/api/family/household`, PATCH/DELETE `/api/family/household/shifts/[id]`, `/dashboard/household` full UI (care team grid + schedule form + shift history), DashboardLayout "My Household" nav, landing page feature card.
+- **Future expansion:** Timesheet approval, Stripe Connect direct payment to caregivers ($49–99/mo family tier). Build when 3+ families are actively using the schedule flow.
 
 ### OL-023: Checkr API not yet configured
 - **Status:** 🟡 OPEN — system uses mock fallback until keys are set

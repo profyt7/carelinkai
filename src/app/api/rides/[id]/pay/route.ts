@@ -29,7 +29,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (!ride.totalAmount)
     return NextResponse.json({ error: "Ride total amount not set" }, { status: 400 });
 
-  const APP_URL = process.env.NEXTAUTH_URL || "https://getcarelinkai.com";
+  const APP_URL = (() => {
+    const proto = req.headers.get("x-forwarded-proto") || "https";
+    const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "getcarelinkai.com";
+    return `${proto}://${host}`;
+  })();
   const totalCents = Math.round(Number(ride.totalAmount) * 100);
 
   const scheduledStr = ride.scheduledAt.toLocaleString("en-US", {

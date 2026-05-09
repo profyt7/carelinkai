@@ -77,6 +77,7 @@ model User {
   placementSearches         PlacementSearch[]
   exports                   ExportHistory[]          @relation("UserExports")
   dischargePlannerProfile   DischargePlannerProfile?
+  householdShifts           HouseholdShift[]         @relation("FamilyHouseholdShifts")
 
   @@index([email])
   @@index([role])
@@ -425,12 +426,14 @@ model Provider {
   listingPeriodEndsAt   DateTime?
   createdAt             DateTime             @default(now())
   updatedAt             DateTime             @updatedAt
-  shortlistedByFamilies FavoriteProvider[]
-  leads                 Lead[]               @relation("LeadToProvider")
-  rides                 Ride[]
-  user                  User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  credentials           ProviderCredential[]
-  reviews               ProviderReview[]
+  shortlistedByFamilies         FavoriteProvider[]
+  leads                         Lead[]               @relation("LeadToProvider")
+  rides                         Ride[]
+  user                          User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credentials                   ProviderCredential[]
+  reviews                       ProviderReview[]
+  checkrCandidateId             String?
+  providerBackgroundCheckOrders ProviderBackgroundCheckOrder[]
 
   @@index([userId])
   @@index([businessName])
@@ -458,23 +461,27 @@ model ProviderReview {
 }
 
 model ProviderCredential {
-  id          String           @id @default(cuid())
-  providerId  String
-  type        String
-  documentUrl String?
-  status      CredentialStatus @default(PENDING)
-  verifiedAt  DateTime?
-  verifiedBy  String?
-  expiresAt   DateTime?
-  notes       String?
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-  provider    Provider         @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  id              String           @id @default(cuid())
+  providerId      String
+  type            String
+  documentUrl     String?
+  status          CredentialStatus @default(PENDING)
+  verifiedAt      DateTime?
+  verifiedBy      String?
+  expiresAt       DateTime?
+  notes           String?
+  aiReviewStatus  String?          // APPROVED | FLAGGED | NEEDS_REVIEW | SKIPPED
+  aiReviewNotes   String?
+  checkrReportId  String?          @unique
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  provider        Provider         @relation(fields: [providerId], references: [id], onDelete: Cascade)
 
   @@index([providerId])
   @@index([type])
   @@index([status])
   @@index([expiresAt])
+  @@index([checkrReportId])
 }
 
 model AssistedLivingHome {
@@ -1744,13 +1751,32 @@ model MarketplaceHire {
   application   MarketplaceApplication? @relation("ApplicationHire", fields: [applicationId], references: [id])
   caregiver     Caregiver               @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
   listing       MarketplaceListing?     @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  shift         CaregiverShift?         @relation("ShiftHire", fields: [shiftId], references: [id])
-  payment       Payment?
+  shift          CaregiverShift?         @relation("ShiftHire", fields: [shiftId], references: [id])
+  payment        Payment?
+  householdShifts HouseholdShift[]
 
   @@index([listingId])
   @@index([caregiverId])
   @@index([applicationId])
   @@index([shiftId])
+}
+
+model HouseholdShift {
+  id             String          @id @default(cuid())
+  familyUserId   String
+  hireId         String
+  scheduledStart DateTime
+  scheduledEnd   DateTime
+  status         String          @default("SCHEDULED")
+  notes          String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  familyUser     User            @relation("FamilyHouseholdShifts", fields: [familyUserId], references: [id], onDelete: Cascade)
+  hire           MarketplaceHire @relation(fields: [hireId], references: [id], onDelete: Cascade)
+
+  @@index([familyUserId])
+  @@index([hireId])
+  @@index([scheduledStart])
 }
 
 /// Favorites for marketplace listings (per caregiver)
@@ -2161,6 +2187,7 @@ enum BackgroundCheckStatus {
 enum BackgroundCheckOrderer {
   SELF
   FAMILY
+  OPERATOR
 }
 
 enum CertificationType {
@@ -2958,4 +2985,59 @@ enum RideStatus {
   IN_PROGRESS
   COMPLETED
   CANCELED
+}
+
+model BackgroundCheckInvitation {
+  id                 String    @id @default(cuid())
+  orderedByUserId    String
+  orderedByRole      String
+
+  subjectFirstName   String
+  subjectLastName    String
+  subjectEmail       String
+  subjectRole        String?
+
+  packageType        String
+  pricePaid          Decimal?  @db.Decimal(10, 2)
+  stripePaymentId    String?
+
+  checkrInvitationId String?   @unique
+  checkrCandidateId  String?
+  checkrReportId     String?   @unique
+  invitationUrl      String?
+
+  status             String    @default("INVITED")
+  reportUrl          String?
+
+  expiresAt          DateTime?
+  completedAt        DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([orderedByUserId])
+  @@index([status])
+}
+
+// Tracks background check orders placed by families/operators on a provider contact
+model ProviderBackgroundCheckOrder {
+  id                String                 @id @default(cuid())
+  providerId        String
+  orderedByType     BackgroundCheckOrderer
+  orderedByUserId   String?
+  status            BackgroundCheckStatus  @default(PENDING)
+  packageType       BackgroundCheckPackage @default(BASIC)
+  checkrPackageName String                 @default("basic")
+  checkrReportId    String?                @unique
+  reportUrl         String?
+  pricePaid         Decimal?               @db.Decimal(10, 2)
+  stripePaymentId   String?
+  completedAt       DateTime?
+  expiresAt         DateTime?
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  provider          Provider               @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([providerId])
+  @@index([orderedByUserId])
+  @@index([status])
 }

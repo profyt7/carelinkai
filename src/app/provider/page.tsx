@@ -3,7 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { FiInbox, FiMessageCircle, FiEdit, FiCheckCircle, FiAlertCircle, FiCreditCard, FiMapPin, FiTruck } from "react-icons/fi";
+import { FiInbox, FiMessageCircle, FiEdit, FiCheckCircle, FiAlertCircle, FiCreditCard, FiMapPin, FiTruck, FiShield, FiCircle } from "react-icons/fi";
 import { computeProviderRideStats, scoreLabel, type RideStats } from "@/lib/rideStats";
 
 async function getProviderDashboardData(userId: string) {
@@ -16,6 +16,15 @@ async function getProviderDashboardData(userId: string) {
       businessName: true,
       listingStatus: true,
       serviceTypes: true,
+      bio: true,
+      rateBaseFare: true,
+      ratePerMile: true,
+      rateWaitPerHour: true,
+      coverageArea: true,
+      credentials: {
+        where: { status: "VERIFIED" },
+        select: { id: true },
+      },
     },
   });
 
@@ -60,6 +69,22 @@ export default async function ProviderDashboard() {
   const listingPastDue = provider?.listingStatus === "PAST_DUE";
   const listingNone = !provider?.listingStatus || provider?.listingStatus === "CANCELED";
 
+  // Profile completeness checklist
+  const verifiedCredentials = provider?.credentials?.length ?? 0;
+  const checklistItems = provider ? [
+    { label: "Business name set",        done: !!provider.businessName,                   href: "/settings/provider" },
+    { label: "Bio written",              done: !!provider.bio,                            href: "/settings/provider" },
+    { label: "Service types selected",   done: provider.serviceTypes.length > 0,          href: "/settings/provider" },
+    { label: "Coverage area set",         done: !!(provider.coverageArea && Object.keys(provider.coverageArea as object).length > 0), href: "/settings/provider" },
+    { label: "Rate set",                 done: !!(provider.rateBaseFare ?? provider.ratePerMile ?? provider.rateWaitPerHour), href: "/settings/provider" },
+    { label: "1+ credential uploaded",   done: verifiedCredentials >= 1,                  href: "/settings/provider/credentials" },
+    { label: "3 credentials (Certified)",done: verifiedCredentials >= 3,                  href: "/settings/provider/credentials" },
+    { label: "Listing activated",        done: listingActive,                             href: "/settings/provider/billing" },
+  ] : [];
+  const completedCount = checklistItems.filter((i) => i.done).length;
+  const completionPct = provider ? Math.round((completedCount / checklistItems.length) * 100) : 0;
+  const showChecklist = provider && completionPct < 100;
+
   return (
     <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
@@ -73,20 +98,54 @@ export default async function ProviderDashboard() {
         )}
       </div>
 
-      {/* Listing status banners */}
-      {listingNone && (
-        <div className="mb-6 p-4 bg-primary-50 border border-primary-200 rounded-lg flex items-start gap-3">
-          <FiCreditCard className="h-5 w-5 text-primary-600 mt-0.5 shrink-0" />
-          <div>
-            <p className="font-medium text-primary-900">Activate your marketplace listing</p>
-            <p className="text-sm text-primary-700 mt-0.5">Subscribe at $99/mo to appear in searches by families and care homes.</p>
-            <Link href="/settings/provider/billing" className="mt-2 inline-block text-sm font-semibold text-primary-700 underline underline-offset-2">
-              Manage listing →
-            </Link>
+      {/* Profile completeness checklist — shown until 100% complete */}
+      {showChecklist && (
+        <div className="mb-6 bg-white border border-neutral-200 rounded-xl p-5">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="font-semibold text-neutral-900">Get listed on the marketplace</p>
+              <p className="text-sm text-neutral-500">{completedCount} of {checklistItems.length} steps complete</p>
+            </div>
+            <span className={`text-sm font-bold px-3 py-1 rounded-full ${
+              completionPct >= 75 ? "bg-success-100 text-success-800" :
+              completionPct >= 50 ? "bg-warning-100 text-warning-800" :
+              "bg-neutral-100 text-neutral-700"
+            }`}>
+              {completionPct}%
+            </span>
           </div>
+          {/* Progress bar */}
+          <div className="w-full bg-neutral-100 rounded-full h-2 mb-4 overflow-hidden">
+            <div
+              className={`h-2 rounded-full transition-all ${completionPct >= 75 ? "bg-success-500" : completionPct >= 50 ? "bg-warning-400" : "bg-primary-500"}`}
+              style={{ width: `${completionPct}%` }}
+            />
+          </div>
+          {/* Checklist items */}
+          <ul className="space-y-2">
+            {checklistItems.map((item) => (
+              <li key={item.label}>
+                <Link
+                  href={item.href}
+                  className={`flex items-center gap-3 text-sm group ${item.done ? "text-neutral-500" : "text-neutral-800 hover:text-primary-700"}`}
+                >
+                  {item.done ? (
+                    <FiCheckCircle className="h-4 w-4 text-success-500 shrink-0" />
+                  ) : (
+                    <FiCircle className="h-4 w-4 text-neutral-300 shrink-0 group-hover:text-primary-400" />
+                  )}
+                  <span className={item.done ? "line-through" : ""}>{item.label}</span>
+                  {!item.done && (
+                    <span className="ml-auto text-xs text-primary-600 group-hover:underline">Fix →</span>
+                  )}
+                </Link>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
+      {/* Past-due and verified banners (kept as supplemental alerts) */}
       {listingPastDue && (
         <div className="mb-6 p-4 bg-error-50 border border-error-200 rounded-lg flex items-start gap-3">
           <FiAlertCircle className="h-5 w-5 text-error-600 mt-0.5 shrink-0" />
@@ -95,19 +154,6 @@ export default async function ProviderDashboard() {
             <p className="text-sm text-error-700 mt-0.5">Your marketplace listing is paused. Update your payment method to restore visibility.</p>
             <Link href="/settings/provider/billing" className="mt-2 inline-block text-sm font-semibold text-error-700 underline underline-offset-2">
               Update payment →
-            </Link>
-          </div>
-        </div>
-      )}
-
-      {!provider?.isVerified && (
-        <div className="mb-6 p-4 bg-warning-50 border border-warning-200 rounded-lg flex items-start gap-3">
-          <FiAlertCircle className="h-5 w-5 text-warning-600 mt-0.5 shrink-0" />
-          <div>
-            <p className="font-medium text-warning-900">Profile verification pending</p>
-            <p className="text-sm text-warning-700 mt-0.5">Complete your profile to get verified and build trust with clients.</p>
-            <Link href="/settings/provider" className="mt-2 inline-block text-sm font-semibold text-warning-700 underline underline-offset-2">
-              Complete profile →
             </Link>
           </div>
         </div>
@@ -197,6 +243,7 @@ export default async function ProviderDashboard() {
           {[
             { href: "/messages", icon: <FiMessageCircle className="h-5 w-5 text-primary-600" />, bg: "bg-primary-100", title: "Messages", desc: "Check your conversations" },
             { href: "/settings/provider", icon: <FiEdit className="h-5 w-5 text-secondary-600" />, bg: "bg-secondary-100", title: "Edit Profile", desc: "Update services and info" },
+            { href: "/settings/provider/credentials", icon: <FiShield className="h-5 w-5 text-violet-600" />, bg: "bg-violet-100", title: "Credentials", desc: `${verifiedCredentials}/3 verified` },
             { href: "/settings/provider/billing", icon: <FiCreditCard className="h-5 w-5 text-success-600" />, bg: "bg-success-100", title: "Listing & Billing", desc: listingActive ? "Manage subscription" : "Activate listing" },
             { href: "/marketplace?tab=providers", icon: <FiMapPin className="h-5 w-5 text-warning-600" />, bg: "bg-warning-100", title: "View Marketplace", desc: "See your public profile" },
             ...(rideStats ? [{ href: "/rides", icon: <FiTruck className="h-5 w-5 text-primary-600" />, bg: "bg-primary-100", title: "Ride Dispatch", desc: "Manage today's runs" }] : []),

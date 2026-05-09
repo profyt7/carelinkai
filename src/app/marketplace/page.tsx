@@ -12,7 +12,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { VirtuosoGrid } from "react-virtuoso";
 import { MOCK_CATEGORIES as SHARED_MOCK_CATEGORIES, MOCK_CAREGIVERS as SHARED_MOCK_CAREGIVERS, MOCK_LISTINGS as SHARED_MOCK_LISTINGS, MOCK_PROVIDERS as SHARED_MOCK_PROVIDERS } from "@/lib/mock/marketplace";
 import MarketplaceTabs from "@/components/marketplace/MarketplaceTabs";
-import { FiMapPin, FiDollarSign, FiCheckCircle, FiUsers } from "react-icons/fi";
+import { FiMapPin, FiDollarSign, FiCheckCircle, FiUsers, FiBriefcase } from "react-icons/fi";
 
 const LAST_TAB_KEY = "marketplace:lastTab";
 const LS_KEYS = {
@@ -151,6 +151,7 @@ export default function MarketplacePage() {
   const [cgShortlistOnly, setCgShortlistOnly] = useState(false);
   // Server-driven pagination (cursor)
   const [cgCursor, setCgCursor] = useState<string | null>(null);
+  const cgCursorRef = useRef<string | null>(null);
   const [cgHasMoreSvr, setCgHasMoreSvr] = useState<boolean | null>(null);
 
   const [listings, setListings] = useState<Listing[]>([]);
@@ -162,6 +163,7 @@ export default function MarketplacePage() {
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   // Server-driven pagination (cursor)
   const [jobCursor, setJobCursor] = useState<string | null>(null);
+  const jobCursorRef = useRef<string | null>(null);
   const [jobHasMoreSvr, setJobHasMoreSvr] = useState<boolean | null>(null);
 
   // Providers state --------------------------------------------------------
@@ -179,6 +181,7 @@ export default function MarketplacePage() {
     distanceMiles?: number;
     isVerified?: boolean;
     yearsInBusiness?: number | null;
+    photoUrl?: string | null;
   };
 
   const [providers, setProviders] = useState<Provider[]>([]);
@@ -189,6 +192,7 @@ export default function MarketplacePage() {
   const [prRadius, setPrRadius] = useState<string>("");
   // Server-driven pagination (cursor)
   const [providerCursor, setProviderCursor] = useState<string | null>(null);
+  const providerCursorRef = useRef<string | null>(null);
   const [providerHasMoreSvr, setProviderHasMoreSvr] = useState<boolean | null>(null);
   const [prGeoLat, setPrGeoLat] = useState<number | null>(null);
   const [prGeoLng, setPrGeoLng] = useState<number | null>(null);
@@ -692,10 +696,10 @@ export default function MarketplacePage() {
   useEffect(() => {
     if (!didInitFromUrl.current) return;
     if (activeTab !== "caregivers") return;
-    const params = new URLSearchParams(Array.from((searchParams ?? new URLSearchParams()).entries()));
+    const params = new URLSearchParams();
     params.set("tab", "caregivers");
     const setOrDel = (k: string, v?: string) => {
-      if (v && v.length > 0) params.set(k, v); else params.delete(k);
+      if (v && v.length > 0) params.set(k, v);
     };
     setOrDel("q", debouncedSearch);
     setOrDel("city", debouncedCity);
@@ -709,30 +713,26 @@ export default function MarketplacePage() {
     setOrDel("availableDate", availableDate);
     setOrDel("availableStartTime", availableStartTime);
     setOrDel("availableEndTime", availableEndTime);
-    if (cgShortlistOnly) params.set("shortlist", "1"); else params.delete("shortlist");
+    if (cgShortlistOnly) params.set("shortlist", "1");
     params.set("page", String(cgPage));
     params.set("sortBy", cgSort);
     if (cgRadius && cgGeoLat !== null && cgGeoLng !== null) {
       params.set("radiusMiles", cgRadius);
       params.set("lat", String(cgGeoLat));
       params.set("lng", String(cgGeoLng));
-    } else {
-      params.delete("radiusMiles");
-      params.delete("lat");
-      params.delete("lng");
     }
     try { localStorage.setItem(LAST_TAB_KEY, "caregivers"); localStorage.setItem(LS_KEYS.caregivers, params.toString()); } catch {}
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, settings, careTypes, debouncedMinRate, debouncedMaxRate, debouncedMinExperience, availableDate, availableStartTime, availableEndTime, cgPage, cgSort, cgRadius, cgGeoLat, cgGeoLng, cgShortlistOnly, router, pathname, searchParams]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, settings, careTypes, debouncedMinRate, debouncedMaxRate, debouncedMinExperience, availableDate, availableStartTime, availableEndTime, cgPage, cgSort, cgRadius, cgGeoLat, cgGeoLng, cgShortlistOnly, router, pathname]);
 
   // Keep URL in sync when on jobs tab (debounced inputs)
   useEffect(() => {
     if (!didInitFromUrl.current) return;
     if (activeTab !== "jobs") return;
-    const params = new URLSearchParams(Array.from((searchParams ?? new URLSearchParams()).entries()));
+    const params = new URLSearchParams();
     params.set("tab", "jobs");
     const setOrDel = (k: string, v?: string) => {
-      if (v && v.length > 0) params.set(k, v); else params.delete(k);
+      if (v && v.length > 0) params.set(k, v);
     };
     setOrDel("q", debouncedSearch);
     setOrDel("city", debouncedCity);
@@ -742,53 +742,45 @@ export default function MarketplacePage() {
     setOrDel("settings", settings.join(","));
     setOrDel("careTypes", careTypes.join(","));
     setOrDel("services", services.join(","));
-    if (postedByMe) params.set("postedByMe", "true"); else params.delete("postedByMe");
-    if (hideClosed) params.set("status", "OPEN"); else params.delete("status");
-    if (favoritesOnly) params.set("favorites", "1"); else params.delete("favorites");
+    if (postedByMe) params.set("postedByMe", "true");
+    if (hideClosed) params.set("status", "OPEN");
+    if (favoritesOnly) params.set("favorites", "1");
     params.set("page", String(jobPage));
     params.set("sortBy", jobSort);
     if (jobRadius && geoLat !== null && geoLng !== null) {
       params.set("radiusMiles", jobRadius);
       params.set("lat", String(geoLat));
       params.set("lng", String(geoLng));
-    } else {
-      params.delete("radiusMiles");
-      params.delete("lat");
-      params.delete("lng");
     }
     try { localStorage.setItem(LAST_TAB_KEY, "jobs"); localStorage.setItem(LS_KEYS.jobs, params.toString()); } catch {}
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, debouncedZip, settings, careTypes, services, postedByMe, hideClosed, favoritesOnly, jobPage, jobSort, jobRadius, geoLat, geoLng, router, pathname, searchParams]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, debouncedZip, settings, careTypes, services, postedByMe, hideClosed, favoritesOnly, jobPage, jobSort, jobRadius, geoLat, geoLng, router, pathname]);
 
   // Keep URL in sync when on providers tab (debounced inputs)
   useEffect(() => {
     if (!didInitFromUrl.current) return;
     if (activeTab !== "providers") return;
-    const params = new URLSearchParams(Array.from((searchParams ?? new URLSearchParams()).entries()));
+    const params = new URLSearchParams();
     params.set("tab", "providers");
     const setOrDel = (k: string, v?: string) => {
-      if (v && v.length > 0) params.set(k, v); else params.delete(k);
+      if (v && v.length > 0) params.set(k, v);
     };
     setOrDel("q", debouncedSearch);
     setOrDel("city", debouncedCity);
     setOrDel("state", debouncedState);
     setOrDel("services", providerServices.join(","));
-    if (prWheelchair) params.set("wheelchairAccessible", "true"); else params.delete("wheelchairAccessible");
-    if (prMedicaid) params.set("acceptsMedicaid", "true"); else params.delete("acceptsMedicaid");
+    if (prWheelchair) params.set("wheelchairAccessible", "true");
+    if (prMedicaid) params.set("acceptsMedicaid", "true");
     params.set("page", String(providerPage));
     params.set("sortBy", providerSort);
     if (prRadius && prGeoLat !== null && prGeoLng !== null) {
       params.set("radiusMiles", prRadius);
       params.set("lat", String(prGeoLat));
       params.set("lng", String(prGeoLng));
-    } else {
-      params.delete("radiusMiles");
-      params.delete("lat");
-      params.delete("lng");
     }
     try { localStorage.setItem(LAST_TAB_KEY, "providers"); localStorage.setItem(LS_KEYS.providers, params.toString()); } catch {}
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, providerServices, prWheelchair, prMedicaid, providerPage, providerSort, prRadius, prGeoLat, prGeoLng, router, pathname, searchParams]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, providerServices, prWheelchair, prMedicaid, providerPage, providerSort, prRadius, prGeoLat, prGeoLng, router, pathname]);
 
   useEffect(() => {
     // Load marketplace categories once
@@ -864,6 +856,7 @@ export default function MarketplacePage() {
       setCaregivers([]);
       setCgPage(1);
       setCgCursor(null);
+      cgCursorRef.current = null;
       setCgHasMoreSvr(null);
     }
   }, [cgQueryKey, activeTab]);
@@ -904,14 +897,16 @@ export default function MarketplacePage() {
         params.set("pageSize", String(20));
         params.set("sortBy", cgSort);
         // Use cursor when available and not using radius search
-        if (!(cgRadius && cgGeoLat !== null && cgGeoLng !== null) && cgCursor) {
-          params.set('cursor', cgCursor);
+        if (cgPage > 1 && !(cgRadius && cgGeoLat !== null && cgGeoLng !== null) && cgCursorRef.current) {
+          params.set('cursor', cgCursorRef.current);
         }
         const json = await fetchJsonCached(`/api/marketplace/caregivers?${params.toString()}`, { signal: controller.signal }, 15000);
         setCaregivers((prev) => (cgPage > 1 ? [...prev, ...(json?.data ?? [])] : (json?.data ?? [])));
         setCgTotal(json?.pagination?.total ?? 0);
         setCgHasMoreSvr(typeof json?.pagination?.hasMore === 'boolean' ? json.pagination.hasMore : null);
-        setCgCursor(json?.pagination?.cursor ?? null);
+        const newCursor = json?.pagination?.cursor ?? null;
+        setCgCursor(newCursor);
+        cgCursorRef.current = newCursor;
       } catch (e: any) {
         if (e?.name === 'AbortError') return;
         if (cgPage === 1) setCaregivers([]);
@@ -923,7 +918,7 @@ export default function MarketplacePage() {
     return () => {
       controller.abort();
     };
-  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, settings, careTypes, debouncedMinRate, debouncedMaxRate, debouncedMinExperience, availableDate, availableStartTime, availableEndTime, cgPage, cgSort, cgRadius, cgGeoLat, cgGeoLng, cgCursor, showMock, MOCK_CAREGIVERS]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, settings, careTypes, debouncedMinRate, debouncedMaxRate, debouncedMinExperience, availableDate, availableStartTime, availableEndTime, cgPage, cgSort, cgRadius, cgGeoLat, cgGeoLng, showMock, MOCK_CAREGIVERS]);
 
   // JOBS: Reset effect MUST run before fetch effect to avoid race condition
   // where fetch sets data, then reset clears it on initial load
@@ -943,6 +938,7 @@ export default function MarketplacePage() {
       setListings([]);
       setJobPage(1);
       setJobCursor(null);
+      jobCursorRef.current = null;
       setJobHasMoreSvr(null);
     }
   }, [jobQueryKey, activeTab]);
@@ -980,15 +976,17 @@ export default function MarketplacePage() {
         params.set("page", String(jobPage));
         params.set("pageSize", String(20));
         params.set("sortBy", jobSort);
-        // Use cursor when available and not using radius search
-        if (!(jobRadius && geoLat !== null && geoLng !== null) && jobCursor) {
-          params.set('cursor', jobCursor);
+        // Use cursor only when loading subsequent pages (not on page 1 fresh fetch)
+        if (jobPage > 1 && !(jobRadius && geoLat !== null && geoLng !== null) && jobCursorRef.current) {
+          params.set('cursor', jobCursorRef.current);
         }
         const json = await fetchJsonCached(`/api/marketplace/listings?${params.toString()}`, { signal: controller.signal }, 15000);
         setListings((prev) => (jobPage > 1 ? [...prev, ...(json?.data ?? [])] : (json?.data ?? [])));
         setJobTotal(json?.pagination?.total ?? 0);
         setJobHasMoreSvr(typeof json?.pagination?.hasMore === 'boolean' ? json.pagination.hasMore : null);
-        setJobCursor(json?.pagination?.cursor ?? null);
+        const newJobCursor = json?.pagination?.cursor ?? null;
+        setJobCursor(newJobCursor);
+        jobCursorRef.current = newJobCursor;
       } catch (e: any) {
         if (e?.name === 'AbortError') return;
         if (jobPage === 1) setListings([]);
@@ -1000,7 +998,7 @@ export default function MarketplacePage() {
     return () => {
       controller.abort();
     };
-  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, debouncedZip, settings, careTypes, services, postedByMe, hideClosed, session, jobPage, jobSort, jobRadius, geoLat, geoLng, jobCursor, showMock, MOCK_LISTINGS]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, specialties, debouncedZip, settings, careTypes, services, postedByMe, hideClosed, session?.user?.id, jobPage, jobSort, jobRadius, geoLat, geoLng, showMock, MOCK_LISTINGS]);
 
   /* ----------------------------------------------------------------------
      PROVIDERS: Reset effect MUST run before fetch effect to avoid race condition
@@ -1022,6 +1020,7 @@ export default function MarketplacePage() {
       setProviders([]);
       setProviderPage(1);
       setProviderCursor(null);
+      providerCursorRef.current = null;
       setProviderHasMoreSvr(null);
     }
   }, [prQueryKey, activeTab]);
@@ -1055,14 +1054,17 @@ export default function MarketplacePage() {
         params.set("page", String(providerPage));
         params.set("pageSize", String(20));
         params.set("sortBy", providerSort);
-        if (!(prRadius && prGeoLat !== null && prGeoLng !== null) && providerCursor) {
-          params.set('cursor', providerCursor);
+        if (providerPage > 1 && !(prRadius && prGeoLat !== null && prGeoLng !== null) && providerCursorRef.current) {
+          params.set('cursor', providerCursorRef.current);
         }
         const json = await fetchJsonCached(`/api/marketplace/providers?${params.toString()}`, { signal: controller.signal }, 15000);
-        setProviders((prev) => (providerPage > 1 ? [...prev, ...(json?.data ?? [])] : (json?.data ?? [])));
+        const mapped = (json?.data ?? []).map((p: any) => ({ ...p, name: p.name || p.businessName || p.contactName || 'Provider' }));
+        setProviders((prev) => (providerPage > 1 ? [...prev, ...mapped] : mapped));
         setProviderTotal(json?.pagination?.total ?? 0);
         setProviderHasMoreSvr(typeof json?.pagination?.hasMore === 'boolean' ? json.pagination.hasMore : null);
-        setProviderCursor(json?.pagination?.cursor ?? null);
+        const newPrCursor = json?.pagination?.cursor ?? null;
+        setProviderCursor(newPrCursor);
+        providerCursorRef.current = newPrCursor;
       } catch (e: any) {
         if (e?.name === 'AbortError') return;
         if (providerPage === 1) setProviders([]);
@@ -1074,7 +1076,7 @@ export default function MarketplacePage() {
     return () => {
       controller.abort();
     };
-  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, providerServices, prWheelchair, prMedicaid, providerPage, providerSort, prRadius, prGeoLat, prGeoLng, providerCursor, showMock, MOCK_PROVIDERS]);
+  }, [activeTab, debouncedSearch, debouncedCity, debouncedState, providerServices, prWheelchair, prMedicaid, providerPage, providerSort, prRadius, prGeoLat, prGeoLng, showMock, MOCK_PROVIDERS]);
 
   // Infinite scroll flags
   // Prefer server-provided hasMore when available (cursor pagination)
@@ -2011,17 +2013,8 @@ export default function MarketplacePage() {
                         <div className="p-4">
                           {/* Header */}
                           <div className="flex items-center mb-4">
-                            <div className="h-16 w-16 rounded-full overflow-hidden bg-neutral-100 flex-shrink-0">
-                              <Image
-                                src={`https://ui-avatars.com/api/?name=${encodeURIComponent(job.title)}&background=random&size=128`}
-                                alt={job.title}
-                                width={64}
-                                height={64}
-                                placeholder="blur"
-                                blurDataURL={getBlurDataURL(64, 64)}
-                                sizes="64px"
-                                loading="lazy"
-                              />
+                            <div className="h-16 w-16 rounded-full overflow-hidden bg-secondary-50 flex-shrink-0 flex items-center justify-center">
+                              <FiBriefcase className="h-7 w-7 text-secondary-400" />
                             </div>
                             <div className="ml-3">
                               <h3 className="font-medium text-neutral-900">{job.title}</h3>
@@ -2109,16 +2102,23 @@ export default function MarketplacePage() {
                         {/* Header */}
                         <div className="flex items-center mb-4">
                           <div className="h-16 w-16 rounded-full overflow-hidden bg-neutral-100 flex-shrink-0">
-                            <Image
-                              src={`https://ui-avatars.com/api/?name=${encodeURIComponent(p.name)}&background=random&size=128`}
-                              alt={p.name}
-                              width={64}
-                              height={64}
-                              placeholder="blur"
-                              blurDataURL={getBlurDataURL(64, 64)}
-                              sizes="64px"
-                              loading="lazy"
-                            />
+                            {p.photoUrl ? (
+                              <Image
+                                src={p.photoUrl}
+                                alt={p.name}
+                                width={64}
+                                height={64}
+                                placeholder="blur"
+                                blurDataURL={getBlurDataURL(64, 64)}
+                                sizes="64px"
+                                loading="lazy"
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="h-full w-full flex items-center justify-center bg-primary-100 text-primary-600 font-bold text-xl">
+                                {(p.name || '?').charAt(0).toUpperCase()}
+                              </div>
+                            )}
                           </div>
                           <div className="ml-3">
                             <h3 className="font-medium text-neutral-900">{p.name}</h3>

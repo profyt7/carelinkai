@@ -1,8 +1,8 @@
 # CareLinkAI — Technical State
-_Last updated: 2026-05-05_
+_Last updated: 2026-05-07_
 
 ## Active Branch
-`main` — all Transport Phase 2 work + landing page updates committed directly to main (auto-deploys to Render)
+`claude/review-carelink-docs-49Ycv` — Option B household scheduling feature (2026-05-07). Also includes all prior 2026-05-07 session changes (background check hub, provider card fixes, caregiver profile sidebar, notification z-index, tours/favorites graceful error fixes).
 
 ## Production URL
 https://carelinkai.onrender.com (also: https://getcarelinkai.com)
@@ -31,7 +31,7 @@ https://carelinkai.onrender.com (also: https://getcarelinkai.com)
 | AI — All features | Anthropic Claude API (`claude-sonnet-4-6`, `claude-haiku-4-5-20251001`) |
 
 ## Schema Summary
-67+ Prisma models + enums. New since 2026-04-27: `DischargePlannerLicenseType` enum (INDIVIDUAL/DEPARTMENT), `AffiliateReferralType` enum (OPERATOR/FAMILY), `CommissionTier` enum (STANDARD/SILVER/GOLD). New fields: `DischargePlannerProfile.licenseType + seatCount`, `Family.referredByCode`, `AffiliateReferral.referralType`, `Affiliate.commissionTier`. `SubscriptionPlan` enum: +AGENCY. Migration: `20260427000000_revenue_model_expansion`. **2026-05-02:** `Provider` adds `stripeCustomerId`, `stripeSubscriptionId`, `listingStatus`, `listingPeriodEndsAt`; `Caregiver` adds `isPro`, `proStripeCustomerId`, `proStripeSubscriptionId`, `proStatus`, `proPeriodEndsAt`, `applicationCount`, `applicationCountResetAt`. Migration: `20260502000003_add_provider_listing_and_pro_caregiver`.
+67+ Prisma models + enums. New since 2026-04-27: `DischargePlannerLicenseType` enum (INDIVIDUAL/DEPARTMENT), `AffiliateReferralType` enum (OPERATOR/FAMILY), `CommissionTier` enum (STANDARD/SILVER/GOLD). New fields: `DischargePlannerProfile.licenseType + seatCount`, `Family.referredByCode`, `AffiliateReferral.referralType`, `Affiliate.commissionTier`. `SubscriptionPlan` enum: +AGENCY. Migration: `20260427000000_revenue_model_expansion`. **2026-05-02:** `Provider` adds `stripeCustomerId`, `stripeSubscriptionId`, `listingStatus`, `listingPeriodEndsAt`; `Caregiver` adds `isPro`, `proStripeCustomerId`, `proStripeSubscriptionId`, `proStatus`, `proPeriodEndsAt`, `applicationCount`, `applicationCountResetAt`. Migration: `20260502000003_add_provider_listing_and_pro_caregiver`. **2026-05-06:** `ProviderCredential` adds `aiReviewStatus String?`, `aiReviewNotes String?`, `checkrReportId String? @unique`; `BackgroundCheckOrderer` enum adds `OPERATOR`; new `BackgroundCheckInvitation` model for standalone check-anyone flow. Three manual migrations: `20260505000001`, `20260505000002`, `20260505000003`. **2026-05-07:** `Provider` adds `checkrCandidateId String?`; new `ProviderBackgroundCheckOrder` model (links Provider to Checkr direct-report flow). Migration: `20260506000001_provider_background_checks`. ⚠️ ALL FOUR MIGRATIONS (20260505000001/2/3, 20260506000001) PENDING DEPLOY on Render DB — will auto-apply via `prisma migrate deploy` on next Render deploy.
 
 ## User Roles
 FAMILY, OPERATOR, CAREGIVER, ADMIN, STAFF, PROVIDER, AFFILIATE, DISCHARGE_PLANNER
@@ -83,6 +83,7 @@ FAMILY, OPERATOR, CAREGIVER, ADMIN, STAFF, PROVIDER, AFFILIATE, DISCHARGE_PLANNE
 - **Financing CTAs:** CareCredit affiliate links on /learn and home listing pricing tab
 - **Compliance document kits:** 3 Ohio ALF kits ($149-$199); one-time Stripe checkout; ComplianceKitPurchase model; /operator/compliance-kits
 - **CareLinkAI Plus ($19/mo):** `plusStatus` + `isPlus` on Family model; Stripe Checkout + Customer Portal at `/settings/family/billing`; webhook syncs status; Plus nav item with amber highlight in sidebar; features: priority matching, unlimited saves, Care Concierge priority, advanced filters, early access; admin MRR tile tracks familyPlusMRR. `STRIPE_PRICE_FAMILY_PLUS` env var confirmed set.
+- **Household Shift Scheduling (Option B):** `HouseholdShift` model — linked to `MarketplaceHire` + `User(familyUserId)`; status String (SCHEDULED/COMPLETED/CANCELLED). Migration: `20260507000001_household_shifts`. API: GET/POST `/api/family/household` (list hires+shifts, create shift with ownership + date validation); PATCH/DELETE `/api/family/household/shifts/[id]` (update status, delete). UI: `/dashboard/household` — care team grid + schedule form + shift history with mark-complete/cancel/delete. DashboardLayout: "My Household" nav for FAMILY role. Landing page: Feature 9 card + families benefit bullet. Future: timesheet approval + Stripe Connect direct payout.
 
 ## Provider Listing + Pro Caregiver Billing (as of 2026-05-03)
 - **Provider Marketplace Listing ($99/mo):** Stripe Checkout + Customer Portal at `/settings/provider/billing`. Webhook syncs `listingStatus`. CANCELED/PAST_DUE/INCOMPLETE providers hidden from marketplace. Null = grace period. Requires `STRIPE_PRICE_PROVIDER_LISTING` env var. ✅ Billing nav link added to DashboardLayout.
@@ -198,11 +199,18 @@ See `REVENUE_MODEL.md` for the full breakdown. 12 streams finalized:
 - **Color tokens:** Fully unified across all 259 source files. Design system tokens only: `primary-*`, `neutral-*`, `error-*`, `success-*`, `warning-*`, `secondary-*`. No raw `red-*`/`green-*`/`blue-*`/`gray-*`/`purple-*` in any component (except `src/app/page.tsx` landing page, intentionally deferred).
 - **Components polished:** StatCard (left-border accent + trend), skeleton-loader (shimmer + HomeCardSkeleton), tabs (real tokens), breadcrumbs, confirm-dialog, error, not-found, login page, search page.
 
+## Provider Credentialing + Compliance (as of 2026-05-05)
+- **Provider credentials CRUD:** `ProviderCredential` model (already in schema). `GET/POST /api/provider/credentials`, `DELETE /api/provider/credentials/[id]`. Status lifecycle: PENDING → VERIFIED / REJECTED / EXPIRED. Providers can upload background check, drug test, CPR cert, vehicle inspection, insurance, driver's license, NEMT license, other.
+- **Provider credentials UI:** `/settings/provider/credentials` — status tabs, add form, expiry date, doc URL, notes. Certified banner when 3+ VERIFIED. CareLinkAI Certified badge on ProviderCard + provider detail page when verifiedCredentialCount >= 3.
+- **Admin credentials queue:** `GET /api/admin/provider-credentials?status=PENDING&limit=100` — list endpoint across all providers. `/admin/credentials` — queue UI with status tabs (PENDING/VERIFIED/REJECTED/EXPIRED/ALL), one-click Verify, Reject with optional reason prompt. Links to `/admin/providers/[id]`. Quick-action card added to admin dashboard.
+- **Credential expiry cron:** `GET /api/cron/credential-expiry` — marks EXPIRED, deactivates providers with critical expired types (BG check, insurance, vehicle inspection, NEMT license), sends 30-day warning emails via Resend. Chris registered Render cron `0 6 * * *`.
+- **Provider onboarding welcome email:** Fires after PROVIDER registration (fire-and-forget). 3 steps: complete profile → upload credentials → activate listing. Links corrected to `/settings/provider`, `/settings/provider/credentials`, `/settings/provider/billing`.
+- **Provider profile completeness checklist:** 8-step progress widget on provider dashboard. Shows % complete + progress bar + per-item checklist with direct CTAs. Disappears when all 8 steps done. Credentials quick-action tile added (shows X/3 verified).
+
 ## Immediate Next Priorities
-1. **Switch Stripe to live mode** — swap all `STRIPE_*` env vars to live keys in Render, re-register webhook at live endpoint, create new Products/Prices in live Stripe dashboard, update `STRIPE_PRICE_*` vars. Runbook: `context/STRIPE_SETUP_RUNBOOK.md`.
-2. **Set Checkr live keys** — set `CHECKR_API_KEY` + `CHECKR_WEBHOOK_SECRET` in Render once account approval received (OL-023).
-3. **Test ride booking end-to-end** — Use `demo.provider@carelinkai.test` + `demo.family@carelinkai.test` to verify full REQUESTED→CONFIRMED→PAID→COMPLETED flow including Stripe Checkout and email notifications.
-4. **Verify ride-reminders cron** — confirm Render cron is firing and emails are delivered for PAID rides within 23–25h window.
-4. **Run Playwright smoke tests** across all 7 demo roles: `npm run test:e2e:prod`
-5. **Switch Stripe to live mode** when ready — follow runbook in `context/STRIPE_SETUP_RUNBOOK.md`
-6. **Set Checkr API keys** in Render: `CHECKR_API_KEY`, `CHECKR_WEBHOOK_SECRET`; register webhook at `https://getcarelinkai.com/api/webhooks/checkr` (OL-023, unblocked once account review completes)
+1. **Merge feat/provider-onboarding-checklist → main** — provider completeness widget + welcome email link fix.
+2. **OL-036 production action** — demo provider at `demo.provider@carelinkai.test` must re-save Settings → Profile to migrate service type slugs from underscore to hyphen format.
+3. **Switch Stripe to live mode** — swap all `STRIPE_*` env vars to live keys in Render, re-register webhook, create live Products/Prices. Runbook: `context/STRIPE_SETUP_RUNBOOK.md`.
+4. **Set Checkr live keys** — `CHECKR_API_KEY` + `CHECKR_WEBHOOK_SECRET` in Render once account approved (OL-023).
+5. **Run Playwright smoke tests** across all 7 demo roles: `npm run test:e2e:prod`. New `tests/ride-booking.spec.ts` covers transport + credentials flows.
+6. **OL-044 Guaranteed Ride SLA** — needs 3+ providers in market first before building fallback network.

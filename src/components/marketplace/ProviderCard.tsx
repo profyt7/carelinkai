@@ -1,7 +1,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { getBlurDataURL } from '@/lib/imageBlur';
-import { FiUser, FiMapPin, FiCheckCircle, FiClock, FiDollarSign, FiHeart } from 'react-icons/fi';
+import { FiUser, FiMapPin, FiCheckCircle, FiClock, FiDollarSign, FiHeart, FiShield } from 'react-icons/fi';
 import Link from 'next/link';
 
 interface ProviderCardProps {
@@ -155,6 +155,14 @@ const ProviderCard: React.FC<ProviderCardProps> = ({ provider, serviceTypeOption
             {formatVerificationStatus(provider.isVerified)}
           </span>
           
+          {/* CareLinkAI Certified (3+ verified credentials) */}
+          {(provider.verifiedCredentialCount ?? 0) >= 3 && (
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
+              <FiShield className="mr-1" size={12} />
+              CareLinkAI Certified
+            </span>
+          )}
+
           {/* Years in business */}
           {provider.yearsInBusiness && (
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
@@ -221,14 +229,14 @@ const ProviderCard: React.FC<ProviderCardProps> = ({ provider, serviceTypeOption
         
         {/* CTA buttons */}
         <div className="grid grid-cols-2 gap-2">
-          <Link 
-            href={`/marketplace/providers/${provider.id}`} 
+          <Link
+            href={`/marketplace/providers/${provider.id}`}
             className="block bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md transition-colors text-center text-sm"
           >
             View Profile
           </Link>
           {provider.userId && (
-            <Link 
+            <Link
               href={`/messages?userId=${provider.userId}`}
               className="block bg-neutral-100 hover:bg-neutral-200 text-neutral-800 font-medium py-2 px-4 rounded-md transition-colors text-center text-sm border border-neutral-300"
             >
@@ -236,6 +244,13 @@ const ProviderCard: React.FC<ProviderCardProps> = ({ provider, serviceTypeOption
             </Link>
           )}
         </div>
+        <Link
+          href={`/marketplace/providers/${provider.id}`}
+          className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-md border border-primary-200 bg-primary-50 py-1.5 text-xs font-medium text-primary-700 hover:bg-primary-100 transition-colors"
+        >
+          <FiShield size={12} />
+          Run Background Check
+        </Link>
       </div>
     </div>
   );

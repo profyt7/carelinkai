@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { 
   FiMapPin, 
@@ -141,7 +142,16 @@ function BidButton({ shiftId }: { shiftId: string }) {
 
 export default function ShiftsPage() {
   const { data: session, status: authStatus } = useSession();
+  const router = useRouter();
   const role = (session?.user as any)?.role as string | undefined;
+
+  // Redirect non-caregiver roles — this page is for caregivers only
+  useEffect(() => {
+    if (authStatus === "authenticated" && role && role !== "CAREGIVER") {
+      router.replace("/marketplace");
+    }
+  }, [authStatus, role, router]);
+
   const [activeTab, setActiveTab] = useState<'open' | 'my'>('open');
   const [showMock, setShowMock] = useState(false);
 

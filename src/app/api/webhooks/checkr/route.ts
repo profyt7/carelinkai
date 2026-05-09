@@ -23,7 +23,21 @@ export async function POST(request: NextRequest) {
     const reportData = payload.data?.object;
 
     // Only handle report completion events
-    if (!type.startsWith("report.") || !reportData) {
+    if (!type.startsWith("report.") && !type.startsWith("invitation.") || !reportData) {
+      return NextResponse.json({ received: true });
+    }
+
+    // Handle invitation status updates (candidate accepted/declined)
+    if (type.startsWith("invitation.")) {
+      const invId: string = reportData.id;
+      const invStatus: string = reportData.status; // pending | expired | cancelled
+      const inv = await prisma.backgroundCheckInvitation.findUnique({ where: { checkrInvitationId: invId }, select: { id: true, checkrInvitationId: true } });
+      if (inv) {
+        await prisma.backgroundCheckInvitation.update({
+          where: { id: inv.id },
+          data: { status: invStatus === "expired" ? "EXPIRED" : invStatus === "cancelled" ? "CANCELLED" : "PENDING" },
+        });
+      }
       return NextResponse.json({ received: true });
     }
 
@@ -34,7 +48,142 @@ export async function POST(request: NextRequest) {
 
     const mappedStatus = mapCheckrStatus(checkrStatus);
 
-    // Find the order by Checkr report ID
+    // Check if this is a provider credential background check
+    const providerCredential = await prisma.providerCredential.findUnique({
+      where: { checkrReportId },
+      select: { id: true, providerId: true, provider: { select: { userId: true } } },
+    });
+
+    if (providerCredential) {
+      const newCredStatus =
+        mappedStatus === "CLEAR" ? "VERIFIED" : mappedStatus === "FAILED" ? "REJECTED" : "PENDING";
+      await prisma.providerCredential.update({
+        where: { id: providerCredential.id },
+        data: {
+          status: newCredStatus,
+          ...(newCredStatus === "VERIFIED" && { verifiedAt: new Date(), verifiedBy: "checkr" }),
+          documentUrl: reportUrl ?? undefined,
+          aiReviewStatus: "SKIPPED",
+          aiReviewNotes: `Checkr result: ${mappedStatus}`,
+        },
+      });
+      const messages: Record<string, string> = {
+        CLEAR: "Your background check came back clear! Your credential has been verified.",
+        FAILED: "Your background check could not be cleared. Please contact support.",
+        CONSIDER: "Your background check requires manual review. A specialist will follow up.",
+      };
+      if (messages[mappedStatus]) {
+        await prisma.notification.create({
+          data: {
+            userId: providerCredential.provider.userId,
+            type: "SYSTEM",
+            title: "Background Check Update",
+            message: messages[mappedStatus],
+            isRead: false,
+          },
+        });
+      }
+      return NextResponse.json({ received: true });
+    }
+
+    // Check if this is a standalone invitation-based check
+    const invitation = await prisma.backgroundCheckInvitation.findUnique({
+      where: { checkrReportId },
+      select: { id: true, orderedByUserId: true, subjectFirstName: true, subjectLastName: true },
+    });
+    if (invitation) {
+      const newStatus = mappedStatus === "CLEAR" ? "CLEAR" : mappedStatus === "FAILED" ? "FAILED" : mappedStatus === "CONSIDER" ? "CONSIDER" : "PENDING";
+      await prisma.backgroundCheckInvitation.update({
+        where: { id: invitation.id },
+        data: { status: newStatus, reportUrl: reportUrl ?? undefined, completedAt: completedAt ? new Date(completedAt) : new Date() },
+      });
+      const msgs: Record<string, string> = {
+        CLEAR: `Background check on ${invitation.subjectFirstName} ${invitation.subjectLastName} came back clear.`,
+        CONSIDER: `Background check on ${invitation.subjectFirstName} ${invitation.subjectLastName} requires manual review.`,
+        FAILED: `Background check on ${invitation.subjectFirstName} ${invitation.subjectLastName} could not be cleared. Contact support for details.`,
+      };
+      if (msgs[newStatus]) {
+        await prisma.notification.create({
+          data: { userId: invitation.orderedByUserId, type: "SYSTEM", title: "Background Check Complete", message: msgs[newStatus], isRead: false },
+        });
+      }
+      return NextResponse.json({ received: true });
+    }
+
+    // Check if this is a provider direct-report order (family/operator ordered on a provider)
+    const providerOrder = await prisma.providerBackgroundCheckOrder.findUnique({
+      where: { checkrReportId },
+      select: {
+        id: true,
+        orderedByUserId: true,
+        packageType: true,
+        provider: {
+          select: {
+            userId: true,
+            businessName: true,
+            contactName: true,
+          },
+        },
+      },
+    });
+
+    if (providerOrder) {
+      const newStatus =
+        mappedStatus === "CLEAR"
+          ? "CLEAR"
+          : mappedStatus === "FAILED"
+          ? "FAILED"
+          : mappedStatus === "CONSIDER"
+          ? "CONSIDER"
+          : "PENDING";
+
+      await prisma.providerBackgroundCheckOrder.update({
+        where: { id: providerOrder.id },
+        data: {
+          status: newStatus,
+          reportUrl: reportUrl ?? undefined,
+          completedAt: completedAt ? new Date(completedAt) : new Date(),
+        },
+      });
+
+      const ordererMsgs: Record<string, string> = {
+        CLEAR: `Background check on ${providerOrder.provider.contactName} (${providerOrder.provider.businessName}) came back clear.`,
+        CONSIDER: `Background check on ${providerOrder.provider.contactName} (${providerOrder.provider.businessName}) requires manual review.`,
+        FAILED: `Background check on ${providerOrder.provider.contactName} (${providerOrder.provider.businessName}) could not be cleared. Contact support for details.`,
+      };
+      if (providerOrder.orderedByUserId && ordererMsgs[newStatus]) {
+        await prisma.notification.create({
+          data: {
+            userId: providerOrder.orderedByUserId,
+            type: "SYSTEM",
+            title: "Background Check Complete",
+            message: ordererMsgs[newStatus],
+            isRead: false,
+          },
+        });
+      }
+
+      const providerMsgs: Record<string, string> = {
+        CLEAR: "A background check ordered on your contact information came back clear.",
+        CONSIDER: "A background check ordered on your contact information requires manual review.",
+        FAILED: "A background check ordered on your contact information could not be cleared. Contact support for details.",
+      };
+      if (providerMsgs[newStatus]) {
+        await prisma.notification.create({
+          data: {
+            userId: providerOrder.provider.userId,
+            type: "SYSTEM",
+            title: "Background Check Update",
+            message: providerMsgs[newStatus],
+            isRead: false,
+          },
+        });
+      }
+
+      return NextResponse.json({ received: true });
+    }
+
+    // Find the order by Checkr report ID (caregiver path)
     const order = await prisma.backgroundCheckOrder.findUnique({
       where: { checkrReportId },
       select: { id: true, caregiverId: true },

@@ -220,7 +220,7 @@ export default async function CaregiverDetailPage({
     ));
 
   return (
-    <div className="max-w-4xl mx-auto p-4 md:p-6">
+    <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
       {/* Back Button */}
       <div className="mb-4">
         <Link
@@ -232,279 +232,249 @@ export default async function CaregiverDetailPage({
         </Link>
       </div>
 
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        {/* Header */}
-        <div className="p-6 border-b border-neutral-200">
-          <div className="flex items-start">
-            <div className="h-24 w-24 rounded-full overflow-hidden bg-neutral-100 flex-shrink-0">
-              {caregiver.photoUrl ? (
-                <img
-                  src={isCloudinaryUrl(caregiver.photoUrl) ? getCloudinaryAvatar(caregiver.photoUrl) : caregiver.photoUrl}
-                  alt={caregiver.name}
-                  loading="lazy"
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="h-full w-full flex items-center justify-center text-neutral-400 text-4xl">
-                  {caregiver.name.charAt(0)}
-                </div>
-              )}
-            </div>
-            <div className="ml-6">
-              <h1 className="text-2xl font-bold text-neutral-900 mb-2">{caregiver.name}</h1>
-              
-              {location && (
-                <div className="flex items-center text-neutral-500 mb-2">
-                  <FiMapPin className="mr-1" />
-                  <span>{location}</span>
-                </div>
-              )}
-              
-              <div className="flex items-center mb-2">
-                <span className="mr-2 flex">
-                  {renderStars()}
-                </span>
-                <span className="text-neutral-600">
-                  {ratingAvg.toFixed(1)} ({reviewCount} reviews)
-                </span>
-              </div>
-              
-              <div className="flex flex-wrap gap-2 mt-3">
-                <BackgroundCheckBadge
-                  status={caregiver.backgroundCheckStatus as any}
-                  size="sm"
-                />
-                {caregiver.badges
-                  .filter((b) => b !== "Background Check Clear")
-                  .map((badge, index) => (
-                    <span
-                      key={index}
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        badge === "Top Rated"
-                          ? "bg-warning-100 text-warning-800"
-                          : "bg-primary-100 text-primary-800"
-                      }`}
-                    >
-                      {badge === "Experienced" && <FiClock className="mr-1" size={12} />}
-                      {badge}
-                    </span>
-                  ))}
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        {/* Body */}
-        <div className="p-6">
-          {/* CTA — operator sees Hire button, families see Request Care */}
-          <div className="mb-6 bg-primary-50 border border-primary-200 rounded-lg p-4">
-            {isOperator ? (
-              <>
-                <h3 className="text-lg font-semibold text-neutral-900 mb-2">
-                  Ready to hire {caregiver.name}?
-                </h3>
-                <p className="text-sm text-neutral-600 mb-4">
-                  Add {caregiver.name.split(' ')[0]} to your team. An employment record will be created and they'll be notified immediately.
-                </p>
-                {operatorPlan && ['PROFESSIONAL', 'GROWTH', 'AGENCY'].includes(operatorPlan) ? (
-                  <p className="text-xs text-success-700 font-medium mb-3">
-                    ✓ Marketplace hire included in your {operatorPlan} plan — no additional fee.
-                  </p>
-                ) : (
-                  <p className="text-xs text-amber-700 font-medium mb-3">
-                    A $99 marketplace access fee applies on the Starter plan.
-                  </p>
-                )}
-                <DirectHireButton
-                  caregiverId={caregiver.id}
-                  caregiverName={caregiver.name}
-                  operatorPlan={operatorPlan}
-                  isMock={caregiver.id.startsWith('cg_')}
-                />
-              </>
-            ) : (
-              <>
-                <h3 className="text-lg font-semibold text-neutral-900 mb-2">
-                  Interested in hiring {caregiver.name}?
-                </h3>
-                <p className="text-sm text-neutral-600 mb-4">
-                  Submit a care inquiry to connect with this caregiver and discuss your needs.
-                </p>
-                <RequestCareButton
-                  targetType="AIDE"
-                  targetId={caregiver.id}
-                  targetName={caregiver.name}
-                />
-                {!caregiver.id.startsWith("cg_") && (
-                  <BackgroundCheckOrderPanel
-                    caregiverId={caregiver.id}
-                    caregiverFirstName={caregiver.name.split(" ")[0]}
-                    existingStatus={caregiver.backgroundCheckStatus}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        {/* Main content — col-span-2 */}
+        <div className="lg:col-span-2 space-y-6">
+
+          {/* Header card */}
+          <div className="bg-white rounded-lg shadow border border-neutral-200 p-6">
+            <div className="flex items-start gap-6">
+              <div className="h-24 w-24 rounded-full overflow-hidden bg-neutral-100 flex-shrink-0">
+                {caregiver.photoUrl ? (
+                  <img
+                    src={isCloudinaryUrl(caregiver.photoUrl) ? getCloudinaryAvatar(caregiver.photoUrl) : caregiver.photoUrl}
+                    alt={caregiver.name}
+                    loading="lazy"
+                    className="h-full w-full object-cover"
                   />
+                ) : (
+                  <div className="h-full w-full flex items-center justify-center text-neutral-400 text-4xl">
+                    {caregiver.name.charAt(0)}
+                  </div>
                 )}
-              </>
+              </div>
+              <div className="flex-1 min-w-0">
+                <h1 className="text-2xl font-bold text-neutral-900 mb-1">{caregiver.name}</h1>
+                {location && (
+                  <div className="flex items-center text-neutral-500 mb-2">
+                    <FiMapPin className="mr-1 flex-shrink-0" size={14} />
+                    <span className="text-sm">{location}</span>
+                  </div>
+                )}
+                <div className="flex items-center mb-3">
+                  <span className="mr-2 flex">{renderStars()}</span>
+                  <span className="text-neutral-600 text-sm">{ratingAvg.toFixed(1)} ({reviewCount} reviews)</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <BackgroundCheckBadge status={caregiver.backgroundCheckStatus as any} size="sm" />
+                  {caregiver.badges
+                    .filter((b) => b !== "Background Check Clear")
+                    .map((badge, index) => (
+                      <span
+                        key={index}
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          badge === "Top Rated" ? "bg-warning-100 text-warning-800" : "bg-primary-100 text-primary-800"
+                        }`}
+                      >
+                        {badge === "Experienced" && <FiClock className="mr-1" size={12} />}
+                        {badge}
+                      </span>
+                    ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Rate + Experience */}
+            {(caregiver.hourlyRate || caregiver.yearsExperience) && (
+              <div className="mt-5 pt-5 border-t border-neutral-100 grid grid-cols-2 gap-4">
+                {caregiver.hourlyRate && (
+                  <div className="flex items-center gap-2">
+                    <FiDollarSign className="text-neutral-400" size={18} />
+                    <div>
+                      <p className="text-xs text-neutral-500">Hourly Rate</p>
+                      <p className="font-semibold text-neutral-900">${caregiver.hourlyRate.toFixed(2)}/hr</p>
+                    </div>
+                  </div>
+                )}
+                {caregiver.yearsExperience && (
+                  <div className="flex items-center gap-2">
+                    <FiClock className="text-neutral-400" size={18} />
+                    <div>
+                      <p className="text-xs text-neutral-500">Experience</p>
+                      <p className="font-semibold text-neutral-900">
+                        {caregiver.yearsExperience} {caregiver.yearsExperience === 1 ? 'Year' : 'Years'}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
           </div>
 
-          {/* Details section */}
-          <div className="mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              {/* Hourly Rate */}
-              {caregiver.hourlyRate && (
-                <div className="flex items-center">
-                  <FiDollarSign className="mr-2 text-neutral-500" size={20} />
-                  <div>
-                    <h3 className="text-sm font-medium text-neutral-500">Hourly Rate</h3>
-                    <p className="mt-1 text-lg font-semibold">${caregiver.hourlyRate.toFixed(2)}/hr</p>
-                  </div>
-                </div>
-              )}
-              
-              {/* Years Experience */}
-              {caregiver.yearsExperience && (
-                <div className="flex items-center">
-                  <FiClock className="mr-2 text-neutral-500" size={20} />
-                  <div>
-                    <h3 className="text-sm font-medium text-neutral-500">Experience</h3>
-                    <p className="mt-1 text-lg font-semibold">
-                      {caregiver.yearsExperience} {caregiver.yearsExperience === 1 ? 'Year' : 'Years'}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            {/* Bio */}
+          {/* About + Specialties + Credentials card */}
+          <div className="bg-white rounded-lg shadow border border-neutral-200 p-6 space-y-6">
             {caregiver.bio && (
-              <div className="mb-6">
-                <h2 className="text-lg font-medium text-neutral-900 mb-2">About</h2>
-                <div className="prose max-w-none text-neutral-700">
-                  {caregiver.bio}
-                </div>
+              <div>
+                <h2 className="text-lg font-semibold text-neutral-900 mb-2">About</h2>
+                <p className="text-neutral-700 leading-relaxed">{caregiver.bio}</p>
               </div>
             )}
-            
-            {/* Specialties */}
             {caregiver.specialties.length > 0 && (
-              <div className="mb-6">
-                <h2 className="text-lg font-medium text-neutral-900 mb-2">Specialties</h2>
+              <div>
+                <h2 className="text-lg font-semibold text-neutral-900 mb-2">Specialties</h2>
                 <div className="flex flex-wrap gap-2">
                   {caregiver.specialties.map((specialty: string, index: number) => (
-                    <span 
-                      key={index} 
-                      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800"
-                    >
+                    <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
                       {specialty.replace(/-/g, ' ')}
                     </span>
                   ))}
                 </div>
               </div>
             )}
-            
-            {/* Credentials & Certifications */}
             {caregiver.credentials && caregiver.credentials.length > 0 && (
-              <div className="mb-6">
-                <h2 className="text-lg font-medium text-neutral-900 mb-2">Credentials & Certifications</h2>
-                <div className="bg-neutral-50 rounded-lg p-4">
-                  <div className="space-y-3">
-                    {caregiver.credentials.map((credential: any) => (
-                      <div key={credential.id} className="flex items-start justify-between">
-                        <div className="flex items-start">
-                          <FiCheckCircle className="text-success-500 mt-1 mr-2 flex-shrink-0" size={16} />
-                          <div>
-                            <p className="font-medium text-neutral-900">{credential.type}</p>
-                            <p className="text-sm text-neutral-500">
-                              Expires: {new Date(credential.expirationDate).toLocaleDateString()}
-                            </p>
-                          </div>
+              <div>
+                <h2 className="text-lg font-semibold text-neutral-900 mb-3">Credentials &amp; Certifications</h2>
+                <div className="space-y-3">
+                  {caregiver.credentials.map((credential: any) => (
+                    <div key={credential.id} className="flex items-start justify-between p-3 bg-neutral-50 rounded-lg">
+                      <div className="flex items-start gap-2">
+                        <FiCheckCircle className="text-success-500 mt-0.5 flex-shrink-0" size={16} />
+                        <div>
+                          <p className="font-medium text-neutral-900 text-sm">{credential.type}</p>
+                          <p className="text-xs text-neutral-500">Expires: {new Date(credential.expirationDate).toLocaleDateString()}</p>
                         </div>
-                        {credential.isVerified && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-success-100 text-success-800">
-                            Verified
-                          </span>
-                        )}
                       </div>
-                    ))}
-                  </div>
+                      {credential.isVerified && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-success-100 text-success-800">Verified</span>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
-            
-            {/* Availability Calendar */}
-            {caregiver.availabilitySlots && caregiver.availabilitySlots.length > 0 && (
-              <div className="mb-6">
-                <h2 className="text-lg font-medium text-neutral-900 mb-2">Availability (Next 7 Days)</h2>
-                <div className="bg-neutral-50 rounded-lg p-4">
-                  <div className="space-y-2">
-                    {caregiver.availabilitySlots.map((slot: any) => {
-                      const startDate = new Date(slot.startTime);
-                      const endDate = new Date(slot.endTime);
-                      const isSameDay = startDate.toDateString() === endDate.toDateString();
-                      
-                      return (
-                        <div key={slot.id} className="flex items-center justify-between bg-white rounded p-3 border border-neutral-200">
-                          <div className="flex items-center">
-                            <FiCalendar className="text-primary-600 mr-3 flex-shrink-0" size={18} />
-                            <div>
-                              <p className="font-medium text-neutral-900">
-                                {startDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                              </p>
-                              <p className="text-sm text-neutral-500">
-                                {startDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} - {endDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                              </p>
-                            </div>
-                          </div>
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-success-100 text-success-800">
-                            Available
-                          </span>
+          </div>
+
+          {/* Availability card */}
+          {caregiver.availabilitySlots && caregiver.availabilitySlots.length > 0 && (
+            <div className="bg-white rounded-lg shadow border border-neutral-200 p-6">
+              <h2 className="text-lg font-semibold text-neutral-900 mb-3">Availability (Next 7 Days)</h2>
+              <div className="space-y-2">
+                {caregiver.availabilitySlots.map((slot: any) => {
+                  const startDate = new Date(slot.startTime);
+                  const endDate = new Date(slot.endTime);
+                  return (
+                    <div key={slot.id} className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg border border-neutral-200">
+                      <div className="flex items-center gap-3">
+                        <FiCalendar className="text-primary-600 flex-shrink-0" size={16} />
+                        <div>
+                          <p className="font-medium text-neutral-900 text-sm">
+                            {startDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                          </p>
+                          <p className="text-xs text-neutral-500">
+                            {startDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} – {endDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                          </p>
                         </div>
-                      );
-                    })}
-                  </div>
-                </div>
-                <p className="text-sm text-neutral-500 mt-2">
-                  Contact the caregiver to schedule a time or request additional availability.
-                </p>
+                      </div>
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-success-100 text-success-800">Available</span>
+                    </div>
+                  );
+                })}
               </div>
-            )}
-          </div>
-          
-          {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <Link 
-              href={`/messages?userId=${caregiver.userId}`}
-              className="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md transition-colors text-center"
-            >
-              Message
-            </Link>
-            <RequestCareButton
-              targetType="AIDE"
-              targetId={caregiver.id}
-              targetName={caregiver.name}
-              className="flex-1 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 font-medium py-2 px-4 rounded-md transition-colors text-center"
-            />
+              <p className="text-xs text-neutral-500 mt-3">Contact the caregiver to request additional availability.</p>
+            </div>
+          )}
+
+          {/* Per-diem shift booking card */}
+          <div className="bg-white rounded-lg shadow border border-neutral-200 p-6">
+            <h2 className="text-lg font-semibold text-neutral-900 mb-4">Book a per-diem shift</h2>
+            <RequestShiftForm caregiverUserId={caregiver.userId} caregiverId={caregiver.id} />
           </div>
 
-          {/* Per-diem shift booking */}
-          <section className="mt-10">
-            <h2 className="text-lg font-medium text-neutral-900 mb-4">
-              Book a per-diem shift
-            </h2>
-            <RequestShiftForm
-              caregiverUserId={caregiver.userId}
-              caregiverId={caregiver.id}
-            />
-          </section>
-
-          {/* Reviews */}
-          <section className="mt-10">
-            <h2 className="text-lg font-medium text-neutral-900 mb-4">Reviews</h2>
+          {/* Reviews card */}
+          <div className="bg-white rounded-lg shadow border border-neutral-200 p-6">
+            <h2 className="text-lg font-semibold text-neutral-900 mb-4">Reviews</h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <CaregiverReviewsList caregiverId={caregiver.id} />
               <CaregiverReviewForm caregiverId={caregiver.id} />
             </div>
-          </section>
+          </div>
+
         </div>
+
+        {/* Sidebar — col-span-1 */}
+        <div className="lg:col-span-1">
+          <div className="sticky top-6 space-y-4">
+
+            {/* CTA card */}
+            <div className="bg-white rounded-lg shadow border border-neutral-200 p-5">
+              {isOperator ? (
+                <>
+                  <h3 className="text-base font-semibold text-neutral-900 mb-1">
+                    Ready to hire {caregiver.name.split(' ')[0]}?
+                  </h3>
+                  <p className="text-sm text-neutral-500 mb-3">
+                    Add them to your team — they&apos;ll be notified immediately.
+                  </p>
+                  {operatorPlan && ['PROFESSIONAL', 'GROWTH', 'AGENCY'].includes(operatorPlan) ? (
+                    <p className="text-xs text-success-700 font-medium mb-3">
+                      ✓ Marketplace hire included in your {operatorPlan} plan
+                    </p>
+                  ) : (
+                    <p className="text-xs text-amber-700 font-medium mb-3">
+                      $99 marketplace access fee applies on Starter
+                    </p>
+                  )}
+                  <DirectHireButton
+                    caregiverId={caregiver.id}
+                    caregiverName={caregiver.name}
+                    operatorPlan={operatorPlan}
+                    isMock={caregiver.id.startsWith('cg_')}
+                  />
+                  <Link
+                    href={`/messages?userId=${caregiver.userId}`}
+                    className="mt-2 flex w-full items-center justify-center gap-2 rounded-md border border-neutral-300 bg-neutral-50 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100 transition-colors"
+                  >
+                    Message
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <h3 className="text-base font-semibold text-neutral-900 mb-1">
+                    Interested in {caregiver.name.split(' ')[0]}?
+                  </h3>
+                  <p className="text-sm text-neutral-500 mb-3">
+                    Submit a care inquiry to connect and discuss your needs.
+                  </p>
+                  <RequestCareButton
+                    targetType="AIDE"
+                    targetId={caregiver.id}
+                    targetName={caregiver.name}
+                    className="w-full flex items-center justify-center gap-2 bg-primary-600 hover:bg-primary-700 text-white font-medium py-2.5 px-4 rounded-md transition-colors text-sm"
+                  />
+                  <Link
+                    href={`/messages?userId=${caregiver.userId}`}
+                    className="mt-2 flex w-full items-center justify-center gap-2 rounded-md border border-neutral-300 bg-neutral-50 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100 transition-colors"
+                  >
+                    Message
+                  </Link>
+                </>
+              )}
+            </div>
+
+            {/* Background check panel */}
+            {!caregiver.id.startsWith("cg_") && (
+              <BackgroundCheckOrderPanel
+                caregiverId={caregiver.id}
+                caregiverFirstName={caregiver.name.split(" ")[0]}
+                existingStatus={caregiver.backgroundCheckStatus}
+                defaultExpanded={true}
+              />
+            )}
+
+          </div>
+        </div>
+
       </div>
     </div>
   );

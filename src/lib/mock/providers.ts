@@ -162,9 +162,9 @@ export function generateMockProviders(
       ? Math.floor(credentialCount * 0.8) // 80% verified
       : Math.floor(credentialCount * 0.3); // 30% verified
     
-    // Random logo/photo
-    const logoIndex = Math.floor(Math.random() * 100);
-    const photoUrl = `https://i.pravatar.cc/150?img=${logoIndex}`;
+    const photoUrl = i % 2 === 0
+      ? `https://randomuser.me/api/portraits/men/${(i * 7 + 1) % 60 + 1}.jpg`
+      : `https://randomuser.me/api/portraits/women/${(i * 7 + 4) % 60 + 1}.jpg`;
     
     return {
       id: `mock-provider-${i + 1}`,

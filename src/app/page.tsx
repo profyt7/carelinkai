@@ -346,6 +346,10 @@ export default function HomePage() {
                 </li>
                 <li className="flex items-start">
                   <FiCheck className="text-primary-500 mt-1 mr-2 flex-shrink-0" />
+                  <span className="text-sm text-neutral-500">Run background checks from search — Basic free</span>
+                </li>
+                <li className="flex items-start">
+                  <FiCheck className="text-primary-500 mt-1 mr-2 flex-shrink-0" />
                   <span className="text-sm text-neutral-500">24/7 CareBot support</span>
                 </li>
               </ul>
@@ -580,6 +584,22 @@ export default function HomePage() {
               </p>
               <p className="text-xs font-semibold text-secondary-500">
                 ✓ Place patients faster
+              </p>
+            </div>
+
+            {/* Feature 9 */}
+            <div className="group bg-white p-6 rounded-xl shadow-lg border-2 border-transparent hover:border-primary-500 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl">
+              <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-primary-500 to-secondary-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <FiCalendar className="text-white text-2xl" />
+              </div>
+              <h3 className="text-lg font-bold text-neutral-900 mb-2">
+                Household Shift Scheduling
+              </h3>
+              <p className="text-sm text-neutral-500 mb-3">
+                Families who hire caregivers directly can schedule, track, and manage private shifts — all in one place. Mark shifts complete or cancelled and keep a full history.
+              </p>
+              <p className="text-xs font-semibold text-primary-500">
+                ✓ Built for home care families
               </p>
             </div>
           </div>
@@ -912,6 +932,24 @@ export default function HomePage() {
                   <div>
                     <h4 className="text-lg font-bold text-neutral-900 mb-2">Book Transport Rides</h4>
                     <p className="text-neutral-500">Find and book NEMT and transportation providers directly on the platform — secure payment, ride confirmation, and day-of reminders handled for you.</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-br from-primary-500 to-primary-400 flex items-center justify-center">
+                    <FiShield className="text-white text-xl" />
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-bold text-neutral-900 mb-2">Order Background Checks</h4>
+                    <p className="text-neutral-500">Run Checkr-powered checks on any caregiver or provider directly from search results — no waiting for an invite. Basic is free; Enhanced, Motor Vehicle, and Premium bundles available from $19.99.</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-br from-primary-500 to-primary-400 flex items-center justify-center">
+                    <FiCalendar className="text-white text-xl" />
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-bold text-neutral-900 mb-2">Household Shift Management</h4>
+                    <p className="text-neutral-500">Post caregiver job listings, hire directly, then schedule and track private household shifts — perfect for families managing in-home care for a loved one.</p>
                   </div>
                 </div>
               </div>

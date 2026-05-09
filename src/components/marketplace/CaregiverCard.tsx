@@ -1,7 +1,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { getBlurDataURL } from '@/lib/imageBlur';
-import { FiUser, FiMapPin, FiCheckCircle, FiClock, FiDollarSign } from 'react-icons/fi';
+import { FiUser, FiMapPin, FiCheckCircle, FiClock, FiDollarSign, FiShield } from 'react-icons/fi';
 import Link from 'next/link';
 
 interface CaregiverCardProps {
@@ -26,82 +26,45 @@ interface CaregiverCardProps {
 }
 
 const CaregiverCard: React.FC<CaregiverCardProps> = ({ caregiver }) => {
-  // Format the location (city, state)
-  const location = [caregiver.city, caregiver.state]
-    .filter(Boolean)
-    .join(', ');
-  
-  // Rating helpers ---------------------------------------------------------
+  const location = [caregiver.city, caregiver.state].filter(Boolean).join(', ');
+
   const ratingAvg = caregiver.ratingAverage ?? 0;
   const reviewCount = caregiver.reviewCount ?? 0;
-  const filledStars = Math.round(ratingAvg); // 0-5
+  const filledStars = Math.round(ratingAvg);
   const renderStars = () =>
     Array.from({ length: 5 }).map((_, idx) => (
-      <span
-        key={idx}
-        className={
-          idx < filledStars ? 'text-warning-400' : 'text-neutral-300'
-        }
-        aria-hidden="true"
-      >
+      <span key={idx} className={idx < filledStars ? 'text-warning-400' : 'text-neutral-300'} aria-hidden="true">
         ★
       </span>
     ));
-  // ------------------------------------------------------------------------
 
-  // Get background check badge color
-  const getBackgroundCheckBadgeColor = (status: string) => {
+  const getBgCheckBadge = (status: string) => {
     switch (status) {
       case 'CLEAR':
-        return 'bg-success-100 text-success-800';
+        return { color: 'bg-success-100 text-success-800', label: '✓ Check Cleared', icon: false };
       case 'PENDING':
-        return 'bg-amber-100 text-amber-800';
+        return { color: 'bg-amber-100 text-amber-800', label: 'Check Pending', icon: true };
       case 'CONSIDER':
-        return 'bg-warning-100 text-warning-800';
+        return { color: 'bg-warning-100 text-warning-800', label: 'Check Review', icon: true };
       case 'FAILED':
-        return 'bg-error-100 text-error-800';
+        return { color: 'bg-error-100 text-error-800', label: 'Check Failed', icon: true };
       case 'EXPIRED':
-        return 'bg-secondary-100 text-secondary-800';
+        return { color: 'bg-secondary-100 text-secondary-800', label: 'Check Expired', icon: true };
       default:
-        return 'bg-neutral-100 text-neutral-800';
+        return { color: 'bg-neutral-100 text-neutral-500', label: 'No Check on File', icon: true };
     }
   };
-  
-  // Format background check status for display
-  const formatBackgroundCheckStatus = (status: string) => {
-    switch (status) {
-      case 'CLEAR':
-        return 'Background Check Clear';
-      case 'PENDING':
-        return 'Background Check Pending';
-      case 'CONSIDER':
-        return 'Background Check Review';
-      case 'FAILED':
-        return 'Background Check Failed';
-      case 'EXPIRED':
-        return 'Background Check Expired';
-      case 'NOT_STARTED':
-        return 'No Background Check';
-      default:
-        return status.replace('_', ' ').toLowerCase();
-    }
-  };
-  
-  // Get visible specialties and count of hidden ones
+
+  const bgCheck = getBgCheckBadge(caregiver.backgroundCheckStatus);
   const visibleSpecialties = caregiver.specialties.slice(0, 3);
   const hiddenSpecialtiesCount = Math.max(0, caregiver.specialties.length - 3);
-
-  // Combine default + dynamic badges (dedup by label)
   const additionalBadges = caregiver.badges ?? [];
-  const experienceLabel =
-    caregiver.yearsExperience &&
-    `${caregiver.yearsExperience} ${caregiver.yearsExperience === 1 ? 'Year' : 'Years'} Experience`;
   const badgeLabels = new Set<string>();
-  
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden">
       <div className="p-4">
-        {/* Header with photo and name */}
+        {/* Header */}
         <div className="flex items-center mb-4">
           <div className="h-16 w-16 rounded-full overflow-hidden bg-neutral-100 flex-shrink-0">
             {caregiver.photoUrl ? (
@@ -130,7 +93,7 @@ const CaregiverCard: React.FC<CaregiverCardProps> = ({ caregiver }) => {
                 <span>
                   {location || 'Location'}
                   {typeof caregiver.distanceMiles === 'number' && isFinite(caregiver.distanceMiles) && (
-                    <span className="ml-2 text-neutral-500">• {caregiver.distanceMiles.toFixed(1)} mi</span>
+                    <span className="ml-2">• {caregiver.distanceMiles.toFixed(1)} mi</span>
                   )}
                 </span>
               </div>
@@ -138,84 +101,66 @@ const CaregiverCard: React.FC<CaregiverCardProps> = ({ caregiver }) => {
           </div>
         </div>
 
-        {/* Rating row */}
+        {/* Rating */}
         <div className="mb-2 flex items-center text-sm">
-          {/* Stars */}
-          <span className="mr-2 flex">
-            {renderStars()}
-          </span>
-          {/* Numeric average & count */}
-          <span className="text-neutral-600">
-            {ratingAvg.toFixed(1)} ({reviewCount})
-          </span>
+          <span className="mr-2 flex">{renderStars()}</span>
+          <span className="text-neutral-600">{ratingAvg.toFixed(1)} ({reviewCount})</span>
         </div>
-        
-        {/* Badges row */}
+
+        {/* Badges */}
         <div className="flex flex-wrap gap-2 mb-3">
-          {/* Pro badge */}
           {caregiver.isPro && (
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-secondary-600 text-white">
               ★ Pro
             </span>
           )}
-          {/* Background check status */}
-          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getBackgroundCheckBadgeColor(caregiver.backgroundCheckStatus)}`}>
-            <FiCheckCircle className="mr-1" size={12} />
-            {formatBackgroundCheckStatus(caregiver.backgroundCheckStatus)}
+          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${bgCheck.color}`}>
+            {bgCheck.icon ? <FiShield size={11} /> : <FiCheckCircle size={11} />}
+            {bgCheck.label}
           </span>
-          
-          {/* Years of experience */}
           {caregiver.yearsExperience && (
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
               <FiClock className="mr-1" size={12} />
-              {caregiver.yearsExperience} {caregiver.yearsExperience === 1 ? 'Year' : 'Years'} Experience
+              {caregiver.yearsExperience} {caregiver.yearsExperience === 1 ? 'yr' : 'yrs'}
             </span>
           )}
         </div>
-        
-        {/* Dynamic badges (gamification etc.) */}
+
+        {/* Dynamic badges */}
         {additionalBadges.map((label) => {
           if (badgeLabels.has(label)) return null;
           badgeLabels.add(label);
           return (
-            <span
-              key={label}
-              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-800 mr-2 mb-2"
-            >
+            <span key={label} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-800 mr-2 mb-2">
               {label}
             </span>
           );
         })}
 
-        {/* Hourly rate */}
+        {/* Rate */}
         {caregiver.hourlyRate && (
           <div className="flex items-center text-lg font-semibold text-neutral-900 mb-3">
             <FiDollarSign className="mr-1" size={18} />
             {caregiver.hourlyRate.toFixed(2)}/hr
           </div>
         )}
-        
-        {/* Bio with line clamp */}
+
+        {/* Bio */}
         {caregiver.bio && (
           <div className="mb-4">
             <p className="text-sm text-neutral-600 line-clamp-2">{caregiver.bio}</p>
           </div>
         )}
-        
+
         {/* Specialties */}
         {caregiver.specialties.length > 0 && (
           <div className="mb-4">
             <div className="flex flex-wrap gap-2">
               {visibleSpecialties.map((specialty, index) => (
-                <span 
-                  key={index} 
-                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800"
-                >
+                <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
                   {specialty.replace(/-/g, ' ')}
                 </span>
               ))}
-              
-              {/* Show count of additional specialties */}
               {hiddenSpecialtiesCount > 0 && (
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-800">
                   +{hiddenSpecialtiesCount} more
@@ -224,17 +169,17 @@ const CaregiverCard: React.FC<CaregiverCardProps> = ({ caregiver }) => {
             </div>
           </div>
         )}
-        
-        {/* CTA buttons */}
+
+        {/* CTAs */}
         <div className="grid grid-cols-2 gap-2">
-          <Link 
-            href={`/marketplace/caregivers/${caregiver.id}`} 
+          <Link
+            href={`/marketplace/caregivers/${caregiver.id}`}
             className="block bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md transition-colors text-center text-sm"
           >
             View Profile
           </Link>
           {caregiver.userId && (
-            <Link 
+            <Link
               href={`/messages?userId=${caregiver.userId}`}
               className="block bg-neutral-100 hover:bg-neutral-200 text-neutral-800 font-medium py-2 px-4 rounded-md transition-colors text-center text-sm border border-neutral-300"
             >
@@ -242,6 +187,15 @@ const CaregiverCard: React.FC<CaregiverCardProps> = ({ caregiver }) => {
             </Link>
           )}
         </div>
+        {caregiver.backgroundCheckStatus !== 'CLEAR' && (
+          <Link
+            href={`/marketplace/caregivers/${caregiver.id}`}
+            className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-md border border-primary-200 bg-primary-50 py-1.5 text-xs font-medium text-primary-700 hover:bg-primary-100 transition-colors"
+          >
+            <FiShield size={12} />
+            Run Background Check
+          </Link>
+        )}
       </div>
     </div>
   );

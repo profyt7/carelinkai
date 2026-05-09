@@ -35,7 +35,9 @@ import {
   FiStar,
   FiBook,
   FiCheckCircle,
-  FiCreditCard
+  FiCreditCard,
+  FiShield,
+  FiBriefcase,
 } from "react-icons/fi";
 import { MessageSquare, Stethoscope } from "lucide-react";
 // Real-time notification center
@@ -98,6 +100,8 @@ const navItems: NavItem[] = [
       { name: "Marketplace", icon: <FiUsers size={18} />, href: "/marketplace", showInMobileBar: true },
       { name: "My Applications", icon: <FiClipboard size={18} />, href: "/caregiver/applications", showInMobileBar: false, roleRestriction: ["CAREGIVER"] },
       { name: "My Saved", icon: <FiHeart size={18} />, href: "/favorites", showInMobileBar: false },
+      { name: "Post a Job", icon: <FiBriefcase size={18} />, href: "/marketplace/listings/new", showInMobileBar: false, roleRestriction: ["FAMILY", "OPERATOR", "ADMIN", "STAFF"] },
+      { name: "My Jobs", icon: <FiBriefcase size={18} />, href: "/marketplace?tab=jobs&postedByMe=true", showInMobileBar: false, roleRestriction: ["FAMILY", "OPERATOR", "ADMIN", "STAFF"] },
       { name: "My Hires", icon: <FiCheckCircle size={18} />, href: "/marketplace/hires", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF", "FAMILY", "CAREGIVER"] },
       { name: "Caregivers", icon: <FiUsers size={18} />, href: "/operator/caregivers", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
       { name: "Caregiver Reviews", icon: <FiStar size={18} />, href: "/operator/reviews", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
@@ -150,6 +154,15 @@ const navItems: NavItem[] = [
     roleRestriction: ["FAMILY", "PROVIDER"],
   },
 
+  // 4d. Background Checks (FAMILY + OPERATOR)
+  {
+    name: "Background Checks",
+    icon: <FiShield size={20} />,
+    href: "/background-checks",
+    showInMobileBar: false,
+    roleRestriction: ["FAMILY", "OPERATOR", "ADMIN"],
+  },
+
   // 5. Residents & Family (collapsible)
   {
     name: "Residents & Family",
@@ -167,7 +180,7 @@ const navItems: NavItem[] = [
     icon: <FiCalendar size={20} />,
     children: [
       { name: "Calendar", icon: <FiCalendar size={18} />, href: "/calendar", showInMobileBar: true },
-      { name: "Shifts", icon: <FiCalendar size={18} />, href: "/shifts", showInMobileBar: true, roleRestriction: ["CAREGIVER", "FAMILY"] },
+      { name: "Shifts", icon: <FiCalendar size={18} />, href: "/shifts", showInMobileBar: true, roleRestriction: ["CAREGIVER"] },
       { name: "Shifts", icon: <FiCalendar size={18} />, href: "/operator/shifts", showInMobileBar: true, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
       { name: "My Points", icon: <FiZap size={18} />, href: "/caregiver/points", showInMobileBar: false, roleRestriction: ["CAREGIVER"] },
       { name: "On-Call AI", icon: <FiZap size={18} />, href: "/operator/oncall", showInMobileBar: false, roleRestriction: ["OPERATOR", "ADMIN", "STAFF"] },
@@ -220,6 +233,15 @@ const navItems: NavItem[] = [
     name: "Listing & Billing",
     icon: <FiCreditCard size={20} />,
     href: "/settings/provider/billing",
+    showInMobileBar: false,
+    roleRestriction: ["PROVIDER"],
+  },
+
+  // 8b-iii. Provider Credentials
+  {
+    name: "Credentials",
+    icon: <FiShield size={20} />,
+    href: "/settings/provider/credentials",
     showInMobileBar: false,
     roleRestriction: ["PROVIDER"],
   },
