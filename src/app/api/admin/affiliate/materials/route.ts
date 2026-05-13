@@ -1,3 +1,5 @@
+// HIPAA: AffiliateMaterial classification=PUBLIC (marketing assets), destination=Cloudinary
+// See HIPAA_PHASE_1_DESIGN.md §2.3 (AffiliateMaterial rationale)
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";

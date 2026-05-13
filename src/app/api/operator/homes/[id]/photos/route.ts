@@ -2,6 +2,8 @@
 // Force dynamic rendering for this API route
 export const dynamic = 'force-dynamic';
 
+// HIPAA: HomePhoto classification=PUBLIC (facility marketing), destination=S3
+// See HIPAA_PHASE_1_DESIGN.md §2.3 (HomePhoto rationale)
 import { NextResponse } from 'next/server';
 import { requireOperatorOrAdmin } from '@/lib/rbac';
 import { PrismaClient, UserRole } from '@prisma/client';
@@ -51,7 +53,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       Key: key,
       Body: buffer,
       ContentType: file.type || 'application/octet-stream',
-      ServerSideEncryption: (String(process.env['S3_ENABLE_SSE']).toLowerCase() === 'true' ? 'AES256' : undefined) as any,
+      ServerSideEncryption: 'AES256', // always enforced per HIPAA Phase 1
     }));
 
     const created = await prisma.homePhoto.create({

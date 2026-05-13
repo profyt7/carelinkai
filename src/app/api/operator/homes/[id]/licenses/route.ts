@@ -2,6 +2,8 @@
 // Force dynamic rendering for this API route
 export const dynamic = 'force-dynamic';
 
+// HIPAA: License classification=PII (operator business document), destination=S3
+// See HIPAA_PHASE_1_DESIGN.md §2.3 (License rationale)
 import { NextRequest, NextResponse } from 'next/server';
 import { requireOperatorOrAdmin } from '@/lib/rbac';
 import { PrismaClient, UserRole } from '@prisma/client';
@@ -55,7 +57,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         documentUrl = `https://example.com/mock-operator/${home.id}/licenses/${key}`;
       } else {
         await uploadBuffer({ key, body: buff, contentType: file.type || 'application/octet-stream', metadata: { homeId: home.id, kind: 'license' } });
-        documentUrl = toS3Url(process.env['S3_BUCKET'] as string, key);
+        documentUrl = toS3Url(process.env['AWS_S3_BUCKET'] as string, key);
       }
     }
 

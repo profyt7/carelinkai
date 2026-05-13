@@ -2,13 +2,15 @@
 // Force dynamic rendering for this API route
 export const dynamic = 'force-dynamic';
 
+// HIPAA: ResidentDocument classification=PHI, destination=S3
+// See HIPAA_PHASE_1_DESIGN.md §2.3 (ResidentDocument rationale)
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requirePermission, requireResidentAccess, handleAuthError } from '@/lib/auth-utils';
 import { PERMISSIONS } from '@/lib/permissions';
 import { z } from 'zod';
 import { createAuditLogFromRequest } from '@/lib/audit';
-import { AuditAction } from '@prisma/client';
+import { AuditAction, DataClassification } from '@prisma/client';
 
 // Validation schema for creating document
 const createDocumentSchema = z.object({
@@ -81,6 +83,8 @@ export async function POST(
     const body = await request.json();
     const validatedData = createDocumentSchema.parse(body);
 
+    const storageProvider = validatedData.fileUrl.startsWith('s3://') || validatedData.fileUrl.includes('amazonaws.com') ? 's3' : 'cloudinary';
+
     // Create document
     const document = await prisma.residentDocument.create({
       data: {
@@ -92,6 +96,8 @@ export async function POST(
         description: validatedData.description,
         fileSize: validatedData.fileSize,
         uploadedById: user.id,
+        classification: DataClassification.PHI,
+        storage: storageProvider,
       },
       include: {
         uploadedBy: {

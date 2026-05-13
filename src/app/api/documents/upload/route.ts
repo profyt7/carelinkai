@@ -2,6 +2,11 @@
 // Force dynamic rendering for this API route
 export const dynamic = 'force-dynamic';
 
+// HIPAA-TODO Phase 2: This route uploads to prisma.Document (generic model) linked to residentId/inquiryId.
+// Documents with residentId or inquiryId are PHI and must route to S3.
+// Phase 1 covers ResidentDocument/FamilyDocument/InquiryDocument/GalleryPhoto only.
+// See HIPAA_PHASE_1_DESIGN.md §2.3, CARELINKAI_RISK_REGISTER.md#risk-1
+
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';

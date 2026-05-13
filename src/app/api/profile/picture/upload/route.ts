@@ -1,9 +1,5 @@
-/**
- * Profile Picture Upload API
- * 
- * Handles profile picture uploads to Cloudinary and updates user profile.
- * Generates multiple sizes: thumbnail (200x200), medium (400x400), large (800x800).
- */
+// HIPAA: ProfilePicture classification=PII (user identity), destination=Cloudinary (no PHI/BAA required)
+// See HIPAA_PHASE_1_DESIGN.md §2.3 (ProfilePicture rationale)
 
 // Force dynamic rendering for this API route
 export const dynamic = 'force-dynamic';

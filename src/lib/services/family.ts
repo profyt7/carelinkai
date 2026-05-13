@@ -79,7 +79,7 @@ import { ACLSubjectType, Permission } from '@/lib/types/family';
 const CONFIG = {
   // S3 configuration
   s3: {
-    region: process.env['AWS_REGION'] || 'us-west-2',
+    region: process.env['AWS_S3_REGION'] || 'us-east-1',
     bucket: process.env['AWS_S3_BUCKET'] || 'carelinkai-family-docs',
     endpoint: process.env['AWS_S3_ENDPOINT'],
     forcePathStyle: process.env['AWS_S3_FORCE_PATH_STYLE'] === 'true',
