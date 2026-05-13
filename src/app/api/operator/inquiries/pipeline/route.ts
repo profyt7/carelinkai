@@ -12,6 +12,7 @@ import { PERMISSIONS } from '@/lib/permissions';
 import { getConversionStats } from '@/lib/services/inquiry-conversion';
 import { prisma } from '@/lib/prisma';
 import { UserRole } from '@prisma/client';
+import { captureError } from '@/lib/sentry';
 
 export async function GET(request: NextRequest) {
   try {
@@ -158,6 +159,9 @@ export async function GET(request: NextRequest) {
       recentConversions,
     });
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'operator:inquiries:pipeline' },
+    });
     console.error('Pipeline API error:', error);
     return handleAuthError(error);
   }

@@ -9,6 +9,7 @@ import { prisma } from '@/lib/prisma';
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { AuditAction } from '@prisma/client';
 import { publish } from '@/lib/sse';
+import { captureError } from '@/lib/sentry';
 
 export async function PUT(
   request: NextRequest,
@@ -128,6 +129,9 @@ export async function PUT(
 
     return NextResponse.json({ member: updatedMember });
   } catch (error: any) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:members:{memberId}:role' },
+    });
     console.error('Error changing role:', error);
     return NextResponse.json(
       { error: error.message ?? 'Internal server error' },

@@ -299,22 +299,22 @@ export default function OperatorDashboardPage() {
 
         {/* Quick links */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <a className="card hover:shadow-md transition" href="/operator/homes">
+          <Link className="card hover:shadow-md transition" href="/operator/homes">
             <div className="text-lg font-medium">Manage Homes</div>
             <div className="text-sm text-neutral-500">Create, edit, and track homes</div>
-          </a>
-          <a className="card hover:shadow-md transition" href="/operator/analytics">
+          </Link>
+          <Link className="card hover:shadow-md transition" href="/operator/analytics">
             <div className="text-lg font-medium">Analytics</div>
             <div className="text-sm text-neutral-500">Occupancy and funnel trends</div>
-          </a>
-          <a className="card hover:shadow-md transition" href="/operator/compliance">
+          </Link>
+          <Link className="card hover:shadow-md transition" href="/operator/compliance">
             <div className="text-lg font-medium">Compliance</div>
             <div className="text-sm text-neutral-500">Licensing and inspections</div>
-          </a>
-          <a className="card hover:shadow-md transition" href="/operator/billing">
+          </Link>
+          <Link className="card hover:shadow-md transition" href="/operator/billing">
             <div className="text-lg font-medium">Billing</div>
             <div className="text-sm text-neutral-500">Deposits and monthly fees</div>
-          </a>
+          </Link>
         </div>
         </>
         )}

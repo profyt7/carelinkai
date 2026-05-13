@@ -5,6 +5,7 @@ import { requireAnyRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { createCandidate, createReport, CHECKR_PACKAGES, CheckrPackageKey } from "@/lib/checkr";
 import Stripe from "stripe";
+import { captureError } from '@/lib/sentry';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2023-10-16" });
 
@@ -99,6 +100,9 @@ export async function POST(
       label: pkg.label,
     });
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:background-checks:order-provider:{providerId}' },
+    });
     console.error("Error ordering provider background check:", error);
     return NextResponse.json({ error: "Failed to order background check" }, { status: 500 });
   }
@@ -155,6 +159,9 @@ export async function PUT(
     const pkg = CHECKR_PACKAGES[packageType];
     return runProviderCheck(provider, packageType, pkg, session!.user!.id!, paymentIntentId);
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:background-checks:order-provider:{providerId}' },
+    });
     console.error("Error confirming provider background check:", error);
     return NextResponse.json({ error: "Failed to confirm background check" }, { status: 500 });
   }
@@ -264,6 +271,9 @@ export async function GET(
 
     return NextResponse.json({ success: true, myOrders });
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:background-checks:order-provider:{providerId}' },
+    });
     console.error("Error fetching provider background check orders:", error);
     return NextResponse.json({ error: "Failed to fetch orders" }, { status: 500 });
   }

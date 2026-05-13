@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { AuditAction } from '@prisma/client';
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { publish } from '@/lib/server/sse';
+import { captureError } from '@/lib/sentry';
 
 const updatePreferencesSchema = z.object({
   familyId: z.string().cuid(),
@@ -72,6 +73,9 @@ export async function GET(request: NextRequest) {
         });
         console.log(`[EMERGENCY] ✓ Created FamilyMember with role ${role}`);
       } catch (createError) {
+        captureError(createError instanceof Error ? createError : new Error(String(createError)), {
+          tags: { route: 'family:emergency' },
+        });
         console.error('[EMERGENCY] Failed to create FamilyMember:', createError);
         // Continue anyway - read access should still work
       }
@@ -87,6 +91,9 @@ export async function GET(request: NextRequest) {
     console.log(`[EMERGENCY] Found preferences: ${preferences ? 'YES' : 'NO'}`);
     return NextResponse.json({ preferences });
   } catch (error: any) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:emergency' },
+    });
     if (error?.name === 'UnauthenticatedError') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -177,6 +184,9 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ preferences });
   } catch (error: any) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:emergency' },
+    });
     if (error?.name === 'UnauthenticatedError') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

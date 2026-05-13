@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { AuditAction } from '@prisma/client';
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { publish } from '@/lib/server/sse';
+import { captureError } from '@/lib/sentry';
 
 const createNoteSchema = z.object({
   familyId: z.string().cuid(),
@@ -75,6 +76,9 @@ export async function GET(request: NextRequest) {
         });
         console.log(`[NOTES] ✓ Created FamilyMember with role ${role}`);
       } catch (createError) {
+        captureError(createError instanceof Error ? createError : new Error(String(createError)), {
+          tags: { route: 'family:notes' },
+        });
         console.error('[NOTES] Failed to create FamilyMember:', createError);
         // Continue anyway - read access should still work
       }
@@ -109,6 +113,9 @@ export async function GET(request: NextRequest) {
     console.log(`[NOTES] Returning ${notes.length} notes`);
     return NextResponse.json({ notes });
   } catch (error: any) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:notes' },
+    });
     console.error('[NOTES] Error fetching notes:', error);
     
     // Return empty array gracefully instead of error
@@ -188,6 +195,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ note }, { status: 201 });
   } catch (error: any) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:notes' },
+    });
     console.error('Error creating note:', error);
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.errors }, { status: 400 });

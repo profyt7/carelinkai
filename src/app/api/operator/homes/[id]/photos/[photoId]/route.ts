@@ -7,6 +7,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient, UserRole } from '@prisma/client';
 import { parseS3Url, deleteObject } from '@/lib/storage';
+import { captureError } from '@/lib/sentry';
 
 const prisma = new PrismaClient();
 
@@ -42,6 +43,9 @@ export async function DELETE(_req: Request, { params }: { params: { id: string; 
     await prisma.homePhoto.delete({ where: { id: photo.id } });
     return NextResponse.json({ success: true });
   } catch (e) {
+    captureError(e instanceof Error ? e : new Error(String(e)), {
+      tags: { route: 'operator:homes:{id}:photos:{photoId}' },
+    });
     console.error('Delete home photo failed', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   } finally {
@@ -62,6 +66,9 @@ export async function PATCH(_req: Request, { params }: { params: { id: string; p
     await prisma.homePhoto.update({ where: { id: photo.id }, data: { isPrimary: true } });
     return NextResponse.json({ success: true });
   } catch (e) {
+    captureError(e instanceof Error ? e : new Error(String(e)), {
+      tags: { route: 'operator:homes:{id}:photos:{photoId}' },
+    });
     console.error('Set primary home photo failed', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   } finally {

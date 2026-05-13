@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireOperatorOrAdmin } from '@/lib/rbac';
 import { PrismaClient, UserRole } from '@prisma/client';
 import { uploadBuffer, toS3Url, deleteObject as s3Delete, parseS3Url, canUseS3 } from '@/lib/storage';
+import { captureError } from '@/lib/sentry';
 
 const prisma = new PrismaClient();
 
@@ -72,6 +73,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     return NextResponse.json({ success: true, licenseId: created.id });
   } catch (e) {
+    captureError(e instanceof Error ? e : new Error(String(e)), {
+      tags: { route: 'operator:homes:{id}:licenses' },
+    });
     console.error('Create license failed', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   } finally {

@@ -22,6 +22,7 @@ import { PrismaClient, AuditAction } from "@prisma/client";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { randomBytes } from "crypto";
+import { captureError } from '@/lib/sentry';
 
 // Initialize Prisma client
 const prisma = new PrismaClient();
@@ -134,6 +135,9 @@ export async function GET(request: NextRequest) {
     });
     
   } catch (error: any) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'auth:backup-codes' },
+    });
     console.error("Backup codes retrieval error:", error);
     
     // Generic error response
@@ -240,6 +244,9 @@ export async function POST(request: NextRequest) {
     });
     
   } catch (error: any) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'auth:backup-codes' },
+    });
     console.error("Backup codes generation error:", error);
     
     // Generic error response

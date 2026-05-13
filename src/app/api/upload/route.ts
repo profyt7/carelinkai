@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import cloudinary, { isCloudinaryConfigured } from '@/lib/cloudinary';
 import { requireAuth } from '@/lib/auth-utils';
+import { captureError } from '@/lib/sentry';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -112,6 +113,9 @@ export async function POST(request: NextRequest) {
     }, { status: 200 });
 
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'upload' },
+    });
     console.error('Upload error:', error);
     
     if (error instanceof Error) {

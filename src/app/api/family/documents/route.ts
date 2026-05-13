@@ -26,6 +26,7 @@ import { uploadBuffer, buildFamilyDocumentKey, toS3Url, parseS3Url, deleteObject
 import cloudinary, { isCloudinaryConfigured, UPLOAD_PRESETS } from "@/lib/cloudinary";
 import { createAuditLogFromRequest } from "@/lib/audit";
 import { rateLimitAsync, getClientIp, buildRateLimitHeaders } from "@/lib/rateLimit";
+import { captureError } from '@/lib/sentry';
 
 // Maximum file size (10MB)
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -123,6 +124,9 @@ async function ensureUploadDirExists(familyId: string): Promise<string> {
     await mkdir(documentsDir, { recursive: true });
     return documentsDir;
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:documents' },
+    });
     console.error("Failed to create upload directories:", error);
     throw new Error("Failed to create upload directories");
   }
@@ -384,6 +388,9 @@ export async function GET(request: NextRequest) {
       });
       
     } catch (error) {
+      captureError(error instanceof Error ? error : new Error(String(error)), {
+        tags: { route: 'family:documents' },
+      });
       const elapsed = Date.now() - startedAt;
       console.error(`[Documents API] Error fetching documents after ${elapsed}ms:`, error);
       return NextResponse.json(
@@ -436,6 +443,9 @@ export async function POST(request: NextRequest) {
       try {
         tags = JSON.parse(tagsRaw);
       } catch (e) {
+        captureError(e instanceof Error ? e : new Error(String(e)), {
+          tags: { route: 'family:documents' },
+        });
         // If parsing fails, try to split by comma
         tags = tagsRaw.split(",").map(tag => tag.trim());
       }
@@ -652,6 +662,9 @@ export async function POST(request: NextRequest) {
     });
     
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:documents' },
+    });
     // ------------------------------------------------------------------
     // Enhanced error logging to help diagnose the exact server failure
     // ------------------------------------------------------------------
@@ -826,6 +839,9 @@ export async function PUT(request: NextRequest) {
     });
     
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:documents' },
+    });
     console.error("Error updating document:", error);
     return NextResponse.json(
       { error: "Failed to update document" },
@@ -910,6 +926,9 @@ export async function DELETE(request: NextRequest) {
           invalidate: true 
         });
       } catch (error) {
+        captureError(error instanceof Error ? error : new Error(String(error)), {
+          tags: { route: 'family:documents' },
+        });
         console.error("Error deleting from Cloudinary:", error);
         // Continue with database deletion even if Cloudinary deletion fails
       }
@@ -920,6 +939,9 @@ export async function DELETE(request: NextRequest) {
         try {
           await s3Delete({ bucket: s3.bucket, key: s3.key });
         } catch (error) {
+          captureError(error instanceof Error ? error : new Error(String(error)), {
+            tags: { route: 'family:documents' },
+          });
           console.error("Error deleting from S3:", error);
         }
       } else {
@@ -970,6 +992,9 @@ export async function DELETE(request: NextRequest) {
     });
     
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:documents' },
+    });
     console.error("Error deleting document:", error);
     return NextResponse.json(
       { error: "Failed to delete document" },

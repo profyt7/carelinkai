@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 import { sendPasswordResetEmail } from "@/lib/email";
+import { captureError } from '@/lib/sentry';
 
 export const dynamic = "force-dynamic";
 
@@ -57,6 +58,9 @@ export async function POST(request: NextRequest) {
       await sendPasswordResetEmail(user.email, user.firstName || 'there', resetToken);
       console.log(`[FORGOT PASSWORD] Reset email sent to: ${normalizedEmail}`);
     } catch (emailError) {
+      captureError(emailError instanceof Error ? emailError : new Error(String(emailError)), {
+        tags: { route: 'auth:forgot-password' },
+      });
       console.error("[FORGOT PASSWORD] Failed to send reset email:", emailError);
       // Don't expose email sending failure to user
     }
@@ -65,6 +69,9 @@ export async function POST(request: NextRequest) {
       message: "If an account exists with this email, you will receive a password reset link.",
     });
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'auth:forgot-password' },
+    });
     console.error("[FORGOT PASSWORD] Error:", error);
     return NextResponse.json(
       { message: "An error occurred. Please try again." },

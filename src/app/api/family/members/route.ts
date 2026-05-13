@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { captureError } from '@/lib/sentry';
 
 export async function GET(request: NextRequest) {
   try {
@@ -87,6 +88,9 @@ export async function GET(request: NextRequest) {
       })),
     });
   } catch (error: any) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:members' },
+    });
     console.error('Error fetching members:', error);
     return NextResponse.json(
       { error: error.message ?? 'Internal server error' },

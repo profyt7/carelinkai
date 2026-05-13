@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { PrismaClient, UserRole, AuditAction } from '@prisma/client';
 import { z } from 'zod';
 import { createAuditLogFromRequest } from '@/lib/audit';
+import { captureError } from '@/lib/sentry';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -62,6 +63,9 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 
     return NextResponse.json({ documents });
   } catch (e) {
+    captureError(e instanceof Error ? e : new Error(String(e)), {
+      tags: { route: 'operator:inquiries:{id}:documents' },
+    });
     console.error('Failed to fetch inquiry documents:', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   } finally {
@@ -161,6 +165,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     return NextResponse.json({ document }, { status: 201 });
   } catch (e) {
+    captureError(e instanceof Error ? e : new Error(String(e)), {
+      tags: { route: 'operator:inquiries:{id}:documents' },
+    });
     console.error('Failed to create inquiry document:', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   } finally {

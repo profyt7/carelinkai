@@ -26,6 +26,7 @@ import * as QRCode from "qrcode";
 import { z } from "zod";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+import { captureError } from '@/lib/sentry';
 
 // Initialize Prisma client
 const prisma = new PrismaClient();
@@ -133,6 +134,9 @@ export async function GET(request: NextRequest) {
     });
     
   } catch (error: any) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'auth:setup-2fa' },
+    });
     console.error("2FA setup error:", error);
     
     // Generic error response
@@ -282,6 +286,9 @@ export async function POST(request: NextRequest) {
     });
     
   } catch (error: any) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'auth:setup-2fa' },
+    });
     console.error("2FA setup verification error:", error);
     
     // Generic error response

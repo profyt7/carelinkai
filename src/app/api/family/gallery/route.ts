@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { captureError } from '@/lib/sentry';
 
 export async function GET(request: NextRequest) {
   try {
@@ -84,6 +85,9 @@ export async function GET(request: NextRequest) {
       offset,
     });
   } catch (error: any) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:gallery' },
+    });
     console.error('Error fetching photos:', error);
     return NextResponse.json(
       { error: error.message ?? 'Internal server error' },

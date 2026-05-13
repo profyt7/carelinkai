@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
+import { captureError } from '@/lib/sentry';
 
 export const dynamic = "force-dynamic";
 
@@ -88,6 +89,9 @@ export async function POST(request: NextRequest) {
       message: "Password has been reset successfully.",
     });
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'auth:reset-password' },
+    });
     console.error("[RESET PASSWORD] Error:", error);
     return NextResponse.json(
       { message: "An error occurred. Please try again." },

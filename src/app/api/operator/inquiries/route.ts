@@ -8,6 +8,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { UserRole, InquiryStatus, Prisma } from '@prisma/client';
 import { differenceInDays, subDays, startOfWeek, endOfWeek } from 'date-fns';
+import { captureError } from '@/lib/sentry';
 
 export async function GET(request: NextRequest) {
   try {
@@ -262,6 +263,9 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'operator:inquiries' },
+    });
     console.error('Error fetching inquiries:', error);
     const errorMessage = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json(

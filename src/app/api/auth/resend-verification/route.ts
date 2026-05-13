@@ -20,6 +20,7 @@ import { PrismaClient, UserStatus } from "@prisma/client";
 import { z } from "zod";
 import { randomBytes } from "crypto";
 import { sendVerificationEmail } from "@/lib/email";
+import { captureError } from '@/lib/sentry';
 
 // Initialize Prisma client
 const prisma = new PrismaClient();
@@ -196,6 +197,9 @@ export async function POST(request: NextRequest) {
     });
     
   } catch (error: any) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'auth:resend-verification' },
+    });
     console.error("Resend verification error:", error);
     
     return NextResponse.json(

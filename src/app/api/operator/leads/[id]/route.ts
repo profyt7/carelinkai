@@ -26,6 +26,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient, LeadStatus, AuditAction } from "@prisma/client";
 import { requireAnyRole } from "@/lib/rbac";
 import { z } from "zod";
+import { captureError } from '@/lib/sentry';
 
 const prisma = new PrismaClient();
 
@@ -147,6 +148,9 @@ export async function GET(
     });
 
   } catch (error: any) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'operator:leads:{id}' },
+    });
     console.error("Lead detail retrieval error:", error);
 
     return NextResponse.json(
@@ -334,6 +338,9 @@ export async function PATCH(
     });
 
   } catch (error: any) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'operator:leads:{id}' },
+    });
     console.error("Lead update error:", error);
 
     return NextResponse.json(

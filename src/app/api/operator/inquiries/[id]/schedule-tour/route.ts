@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { PrismaClient, UserRole, InquiryStatus, AuditAction } from '@prisma/client';
 import { z } from 'zod';
 import { createAuditLogFromRequest } from '@/lib/audit';
+import { captureError } from '@/lib/sentry';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -87,6 +88,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     return NextResponse.json({ inquiry: updated });
   } catch (e) {
+    captureError(e instanceof Error ? e : new Error(String(e)), {
+      tags: { route: 'operator:inquiries:{id}:schedule-tour' },
+    });
     console.error('Schedule tour failed', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   } finally {

@@ -10,6 +10,7 @@ import { deleteFromCloudinary } from '@/lib/cloudinary';
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { AuditAction } from '@prisma/client';
 import { publish } from '@/lib/sse';
+import { captureError } from '@/lib/sentry';
 
 export async function DELETE(
   request: NextRequest,
@@ -94,6 +95,9 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:gallery:{photoId}' },
+    });
     console.error('Error deleting photo:', error);
     return NextResponse.json(
       { error: error.message ?? 'Internal server error' },

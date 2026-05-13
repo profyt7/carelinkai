@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { captureError } from '@/lib/sentry';
 
 /**
  * GET /api/family/homes/compare?ids=id1,id2,id3
@@ -94,6 +95,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, homes: ordered });
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:homes:compare' },
+    });
     console.error("[Compare API] Error:", error);
     return NextResponse.json({ error: "Failed to compare homes" }, { status: 500 });
   }

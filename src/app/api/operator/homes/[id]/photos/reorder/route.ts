@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 ﻿import { NextResponse } from 'next/server';
 import { requireOperatorOrAdmin } from '@/lib/rbac';
 import { PrismaClient, UserRole } from '@prisma/client';
+import { captureError } from '@/lib/sentry';
 
 const prisma = new PrismaClient();
 
@@ -36,6 +37,9 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
     return NextResponse.json({ success: true });
   } catch (e) {
+    captureError(e instanceof Error ? e : new Error(String(e)), {
+      tags: { route: 'operator:homes:{id}:photos:reorder' },
+    });
     console.error('Reorder home photos failed', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   } finally {

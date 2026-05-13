@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth-utils';
+import { captureError } from '@/lib/sentry';
 
 /**
  * GET /api/family/match/[id]
@@ -119,6 +120,9 @@ export async function GET(
     });
     
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:match:{id}' },
+    });
     console.error('[GET /api/family/match/[id]] Error:', error);
     
     return NextResponse.json(

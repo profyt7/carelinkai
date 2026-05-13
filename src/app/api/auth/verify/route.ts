@@ -12,6 +12,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient, AuditAction, UserStatus } from "@prisma/client";
+import { captureError } from '@/lib/sentry';
 
 // Initialize Prisma client
 const prisma = new PrismaClient();
@@ -94,6 +95,9 @@ export async function POST(request: NextRequest) {
     });
     
   } catch (error: any) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'auth:verify' },
+    });
     console.error("Email verification error:", error);
     
     // Generic error response

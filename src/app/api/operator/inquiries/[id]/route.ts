@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient, UserRole, InquiryStatus } from '@prisma/client';
 import { z } from 'zod';
+import { captureError } from '@/lib/sentry';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -60,6 +61,9 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 
     return NextResponse.json({ inquiry: data });
   } catch (e) {
+    captureError(e instanceof Error ? e : new Error(String(e)), {
+      tags: { route: 'operator:inquiries:{id}' },
+    });
     console.error('Get inquiry failed', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   } finally {
@@ -114,6 +118,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const updated = await prisma.inquiry.update({ where: { id: inquiry.id }, data });
     return NextResponse.json({ inquiry: updated });
   } catch (e) {
+    captureError(e instanceof Error ? e : new Error(String(e)), {
+      tags: { route: 'operator:inquiries:{id}' },
+    });
     console.error('Update inquiry failed', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   } finally {

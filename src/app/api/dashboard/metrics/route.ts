@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { captureError } from '@/lib/sentry';
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -110,6 +111,9 @@ export async function GET(request: NextRequest) {
 
       console.log('Residents:', { totalResidents, occupancyPercentage, residentTrend, residentTrendValue });
     } catch (error) {
+      captureError(error instanceof Error ? error : new Error(String(error)), {
+        tags: { route: 'dashboard:metrics' },
+      });
       console.error('Error calculating residents/occupancy:', error);
     }
 
@@ -123,6 +127,9 @@ export async function GET(request: NextRequest) {
       });
       console.log('Active caregivers:', activeCaregivers);
     } catch (error) {
+      captureError(error instanceof Error ? error : new Error(String(error)), {
+        tags: { route: 'dashboard:metrics' },
+      });
       console.error('Error counting caregivers:', error);
     }
 
@@ -138,6 +145,9 @@ export async function GET(request: NextRequest) {
       });
       console.log('Pending inquiries:', pendingInquiries);
     } catch (error) {
+      captureError(error instanceof Error ? error : new Error(String(error)), {
+        tags: { route: 'dashboard:metrics' },
+      });
       console.error('Error counting pending inquiries:', error);
     }
 
@@ -157,6 +167,9 @@ export async function GET(request: NextRequest) {
       });
       console.log('Critical incidents (last 30 days):', criticalIncidents);
     } catch (error) {
+      captureError(error instanceof Error ? error : new Error(String(error)), {
+        tags: { route: 'dashboard:metrics' },
+      });
       console.error('Error counting critical incidents:', error);
     }
 
@@ -178,6 +191,9 @@ export async function GET(request: NextRequest) {
       });
       console.log('Overdue assessments:', overdueAssessments);
     } catch (error) {
+      captureError(error instanceof Error ? error : new Error(String(error)), {
+        tags: { route: 'dashboard:metrics' },
+      });
       console.error('Error counting overdue assessments:', error);
     }
 
@@ -202,6 +218,9 @@ export async function GET(request: NextRequest) {
       });
       console.log('Tours this week:', toursThisWeek);
     } catch (error) {
+      captureError(error instanceof Error ? error : new Error(String(error)), {
+        tags: { route: 'dashboard:metrics' },
+      });
       console.error('Error counting tours this week:', error);
     }
 
@@ -249,6 +268,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(metrics);
 
   } catch (error: any) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'dashboard:metrics' },
+    });
     console.error('=== Dashboard Metrics Error ===');
     console.error('Error:', error);
     console.error('Message:', error.message);

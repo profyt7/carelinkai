@@ -24,6 +24,7 @@ import { z } from "zod";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { timingSafeEqual } from "crypto";
+import { captureError } from '@/lib/sentry';
 
 // Initialize Prisma client
 const prisma = new PrismaClient();
@@ -97,6 +98,9 @@ function verifyTOTP(token: string, secret: string): boolean {
   try {
     return authenticator.verify({ token, secret });
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'auth:verify-2fa' },
+    });
     console.error("TOTP verification error:", error);
     return false;
   }
@@ -128,6 +132,9 @@ function verifyBackupCode(providedCode: string, storedCodes: string[]): string |
         return code; // Return the original code format
       }
     } catch (error) {
+      captureError(error instanceof Error ? error : new Error(String(error)), {
+        tags: { route: 'auth:verify-2fa' },
+      });
       console.error("Backup code verification error:", error);
     }
   }
@@ -291,6 +298,9 @@ export async function POST(request: NextRequest) {
     }
     
   } catch (error: any) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'auth:verify-2fa' },
+    });
     console.error("2FA verification error:", error);
     
     // Generic error response

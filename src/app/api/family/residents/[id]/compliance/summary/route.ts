@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma';
 import { requireAnyRole } from '@/lib/rbac';
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { checkFamilyMembership } from '@/lib/services/family';
+import { captureError } from '@/lib/sentry';
 
 /**
  * GET /api/family/residents/[id]/compliance/summary
@@ -56,6 +57,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
     return NextResponse.json({ open, completed, dueSoon, overdue });
   } catch (e) {
+    captureError(e instanceof Error ? e : new Error(String(e)), {
+      tags: { route: 'family:residents:{id}:compliance:summary' },
+    });
     console.error('Family resident compliance summary error', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
