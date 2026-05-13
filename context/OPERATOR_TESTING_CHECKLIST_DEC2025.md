@@ -1,3 +1,11 @@
+> **STATUS: LEGACY** — Captured Dec 2025. The operator dashboard has been
+> substantially restructured since. Use as reference material when writing
+> the v2 checklist, not as a current test plan. The structure (auth → home
+> mgmt → caregiver mgmt → AI matching → family portal) is reusable; the
+> specific UI references and flows are stale.
+>
+> Migrated from repo root 2026-05-09.
+
 # Operator MVP Testing Checklist
 
 **Last Updated:** December 8, 2025  
