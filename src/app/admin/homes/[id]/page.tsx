@@ -22,8 +22,8 @@ import {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-// Helper to safely unwrap params - handles both Promise and plain object
-function unwrapParams<T>(params: T | Promise<T>): T {
+// Safely unwrap params — handles both Promise and plain object
+function useUnwrapParams<T>(params: T | Promise<T>): T {
   // Check if params is a Promise (has .then method)
   if (params && typeof params === 'object' && 'then' in params && typeof (params as any).then === 'function') {
     return use(params as Promise<T>);
@@ -162,7 +162,7 @@ type HomeDetail = {
 };
 
 export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: string }> | { id: string } }) {
-  const resolvedParams = unwrapParams(params);
+  const resolvedParams = useUnwrapParams(params);
   const router = useRouter();
   const [home, setHome] = useState<HomeDetail | null>(null);
   const [loading, setLoading] = useState(true);
