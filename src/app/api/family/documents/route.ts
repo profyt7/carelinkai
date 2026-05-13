@@ -22,8 +22,10 @@ import {
   createActivityRecord
 } from "@/lib/services/family";
 import { generateMockDocuments } from "@/lib/services/family";
-import { uploadBuffer, buildFamilyDocumentKey, toS3Url, parseS3Url, deleteObject as s3Delete, hasS3Credentials } from "@/lib/storage";
+import { uploadBuffer, buildFamilyDocumentKey, toS3Url, parseS3Url, deleteObject as s3Delete, hasS3Credentials, canUseS3, getBucket } from "@/lib/storage";
 import cloudinary, { isCloudinaryConfigured, UPLOAD_PRESETS } from "@/lib/cloudinary";
+import { getUploadDestination } from "@/lib/storage/router";
+import { DataClassification } from "@prisma/client";
 import { createAuditLogFromRequest } from "@/lib/audit";
 import { rateLimitAsync, getClientIp, buildRateLimitHeaders } from "@/lib/rateLimit";
 import { captureError } from '@/lib/sentry';
@@ -510,56 +512,41 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Check if we have S3 or Cloudinary configured
-    const useS3 = hasS3Credentials();
-    const useCloudinary = isCloudinaryConfigured();
-    
-    // Log configuration status for debugging
-    console.log('[Documents Upload] Checking upload service configuration:', {
-      useS3,
-      useCloudinary,
-      CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME ? '***SET***' : 'NOT SET',
-      CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY ? '***SET***' : 'NOT SET',
-      CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET ? '***SET***' : 'NOT SET',
-    });
-    
+    // HIPAA: FamilyDocument classification=PHI — route to S3 (BAA-covered).
+    // Cloudinary fallback only in dev/test when S3 is unavailable.
+    // See HIPAA_PHASE_1_DESIGN.md §2.3
+    const classification = DataClassification.PHI;
+    const destination = getUploadDestination(classification);
+    const useS3 = destination === 's3' && canUseS3();
+    const useCloudinary = !useS3 && isCloudinaryConfigured();
+
     if (!useS3 && !useCloudinary) {
-      console.error('[Documents Upload] No upload service configured. Details:', {
-        S3: useS3,
-        Cloudinary: {
-          configured: useCloudinary,
-          cloudName: !!process.env.CLOUDINARY_CLOUD_NAME,
-          apiKey: !!process.env.CLOUDINARY_API_KEY,
-          apiSecret: !!process.env.CLOUDINARY_API_SECRET,
-        }
-      });
-      
       return NextResponse.json(
-        { 
-          error: "File upload service not configured. Please contact your administrator.",
-          code: "UPLOAD_SERVICE_NOT_CONFIGURED",
-          details: {
-            s3Available: useS3,
-            cloudinaryAvailable: useCloudinary,
-            cloudinaryEnvVars: {
-              cloudName: !!process.env.CLOUDINARY_CLOUD_NAME,
-              apiKey: !!process.env.CLOUDINARY_API_KEY,
-              apiSecret: !!process.env.CLOUDINARY_API_SECRET,
-            }
-          }
-        },
+        { error: "File upload service not configured. Please contact your administrator.", code: "UPLOAD_SERVICE_NOT_CONFIGURED" },
         { status: 503 }
       );
     }
     
     let fileUrl: string;
     let cloudinaryPublicId: string | undefined;
-    
+    let storageProvider: string;
+
     // Convert file to buffer
     const fileBuffer = Buffer.from(await file.arrayBuffer());
-    
-    if (useCloudinary) {
-      // Upload to Cloudinary
+
+    if (useS3) {
+      const secureFilename = generateSecureFilename(file.name);
+      const key = buildFamilyDocumentKey(metadata.familyId, secureFilename);
+      await uploadBuffer({
+        key,
+        body: fileBuffer,
+        contentType: file.type,
+        metadata: { uploaderId: session.user.id, familyId: metadata.familyId },
+      });
+      fileUrl = toS3Url(getBucket(), key);
+      storageProvider = 's3';
+    } else {
+      // Cloudinary fallback — dev/test only
       const uploadResult = await new Promise<any>((resolve, reject) => {
         cloudinary.uploader
           .upload_stream(
@@ -574,20 +561,9 @@ export async function POST(request: NextRequest) {
           )
           .end(fileBuffer);
       });
-      
       fileUrl = uploadResult.secure_url;
       cloudinaryPublicId = uploadResult.public_id;
-    } else {
-      // Fallback to S3 (legacy)
-      const secureFilename = generateSecureFilename(file.name);
-      const key = buildFamilyDocumentKey(metadata.familyId, secureFilename);
-      await uploadBuffer({ 
-        key, 
-        body: fileBuffer, 
-        contentType: file.type, 
-        metadata: { uploaderId: session.user.id, familyId: metadata.familyId } 
-      });
-      fileUrl = toS3Url(process.env["S3_BUCKET"] as string, key);
+      storageProvider = 'cloudinary';
     }
     
     // Create document record in database
@@ -605,12 +581,14 @@ export async function POST(request: NextRequest) {
         version: 1,
         isEncrypted: metadata.isEncrypted,
         tags: metadata.tags || [],
+        classification,
+        storage: storageProvider,
         metadata: cloudinaryPublicId ? {
           cloudinaryPublicId,
-          uploadService: 'cloudinary'
+          uploadService: storageProvider,
         } : {
-          uploadService: 's3'
-        }
+          uploadService: storageProvider,
+        },
       },
       include: {
         uploader: {

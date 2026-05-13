@@ -1,7 +1,9 @@
+// HIPAA: InquiryDocument classification=PHI, destination=S3
+// See HIPAA_PHASE_1_DESIGN.md §2.3 (InquiryDocument rationale)
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient, UserRole, AuditAction } from '@prisma/client';
+import { PrismaClient, UserRole, AuditAction, DataClassification } from '@prisma/client';
 import { z } from 'zod';
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { captureError } from '@/lib/sentry';
@@ -131,6 +133,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     const { fileName, fileUrl, fileType, documentType, description, fileSize } = validation.data;
 
+    const storageProvider = fileUrl.startsWith('s3://') || fileUrl.includes('amazonaws.com') ? 's3' : 'cloudinary';
+
     // Create document
     const document = await prisma.inquiryDocument.create({
       data: {
@@ -142,6 +146,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         description: description || null,
         fileSize,
         uploadedById: user.id,
+        classification: DataClassification.PHI,
+        storage: storageProvider,
       },
       include: {
         uploadedBy: {
