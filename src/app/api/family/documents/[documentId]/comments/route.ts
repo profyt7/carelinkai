@@ -12,12 +12,12 @@ import {
   hasPermissionToViewDocuments 
 } from "@/lib/services/family";
 import { publish } from "@/lib/server/sse";
-import { 
 import { captureError } from '@/lib/sentry';
+import {
   // type-only import to satisfy TS `verbatimModuleSyntax`
   // and avoid runtime bundling of purely compile-time types
-  type DocumentCommentWithAuthor, 
-  type CreateDocumentCommentRequest 
+  type DocumentCommentWithAuthor,
+  type CreateDocumentCommentRequest
 } from "@/lib/types/family";
 
 /**
