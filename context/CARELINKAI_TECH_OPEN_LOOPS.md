@@ -175,6 +175,41 @@ Each loop: what it is, why it matters, what done looks like.
 
 ---
 
+## 🟡 Important (Week 1-4 launch requirements)
+
+- [ ] **Home photo upload broken — missing S3 credentials**
+  - File: `src/app/api/operator/homes/[id]/photos/route.ts`
+  - Symptom: throws "Missing S3 credentials: set S3_ACCESS_KEY_ID/
+    S3_SECRET_ACCESS_KEY or S3_ACCESS_KEY/S3_SECRET_KEY" at runtime
+  - Cause: calls `getS3Client()` directly with no `canUseS3()` guard;
+    S3 env vars are not configured in Render
+  - Fix options: (a) add `canUseS3()` guard matching neighbor routes
+    (licenses, inspections), (b) wire up S3 with new bucket + creds,
+    (c) reroute through Cloudinary
+  - Cross-ref: Risk #1 (HIPAA — image storage decision)
+  - Discovered: 2026-05-09 during operator home edit test
+
+- [ ] **S3 env var naming inconsistency**
+  - `src/lib/storage.ts` reads `S3_BUCKET`
+  - `src/app/api/{provider,caregiver}/credentials/upload-url` and
+    `src/lib/services/family.ts` read `AWS_S3_BUCKET`
+  - Two different env var names; whichever is set, the other code
+    path silently fails
+  - Fix: pick one canonical name, update other code paths to match
+  - Cross-ref: Risk #1
+
+- [ ] **Fragmented image storage architecture (Cloudinary vs S3)**
+  - Cloudinary: `/api/upload`, `/api/profile/picture/upload`,
+    `/api/admin/affiliate/materials`, plus user-deletion cleanup
+  - S3: `/api/operator/homes/[id]/{photos,licenses,inspections}`,
+    `/api/{provider,caregiver}/credentials/upload-url`, `family.ts`
+  - Dual fallback: `/api/family/documents` (S3 → Cloudinary fallback)
+  - Design decision: consolidate onto one stack during HIPAA migration
+    so PHI vs non-PHI image routing is cleanly designed (not accidental)
+  - Cross-ref: Risk #1
+
+---
+
 ## 🟡 Important (Quality / Stability)
 
 ### OL-005: TypeScript strict mode errors
