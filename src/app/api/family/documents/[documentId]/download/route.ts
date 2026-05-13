@@ -9,6 +9,7 @@ import { checkFamilyMembership, hasPermissionToViewDocuments } from "@/lib/servi
 import { parseS3Url, createSignedGetUrl } from "@/lib/storage";
 import { createAuditLogFromRequest } from "@/lib/audit";
 import { rateLimitAsync, getClientIp, buildRateLimitHeaders } from "@/lib/rateLimit";
+import { captureError } from '@/lib/sentry';
 
 export async function GET(request: NextRequest, { params }: { params: { documentId: string } }) {
   try {
@@ -79,6 +80,9 @@ export async function GET(request: NextRequest, { params }: { params: { document
           { fileType: doc.fileType, action: 'download', service: 'cloudinary' }
         );
       } catch (auditError) {
+        captureError(auditError instanceof Error ? auditError : new Error(String(auditError)), {
+          tags: { route: 'family:documents:{documentId}:download' },
+        });
         // Log audit error but don't fail the download
         console.error('Failed to create audit log:', auditError);
       }
@@ -121,6 +125,9 @@ export async function GET(request: NextRequest, { params }: { params: { document
         { fileType: doc.fileType, action: 'download', service: 's3' }
       );
     } catch (auditError) {
+      captureError(auditError instanceof Error ? auditError : new Error(String(auditError)), {
+        tags: { route: 'family:documents:{documentId}:download' },
+      });
       // Log audit error but don't fail the download
       console.error('Failed to create audit log:', auditError);
     }
@@ -128,6 +135,9 @@ export async function GET(request: NextRequest, { params }: { params: { document
     // Redirect to signed URL
     return NextResponse.redirect(signedUrl, 302);
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:documents:{documentId}:download' },
+    });
     console.error("Error generating signed download URL:", error);
     return NextResponse.json({ error: "Failed to generate download URL" }, { status: 500 });
   }

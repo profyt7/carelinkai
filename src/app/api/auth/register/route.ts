@@ -20,6 +20,7 @@ import { z } from "zod";
 import { v4 as uuidv4 } from "uuid";
 import { randomBytes } from "crypto";
 import { sendVerificationEmail } from "@/lib/email";
+import { captureError } from '@/lib/sentry';
 
 // Initialize Prisma client
 const prisma = new PrismaClient();
@@ -135,6 +136,9 @@ async function sendVerificationEmailToUser(userId: string): Promise<boolean> {
     
     return emailSent;
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'auth:register' },
+    });
     console.error('[sendVerificationEmail] Exception:', error);
     return false;
   }
@@ -410,6 +414,9 @@ export async function POST(request: NextRequest) {
         `[registration] ✓ Verification e-mail queued successfully for userId=${result.id}`
       );
     } catch (emailErr) {
+      captureError(emailErr instanceof Error ? emailErr : new Error(String(emailErr)), {
+        tags: { route: 'auth:register' },
+      });
       // Log but do not abort user creation
       console.error("[registration] Email verification step failed:", emailErr);
     }
@@ -460,6 +467,9 @@ export async function POST(request: NextRequest) {
     }, { status: 201 });
     
   } catch (error: any) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'auth:register' },
+    });
     console.error("=".repeat(60));
     console.error("[REGISTER API] ❌ REGISTRATION ERROR CAUGHT");
     console.error("[REGISTER API] Error type:", typeof error);

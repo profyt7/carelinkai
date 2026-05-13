@@ -9,6 +9,7 @@ import { prisma } from '@/lib/prisma';
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { AuditAction } from '@prisma/client';
 import { publish } from '@/lib/sse';
+import { captureError } from '@/lib/sentry';
 
 export async function POST(request: NextRequest) {
   try {
@@ -125,6 +126,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ invitation });
   } catch (error: any) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:members:invite' },
+    });
     console.error('Error sending invitation:', error);
     return NextResponse.json(
       { error: error.message ?? 'Internal server error' },

@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient, UserRole } from '@prisma/client';
+import { captureError } from '@/lib/sentry';
 
 const prisma = new PrismaClient();
 
@@ -324,6 +325,9 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       },
     });
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'operator:homes:{id}:alerts' },
+    });
     console.error('Alerts API error:', error);
     return NextResponse.json({ error: 'Failed to fetch alerts' }, { status: 500 });
   } finally {

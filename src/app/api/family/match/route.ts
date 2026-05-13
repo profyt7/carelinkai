@@ -8,6 +8,7 @@ import { prisma } from '@/lib/prisma';
 import { requireAuth, UnauthenticatedError } from '@/lib/auth-utils';
 import { AuditAction } from '@prisma/client';
 import { createAuditLogFromRequest } from '@/lib/audit';
+import { captureError } from '@/lib/sentry';
 
 // Validation schema for match request
 const matchRequestSchema = z.object({
@@ -65,6 +66,9 @@ export async function POST(request: NextRequest) {
         });
         console.log('[POST /api/family/match] ✅ Family profile created:', family.id);
       } catch (createError) {
+        captureError(createError instanceof Error ? createError : new Error(String(createError)), {
+          tags: { route: 'family:match' },
+        });
         console.error('[POST /api/family/match] ❌ Failed to create family profile:', createError);
         return NextResponse.json(
           { error: 'Failed to create family profile. Please try again.' },
@@ -215,6 +219,9 @@ export async function POST(request: NextRequest) {
               }
             });
           } catch (error) {
+            captureError(error instanceof Error ? error : new Error(String(error)), {
+              tags: { route: 'family:match' },
+            });
             console.error(`[POST /api/family/match] ❌ Error creating match result for home ${match.homeId}:`, error);
             throw error;
           }
@@ -258,6 +265,9 @@ export async function POST(request: NextRequest) {
       }, { status: 201 });
       
     } catch (matchError) {
+      captureError(matchError instanceof Error ? matchError : new Error(String(matchError)), {
+        tags: { route: 'family:match' },
+      });
       console.error('[POST /api/family/match] ❌ Error during match request processing:');
       console.error('[POST /api/family/match] Error details:', matchError);
       
@@ -272,6 +282,9 @@ export async function POST(request: NextRequest) {
     }
     
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:match' },
+    });
     console.error('[POST /api/family/match] ERROR OCCURRED:');
     console.error('[POST /api/family/match] Error name:', error instanceof Error ? error.name : 'Unknown');
     console.error('[POST /api/family/match] Error message:', error instanceof Error ? error.message : String(error));
@@ -347,6 +360,9 @@ export async function GET(request: NextRequest) {
     });
     
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:match' },
+    });
     // Handle authentication errors gracefully (health checks, monitoring)
     if (error instanceof UnauthenticatedError) {
       // Don't log authentication failures as errors (these are expected from health checks)

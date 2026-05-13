@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient, UserRole } from '@prisma/client';
 import { z } from 'zod';
+import { captureError } from '@/lib/sentry';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -68,6 +69,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     return NextResponse.json({ id: updated.id, internalNotes: updated.internalNotes || '' });
   } catch (e) {
+    captureError(e instanceof Error ? e : new Error(String(e)), {
+      tags: { route: 'operator:inquiries:{id}:notes' },
+    });
     console.error('Add note failed', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   } finally {
@@ -112,6 +116,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
     return NextResponse.json({ id: updated.id, internalNotes: updated.internalNotes || '' });
   } catch (e) {
+    captureError(e instanceof Error ? e : new Error(String(e)), {
+      tags: { route: 'operator:inquiries:{id}:notes' },
+    });
     console.error('Update notes failed', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   } finally {

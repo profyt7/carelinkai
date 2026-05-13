@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
+import { captureError } from '@/lib/sentry';
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +35,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ valid: !!user });
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'auth:verify-reset-token' },
+    });
     console.error("[VERIFY RESET TOKEN] Error:", error);
     return NextResponse.json({ valid: false });
   }

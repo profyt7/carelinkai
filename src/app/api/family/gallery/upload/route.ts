@@ -10,6 +10,7 @@ import cloudinary, { isCloudinaryConfigured, getThumbnailUrl, UPLOAD_PRESETS } f
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { AuditAction } from '@prisma/client';
 import { publish } from '@/lib/sse';
+import { captureError } from '@/lib/sentry';
 
 export async function POST(request: NextRequest) {
   try {
@@ -248,6 +249,9 @@ export async function POST(request: NextRequest) {
     console.log('=== GALLERY UPLOAD SUCCESS ===');
     return NextResponse.json({ photo });
   } catch (error: any) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:gallery:upload' },
+    });
     console.error('=== GALLERY UPLOAD ERROR ===');
     console.error('Error type:', error?.constructor?.name);
     console.error('Error message:', error?.message);

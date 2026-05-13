@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { stripe } from '@/lib/stripe';
+import { captureError } from '@/lib/sentry';
 
 // $79/mo for a featured listing add-on (configurable via env)
 const FEATURED_LISTING_FEE_CENTS = parseInt(
@@ -95,6 +96,9 @@ export async function POST(
         },
       });
     } catch (err: any) {
+      captureError(err instanceof Error ? err : new Error(String(err)), {
+        tags: { route: 'operator:homes:{id}:featured' },
+      });
       console.error('[FEATURED] Failed to queue invoice item:', err?.message ?? err);
       // Home is still marked featured; billing is best-effort
     }

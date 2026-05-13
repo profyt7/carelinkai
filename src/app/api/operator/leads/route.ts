@@ -24,6 +24,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient, LeadStatus, LeadTargetType } from "@prisma/client";
 import { requireAnyRole } from "@/lib/rbac";
+import { captureError } from '@/lib/sentry';
 
 const prisma = new PrismaClient();
 
@@ -192,6 +193,9 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error: any) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'operator:leads' },
+    });
     console.error("Operator leads list error:", error);
 
     return NextResponse.json(

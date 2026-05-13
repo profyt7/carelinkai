@@ -8,6 +8,7 @@ import { PrismaClient, UserRole } from '@prisma/client';
 import { getS3Client, getBucket, toS3Url } from '@/lib/storage';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
+import { captureError } from '@/lib/sentry';
 
 const prisma = new PrismaClient();
 
@@ -69,6 +70,9 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
     return NextResponse.json({ photoId: created.id });
   } catch (e) {
+    captureError(e instanceof Error ? e : new Error(String(e)), {
+      tags: { route: 'operator:homes:{id}:photos' },
+    });
     console.error('Upload home photo failed', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   } finally {

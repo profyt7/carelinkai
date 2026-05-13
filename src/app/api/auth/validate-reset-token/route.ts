@@ -19,6 +19,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient, AuditAction } from "@prisma/client";
 import { z } from "zod";
+import { captureError } from '@/lib/sentry';
 
 // Initialize Prisma client
 const prisma = new PrismaClient();
@@ -103,6 +104,9 @@ export async function POST(request: NextRequest) {
     }
     
   } catch (error: any) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'auth:validate-reset-token' },
+    });
     console.error("Token validation error:", error);
     
     // Generic error response
@@ -171,6 +175,9 @@ export async function GET(request: NextRequest) {
     }
     
   } catch (error: any) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'auth:validate-reset-token' },
+    });
     console.error("Token validation error:", error);
     
     // Generic error response

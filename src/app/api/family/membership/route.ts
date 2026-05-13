@@ -5,6 +5,7 @@ export const fetchCache = "force-no-store";
 import { NextRequest, NextResponse } from "next/server";
 import { requireAnyRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
+import { captureError } from '@/lib/sentry';
 
 /**
  * GET /api/family/membership
@@ -91,6 +92,9 @@ export async function GET(request: NextRequest) {
           
           console.log(`[MEMBERSHIP] ✓ Created Family record: ${family.id}`);
         } catch (createFamilyError) {
+          captureError(createFamilyError instanceof Error ? createFamilyError : new Error(String(createFamilyError)), {
+            tags: { route: 'family:membership' },
+          });
           console.error('[MEMBERSHIP] Failed to create Family:', createFamilyError);
           return NextResponse.json(
             { error: "Failed to create family record", details: String(createFamilyError) },
@@ -127,6 +131,9 @@ export async function GET(request: NextRequest) {
           console.log(`[MEMBERSHIP] ✓ Auto-created FamilyMember record`);
           membership = newMembership;
         } catch (createError) {
+          captureError(createError instanceof Error ? createError : new Error(String(createError)), {
+            tags: { route: 'family:membership' },
+          });
           console.error('[MEMBERSHIP] Failed to auto-create FamilyMember:', createError);
           return NextResponse.json(
             { error: "Failed to create family membership", details: String(createError) },
@@ -153,6 +160,9 @@ export async function GET(request: NextRequest) {
       role: membership.role,
     });
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:membership' },
+    });
     console.error("[MEMBERSHIP] Unexpected error:", error);
     return NextResponse.json(
       { error: "Failed to fetch family membership", details: String(error) },

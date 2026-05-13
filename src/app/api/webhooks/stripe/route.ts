@@ -9,6 +9,7 @@ import Stripe from "stripe";
 import { bindRequestLogger } from "@/lib/logger";
 import { InvoiceStatus, SubscriptionPlan, SubscriptionStatus } from "@prisma/client";
 import { smsService } from "@/lib/sms/sms-service";
+import { captureError } from '@/lib/sentry';
 
 /**
  * Utility: maps Stripe Transfer status strings to internal PaymentStatus values
@@ -136,6 +137,9 @@ export async function POST(request: NextRequest) {
       try {
         event = stripe.webhooks.constructEvent(rawBody, signature, secret);
       } catch (err) {
+        captureError(err instanceof Error ? err : new Error(String(err)), {
+          tags: { route: 'webhooks:stripe' },
+        });
         logger.error("Webhook signature verification failed", { err: err instanceof Error ? err.message : err });
         return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
       }
@@ -149,6 +153,9 @@ export async function POST(request: NextRequest) {
           logger.info("Webhook signature bypassed (non-production)");
         }
       } catch (err) {
+        captureError(err instanceof Error ? err : new Error(String(err)), {
+          tags: { route: 'webhooks:stripe' },
+        });
         logger.error("Invalid webhook payload", { err: err instanceof Error ? err.message : err });
         return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
       }
@@ -574,6 +581,9 @@ export async function POST(request: NextRequest) {
     logger.info("Payment processed", { stripePaymentId });
     return NextResponse.json({ received: true, success: true }, { status: 200 });
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'webhooks:stripe' },
+    });
     logger.error("Error processing Stripe webhook", { err: error instanceof Error ? error.message : error });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

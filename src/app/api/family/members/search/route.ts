@@ -6,6 +6,7 @@ import { requireAnyRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { checkFamilyMembership } from "@/lib/services/family";
+import { captureError } from '@/lib/sentry';
 
 export async function GET(request: NextRequest) {
   try {
@@ -121,6 +122,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ items });
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:members:search' },
+    });
     console.error("Error searching family members:", error);
     return NextResponse.json(
       { error: "Failed to search members" },

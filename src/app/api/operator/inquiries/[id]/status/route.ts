@@ -13,6 +13,7 @@ import { prisma } from '@/lib/prisma';
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { AuditAction, InquiryStatus } from '@prisma/client';
 import { z } from 'zod';
+import { captureError } from '@/lib/sentry';
 
 const StatusUpdateSchema = z.object({
   status: z.nativeEnum(InquiryStatus),
@@ -103,6 +104,9 @@ export async function PATCH(
       message: `Status updated to ${status}`,
     });
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'operator:inquiries:{id}:status' },
+    });
     console.error('Status update error:', error);
 
     if (error instanceof z.ZodError) {

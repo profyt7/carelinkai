@@ -13,6 +13,7 @@ import {
 } from "@/lib/services/family";
 import { publish } from "@/lib/server/sse";
 import { 
+import { captureError } from '@/lib/sentry';
   // type-only import to satisfy TS `verbatimModuleSyntax`
   // and avoid runtime bundling of purely compile-time types
   type DocumentCommentWithAuthor, 
@@ -104,6 +105,9 @@ export async function GET(
     // Return comments with pagination metadata
     return NextResponse.json(commentsResponse);
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:documents:{documentId}:comments' },
+    });
     console.error("Error fetching document comments:", error);
     return NextResponse.json(
       { error: "Failed to fetch document comments" },
@@ -215,6 +219,9 @@ export async function POST(
       // Notify subscribers interested in any comments for the family
       publish(`family:${familyId}`, "comment:created", payload);
     } catch (pubErr) {
+      captureError(pubErr instanceof Error ? pubErr : new Error(String(pubErr)), {
+        tags: { route: 'family:documents:{documentId}:comments' },
+      });
       // Log but do not fail the request if publishing fails
       console.error("Failed to publish SSE comment event:", pubErr);
     }
@@ -225,6 +232,9 @@ export async function POST(
       comment
     });
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:documents:{documentId}:comments' },
+    });
     console.error("Error creating document comment:", error);
     return NextResponse.json(
       { error: "Failed to create document comment" },
