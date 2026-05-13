@@ -208,6 +208,36 @@ Each loop: what it is, why it matters, what done looks like.
     so PHI vs non-PHI image routing is cleanly designed (not accidental)
   - Cross-ref: Risk #1
 
+- [ ] **Test suite rot — 2 broken suites on main**
+  - `__tests__/emergency.api.test.ts` — failing on main
+  - `__tests__/background_checks.api.test.ts` — failing on main
+  - 10 total test failures across both suites
+  - Has been failing since at least PR #517; PR #518 and PR #519 both
+    merged via admin override past these
+  - CI/build-and-test runs Jest which catches these; Quality job depends
+    on Jest pass for green status
+  - Fix options: (a) repair the tests, (b) temporarily skip the suites
+    until repaired, (c) keep admin-overriding (status quo, not great)
+  - Recommended: option (b) until someone has time for (a)
+  - Cross-ref: Risk #7 (no staging / no tests)
+
+- [ ] **Main branch is not protected**
+  - GitHub Branches page reports "Your main branch isn't protected"
+  - Allows force-push and deletion of main; allows merges past failing
+    required checks (currently the only thing letting our merges through)
+  - Once test suite rot is fixed, enable branch protection: require PR
+    review (or at least up-to-date branch), require status checks to
+    pass, prevent force-push, prevent deletion
+  - DO NOT enable protection BEFORE fixing the test suite rot — it
+    would block all merges
+  - Cross-ref: Risk #7 (HIPAA/compliance — branch protection is a basic
+    security control)
+
+- [x] **Stale sentry-wrapper-rollout branch deleted (informational)**
+  - `claude/sentry-wrapper-rollout-2026-05-13` deleted from GitHub
+    2026-05-13 (the messy-history first attempt at the Sentry rollout)
+  - Kept here as a record of what was cleaned up; loop is closed.
+
 ---
 
 ## 🟡 Important (Quality / Stability)
