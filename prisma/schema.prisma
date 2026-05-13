@@ -617,18 +617,20 @@ model Resident {
 
 /// Documents uploaded for residents (medical records, care plans, etc.)
 model ResidentDocument {
-  id           String               @id @default(cuid())
-  residentId   String
-  documentType ResidentDocumentType
-  fileName     String
-  fileUrl      String
-  fileType     String
-  fileSize     Int
-  description  String?
-  uploadedById String
-  uploadedAt   DateTime             @default(now())
-  createdAt    DateTime             @default(now())
-  updatedAt    DateTime             @updatedAt
+  id             String               @id @default(cuid())
+  residentId     String
+  documentType   ResidentDocumentType
+  fileName       String
+  fileUrl        String
+  fileType       String
+  fileSize       Int
+  description    String?
+  uploadedById   String
+  uploadedAt     DateTime             @default(now())
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  classification DataClassification   @default(PHI)
+  storage        String?              // 's3' | 'cloudinary' — null for pre-Phase-1 rows
   resident     Resident             @relation(fields: [residentId], references: [id], onDelete: Cascade)
   uploadedBy   User                 @relation("ResidentDocumentUploader", fields: [uploadedById], references: [id])
 
@@ -843,16 +845,18 @@ model Inquiry {
 
 /// Documents associated with an inquiry (applications, IDs, medical records, etc.)
 model InquiryDocument {
-  id           String   @id @default(cuid())
-  inquiryId    String
-  fileName     String
-  fileUrl      String
-  fileType     String
-  documentType String
-  description  String?
-  fileSize     Int
-  uploadedById String
-  uploadedAt   DateTime @default(now())
+  id             String             @id @default(cuid())
+  inquiryId      String
+  fileName       String
+  fileUrl        String
+  fileType       String
+  documentType   String
+  description    String?
+  fileSize       Int
+  uploadedById   String
+  uploadedAt     DateTime           @default(now())
+  classification DataClassification @default(PHI)
+  storage        String?            // 's3' | 'cloudinary' — null for pre-Phase-1 rows
   inquiry      Inquiry  @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
   uploadedBy   User     @relation("InquiryDocumentUploader", fields: [uploadedById], references: [id])
 
@@ -1503,24 +1507,26 @@ model FamilyMember {
 }
 
 model FamilyDocument {
-  id          String             @id @default(cuid())
-  familyId    String
-  uploaderId  String
-  residentId  String?
-  type        FamilyDocumentType
-  title       String
-  description String?
-  fileUrl     String
-  fileName    String
-  fileType    String
-  fileSize    Int
-  version     Int                @default(1)
-  isEncrypted Boolean            @default(true)
-  acl         Json?
-  tags        String[]
-  metadata    Json?
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
+  id             String             @id @default(cuid())
+  familyId       String
+  uploaderId     String
+  residentId     String?
+  type           FamilyDocumentType
+  title          String
+  description    String?
+  fileUrl        String
+  fileName       String
+  fileType       String
+  fileSize       Int
+  version        Int                @default(1)
+  isEncrypted    Boolean            @default(true)
+  acl            Json?
+  tags           String[]
+  metadata       Json?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  classification DataClassification @default(PHI)
+  storage        String?            // 's3' | 'cloudinary' — null for pre-Phase-1 rows
   comments    DocumentComment[]
   family      Family             @relation(fields: [familyId], references: [id], onDelete: Cascade)
   resident    Resident?          @relation(fields: [residentId], references: [id])
@@ -1615,17 +1621,21 @@ model SharedGallery {
   @@index([createdAt])
 }
 
+// GalleryPhoto: default PHI — SharedGallery is linked to Family → Resident; photos are in care context.
+// Per HIPAA posture memo §2: resident photos linked to care records = PHI.
 model GalleryPhoto {
-  id           String        @id @default(cuid())
-  galleryId    String
-  uploaderId   String
-  fileUrl      String
-  thumbnailUrl String
-  caption      String?
-  metadata     Json?
-  sortOrder    Int           @default(0)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id             String             @id @default(cuid())
+  galleryId      String
+  uploaderId     String
+  fileUrl        String
+  thumbnailUrl   String
+  caption        String?
+  metadata       Json?
+  sortOrder      Int                @default(0)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  classification DataClassification @default(PHI)
+  storage        String?            // 's3' | 'cloudinary' — null for pre-Phase-1 rows
   gallery      SharedGallery @relation(fields: [galleryId], references: [id], onDelete: Cascade)
   uploader     User          @relation("PhotoUploader", fields: [uploaderId], references: [id])
 
@@ -2605,6 +2615,13 @@ enum ExtractionStatus {
   PROCESSING
   COMPLETED
   FAILED
+}
+
+/// HIPAA data classification — drives upload routing (PHI → S3, PUBLIC/PII → Cloudinary)
+enum DataClassification {
+  PUBLIC // facility marketing photos, regulatory docs, public-facing content
+  PII    // personally identifiable info not linked to clinical care (profile photos, caregiver certs)
+  PHI    // protected health info: resident identifier + health information
 }
 
 enum ValidationStatus {
