@@ -52,6 +52,9 @@ jest.mock('@/lib/prisma', () => {
         update: jest.fn(),
         create: jest.fn(),
       },
+      activityFeedItem: {
+        create: jest.fn().mockResolvedValue({}),
+      },
     },
   };
 });
