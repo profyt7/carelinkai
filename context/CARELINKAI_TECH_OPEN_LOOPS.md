@@ -175,6 +175,29 @@ Each loop: what it is, why it matters, what done looks like.
 
 ---
 
+## 🔴 Critical (HIPAA / Compliance)
+
+- [ ] **PHI verification audit — BLOCKED on production DB access**
+  - Schema analysis complete (2026-05-13): 29 PHI-bearing models catalogued
+  - SQL audit script written: `scripts/phi-audit.sql` (11 sections, read-only)
+  - **BLOCKED:** production DATABASE_URL not in local dev environment
+  - **Action needed from Chris:** run `psql "$DATABASE_URL" -f scripts/phi-audit.sql -o phi-audit-results.txt` from Render shell OR provide External DB URL from Render dashboard → PostgreSQL → Connection → External Database URL
+  - PHI-bearing tables (HIGH): Resident, ResidentDocument, ResidentNote, ResidentIncident, ResidentContact, AssessmentResult, FamilyDocument, EmergencyPreference, FamilyContact
+  - PHI-bearing tables (MEDIUM): Inquiry (has contactEmail, contactPhone, careRecipientName), PlacementRequest (patientInfo JSON), PlacementSearch, Family (primaryDiagnosis)
+  - Storage concern: document upload endpoints may route PHI files to Cloudinary (non-BAA) — audit section 6 will confirm
+  - Once verdict is SEED_ONLY: start Phase 1 HIPAA code work (data_classification field + PHI-aware upload routing)
+  - Cross-ref: Risk #1 (HIPAA)
+
+- [ ] **HIPAA Phase 1 code work — waiting on PHI audit verdict**
+  - Add `data_classification` enum (PUBLIC/INTERNAL/PHI) + field to upload-related tables
+  - Update upload endpoints to route by classification: PHI → S3 (BAA), non-PHI → Cloudinary
+  - Unify S3 env var naming (`S3_BUCKET` vs `AWS_S3_BUCKET`)
+  - Add Sentry `beforeSend` scrubber to strip PHI before error capture
+  - Do NOT start until PHI audit confirms no real data in prod (or real data is hard-deleted)
+  - Cross-ref: Risk #1
+
+---
+
 ## 🟡 Important (Week 1-4 launch requirements)
 
 - [ ] **Home photo upload broken — missing S3 credentials**
@@ -208,17 +231,10 @@ Each loop: what it is, why it matters, what done looks like.
     so PHI vs non-PHI image routing is cleanly designed (not accidental)
   - Cross-ref: Risk #1
 
-- [ ] **Test suite rot — 2 broken suites on main**
-  - `__tests__/emergency.api.test.ts` — failing on main
-  - `__tests__/background_checks.api.test.ts` — failing on main
-  - 10 total test failures across both suites
-  - Has been failing since at least PR #517; PR #518 and PR #519 both
-    merged via admin override past these
-  - CI/build-and-test runs Jest which catches these; Quality job depends
-    on Jest pass for green status
-  - Fix options: (a) repair the tests, (b) temporarily skip the suites
-    until repaired, (c) keep admin-overriding (status quo, not great)
-  - Recommended: option (b) until someone has time for (a)
+- [ ] **Test suite rot — fix pending merge**
+  - `__tests__/emergency.api.test.ts` and `__tests__/background_checks.api.test.ts` — both repaired on branch `claude/fix-test-mocks-2026-05-13`
+  - Fix: added `activityFeedItem` mock (emergency suite), updated mockCaregiver + webhook helper + rewrote webhook/start assertions to match current contract (bg checks suite)
+  - 31/31 tests passing on fix branch; needs Cowork merge to close this loop
   - Cross-ref: Risk #7 (no staging / no tests)
 
 - [ ] **Main branch is not protected**
