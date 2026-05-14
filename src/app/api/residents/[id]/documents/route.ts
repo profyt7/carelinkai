@@ -9,7 +9,7 @@ import { createAuditLogFromRequest } from '@/lib/audit';
 
 const CreateDocSchema = z.object({
   fileName: z.string().min(1),
-  fileUrl: z.string().url(),
+  fileUrl: z.string().min(1),
   mimeType: z.string().min(1),
   fileSize: z.number().int().positive(),
   type: z.string().optional(),

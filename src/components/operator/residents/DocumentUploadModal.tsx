@@ -80,9 +80,9 @@ export function DocumentUploadModal({
     setUploadProgress(0);
 
     try {
-      // Upload to Cloudinary
       const formData = new FormData();
       formData.append('file', file);
+      formData.append('classification', 'PHI');
 
       const uploadResponse = await fetch('/api/upload', {
         method: 'POST',

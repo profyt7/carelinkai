@@ -77,7 +77,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 
 const DocumentSchema = z.object({
   fileName: z.string().min(1, 'File name is required'),
-  fileUrl: z.string().url('Valid file URL is required'),
+  fileUrl: z.string().min(1, 'File URL is required'),
   fileType: z.string().min(1, 'File type is required'),
   documentType: z.string().min(1, 'Document type is required'),
   description: z.string().optional(),

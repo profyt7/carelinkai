@@ -3,21 +3,21 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, unlink } from 'fs/promises';
-import { join } from 'path';
 import { requireOperatorOrAdmin } from '@/lib/rbac';
 import { prisma } from '@/lib/prisma';
+import { uploadBuffer, deleteObject, getBucket, toS3Url, parseS3Url } from '@/lib/storage';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 /**
  * POST /api/residents/[id]/photo
- * Upload resident photo
+ * Upload resident photo to S3 (classification=PHI always).
+ * Resident photos are linked to a care record and qualify as PHI per HIPAA posture memo §2.
  */
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { session, error } = await requireOperatorOrAdmin();
+    const { error } = await requireOperatorOrAdmin();
     if (error) return error;
 
     const formData = await req.formData();
@@ -27,17 +27,17 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
-    // Validate file type
     if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json({ error: 'Invalid file type. Only JPEG, PNG, and WebP are allowed.' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid file type. Only JPEG, PNG, and WebP are allowed.' },
+        { status: 400 }
+      );
     }
 
-    // Validate file size
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json({ error: 'File too large. Maximum size is 5MB.' }, { status: 400 });
     }
 
-    // Get resident to ensure it exists and user has access
     const resident = await prisma.resident.findUnique({
       where: { id: params.id },
       select: { id: true, photoUrl: true },
@@ -47,35 +47,24 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       return NextResponse.json({ error: 'Resident not found' }, { status: 404 });
     }
 
-    // Generate file path
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     const ext = file.type.split('/')[1];
-    const filename = `${params.id}_${Date.now()}.${ext}`;
-    const uploadDir = join(process.cwd(), 'public', 'uploads', 'residents');
-    const filePath = join(uploadDir, filename);
-    const photoUrl = `/uploads/residents/${filename}`;
+    const key = `residents/${params.id}/photo/${Date.now()}.${ext}`;
 
-    // Ensure directory exists
-    const fs = require('fs');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
+    const { bucket } = await uploadBuffer({ key, contentType: file.type, body: buffer });
+    const photoUrl = toS3Url(bucket, key);
 
-    // Delete old photo if exists
-    if (resident.photoUrl && resident.photoUrl.startsWith('/uploads/')) {
-      const oldPath = join(process.cwd(), 'public', resident.photoUrl);
-      try {
-        await unlink(oldPath);
-      } catch (e) {
-        console.log('Could not delete old photo:', e);
+    // Delete old S3 photo if present
+    if (resident.photoUrl) {
+      const parsed = parseS3Url(resident.photoUrl);
+      if (parsed) {
+        await deleteObject({ bucket: parsed.bucket, key: parsed.key }).catch(() => {
+          // Non-fatal — old photo cleanup failure doesn't block new upload
+        });
       }
     }
 
-    // Write new file
-    await writeFile(filePath, buffer);
-
-    // Update resident record
     await prisma.resident.update({
       where: { id: params.id },
       data: { photoUrl },
@@ -83,18 +72,18 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     return NextResponse.json({ success: true, photoUrl });
   } catch (e) {
-    console.error('Photo upload error:', e);
+    console.error('Photo upload error:', e instanceof Error ? e.message : 'Unknown error');
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }
 
 /**
  * DELETE /api/residents/[id]/photo
- * Delete resident photo
+ * Remove resident photo from S3 and clear photoUrl.
  */
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { session, error } = await requireOperatorOrAdmin();
+    const { error } = await requireOperatorOrAdmin();
     if (error) return error;
 
     const resident = await prisma.resident.findUnique({
@@ -106,17 +95,15 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
       return NextResponse.json({ error: 'Resident not found' }, { status: 404 });
     }
 
-    // Delete file if exists
-    if (resident.photoUrl && resident.photoUrl.startsWith('/uploads/')) {
-      const oldPath = join(process.cwd(), 'public', resident.photoUrl);
-      try {
-        await unlink(oldPath);
-      } catch (e) {
-        console.log('Could not delete photo:', e);
+    if (resident.photoUrl) {
+      const parsed = parseS3Url(resident.photoUrl);
+      if (parsed) {
+        await deleteObject({ bucket: parsed.bucket, key: parsed.key }).catch(() => {
+          // Non-fatal
+        });
       }
     }
 
-    // Update resident record
     await prisma.resident.update({
       where: { id: params.id },
       data: { photoUrl: null },
@@ -124,7 +111,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
 
     return NextResponse.json({ success: true });
   } catch (e) {
-    console.error('Photo delete error:', e);
+    console.error('Photo delete error:', e instanceof Error ? e.message : 'Unknown error');
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

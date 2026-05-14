@@ -15,7 +15,7 @@ import { AuditAction, DataClassification } from '@prisma/client';
 // Validation schema for creating document
 const createDocumentSchema = z.object({
   fileName: z.string().min(1),
-  fileUrl: z.string().url(),
+  fileUrl: z.string().min(1),
   fileType: z.string().min(1),
   documentType: z.enum([
     'MEDICAL_RECORD',
