@@ -48,9 +48,11 @@ export function captureError(
     
     Sentry.captureException(errorObj);
   });
-  
-  // Also log to console for development visibility
-  console.error('[Sentry] Error captured:', errorObj.message, context);
+
+  if (process.env.NODE_ENV !== 'production') {
+    // Dev-only: log error message (no context — may contain PHI)
+    console.error('[Sentry] Error captured:', errorObj.message);
+  }
 }
 
 /**

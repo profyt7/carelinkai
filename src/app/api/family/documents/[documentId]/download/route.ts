@@ -63,11 +63,7 @@ export async function GET(request: NextRequest, { params }: { params: { document
     
     // Handle Cloudinary documents
     if (isCloudinary) {
-      console.log('[Download] Cloudinary document detected:', {
-        documentId: doc.id,
-        fileName: doc.fileName,
-        fileUrl: doc.fileUrl
-      });
+      // fileUrl intentionally omitted — PHI field, not logged
       
       // Audit log (read/download)
       try {
