@@ -82,10 +82,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // TODO: Send invitation email
-    // For now, we'll just log it
-    console.log('Invitation email would be sent to:', email);
-    console.log('Message:', message);
+    // TODO: Send invitation email via Resend
 
     // Create activity feed item
     await prisma.activityFeedItem.create({

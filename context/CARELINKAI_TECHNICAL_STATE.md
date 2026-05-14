@@ -1,8 +1,8 @@
 # CareLinkAI — Technical State
-_Last updated: 2026-05-13_
+_Last updated: 2026-05-14_
 
 ## Active Branch
-`claude/hipaa-phase1-purge-2026-05-13` — HIPAA Phase 1 complete (3 PRs pushed 2026-05-13). Previous: `claude/review-carelink-docs-49Ycv` (household scheduling, 2026-05-07).
+`claude/hipaa-phase2-logs-2026-05-14` — HIPAA Phase 2 complete (3 PRs pushed 2026-05-14). Awaiting merge in order: Phase 1 PRs first, then Phase 2 A→B→C.
 
 ## Production URL
 https://carelinkai.onrender.com (also: https://getcarelinkai.com)

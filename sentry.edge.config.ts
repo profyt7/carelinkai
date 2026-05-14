@@ -2,6 +2,7 @@
 // https://docs.sentry.io/platforms/javascript/guides/nextjs/
 
 import * as Sentry from '@sentry/nextjs';
+import { scrubPhi } from './src/lib/phi-scrubber';
 
 const SENTRY_DSN = process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN;
 
@@ -27,8 +28,25 @@ if (SENTRY_DSN) {
     // Debug mode
     debug: process.env.NODE_ENV !== 'production',
 
-    // Enable sending default PII
-    sendDefaultPii: true,
+    // HIPAA: never send PII/PHI to Sentry by default
+    sendDefaultPii: false,
+
+    beforeSend(event) {
+      if (event.request?.data) {
+        event.request.data = scrubPhi(event.request.data);
+      }
+      if (event.extra) {
+        event.extra = scrubPhi(event.extra) as Record<string, unknown>;
+      }
+      return event;
+    },
+
+    beforeBreadcrumb(breadcrumb) {
+      if (breadcrumb.data) {
+        breadcrumb.data = scrubPhi(breadcrumb.data) as Record<string, unknown>;
+      }
+      return breadcrumb;
+    },
   });
 
   console.log('[Sentry Edge] ✅ Initialized with features:');

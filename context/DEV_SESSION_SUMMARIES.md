@@ -2,6 +2,73 @@
 
 ---
 
+### 2026-05-14 — HIPAA Phase 2: Data-Flow Lockdown (Upload Routes, Pre-signed Downloads, Log Redaction)
+
+- **Objective:** Complete HIPAA Phase 2 — close the 3 carried-forward upload routes, enforce pre-signed URLs on all PHI reads, and scrub PHI from Sentry/logs. Delivered as 3 separate PRs against main (branch off each prior).
+
+- **Work completed:**
+  1. **HIPAA_PHASE_2_DESIGN.md** — created in `chrisos-vault/03_Execution/`. Full spec: caller audit verdicts, classification logic, getDownloadUrl() signature, scrubPhi() denylist, acceptance criteria, PR descriptions.
+  2. **PR A** `claude/hipaa-phase2-uploads-2026-05-14` — pushed, merge first.
+     - Schema: `Document` model gets `classification DataClassification @default(PHI)` + `storage String?`; migration also nulls out `/uploads/` Resident.photoUrl rows (local FS, not recoverable)
+     - `/api/documents/upload`: classify-by-linkage (residentId→PHI, inquiryId→PII, unlinked→PII); PHI→uploadBuffer(S3)/toS3Url; PII→Cloudinary; persist classification+storage; zero HIPAA-TODO Phase 2 comments remain
+     - `/api/upload`: accepts `classification` FormData param (default PHI); PHI→S3, PII/PUBLIC→Cloudinary; returns `storage` field
+     - `/api/residents/[id]/photo`: ALL local FS code removed (writeFile/unlink/mkdirSync); S3 upload at `residents/{id}/photo/{ts}.{ext}`; DELETE uses parseS3Url+deleteObject; classification=PHI always
+     - Zod: `z.string().url()` → `z.string().min(1)` in 3 metadata endpoints (rejects s3:// URIs)
+     - Frontend modals: residents+inquiries append `classification=PHI`; caregivers append `classification=PII` to `/api/upload` FormData
+     - Tests: 11 unit + 5 real-S3 (skipped without creds) — all pass
+  3. **PR B** `claude/hipaa-phase2-download-2026-05-14` — pushed, merge after A.
+     - New `src/lib/storage/download.ts`: `getDownloadUrl({ storage, fileUrl, expiresIn? })` → presigned HTTPS (TTL 300s) for S3, passthrough for Cloudinary, inferred from URL for legacy null-storage rows. Local crypto op — no network call.
+     - 6 PHI read routes updated: operator/residents documents, family gallery, operator/inquiries documents, residents/[id]/documents, residents/[id] (photoUrl), family/documents list. Each call site has AUTHZ comment.
+     - Tests: 8 unit + 4 real-S3 (skipped) — all pass
+  4. **PR C** `claude/hipaa-phase2-logs-2026-05-14` — pushed, merge after B.
+     - New `src/lib/phi-scrubber.ts`: `scrubPhi(payload)` — pure, deterministic, recursive; 25-field denylist; works on objects/arrays/nested; primitives/null pass through
+     - All 3 Sentry configs: `sendDefaultPii: false`, `beforeSend`+`beforeBreadcrumb` run scrubPhi on event.request.data, event.extra, breadcrumb.data
+     - `instrumentation-client.ts`: `maskAllInputs: true` in Session Replay (form fields = PHI risk); composed beforeSend (ResizeObserver filter + PHI scrub)
+     - `src/lib/sentry.ts` captureError(): console.error now logs only errorObj.message (no context), dev-only
+     - `family/members/invite`: removed console.log of email + message fields
+     - `family/documents/[documentId]/download`: removed console.log of fileUrl
+     - Tests: 42 unit tests covering every denylist field + nested + arrays + edge cases — all pass
+
+- **Files changed:**
+  - `prisma/schema.prisma` (Document model +2 fields)
+  - `prisma/migrations/20260514000001_hipaa_phase2_document_classification/migration.sql` (new)
+  - `src/app/api/documents/upload/route.ts` (full rewrite)
+  - `src/app/api/upload/route.ts` (full rewrite)
+  - `src/app/api/residents/[id]/photo/route.ts` (full rewrite — no local FS)
+  - `src/app/api/residents/[id]/documents/route.ts` (Zod + presign GET)
+  - `src/app/api/operator/residents/[id]/documents/route.ts` (Zod + presign GET)
+  - `src/app/api/operator/inquiries/[id]/documents/route.ts` (Zod + presign GET)
+  - `src/app/api/residents/[id]/route.ts` (presign photoUrl in GET)
+  - `src/app/api/family/gallery/route.ts` (presign photos in GET)
+  - `src/app/api/family/documents/route.ts` (presign in GET list)
+  - `src/app/api/family/documents/[documentId]/download/route.ts` (remove fileUrl log)
+  - `src/app/api/family/members/invite/route.ts` (remove email log)
+  - `src/lib/storage/download.ts` (new)
+  - `src/lib/phi-scrubber.ts` (new)
+  - `sentry.server.config.ts`, `sentry.edge.config.ts`, `src/instrumentation-client.ts`, `src/lib/sentry.ts`
+  - `src/components/operator/residents/DocumentUploadModal.tsx`
+  - `src/components/operator/inquiries/DocumentUploadModal.tsx`
+  - `src/components/operator/caregivers/DocumentUploadModal.tsx`
+  - `__tests__/hipaa-phase2-uploads.integration.test.ts` (new)
+  - `__tests__/hipaa-phase2-downloads.unit.test.ts` (new)
+  - `__tests__/phi-scrubber.unit.test.ts` (new)
+  - `chrisos-vault/03_Execution/HIPAA_PHASE_2_DESIGN.md` (new)
+
+- **Commands run:** `npx prisma generate`, `npx tsc --noEmit` (0 errors), `npx jest` (67 pass, 9 skip), `git push` × 3
+
+- **Tests/build status:** TypeScript 0 errors. 67 tests pass, 9 skipped (real-S3 integration without credentials in dev). All 3 PR branches pushed to GitHub.
+
+- **Deployment impact:** 3 PRs must merge in order A→B→C. PR A includes a DB migration — will auto-run on Render deploy. The migration nulls `/uploads/` photoUrls; resident photos will show missing until operator re-uploads. No other destructive data change.
+
+- **New risks/blockers:**
+  - PR A migration nulls local-FS photoUrls. Notify Chris before merging if any production residents have real photos (confirmed DB is seed-only as of 2026-05-13 PHI audit, so safe to proceed).
+  - Phase 1 PRs must be merged before Phase 2 PRs. Phase 2 A imports `DataClassification` from `@prisma/client` which Phase 1 migration creates.
+  - Real-S3 integration tests need `AWS_S3_*` creds to run — they correctly skip without. Run in Render shell post-merge to verify.
+
+- **Recommended next step:** Merge Phase 1 PRs (`claude/hipaa-phase1-schema-2026-05-13` → routing → purge), then merge Phase 2 PRs (A→B→C). Then run the Phase 1 purge script to clear seed Cloudinary files. Engage HIPAA external consultant ($500-1500, OL-HIPAA-GAP in open loops).
+
+---
+
 ### 2026-05-13 — HIPAA Phase 1: Data Classification + PHI-Aware Upload Routing
 
 - **Objective:** Implement HIPAA Phase 1 — classify every uploaded file at the DB layer (PUBLIC/PII/PHI) and route PHI uploads to S3 (BAA-covered bucket carelinkai-prod-phi). Delivered as 3 separate PRs against main.
