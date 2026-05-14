@@ -7,6 +7,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { captureError } from '@/lib/sentry';
+import { getDownloadUrl } from '@/lib/storage/download';
 
 export async function GET(request: NextRequest) {
   try {
@@ -78,8 +79,16 @@ export async function GET(request: NextRequest) {
 
     const total = await prisma.galleryPhoto.count({ where });
 
+    // AUTHZ: familyMember membership check above ensures user is authorized for this family
+    const resolvedPhotos = await Promise.all(
+      photos.map(async (photo) => ({
+        ...photo,
+        fileUrl: await getDownloadUrl({ storage: photo.storage, fileUrl: photo.fileUrl }),
+      }))
+    );
+
     return NextResponse.json({
-      photos,
+      photos: resolvedPhotos,
       total,
       limit,
       offset,
