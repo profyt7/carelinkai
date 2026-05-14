@@ -193,12 +193,19 @@ Each loop: what it is, why it matters, what done looks like.
   - **After PR 2 merge:** Run `npx ts-node --transpile-only scripts/phase1-purge-cloudinary-seeds.ts --dry-run` then the real purge.
   - **Done when:** All 3 PRs merged, migration applied on Render, purge script confirms 0 Cloudinary rows.
 
-- [ ] **OL-052: HIPAA Phase 2 — 3 remaining PHI upload routes**
-  - `src/app/api/documents/upload/route.ts` — routes to Cloudinary for docs linked to residentId/inquiryId (PHI context)
-  - `src/app/api/upload/route.ts` — generic Cloudinary upload, no classification check
-  - `src/app/api/residents/[id]/photo/route.ts` — stores resident photos to local FS (writeFile)
-  - All three flagged with `// HIPAA-TODO Phase 2` comments in code
-  - **Done when:** All three routes route PHI context to S3 and persist classification+storage
+- [x] **OL-052: HIPAA Phase 2 — 3 remaining PHI upload routes** ✅ RESOLVED 2026-05-14
+  - PR A `claude/hipaa-phase2-uploads-2026-05-14` fixes all three; zero HIPAA-TODO Phase 2 comments remain.
+  - Awaiting merge (after Phase 1 PRs merge first).
+
+- [ ] **OL-053: HIPAA Phase 2 PRs — merge in order A→B→C** (after Phase 1 PRs)
+  - **PR A** `claude/hipaa-phase2-uploads-2026-05-14` — upload routes + schema migration
+  - **PR B** `claude/hipaa-phase2-download-2026-05-14` — pre-signed URLs on all PHI reads
+  - **PR C** `claude/hipaa-phase2-logs-2026-05-14` — Sentry scrubbing + log redaction
+  - Design spec: `chrisos-vault/03_Execution/HIPAA_PHASE_2_DESIGN.md`
+  - **CRITICAL:** Phase 1 PRs must merge first (Phase 2 imports DataClassification from Phase 1 migration)
+  - **Done when:** All 3 PRs merged, migrations applied on Render, real-S3 integration tests run clean.
+
+- [ ] **OL-054: HIPAA external consultant gap assessment** — $500-1500, target 2026-05-27 (Risk 1)
 
 - [ ] **Test suite rot — 2 broken suites on main**
   - `__tests__/emergency.api.test.ts` — failing on main
