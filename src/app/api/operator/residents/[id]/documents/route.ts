@@ -11,6 +11,7 @@ import { PERMISSIONS } from '@/lib/permissions';
 import { z } from 'zod';
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { AuditAction, DataClassification } from '@prisma/client';
+import { getDownloadUrl } from '@/lib/storage/download';
 
 // Validation schema for creating document
 const createDocumentSchema = z.object({
@@ -45,7 +46,7 @@ export async function GET(
     const user = await requirePermission(PERMISSIONS.RESIDENTS_VIEW);
     await requireResidentAccess(user.id, params.id);
 
-    // Fetch documents
+    // AUTHZ: requireResidentAccess above ensures user is authorized for this resident
     const documents = await prisma.residentDocument.findMany({
       where: { residentId: params.id },
       orderBy: { uploadedAt: 'desc' },
@@ -61,7 +62,14 @@ export async function GET(
       }
     });
 
-    return NextResponse.json(documents);
+    const resolved = await Promise.all(
+      documents.map(async (doc) => ({
+        ...doc,
+        fileUrl: await getDownloadUrl({ storage: doc.storage, fileUrl: doc.fileUrl }),
+      }))
+    );
+
+    return NextResponse.json(resolved);
   } catch (error) {
     return handleAuthError(error);
   }

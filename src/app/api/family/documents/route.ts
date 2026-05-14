@@ -25,6 +25,7 @@ import { generateMockDocuments } from "@/lib/services/family";
 import { uploadBuffer, buildFamilyDocumentKey, toS3Url, parseS3Url, deleteObject as s3Delete, hasS3Credentials, canUseS3, getBucket } from "@/lib/storage";
 import cloudinary, { isCloudinaryConfigured, UPLOAD_PRESETS } from "@/lib/cloudinary";
 import { getUploadDestination } from "@/lib/storage/router";
+import { getDownloadUrl } from "@/lib/storage/download";
 import { DataClassification } from "@prisma/client";
 import { createAuditLogFromRequest } from "@/lib/audit";
 import { rateLimitAsync, getClientIp, buildRateLimitHeaders } from "@/lib/rateLimit";
@@ -355,13 +356,15 @@ export async function GET(request: NextRequest) {
       const hasNextPage = filters.page < totalPages;
       const hasPreviousPage = filters.page > 1;
       
-      // Transform documents to include comment count
-      const documentsWithDetails = documents.map(doc => ({
-        ...doc,
-        // fallback to 0 if comments is undefined (e.g., mock data)
-        commentCount: (doc as any).comments?.length ?? 0,
-        comments: undefined // Remove comments array
-      })) as FamilyDocumentWithDetails[];
+      // AUTHZ: checkFamilyMembership above ensures user is authorized for this family
+      const documentsWithDetails = await Promise.all(
+        documents.map(async (doc) => ({
+          ...doc,
+          fileUrl: await getDownloadUrl({ storage: (doc as any).storage, fileUrl: doc.fileUrl }),
+          commentCount: (doc as any).comments?.length ?? 0,
+          comments: undefined,
+        }))
+      ) as FamilyDocumentWithDetails[];
       
       const elapsed = Date.now() - startedAt;
       console.log(`[Documents API] Request successful, returning response, total elapsed: ${elapsed}ms`);
