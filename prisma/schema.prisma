@@ -2014,6 +2014,8 @@ model Document {
   tags                     String[]         @default([])
   notes                    String?
   version                  Int?             @default(1)
+  classification           DataClassification @default(PHI)
+  storage                  String?
   classificationConfidence Float?
   classificationReasoning  String?
   autoClassified           Boolean          @default(false)
