@@ -2,6 +2,87 @@
 
 ---
 
+### 2026-05-13 — HIPAA Phase 1: Data Classification + PHI-Aware Upload Routing
+
+- **Objective:** Implement HIPAA Phase 1 — classify every uploaded file at the DB layer (PUBLIC/PII/PHI) and route PHI uploads to S3 (BAA-covered bucket carelinkai-prod-phi). Delivered as 3 separate PRs against main.
+
+- **Work completed:**
+  1. **HIPAA_PHASE_1_DESIGN.md** — created PRIMARY REFERENCE design spec in chrisos-vault/03_Execution/. Contains getUploadDestination spec, S3 canonical config, endpoint→classification table, purge script spec, env var standardization table, acceptance criteria.
+  2. **PR 1 (schema)** `claude/hipaa-phase1-schema-2026-05-13` — pushed, ready to merge first.
+     - Added `DataClassification` enum (PUBLIC, PII, PHI) to prisma/schema.prisma
+     - Added `classification DataClassification @default(PHI)` and `storage String?` to 4 models: ResidentDocument, FamilyDocument, InquiryDocument, GalleryPhoto
+     - Migration: `prisma/migrations/20260513000001_add_data_classification/migration.sql`
+  3. **PR 2 (routing)** `claude/hipaa-phase1-routing-2026-05-13` — pushed, merge after PR 1.
+     - New `src/lib/storage/router.ts`: `getUploadDestination(classification)` → 's3'|'cloudinary'. PHI → S3, PUBLIC/PII → Cloudinary.
+     - Rewrote `src/lib/storage.ts`: AWS_S3_* env vars exclusively, canUseS3() removes NODE_ENV restriction, uploadBuffer() unconditionally sets SSE-S3 AES256, getBucket() exported.
+     - Standardized ALL upload routes to AWS_S3_* env vars (was: S3_*, AWS_ACCESS_KEY_ID, AWS_REGION mix)
+     - Refactored family/documents and family/gallery/upload: S3-first for PHI, Cloudinary dev fallback, persist classification + storage fields
+     - Added classification=PHI + storage to residentDocument.create and inquiryDocument.create
+     - Added HIPAA classification comments to every upload route per §2.3 classification table
+     - Added HIPAA-TODO Phase 2 notes to documents/upload/route.ts and generic upload route
+     - Updated .env.example: AWS_S3_* section with BAA-bucket documentation
+     - New `__tests__/storage-router.unit.test.ts`: 6 passing tests (PUBLIC→cloudinary, PII→cloudinary, PHI→s3)
+     - `npm run type-check`: 0 errors. `npm run lint`: 0 new errors.
+  4. **PR 3 (purge)** `claude/hipaa-phase1-purge-2026-05-13` — pushed, merge after PR 2.
+     - New `scripts/phase1-purge-cloudinary-seeds.ts`
+     - --dry-run flag: reports without API calls or DB changes
+     - Targets 4 tables (ResidentDocument:1, FamilyDocument:8, InquiryDocument:3, GalleryPhoto:14)
+     - Parses publicId + resourceType from Cloudinary URLs; handles not-found as success; skips non-Cloudinary rows
+     - Post-purge verification: queries all 4 tables, asserts 0 Cloudinary rows remain
+
+- **Files changed:**
+  - `prisma/schema.prisma` (DataClassification enum + 4 model columns)
+  - `prisma/migrations/20260513000001_add_data_classification/migration.sql` (new)
+  - `src/lib/storage/router.ts` (new)
+  - `src/lib/storage.ts` (rewrite)
+  - `src/lib/s3/upload.ts` (AWS_S3_* vars)
+  - `src/lib/services/family.ts` (AWS_S3_REGION)
+  - `src/app/api/family/documents/route.ts` (PHI routing + storage field)
+  - `src/app/api/family/gallery/upload/route.ts` (PHI routing + storage field)
+  - `src/app/api/operator/residents/[id]/documents/route.ts` (classification + storage on create)
+  - `src/app/api/operator/inquiries/[id]/documents/route.ts` (classification + storage on create)
+  - `src/app/api/caregiver/credentials/upload-url/route.ts` (AWS_S3_* vars + HIPAA comment)
+  - `src/app/api/provider/credentials/upload-url/route.ts` (AWS_S3_* vars + HIPAA comment)
+  - `src/app/api/operator/homes/[id]/photos/route.ts` (HIPAA comment)
+  - `src/app/api/operator/homes/[id]/licenses/route.ts` (HIPAA comment)
+  - `src/app/api/operator/homes/[id]/inspections/route.ts` (HIPAA comment)
+  - `src/app/api/profile/picture/upload/route.ts` (HIPAA comment)
+  - `src/app/api/admin/affiliate/materials/route.ts` (HIPAA comment)
+  - `src/app/api/documents/upload/route.ts` (HIPAA-TODO Phase 2 note)
+  - `.env.example` (AWS_S3_* section added)
+  - `__tests__/storage-router.unit.test.ts` (new — 6 tests)
+  - `scripts/phase1-purge-cloudinary-seeds.ts` (new)
+
+- **Commands run:**
+  - `npm run type-check` → 0 errors
+  - `npm run lint` → 0 new errors (pre-existing warnings only)
+  - `npx jest __tests__/storage-router.unit.test.ts` → 6/6 PASS
+  - `git push -u origin claude/hipaa-phase1-schema-2026-05-13`
+  - `git push -u origin claude/hipaa-phase1-routing-2026-05-13`
+  - `git push -u origin claude/hipaa-phase1-purge-2026-05-13`
+
+- **Tests/build status:** type-check clean, 6 new unit tests passing, no lint errors.
+
+- **Deployment impact:**
+  - PR 1 migration adds 2 columns to 4 tables (additive, nullable storage column). Applies via `prisma migrate deploy` on Render deploy. Safe on current SEED_ONLY production DB.
+  - PR 2 changes all upload routes. No DB migration needed. Render env vars `AWS_S3_*` already set.
+  - PR 3 purge script is run manually (not auto-deployed). Run `--dry-run` first.
+  - **MERGE ORDER IS REQUIRED:** PR 1 → PR 2 → PR 3. PR 2 imports DataClassification from @prisma/client which requires PR 1's generated client.
+
+- **New risks/blockers:**
+  - `documents/upload/route.ts` and `upload/route.ts` still route to Cloudinary for potentially PHI-linked documents (noted as HIPAA-TODO Phase 2 in both files).
+  - `residents/[id]/photo/route.ts` stores resident photos to local FS — HIPAA-TODO Phase 2.
+  - PR 3 purge script must not run until PRs 1+2 are merged and prisma migrate deploy has run.
+
+- **Recommended next step:**
+  1. Merge PR 1 to main → verify Render deploy + migration applies cleanly
+  2. Merge PR 2 to main → verify S3 routing live in production
+  3. Run purge script dry-run: `npx ts-node --transpile-only scripts/phase1-purge-cloudinary-seeds.ts --dry-run`
+  4. Run purge script live
+  5. Phase 2 scope: migrate `documents/upload/route.ts`, `upload/route.ts`, `residents/[id]/photo/route.ts` to S3 for PHI context
+
+---
+
 ### 2026-05-07 — Option B: Household Shift Scheduling for FAMILY Users
 
 - **Objective:** Build the private household shift management layer for FAMILY users who hire caregivers directly via the marketplace (Option A), and close OL-050.
