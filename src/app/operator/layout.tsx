@@ -2,6 +2,7 @@
 
 import { ReactNode } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import { AcceptanceGate } from "@/components/operator/AcceptanceGate";
 
 interface OperatorLayoutProps {
   children: ReactNode;
@@ -9,8 +10,10 @@ interface OperatorLayoutProps {
 
 export default function OperatorLayout({ children }: OperatorLayoutProps) {
   return (
-    <DashboardLayout title="Operator">
-      {children}
-    </DashboardLayout>
+    <AcceptanceGate>
+      <DashboardLayout title="Operator">
+        {children}
+      </DashboardLayout>
+    </AcceptanceGate>
   );
 }
