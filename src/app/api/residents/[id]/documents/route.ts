@@ -58,6 +58,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       }))
     );
 
+    await createAuditLogFromRequest(req, 'READ', 'Document', resident.id, 'PHI read: resident documents listing');
     return NextResponse.json({ items: resolvedItems }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (e) {
     captureError(e instanceof Error ? e : new Error(String(e)), { extra: { route: 'documents_get' } });

@@ -288,6 +288,7 @@ const navItems: NavItem[] = [
       { name: "Discharge Planners", icon: <FiFileText size={18} />, href: "/admin/discharge-planners", showInMobileBar: false, roleRestriction: ["ADMIN"] },
       { name: "Analytics", icon: <FiBarChart2 size={18} />, href: "/admin/analytics", showInMobileBar: false, roleRestriction: ["ADMIN"] },
       { name: "Audit Logs", icon: <FiFileText size={18} />, href: "/admin/audit-logs", showInMobileBar: false, roleRestriction: ["ADMIN"] },
+      { name: "ePHI Access Log", icon: <FiShield size={18} />, href: "/admin/phi-access", showInMobileBar: false, roleRestriction: ["ADMIN"] },
       { name: "Data Exports", icon: <FiFileText size={18} />, href: "/admin/exports", showInMobileBar: false, roleRestriction: ["ADMIN"] },
       { name: "System Health", icon: <FiBarChart2 size={18} />, href: "/admin/system-health", showInMobileBar: false, roleRestriction: ["ADMIN"] },
       { name: "Admin Tools", icon: <FiTool size={18} />, href: "/admin/tools", showInMobileBar: false, roleRestriction: ["ADMIN"] },
