@@ -8,6 +8,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { captureError } from '@/lib/sentry';
 import { getDownloadUrl } from '@/lib/storage/download';
+import { createAuditLogFromRequest } from '@/lib/audit';
 
 export async function GET(request: NextRequest) {
   try {
@@ -87,6 +88,7 @@ export async function GET(request: NextRequest) {
       }))
     );
 
+    await createAuditLogFromRequest(request, 'READ', 'GalleryPhoto', familyId, 'PHI read: family gallery listing');
     return NextResponse.json({
       photos: resolvedPhotos,
       total,
