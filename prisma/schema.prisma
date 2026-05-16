@@ -160,6 +160,15 @@ model Operator {
   subscriptionStatus   SubscriptionStatus?
   trialEndsAt          DateTime?
   currentPeriodEndsAt  DateTime?
+  // HIPAA BAA + DPA acceptance — nullable so existing operators are not broken
+  baaTemplateVersion   String?
+  baaAcceptedAt        DateTime?
+  baaAcceptedIp        String?
+  baaAcceptedUserAgent String?
+  dpaTemplateVersion   String?
+  dpaAcceptedAt        DateTime?
+  dpaAcceptedIp        String?
+  dpaAcceptedUserAgent String?
   createdAt            DateTime            @default(now())
   updatedAt            DateTime            @updatedAt
   homes                    AssistedLivingHome[]
@@ -2478,6 +2487,7 @@ enum AuditAction {
   REPORT_DOWNLOADED
   IMPERSONATION_STARTED
   IMPERSONATION_STOPPED
+  LEGAL_ACCEPTANCE
 }
 
 /// Appointment-related enums
