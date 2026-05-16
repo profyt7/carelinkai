@@ -71,6 +71,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       }))
     );
 
+    await createAuditLogFromRequest(_req, AuditAction.READ, 'InquiryDocument', params.id, 'PHI read: inquiry documents listing');
     return NextResponse.json({ documents: resolved });
   } catch (e) {
     captureError(e instanceof Error ? e : new Error(String(e)), {
