@@ -14,6 +14,9 @@ import { NextRequest, NextResponse } from 'next/server';
  * 3. Error should appear in Sentry dashboard within a few minutes
  */
 export async function GET(request: NextRequest) {
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
   // Generate unique test run ID to prevent caching
   const testRunId = `client-test-${Date.now()}-${Math.random().toString(36).substring(7)}`;
   const timestamp = new Date().toISOString();

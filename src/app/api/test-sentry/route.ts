@@ -4,6 +4,9 @@ import * as Sentry from '@sentry/nextjs';
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
   console.log('='.repeat(60));
   console.log('[Test Sentry API] === STARTING DIAGNOSTICS ===');
   console.log('[Test Sentry API] Timestamp:', new Date().toISOString());
