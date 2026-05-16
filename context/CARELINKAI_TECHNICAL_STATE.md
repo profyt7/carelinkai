@@ -1,8 +1,11 @@
 # CareLinkAI — Technical State
-_Last updated: 2026-05-14_
+_Last updated: 2026-05-16_
 
 ## Active Branch
-`claude/hipaa-phase2-logs-2026-05-14` — HIPAA Phase 2 complete (3 PRs pushed 2026-05-14). Awaiting merge in order: Phase 1 PRs first, then Phase 2 A→B→C.
+Phase 3 complete — 3 PRs pushed 2026-05-16, awaiting merge in order A→B→C:
+- PR A #536: `claude/hipaa-phase3-phi-dashboard-2026-05-16` — ePHI access dashboard + audit gaps
+- PR B #537: `claude/hipaa-phase3-operator-baa-2026-05-16` — BAA/DPA gate + schema migration
+- PR C #538: `claude/hipaa-phase3-gate-test-sentry-2026-05-16` — test-sentry production gate
 
 ## Production URL
 https://carelinkai.onrender.com (also: https://getcarelinkai.com)
@@ -31,7 +34,7 @@ https://carelinkai.onrender.com (also: https://getcarelinkai.com)
 | AI — All features | Anthropic Claude API (`claude-sonnet-4-6`, `claude-haiku-4-5-20251001`) |
 
 ## Schema Summary
-67+ Prisma models + enums. New since 2026-04-27: `DischargePlannerLicenseType` enum (INDIVIDUAL/DEPARTMENT), `AffiliateReferralType` enum (OPERATOR/FAMILY), `CommissionTier` enum (STANDARD/SILVER/GOLD). New fields: `DischargePlannerProfile.licenseType + seatCount`, `Family.referredByCode`, `AffiliateReferral.referralType`, `Affiliate.commissionTier`. `SubscriptionPlan` enum: +AGENCY. Migration: `20260427000000_revenue_model_expansion`. **2026-05-02:** `Provider` adds `stripeCustomerId`, `stripeSubscriptionId`, `listingStatus`, `listingPeriodEndsAt`; `Caregiver` adds `isPro`, `proStripeCustomerId`, `proStripeSubscriptionId`, `proStatus`, `proPeriodEndsAt`, `applicationCount`, `applicationCountResetAt`. Migration: `20260502000003_add_provider_listing_and_pro_caregiver`. **2026-05-06:** `ProviderCredential` adds `aiReviewStatus String?`, `aiReviewNotes String?`, `checkrReportId String? @unique`; `BackgroundCheckOrderer` enum adds `OPERATOR`; new `BackgroundCheckInvitation` model for standalone check-anyone flow. Three manual migrations: `20260505000001`, `20260505000002`, `20260505000003`. **2026-05-07:** `Provider` adds `checkrCandidateId String?`; new `ProviderBackgroundCheckOrder` model (links Provider to Checkr direct-report flow). Migration: `20260506000001_provider_background_checks`. ⚠️ ALL FOUR MIGRATIONS (20260505000001/2/3, 20260506000001) PENDING DEPLOY on Render DB — will auto-apply via `prisma migrate deploy` on next Render deploy.
+67+ Prisma models + enums. **2026-05-16 (Phase 3 PR B, pending merge):** `Operator` adds 8 nullable BAA/DPA acceptance fields (`baaTemplateVersion`, `baaAcceptedAt`, `baaAcceptedIp`, `baaAcceptedUserAgent`, `dpaTemplateVersion`, `dpaAcceptedAt`, `dpaAcceptedIp`, `dpaAcceptedUserAgent`); `AuditAction` enum adds `LEGAL_ACCEPTANCE`. Migration: `20260516000001_add_operator_baa_dpa_acceptance`. **2026-05-14 (Phase 2, on main):** `Document` adds `classification DataClassification @default(PHI)` + `storage String?`. **Earlier:** `DischargePlannerLicenseType`, `AffiliateReferralType`, `CommissionTier` enums; provider/caregiver subscription fields; `BackgroundCheckInvitation`, `ProviderBackgroundCheckOrder` models. ⚠️ Migrations 20260505000001/2/3 + 20260506000001 pending deploy on Render DB.
 
 ## User Roles
 FAMILY, OPERATOR, CAREGIVER, ADMIN, STAFF, PROVIDER, AFFILIATE, DISCHARGE_PLANNER

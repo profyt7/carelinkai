@@ -2,6 +2,89 @@
 
 ---
 
+### 2026-05-16 — HIPAA Phase 3: ePHI Access Dashboard + Operator BAA/DPA Gate + Test-Sentry Gate
+
+- **Objective:** Ship HIPAA Phase 3 as 3 PRs against main (merge A → B → C): E3 ePHI access-logging dashboard, E1 operator BAA/DPA gate, E4 test-sentry route gate.
+
+- **Work completed:**
+
+  **Vault files created:**
+  - `chrisos-vault/03_Execution/HIPAA_PUNCH_LIST.md` — created with items A1-B5 (done), E1-E4 (Phase 3), F1-F4 (remaining)
+  - `chrisos-vault/02_Memory/HIPAA_AUDIT_READINESS.md` — coverage table, legal agreement status, phase gate checklist, risk register alignment
+
+  **PR A** `claude/hipaa-phase3-phi-dashboard-2026-05-16` → GitHub PR #536 (merge first):
+  - 4 PHI read-path audit gaps fixed: `residents/[id]/documents` GET, `operator/residents/[id]/documents` GET, `family/gallery` GET, `operator/inquiries/[id]/documents` GET
+  - `family/gallery` was also missing the import — added both import and call
+  - New `/api/admin/phi-access` — ADMIN-only, PHI resource types (Resident, Document, ResidentDocument, InquiryDocument, GalleryPhoto), date range default 7d, action/type multi-select, subject+actor text search, 100/page pagination, CSV export max 10k rows, summary stats (totalEvents, uniqueActors, uniqueSubjects, deniedCount)
+  - New `/admin/phi-access` client component dashboard — 4 summary cards, filter bar, table with timestamp/actor+role/action/resource/IP/UA, pagination, CSV export
+  - DashboardLayout: "ePHI Access Log" nav link added (ADMIN-only)
+  - Tests: 13 pass (0 fail) — PHI_RESOURCE_TYPES constants, default date window, static coverage probe for all 6 PHI read routes
+
+  **PR B** `claude/hipaa-phase3-operator-baa-2026-05-16` → GitHub PR #537 (merge second):
+  - Schema: 8 nullable BAA/DPA fields on Operator, LEGAL_ACCEPTANCE on AuditAction — additive + nullable, safe auto-deploy
+  - Migration: `20260516000001_add_operator_baa_dpa_acceptance` (IF NOT EXISTS + DO $$ block)
+  - Draft legal templates with DRAFT banner: `src/content/legal/baa/v-draft-2026-05-15.md`, `src/content/legal/dpa/v-draft-2026-05-15.md`
+  - `src/lib/legal.ts` — version constants + `isOperatorAcceptanceCurrent()` helper
+  - `src/app/api/operator/acceptance/route.ts` — GET (status check, ADMIN bypass) + POST (record acceptance with IP/UA/timestamp/version, dual LEGAL_ACCEPTANCE audit events)
+  - `src/app/operator/acceptance/page.tsx` — scrollable BAA+DPA boxes, two mandatory checkboxes, records acceptance + redirects to /operator
+  - `src/components/operator/AcceptanceGate.tsx` — client gate: calls `/api/operator/acceptance`, redirects if not current, ADMIN bypass, acceptance page excluded
+  - `src/app/operator/layout.tsx` — wraps children in AcceptanceGate
+  - `src/app/admin/operators/[id]/page.tsx` — ADMIN detail page with Agreements section (version/accepted-at/IP, read-only)
+  - Tests: 9 pass, 1 skipped (DB integration skipped without live DB)
+
+  **PR C** `claude/hipaa-phase3-gate-test-sentry-2026-05-16` → GitHub PR #538 (merge third):
+  - All 4 test-sentry routes gated: `NODE_ENV === 'production'` → 404
+  - Design choice: NODE_ENV gate (not admin session) — simpler, deterministic, no auth overhead
+  - Tests: 8 pass — 2 per route (has production guard, returns 404)
+
+- **Files changed:**
+  - `prisma/schema.prisma` (Operator model, AuditAction enum)
+  - `prisma/migrations/20260516000001_add_operator_baa_dpa_acceptance/migration.sql` (new)
+  - `src/app/api/residents/[id]/documents/route.ts`
+  - `src/app/api/operator/residents/[id]/documents/route.ts`
+  - `src/app/api/family/gallery/route.ts`
+  - `src/app/api/operator/inquiries/[id]/documents/route.ts`
+  - `src/app/api/admin/phi-access/route.ts` (new)
+  - `src/app/admin/phi-access/page.tsx` (new)
+  - `src/app/admin/operators/[id]/page.tsx` (new)
+  - `src/app/api/operator/acceptance/route.ts` (new)
+  - `src/app/operator/acceptance/page.tsx` (new)
+  - `src/app/operator/layout.tsx`
+  - `src/components/layout/DashboardLayout.tsx`
+  - `src/components/operator/AcceptanceGate.tsx` (new)
+  - `src/content/legal/baa/v-draft-2026-05-15.md` (new)
+  - `src/content/legal/dpa/v-draft-2026-05-15.md` (new)
+  - `src/lib/legal.ts` (new)
+  - `src/app/api/test-sentry/route.ts`
+  - `src/app/api/test-sentry-logs/route.ts`
+  - `src/app/api/test-sentry-client-error/route.ts`
+  - `src/app/api/test-sentry-metrics/route.ts`
+  - `__tests__/hipaa-phase3-phi-dashboard.unit.test.ts` (new)
+  - `__tests__/hipaa-phase3-phi-audit-coverage.probe.test.ts` (new)
+  - `__tests__/hipaa-phase3-baa-gate.unit.test.ts` (new)
+  - `__tests__/hipaa-phase3-test-sentry-gate.unit.test.ts` (new)
+  - `chrisos-vault/03_Execution/HIPAA_PUNCH_LIST.md` (new)
+  - `chrisos-vault/02_Memory/HIPAA_AUDIT_READINESS.md` (new)
+
+- **Commands run:**
+  - `npx prisma generate` (regenerate client after schema change)
+  - `npx jest` (all tests pass: 36 suites, 374 pass)
+  - `npx tsc --noEmit --skipLibCheck` (0 errors)
+  - `git push -u origin` × 3 branches
+
+- **Tests/build status:** 36 suites pass, 374 tests pass, 10 skipped (DB/S3 integration without live infra), 0 failures.
+
+- **Deployment impact:** PR B has a schema migration (additive + nullable, no destructive ops). Standard Render auto-deploy handles it via `prisma migrate deploy` in the `start` script. PRs A and C are zero-migration deploys.
+
+- **New risks/blockers:**
+  - BAA/DPA template content is DRAFT — must NOT be presented as binding until attorney review (HIPAA Punch List F1/A2)
+  - Pre-Phase-3 operators will hit the acceptance gate on next login and must accept BAA+DPA before they can access the platform
+  - Risk Register Risk 1 score holds at 20 (Sev 5 × Lik 4) until PRs merge AND attorney reviews legal content
+
+- **Recommended next step:** Merge PRs #536 → #537 → #538 in order. Then engage attorney for BAA/DPA review (Punch List F1). Risk 1 score drops to 15 after both PRs merge. Drops to 12 after attorney review + first operator signs the approved version.
+
+---
+
 ### 2026-05-14 — HIPAA Phase 2: Data-Flow Lockdown (Upload Routes, Pre-signed Downloads, Log Redaction)
 
 - **Objective:** Complete HIPAA Phase 2 — close the 3 carried-forward upload routes, enforce pre-signed URLs on all PHI reads, and scrub PHI from Sentry/logs. Delivered as 3 separate PRs against main (branch off each prior).

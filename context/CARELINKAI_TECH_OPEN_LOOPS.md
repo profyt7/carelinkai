@@ -1,8 +1,28 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-05-05_
+_Last updated: 2026-05-16_
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
+
+---
+
+## 🔴 HIPAA Critical (Blocking First Operator with Real PHI)
+
+### OL-051: Merge HIPAA Phase 3 PRs #536 → #537 → #538
+- **Status:** 🔴 OPEN — code shipped, awaiting merge
+- **What:** Three PRs pushed 2026-05-16. Must merge in order A (#536) → B (#537) → C (#538). PR B has a schema migration.
+- **PR B impact on existing operators:** Pre-Phase-3 operators get null in all BAA/DPA fields → `isOperatorAcceptanceCurrent()` returns false → they will be redirected to `/operator/acceptance` on next login and must accept BAA+DPA before accessing the platform.
+- **Done when:** All three PRs merged to main, Render auto-deploy completes without migration errors.
+
+### OL-052: Attorney review of BAA/DPA draft templates (HIPAA Punch List F1 / A2)
+- **Status:** 🔴 OPEN — BLOCKING first operator with real PHI
+- **What:** `src/content/legal/baa/v-draft-2026-05-15.md` and `src/content/legal/dpa/v-draft-2026-05-15.md` have mandatory DRAFT banners. Must NOT be presented to operators as binding agreements until reviewed and approved by qualified legal counsel.
+- **Done when:** Attorney reviews + approves both templates → update `BAA_CURRENT_VERSION` / `DPA_CURRENT_VERSION` in `src/lib/legal.ts` to the approved version → redeploy → existing operators re-accept.
+
+### OL-053: HIPAA breach response runbook (Risk Register Risk 1 Action 6)
+- **Status:** ❌ OPEN — due 2026-06-30
+- **What:** Written runbook for breach detection, notification within 60 days (HIPAA Breach Notification Rule), affected individuals list, HHS reporting.
+- **Done when:** Document created in vault, reviewed, and linked from admin HIPAA dashboard.
 
 ---
 
