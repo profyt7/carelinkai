@@ -2,6 +2,35 @@
 
 ---
 
+### 2026-05-19 — Testing Infrastructure: 9 Critical-Path E2E Specs + Smoke + Synthetic Monitor
+- **Objective:** Build 3-PR testing infrastructure batch to close the gap exposed by the 2026-05-17 email outage (hardcoded wrong domain — no test caught it for days).
+- **Work completed:**
+  - **PR 1 — 9 Playwright @critical e2e specs** in `e2e/`:
+    - `signup-operator`, `signup-family`, `signup-discharge-planner` — UI registration flow → DB row assertions
+    - `email-verification` — reads verificationToken from DB via dev endpoint, calls verify-email API, asserts emailVerified set
+    - `baa-dpa-gate-operator` — AcceptanceGate redirect → accept BAA/DPA → operator dashboard
+    - `admin-phi-access-dashboard` — 4 summary cards + 403 for non-admin
+    - `operator-claim-flow` — admin claims DRAFT home → status PENDING_REVIEW
+    - `operator-onboarding-wizard` — 0-homes operator → wizard steps through Company + First Home
+    - `tour-inquiry-lifecycle` — family submits inquiry → operator schedules tour → marks completed
+  - **New dev endpoint** `GET /api/dev/get-verification-token?email=...` — returns stored verificationToken from DB without sending actual email
+  - **`GET /api/health/s3`** — PUT→GET→DELETE round-trip gated by X-Health-Check-Token header
+  - **`scripts/cleanup-smoke-users.ts`** — deletes *@test.carelinkai.com users older than 7 days
+  - **`.github/workflows/production-smoke.yml`** — post-deploy + nightly cron, 4 matrix checks (health, email delivery via Resend API polling, S3 round-trip, Stripe products), Slack + Sentry on failure
+  - **`.github/workflows/synthetic-monitor.yml`** — hourly canary: /api/health, /sitemap.xml, /robots.txt, Resend domain verification, Stripe products, Slack + Sentry on failure
+  - **`.github/workflows/cleanup-smoke-users.yml`** — weekly Sunday cron running the cleanup script
+  - **Bug fix in `src/app/api/auth/register/route.ts`** — added DISCHARGE_PLANNER to zod enum + `dischargePlannerProfile.create` switch case (was silently throwing "Invalid role selected")
+- **Files changed:** `e2e/` (9 new specs), `src/app/api/dev/get-verification-token/route.ts`, `src/app/api/health/s3/route.ts`, `src/app/api/auth/register/route.ts`, `scripts/cleanup-smoke-users.ts`, `.github/workflows/` (3 new workflows)
+- **Commands run:** `npx tsc --noEmit` (0 errors), `npx jest --testPathPattern=hipaa-phase3` (31 pass), `git push`
+- **Tests/build status:** TypeScript clean; all 31 HIPAA Phase 3 unit tests green
+- **Deployment impact:** `[skip render]` not needed — new files don't affect routes (dev endpoints gated by `ALLOW_DEV_ENDPOINTS`, health/s3 gated by token header)
+- **New risks/blockers:**
+  - OL-054: GitHub secrets for smoke test not yet configured (`SLACK_SMOKE_WEBHOOK`, `HEALTH_CHECK_TOKEN`, `RESEND_SMOKE_EMAIL`, `STRIPE_SECRET_KEY_TEST`) — smoke test steps skip gracefully if secrets absent
+  - `activate-user` dev endpoint uses `NODE_ENV !== "development"` gate (not `ALLOW_DEV_ENDPOINTS`) — won't work in CI. Not blocking for these specs (tests use dev/login bypass instead), but should be fixed eventually
+- **Recommended next step:** Configure the 4 missing GitHub secrets in Render/GitHub, then manually trigger `production-smoke.yml` to verify it runs end-to-end against production.
+
+---
+
 ### 2026-05-16 — HIPAA Phase 3: ePHI Access Dashboard + Operator BAA/DPA Gate + Test-Sentry Gate
 
 - **Objective:** Ship HIPAA Phase 3 as 3 PRs against main (merge A → B → C): E3 ePHI access-logging dashboard, E1 operator BAA/DPA gate, E4 test-sentry route gate.

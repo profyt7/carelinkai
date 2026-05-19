@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-05-16_
+_Last updated: 2026-05-19_
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -23,6 +23,21 @@ Each loop: what it is, why it matters, what done looks like.
 - **Status:** ❌ OPEN — due 2026-06-30
 - **What:** Written runbook for breach detection, notification within 60 days (HIPAA Breach Notification Rule), affected individuals list, HHS reporting.
 - **Done when:** Document created in vault, reviewed, and linked from admin HIPAA dashboard.
+
+### OL-054: Configure GitHub secrets for smoke/synthetic monitor workflows
+- **Status:** 🔴 OPEN — workflows live but won't run fully without secrets
+- **What:** `production-smoke.yml` and `synthetic-monitor.yml` need these GitHub repo secrets set:
+  - `SLACK_SMOKE_WEBHOOK` — Slack incoming webhook URL for failure alerts
+  - `HEALTH_CHECK_TOKEN` — matches `HEALTH_CHECK_TOKEN` env var in Render (for `/api/health/s3`)
+  - `RESEND_SMOKE_EMAIL` — destination email for smoke delivery test
+  - `STRIPE_SECRET_KEY_TEST` — Stripe test-mode key (never live key)
+  - `RESEND_API_KEY` — already exists in Render, needs to be added to GitHub secrets too
+- **Done when:** All 5 secrets configured → manually trigger `production-smoke.yml` → all 4 matrix checks pass.
+
+### OL-055: Fix `activate-user` dev endpoint to use ALLOW_DEV_ENDPOINTS gate
+- **Status:** 🟡 LOW-PRI — not blocking
+- **What:** `src/app/api/dev/activate-user/route.ts` checks `NODE_ENV !== "development"` instead of `ALLOW_DEV_ENDPOINTS !== "1"`. In CI (NODE_ENV=test or NODE_ENV=production), this endpoint returns 403 silently. Other dev endpoints correctly use `ALLOW_DEV_ENDPOINTS`. The e2e specs written 2026-05-19 work around this by using dev/login + verify-email route directly.
+- **Done when:** Gate changed to `ALLOW_DEV_ENDPOINTS !== "1"` and tested in CI.
 
 ---
 
