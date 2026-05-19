@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import { AcceptanceGate } from "@/components/operator/AcceptanceGate";
 
 export default async function ProviderLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession(authOptions);
@@ -11,8 +12,10 @@ export default async function ProviderLayout({ children }: { children: React.Rea
   }
 
   return (
-    <DashboardLayout title="Provider" showSearch={false}>
-      {children}
-    </DashboardLayout>
+    <AcceptanceGate>
+      <DashboardLayout title="Provider" showSearch={false}>
+        {children}
+      </DashboardLayout>
+    </AcceptanceGate>
   );
 }

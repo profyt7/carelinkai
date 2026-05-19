@@ -196,6 +196,15 @@ model Caregiver {
   backgroundCheckReportUrl String?
   checkrCandidateId        String?                  @unique
   specialties              String[]
+  // HIPAA BAA/DPA acceptance
+  baaTemplateVersion       String?
+  baaAcceptedAt            DateTime?
+  baaAcceptedIp            String?
+  baaAcceptedUserAgent     String?
+  dpaTemplateVersion       String?
+  dpaAcceptedAt            DateTime?
+  dpaAcceptedIp            String?
+  dpaAcceptedUserAgent     String?
   createdAt                DateTime                 @default(now())
   updatedAt                DateTime                 @updatedAt
   careTypes                String[]                 @default([])
@@ -433,6 +442,15 @@ model Provider {
   stripeSubscriptionId  String?              @unique
   listingStatus         SubscriptionStatus?
   listingPeriodEndsAt   DateTime?
+  // HIPAA BAA/DPA acceptance
+  baaTemplateVersion    String?
+  baaAcceptedAt         DateTime?
+  baaAcceptedIp         String?
+  baaAcceptedUserAgent  String?
+  dpaTemplateVersion    String?
+  dpaAcceptedAt         DateTime?
+  dpaAcceptedIp         String?
+  dpaAcceptedUserAgent  String?
   createdAt             DateTime             @default(now())
   updatedAt             DateTime             @updatedAt
   shortlistedByFamilies         FavoriteProvider[]
@@ -2780,6 +2798,15 @@ model DischargePlannerProfile {
   seatCount            Int                         @default(1)
   trialEndsAt          DateTime?
   currentPeriodEndsAt  DateTime?
+  // HIPAA BAA/DPA acceptance
+  baaTemplateVersion   String?
+  baaAcceptedAt        DateTime?
+  baaAcceptedIp        String?
+  baaAcceptedUserAgent String?
+  dpaTemplateVersion   String?
+  dpaAcceptedAt        DateTime?
+  dpaAcceptedIp        String?
+  dpaAcceptedUserAgent String?
   createdAt            DateTime                    @default(now())
   updatedAt            DateTime                    @updatedAt
   user                 User                        @relation(fields: [userId], references: [id], onDelete: Cascade)

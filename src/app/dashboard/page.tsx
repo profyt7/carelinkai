@@ -27,7 +27,7 @@ export default async function DashboardPage() {
       if (operator) {
         const accepted = await isOperatorAcceptanceCurrent(operator.id);
         if (!accepted) {
-          redirect('/operator/acceptance');
+          redirect('/legal/acceptance');
         }
       }
       return <OperatorDashboardContent />;

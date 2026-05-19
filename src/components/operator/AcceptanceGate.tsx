@@ -15,7 +15,7 @@ export function AcceptanceGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [checked, setChecked] = useState(false);
 
-  const isAcceptancePage = pathname?.startsWith('/operator/acceptance');
+  const isAcceptancePage = pathname?.startsWith('/legal/acceptance');
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -33,13 +33,13 @@ export function AcceptanceGate({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    fetch('/api/operator/acceptance')
+    fetch('/api/acceptance')
       .then((r) => r.json())
-      .then((data: { current?: boolean; adminBypass?: boolean }) => {
+      .then((data: { current?: boolean; bypass?: boolean }) => {
         if (data.current) {
           setChecked(true);
         } else {
-          router.push('/operator/acceptance');
+          router.push('/legal/acceptance');
         }
       })
       .catch(() => {

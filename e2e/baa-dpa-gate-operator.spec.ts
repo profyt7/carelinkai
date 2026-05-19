@@ -22,8 +22,8 @@ test.describe('@critical BAA/DPA gate', () => {
     await page.goto('/operator', { waitUntil: 'domcontentloaded' });
 
     // Wait for redirect to acceptance page
-    await page.waitForURL(/\/operator\/acceptance/, { timeout: 15000 });
-    await expect(page).toHaveURL(/\/operator\/acceptance/);
+    await page.waitForURL(/\/legal\/acceptance/, { timeout: 15000 });
+    await expect(page).toHaveURL(/\/legal\/acceptance/);
 
     // Assert acceptance page renders BAA and DPA sections
     await expect(page.getByText(/business associate agreement/i).first()).toBeVisible({ timeout: 10000 });

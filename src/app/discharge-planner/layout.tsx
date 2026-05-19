@@ -4,10 +4,10 @@ import React from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { AcceptanceGate } from "@/components/operator/AcceptanceGate";
 
-export default function CaregiverLayout({ children }: { children: React.ReactNode }) {
+export default function DischargePlannerLayout({ children }: { children: React.ReactNode }) {
   return (
     <AcceptanceGate>
-      <DashboardLayout title="Caregiver" showSearch={false}>
+      <DashboardLayout title="Discharge Planner" showSearch={false}>
         {children}
       </DashboardLayout>
     </AcceptanceGate>
