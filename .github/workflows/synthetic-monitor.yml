@@ -1,0 +1,86 @@
+name: Synthetic Monitor
+
+on:
+  schedule:
+    # Hourly canary checks
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  canary:
+    name: Canary checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Health endpoint
+        run: |
+          RESP=$(curl -sf --max-time 15 https://getcarelinkai.com/api/health)
+          echo "$RESP" | jq -e '.ok == true' || (echo "FAIL: /api/health not ok" && exit 1)
+          echo "PASS: /api/health ok"
+
+      - name: Sitemap reachable
+        run: |
+          STATUS=$(curl -o /dev/null -sw '%{http_code}' --max-time 15 https://getcarelinkai.com/sitemap.xml)
+          [ "$STATUS" = "200" ] || (echo "FAIL: /sitemap.xml returned $STATUS" && exit 1)
+          echo "PASS: /sitemap.xml $STATUS"
+
+      - name: robots.txt reachable
+        run: |
+          STATUS=$(curl -o /dev/null -sw '%{http_code}' --max-time 15 https://getcarelinkai.com/robots.txt)
+          [ "$STATUS" = "200" ] || (echo "FAIL: /robots.txt returned $STATUS" && exit 1)
+          echo "PASS: /robots.txt $STATUS"
+
+      - name: Resend domain verification
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        run: |
+          if [ -z "$RESEND_API_KEY" ]; then
+            echo "SKIP: RESEND_API_KEY not set"
+            exit 0
+          fi
+          RESP=$(curl -sf --max-time 15 \
+            -H "Authorization: Bearer $RESEND_API_KEY" \
+            "https://api.resend.com/domains")
+          echo "$RESP" | jq -e '.data | map(select(.status == "verified")) | length > 0' \
+            || (echo "FAIL: No verified Resend domain found" && exit 1)
+          echo "PASS: Resend verified domain found"
+
+      - name: Stripe products API reachable
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY_TEST }}
+        run: |
+          if [ -z "$STRIPE_SECRET_KEY" ]; then
+            echo "SKIP: STRIPE_SECRET_KEY_TEST not set"
+            exit 0
+          fi
+          RESP=$(curl -sf --max-time 15 -u "$STRIPE_SECRET_KEY:" "https://api.stripe.com/v1/products?limit=1")
+          echo "$RESP" | jq -e '.object == "list"' || (echo "FAIL: Stripe products API error" && exit 1)
+          echo "PASS: Stripe products API ok"
+
+  notify-failure:
+    name: Alert on failure
+    runs-on: ubuntu-latest
+    needs: canary
+    if: failure()
+    steps:
+      - name: Slack alert
+        if: env.SLACK_WEBHOOK_URL != ''
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_SMOKE_WEBHOOK }}
+        run: |
+          curl -sf -X POST "$SLACK_WEBHOOK_URL" \
+            -H 'Content-type: application/json' \
+            -d "{\"text\":\":warning: *Synthetic monitor FAILED* — <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|View run>\"}"
+
+      - name: Sentry issue
+        if: env.SENTRY_DSN != ''
+        env:
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+        run: |
+          curl -sf -X POST "$SENTRY_DSN" \
+            -H 'Content-Type: application/json' \
+            -d "{\"exception\":{\"values\":[{\"type\":\"SyntheticMonitorFailure\",\"value\":\"Synthetic monitor failed — run ${{ github.run_id }}\"}]},\"level\":\"warning\",\"tags\":{\"source\":\"synthetic-monitor\"}}" || true
