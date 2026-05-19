@@ -18,6 +18,7 @@ import {
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { AuditAction } from '@prisma/client';
 import { z } from 'zod';
+import { captureError } from '@/lib/sentry';
 
 export async function POST(
   request: NextRequest,
@@ -84,6 +85,9 @@ export async function POST(
       message: 'Inquiry successfully converted to resident',
     });
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'operator:inquiries:{id}:convert' },
+    });
     console.error('Conversion API error:', error);
 
     if (error instanceof z.ZodError) {
@@ -134,6 +138,9 @@ export async function GET(
       reason,
     });
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'operator:inquiries:{id}:convert' },
+    });
     console.error('Get conversion preview error:', error);
     return handleAuthError(error);
   }

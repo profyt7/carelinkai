@@ -1,8 +1,11 @@
 # CareLinkAI — Technical State
-_Last updated: 2026-05-07_
+_Last updated: 2026-05-16_
 
 ## Active Branch
-`claude/review-carelink-docs-49Ycv` — Option B household scheduling feature (2026-05-07). Also includes all prior 2026-05-07 session changes (background check hub, provider card fixes, caregiver profile sidebar, notification z-index, tours/favorites graceful error fixes).
+Phase 3 complete — 3 PRs pushed 2026-05-16, awaiting merge in order A→B→C:
+- PR A #536: `claude/hipaa-phase3-phi-dashboard-2026-05-16` — ePHI access dashboard + audit gaps
+- PR B #537: `claude/hipaa-phase3-operator-baa-2026-05-16` — BAA/DPA gate + schema migration
+- PR C #538: `claude/hipaa-phase3-gate-test-sentry-2026-05-16` — test-sentry production gate
 
 ## Production URL
 https://carelinkai.onrender.com (also: https://getcarelinkai.com)
@@ -11,7 +14,7 @@ https://carelinkai.onrender.com (also: https://getcarelinkai.com)
 - **Platform:** Render.com
 - **Build:** Docker container, auto-deploy from `main` branch
 - **Database:** PostgreSQL on Render
-- **Image storage:** Cloudinary
+- **Image storage (HIPAA Phase 1):** PHI → S3 (bucket carelinkai-prod-phi, us-east-2, SSE-S3, AWS BAA signed 2026-05-13). PUBLIC/PII → Cloudinary.
 - **Email:** Resend
 
 ## Tech Stack
@@ -31,7 +34,7 @@ https://carelinkai.onrender.com (also: https://getcarelinkai.com)
 | AI — All features | Anthropic Claude API (`claude-sonnet-4-6`, `claude-haiku-4-5-20251001`) |
 
 ## Schema Summary
-67+ Prisma models + enums. New since 2026-04-27: `DischargePlannerLicenseType` enum (INDIVIDUAL/DEPARTMENT), `AffiliateReferralType` enum (OPERATOR/FAMILY), `CommissionTier` enum (STANDARD/SILVER/GOLD). New fields: `DischargePlannerProfile.licenseType + seatCount`, `Family.referredByCode`, `AffiliateReferral.referralType`, `Affiliate.commissionTier`. `SubscriptionPlan` enum: +AGENCY. Migration: `20260427000000_revenue_model_expansion`. **2026-05-02:** `Provider` adds `stripeCustomerId`, `stripeSubscriptionId`, `listingStatus`, `listingPeriodEndsAt`; `Caregiver` adds `isPro`, `proStripeCustomerId`, `proStripeSubscriptionId`, `proStatus`, `proPeriodEndsAt`, `applicationCount`, `applicationCountResetAt`. Migration: `20260502000003_add_provider_listing_and_pro_caregiver`. **2026-05-06:** `ProviderCredential` adds `aiReviewStatus String?`, `aiReviewNotes String?`, `checkrReportId String? @unique`; `BackgroundCheckOrderer` enum adds `OPERATOR`; new `BackgroundCheckInvitation` model for standalone check-anyone flow. Three manual migrations: `20260505000001`, `20260505000002`, `20260505000003`. **2026-05-07:** `Provider` adds `checkrCandidateId String?`; new `ProviderBackgroundCheckOrder` model (links Provider to Checkr direct-report flow). Migration: `20260506000001_provider_background_checks`. ⚠️ ALL FOUR MIGRATIONS (20260505000001/2/3, 20260506000001) PENDING DEPLOY on Render DB — will auto-apply via `prisma migrate deploy` on next Render deploy.
+67+ Prisma models + enums. **2026-05-16 (Phase 3 PR B, pending merge):** `Operator` adds 8 nullable BAA/DPA acceptance fields (`baaTemplateVersion`, `baaAcceptedAt`, `baaAcceptedIp`, `baaAcceptedUserAgent`, `dpaTemplateVersion`, `dpaAcceptedAt`, `dpaAcceptedIp`, `dpaAcceptedUserAgent`); `AuditAction` enum adds `LEGAL_ACCEPTANCE`. Migration: `20260516000001_add_operator_baa_dpa_acceptance`. **2026-05-14 (Phase 2, on main):** `Document` adds `classification DataClassification @default(PHI)` + `storage String?`. **Earlier:** `DischargePlannerLicenseType`, `AffiliateReferralType`, `CommissionTier` enums; provider/caregiver subscription fields; `BackgroundCheckInvitation`, `ProviderBackgroundCheckOrder` models. ⚠️ Migrations 20260505000001/2/3 + 20260506000001 pending deploy on Render DB.
 
 ## User Roles
 FAMILY, OPERATOR, CAREGIVER, ADMIN, STAFF, PROVIDER, AFFILIATE, DISCHARGE_PLANNER
@@ -113,6 +116,15 @@ FAMILY, OPERATOR, CAREGIVER, ADMIN, STAFF, PROVIDER, AFFILIATE, DISCHARGE_PLANNE
 - **UI:** `/rides` management page with role-adaptive views (provider: Confirm/Decline/Start/Complete; family/operator: Pay/Cancel); `RideRequestModal` with resident name field for operators; `BookTransportButton` on resident detail page; "Book Ride for Resident" button on provider detail page.
 - **Nav:** "My Rides" sidebar nav item added for FAMILY + PROVIDER roles.
 - **Admin:** Transport commissions (12% platform fee × completed rides MTD) in 7th MRR tile on admin dashboard.
+
+## HIPAA Phase 1 Status (as of 2026-05-13)
+- **AWS S3 foundation:** Live — bucket `carelinkai-prod-phi`, us-east-2, SSE-S3, versioning on. IAM user `carelinkai-app-prod` with policy `carelinkai-prod-phi-rw`. Render env vars set: `AWS_S3_BUCKET`, `AWS_S3_REGION`, `AWS_S3_ACCESS_KEY_ID`, `AWS_S3_SECRET_ACCESS_KEY`. AWS BAA signed 2026-05-13.
+- **3 PRs pushed, awaiting merge:**
+  - PR 1 `claude/hipaa-phase1-schema-2026-05-13`: DataClassification enum + columns on 4 tables
+  - PR 2 `claude/hipaa-phase1-routing-2026-05-13`: storage router, S3 rewrite, all env vars unified, route refactors, 6 unit tests
+  - PR 3 `claude/hipaa-phase1-purge-2026-05-13`: purge script (26 seed Cloudinary files from PHI tables)
+- **MERGE ORDER:** PR 1 → PR 2 → PR 3. PR 2 depends on Prisma client generated from PR 1.
+- **Phase 2 remaining:** `documents/upload/route.ts` (generic Document model, PHI-linked), `upload/route.ts`, `residents/[id]/photo/route.ts` (local FS) — all flagged with HIPAA-TODO Phase 2 comments.
 
 ## Known Issues (as of 2026-05-02)
 1. Demo accounts use test Stripe data — when switching to live Stripe, all operator `stripeCustomerId` fields must be cleared and operators re-subscribed
@@ -208,9 +220,9 @@ See `REVENUE_MODEL.md` for the full breakdown. 12 streams finalized:
 - **Provider profile completeness checklist:** 8-step progress widget on provider dashboard. Shows % complete + progress bar + per-item checklist with direct CTAs. Disappears when all 8 steps done. Credentials quick-action tile added (shows X/3 verified).
 
 ## Immediate Next Priorities
-1. **Merge feat/provider-onboarding-checklist → main** — provider completeness widget + welcome email link fix.
-2. **OL-036 production action** — demo provider at `demo.provider@carelinkai.test` must re-save Settings → Profile to migrate service type slugs from underscore to hyphen format.
-3. **Switch Stripe to live mode** — swap all `STRIPE_*` env vars to live keys in Render, re-register webhook, create live Products/Prices. Runbook: `context/STRIPE_SETUP_RUNBOOK.md`.
-4. **Set Checkr live keys** — `CHECKR_API_KEY` + `CHECKR_WEBHOOK_SECRET` in Render once account approved (OL-023).
-5. **Run Playwright smoke tests** across all 7 demo roles: `npm run test:e2e:prod`. New `tests/ride-booking.spec.ts` covers transport + credentials flows.
-6. **OL-044 Guaranteed Ride SLA** — needs 3+ providers in market first before building fallback network.
+1. **Merge HIPAA Phase 1 PRs** — in order: PR 1 (schema) → PR 2 (routing) → PR 3 (purge). Monitor Render deploy + migration apply. Run purge script dry-run, then live.
+2. **Merge feat/provider-onboarding-checklist → main** — provider completeness widget + welcome email link fix.
+3. **OL-036 production action** — demo provider at `demo.provider@carelinkai.test` must re-save Settings → Profile to migrate service type slugs from underscore to hyphen format.
+4. **Switch Stripe to live mode** — swap all `STRIPE_*` env vars to live keys in Render, re-register webhook, create live Products/Prices. Runbook: `context/STRIPE_SETUP_RUNBOOK.md`.
+5. **Set Checkr live keys** — `CHECKR_API_KEY` + `CHECKR_WEBHOOK_SECRET` in Render once account approved (OL-023).
+6. **HIPAA Phase 2** — migrate `documents/upload/route.ts`, `upload/route.ts`, `residents/[id]/photo/route.ts` to S3 for PHI context (see HIPAA-TODO comments in each file).

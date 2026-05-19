@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth-utils';
 import { AuditAction } from '@prisma/client';
 import { createAuditLogFromRequest } from '@/lib/audit';
+import { captureError } from '@/lib/sentry';
 
 // DELETE /api/family/notes/[id] - Delete a note
 export async function DELETE(
@@ -67,6 +68,9 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:notes:{id}' },
+    });
     console.error('Error deleting note:', error);
     return NextResponse.json(
       { error: error.message || 'Failed to delete note' },

@@ -11,6 +11,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { PERMISSIONS, hasPermission } from "@/lib/permissions";
+import { captureError } from '@/lib/sentry';
 
 export async function GET(request: NextRequest) {
   try {
@@ -59,6 +60,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, tours });
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:tours' },
+    });
     console.error("[Family Tours API] Error:", error);
     return NextResponse.json(
       { error: "Failed to fetch tours" },

@@ -6,6 +6,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { captureError } from '@/lib/sentry';
+import { getDownloadUrl } from '@/lib/storage/download';
+import { createAuditLogFromRequest } from '@/lib/audit';
 
 export async function GET(request: NextRequest) {
   try {
@@ -77,13 +80,25 @@ export async function GET(request: NextRequest) {
 
     const total = await prisma.galleryPhoto.count({ where });
 
+    // AUTHZ: familyMember membership check above ensures user is authorized for this family
+    const resolvedPhotos = await Promise.all(
+      photos.map(async (photo) => ({
+        ...photo,
+        fileUrl: await getDownloadUrl({ storage: photo.storage, fileUrl: photo.fileUrl }),
+      }))
+    );
+
+    await createAuditLogFromRequest(request, 'READ', 'GalleryPhoto', familyId, 'PHI read: family gallery listing');
     return NextResponse.json({
-      photos,
+      photos: resolvedPhotos,
       total,
       limit,
       offset,
     });
   } catch (error: any) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:gallery' },
+    });
     console.error('Error fetching photos:', error);
     return NextResponse.json(
       { error: error.message ?? 'Internal server error' },

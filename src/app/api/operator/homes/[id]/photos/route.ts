@@ -2,12 +2,15 @@
 // Force dynamic rendering for this API route
 export const dynamic = 'force-dynamic';
 
+// HIPAA: HomePhoto classification=PUBLIC (facility marketing), destination=S3
+// See HIPAA_PHASE_1_DESIGN.md §2.3 (HomePhoto rationale)
 import { NextResponse } from 'next/server';
 import { requireOperatorOrAdmin } from '@/lib/rbac';
 import { PrismaClient, UserRole } from '@prisma/client';
 import { getS3Client, getBucket, toS3Url } from '@/lib/storage';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
+import { captureError } from '@/lib/sentry';
 
 const prisma = new PrismaClient();
 
@@ -50,7 +53,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       Key: key,
       Body: buffer,
       ContentType: file.type || 'application/octet-stream',
-      ServerSideEncryption: (String(process.env['S3_ENABLE_SSE']).toLowerCase() === 'true' ? 'AES256' : undefined) as any,
+      ServerSideEncryption: 'AES256', // always enforced per HIPAA Phase 1
     }));
 
     const created = await prisma.homePhoto.create({
@@ -69,6 +72,9 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
     return NextResponse.json({ photoId: created.id });
   } catch (e) {
+    captureError(e instanceof Error ? e : new Error(String(e)), {
+      tags: { route: 'operator:homes:{id}:photos' },
+    });
     console.error('Upload home photo failed', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   } finally {

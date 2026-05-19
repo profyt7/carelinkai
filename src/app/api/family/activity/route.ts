@@ -7,6 +7,7 @@ import { requireAnyRole } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { checkFamilyMembership } from "@/lib/services/family";
 import { z } from "zod";
+import { captureError } from '@/lib/sentry';
 
 // Validate query parameters
 const querySchema = z.object({
@@ -87,6 +88,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ items });
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:activity' },
+    });
     console.error("Error fetching family activity:", error);
 
     // In development, return empty array as fallback

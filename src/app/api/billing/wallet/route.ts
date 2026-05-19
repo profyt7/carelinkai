@@ -6,6 +6,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { checkFamilyMembership } from "@/lib/services/family";
+import { captureError } from '@/lib/sentry';
 
 /**
  * GET /api/billing/wallet
@@ -91,6 +92,9 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'billing:wallet' },
+    });
     console.error("Error fetching wallet information:", error);
     return NextResponse.json(
       { error: "Failed to fetch wallet information" },

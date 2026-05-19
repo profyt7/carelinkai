@@ -7,6 +7,7 @@ import { PrismaClient, UserRole, ResidentStatus } from '@prisma/client';
 import { requireOperatorOrAdmin } from '@/lib/rbac';
 import { updateHomeCapacity } from '@/lib/utils/capacity-tracker';
 import { auditPhiRead, logPhiAccess } from '@/lib/phi-audit';
+import { getDownloadUrl } from '@/lib/storage/download';
 
 const prisma = new PrismaClient();
 
@@ -46,7 +47,13 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     });
     if (!resident) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     console.log('Resident API GET ok', params.id);
-    return NextResponse.json({ resident });
+
+    // AUTHZ: ensureAccess above ensures operator/admin authorization for this resident
+    const photoUrl = resident.photoUrl
+      ? await getDownloadUrl({ storage: null, fileUrl: resident.photoUrl })
+      : null;
+
+    return NextResponse.json({ resident: { ...resident, photoUrl } });
   } catch (e) {
     console.error('Resident get error', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });

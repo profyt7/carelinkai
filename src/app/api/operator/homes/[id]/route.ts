@@ -7,6 +7,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient, UserRole } from '@prisma/client';
 import { z } from 'zod';
+import { captureError } from '@/lib/sentry';
 
 const prisma = new PrismaClient();
 
@@ -78,6 +79,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const updated = await prisma.assistedLivingHome.update({ where: { id: home.id }, data });
     return NextResponse.json({ id: updated.id });
   } catch (e) {
+    captureError(e instanceof Error ? e : new Error(String(e)), {
+      tags: { route: 'operator:homes:{id}' },
+    });
     console.error('Update home failed', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   } finally {
@@ -126,6 +130,9 @@ export async function POST(req: Request, ctx: { params: { id: string } }) {
     await prisma.assistedLivingHome.update({ where: { id: home.id }, data });
     return NextResponse.redirect(new URL(`/operator/homes/${home.id}`, req.url));
   } catch (e) {
+    captureError(e instanceof Error ? e : new Error(String(e)), {
+      tags: { route: 'operator:homes:{id}' },
+    });
     console.error('Quick update home failed', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   } finally {
@@ -155,6 +162,9 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 
     return NextResponse.json({ data: home });
   } catch (e) {
+    captureError(e instanceof Error ? e : new Error(String(e)), {
+      tags: { route: 'operator:homes:{id}' },
+    });
     console.error('Get home failed', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   } finally {

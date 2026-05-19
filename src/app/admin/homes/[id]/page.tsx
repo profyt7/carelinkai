@@ -18,12 +18,13 @@ import {
   FiShield,
   FiMail,
   FiPhone,
+  FiUserCheck,
 } from 'react-icons/fi';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-// Helper to safely unwrap params - handles both Promise and plain object
-function unwrapParams<T>(params: T | Promise<T>): T {
+// Safely unwrap params — handles both Promise and plain object
+function useUnwrapParams<T>(params: T | Promise<T>): T {
   // Check if params is a Promise (has .then method)
   if (params && typeof params === 'object' && 'then' in params && typeof (params as any).then === 'function') {
     return use(params as Promise<T>);
@@ -162,7 +163,7 @@ type HomeDetail = {
 };
 
 export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: string }> | { id: string } }) {
-  const resolvedParams = unwrapParams(params);
+  const resolvedParams = useUnwrapParams(params);
   const router = useRouter();
   const [home, setHome] = useState<HomeDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -277,6 +278,39 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
     }
   };
 
+  const handleClaim = async () => {
+    const operatorEmail = prompt(
+      "Enter the operator's account email to claim this listing for:"
+    );
+    if (!operatorEmail) return;
+
+    try {
+      const response = await fetch(
+        `/api/admin/homes/${resolvedParams.id}/claim`,
+        {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ operatorEmail }),
+        }
+      );
+      const data = await response.json();
+      if (!response.ok) {
+        alert(`Failed to claim listing: ${data.error || 'Unknown error'}`);
+        return;
+      }
+      alert(data.message);
+      fetchHome();
+    } catch (error) {
+      console.error('Failed to claim listing:', error);
+      alert(
+        `Error claiming listing: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      );
+    }
+  };
+
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
       case 'ACTIVE':
@@ -367,7 +401,16 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
             <div className="flex items-center gap-2">
               {!editing ? (
                 <>
-                  {home.status === 'PENDING_REVIEW' && (
+                  {home.status === 'DRAFT' && (
+                  <button
+                    onClick={handleClaim}
+                    className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+                  >
+                    <FiUserCheck />
+                    Claim for operator
+                  </button>
+                )}
+                {home.status === 'PENDING_REVIEW' && (
                     <>
                       <button
                         onClick={() => handleVerify('APPROVE')}

@@ -15,6 +15,7 @@ import { hasPermission } from "@/lib/permissions";
 import { z } from "zod";
 import { smsService } from "@/lib/sms/sms-service";
 import { sendTourConfirmationEmail } from "@/lib/notifications/tour-notifications";
+import { captureError } from '@/lib/sentry';
 
 const tourRequestSchema = z.object({
   homeId: z.string(),
@@ -40,6 +41,9 @@ export async function POST(request: NextRequest) {
       await prisma.$queryRaw`SELECT 1`;
       console.log('🟢 [TOUR API] ✅ Database connection SUCCESSFUL');
     } catch (dbError) {
+      captureError(dbError instanceof Error ? dbError : new Error(String(dbError)), {
+        tags: { route: 'family:tours:request' },
+      });
       console.error('🟢 [TOUR API] ❌ Database connection FAILED:', dbError);
       throw new Error("Database connection failed");
     }
@@ -95,6 +99,9 @@ export async function POST(request: NextRequest) {
       console.log('🟢 [TOUR API] Body parsed successfully');
       console.log('🟢 [TOUR API] Raw body:', JSON.stringify(body, null, 2));
     } catch (parseError) {
+      captureError(parseError instanceof Error ? parseError : new Error(String(parseError)), {
+        tags: { route: 'family:tours:request' },
+      });
       console.error('🟢 [TOUR API] ❌ JSON PARSING FAILED:', parseError);
       throw new Error("Invalid JSON in request body");
     }
@@ -112,6 +119,9 @@ export async function POST(request: NextRequest) {
         hasFamilyNotes: !!validatedData.familyNotes
       });
     } catch (validationError) {
+      captureError(validationError instanceof Error ? validationError : new Error(String(validationError)), {
+        tags: { route: 'family:tours:request' },
+      });
       console.error('🟢 [TOUR API] ❌ SCHEMA VALIDATION FAILED:', validationError);
       throw validationError;
     }
@@ -142,6 +152,9 @@ export async function POST(request: NextRequest) {
         });
       }
     } catch (dbError) {
+      captureError(dbError instanceof Error ? dbError : new Error(String(dbError)), {
+        tags: { route: 'family:tours:request' },
+      });
       console.error('🟢 [TOUR API] ❌ DATABASE QUERY FAILED (Family):', dbError);
       throw new Error("Failed to fetch family record");
     }
@@ -215,6 +228,9 @@ export async function POST(request: NextRequest) {
         });
       }
     } catch (dbError) {
+      captureError(dbError instanceof Error ? dbError : new Error(String(dbError)), {
+        tags: { route: 'family:tours:request' },
+      });
       console.error('🟢 [TOUR API] ❌ DATABASE QUERY FAILED (Home):', dbError);
       throw new Error("Failed to fetch home details");
     }
@@ -315,6 +331,9 @@ export async function POST(request: NextRequest) {
         }, { status: 404 });
         
       } catch (diagnosticError) {
+        captureError(diagnosticError instanceof Error ? diagnosticError : new Error(String(diagnosticError)), {
+          tags: { route: 'family:tours:request' },
+        });
         console.error('🟢 [TOUR API] ❌ Error running diagnostics:', diagnosticError);
         return NextResponse.json({ 
           error: "Home not found",
@@ -406,6 +425,9 @@ export async function POST(request: NextRequest) {
         createdAt: tourRequest.createdAt
       });
     } catch (dbError) {
+      captureError(dbError instanceof Error ? dbError : new Error(String(dbError)), {
+        tags: { route: 'family:tours:request' },
+      });
       console.error('🟢 [TOUR API] ❌ DATABASE INSERT FAILED!');
       console.error('🟢 [TOUR API] Error:', dbError);
       
@@ -460,6 +482,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(responseData);
     
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:tours:request' },
+    });
     console.error('🔴 [TOUR API] ========================================');
     console.error('🔴 [TOUR API] ERROR OCCURRED!');
     console.error('🔴 [TOUR API] Error type:', error?.constructor?.name || "Unknown");

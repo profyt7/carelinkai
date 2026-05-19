@@ -2,18 +2,21 @@
 // Force dynamic rendering for this API route
 export const dynamic = 'force-dynamic';
 
+// HIPAA: ResidentDocument classification=PHI, destination=S3
+// See HIPAA_PHASE_1_DESIGN.md §2.3 (ResidentDocument rationale)
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requirePermission, requireResidentAccess, handleAuthError } from '@/lib/auth-utils';
 import { PERMISSIONS } from '@/lib/permissions';
 import { z } from 'zod';
 import { createAuditLogFromRequest } from '@/lib/audit';
-import { AuditAction } from '@prisma/client';
+import { AuditAction, DataClassification } from '@prisma/client';
+import { getDownloadUrl } from '@/lib/storage/download';
 
 // Validation schema for creating document
 const createDocumentSchema = z.object({
   fileName: z.string().min(1),
-  fileUrl: z.string().url(),
+  fileUrl: z.string().min(1),
   fileType: z.string().min(1),
   documentType: z.enum([
     'MEDICAL_RECORD',
@@ -43,7 +46,7 @@ export async function GET(
     const user = await requirePermission(PERMISSIONS.RESIDENTS_VIEW);
     await requireResidentAccess(user.id, params.id);
 
-    // Fetch documents
+    // AUTHZ: requireResidentAccess above ensures user is authorized for this resident
     const documents = await prisma.residentDocument.findMany({
       where: { residentId: params.id },
       orderBy: { uploadedAt: 'desc' },
@@ -59,7 +62,15 @@ export async function GET(
       }
     });
 
-    return NextResponse.json(documents);
+    const resolved = await Promise.all(
+      documents.map(async (doc) => ({
+        ...doc,
+        fileUrl: await getDownloadUrl({ storage: doc.storage, fileUrl: doc.fileUrl }),
+      }))
+    );
+
+    await createAuditLogFromRequest(request, AuditAction.READ, 'ResidentDocument', params.id, 'PHI read: resident documents listing');
+    return NextResponse.json(resolved);
   } catch (error) {
     return handleAuthError(error);
   }
@@ -81,6 +92,8 @@ export async function POST(
     const body = await request.json();
     const validatedData = createDocumentSchema.parse(body);
 
+    const storageProvider = validatedData.fileUrl.startsWith('s3://') || validatedData.fileUrl.includes('amazonaws.com') ? 's3' : 'cloudinary';
+
     // Create document
     const document = await prisma.residentDocument.create({
       data: {
@@ -92,6 +105,8 @@ export async function POST(
         description: validatedData.description,
         fileSize: validatedData.fileSize,
         uploadedById: user.id,
+        classification: DataClassification.PHI,
+        storage: storageProvider,
       },
       include: {
         uploadedBy: {

@@ -108,9 +108,10 @@ export function DocumentUploadModal({ caregiverId, onClose, onSuccess }: Documen
       setUploading(true);
       setUploadProgress(10);
 
-      // Step 1: Upload file to Cloudinary
+      // Step 1: Upload file (caregiver docs are PII — certifications/contracts)
       const uploadFormData = new FormData();
       uploadFormData.append('file', file);
+      uploadFormData.append('classification', 'PII');
 
       setUploadProgress(30);
 

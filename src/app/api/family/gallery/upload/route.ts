@@ -7,9 +7,13 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import cloudinary, { isCloudinaryConfigured, getThumbnailUrl, UPLOAD_PRESETS } from '@/lib/cloudinary';
+import { uploadBuffer, canUseS3, getBucket, toS3Url } from '@/lib/storage';
+import { getUploadDestination } from '@/lib/storage/router';
+import { DataClassification } from '@prisma/client';
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { AuditAction } from '@prisma/client';
 import { publish } from '@/lib/sse';
+import { captureError } from '@/lib/sentry';
 
 export async function POST(request: NextRequest) {
   try {
@@ -80,40 +84,54 @@ export async function POST(request: NextRequest) {
     }
     console.log('[4/8] ✓ Membership OK:', membership.role);
 
-    // 5. Upload to Cloudinary
-    console.log('[5/8] Uploading to Cloudinary...');
+    // 5. Upload — HIPAA: GalleryPhoto classification=PHI, destination=S3
+    // See HIPAA_PHASE_1_DESIGN.md §2.3 (GalleryPhoto rationale)
+    console.log('[5/8] Uploading...');
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    const uploadResult = await new Promise<any>((resolve, reject) => {
-      cloudinary.uploader
-        .upload_stream(
-          {
-            ...UPLOAD_PRESETS.FAMILY_GALLERY,
-            folder: `${UPLOAD_PRESETS.FAMILY_GALLERY.folder}/${familyId}/gallery`,
-          },
-          (error, result) => {
-            if (error) {
-              console.error('[5/8] ✗ Cloudinary upload failed:', error);
-              reject(error);
-            } else if (result) {
-              console.log('[5/8] ✓ Cloudinary upload OK:', result.secure_url);
-              resolve(result);
-            } else {
-              reject(new Error('Cloudinary upload failed: no result'));
-            }
-          }
-        )
-        .end(buffer);
-    });
+    const classification = DataClassification.PHI;
+    const destination = getUploadDestination(classification);
+    const useS3 = destination === 's3' && canUseS3();
 
-    // Store the raw Cloudinary URL without transformations
-    // Let Next.js Image component handle optimization
-    const thumbnailUrl = uploadResult.secure_url;
-    console.log('[5/8] ✓ Upload complete:', {
-      url: uploadResult.secure_url,
-      publicId: uploadResult.public_id,
-    });
+    let fileUrl: string;
+    let thumbnailUrl: string;
+    let storageProvider: string;
+    let cloudinaryPublicId: string | undefined;
+
+    if (useS3) {
+      const key = `family/${familyId}/gallery/${Date.now()}-${file.name.replace(/[^a-z0-9_.-]+/gi, '_')}`;
+      await uploadBuffer({ key, body: buffer, contentType: file.type });
+      const bucket = getBucket();
+      fileUrl = toS3Url(bucket, key);
+      thumbnailUrl = fileUrl; // no CDN transform; client requests full URL
+      storageProvider = 's3';
+      console.log('[5/8] ✓ S3 upload complete:', key);
+    } else {
+      if (!isCloudinaryConfigured()) {
+        return NextResponse.json({ error: 'Upload service not configured', code: 'UPLOAD_NOT_CONFIGURED' }, { status: 503 });
+      }
+      const uploadResult = await new Promise<any>((resolve, reject) => {
+        cloudinary.uploader
+          .upload_stream(
+            {
+              ...UPLOAD_PRESETS.FAMILY_GALLERY,
+              folder: `${UPLOAD_PRESETS.FAMILY_GALLERY.folder}/${familyId}/gallery`,
+            },
+            (error, result) => {
+              if (error) reject(error);
+              else if (result) resolve(result);
+              else reject(new Error('Cloudinary upload returned no result'));
+            }
+          )
+          .end(buffer);
+      });
+      fileUrl = uploadResult.secure_url;
+      thumbnailUrl = uploadResult.secure_url;
+      cloudinaryPublicId = uploadResult.public_id;
+      storageProvider = 'cloudinary';
+      console.log('[5/8] ✓ Cloudinary upload complete (dev fallback):', fileUrl);
+    }
 
     // 6. Get or create gallery
     console.log('[6/8] Finding/creating gallery...');
@@ -175,14 +193,17 @@ export async function POST(request: NextRequest) {
       data: {
         galleryId: gallery.id,
         uploaderId: session.user.id,
-        fileUrl: uploadResult.secure_url,
+        fileUrl,
         thumbnailUrl,
         caption: caption || file.name,
+        classification,
+        storage: storageProvider,
         metadata: {
-          cloudinaryPublicId: uploadResult.public_id,
+          ...(cloudinaryPublicId ? { cloudinaryPublicId } : {}),
           fileType: file.type,
           fileSize: file.size,
           originalFilename: file.name,
+          uploadService: storageProvider,
         },
       },
       include: {
@@ -248,6 +269,9 @@ export async function POST(request: NextRequest) {
     console.log('=== GALLERY UPLOAD SUCCESS ===');
     return NextResponse.json({ photo });
   } catch (error: any) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:gallery:upload' },
+    });
     console.error('=== GALLERY UPLOAD ERROR ===');
     console.error('Error type:', error?.constructor?.name);
     console.error('Error message:', error?.message);

@@ -2,6 +2,237 @@
 
 ---
 
+### 2026-05-16 — HIPAA Phase 3: ePHI Access Dashboard + Operator BAA/DPA Gate + Test-Sentry Gate
+
+- **Objective:** Ship HIPAA Phase 3 as 3 PRs against main (merge A → B → C): E3 ePHI access-logging dashboard, E1 operator BAA/DPA gate, E4 test-sentry route gate.
+
+- **Work completed:**
+
+  **Vault files created:**
+  - `chrisos-vault/03_Execution/HIPAA_PUNCH_LIST.md` — created with items A1-B5 (done), E1-E4 (Phase 3), F1-F4 (remaining)
+  - `chrisos-vault/02_Memory/HIPAA_AUDIT_READINESS.md` — coverage table, legal agreement status, phase gate checklist, risk register alignment
+
+  **PR A** `claude/hipaa-phase3-phi-dashboard-2026-05-16` → GitHub PR #536 (merge first):
+  - 4 PHI read-path audit gaps fixed: `residents/[id]/documents` GET, `operator/residents/[id]/documents` GET, `family/gallery` GET, `operator/inquiries/[id]/documents` GET
+  - `family/gallery` was also missing the import — added both import and call
+  - New `/api/admin/phi-access` — ADMIN-only, PHI resource types (Resident, Document, ResidentDocument, InquiryDocument, GalleryPhoto), date range default 7d, action/type multi-select, subject+actor text search, 100/page pagination, CSV export max 10k rows, summary stats (totalEvents, uniqueActors, uniqueSubjects, deniedCount)
+  - New `/admin/phi-access` client component dashboard — 4 summary cards, filter bar, table with timestamp/actor+role/action/resource/IP/UA, pagination, CSV export
+  - DashboardLayout: "ePHI Access Log" nav link added (ADMIN-only)
+  - Tests: 13 pass (0 fail) — PHI_RESOURCE_TYPES constants, default date window, static coverage probe for all 6 PHI read routes
+
+  **PR B** `claude/hipaa-phase3-operator-baa-2026-05-16` → GitHub PR #537 (merge second):
+  - Schema: 8 nullable BAA/DPA fields on Operator, LEGAL_ACCEPTANCE on AuditAction — additive + nullable, safe auto-deploy
+  - Migration: `20260516000001_add_operator_baa_dpa_acceptance` (IF NOT EXISTS + DO $$ block)
+  - Draft legal templates with DRAFT banner: `src/content/legal/baa/v-draft-2026-05-15.md`, `src/content/legal/dpa/v-draft-2026-05-15.md`
+  - `src/lib/legal.ts` — version constants + `isOperatorAcceptanceCurrent()` helper
+  - `src/app/api/operator/acceptance/route.ts` — GET (status check, ADMIN bypass) + POST (record acceptance with IP/UA/timestamp/version, dual LEGAL_ACCEPTANCE audit events)
+  - `src/app/operator/acceptance/page.tsx` — scrollable BAA+DPA boxes, two mandatory checkboxes, records acceptance + redirects to /operator
+  - `src/components/operator/AcceptanceGate.tsx` — client gate: calls `/api/operator/acceptance`, redirects if not current, ADMIN bypass, acceptance page excluded
+  - `src/app/operator/layout.tsx` — wraps children in AcceptanceGate
+  - `src/app/admin/operators/[id]/page.tsx` — ADMIN detail page with Agreements section (version/accepted-at/IP, read-only)
+  - Tests: 9 pass, 1 skipped (DB integration skipped without live DB)
+
+  **PR C** `claude/hipaa-phase3-gate-test-sentry-2026-05-16` → GitHub PR #538 (merge third):
+  - All 4 test-sentry routes gated: `NODE_ENV === 'production'` → 404
+  - Design choice: NODE_ENV gate (not admin session) — simpler, deterministic, no auth overhead
+  - Tests: 8 pass — 2 per route (has production guard, returns 404)
+
+- **Files changed:**
+  - `prisma/schema.prisma` (Operator model, AuditAction enum)
+  - `prisma/migrations/20260516000001_add_operator_baa_dpa_acceptance/migration.sql` (new)
+  - `src/app/api/residents/[id]/documents/route.ts`
+  - `src/app/api/operator/residents/[id]/documents/route.ts`
+  - `src/app/api/family/gallery/route.ts`
+  - `src/app/api/operator/inquiries/[id]/documents/route.ts`
+  - `src/app/api/admin/phi-access/route.ts` (new)
+  - `src/app/admin/phi-access/page.tsx` (new)
+  - `src/app/admin/operators/[id]/page.tsx` (new)
+  - `src/app/api/operator/acceptance/route.ts` (new)
+  - `src/app/operator/acceptance/page.tsx` (new)
+  - `src/app/operator/layout.tsx`
+  - `src/components/layout/DashboardLayout.tsx`
+  - `src/components/operator/AcceptanceGate.tsx` (new)
+  - `src/content/legal/baa/v-draft-2026-05-15.md` (new)
+  - `src/content/legal/dpa/v-draft-2026-05-15.md` (new)
+  - `src/lib/legal.ts` (new)
+  - `src/app/api/test-sentry/route.ts`
+  - `src/app/api/test-sentry-logs/route.ts`
+  - `src/app/api/test-sentry-client-error/route.ts`
+  - `src/app/api/test-sentry-metrics/route.ts`
+  - `__tests__/hipaa-phase3-phi-dashboard.unit.test.ts` (new)
+  - `__tests__/hipaa-phase3-phi-audit-coverage.probe.test.ts` (new)
+  - `__tests__/hipaa-phase3-baa-gate.unit.test.ts` (new)
+  - `__tests__/hipaa-phase3-test-sentry-gate.unit.test.ts` (new)
+  - `chrisos-vault/03_Execution/HIPAA_PUNCH_LIST.md` (new)
+  - `chrisos-vault/02_Memory/HIPAA_AUDIT_READINESS.md` (new)
+
+- **Commands run:**
+  - `npx prisma generate` (regenerate client after schema change)
+  - `npx jest` (all tests pass: 36 suites, 374 pass)
+  - `npx tsc --noEmit --skipLibCheck` (0 errors)
+  - `git push -u origin` × 3 branches
+
+- **Tests/build status:** 36 suites pass, 374 tests pass, 10 skipped (DB/S3 integration without live infra), 0 failures.
+
+- **Deployment impact:** PR B has a schema migration (additive + nullable, no destructive ops). Standard Render auto-deploy handles it via `prisma migrate deploy` in the `start` script. PRs A and C are zero-migration deploys.
+
+- **New risks/blockers:**
+  - BAA/DPA template content is DRAFT — must NOT be presented as binding until attorney review (HIPAA Punch List F1/A2)
+  - Pre-Phase-3 operators will hit the acceptance gate on next login and must accept BAA+DPA before they can access the platform
+  - Risk Register Risk 1 score holds at 20 (Sev 5 × Lik 4) until PRs merge AND attorney reviews legal content
+
+- **Recommended next step:** Merge PRs #536 → #537 → #538 in order. Then engage attorney for BAA/DPA review (Punch List F1). Risk 1 score drops to 15 after both PRs merge. Drops to 12 after attorney review + first operator signs the approved version.
+
+---
+
+### 2026-05-14 — HIPAA Phase 2: Data-Flow Lockdown (Upload Routes, Pre-signed Downloads, Log Redaction)
+
+- **Objective:** Complete HIPAA Phase 2 — close the 3 carried-forward upload routes, enforce pre-signed URLs on all PHI reads, and scrub PHI from Sentry/logs. Delivered as 3 separate PRs against main (branch off each prior).
+
+- **Work completed:**
+  1. **HIPAA_PHASE_2_DESIGN.md** — created in `chrisos-vault/03_Execution/`. Full spec: caller audit verdicts, classification logic, getDownloadUrl() signature, scrubPhi() denylist, acceptance criteria, PR descriptions.
+  2. **PR A** `claude/hipaa-phase2-uploads-2026-05-14` — pushed, merge first.
+     - Schema: `Document` model gets `classification DataClassification @default(PHI)` + `storage String?`; migration also nulls out `/uploads/` Resident.photoUrl rows (local FS, not recoverable)
+     - `/api/documents/upload`: classify-by-linkage (residentId→PHI, inquiryId→PII, unlinked→PII); PHI→uploadBuffer(S3)/toS3Url; PII→Cloudinary; persist classification+storage; zero HIPAA-TODO Phase 2 comments remain
+     - `/api/upload`: accepts `classification` FormData param (default PHI); PHI→S3, PII/PUBLIC→Cloudinary; returns `storage` field
+     - `/api/residents/[id]/photo`: ALL local FS code removed (writeFile/unlink/mkdirSync); S3 upload at `residents/{id}/photo/{ts}.{ext}`; DELETE uses parseS3Url+deleteObject; classification=PHI always
+     - Zod: `z.string().url()` → `z.string().min(1)` in 3 metadata endpoints (rejects s3:// URIs)
+     - Frontend modals: residents+inquiries append `classification=PHI`; caregivers append `classification=PII` to `/api/upload` FormData
+     - Tests: 11 unit + 5 real-S3 (skipped without creds) — all pass
+  3. **PR B** `claude/hipaa-phase2-download-2026-05-14` — pushed, merge after A.
+     - New `src/lib/storage/download.ts`: `getDownloadUrl({ storage, fileUrl, expiresIn? })` → presigned HTTPS (TTL 300s) for S3, passthrough for Cloudinary, inferred from URL for legacy null-storage rows. Local crypto op — no network call.
+     - 6 PHI read routes updated: operator/residents documents, family gallery, operator/inquiries documents, residents/[id]/documents, residents/[id] (photoUrl), family/documents list. Each call site has AUTHZ comment.
+     - Tests: 8 unit + 4 real-S3 (skipped) — all pass
+  4. **PR C** `claude/hipaa-phase2-logs-2026-05-14` — pushed, merge after B.
+     - New `src/lib/phi-scrubber.ts`: `scrubPhi(payload)` — pure, deterministic, recursive; 25-field denylist; works on objects/arrays/nested; primitives/null pass through
+     - All 3 Sentry configs: `sendDefaultPii: false`, `beforeSend`+`beforeBreadcrumb` run scrubPhi on event.request.data, event.extra, breadcrumb.data
+     - `instrumentation-client.ts`: `maskAllInputs: true` in Session Replay (form fields = PHI risk); composed beforeSend (ResizeObserver filter + PHI scrub)
+     - `src/lib/sentry.ts` captureError(): console.error now logs only errorObj.message (no context), dev-only
+     - `family/members/invite`: removed console.log of email + message fields
+     - `family/documents/[documentId]/download`: removed console.log of fileUrl
+     - Tests: 42 unit tests covering every denylist field + nested + arrays + edge cases — all pass
+
+- **Files changed:**
+  - `prisma/schema.prisma` (Document model +2 fields)
+  - `prisma/migrations/20260514000001_hipaa_phase2_document_classification/migration.sql` (new)
+  - `src/app/api/documents/upload/route.ts` (full rewrite)
+  - `src/app/api/upload/route.ts` (full rewrite)
+  - `src/app/api/residents/[id]/photo/route.ts` (full rewrite — no local FS)
+  - `src/app/api/residents/[id]/documents/route.ts` (Zod + presign GET)
+  - `src/app/api/operator/residents/[id]/documents/route.ts` (Zod + presign GET)
+  - `src/app/api/operator/inquiries/[id]/documents/route.ts` (Zod + presign GET)
+  - `src/app/api/residents/[id]/route.ts` (presign photoUrl in GET)
+  - `src/app/api/family/gallery/route.ts` (presign photos in GET)
+  - `src/app/api/family/documents/route.ts` (presign in GET list)
+  - `src/app/api/family/documents/[documentId]/download/route.ts` (remove fileUrl log)
+  - `src/app/api/family/members/invite/route.ts` (remove email log)
+  - `src/lib/storage/download.ts` (new)
+  - `src/lib/phi-scrubber.ts` (new)
+  - `sentry.server.config.ts`, `sentry.edge.config.ts`, `src/instrumentation-client.ts`, `src/lib/sentry.ts`
+  - `src/components/operator/residents/DocumentUploadModal.tsx`
+  - `src/components/operator/inquiries/DocumentUploadModal.tsx`
+  - `src/components/operator/caregivers/DocumentUploadModal.tsx`
+  - `__tests__/hipaa-phase2-uploads.integration.test.ts` (new)
+  - `__tests__/hipaa-phase2-downloads.unit.test.ts` (new)
+  - `__tests__/phi-scrubber.unit.test.ts` (new)
+  - `chrisos-vault/03_Execution/HIPAA_PHASE_2_DESIGN.md` (new)
+
+- **Commands run:** `npx prisma generate`, `npx tsc --noEmit` (0 errors), `npx jest` (67 pass, 9 skip), `git push` × 3
+
+- **Tests/build status:** TypeScript 0 errors. 67 tests pass, 9 skipped (real-S3 integration without credentials in dev). All 3 PR branches pushed to GitHub.
+
+- **Deployment impact:** 3 PRs must merge in order A→B→C. PR A includes a DB migration — will auto-run on Render deploy. The migration nulls `/uploads/` photoUrls; resident photos will show missing until operator re-uploads. No other destructive data change.
+
+- **New risks/blockers:**
+  - PR A migration nulls local-FS photoUrls. Notify Chris before merging if any production residents have real photos (confirmed DB is seed-only as of 2026-05-13 PHI audit, so safe to proceed).
+  - Phase 1 PRs must be merged before Phase 2 PRs. Phase 2 A imports `DataClassification` from `@prisma/client` which Phase 1 migration creates.
+  - Real-S3 integration tests need `AWS_S3_*` creds to run — they correctly skip without. Run in Render shell post-merge to verify.
+
+- **Recommended next step:** Merge Phase 1 PRs (`claude/hipaa-phase1-schema-2026-05-13` → routing → purge), then merge Phase 2 PRs (A→B→C). Then run the Phase 1 purge script to clear seed Cloudinary files. Engage HIPAA external consultant ($500-1500, OL-HIPAA-GAP in open loops).
+
+---
+
+### 2026-05-13 — HIPAA Phase 1: Data Classification + PHI-Aware Upload Routing
+
+- **Objective:** Implement HIPAA Phase 1 — classify every uploaded file at the DB layer (PUBLIC/PII/PHI) and route PHI uploads to S3 (BAA-covered bucket carelinkai-prod-phi). Delivered as 3 separate PRs against main.
+
+- **Work completed:**
+  1. **HIPAA_PHASE_1_DESIGN.md** — created PRIMARY REFERENCE design spec in chrisos-vault/03_Execution/. Contains getUploadDestination spec, S3 canonical config, endpoint→classification table, purge script spec, env var standardization table, acceptance criteria.
+  2. **PR 1 (schema)** `claude/hipaa-phase1-schema-2026-05-13` — pushed, ready to merge first.
+     - Added `DataClassification` enum (PUBLIC, PII, PHI) to prisma/schema.prisma
+     - Added `classification DataClassification @default(PHI)` and `storage String?` to 4 models: ResidentDocument, FamilyDocument, InquiryDocument, GalleryPhoto
+     - Migration: `prisma/migrations/20260513000001_add_data_classification/migration.sql`
+  3. **PR 2 (routing)** `claude/hipaa-phase1-routing-2026-05-13` — pushed, merge after PR 1.
+     - New `src/lib/storage/router.ts`: `getUploadDestination(classification)` → 's3'|'cloudinary'. PHI → S3, PUBLIC/PII → Cloudinary.
+     - Rewrote `src/lib/storage.ts`: AWS_S3_* env vars exclusively, canUseS3() removes NODE_ENV restriction, uploadBuffer() unconditionally sets SSE-S3 AES256, getBucket() exported.
+     - Standardized ALL upload routes to AWS_S3_* env vars (was: S3_*, AWS_ACCESS_KEY_ID, AWS_REGION mix)
+     - Refactored family/documents and family/gallery/upload: S3-first for PHI, Cloudinary dev fallback, persist classification + storage fields
+     - Added classification=PHI + storage to residentDocument.create and inquiryDocument.create
+     - Added HIPAA classification comments to every upload route per §2.3 classification table
+     - Added HIPAA-TODO Phase 2 notes to documents/upload/route.ts and generic upload route
+     - Updated .env.example: AWS_S3_* section with BAA-bucket documentation
+     - New `__tests__/storage-router.unit.test.ts`: 6 passing tests (PUBLIC→cloudinary, PII→cloudinary, PHI→s3)
+     - `npm run type-check`: 0 errors. `npm run lint`: 0 new errors.
+  4. **PR 3 (purge)** `claude/hipaa-phase1-purge-2026-05-13` — pushed, merge after PR 2.
+     - New `scripts/phase1-purge-cloudinary-seeds.ts`
+     - --dry-run flag: reports without API calls or DB changes
+     - Targets 4 tables (ResidentDocument:1, FamilyDocument:8, InquiryDocument:3, GalleryPhoto:14)
+     - Parses publicId + resourceType from Cloudinary URLs; handles not-found as success; skips non-Cloudinary rows
+     - Post-purge verification: queries all 4 tables, asserts 0 Cloudinary rows remain
+
+- **Files changed:**
+  - `prisma/schema.prisma` (DataClassification enum + 4 model columns)
+  - `prisma/migrations/20260513000001_add_data_classification/migration.sql` (new)
+  - `src/lib/storage/router.ts` (new)
+  - `src/lib/storage.ts` (rewrite)
+  - `src/lib/s3/upload.ts` (AWS_S3_* vars)
+  - `src/lib/services/family.ts` (AWS_S3_REGION)
+  - `src/app/api/family/documents/route.ts` (PHI routing + storage field)
+  - `src/app/api/family/gallery/upload/route.ts` (PHI routing + storage field)
+  - `src/app/api/operator/residents/[id]/documents/route.ts` (classification + storage on create)
+  - `src/app/api/operator/inquiries/[id]/documents/route.ts` (classification + storage on create)
+  - `src/app/api/caregiver/credentials/upload-url/route.ts` (AWS_S3_* vars + HIPAA comment)
+  - `src/app/api/provider/credentials/upload-url/route.ts` (AWS_S3_* vars + HIPAA comment)
+  - `src/app/api/operator/homes/[id]/photos/route.ts` (HIPAA comment)
+  - `src/app/api/operator/homes/[id]/licenses/route.ts` (HIPAA comment)
+  - `src/app/api/operator/homes/[id]/inspections/route.ts` (HIPAA comment)
+  - `src/app/api/profile/picture/upload/route.ts` (HIPAA comment)
+  - `src/app/api/admin/affiliate/materials/route.ts` (HIPAA comment)
+  - `src/app/api/documents/upload/route.ts` (HIPAA-TODO Phase 2 note)
+  - `.env.example` (AWS_S3_* section added)
+  - `__tests__/storage-router.unit.test.ts` (new — 6 tests)
+  - `scripts/phase1-purge-cloudinary-seeds.ts` (new)
+
+- **Commands run:**
+  - `npm run type-check` → 0 errors
+  - `npm run lint` → 0 new errors (pre-existing warnings only)
+  - `npx jest __tests__/storage-router.unit.test.ts` → 6/6 PASS
+  - `git push -u origin claude/hipaa-phase1-schema-2026-05-13`
+  - `git push -u origin claude/hipaa-phase1-routing-2026-05-13`
+  - `git push -u origin claude/hipaa-phase1-purge-2026-05-13`
+
+- **Tests/build status:** type-check clean, 6 new unit tests passing, no lint errors.
+
+- **Deployment impact:**
+  - PR 1 migration adds 2 columns to 4 tables (additive, nullable storage column). Applies via `prisma migrate deploy` on Render deploy. Safe on current SEED_ONLY production DB.
+  - PR 2 changes all upload routes. No DB migration needed. Render env vars `AWS_S3_*` already set.
+  - PR 3 purge script is run manually (not auto-deployed). Run `--dry-run` first.
+  - **MERGE ORDER IS REQUIRED:** PR 1 → PR 2 → PR 3. PR 2 imports DataClassification from @prisma/client which requires PR 1's generated client.
+
+- **New risks/blockers:**
+  - `documents/upload/route.ts` and `upload/route.ts` still route to Cloudinary for potentially PHI-linked documents (noted as HIPAA-TODO Phase 2 in both files).
+  - `residents/[id]/photo/route.ts` stores resident photos to local FS — HIPAA-TODO Phase 2.
+  - PR 3 purge script must not run until PRs 1+2 are merged and prisma migrate deploy has run.
+
+- **Recommended next step:**
+  1. Merge PR 1 to main → verify Render deploy + migration applies cleanly
+  2. Merge PR 2 to main → verify S3 routing live in production
+  3. Run purge script dry-run: `npx ts-node --transpile-only scripts/phase1-purge-cloudinary-seeds.ts --dry-run`
+  4. Run purge script live
+  5. Phase 2 scope: migrate `documents/upload/route.ts`, `upload/route.ts`, `residents/[id]/photo/route.ts` to S3 for PHI context
+
+---
+
 ### 2026-05-07 — Option B: Household Shift Scheduling for FAMILY Users
 
 - **Objective:** Build the private household shift management layer for FAMILY users who hire caregivers directly via the marketplace (Option A), and close OL-050.

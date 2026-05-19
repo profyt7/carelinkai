@@ -15,6 +15,7 @@ import { authOptions } from '@/lib/auth';
 import { PrismaClient, UserRole, AuditAction } from '@prisma/client';
 import { generateHomeProfile, validateHomeData, type HomeData } from '@/lib/profile-generator/home-profile-generator';
 import { createAuditLogFromRequest } from '@/lib/audit';
+import { captureError } from '@/lib/sentry';
 
 const prisma = new PrismaClient();
 
@@ -140,6 +141,9 @@ export async function POST(
     });
 
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'operator:homes:{id}:generate-profile' },
+    });
     console.error('[Generate Profile] Error:', error);
     
     // Handle specific errors

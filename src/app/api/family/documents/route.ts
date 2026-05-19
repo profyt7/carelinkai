@@ -22,10 +22,14 @@ import {
   createActivityRecord
 } from "@/lib/services/family";
 import { generateMockDocuments } from "@/lib/services/family";
-import { uploadBuffer, buildFamilyDocumentKey, toS3Url, parseS3Url, deleteObject as s3Delete, hasS3Credentials } from "@/lib/storage";
+import { uploadBuffer, buildFamilyDocumentKey, toS3Url, parseS3Url, deleteObject as s3Delete, hasS3Credentials, canUseS3, getBucket } from "@/lib/storage";
 import cloudinary, { isCloudinaryConfigured, UPLOAD_PRESETS } from "@/lib/cloudinary";
+import { getUploadDestination } from "@/lib/storage/router";
+import { getDownloadUrl } from "@/lib/storage/download";
+import { DataClassification } from "@prisma/client";
 import { createAuditLogFromRequest } from "@/lib/audit";
 import { rateLimitAsync, getClientIp, buildRateLimitHeaders } from "@/lib/rateLimit";
+import { captureError } from '@/lib/sentry';
 
 // Maximum file size (10MB)
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -123,6 +127,9 @@ async function ensureUploadDirExists(familyId: string): Promise<string> {
     await mkdir(documentsDir, { recursive: true });
     return documentsDir;
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:documents' },
+    });
     console.error("Failed to create upload directories:", error);
     throw new Error("Failed to create upload directories");
   }
@@ -349,13 +356,15 @@ export async function GET(request: NextRequest) {
       const hasNextPage = filters.page < totalPages;
       const hasPreviousPage = filters.page > 1;
       
-      // Transform documents to include comment count
-      const documentsWithDetails = documents.map(doc => ({
-        ...doc,
-        // fallback to 0 if comments is undefined (e.g., mock data)
-        commentCount: (doc as any).comments?.length ?? 0,
-        comments: undefined // Remove comments array
-      })) as FamilyDocumentWithDetails[];
+      // AUTHZ: checkFamilyMembership above ensures user is authorized for this family
+      const documentsWithDetails = await Promise.all(
+        documents.map(async (doc) => ({
+          ...doc,
+          fileUrl: await getDownloadUrl({ storage: (doc as any).storage, fileUrl: doc.fileUrl }),
+          commentCount: (doc as any).comments?.length ?? 0,
+          comments: undefined,
+        }))
+      ) as FamilyDocumentWithDetails[];
       
       const elapsed = Date.now() - startedAt;
       console.log(`[Documents API] Request successful, returning response, total elapsed: ${elapsed}ms`);
@@ -384,6 +393,9 @@ export async function GET(request: NextRequest) {
       });
       
     } catch (error) {
+      captureError(error instanceof Error ? error : new Error(String(error)), {
+        tags: { route: 'family:documents' },
+      });
       const elapsed = Date.now() - startedAt;
       console.error(`[Documents API] Error fetching documents after ${elapsed}ms:`, error);
       return NextResponse.json(
@@ -436,6 +448,9 @@ export async function POST(request: NextRequest) {
       try {
         tags = JSON.parse(tagsRaw);
       } catch (e) {
+        captureError(e instanceof Error ? e : new Error(String(e)), {
+          tags: { route: 'family:documents' },
+        });
         // If parsing fails, try to split by comma
         tags = tagsRaw.split(",").map(tag => tag.trim());
       }
@@ -500,56 +515,41 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Check if we have S3 or Cloudinary configured
-    const useS3 = hasS3Credentials();
-    const useCloudinary = isCloudinaryConfigured();
-    
-    // Log configuration status for debugging
-    console.log('[Documents Upload] Checking upload service configuration:', {
-      useS3,
-      useCloudinary,
-      CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME ? '***SET***' : 'NOT SET',
-      CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY ? '***SET***' : 'NOT SET',
-      CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET ? '***SET***' : 'NOT SET',
-    });
-    
+    // HIPAA: FamilyDocument classification=PHI — route to S3 (BAA-covered).
+    // Cloudinary fallback only in dev/test when S3 is unavailable.
+    // See HIPAA_PHASE_1_DESIGN.md §2.3
+    const classification = DataClassification.PHI;
+    const destination = getUploadDestination(classification);
+    const useS3 = destination === 's3' && canUseS3();
+    const useCloudinary = !useS3 && isCloudinaryConfigured();
+
     if (!useS3 && !useCloudinary) {
-      console.error('[Documents Upload] No upload service configured. Details:', {
-        S3: useS3,
-        Cloudinary: {
-          configured: useCloudinary,
-          cloudName: !!process.env.CLOUDINARY_CLOUD_NAME,
-          apiKey: !!process.env.CLOUDINARY_API_KEY,
-          apiSecret: !!process.env.CLOUDINARY_API_SECRET,
-        }
-      });
-      
       return NextResponse.json(
-        { 
-          error: "File upload service not configured. Please contact your administrator.",
-          code: "UPLOAD_SERVICE_NOT_CONFIGURED",
-          details: {
-            s3Available: useS3,
-            cloudinaryAvailable: useCloudinary,
-            cloudinaryEnvVars: {
-              cloudName: !!process.env.CLOUDINARY_CLOUD_NAME,
-              apiKey: !!process.env.CLOUDINARY_API_KEY,
-              apiSecret: !!process.env.CLOUDINARY_API_SECRET,
-            }
-          }
-        },
+        { error: "File upload service not configured. Please contact your administrator.", code: "UPLOAD_SERVICE_NOT_CONFIGURED" },
         { status: 503 }
       );
     }
     
     let fileUrl: string;
     let cloudinaryPublicId: string | undefined;
-    
+    let storageProvider: string;
+
     // Convert file to buffer
     const fileBuffer = Buffer.from(await file.arrayBuffer());
-    
-    if (useCloudinary) {
-      // Upload to Cloudinary
+
+    if (useS3) {
+      const secureFilename = generateSecureFilename(file.name);
+      const key = buildFamilyDocumentKey(metadata.familyId, secureFilename);
+      await uploadBuffer({
+        key,
+        body: fileBuffer,
+        contentType: file.type,
+        metadata: { uploaderId: session.user.id, familyId: metadata.familyId },
+      });
+      fileUrl = toS3Url(getBucket(), key);
+      storageProvider = 's3';
+    } else {
+      // Cloudinary fallback — dev/test only
       const uploadResult = await new Promise<any>((resolve, reject) => {
         cloudinary.uploader
           .upload_stream(
@@ -564,20 +564,9 @@ export async function POST(request: NextRequest) {
           )
           .end(fileBuffer);
       });
-      
       fileUrl = uploadResult.secure_url;
       cloudinaryPublicId = uploadResult.public_id;
-    } else {
-      // Fallback to S3 (legacy)
-      const secureFilename = generateSecureFilename(file.name);
-      const key = buildFamilyDocumentKey(metadata.familyId, secureFilename);
-      await uploadBuffer({ 
-        key, 
-        body: fileBuffer, 
-        contentType: file.type, 
-        metadata: { uploaderId: session.user.id, familyId: metadata.familyId } 
-      });
-      fileUrl = toS3Url(process.env["S3_BUCKET"] as string, key);
+      storageProvider = 'cloudinary';
     }
     
     // Create document record in database
@@ -595,12 +584,14 @@ export async function POST(request: NextRequest) {
         version: 1,
         isEncrypted: metadata.isEncrypted,
         tags: metadata.tags || [],
+        classification,
+        storage: storageProvider,
         metadata: cloudinaryPublicId ? {
           cloudinaryPublicId,
-          uploadService: 'cloudinary'
+          uploadService: storageProvider,
         } : {
-          uploadService: 's3'
-        }
+          uploadService: storageProvider,
+        },
       },
       include: {
         uploader: {
@@ -652,6 +643,9 @@ export async function POST(request: NextRequest) {
     });
     
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:documents' },
+    });
     // ------------------------------------------------------------------
     // Enhanced error logging to help diagnose the exact server failure
     // ------------------------------------------------------------------
@@ -826,6 +820,9 @@ export async function PUT(request: NextRequest) {
     });
     
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:documents' },
+    });
     console.error("Error updating document:", error);
     return NextResponse.json(
       { error: "Failed to update document" },
@@ -910,6 +907,9 @@ export async function DELETE(request: NextRequest) {
           invalidate: true 
         });
       } catch (error) {
+        captureError(error instanceof Error ? error : new Error(String(error)), {
+          tags: { route: 'family:documents' },
+        });
         console.error("Error deleting from Cloudinary:", error);
         // Continue with database deletion even if Cloudinary deletion fails
       }
@@ -920,6 +920,9 @@ export async function DELETE(request: NextRequest) {
         try {
           await s3Delete({ bucket: s3.bucket, key: s3.key });
         } catch (error) {
+          captureError(error instanceof Error ? error : new Error(String(error)), {
+            tags: { route: 'family:documents' },
+          });
           console.error("Error deleting from S3:", error);
         }
       } else {
@@ -970,6 +973,9 @@ export async function DELETE(request: NextRequest) {
     });
     
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:documents' },
+    });
     console.error("Error deleting document:", error);
     return NextResponse.json(
       { error: "Failed to delete document" },

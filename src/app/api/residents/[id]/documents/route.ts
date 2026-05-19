@@ -6,10 +6,11 @@ import { prisma } from '@/lib/prisma';
 import { requireOperatorOrAdmin } from '@/lib/rbac';
 import { captureError, addBreadcrumb, captureMessage } from '@/lib/sentry';
 import { createAuditLogFromRequest } from '@/lib/audit';
+import { getDownloadUrl } from '@/lib/storage/download';
 
 const CreateDocSchema = z.object({
   fileName: z.string().min(1),
-  fileUrl: z.string().url(),
+  fileUrl: z.string().min(1),
   mimeType: z.string().min(1),
   fileSize: z.number().int().positive(),
   type: z.string().optional(),
@@ -48,7 +49,17 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     });
     const dur = Date.now() - t0;
     addBreadcrumb('documents_get_ok', 'api', { residentId: resident.id, count: items.length, dur }, 'info');
-    return NextResponse.json({ items }, { headers: { 'Cache-Control': 'no-store' } });
+
+    // AUTHZ: requireOperatorOrAdmin + operator home check above ensures authorization
+    const resolvedItems = await Promise.all(
+      items.map(async (item) => ({
+        ...item,
+        fileUrl: await getDownloadUrl({ storage: item.storage, fileUrl: item.fileUrl }),
+      }))
+    );
+
+    await createAuditLogFromRequest(req, 'READ', 'Document', resident.id, 'PHI read: resident documents listing');
+    return NextResponse.json({ items: resolvedItems }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (e) {
     captureError(e instanceof Error ? e : new Error(String(e)), { extra: { route: 'documents_get' } });
     console.error('documents GET error', e);

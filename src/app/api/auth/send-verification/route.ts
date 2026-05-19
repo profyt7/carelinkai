@@ -24,6 +24,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { randomBytes } from "crypto";
 import { z } from "zod";
+import { captureError } from '@/lib/sentry';
 
 // Initialize Prisma client
 const prisma = new PrismaClient();
@@ -115,6 +116,9 @@ async function sendVerificationEmail(email: string, token: string, isResend: boo
     
     return true;
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'auth:send-verification' },
+    });
     console.error("Failed to send verification email:", error);
     return false;
   }
@@ -224,6 +228,9 @@ export async function POST(request: NextRequest) {
     // Send verification email
         return NextResponse.json({ success: true, message: 'Verification email sent successfully. Please check your inbox.' });
   } catch (error: any) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'auth:send-verification' },
+    });
     console.error("Send verification email error:", error);
     
     // Generic error response
@@ -288,6 +295,9 @@ export async function GET(request: NextRequest) {
     });
     
   } catch (error: any) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'auth:send-verification' },
+    });
     console.error("Check verification status error:", error);
     
     // Generic error response

@@ -11,6 +11,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { PERMISSIONS, hasPermission } from "@/lib/permissions";
 import { suggestOptimalTimes } from "@/lib/tour-scheduler/ai-tour-scheduler";
+import { captureError } from '@/lib/sentry';
 
 export async function GET(
   request: NextRequest,
@@ -58,6 +59,9 @@ export async function GET(
 
     return NextResponse.json({ success: true, suggestions: formattedSuggestions });
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:tours:available-slots:{homeId}' },
+    });
     console.error("[Available Slots API] Error:", error);
     return NextResponse.json(
       { error: "Failed to get available slots" },

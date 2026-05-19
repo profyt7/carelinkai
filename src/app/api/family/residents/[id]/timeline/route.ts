@@ -8,6 +8,7 @@ import { requireAnyRole } from '@/lib/rbac';
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { checkFamilyMembership } from '@/lib/services/family';
 import { z } from 'zod';
+import { captureError } from '@/lib/sentry';
 
 const querySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(25),
@@ -121,6 +122,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
     return NextResponse.json({ items });
   } catch (e) {
+    captureError(e instanceof Error ? e : new Error(String(e)), {
+      tags: { route: 'family:residents:{id}:timeline' },
+    });
     console.error('Family resident timeline error', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }

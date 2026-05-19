@@ -9,6 +9,7 @@ import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
 import { checkFamilyMembership } from "@/lib/services/family";
 import { z } from "zod";
+import { captureError } from '@/lib/sentry';
 
 // Validate request body
 const depositSchema = z.object({
@@ -170,6 +171,9 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'billing:deposit' },
+    });
     console.error("Error creating payment intent:", error);
     return NextResponse.json(
       { error: "Failed to create payment intent" },

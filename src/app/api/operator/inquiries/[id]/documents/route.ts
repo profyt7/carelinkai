@@ -1,9 +1,13 @@
+// HIPAA: InquiryDocument classification=PHI, destination=S3
+// See HIPAA_PHASE_1_DESIGN.md §2.3 (InquiryDocument rationale)
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient, UserRole, AuditAction } from '@prisma/client';
+import { PrismaClient, UserRole, AuditAction, DataClassification } from '@prisma/client';
 import { z } from 'zod';
 import { createAuditLogFromRequest } from '@/lib/audit';
+import { captureError } from '@/lib/sentry';
+import { getDownloadUrl } from '@/lib/storage/download';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -46,7 +50,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       }
     }
 
-    // Fetch documents
+    // AUTHZ: operator access check above ensures user is authorized for this inquiry
     const documents = await prisma.inquiryDocument.findMany({
       where: { inquiryId: params.id },
       orderBy: { uploadedAt: 'desc' },
@@ -60,8 +64,19 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       },
     });
 
-    return NextResponse.json({ documents });
+    const resolved = await Promise.all(
+      documents.map(async (doc) => ({
+        ...doc,
+        fileUrl: await getDownloadUrl({ storage: doc.storage, fileUrl: doc.fileUrl }),
+      }))
+    );
+
+    await createAuditLogFromRequest(_req, AuditAction.READ, 'InquiryDocument', params.id, 'PHI read: inquiry documents listing');
+    return NextResponse.json({ documents: resolved });
   } catch (e) {
+    captureError(e instanceof Error ? e : new Error(String(e)), {
+      tags: { route: 'operator:inquiries:{id}:documents' },
+    });
     console.error('Failed to fetch inquiry documents:', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   } finally {
@@ -71,7 +86,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 
 const DocumentSchema = z.object({
   fileName: z.string().min(1, 'File name is required'),
-  fileUrl: z.string().url('Valid file URL is required'),
+  fileUrl: z.string().min(1, 'File URL is required'),
   fileType: z.string().min(1, 'File type is required'),
   documentType: z.string().min(1, 'Document type is required'),
   description: z.string().optional(),
@@ -127,6 +142,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     const { fileName, fileUrl, fileType, documentType, description, fileSize } = validation.data;
 
+    const storageProvider = fileUrl.startsWith('s3://') || fileUrl.includes('amazonaws.com') ? 's3' : 'cloudinary';
+
     // Create document
     const document = await prisma.inquiryDocument.create({
       data: {
@@ -138,6 +155,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         description: description || null,
         fileSize,
         uploadedById: user.id,
+        classification: DataClassification.PHI,
+        storage: storageProvider,
       },
       include: {
         uploadedBy: {
@@ -161,6 +180,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     return NextResponse.json({ document }, { status: 201 });
   } catch (e) {
+    captureError(e instanceof Error ? e : new Error(String(e)), {
+      tags: { route: 'operator:inquiries:{id}:documents' },
+    });
     console.error('Failed to create inquiry document:', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   } finally {

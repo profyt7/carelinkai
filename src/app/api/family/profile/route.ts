@@ -24,6 +24,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient, AuditAction } from "@prisma/client";
 import { requireAnyRole } from "@/lib/rbac";
 import { z } from "zod";
+import { captureError } from '@/lib/sentry';
 
 // Initialize Prisma client
 const prisma = new PrismaClient();
@@ -149,6 +150,9 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error: any) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:profile' },
+    });
     console.error("Family profile retrieval error:", error);
 
     return NextResponse.json(
@@ -270,6 +274,9 @@ export async function PATCH(request: NextRequest) {
     });
 
   } catch (error: any) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:profile' },
+    });
     console.error("Family profile update error:", error);
 
     return NextResponse.json(

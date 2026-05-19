@@ -8,6 +8,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { AuditAction } from '@prisma/client';
+import { captureError } from '@/lib/sentry';
 
 export async function GET(request: NextRequest) {
   try {
@@ -55,6 +56,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ albums: albumsWithCounts });
   } catch (error: any) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:gallery:albums' },
+    });
     console.error('Error fetching albums:', error);
     return NextResponse.json(
       { error: error.message ?? 'Internal server error' },
@@ -128,6 +132,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ album: { ...album, photoCount: 0 } });
   } catch (error: any) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:gallery:albums' },
+    });
     console.error('Error creating album:', error);
     return NextResponse.json(
       { error: error.message ?? 'Internal server error' },

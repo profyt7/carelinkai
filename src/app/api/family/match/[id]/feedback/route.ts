@@ -8,6 +8,7 @@ import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth-utils';
 import { AuditAction, FeedbackType } from '@prisma/client';
 import { createAuditLogFromRequest } from '@/lib/audit';
+import { captureError } from '@/lib/sentry';
 
 // Validation schema for feedback
 const feedbackSchema = z.object({
@@ -136,6 +137,9 @@ export async function POST(
     }, { status: 201 });
     
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:match:{id}:feedback' },
+    });
     console.error('[POST /api/family/match/[id]/feedback] Error:', error);
     
     if (error instanceof z.ZodError) {
@@ -218,6 +222,9 @@ export async function GET(
     });
     
   } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:match:{id}:feedback' },
+    });
     console.error('[GET /api/family/match/[id]/feedback] Error:', error);
     
     return NextResponse.json(

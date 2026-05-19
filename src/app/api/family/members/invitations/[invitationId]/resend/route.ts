@@ -8,6 +8,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { AuditAction } from '@prisma/client';
+import { captureError } from '@/lib/sentry';
 
 export async function POST(
   request: NextRequest,
@@ -88,6 +89,9 @@ export async function POST(
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'family:members:invitations:{invitationId}:resend' },
+    });
     console.error('Error resending invitation:', error);
     return NextResponse.json(
       { error: error.message ?? 'Internal server error' },

@@ -26,6 +26,7 @@ import { authOptions } from "@/lib/auth";
 import { authenticator } from "otplib";
 import { z } from "zod";
 import { compare } from "bcryptjs";
+import { captureError } from '@/lib/sentry';
 
 // Initialize Prisma client
 const prisma = new PrismaClient();
@@ -271,6 +272,9 @@ export async function POST(request: NextRequest) {
     });
     
   } catch (error: any) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { route: 'auth:disable-2fa' },
+    });
     console.error("Disable 2FA error:", error);
     
     // Generic error response
