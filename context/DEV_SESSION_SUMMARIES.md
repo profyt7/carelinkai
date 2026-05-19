@@ -2,6 +2,29 @@
 
 ---
 
+### 2026-05-19 — BAA/DPA Gate Extended to CAREGIVER, DISCHARGE_PLANNER, PROVIDER
+- **Objective:** Extend the HIPAA BAA/DPA acceptance gate from OPERATOR-only to all four PHI-accessing roles.
+- **Work completed:**
+  - **Schema:** 8 nullable BAA/DPA fields added to `Caregiver`, `Provider`, `DischargePlannerProfile` in `prisma/schema.prisma`. Migration `20260519000001_add_baa_dpa_to_caregiver_provider_dp` created (all `ADD COLUMN IF NOT EXISTS`).
+  - **`src/lib/legal.ts`:** Refactored `isOperatorAcceptanceCurrent()` to use shared helpers; added `isAcceptanceCurrent(userId)` — dispatches to correct profile record based on user role. ADMIN/FAMILY always return true.
+  - **`src/app/api/acceptance/route.ts`** (new): Generic GET (checks current acceptance) + POST (records acceptance) for OPERATOR, CAREGIVER, DISCHARGE_PLANNER, PROVIDER. Includes dual LEGAL_ACCEPTANCE audit events per role.
+  - **`src/app/legal/acceptance/page.tsx`** (new): Acceptance page for all roles. Redirects to role-appropriate dashboard after acceptance (`/operator`, `/caregiver`, `/discharge-planner`, `/provider`).
+  - **`src/app/operator/acceptance/page.tsx`:** Replaced with server-side redirect to `/legal/acceptance` (backwards compat for any old bookmarks).
+  - **`src/components/operator/AcceptanceGate.tsx`:** Updated to call `/api/acceptance` (was `/api/operator/acceptance`) and redirect to `/legal/acceptance` (was `/operator/acceptance`).
+  - **`src/app/caregiver/layout.tsx`:** Added `AcceptanceGate` wrap.
+  - **`src/app/provider/layout.tsx`:** Added `AcceptanceGate` wrap.
+  - **`src/app/discharge-planner/layout.tsx`** (new): Created layout with `AcceptanceGate` + `DashboardLayout` (was missing entirely).
+  - **`src/app/dashboard/page.tsx`:** Updated OPERATOR redirect to `/legal/acceptance` (was `/operator/acceptance`).
+  - **`e2e/baa-dpa-gate-operator.spec.ts`:** URL assertions updated to match `/legal/acceptance`.
+- **Files changed:** `prisma/schema.prisma`, `prisma/migrations/20260519000001_*/migration.sql`, `src/lib/legal.ts`, `src/app/api/acceptance/route.ts` (new), `src/app/legal/acceptance/page.tsx` (new), `src/app/operator/acceptance/page.tsx`, `src/components/operator/AcceptanceGate.tsx`, `src/app/caregiver/layout.tsx`, `src/app/provider/layout.tsx`, `src/app/discharge-planner/layout.tsx` (new), `src/app/dashboard/page.tsx`, `e2e/baa-dpa-gate-operator.spec.ts`
+- **Commands run:** `npx prisma generate` (0 errors), `npx tsc --noEmit` (0 errors), `git push origin claude/review-carelink-docs-49Ycv`
+- **Tests/build status:** TypeScript clean (0 errors). E2e spec updated.
+- **Deployment impact:** New migration auto-deploys via Render start script. All existing users with null BAA/DPA fields will be redirected to `/legal/acceptance` on next visit to their role's route tree. No data lost.
+- **New risks/blockers:** None new. OL-056 still awaits merge.
+- **Recommended next step:** Merge `claude/review-carelink-docs-49Ycv` to main. Verify Michael Chen's dashboard counts. Then continue to OL-051 (merge HIPAA Phase 3 PRs #536–#538).
+
+---
+
 ### 2026-05-19 — Dashboard Scoping Bug + BAA Gate Coverage (P0 Fix)
 - **Objective:** Fix production bug where operator dashboard showed cross-operator aggregate counts (HIPAA inference leak), and extend BAA/DPA gate to cover /dashboard route.
 - **Work completed:**
