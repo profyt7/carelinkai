@@ -2,6 +2,23 @@
 
 ---
 
+### 2026-05-19 — Dashboard Scoping Bug + BAA Gate Coverage (P0 Fix)
+- **Objective:** Fix production bug where operator dashboard showed cross-operator aggregate counts (HIPAA inference leak), and extend BAA/DPA gate to cover /dashboard route.
+- **Work completed:**
+  - **Root cause diagnosed:** All 4 `/api/dashboard/*` routes (`metrics`, `charts`, `alerts`, `activity`) had zero operator scope in Prisma queries — Hypothesis A confirmed. No hardcoded values; real DB queries returning platform-wide totals.
+  - **Bug A fixed:** All 4 routes now resolve the operator record and apply `{ home: { operatorId } }` (or nested variant) to every query. ADMIN role retains platform-wide visibility.
+  - **Bug B fixed:** `src/app/dashboard/page.tsx` — OPERATOR case now calls `isOperatorAcceptanceCurrent()` server-side and redirects to `/operator/acceptance` before rendering `OperatorDashboardContent`. Previously the AcceptanceGate only fired on `/operator/*` routes.
+  - **Regression spec:** `e2e/operator-dashboard-scoping.spec.ts` — seeds 2 operators, asserts each sees 0 (their own data only), asserts fresh operator without BAA is blocked at /dashboard.
+  - **HIPAA audit log:** Incident documented in `chrisos-vault/02_Memory/HIPAA_AUDIT_READINESS.md` and `HIPAA_PUNCH_LIST.md` (E5/E6 added). Classified as inference-channel disclosure, not reportable breach — attorney confirmation requested under F1.
+- **Files changed:** `src/app/api/dashboard/metrics/route.ts`, `charts/route.ts`, `alerts/route.ts`, `activity/route.ts`, `src/app/dashboard/page.tsx`, `e2e/operator-dashboard-scoping.spec.ts`, `chrisos-vault/02_Memory/HIPAA_AUDIT_READINESS.md`, `chrisos-vault/03_Execution/HIPAA_PUNCH_LIST.md`
+- **Commands run:** `npx tsc --noEmit` (0 errors), `npx jest --testPathPattern=hipaa-phase3` (31 pass), `git push`
+- **Tests/build status:** TypeScript clean; 31 HIPAA tests green
+- **Deployment impact:** Routes changed — will auto-deploy when merged to main. Safe — additive WHERE clauses only; no schema changes.
+- **New risks/blockers:** Ask attorney to confirm 2026-05-18 aggregate-count disclosure is not reportable (add to F1 scope).
+- **Recommended next step:** Merge this branch to main. Then Michael Chen should re-log-in and verify dashboard shows his correct counts (1 resident, 0 inquiries).
+
+---
+
 ### 2026-05-19 — Testing Infrastructure: 9 Critical-Path E2E Specs + Smoke + Synthetic Monitor
 - **Objective:** Build 3-PR testing infrastructure batch to close the gap exposed by the 2026-05-17 email outage (hardcoded wrong domain — no test caught it for days).
 - **Work completed:**

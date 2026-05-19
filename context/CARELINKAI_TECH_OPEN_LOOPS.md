@@ -8,6 +8,12 @@ Each loop: what it is, why it matters, what done looks like.
 
 ## 🔴 HIPAA Critical (Blocking First Operator with Real PHI)
 
+### OL-056: Merge dashboard scoping fix + BAA gate extension (2026-05-18 P0 incident)
+- **Status:** 🔴 OPEN — code shipped on `claude/review-carelink-docs-49Ycv`, awaiting merge
+- **What:** Fixes two bugs in the operator dashboard: (A) all 4 `/api/dashboard/*` routes returned cross-operator aggregate counts — no `WHERE` clause scoped to the operator; (B) `/dashboard` route did not enforce the BAA/DPA gate (only `/operator/*` did).
+- **HIPAA classification:** Inference-channel disclosure (counts only, no PHI fields). One affected user: Michael Chen. Documented in `HIPAA_AUDIT_READINESS.md` — ask attorney to confirm not reportable when engaging for BAA/DPA review (OL-052).
+- **Done when:** Merged to main, Render auto-deploys, Michael Chen verifies dashboard shows 1 resident, 0 inquiries.
+
 ### OL-051: Merge HIPAA Phase 3 PRs #536 → #537 → #538
 - **Status:** 🔴 OPEN — code shipped, awaiting merge
 - **What:** Three PRs pushed 2026-05-16. Must merge in order A (#536) → B (#537) → C (#538). PR B has a schema migration.
