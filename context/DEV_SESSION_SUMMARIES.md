@@ -2,6 +2,25 @@
 
 ---
 
+### 2026-05-31 — Operator Scoping Audit: 3 Additional Leaks Fixed
+- **Objective:** Verify the 2026-05-18 dashboard scoping fix is in place and audit all operator API routes for the same unscoped-query pattern. Prompted by a brand-new operator account seeing 8 residents/57 caregivers/3 inquiries.
+- **Work completed:**
+  - **Root cause confirmed:** `/api/dashboard/*` fix is on `claude/review-carelink-docs-49Ycv` but not yet merged to main — production still runs unscoped queries. This is the direct cause of the reported numbers.
+  - **Dashboard routes (A-D):** All 4 routes verified correctly scoped on this branch.
+  - **`/api/operator/leads` (NEW BUG):** No operator scope for OPERATOR role at all — all leads across all operators visible. Fixed by auto-applying `assignedOperatorId = session.user.id` for non-ADMIN callers. The existing "assignedOperatorId" query param is now ADMIN-only.
+  - **`/api/operator/inquiries/pipeline` (NEW BUG):** `getConversionStats(scope.homeIds[0])` passed a homeId where an operatorId is expected (type mismatch). When operator has no homes, fell back to `getConversionStats()` (platform-wide). Fixed: use `scope.operatorId` directly; return empty stats when operatorId is absent.
+  - **`/api/operator/dashboard` (NEW BUG):** Null-operator fallback built `homeFilter = {}` (all data). Fixed: return 404 for OPERATOR role with no operator record.
+  - **`e2e/operator-dashboard-scoping.spec.ts` (FIXED + EXTENDED):** Wrong BAA endpoint (`/api/operator/acceptance` → `/api/acceptance`), wrong payload keys (`baaAccepted` → `acceptedBaa`), wrong URL assertion (`/operator/acceptance` → `/legal/acceptance`). Added 4 new isolation tests: metrics, charts funnel, leads, pipeline.
+  - **Routes cleared (no new bugs):** `/api/operator/homes`, `/api/operator/caregivers`, `/api/operator/inquiries`, `/api/operator/shifts`, `/api/operator/tours`, `/api/operator/compliance/scan`, `/api/operator/analytics/export` — all correctly scoped.
+- **Files changed:** `src/app/api/operator/leads/route.ts`, `src/app/api/operator/inquiries/pipeline/route.ts`, `src/app/api/operator/dashboard/route.ts`, `e2e/operator-dashboard-scoping.spec.ts`
+- **Commands run:** `npx tsc --noEmit` (0 new errors), `git push origin claude/review-carelink-docs-49Ycv`
+- **Tests/build status:** TypeScript clean. 4 new Playwright isolation tests committed.
+- **Deployment impact:** No schema changes. API behavior changes are fixes — operators who had cross-tenant visibility now get correctly scoped (zero) results for leads and pipeline. Safe to merge.
+- **New risks/blockers:** None. All confirmed bugs are fixed on this branch.
+- **Recommended next step:** **Merge `claude/review-carelink-docs-49Ycv` to main immediately** — this is a live HIPAA incident (brand-new operators are seeing cross-tenant data on production). OL-056.
+
+---
+
 ### 2026-05-19 — BAA/DPA Gate Extended to CAREGIVER, DISCHARGE_PLANNER, PROVIDER
 - **Objective:** Extend the HIPAA BAA/DPA acceptance gate from OPERATOR-only to all four PHI-accessing roles.
 - **Work completed:**

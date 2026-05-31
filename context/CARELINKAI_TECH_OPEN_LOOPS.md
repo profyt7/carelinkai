@@ -8,14 +8,17 @@ Each loop: what it is, why it matters, what done looks like.
 
 ## 🔴 HIPAA Critical (Blocking First Operator with Real PHI)
 
-### OL-056: Merge dashboard scoping fix + BAA/DPA gate extension to all PHI roles (2026-05-18/19)
+### OL-056: Merge dashboard scoping fix + BAA/DPA gate extension + operator scoping audit (2026-05-18/19/31)
 - **Status:** 🔴 OPEN — code shipped on `claude/review-carelink-docs-49Ycv`, awaiting merge
-- **What:** Four items on this branch:
-  - (A) All 4 `/api/dashboard/*` routes now scoped to operator — were returning cross-operator aggregate counts.
+- **What:** Six items on this branch:
+  - (A) All 4 `/api/dashboard/*` routes now scoped to operator (primary fix for reported incident).
   - (B) `/dashboard` page enforces BAA/DPA gate for OPERATOR (redirects to `/legal/acceptance`).
-  - (C) BAA/DPA gate extended to CAREGIVER, DISCHARGE_PLANNER, PROVIDER — all 4 PHI-accessing roles now gate through `/legal/acceptance`. New generic `/api/acceptance` endpoint + new `isAcceptanceCurrent(userId)` in `src/lib/legal.ts`. Layouts for caregiver/provider/discharge-planner all wrap with `AcceptanceGate`.
+  - (C) BAA/DPA gate extended to CAREGIVER, DISCHARGE_PLANNER, PROVIDER — all 4 PHI-accessing roles gate through `/legal/acceptance`. New generic `/api/acceptance` endpoint + `isAcceptanceCurrent(userId)`.
   - (D) Schema migration `20260519000001_add_baa_dpa_to_caregiver_provider_dp` — 8 nullable BAA/DPA fields on Caregiver, Provider, DischargePlannerProfile.
-- **HIPAA classification of (A):** Inference-channel disclosure (counts only, no PHI fields). One affected user: Michael Chen. Ask attorney to confirm not reportable when engaging for BAA/DPA review (OL-052).
+  - (E) `/api/operator/leads` — no OPERATOR scope, all leads visible cross-tenant. Fixed: auto-filter `assignedOperatorId = session.user.id` for non-ADMIN.
+  - (F) `/api/operator/inquiries/pipeline` — passed homeId where operatorId expected to `getConversionStats`; fell back to platform-wide when operator had no homes. Fixed: use `scope.operatorId`; return empty stats for no-homes case.
+  - (G) `/api/operator/dashboard` (legacy) — null-operator guard added (was leaking `{}` filter → all data).
+- **HIPAA classification of (A):** Inference-channel disclosure (counts only, no PHI fields). One affected user: Michael Chen. Ask attorney to confirm not reportable (OL-052).
 - **Done when:** Merged to main, Render auto-deploys (migration applies), Michael Chen verifies dashboard shows 1 resident, 0 inquiries.
 
 ### OL-051: Merge HIPAA Phase 3 PRs #536 → #537 → #538
