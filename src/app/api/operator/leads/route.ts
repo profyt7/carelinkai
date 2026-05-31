@@ -73,12 +73,19 @@ export async function GET(request: NextRequest) {
       deletedAt: null // Only non-deleted leads
     };
 
+    // OPERATOR scope: restrict to leads assigned to this operator user.
+    // Without this, all operators can see all leads across all accounts.
+    const isAdmin = session!.user!.role === "ADMIN";
+    if (!isAdmin) {
+      where.assignedOperatorId = session!.user!.id;
+    }
+
     // Handle status filter (can be multiple statuses)
     if (statusParam) {
-      const statuses = statusParam.split(",").filter(s => 
+      const statuses = statusParam.split(",").filter(s =>
         Object.values(LeadStatus).includes(s as LeadStatus)
       ) as LeadStatus[];
-      
+
       if (statuses.length > 0) {
         where.status = statuses.length === 1 ? statuses[0] : { in: statuses };
       }
@@ -89,8 +96,8 @@ export async function GET(request: NextRequest) {
       where.targetType = targetType;
     }
 
-    // Handle assignedOperatorId filter
-    if (assignedOperatorId) {
+    // Handle assignedOperatorId filter (ADMIN only — OPERATOR scope is already locked above)
+    if (isAdmin && assignedOperatorId) {
       if (assignedOperatorId === "unassigned") {
         where.assignedOperatorId = null;
       } else if (assignedOperatorId === "me") {

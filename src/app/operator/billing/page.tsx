@@ -10,12 +10,13 @@ export const revalidate = 0;
 
 const prisma = new PrismaClient();
 
-export default async function OperatorBillingPage({ searchParams }: { searchParams?: { operatorId?: string } }) {
+export default async function OperatorBillingPage({ searchParams }: { searchParams?: { operatorId?: string; subscription?: string } }) {
   const session = await getServerSession(authOptions);
   const email = session?.user?.email ?? null;
   const user = email ? await prisma.user.findUnique({ where: { email } }) : null;
   const isAdmin = user?.role === UserRole.ADMIN;
   const operatorOverrideId = isAdmin ? (searchParams?.operatorId || null) : null;
+  const subscriptionParam = searchParams?.subscription;
   const op = user?.role === UserRole.OPERATOR ? await prisma.operator.findUnique({ where: { userId: user.id } }) : null;
   const effectiveOperatorId = operatorOverrideId || op?.id || null;
 
@@ -57,6 +58,18 @@ export default async function OperatorBillingPage({ searchParams }: { searchPara
         { label: 'Operator', href: '/operator' },
         { label: 'Billing' }
       ]} />
+
+      {subscriptionParam === 'success' && (
+        <div className="rounded-lg bg-success-50 border border-success-200 px-4 py-3 text-sm text-success-800 flex items-center gap-2">
+          <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+          Your subscription is active. Welcome aboard!
+        </div>
+      )}
+      {subscriptionParam === 'canceled' && (
+        <div className="rounded-lg bg-neutral-50 border border-neutral-200 px-4 py-3 text-sm text-neutral-700">
+          Checkout was canceled — no charge was made.
+        </div>
+      )}
 
       {/* Subscription management — only shown to operators, not admins viewing all operators */}
       {user?.role === UserRole.OPERATOR && !isAdmin && (

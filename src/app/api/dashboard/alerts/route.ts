@@ -8,20 +8,43 @@ export const revalidate = 0;
 
 /**
  * GET /api/dashboard/alerts
- * ENHANCED VERSION - Phase 3 Implementation
- * Returns real alerts for overdue assessments, critical incidents, and follow-ups
+ * Returns operator-scoped alerts. OPERATOR: scoped to their homes.
+ * ADMIN: platform-wide.
  */
 export async function GET(request: NextRequest) {
   try {
-    console.log('=== Dashboard Alerts API Called (Enhanced) ===');
-    
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      console.log('No session found');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    console.log('User email:', session.user.email);
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { id: true, role: true },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    let operatorId: string | null = null;
+    if (user.role === 'OPERATOR') {
+      const operator = await prisma.operator.findUnique({
+        where: { userId: user.id },
+        select: { id: true },
+      });
+      if (!operator) {
+        return NextResponse.json({ error: 'Operator record not found' }, { status: 404 });
+      }
+      operatorId = operator.id;
+    }
+
+    const assessScope   = operatorId ? { resident: { home: { operatorId } } } : {};
+    const incidentScope = operatorId ? { resident: { home: { operatorId } } } : {};
+    const inquiryScope  = operatorId ? { home: { operatorId } } : {};
+    const certScope     = operatorId
+      ? { caregiver: { employments: { some: { operatorId } } } }
+      : {};
 
     const alerts: Array<{
       id: string;
@@ -40,37 +63,22 @@ export async function GET(request: NextRequest) {
 
       const overdueAssessments = await prisma.assessmentResult.findMany({
         where: {
-          status: {
-            in: ['PENDING_REVIEW', 'IN_PROGRESS']
-          },
-          createdAt: {
-            lt: sevenDaysAgo
-          }
+          ...assessScope,
+          status: { in: ['PENDING_REVIEW', 'IN_PROGRESS'] },
+          createdAt: { lt: sevenDaysAgo },
         },
-        include: {
-          resident: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true
-            }
-          }
-        },
+        include: { resident: { select: { id: true, firstName: true, lastName: true } } },
         take: 5,
-        orderBy: {
-          createdAt: 'asc'
-        }
+        orderBy: { createdAt: 'asc' },
       });
 
       if (overdueAssessments.length > 0) {
-        const residentNames = overdueAssessments
-          .slice(0, 3)
+        const residentNames = overdueAssessments.slice(0, 3)
           .map(a => `${a?.resident?.firstName ?? ''} ${a?.resident?.lastName ?? ''}`.trim())
-          .filter(name => name.length > 0)
+          .filter(n => n.length > 0)
           .join(', ');
-        
         const moreCount = overdueAssessments.length > 3 ? ` and ${overdueAssessments.length - 3} more` : '';
-        
+
         alerts.push({
           id: 'overdue-assessments',
           type: 'warning',
@@ -78,11 +86,9 @@ export async function GET(request: NextRequest) {
           description: `Assessments pending review for ${residentNames}${moreCount}`,
           actionLabel: 'View Assessments',
           actionUrl: '/operator/residents',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       }
-
-      console.log('Overdue assessments alert:', overdueAssessments.length);
     } catch (error) {
       console.error('Error fetching overdue assessments:', error);
     }
@@ -94,35 +100,18 @@ export async function GET(request: NextRequest) {
 
       const criticalIncidents = await prisma.residentIncident.findMany({
         where: {
+          ...incidentScope,
           severity: 'Critical',
-          occurredAt: {
-            gte: sevenDaysAgo
-          },
-          status: {
-            in: ['REPORTED', 'UNDER_REVIEW']
-          }
+          occurredAt: { gte: sevenDaysAgo },
+          status: { in: ['REPORTED', 'UNDER_REVIEW'] },
         },
-        include: {
-          resident: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true
-            }
-          }
-        },
+        include: { resident: { select: { id: true, firstName: true, lastName: true } } },
         take: 5,
-        orderBy: {
-          occurredAt: 'desc'
-        }
+        orderBy: { occurredAt: 'desc' },
       });
 
       if (criticalIncidents.length > 0) {
-        const incidentTypes = criticalIncidents
-          .slice(0, 2)
-          .map(i => i.type)
-          .join(', ');
-        
+        const incidentTypes = criticalIncidents.slice(0, 2).map(i => i.type).join(', ');
         alerts.push({
           id: 'critical-incidents',
           type: 'error',
@@ -130,16 +119,14 @@ export async function GET(request: NextRequest) {
           description: `Recent critical incidents: ${incidentTypes}`,
           actionLabel: 'View Incidents',
           actionUrl: '/operator/residents',
-          timestamp: criticalIncidents[0]?.occurredAt?.toISOString() ?? new Date().toISOString()
+          timestamp: criticalIncidents[0]?.occurredAt?.toISOString() ?? new Date().toISOString(),
         });
       }
-
-      console.log('Critical incidents alert:', criticalIncidents.length);
     } catch (error) {
       console.error('Error fetching critical incidents:', error);
     }
 
-    // ALERT 3: Follow-ups Due Today
+    // ALERT 3: Tours Scheduled Today
     try {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -148,38 +135,25 @@ export async function GET(request: NextRequest) {
 
       const followUpsDue = await prisma.inquiry.findMany({
         where: {
-          tourDate: {
-            gte: today,
-            lt: tomorrow
-          },
-          status: {
-            in: ['TOUR_SCHEDULED', 'CONTACTED']
-          }
+          ...inquiryScope,
+          tourDate: { gte: today, lt: tomorrow },
+          status: { in: ['TOUR_SCHEDULED', 'CONTACTED'] },
         },
         include: {
           family: {
-            include: {
-              user: {
-                select: {
-                  firstName: true,
-                  lastName: true
-                }
-              }
-            }
-          }
+            include: { user: { select: { firstName: true, lastName: true } } },
+          },
         },
-        take: 5
+        take: 5,
       });
 
       if (followUpsDue.length > 0) {
-        const familyNames = followUpsDue
-          .slice(0, 2)
+        const familyNames = followUpsDue.slice(0, 2)
           .map(f => `${f?.family?.user?.firstName ?? ''} ${f?.family?.user?.lastName ?? ''}`.trim())
-          .filter(name => name.length > 0)
+          .filter(n => n.length > 0)
           .join(', ');
-        
         const moreCount = followUpsDue.length > 2 ? ` and ${followUpsDue.length - 2} more` : '';
-        
+
         alerts.push({
           id: 'followups-due',
           type: 'info',
@@ -187,55 +161,40 @@ export async function GET(request: NextRequest) {
           description: `Tours for ${familyNames}${moreCount}`,
           actionLabel: 'View Tours',
           actionUrl: '/operator/inquiries',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       }
-
-      console.log('Follow-ups due alert:', followUpsDue.length);
     } catch (error) {
       console.error('Error fetching follow-ups:', error);
     }
 
-    // ALERT 4: Expiring Certifications (Caregivers with certs expiring in 30 days)
+    // ALERT 4: Expiring Certifications
     try {
       const thirtyDaysFromNow = new Date();
       thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
 
       const expiringCerts = await prisma.caregiverCertification.findMany({
         where: {
-          expiryDate: {
-            lte: thirtyDaysFromNow,
-            gte: new Date()
-          },
-          status: 'CURRENT'
+          ...certScope,
+          expiryDate: { lte: thirtyDaysFromNow, gte: new Date() },
+          status: 'CURRENT',
         },
         include: {
           caregiver: {
-            include: {
-              user: {
-                select: {
-                  firstName: true,
-                  lastName: true
-                }
-              }
-            }
-          }
+            include: { user: { select: { firstName: true, lastName: true } } },
+          },
         },
         take: 5,
-        orderBy: {
-          expiryDate: 'asc'
-        }
+        orderBy: { expiryDate: 'asc' },
       });
 
       if (expiringCerts.length > 0) {
-        const caregiverNames = expiringCerts
-          .slice(0, 2)
+        const caregiverNames = expiringCerts.slice(0, 2)
           .map(c => `${c?.caregiver?.user?.firstName ?? ''} ${c?.caregiver?.user?.lastName ?? ''}`.trim())
-          .filter(name => name.length > 0)
+          .filter(n => n.length > 0)
           .join(', ');
-        
         const moreCount = expiringCerts.length > 2 ? ` and ${expiringCerts.length - 2} more` : '';
-        
+
         alerts.push({
           id: 'expiring-certifications',
           type: 'warning',
@@ -243,23 +202,16 @@ export async function GET(request: NextRequest) {
           description: `Certifications expiring for ${caregiverNames}${moreCount}`,
           actionLabel: 'View Caregivers',
           actionUrl: '/operator/caregivers',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       }
-
-      console.log('Expiring certifications alert:', expiringCerts.length);
     } catch (error) {
       console.error('Error fetching expiring certifications:', error);
     }
 
-    console.log(`Returning ${alerts.length} alerts`);
     return NextResponse.json({ alerts });
-
   } catch (error: any) {
-    console.error('=== Dashboard Alerts Error ===');
-    console.error('Error:', error);
-    console.error('Message:', error.message);
-    console.error('Stack:', error.stack);
+    console.error('Dashboard alerts error:', error);
     return NextResponse.json(
       { error: 'Failed to fetch alerts', details: error.message },
       { status: 500 }

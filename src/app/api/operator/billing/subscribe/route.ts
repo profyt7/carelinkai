@@ -66,7 +66,16 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  const appUrl = process.env['NEXT_PUBLIC_APP_URL'] || 'https://getcarelinkai.com';
+  // Derive the base URL from the incoming request so the success/cancel URLs always
+  // match the origin the user is actually browsing from. Falls back to the env var,
+  // then the canonical production URL. This prevents session loss when NEXT_PUBLIC_APP_URL
+  // differs from the actual host (e.g., Render internal URL vs custom domain).
+  const forwardedProto = request.headers.get('x-forwarded-proto');
+  const forwardedHost = request.headers.get('x-forwarded-host');
+  const requestOrigin = (forwardedProto && forwardedHost)
+    ? `${forwardedProto}://${forwardedHost}`
+    : request.headers.get('origin');
+  const appUrl = requestOrigin || process.env['NEXT_PUBLIC_APP_URL'] || 'https://getcarelinkai.com';
 
   const checkoutSession = await stripe.checkout.sessions.create({
     customer: stripeCustomerId,

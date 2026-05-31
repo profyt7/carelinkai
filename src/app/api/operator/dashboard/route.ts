@@ -38,6 +38,12 @@ export async function GET(request: NextRequest) {
       ? await prisma.operator.findUnique({ where: { userId: user.id } })
       : null;
 
+    // Guard: an OPERATOR without a profile record should not fall through to
+    // an empty filter (which would return platform-wide data).
+    if (user.role === UserRole.OPERATOR && !operator) {
+      return NextResponse.json({ error: 'Operator profile not found' }, { status: 404 });
+    }
+
     // Determine homeFilter based on user role and query params
     const homeFilter = operatorIdParam && user.role === UserRole.ADMIN
       ? { operatorId: operatorIdParam }
