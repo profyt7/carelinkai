@@ -150,6 +150,16 @@ export default function middleware(req: NextRequest) {
       }
     },
     {
+      // Explicitly wire the secret and cookie name to match auth.ts, so the Edge Runtime
+      // getToken call looks for the same cookie regardless of NEXTAUTH_URL configuration.
+      secret: process.env['NEXTAUTH_SECRET'],
+      cookies: {
+        sessionToken: {
+          name: (process.env.NODE_ENV === 'production' && process.env['ALLOW_INSECURE_AUTH_COOKIE'] !== '1')
+            ? '__Secure-next-auth.session-token'
+            : 'next-auth.session-token',
+        },
+      },
       callbacks: {
         authorized({ req, token }: { req: any; token: any }) {
           try {
