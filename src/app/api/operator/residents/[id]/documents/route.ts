@@ -69,6 +69,7 @@ export async function GET(
       }))
     );
 
+    await createAuditLogFromRequest(request, AuditAction.READ, 'ResidentDocument', params.id, 'PHI read: resident documents listing');
     return NextResponse.json(resolved);
   } catch (error) {
     return handleAuthError(error);
