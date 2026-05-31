@@ -35,7 +35,12 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const appUrl = process.env['NEXT_PUBLIC_APP_URL'] || 'https://getcarelinkai.com';
+  const forwardedProto = request.headers.get('x-forwarded-proto');
+  const forwardedHost = request.headers.get('x-forwarded-host');
+  const requestOrigin = (forwardedProto && forwardedHost)
+    ? `${forwardedProto}://${forwardedHost}`
+    : request.headers.get('origin');
+  const appUrl = requestOrigin || process.env['NEXT_PUBLIC_APP_URL'] || 'https://getcarelinkai.com';
 
   const portalSession = await stripe.billingPortal.sessions.create({
     customer: operator.stripeCustomerId,

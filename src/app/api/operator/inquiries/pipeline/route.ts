@@ -47,10 +47,14 @@ export async function GET(request: NextRequest) {
     }
     // Admins see all inquiries (no where clause)
 
-    // Get conversion statistics
-    const stats = user.role === UserRole.OPERATOR && scope.homeIds.length > 0
-      ? await getConversionStats(scope.homeIds[0]) // Use first home for operator
-      : await getConversionStats(); // All stats for admin
+    // Get conversion statistics scoped to operator.
+    // scope.operatorId is the Operator record ID — getConversionStats filters by home.operatorId.
+    // For a brand-new operator with no homes, return empty stats rather than platform-wide data.
+    const stats = user.role === UserRole.OPERATOR
+      ? (scope.operatorId
+          ? await getConversionStats(scope.operatorId)
+          : { total: 0, converted: 0, conversionRate: 0, byStatus: {} })
+      : await getConversionStats(); // ADMIN: platform-wide
 
     // Get detailed pipeline data by status
     const pipeline = await prisma.inquiry.groupBy({
