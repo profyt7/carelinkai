@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
     success_url: `${appUrl}/operator/billing?subscription=success`,
     cancel_url: `${appUrl}/operator/billing?subscription=canceled`,
     metadata: { operatorId: operator.id, plan },
-    allow_promotion_codes: true,
+    allow_promotion_codes: false,
   });
 
   return NextResponse.json({ url: checkoutSession.url });
