@@ -43,7 +43,7 @@ const registrationSchema = z.object({
     (val) => !val || /^(\+1\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/.test(val),
     { message: "Please enter a valid US phone number" }
   ),
-  role: z.enum(["FAMILY", "OPERATOR", "CAREGIVER", "AFFILIATE", "PROVIDER"]),
+  role: z.enum(["FAMILY", "OPERATOR", "CAREGIVER", "AFFILIATE", "PROVIDER", "DISCHARGE_PLANNER"]),
   agreeToTerms: z.boolean().refine(val => val === true, {
     message: "You must agree to the terms and conditions"
   }),
@@ -355,7 +355,19 @@ export async function POST(request: NextRequest) {
           });
           console.log("[REGISTER API] Provider profile created successfully");
           break;
-          
+
+        case "DISCHARGE_PLANNER":
+          console.log("[REGISTER API] Creating DISCHARGE_PLANNER profile...");
+          await tx.dischargePlannerProfile.create({
+            data: {
+              userId: user.id,
+              organization: null,
+              title: null,
+            }
+          });
+          console.log("[REGISTER API] DischargePlannerProfile created successfully");
+          break;
+
         default:
           console.log("[REGISTER API] ERROR: Invalid role:", role);
           throw new Error("Invalid role selected");
