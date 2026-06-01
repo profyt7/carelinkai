@@ -2,6 +2,25 @@
 
 ---
 
+### 2026-06-01 — Onboarding Wizard + Cleveland Founder Gating (Issues A/B/C/D)
+- **Objective:** Ship four bundled UX/product fixes post-PR-#539: operator onboarding wizard, Cleveland founder free-access gating, signup form role pre-selection, and FOUNDERS49 removal.
+- **Work completed:**
+  - **Issue D:** Removed all FOUNDERS49 references from `SubscriptionManager.tsx` and old onboarding page. Set `allow_promotion_codes: false` on Stripe checkout sessions.
+  - **Issue C:** Added `useSearchParams` to register page; reads `?role=OPERATOR` param and pre-selects the role, so operator sign-up links land with the right tile pre-selected.
+  - **Issue A/B — Prisma schema:** Added `onboardingCompletedAt DateTime?`, `clevelandFounder Boolean @default(false)`, `freeAccessUntil DateTime?`, `accessTier AccessTier @default(FULL)` to `Operator` model. Added `AccessTier` enum. Migration `20260601000001_operator_onboarding_cleveland_founder` grandfathers all existing operators as onboarded to prevent forced redirect on existing accounts.
+  - **Issue A/B — 4-step wizard:** Created `/operator/onboarding/[step]/page.tsx` (Company → First Home → Claim Link → Choose Plan). Deleted old `/operator/onboarding/page.tsx`.
+  - **Issue A/B — AcceptanceGate:** Modified to check onboarding completion BEFORE BAA/DPA acceptance. New operators (null `onboardingCompletedAt`) are redirected to `/operator/onboarding/1`. Onboarding pages bypass both gates.
+  - **Issue A/B — Claim token system:** `src/lib/claim-token.ts` — HMAC-SHA256 signed tokens using `NEXTAUTH_SECRET`, locked to operator email, 48h default expiry. `POST /api/operator/claim` — validates + redeems token, sets `clevelandFounder = true` and 6-month `freeAccessUntil`. Cleveland founders skip Stripe on Step 3 and complete onboarding directly. `GET /api/operator/onboarding/status` — checked by AcceptanceGate. `POST /api/operator/onboarding/complete` — marks `onboardingCompletedAt`. `POST /api/admin/homes/[id]/claim-link` — admin generates tokenized claim links.
+  - **E2E tests:** Rewrote `operator-onboarding-wizard.spec.ts` to match new 4-step wizard. Added Cleveland founder redemption tests and email-lock enforcement test.
+- **Files changed:** `src/components/operator/AcceptanceGate.tsx`, `src/components/operator/billing/SubscriptionManager.tsx`, `src/app/api/operator/billing/subscribe/route.ts`, `src/app/auth/register/page.tsx`, `prisma/schema.prisma`, `prisma/migrations/20260601000001_operator_onboarding_cleveland_founder/migration.sql`, `src/lib/claim-token.ts`, `src/app/api/operator/onboarding/status/route.ts` (new), `src/app/api/operator/onboarding/complete/route.ts` (new), `src/app/api/operator/claim/route.ts` (new), `src/app/api/admin/homes/[id]/claim-link/route.ts` (new), `src/app/operator/onboarding/[step]/page.tsx` (new), `src/app/operator/onboarding/page.tsx` (deleted), `e2e/operator-onboarding-wizard.spec.ts`
+- **Commands run:** `git add`, `git commit`, `git push -u origin claude/review-carelink-docs-49Ycv`
+- **Tests/build status:** No node_modules in this environment; TypeScript/build validation deferred to CI. Logic reviewed manually. No `prisma generate` run (CLI v7.8 installed globally vs package `^6.7.0` — local prisma binaries absent; generate runs on Render build).
+- **Deployment impact:** Schema migration grandfathers existing operators. New `accessTier` field is schema-only this PR (no 402 middleware enforcement). Safe to merge alongside OL-056 changes.
+- **New risks/blockers:** READ_ONLY enforcement (402 blocking for expired free-tier) intentionally deferred — schema field added, middleware not wired. Follow-up PR needed before Cleveland founder free period actually expires (6 months from signup).
+- **Recommended next step:** Create PR from `claude/review-carelink-docs-49Ycv` → main covering both OL-056 fixes (dashboard scoping + Stripe redirect) and this onboarding wizard bundle. Or ship as separate PR targeting the Stripe/scoping branch.
+
+---
+
 ### 2026-05-31 — Operator Scoping Audit: 3 Additional Leaks Fixed
 - **Objective:** Verify the 2026-05-18 dashboard scoping fix is in place and audit all operator API routes for the same unscoped-query pattern. Prompted by a brand-new operator account seeing 8 residents/57 caregivers/3 inquiries.
 - **Work completed:**

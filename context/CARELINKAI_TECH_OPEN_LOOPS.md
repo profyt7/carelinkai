@@ -1,5 +1,15 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-05-19_
+_Last updated: 2026-06-01_
+
+---
+
+## 🟡 Product (Recent — Shipped but Incomplete)
+
+### OL-057: READ_ONLY enforcement (402 blocking) for expired Cleveland founder free tier
+- **Status:** 🟡 OPEN — schema field added, enforcement NOT wired
+- **What:** `Operator.accessTier` (FULL | READ_ONLY) and `Operator.freeAccessUntil` exist in schema (migration `20260601000001`). When `freeAccessUntil` passes and `clevelandFounder = true`, the operator should be downgraded to `READ_ONLY` and all POST/PATCH/DELETE API routes should return 402 with upgrade prompt. Neither the downgrade cron nor the middleware 402 check have been built.
+- **Risk:** Low for 6 months (free period duration). Must be built before first Cleveland founder's free period expires.
+- **Done when:** (1) Cron job runs monthly: sets `accessTier = READ_ONLY` where `clevelandFounder = true AND freeAccessUntil < NOW()`. (2) Middleware (or route-level guard) returns 402 for READ_ONLY operators on mutating routes. (3) Billing page shows "Your free period ended — upgrade to restore full access" banner.
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
