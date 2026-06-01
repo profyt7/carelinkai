@@ -169,6 +169,11 @@ model Operator {
   dpaAcceptedAt        DateTime?
   dpaAcceptedIp        String?
   dpaAcceptedUserAgent String?
+  // Onboarding & Cleveland founder gating
+  onboardingCompletedAt DateTime?
+  clevelandFounder     Boolean             @default(false)
+  freeAccessUntil      DateTime?
+  accessTier           AccessTier          @default(FULL)
   createdAt            DateTime            @default(now())
   updatedAt            DateTime            @updatedAt
   homes                    AssistedLivingHome[]
@@ -3069,4 +3074,9 @@ model ProviderBackgroundCheckOrder {
   @@index([providerId])
   @@index([orderedByUserId])
   @@index([status])
+}
+
+enum AccessTier {
+  FULL
+  READ_ONLY
 }

@@ -347,15 +347,6 @@ export default function SubscriptionManager() {
       {/* Plan selection (shown when no active plan) */}
       {!hasActivePlan && (
         <div>
-          <div className="mb-4 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 flex items-start gap-3">
-            <span className="text-lg leading-none mt-0.5">🎉</span>
-            <div className="text-sm">
-              <span className="font-semibold text-amber-900">Founders rate — first 50 operators only.</span>
-              <span className="text-amber-800"> Enter code </span>
-              <code className="bg-amber-100 text-amber-900 font-mono font-bold px-1.5 py-0.5 rounded text-xs">FOUNDERS49</code>
-              <span className="text-amber-800"> at checkout to lock in $49/mo on Starter forever.</span>
-            </div>
-          </div>
           <div className="text-sm font-medium text-neutral-700 mb-3 flex items-center gap-2">
             <Zap className="w-4 h-4 text-amber-500" />
             Choose a plan — 14-day free trial, no credit card required at signup

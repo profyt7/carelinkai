@@ -96,6 +96,24 @@ Canonical-source rules:
 
 ---
 
+## Branching Discipline (REQUIRED)
+
+Every new feature, fix, or refactor MUST start from a fresh branch off `origin/main`:
+
+    git checkout main && git pull origin main
+    git checkout -b feat/<short-description>     # or fix/, chore/, refactor/
+
+NEVER push subsequent work to `claude/review-carelink-docs-49Ycv` or any other
+long-running branch that already has accumulated unmerged work. That branch is
+effectively a graveyard and pushing more onto it creates the same "month of
+mixed workstreams in one PR" problem PR #539 had to clean up via cherry-pick.
+
+If you find yourself on any branch other than a freshly-created one off main,
+stop and create the right branch before doing implementation work. This rule
+takes priority over any other workflow suggestion.
+
+---
+
 ## Development rules
 - Preserve production stability — Render auto-deploys from main.
 - Prefer small, reviewable changes over large rewrites.
