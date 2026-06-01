@@ -4,7 +4,7 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import axios from "axios";
@@ -160,6 +160,18 @@ export default function RegisterPage() {
   }, []);
 
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Pre-select role from ?role= query param (e.g. links from operator sign-up page)
+  useEffect(() => {
+    const roleParam = searchParams?.get('role')?.toUpperCase() as UserRole | undefined;
+    const validRoles: UserRole[] = ['FAMILY', 'OPERATOR', 'CAREGIVER', 'AFFILIATE', 'PROVIDER', 'DISCHARGE_PLANNER'];
+    if (roleParam && validRoles.includes(roleParam)) {
+      setValue('role', roleParam);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
