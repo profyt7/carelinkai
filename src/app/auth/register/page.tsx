@@ -277,6 +277,9 @@ export default function RegisterPage() {
           data.role === "FAMILY" ? data.relationshipToRecipient : undefined,
         carePreferences:
           data.role === "FAMILY" ? data.carePreferences : undefined,
+        // Pass claimToken in the body so the register API redeems it at signup
+        // time — this survives the email-verification redirect
+        claimToken: claimTokenFromUrl ?? undefined,
       };
 
       await axios.post("/api/auth/register", cleanedData);
@@ -291,20 +294,7 @@ export default function RegisterPage() {
           });
 
           if (signInResult?.ok) {
-            // Redeem claim token if present (operator deep-link flow)
-            if (claimTokenFromUrl && data.role === "OPERATOR") {
-              try {
-                await fetch("/api/operator/claim", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ token: claimTokenFromUrl }),
-                });
-              } catch {
-                // Non-fatal — continue to onboarding even if redemption fails
-              }
-            }
-
-            // Role-specific redirect
+            // Role-specific redirect (claim token was already redeemed by the API)
             if (data.role === "OPERATOR") {
               router.push("/operator/onboarding/1");
             } else if (data.role === "FAMILY") {

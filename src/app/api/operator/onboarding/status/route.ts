@@ -8,7 +8,8 @@ import { UserRole } from '@prisma/client';
 
 /**
  * GET /api/operator/onboarding/status
- * Returns whether the current operator has completed onboarding.
+ * Returns onboarding state for the current operator, including seeded home data
+ * when a Cleveland founder claim has assigned one.
  */
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -27,10 +28,39 @@ export async function GET() {
     return NextResponse.json({ completed: false, clevelandFounder: false });
   }
 
+  // Fetch the seeded home if one is assigned (Cleveland founder flow)
+  let seededHome = null;
+  if (operator.seededHomeId) {
+    const home = await prisma.assistedLivingHome.findUnique({
+      where: { id: operator.seededHomeId },
+      include: { address: true },
+    });
+    if (home) {
+      seededHome = {
+        id: home.id,
+        name: home.name,
+        description: home.description,
+        capacity: home.capacity,
+        careLevel: home.careLevel,
+        status: home.status,
+        address: home.address
+          ? {
+              street: home.address.street,
+              city: home.address.city,
+              state: home.address.state,
+              zipCode: home.address.zipCode,
+            }
+          : null,
+      };
+    }
+  }
+
   return NextResponse.json({
     completed: !!operator.onboardingCompletedAt,
     clevelandFounder: operator.clevelandFounder ?? false,
     freeAccessUntil: operator.freeAccessUntil ?? null,
     accessTier: operator.accessTier ?? 'FULL',
+    seededHomeId: operator.seededHomeId ?? null,
+    seededHome,
   });
 }

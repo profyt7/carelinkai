@@ -144,7 +144,7 @@ test.describe('@critical Register — Operator path (?role=OPERATOR deep-link)',
 // ── Operator path — ?claimToken (Cleveland founder deep-link) ─────────────────
 
 test.describe('@critical Register — Cleveland founder claim-token flow', () => {
-  test('?claimToken redeemed after signup → clevelandFounder=true on operator record', async ({
+  test('?claimToken applied at signup time via API → clevelandFounder=true without manual claim call', async ({
     page,
     request,
   }) => {
@@ -199,12 +199,10 @@ test.describe('@critical Register — Cleveland founder claim-token flow', () =>
     await page.getByRole('checkbox', { name: /terms/i }).check();
     await page.getByRole('button', { name: /create account/i }).click();
 
-    // Wait for redirect to onboarding wizard
+    // Wait for redirect to onboarding wizard (claim was applied during register API call)
     await page.waitForURL(/\/operator\/onboarding\/1|\/auth\/login/, { timeout: 20000 });
 
-    // After redirect, verify the claim was applied (founder flag set)
-    // Use a short delay to let the claim redemption API call complete
-    await page.waitForTimeout(3000);
+    // Verify founder flags are already set — no separate /api/operator/claim call needed
     const statusRes = await page.evaluate(async () => {
       const r = await fetch('/api/operator/onboarding/status', {
         credentials: 'include',
@@ -213,5 +211,6 @@ test.describe('@critical Register — Cleveland founder claim-token flow', () =>
     });
     expect(statusRes.clevelandFounder).toBe(true);
     expect(statusRes.freeAccessUntil).toBeTruthy();
+    expect(statusRes.seededHomeId).toBeTruthy();
   });
 });
