@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-05-16_
+_Last updated: 2026-06-04_
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -27,6 +27,16 @@ Each loop: what it is, why it matters, what done looks like.
 ---
 
 ## 🔴 Critical (Blocking Revenue / Demos)
+
+### OL-055: STRIPE_PRICE_AGENCY env var not set in Render
+- **Status:** 🔴 OPEN — AGENCY tier ($799/mo) is visible in wizard Step 4 but Stripe Checkout will fail without this env var
+- **What:** Create a $799/month recurring product in the Stripe dashboard, copy the price ID, set `STRIPE_PRICE_AGENCY` in Render environment variables.
+- **Done when:** Env var set in Render + operator can successfully start Agency Stripe Checkout from wizard Step 4.
+
+### OL-056: Cleveland founder end-to-end production smoke test needed
+- **Status:** 🔴 OPEN — code shipped in PR #542, not yet verified on production
+- **What:** Full path: seed a home via `/api/dev/upsert-operator`, generate claim link via admin UI, register new operator with `?claimToken=`, complete all 4 wizard steps, verify free access granted and no Stripe flow triggered.
+- **Done when:** Founder lands on Step 4 free card, clicks "Complete Setup", reaches `/operator` dashboard with no Stripe redirect.
 
 ### OL-027: Provider listing fee ($99/mo)
 - **Status:** ✅ CLOSED (2026-05-02)
@@ -143,8 +153,6 @@ Each loop: what it is, why it matters, what done looks like.
 
 ### OL-022: STRIPE_PRICE_AGENCY and STRIPE_PRICE_DISCHARGE_PLANNER_DEPT not set
 - **Status:** ✅ FIXED (2026-04-27) — Chris confirmed both env vars already set in Render dashboard.
-
-
 
 ### OL-001: Demo accounts not seeded in production
 - **Status:** ✅ FIXED (2026-04-22)

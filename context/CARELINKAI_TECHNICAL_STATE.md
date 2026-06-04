@@ -1,11 +1,8 @@
 # CareLinkAI — Technical State
-_Last updated: 2026-05-16_
+_Last updated: 2026-06-04_
 
 ## Active Branch
-Phase 3 complete — 3 PRs pushed 2026-05-16, awaiting merge in order A→B→C:
-- PR A #536: `claude/hipaa-phase3-phi-dashboard-2026-05-16` — ePHI access dashboard + audit gaps
-- PR B #537: `claude/hipaa-phase3-operator-baa-2026-05-16` — BAA/DPA gate + schema migration
-- PR C #538: `claude/hipaa-phase3-gate-test-sentry-2026-05-16` — test-sentry production gate
+`main` — PR #542 merged 2026-06-04 (Cleveland founder integration bugs). No open PRs. Clean to build from.
 
 ## Production URL
 https://carelinkai.onrender.com (also: https://getcarelinkai.com)
@@ -34,7 +31,7 @@ https://carelinkai.onrender.com (also: https://getcarelinkai.com)
 | AI — All features | Anthropic Claude API (`claude-sonnet-4-6`, `claude-haiku-4-5-20251001`) |
 
 ## Schema Summary
-67+ Prisma models + enums. **2026-05-16 (Phase 3 PR B, pending merge):** `Operator` adds 8 nullable BAA/DPA acceptance fields (`baaTemplateVersion`, `baaAcceptedAt`, `baaAcceptedIp`, `baaAcceptedUserAgent`, `dpaTemplateVersion`, `dpaAcceptedAt`, `dpaAcceptedIp`, `dpaAcceptedUserAgent`); `AuditAction` enum adds `LEGAL_ACCEPTANCE`. Migration: `20260516000001_add_operator_baa_dpa_acceptance`. **2026-05-14 (Phase 2, on main):** `Document` adds `classification DataClassification @default(PHI)` + `storage String?`. **Earlier:** `DischargePlannerLicenseType`, `AffiliateReferralType`, `CommissionTier` enums; provider/caregiver subscription fields; `BackgroundCheckInvitation`, `ProviderBackgroundCheckOrder` models. ⚠️ Migrations 20260505000001/2/3 + 20260506000001 pending deploy on Render DB.
+67+ Prisma models + enums. **2026-06-04 (PR #542, merged):** `Operator` adds `seededHomeId String?` (tracks admin-seeded home assigned via Cleveland founder claim token). Migration: `20260602000001_operator_seeded_home`. **2026-05-16 (Phase 3 PR B, pending merge):** `Operator` adds 8 nullable BAA/DPA acceptance fields; `AuditAction` enum adds `LEGAL_ACCEPTANCE`. Migration: `20260516000001_add_operator_baa_dpa_acceptance`. **2026-05-14 (Phase 2, on main):** `Document` adds `classification DataClassification @default(PHI)` + `storage String?`. **Earlier:** `DischargePlannerLicenseType`, `AffiliateReferralType`, `CommissionTier` enums; provider/caregiver subscription fields; `BackgroundCheckInvitation`, `ProviderBackgroundCheckOrder` models. ⚠️ Migrations 20260505000001/2/3 + 20260506000001 pending deploy on Render DB.
 
 ## User Roles
 FAMILY, OPERATOR, CAREGIVER, ADMIN, STAFF, PROVIDER, AFFILIATE, DISCHARGE_PLANNER
@@ -65,7 +62,7 @@ FAMILY, OPERATOR, CAREGIVER, ADMIN, STAFF, PROVIDER, AFFILIATE, DISCHARGE_PLANNE
 - **Admin portal — Operators page:** `/admin/operators` — 9-column table, MRR by plan tier, bed occupancy, past-due highlights
 - **Admin portal — Discharge Planners page:** `/admin/discharge-planners` — active planners table, MRR at $99/seat
 - **Fix Demo Caregiver Employment:** `/api/admin/fix-demo-employment` POST endpoint + Admin Tools UI button; auto-creates `CaregiverEmployment` records for demo operator's caregivers
-- **Operator onboarding wizard:** 3-step guided flow (company → first home → plan selection); new operators auto-redirected on first login
+- **Operator onboarding wizard:** 4-step guided flow (company → first home → Cleveland founder claim → plan selection); new operators auto-redirected from `/operator` via AcceptanceGate; wizard detects seeded home and pre-populates Step 2 for founders; Step 4 shows free founder card or 4 paid tiers (Starter/Professional/Growth/Agency)
 - **Caregiver marketplace hire fee:** $250 Stripe invoice item queued on shift claim; MARKETPLACE_HIRE_FEE PaymentType
 - **Featured listings:** isFeatured/featuredUntil on homes; $79/mo billed as invoice item; search results sorted featured-first; operator toggle in home edit page
 - **Discharge planner subscription:** DischargePlannerProfile model; $99/seat/mo Stripe checkout at /discharge-planner/billing; webhook handler synced
@@ -155,6 +152,7 @@ These MUST be set on Render for production to work:
 - [ ] `STRIPE_PRICE_STARTER` ← required for subscription checkout
 - [ ] `STRIPE_PRICE_PROFESSIONAL` ← required for subscription checkout
 - [ ] `STRIPE_PRICE_GROWTH` ← required for subscription checkout
+- [ ] `STRIPE_PRICE_AGENCY` ← **NEW — required for Agency tier Stripe Checkout**
 - [x] `PLACEMENT_FEE_CENTS` = `150000` ✅ updated 2026-05-02 — placement fee now $1,500
 - [x] `STRIPE_PRICE_PROVIDER_LISTING` ✅ set 2026-05-02 — $99/mo provider listing
 - [x] `STRIPE_PRICE_PRO_CAREGIVER` ✅ set 2026-05-02 — $19/mo pro caregiver
@@ -179,7 +177,7 @@ These MUST be set on Render for production to work:
 Architecture is env-var-only. When the current test Stripe account is replaced:
 1. Update `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET` in Render
 2. Re-create Products/Prices in the new Stripe account
-3. Update `STRIPE_PRICE_STARTER`, `STRIPE_PRICE_PROFESSIONAL`, `STRIPE_PRICE_GROWTH` in Render
+3. Update `STRIPE_PRICE_STARTER`, `STRIPE_PRICE_PROFESSIONAL`, `STRIPE_PRICE_GROWTH`, `STRIPE_PRICE_AGENCY` in Render
 4. Re-register webhook endpoint in new Stripe account
 Zero code changes required.
 
@@ -190,7 +188,7 @@ Zero code changes required.
 
 ## Revenue Model
 See `REVENUE_MODEL.md` for the full breakdown. 12 streams finalized:
-1. **Operator SaaS subscription** (PRIMARY) — $99/$249/$499/mo — **checkout now wired**
+1. **Operator SaaS subscription** (PRIMARY) — $99/$249/$499/$799/mo — **checkout now wired**
 2. Family placement/referral fee — one-time on conversion
 3. Caregiver marketplace placement fee — per-hire
 4. Discharge Planner SaaS — per-seat hospital subscription
@@ -219,10 +217,17 @@ See `REVENUE_MODEL.md` for the full breakdown. 12 streams finalized:
 - **Provider onboarding welcome email:** Fires after PROVIDER registration (fire-and-forget). 3 steps: complete profile → upload credentials → activate listing. Links corrected to `/settings/provider`, `/settings/provider/credentials`, `/settings/provider/billing`.
 - **Provider profile completeness checklist:** 8-step progress widget on provider dashboard. Shows % complete + progress bar + per-item checklist with direct CTAs. Disappears when all 8 steps done. Credentials quick-action tile added (shows X/3 verified).
 
+## Recent Technical Decisions (2026-06-04)
+- **Claim token applied at signup time** (not post-signIn) — register API handles it atomically; avoids the PENDING-user signIn block that was dropping the token
+- **seededHomeId on Operator** — single field tracks the admin-seeded home; cleared to null after operator claims it via `POST /api/operator/homes/[id]/claim`
+- **NEXTAUTH_SECRET reused for claim token HMAC** — acceptable for now; rotating that secret invalidates outstanding tokens (acceptable given 48h expiry)
+- **AGENCY tier added at $799/mo** — shown in wizard Step 4 alongside Starter/Professional/Growth; `STRIPE_PRICE_AGENCY` env var needed
+- **OnboardingModal suppressed for OPERATOR** — OPERATOR uses wizard exclusively; old modal was firing on first login
+
 ## Immediate Next Priorities
-1. **Merge HIPAA Phase 1 PRs** — in order: PR 1 (schema) → PR 2 (routing) → PR 3 (purge). Monitor Render deploy + migration apply. Run purge script dry-run, then live.
-2. **Merge feat/provider-onboarding-checklist → main** — provider completeness widget + welcome email link fix.
-3. **OL-036 production action** — demo provider at `demo.provider@carelinkai.test` must re-save Settings → Profile to migrate service type slugs from underscore to hyphen format.
-4. **Switch Stripe to live mode** — swap all `STRIPE_*` env vars to live keys in Render, re-register webhook, create live Products/Prices. Runbook: `context/STRIPE_SETUP_RUNBOOK.md`.
-5. **Set Checkr live keys** — `CHECKR_API_KEY` + `CHECKR_WEBHOOK_SECRET` in Render once account approved (OL-023).
-6. **HIPAA Phase 2** — migrate `documents/upload/route.ts`, `upload/route.ts`, `residents/[id]/photo/route.ts` to S3 for PHI context (see HIPAA-TODO comments in each file).
+1. **Set `STRIPE_PRICE_AGENCY` in Render** — create $799/mo Agency product in Stripe dashboard, set env var. Without it, Agency Stripe Checkout will fail.
+2. **Run full Cleveland founder path in production** — seed a home, generate claim link, register with claimToken, complete wizard Steps 1-4.
+3. **Merge HIPAA Phase 1 PRs** — in order: PR 1 (schema) → PR 2 (routing) → PR 3 (purge). Monitor Render deploy + migration apply.
+4. **OL-036 production action** — demo provider at `demo.provider@carelinkai.test` must re-save Settings → Profile to migrate service type slugs.
+5. **Switch Stripe to live mode** — swap all `STRIPE_*` env vars to live keys in Render. Runbook: `context/STRIPE_SETUP_RUNBOOK.md`.
+6. **Set Checkr live keys** — `CHECKR_API_KEY` + `CHECKR_WEBHOOK_SECRET` in Render once account approved (OL-023).
