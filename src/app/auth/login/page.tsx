@@ -97,6 +97,9 @@ export default function LoginPage() {
         const session = await response.json();
         if (session?.user?.role === 'DISCHARGE_PLANNER') {
           router.push('/discharge-planner');
+        } else if (session?.user?.role === 'OPERATOR' && (!callbackUrl || callbackUrl === '/')) {
+          // Send operators to /operator so AcceptanceGate can enforce onboarding/BAA redirect
+          router.push('/operator');
         } else if (callbackUrl && callbackUrl !== '/') {
           router.push(callbackUrl);
         } else {

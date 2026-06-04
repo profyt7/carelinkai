@@ -39,8 +39,20 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const { name, description, careLevel, capacity, priceMin, priceMax, address, amenities, genderRestriction, operatorId: bodyOperatorId } = body || {};
-    if (!name || !description || !Array.isArray(careLevel) || !capacity || !address?.city || !address?.state || !address?.street || !address?.zipCode) {
-      return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
+
+    // Validate required fields and surface specific errors
+    const fieldErrors: Record<string, string> = {};
+    if (!name) fieldErrors.name = 'Home name is required';
+    if (!description) fieldErrors.description = 'Description is required';
+    if (!Array.isArray(careLevel) || careLevel.length === 0) fieldErrors.careLevel = 'At least one care type is required';
+    if (!capacity) fieldErrors.capacity = 'Capacity is required';
+    if (!address?.street) fieldErrors['address.street'] = 'Street address is required';
+    if (!address?.city) fieldErrors['address.city'] = 'City is required';
+    if (!address?.state) fieldErrors['address.state'] = 'State is required';
+    if (!address?.zipCode) fieldErrors['address.zipCode'] = 'ZIP code is required';
+
+    if (Object.keys(fieldErrors).length > 0) {
+      return NextResponse.json({ error: 'Invalid payload', fields: fieldErrors }, { status: 400 });
     }
 
     // Determine operatorId based on user role

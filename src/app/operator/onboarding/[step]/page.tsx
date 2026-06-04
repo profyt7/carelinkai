@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useParams, useSearchParams } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { FiCheck, FiArrowRight, FiHome, FiUser, FiZap, FiGift } from "react-icons/fi";
 
@@ -23,6 +23,16 @@ interface HomeForm {
   zipCode: string;
   capacity: string;
   careLevel: string[];
+}
+
+interface SeededHome {
+  id: string;
+  name: string;
+  description: string;
+  capacity: number;
+  careLevel: string[];
+  status: string;
+  address: { street: string; city: string; state: string; zipCode: string } | null;
 }
 
 const CARE_LEVELS = [
@@ -63,6 +73,19 @@ const PLANS = [
       "Custom analytics",
       "Dedicated support",
       "API access",
+    ],
+    highlight: false,
+  },
+  {
+    key: "AGENCY",
+    name: "Agency",
+    price: "$799",
+    features: [
+      "Everything in Growth",
+      "Multi-operator management",
+      "White-label options",
+      "SLA support",
+      "Custom integrations",
     ],
     highlight: false,
   },
@@ -122,15 +145,14 @@ export default function OperatorOnboardingStepPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const params = useParams();
-  const searchParams = useSearchParams();
 
-  // Derive step number from URL param
   const rawStep = Number(params?.step);
   const step: StepNum = ([1, 2, 3, 4].includes(rawStep) ? rawStep : 1) as StepNum;
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [clevelandFounder, setClevelandFounder] = useState(false);
+  const [seededHome, setSeededHome] = useState<SeededHome | null>(null);
 
   const [profile, setProfile] = useState<ProfileForm>({ companyName: "", phone: "" });
   const [home, setHome] = useState<HomeForm>({
@@ -143,7 +165,9 @@ export default function OperatorOnboardingStepPage() {
     capacity: "",
     careLevel: [],
   });
-  const [claimToken, setClaimToken] = useState(searchParams?.get("claimToken") || "");
+
+  // Only used on Step 3 when the operator manually enters a token
+  const [manualToken, setManualToken] = useState("");
   const [claimApplied, setClaimApplied] = useState(false);
 
   // Redirect non-operators
@@ -154,9 +178,36 @@ export default function OperatorOnboardingStepPage() {
     }
   }, [status, session, router]);
 
-  // Pre-fill existing profile data
+  // Load onboarding status + profile on mount
   useEffect(() => {
     if (status !== "authenticated") return;
+
+    // Fetch onboarding status (includes seededHome for founders)
+    fetch("/api/operator/onboarding/status")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.clevelandFounder) {
+          setClevelandFounder(true);
+          setClaimApplied(true);
+        }
+        if (d.seededHome) {
+          setSeededHome(d.seededHome);
+          // Pre-populate Step 2 form with seeded home data
+          setHome({
+            name: d.seededHome.name ?? "",
+            description: d.seededHome.description ?? "",
+            street: d.seededHome.address?.street ?? "",
+            city: d.seededHome.address?.city ?? "",
+            state: d.seededHome.address?.state ?? "",
+            zipCode: d.seededHome.address?.zipCode ?? "",
+            capacity: String(d.seededHome.capacity ?? ""),
+            careLevel: d.seededHome.careLevel ?? [],
+          });
+        }
+      })
+      .catch(() => {});
+
+    // Pre-fill company profile
     fetch("/api/operator/profile")
       .then((r) => r.json())
       .then((d) => {
@@ -166,17 +217,13 @@ export default function OperatorOnboardingStepPage() {
             phone: d.user?.phone || "",
           });
         }
-        if (d.operator?.clevelandFounder) {
-          setClevelandFounder(true);
-          setClaimApplied(true);
-        }
       })
       .catch(() => {});
   }, [status]);
 
   const goToStep = (n: StepNum) => router.push(`/operator/onboarding/${n}`);
 
-  // ── Step 1 submit ──────────────────────────────────────────────────────────
+  // ── Step 1: Save company profile ─────────────────────────────────────────
   const submitProfile = async () => {
     if (!profile.companyName.trim()) {
       setError("Company name is required.");
@@ -202,7 +249,7 @@ export default function OperatorOnboardingStepPage() {
     }
   };
 
-  // ── Step 2 submit ──────────────────────────────────────────────────────────
+  // ── Step 2: Add / claim first home ───────────────────────────────────────
   const submitHome = async () => {
     if (!home.name.trim()) { setError("Home name is required."); return; }
     if (!home.description.trim()) { setError("A brief description is required."); return; }
@@ -212,24 +259,46 @@ export default function OperatorOnboardingStepPage() {
     }
     if (home.careLevel.length === 0) { setError("Select at least one care type."); return; }
     if (!home.capacity || parseInt(home.capacity) < 1) { setError("Capacity must be at least 1."); return; }
+
     setError(null);
     setSaving(true);
     try {
-      const res = await fetch("/api/operator/homes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: home.name.trim(),
-          description: home.description.trim(),
-          street: home.street.trim(),
-          city: home.city.trim(),
-          state: home.state.trim(),
-          zipCode: home.zipCode.trim(),
-          capacity: parseInt(home.capacity),
-          careLevel: home.careLevel,
-        }),
-      });
-      if (!res.ok) throw new Error("Failed to save home.");
+      if (clevelandFounder && seededHome) {
+        // Transfer the seeded home to this operator instead of creating a new one
+        const res = await fetch(`/api/operator/homes/${seededHome.id}/claim`, {
+          method: "POST",
+        });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || "Failed to claim home.");
+        }
+      } else {
+        // Standard path: create a new home.
+        // Wrap address fields in the `address` object the API expects.
+        const res = await fetch("/api/operator/homes", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: home.name.trim(),
+            description: home.description.trim(),
+            address: {
+              street: home.street.trim(),
+              city: home.city.trim(),
+              state: home.state.trim(),
+              zipCode: home.zipCode.trim(),
+            },
+            capacity: parseInt(home.capacity),
+            careLevel: home.careLevel,
+          }),
+        });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          const fieldMsg = errData.fields
+            ? Object.values(errData.fields as Record<string, string>).join(". ")
+            : null;
+          throw new Error(fieldMsg || errData.error || "Failed to save home.");
+        }
+      }
       goToStep(3);
     } catch (e: any) {
       setError(e.message || "Something went wrong.");
@@ -238,10 +307,10 @@ export default function OperatorOnboardingStepPage() {
     }
   };
 
-  // ── Step 3: Apply claim token ──────────────────────────────────────────────
+  // ── Step 3: Apply claim token manually (for operators who weren't deep-linked) ─
   const applyClaimToken = async () => {
-    if (!claimToken.trim()) {
-      setError("Enter your claim link token.");
+    if (!manualToken.trim()) {
+      setError("Enter your claim token.");
       return;
     }
     setError(null);
@@ -250,12 +319,19 @@ export default function OperatorOnboardingStepPage() {
       const res = await fetch("/api/operator/claim", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: claimToken.trim() }),
+        body: JSON.stringify({ token: manualToken.trim() }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Invalid token.");
       setClaimApplied(true);
       setClevelandFounder(true);
+      if (data.seededHomeId) {
+        // Refresh seeded home data so Step 4 has the right context
+        fetch("/api/operator/onboarding/status")
+          .then((r) => r.json())
+          .then((d) => { if (d.seededHome) setSeededHome(d.seededHome); })
+          .catch(() => {});
+      }
     } catch (e: any) {
       setError(e.message || "Something went wrong.");
     } finally {
@@ -263,22 +339,12 @@ export default function OperatorOnboardingStepPage() {
     }
   };
 
-  const skipClaim = () => {
+  const proceedFromStep3 = () => {
     setError(null);
     goToStep(4);
   };
 
-  const proceedFromClaim = () => {
-    setError(null);
-    if (clevelandFounder) {
-      // Skip Stripe — complete onboarding directly
-      completeFreeOnboarding();
-    } else {
-      goToStep(4);
-    }
-  };
-
-  // ── Cleveland founder: complete without Stripe ────────────────────────────
+  // ── Step 4: Cleveland founder — complete without Stripe ──────────────────
   const completeFreeOnboarding = async () => {
     setSaving(true);
     try {
@@ -291,7 +357,7 @@ export default function OperatorOnboardingStepPage() {
     }
   };
 
-  // ── Step 4: subscribe to a plan ──────────────────────────────────────────
+  // ── Step 4: Subscribe to a paid plan ─────────────────────────────────────
   const selectPlan = async (planKey: string) => {
     setError(null);
     setSaving(true);
@@ -303,7 +369,6 @@ export default function OperatorOnboardingStepPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to start checkout.");
-      // Mark onboarding complete before sending to Stripe
       await fetch("/api/operator/onboarding/complete", { method: "POST" });
       window.location.href = data.url;
     } catch (e: any) {
@@ -324,7 +389,6 @@ export default function OperatorOnboardingStepPage() {
   return (
     <div className="min-h-screen bg-neutral-50 flex flex-col items-center py-12 px-4">
       <div className="w-full max-w-xl">
-        {/* Logo */}
         <div className="text-center mb-8">
           <span className="text-xl font-bold text-primary-700">CareLinkAI</span>
         </div>
@@ -381,11 +445,17 @@ export default function OperatorOnboardingStepPage() {
             </div>
           )}
 
-          {/* ── Step 2: First Home ── */}
+          {/* ── Step 2: First Home (or claim seeded home for founders) ── */}
           {step === 2 && (
             <div>
-              <h1 className="text-2xl font-bold text-neutral-900 mb-1">Add your first home</h1>
-              <p className="text-neutral-500 text-sm mb-6">You can add more homes later.</p>
+              <h1 className="text-2xl font-bold text-neutral-900 mb-1">
+                {clevelandFounder && seededHome ? "Confirm your home" : "Add your first home"}
+              </h1>
+              <p className="text-neutral-500 text-sm mb-6">
+                {clevelandFounder && seededHome
+                  ? "We've pre-filled your seeded home. Review and confirm to claim it."
+                  : "You can add more homes later."}
+              </p>
 
               <div className="space-y-4">
                 <div>
@@ -427,7 +497,9 @@ export default function OperatorOnboardingStepPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-1">City <span className="text-error-500">*</span></label>
+                    <label className="block text-sm font-medium text-neutral-700 mb-1">
+                      City <span className="text-error-500">*</span>
+                    </label>
                     <input
                       type="text"
                       className="form-input w-full"
@@ -437,18 +509,24 @@ export default function OperatorOnboardingStepPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-sm font-medium text-neutral-700 mb-1">State <span className="text-error-500">*</span></label>
+                      <label className="block text-sm font-medium text-neutral-700 mb-1">
+                        State <span className="text-error-500">*</span>
+                      </label>
                       <input
                         type="text"
                         maxLength={2}
                         className="form-input w-full uppercase"
                         value={home.state}
-                        onChange={(e) => setHome({ ...home, state: e.target.value.toUpperCase() })}
+                        onChange={(e) =>
+                          setHome({ ...home, state: e.target.value.toUpperCase() })
+                        }
                         placeholder="OH"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-neutral-700 mb-1">ZIP <span className="text-error-500">*</span></label>
+                      <label className="block text-sm font-medium text-neutral-700 mb-1">
+                        ZIP <span className="text-error-500">*</span>
+                      </label>
                       <input
                         type="text"
                         className="form-input w-full"
@@ -458,7 +536,9 @@ export default function OperatorOnboardingStepPage() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-1">Capacity <span className="text-error-500">*</span></label>
+                    <label className="block text-sm font-medium text-neutral-700 mb-1">
+                      Capacity <span className="text-error-500">*</span>
+                    </label>
                     <input
                       type="number"
                       min="1"
@@ -505,7 +585,11 @@ export default function OperatorOnboardingStepPage() {
                 disabled={saving}
                 className="btn btn-primary w-full mt-6 flex items-center justify-center gap-2"
               >
-                {saving ? "Saving…" : <>Continue <FiArrowRight /></>}
+                {saving
+                  ? "Saving…"
+                  : clevelandFounder && seededHome
+                  ? <>Claim this home <FiArrowRight /></>
+                  : <>Continue <FiArrowRight /></>}
               </button>
             </div>
           )}
@@ -513,16 +597,19 @@ export default function OperatorOnboardingStepPage() {
           {/* ── Step 3: Claim link (Cleveland founder) ── */}
           {step === 3 && (
             <div>
-              <h1 className="text-2xl font-bold text-neutral-900 mb-1">Cleveland founder access</h1>
+              <h1 className="text-2xl font-bold text-neutral-900 mb-1">
+                Cleveland founder access
+              </h1>
               <p className="text-neutral-500 text-sm mb-6">
-                If you received a CareLinkAI founder claim link, paste it here to unlock 6 months
-                of free access. Otherwise skip to choose a plan.
+                {claimApplied
+                  ? "Your founder access is active — proceed to choose your plan."
+                  : "If you received a CareLinkAI founder claim link, paste it here to unlock 6 months of free access. Otherwise skip to choose a plan."}
               </p>
 
               {claimApplied ? (
                 <div className="rounded-lg bg-success-50 border border-success-200 px-4 py-3 text-sm text-success-800 flex items-center gap-2 mb-6">
                   <FiCheck className="w-4 h-4 flex-shrink-0" />
-                  Claim applied — 6 months of free access unlocked!
+                  Founder access applied — 6 months free unlocked!
                 </div>
               ) : (
                 <div className="space-y-3 mb-6">
@@ -532,13 +619,13 @@ export default function OperatorOnboardingStepPage() {
                   <input
                     type="text"
                     className="form-input w-full font-mono text-xs"
-                    value={claimToken}
-                    onChange={(e) => setClaimToken(e.target.value)}
+                    value={manualToken}
+                    onChange={(e) => setManualToken(e.target.value)}
                     placeholder="Paste your claim token here…"
                   />
                   <button
                     onClick={applyClaimToken}
-                    disabled={saving || !claimToken.trim()}
+                    disabled={saving || !manualToken.trim()}
                     className="btn btn-secondary w-full"
                   >
                     {saving ? "Checking…" : "Apply token"}
@@ -548,77 +635,119 @@ export default function OperatorOnboardingStepPage() {
 
               <div className="flex gap-3">
                 {!claimApplied && (
-                  <button onClick={skipClaim} className="btn btn-ghost flex-1">
+                  <button onClick={proceedFromStep3} className="btn btn-ghost flex-1">
                     Skip — choose a plan
                   </button>
                 )}
                 {claimApplied && (
                   <button
-                    onClick={proceedFromClaim}
-                    disabled={saving}
+                    onClick={proceedFromStep3}
                     className="btn btn-primary flex-1 flex items-center justify-center gap-2"
                   >
-                    {saving ? "Setting up…" : <>Complete setup <FiArrowRight /></>}
+                    Continue to plan <FiArrowRight />
                   </button>
                 )}
               </div>
             </div>
           )}
 
-          {/* ── Step 4: Choose plan ── */}
+          {/* ── Step 4: Choose plan (or free founder card) ── */}
           {step === 4 && (
             <div>
               <h1 className="text-2xl font-bold text-neutral-900 mb-1">Choose a plan</h1>
               <p className="text-neutral-500 text-sm mb-6">
-                14-day free trial on all plans. Cancel anytime.
+                {clevelandFounder
+                  ? "Your founder access is active. Complete setup below."
+                  : "14-day free trial on all plans. Cancel anytime."}
               </p>
 
-              <div className="space-y-3">
-                {PLANS.map((plan) => (
-                  <div
-                    key={plan.key}
-                    className={`rounded-xl border p-4 ${
-                      plan.highlight
-                        ? "border-primary-400 bg-primary-50"
-                        : "border-neutral-200 bg-white"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div>
-                        <span className="font-semibold text-neutral-900">{plan.name}</span>
-                        {plan.highlight && (
-                          <span className="ml-2 text-xs font-medium text-primary-700 bg-primary-100 px-2 py-0.5 rounded-full">
-                            Popular
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-lg font-bold text-neutral-900">
-                        {plan.price}
-                        <span className="text-xs font-normal text-neutral-500">/mo</span>
-                      </span>
+              {clevelandFounder ? (
+                /* Cleveland Founder — free card, no Stripe */
+                <div className="rounded-xl border-2 border-success-400 bg-success-50 p-6">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-full bg-success-500 flex items-center justify-center">
+                      <FiGift className="text-white" size={20} />
                     </div>
-                    <ul className="text-xs text-neutral-600 space-y-1 mb-3">
-                      {plan.features.map((f) => (
-                        <li key={f} className="flex items-center gap-1.5">
-                          <FiCheck className="w-3 h-3 text-success-500 flex-shrink-0" />
-                          {f}
-                        </li>
-                      ))}
-                    </ul>
-                    <button
-                      onClick={() => selectPlan(plan.key)}
-                      disabled={saving}
-                      className={`w-full text-sm font-medium py-2 rounded-lg transition-colors ${
+                    <div>
+                      <div className="font-semibold text-neutral-900">
+                        Cleveland Founder Program
+                      </div>
+                      <div className="text-success-700 font-bold text-lg">
+                        Free for 6 months
+                      </div>
+                    </div>
+                  </div>
+                  <ul className="text-sm text-neutral-700 space-y-1.5 mb-5">
+                    {[
+                      "Full platform access",
+                      "Unlimited homes",
+                      "AI-powered matching",
+                      "Priority support",
+                      "No credit card required",
+                    ].map((f) => (
+                      <li key={f} className="flex items-center gap-2">
+                        <FiCheck className="w-4 h-4 text-success-500 flex-shrink-0" />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <button
+                    onClick={completeFreeOnboarding}
+                    disabled={saving}
+                    className="w-full bg-success-600 hover:bg-success-700 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+                  >
+                    {saving ? "Setting up…" : <>Complete setup <FiArrowRight /></>}
+                  </button>
+                </div>
+              ) : (
+                /* Paid plans */
+                <div className="space-y-3">
+                  {PLANS.map((plan) => (
+                    <div
+                      key={plan.key}
+                      className={`rounded-xl border p-4 ${
                         plan.highlight
-                          ? "bg-primary-600 text-white hover:bg-primary-700"
-                          : "bg-neutral-100 text-neutral-800 hover:bg-neutral-200"
+                          ? "border-primary-400 bg-primary-50"
+                          : "border-neutral-200 bg-white"
                       }`}
                     >
-                      {saving ? "Loading…" : `Start with ${plan.name}`}
-                    </button>
-                  </div>
-                ))}
-              </div>
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <span className="font-semibold text-neutral-900">{plan.name}</span>
+                          {plan.highlight && (
+                            <span className="ml-2 text-xs font-medium text-primary-700 bg-primary-100 px-2 py-0.5 rounded-full">
+                              Popular
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-lg font-bold text-neutral-900">
+                          {plan.price}
+                          <span className="text-xs font-normal text-neutral-500">/mo</span>
+                        </span>
+                      </div>
+                      <ul className="text-xs text-neutral-600 space-y-1 mb-3">
+                        {plan.features.map((f) => (
+                          <li key={f} className="flex items-center gap-1.5">
+                            <FiCheck className="w-3 h-3 text-success-500 flex-shrink-0" />
+                            {f}
+                          </li>
+                        ))}
+                      </ul>
+                      <button
+                        onClick={() => selectPlan(plan.key)}
+                        disabled={saving}
+                        className={`w-full text-sm font-medium py-2 rounded-lg transition-colors ${
+                          plan.highlight
+                            ? "bg-primary-600 text-white hover:bg-primary-700"
+                            : "bg-neutral-100 text-neutral-800 hover:bg-neutral-200"
+                        }`}
+                      >
+                        {saving ? "Loading…" : `Start with ${plan.name}`}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>

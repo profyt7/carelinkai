@@ -130,6 +130,10 @@ export default function OnboardingModal() {
     // Only show onboarding for logged-in users
     if (!isClient || !session?.user) return;
 
+    // OPERATOR role uses the dedicated wizard — suppress this modal entirely
+    // so it doesn't conflict with AcceptanceGate's onboarding redirect
+    if (userRole === 'OPERATOR') return;
+
     // Check if onboarding has been completed
     const completed = localStorage.getItem(`${ONBOARDING_KEY}_${userRole}`);
     if (!completed) {

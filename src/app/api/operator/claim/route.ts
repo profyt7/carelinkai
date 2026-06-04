@@ -62,8 +62,14 @@ export async function POST(request: NextRequest) {
     data: {
       clevelandFounder: true,
       freeAccessUntil: freeUntil,
+      seededHomeId: payload.homeId ?? null,
     },
   });
 
-  return NextResponse.json({ ok: true, clevelandFounder: true, freeAccessUntil: freeUntil });
+  return NextResponse.json({
+    ok: true,
+    clevelandFounder: true,
+    freeAccessUntil: freeUntil,
+    seededHomeId: payload.homeId ?? null,
+  });
 }

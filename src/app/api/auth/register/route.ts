@@ -21,6 +21,7 @@ import { v4 as uuidv4 } from "uuid";
 import { randomBytes } from "crypto";
 import { sendVerificationEmail } from "@/lib/email";
 import { captureError } from '@/lib/sentry';
+import { verifyClaimToken } from '@/lib/claim-token';
 
 // Initialize Prisma client
 const prisma = new PrismaClient();
@@ -52,6 +53,7 @@ const registrationSchema = z.object({
   carePreferences: z.string().max(1000, "Care preferences must be under 1000 characters").optional(),
   preferredContactMethod: z.enum(["EMAIL", "PHONE", "BOTH"]).optional(),
   referredByCode: z.string().max(20).optional(), // affiliate ?ref= code captured from URL
+  claimToken: z.string().optional(), // Cleveland founder claim token
 });
 
 /**
@@ -180,18 +182,19 @@ export async function POST(request: NextRequest) {
     console.log("[REGISTER API] Validation PASSED");
     
     // Extract validated data
-    const { 
-      email, 
-      password, 
-      firstName, 
-      lastName, 
-      phone, 
-      role, 
+    const {
+      email,
+      password,
+      firstName,
+      lastName,
+      phone,
+      role,
       agreeToTerms,
       relationshipToRecipient,
       carePreferences,
       preferredContactMethod,
       referredByCode,
+      claimToken,
     } = validationResult.data;
     
     // Normalize email to lowercase
@@ -292,18 +295,44 @@ export async function POST(request: NextRequest) {
           console.log("[REGISTER API] Family profile created successfully");
           break;
           
-        case "OPERATOR":
+        case "OPERATOR": {
           console.log("[REGISTER API] Creating OPERATOR profile...");
-          await tx.operator.create({
+          const newOperator = await tx.operator.create({
             data: {
               userId: user.id,
-              companyName: `${firstName}'s Care Home`, // Default company name
+              companyName: `${firstName}'s Care Home`,
               taxId: null,
-              businessLicense: null
-            }
+              businessLicense: null,
+            },
           });
+
+          // Apply Cleveland founder claim token at signup time so it survives
+          // the email-verification redirect (token is no longer needed in the URL)
+          if (claimToken) {
+            const payload = verifyClaimToken(
+              claimToken,
+              process.env['NEXTAUTH_SECRET'] ?? ''
+            );
+            if (payload && payload.operatorEmail.toLowerCase() === normalizedEmail) {
+              console.log("[REGISTER API] Applying Cleveland founder claim token");
+              await tx.operator.update({
+                where: { id: newOperator.id },
+                data: {
+                  clevelandFounder: true,
+                  freeAccessUntil: new Date(
+                    Date.now() + 1000 * 60 * 60 * 24 * 180
+                  ),
+                  seededHomeId: payload.homeId ?? null,
+                },
+              });
+            } else {
+              console.log("[REGISTER API] Claim token invalid or email mismatch — skipping");
+            }
+          }
+
           console.log("[REGISTER API] Operator profile created successfully");
           break;
+        }
           
         case "CAREGIVER":
           console.log("[REGISTER API] Creating CAREGIVER profile...");
