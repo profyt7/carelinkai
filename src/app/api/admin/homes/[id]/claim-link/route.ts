@@ -39,7 +39,7 @@ export async function POST(
   const {
     operatorEmail,
     clevelandFounder = true,
-    expiresInHours = 48,
+    expiresInHours = 168, // 7 days — matches the Cleveland outreach email's stated window
   } = body as { operatorEmail?: string; clevelandFounder?: boolean; expiresInHours?: number };
 
   if (!operatorEmail) {
