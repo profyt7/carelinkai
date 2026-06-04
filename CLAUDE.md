@@ -112,6 +112,12 @@ If you find yourself on any branch other than a freshly-created one off main,
 stop and create the right branch before doing implementation work. This rule
 takes priority over any other workflow suggestion.
 
+This rule applies to ALL writes to main, including via `git push`, the GitHub
+REST API, GraphQL, or any other mechanism. If branch protection blocks a
+write, the answer is "open a PR" — never "find a path around it." Bypassing
+protection via API is a violation even when the changes are "just
+documentation."
+
 ---
 
 ## Development rules
