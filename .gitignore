@@ -22,3 +22,6 @@ out
 # Playwright test artifacts
 test-results/
 playwright-report/
+
+# Operator website scrape cache
+scripts/scraped-cache/

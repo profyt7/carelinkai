@@ -514,12 +514,18 @@ model AssistedLivingHome {
   amenities              String[]
   createdAt              DateTime         @default(now())
   updatedAt              DateTime         @updatedAt
-  aiGeneratedDescription String?
-  highlights             String[]         @default([])
-  lastProfileGenerated   DateTime?
-  slug                   String?          @unique
-  isFeatured             Boolean          @default(false)
-  featuredUntil          DateTime?
+  aiGeneratedDescription  String?
+  highlights              String[]         @default([])
+  lastProfileGenerated    DateTime?
+  slug                    String?          @unique
+  isFeatured              Boolean          @default(false)
+  featuredUntil           DateTime?
+  websiteUrl              String?
+  autoPopulatedAt         DateTime?
+  autoPopulatedFromUrl    String?
+  autoPopulatedVersion    Int?             @default(0)
+  preFilledFields         Json?
+  aiPopulationConfidence  String?
   address                Address?
   operator               Operator         @relation(fields: [operatorId], references: [id], onDelete: Cascade)
   bookings               Booking[]
