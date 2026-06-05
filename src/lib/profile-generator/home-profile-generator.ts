@@ -354,6 +354,7 @@ Call the extract_profile tool with all fields you can confidently extract.`;
       },
     ],
     tool_choice: { type: 'tool', name: 'extract_profile' },
+    messages: [{ role: 'user', content: userPrompt }],
   });
 
   const tokensIn = response.usage.input_tokens;
