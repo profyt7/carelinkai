@@ -212,6 +212,194 @@ function generateFallbackProfile(data: HomeData): GeneratedProfile {
   return { description: description.trim(), highlights: highlights.slice(0, 5) };
 }
 
+// ── Website extraction (Task 3) ───────────────────────────────────────────────
+
+const EXTRACTION_SYSTEM_PROMPT = `You are extracting publicly-available marketing content from an assisted
+living facility's own website to pre-populate their directory listing on
+CareLinkAI.
+
+ABSOLUTE RULES — VIOLATE NONE OF THESE:
+
+1. NEVER extract names of residents, patients, families, or any
+   individuals other than the facility's leadership/management team.
+   If a testimonial includes a resident name, IGNORE that testimonial
+   entirely. Do not summarize testimonials with names removed.
+2. NEVER extract pricing or rates of any kind. Pricing is typically
+   stale on websites and gated behind tours. Set priceMin/priceMax to
+   null.
+3. NEVER extract photos. Photo handling will be added in a separate
+   consent-gated flow.
+4. NEVER extract content that appears to be outdated (e.g., "Now
+   accepting residents for 2024!"). Note in extractionNotes if you see
+   this.
+5. Only extract content suitable for a public marketing listing. If
+   content seems controversial, dated, or unflattering, omit it.
+6. If you cannot confidently extract a field, set it to null and note
+   in extractionNotes. Do not fabricate.
+
+When you see content like "Joe Smith says we changed his mother's life",
+ignore it. When you see content like "Our memory care neighborhood
+features 24-hour nursing", extract that as a service/amenity.`;
+
+const VALID_CARE_LEVELS = ['ASSISTED', 'MEMORY_CARE', 'INDEPENDENT', 'SKILLED_NURSING'] as const;
+
+export interface ExtractedProfile {
+  description: string;
+  shortDescription: string;
+  services: string[];
+  amenities: string[];
+  careLevel: string[];
+  address: {
+    streetAddress: string | null;
+    city: string | null;
+    state: string | null;
+    zip: string | null;
+  } | null;
+  phone: string | null;
+  contactEmail: string | null;
+  tagline: string | null;
+  extractionConfidence: 'HIGH' | 'MEDIUM' | 'LOW';
+  extractionNotes: string | null;
+  tokensIn: number;
+  tokensOut: number;
+}
+
+export async function extractProfileFromWebsite(
+  homeData: HomeData,
+  preparedHtml: string,
+  websiteUrl: string,
+): Promise<ExtractedProfile> {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    throw new Error('ANTHROPIC_API_KEY is required for website extraction');
+  }
+
+  const client = getAnthropicClient();
+
+  const userPrompt = `Extract a directory profile for "${homeData.name}" from the HTML below.
+
+Known seed data (from Ohio DOH records — do NOT contradict unless the site clearly shows otherwise):
+- City: ${homeData.address?.city ?? 'unknown'}
+- State: ${homeData.address?.state ?? 'OH'}
+- Capacity: ${homeData.capacity} beds
+- Website URL: ${websiteUrl}
+
+HTML content:
+---
+${preparedHtml}
+---
+
+Call the extract_profile tool with all fields you can confidently extract.`;
+
+  const response = await client.messages.create({
+    model: 'claude-sonnet-4-6',
+    max_tokens: 2048,
+    system: EXTRACTION_SYSTEM_PROMPT,
+    tools: [
+      {
+        name: 'extract_profile',
+        description: 'Submit the extracted facility profile data',
+        input_schema: {
+          type: 'object' as const,
+          properties: {
+            description: {
+              type: 'string',
+              description: '2-4 paragraph marketing description of the facility',
+            },
+            shortDescription: {
+              type: 'string',
+              description: '1-2 sentence summary for cards and previews',
+            },
+            services: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Services the facility offers',
+            },
+            amenities: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Physical amenities and features',
+            },
+            careLevel: {
+              type: 'array',
+              items: {
+                type: 'string',
+                enum: ['ASSISTED', 'MEMORY_CARE', 'INDEPENDENT', 'SKILLED_NURSING'],
+              },
+              description: 'Care levels offered',
+            },
+            address: {
+              type: 'object',
+              properties: {
+                streetAddress: { type: 'string' },
+                city: { type: 'string' },
+                state: { type: 'string' },
+                zip: { type: 'string' },
+              },
+            },
+            phone: { type: 'string', description: 'Main facility phone number' },
+            contactEmail: { type: 'string', description: 'Contact email address' },
+            tagline: { type: 'string', description: 'Facility tagline or motto' },
+            extractionConfidence: {
+              type: 'string',
+              enum: ['HIGH', 'MEDIUM', 'LOW'],
+              description: 'Overall confidence in the extraction quality',
+            },
+            extractionNotes: {
+              type: 'string',
+              description: "Notes on what couldn't be extracted or caveats",
+            },
+          },
+          required: ['description', 'shortDescription', 'extractionConfidence'],
+        },
+      },
+    ],
+    tool_choice: { type: 'tool', name: 'extract_profile' },
+    messages: [{ role: 'user', content: userPrompt }],
+  });
+
+  const tokensIn = response.usage.input_tokens;
+  const tokensOut = response.usage.output_tokens;
+
+  // Tool use response
+  const toolBlock = response.content.find(b => b.type === 'tool_use');
+  if (!toolBlock || toolBlock.type !== 'tool_use') {
+    throw new Error('Claude did not call extract_profile tool');
+  }
+
+  const raw = toolBlock.input as Record<string, unknown>;
+
+  // Sanitise careLevel — only accept known enum values
+  const rawCareLevel = Array.isArray(raw.careLevel) ? (raw.careLevel as string[]) : [];
+  const careLevel = rawCareLevel.filter(v => (VALID_CARE_LEVELS as readonly string[]).includes(v));
+
+  return {
+    description: String(raw.description ?? ''),
+    shortDescription: String(raw.shortDescription ?? ''),
+    services: Array.isArray(raw.services) ? (raw.services as string[]) : [],
+    amenities: Array.isArray(raw.amenities) ? (raw.amenities as string[]) : [],
+    careLevel,
+    address: raw.address && typeof raw.address === 'object'
+      ? {
+          streetAddress: (raw.address as any).streetAddress ?? null,
+          city: (raw.address as any).city ?? null,
+          state: (raw.address as any).state ?? null,
+          zip: (raw.address as any).zip ?? null,
+        }
+      : null,
+    phone: raw.phone ? String(raw.phone) : null,
+    contactEmail: raw.contactEmail ? String(raw.contactEmail) : null,
+    tagline: raw.tagline ? String(raw.tagline) : null,
+    extractionConfidence: (['HIGH', 'MEDIUM', 'LOW'].includes(String(raw.extractionConfidence))
+      ? raw.extractionConfidence
+      : 'LOW') as 'HIGH' | 'MEDIUM' | 'LOW',
+    extractionNotes: raw.extractionNotes ? String(raw.extractionNotes) : null,
+    tokensIn,
+    tokensOut,
+  };
+}
+
+// ── Validation ────────────────────────────────────────────────────────────────
+
 /**
  * Validate home data before generating profile
  */

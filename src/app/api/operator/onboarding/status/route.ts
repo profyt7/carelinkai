@@ -42,6 +42,7 @@ export async function GET() {
         description: home.description,
         capacity: home.capacity,
         careLevel: home.careLevel,
+        amenities: home.amenities,
         status: home.status,
         address: home.address
           ? {
@@ -51,6 +52,12 @@ export async function GET() {
               zipCode: home.address.zipCode,
             }
           : null,
+        // AI auto-population fields
+        websiteUrl: home.websiteUrl ?? null,
+        autoPopulatedAt: home.autoPopulatedAt ?? null,
+        autoPopulatedFromUrl: home.autoPopulatedFromUrl ?? null,
+        aiPopulationConfidence: home.aiPopulationConfidence ?? null,
+        preFilledFields: home.preFilledFields ?? null,
       };
     }
   }
