@@ -13,7 +13,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
 import path from 'path';
 
 const BOT_USER_AGENT =
-  'CareLinkAI Operator Profile Bot (profyt7@gmail.com) — auto-populating claimed-listing profile';
+  'CareLinkAI Operator Profile Bot (profyt7@gmail.com) - auto-populating claimed-listing profile';
 const FETCH_TIMEOUT_MS = 30_000;
 
 export type ScrapeErrorCategory = 'TRANSIENT' | 'PERMANENT';
