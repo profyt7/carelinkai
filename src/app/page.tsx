@@ -280,7 +280,7 @@ export default function HomePage() {
                       <h3 className="font-bold text-neutral-900 text-lg">Perfect Match Found</h3>
                       <p className="text-sm text-neutral-500">Sunshine Valley Care</p>
                     </div>
-                    <div className="text-secondary-500 font-bold text-2xl">98%</div>
+                    <div className="text-secondary-500 font-bold text-2xl">✓</div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl p-4 text-center">
