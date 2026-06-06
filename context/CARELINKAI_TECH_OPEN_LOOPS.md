@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-06-04_
+_Last updated: 2026-06-05_
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -37,6 +37,26 @@ Each loop: what it is, why it matters, what done looks like.
 - **Status:** 🔴 OPEN — code shipped in PR #542, not yet verified on production
 - **What:** Full path: seed a home via `/api/dev/upsert-operator`, generate claim link via admin UI, register new operator with `?claimToken=`, complete all 4 wizard steps, verify free access granted and no Stripe flow triggered.
 - **Done when:** Founder lands on Step 4 free card, clicks "Complete Setup", reaches `/operator` dashboard with no Stripe redirect.
+
+### OL-057: Non-Cleveland demo homes cleanup pending merge
+- **Status:** 🟡 OPEN — script created on `chore/remove-non-cleveland-demo-data`, no PR yet
+- **What:** `scripts/cleanup-non-cleveland-demo-homes.ts` deletes DRAFT homes where `address.state != 'OH'` (Golden Years Chicago, Lakeside Rehab Seattle, Harbor View Miami). Safety: aborts if >3 records found or if any home has bookings/residents/inquiries/tours.
+- **Done when:** PR created, dry-run reviewed, `--force` run completes, 3 homes removed from production DB.
+
+### OL-058: Second batch Cleveland facilities auto-population
+- **Status:** 🟡 OPEN — first batch (15 homes) complete; remaining Cleveland facilities in the directory need auto-population
+- **What:** Identify next set of Cleveland-area AssistedLivingHome records with `websiteUrl` available, create CSV, run `autopopulate-cohort.ts --dry-run` then `--force`.
+- **Note:** The Elms (mapped to "Hudson Elms Skilled Nursing & Rehabilitation Center"), Concordia at Sumner (city/address unresolved), Ohman + O'Neill North Ridgeville (capacity discrepancies) should be manually reviewed before operator outreach.
+- **Done when:** All Cleveland directory homes have `autoPopulatedAt` set or are marked as JS_ONLY/BLOCKED with a note.
+
+### OL-059: AI-populated home data quality review — first-batch flags
+- **Status:** 🟡 OPEN — 4 homes flagged during first batch run
+- **What:** Manual verification needed before operator outreach for:
+  1. **The Elms** — site says "Hudson Elms Skilled Nursing & Rehabilitation Center"; confirm this is the intended facility
+  2. **Ohman Family Living at Holly** — capacity: DOH 58 vs site 92 SN + 26 AL + 24 MC
+  3. **O'Neill Healthcare North Ridgeville** — capacity: DOH 44 vs site 190 total
+  4. **Concordia at Sumner** — city/street address not resolved; MEDIUM confidence
+- **Done when:** Each record manually verified and corrected in admin panel before the facility receives a claim link.
 
 ### OL-027: Provider listing fee ($99/mo)
 - **Status:** ✅ CLOSED (2026-05-02)

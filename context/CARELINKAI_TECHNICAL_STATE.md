@@ -2,7 +2,7 @@
 _Last updated: 2026-06-04_
 
 ## Active Branch
-`main` — PR #542 merged 2026-06-04 (Cleveland founder integration bugs). No open PRs. Clean to build from.
+`main` — PRs #543–#546 merged 2026-06-05. No open PRs. Clean to build from. Pending branch: `chore/remove-non-cleveland-demo-data` (non-Cleveland demo homes cleanup, not yet a PR).
 
 ## Production URL
 https://carelinkai.onrender.com (also: https://getcarelinkai.com)
@@ -31,7 +31,7 @@ https://carelinkai.onrender.com (also: https://getcarelinkai.com)
 | AI — All features | Anthropic Claude API (`claude-sonnet-4-6`, `claude-haiku-4-5-20251001`) |
 
 ## Schema Summary
-67+ Prisma models + enums. **2026-06-04 (PR #542, merged):** `Operator` adds `seededHomeId String?` (tracks admin-seeded home assigned via Cleveland founder claim token). Migration: `20260602000001_operator_seeded_home`. **2026-05-16 (Phase 3 PR B, pending merge):** `Operator` adds 8 nullable BAA/DPA acceptance fields; `AuditAction` enum adds `LEGAL_ACCEPTANCE`. Migration: `20260516000001_add_operator_baa_dpa_acceptance`. **2026-05-14 (Phase 2, on main):** `Document` adds `classification DataClassification @default(PHI)` + `storage String?`. **Earlier:** `DischargePlannerLicenseType`, `AffiliateReferralType`, `CommissionTier` enums; provider/caregiver subscription fields; `BackgroundCheckInvitation`, `ProviderBackgroundCheckOrder` models. ⚠️ Migrations 20260505000001/2/3 + 20260506000001 pending deploy on Render DB.
+67+ Prisma models + enums. **2026-06-05 (PR #545, merged):** `AssistedLivingHome` adds 6 AI auto-population fields: `websiteUrl String?`, `autoPopulatedAt DateTime?`, `autoPopulatedFromUrl String?`, `autoPopulatedVersion Int? @default(0)`, `preFilledFields Json?`, `aiPopulationConfidence String?`. Migration: `20260605000001_home_auto_populate_fields`. **2026-06-04 (PR #542, merged):** `Operator` adds `seededHomeId String?` (tracks admin-seeded home assigned via Cleveland founder claim token). Migration: `20260602000001_operator_seeded_home`. **2026-05-16 (Phase 3 PR B, pending merge):** `Operator` adds 8 nullable BAA/DPA acceptance fields; `AuditAction` enum adds `LEGAL_ACCEPTANCE`. Migration: `20260516000001_add_operator_baa_dpa_acceptance`. **2026-05-14 (Phase 2, on main):** `Document` adds `classification DataClassification @default(PHI)` + `storage String?`. **Earlier:** `DischargePlannerLicenseType`, `AffiliateReferralType`, `CommissionTier` enums; provider/caregiver subscription fields; `BackgroundCheckInvitation`, `ProviderBackgroundCheckOrder` models. ⚠️ Migrations 20260505000001/2/3 + 20260506000001 pending deploy on Render DB.
 
 ## User Roles
 FAMILY, OPERATOR, CAREGIVER, ADMIN, STAFF, PROVIDER, AFFILIATE, DISCHARGE_PLANNER
@@ -63,6 +63,7 @@ FAMILY, OPERATOR, CAREGIVER, ADMIN, STAFF, PROVIDER, AFFILIATE, DISCHARGE_PLANNE
 - **Admin portal — Discharge Planners page:** `/admin/discharge-planners` — active planners table, MRR at $99/seat
 - **Fix Demo Caregiver Employment:** `/api/admin/fix-demo-employment` POST endpoint + Admin Tools UI button; auto-creates `CaregiverEmployment` records for demo operator's caregivers
 - **Operator onboarding wizard:** 4-step guided flow (company → first home → Cleveland founder claim → plan selection); new operators auto-redirected from `/operator` via AcceptanceGate; wizard detects seeded home and pre-populates Step 2 for founders; Step 4 shows free founder card or 4 paid tiers (Starter/Professional/Growth/Agency)
+- **AI Auto-Population Pipeline:** `src/lib/operator-profile-scraper.ts` (robots.txt-respecting, 30s timeout, file-based cache, SPA detection) + `extractProfileFromWebsite()` in `home-profile-generator.ts` (Claude Sonnet 4.6, forced tool use for structured JSON, SAFETY CONSTRAINTS in system prompt) + `scripts/autopopulate-cohort.ts` (CSV batch runner: `--dry-run`/`--force`/`--resume`/`--facility`). Onboarding Step 2 shows `ProvenanceBadge` (AI vs SEED vs OPERATOR) and pre-populated UX when `autoPopulatedAt` is set. Admin home detail page shows AI panel (date, source URL, confidence, version). **Production state: 15/15 first-batch Cleveland facilities auto-populated, $1.44 total Anthropic spend, 12 HIGH + 3 MEDIUM confidence.**
 - **Caregiver marketplace hire fee:** $250 Stripe invoice item queued on shift claim; MARKETPLACE_HIRE_FEE PaymentType
 - **Featured listings:** isFeatured/featuredUntil on homes; $79/mo billed as invoice item; search results sorted featured-first; operator toggle in home edit page
 - **Discharge planner subscription:** DischargePlannerProfile model; $99/seat/mo Stripe checkout at /discharge-planner/billing; webhook handler synced
@@ -217,17 +218,22 @@ See `REVENUE_MODEL.md` for the full breakdown. 12 streams finalized:
 - **Provider onboarding welcome email:** Fires after PROVIDER registration (fire-and-forget). 3 steps: complete profile → upload credentials → activate listing. Links corrected to `/settings/provider`, `/settings/provider/credentials`, `/settings/provider/billing`.
 - **Provider profile completeness checklist:** 8-step progress widget on provider dashboard. Shows % complete + progress bar + per-item checklist with direct CTAs. Disappears when all 8 steps done. Credentials quick-action tile added (shows X/3 verified).
 
-## Recent Technical Decisions (2026-06-04)
+## Recent Technical Decisions (2026-06-05)
+- **Claim token expiry raised to 7 days (168h)** — 48h was too short for founders to act on email; NEXTAUTH_SECRET rotation is now the only invalidation path
+- **Inline robots.txt parser** — no external dependency; avoids npm dep for a small parsing task
+- **SPA detection heuristic** — if HTML >1000 chars but visible text <200 chars → PERMANENT/JS_ONLY; prevents garbage AI extraction on JS-rendered sites
+- **Claude tool_choice: forced** — `{ type: 'tool', name: 'extract_profile' }` guarantees structured JSON output; no text fallback path needed
+- **preFilledFields JSON map** — `{ fieldName: 'AI' | 'SEED' | 'OPERATOR' }` for per-field provenance; ProvenanceBadge reads this to render AI vs DOH badge
+- **Timeout classified as PERMANENT not TRANSIENT** — a site that times out consistently is not going to succeed on retry; skip it
+- **CLAUDE.md branching discipline extended** — explicit API/GraphQL bypass loophole added; all write paths to main require PR regardless of mechanism (PR #543)
 - **Claim token applied at signup time** (not post-signIn) — register API handles it atomically; avoids the PENDING-user signIn block that was dropping the token
 - **seededHomeId on Operator** — single field tracks the admin-seeded home; cleared to null after operator claims it via `POST /api/operator/homes/[id]/claim`
-- **NEXTAUTH_SECRET reused for claim token HMAC** — acceptable for now; rotating that secret invalidates outstanding tokens (acceptable given 48h expiry)
 - **AGENCY tier added at $799/mo** — shown in wizard Step 4 alongside Starter/Professional/Growth; `STRIPE_PRICE_AGENCY` env var needed
-- **OnboardingModal suppressed for OPERATOR** — OPERATOR uses wizard exclusively; old modal was firing on first login
 
 ## Immediate Next Priorities
-1. **Set `STRIPE_PRICE_AGENCY` in Render** — create $799/mo Agency product in Stripe dashboard, set env var. Without it, Agency Stripe Checkout will fail.
-2. **Run full Cleveland founder path in production** — seed a home, generate claim link, register with claimToken, complete wizard Steps 1-4.
-3. **Merge HIPAA Phase 1 PRs** — in order: PR 1 (schema) → PR 2 (routing) → PR 3 (purge). Monitor Render deploy + migration apply.
-4. **OL-036 production action** — demo provider at `demo.provider@carelinkai.test` must re-save Settings → Profile to migrate service type slugs.
-5. **Switch Stripe to live mode** — swap all `STRIPE_*` env vars to live keys in Render. Runbook: `context/STRIPE_SETUP_RUNBOOK.md`.
-6. **Set Checkr live keys** — `CHECKR_API_KEY` + `CHECKR_WEBHOOK_SECRET` in Render once account approved (OL-023).
+1. **Merge non-Cleveland demo homes cleanup** — branch `chore/remove-non-cleveland-demo-data`: create PR, dry-run, then `--force` to delete Golden Years (Chicago), Lakeside Rehab (Seattle), Harbor View (Miami).
+2. **Set `STRIPE_PRICE_AGENCY` in Render (OL-055)** — create $799/mo Agency product in Stripe dashboard, set env var. Agency Stripe Checkout fails without it.
+3. **Cleveland founder end-to-end smoke test (OL-056)** — seed a home, generate claim link, register new operator with claimToken, complete wizard Steps 1-4, verify free access granted, no Stripe redirect.
+4. **Second batch Cleveland facilities auto-population** — queue next set of facilities, create CSV, run `autopopulate-cohort.ts --dry-run` then `--force`.
+5. **Merge HIPAA Phase 1 PRs** — in order: PR 1 (schema) → PR 2 (routing) → PR 3 (purge). Monitor Render deploy + migration apply.
+6. **Switch Stripe to live mode** — swap all `STRIPE_*` env vars to live keys in Render. Runbook: `context/STRIPE_SETUP_RUNBOOK.md`.
