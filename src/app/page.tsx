@@ -199,7 +199,7 @@ export default function HomePage() {
               {/* Trust badge */}
               <div className="inline-flex items-center bg-white rounded-full px-4 py-2 shadow-sm mb-6 border border-neutral-200">
                 <FiStar className="text-secondary-500 mr-2" />
-                <span className="text-sm font-semibold text-neutral-900">Trusted by 10,000+ families</span>
+                <span className="text-sm font-semibold text-neutral-900">Senior care, simplified for Northeast Ohio families</span>
               </div>
               
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-neutral-900 leading-tight">
@@ -471,7 +471,7 @@ export default function HomePage() {
                 Analyzes 50+ data points including medical needs, preferences, location, and budget to find perfect matches.
               </p>
               <p className="text-xs font-semibold text-primary-500">
-                ✓ 98% match accuracy
+                ✓ Multi-factor AI match scoring
               </p>
             </div>
             
@@ -1560,10 +1560,10 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 md:px-6">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold text-neutral-900 mb-4">
-              Trusted by Thousands
+              Built for Senior Care
             </h2>
             <p className="text-xl text-neutral-500 max-w-3xl mx-auto">
-              See what families, operators, and healthcare professionals are saying
+              One AI platform serving families, operators, and discharge planners
             </p>
           </div>
           
@@ -1584,81 +1584,6 @@ export default function HomePage() {
             <div className="bg-white p-6 rounded-xl shadow-lg border border-neutral-200 text-center">
               <div className="text-4xl font-bold text-secondary-500 mb-2">$0</div>
               <p className="text-neutral-500 font-medium">Always Free for Families</p>
-            </div>
-          </div>
-          
-          {/* Testimonials */}
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-white p-8 rounded-2xl shadow-lg border border-neutral-200">
-              <div className="flex items-center mb-4">
-                <div className="flex text-secondary-500">
-                  <FiStar className="fill-current" />
-                  <FiStar className="fill-current" />
-                  <FiStar className="fill-current" />
-                  <FiStar className="fill-current" />
-                  <FiStar className="fill-current" />
-                </div>
-              </div>
-              <p className="text-neutral-500 mb-6 italic">
-                "CareLinkAI made finding care for my mother so much easier. The AI matched us with three perfect facilities, and we found the right one within a week!"
-              </p>
-              <div className="flex items-center">
-                <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center text-white font-bold mr-3">
-                  SM
-                </div>
-                <div>
-                  <p className="font-bold text-neutral-900">Sarah M.</p>
-                  <p className="text-sm text-neutral-500">Family Member</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white p-8 rounded-2xl shadow-lg border border-neutral-200">
-              <div className="flex items-center mb-4">
-                <div className="flex text-secondary-500">
-                  <FiStar className="fill-current" />
-                  <FiStar className="fill-current" />
-                  <FiStar className="fill-current" />
-                  <FiStar className="fill-current" />
-                  <FiStar className="fill-current" />
-                </div>
-              </div>
-              <p className="text-neutral-500 mb-6 italic">
-                "The automated follow-ups and inquiry management have saved our staff countless hours. Our occupancy rate has increased by 25%!"
-              </p>
-              <div className="flex items-center">
-                <div className="h-12 w-12 rounded-full bg-gradient-to-br from-secondary-500 to-primary-500 flex items-center justify-center text-white font-bold mr-3">
-                  JT
-                </div>
-                <div>
-                  <p className="font-bold text-neutral-900">John T.</p>
-                  <p className="text-sm text-neutral-500">Care Home Operator</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white p-8 rounded-2xl shadow-lg border border-neutral-200">
-              <div className="flex items-center mb-4">
-                <div className="flex text-secondary-500">
-                  <FiStar className="fill-current" />
-                  <FiStar className="fill-current" />
-                  <FiStar className="fill-current" />
-                  <FiStar className="fill-current" />
-                  <FiStar className="fill-current" />
-                </div>
-              </div>
-              <p className="text-neutral-500 mb-6 italic">
-                "As a discharge planner, this tool has been a game-changer. I can place patients in hours instead of days. The AI is incredibly accurate!"
-              </p>
-              <div className="flex items-center">
-                <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center text-white font-bold mr-3">
-                  DR
-                </div>
-                <div>
-                  <p className="font-bold text-neutral-900">Dr. Rodriguez</p>
-                  <p className="text-sm text-neutral-500">Discharge Planner</p>
-                </div>
-              </div>
             </div>
           </div>
           
@@ -2074,7 +1999,7 @@ export default function HomePage() {
             <p>© {new Date().getFullYear()} CareLinkAI. All rights reserved.</p>
             <div className="flex items-center mt-4 md:mt-0">
               <FiShield className="text-primary-500 mr-2" />
-              <span>HIPAA Compliant & SOC 2 Certified</span>
+              <span>HIPAA Compliant</span>
             </div>
           </div>
         </div>
