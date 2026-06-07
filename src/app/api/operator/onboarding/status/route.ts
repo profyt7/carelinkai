@@ -65,6 +65,9 @@ export async function GET() {
         aiPopulationConfidence: home.aiPopulationConfidence ?? null,
         preFilledFields: home.preFilledFields ?? null,
         imageRightsAcknowledgedAt: home.imageRightsAcknowledgedAt ?? null,
+        // On-claim enrichment lifecycle
+        enrichmentStatus: home.enrichmentStatus,
+        enrichmentError: home.enrichmentError ?? null,
         // Auto-populated (scraped + AI-screened) marketing photos for review
         photos: home.photos.map((p) => ({
           id: p.id,
