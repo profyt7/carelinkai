@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { FiCheck, FiArrowRight, FiHome, FiUser, FiZap, FiGift } from "react-icons/fi";
+import { FiCheck, FiArrowRight, FiHome, FiUser, FiZap, FiGift, FiX } from "react-icons/fi";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -27,6 +27,12 @@ interface HomeForm {
 
 type FieldProvenance = 'AI' | 'SEED' | 'OPERATOR';
 
+interface SeededPhoto {
+  id: string;
+  url: string;
+  caption: string | null;
+}
+
 interface SeededHome {
   id: string;
   name: string;
@@ -42,6 +48,8 @@ interface SeededHome {
   autoPopulatedFromUrl: string | null;
   aiPopulationConfidence: string | null;
   preFilledFields: Record<string, FieldProvenance> | null;
+  imageRightsAcknowledgedAt: string | null;
+  photos: SeededPhoto[];
 }
 
 const CARE_LEVELS = [
@@ -196,6 +204,12 @@ export default function OperatorOnboardingStepPage() {
   // Snapshot of AI-suggested values so operator can reset to them
   const [aiOriginal, setAiOriginal] = useState<HomeForm | null>(null);
 
+  // Auto-populated (scraped) photos shown for review in Step 2
+  const [photos, setPhotos] = useState<SeededPhoto[]>([]);
+  const [removingPhotoId, setRemovingPhotoId] = useState<string | null>(null);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [imageRightsAck, setImageRightsAck] = useState(false);
+
   // Only used on Step 3 when the operator manually enters a token
   const [manualToken, setManualToken] = useState("");
   const [claimApplied, setClaimApplied] = useState(false);
@@ -235,6 +249,8 @@ export default function OperatorOnboardingStepPage() {
           setHome(pre);
           // Snapshot AI values so operator can reset later
           if (d.seededHome.autoPopulatedAt) setAiOriginal(pre);
+          if (Array.isArray(d.seededHome.photos)) setPhotos(d.seededHome.photos);
+          if (d.seededHome.imageRightsAcknowledgedAt) setImageRightsAck(true);
         }
       })
       .catch(() => {});
@@ -292,6 +308,12 @@ export default function OperatorOnboardingStepPage() {
     if (home.careLevel.length === 0) { setError("Select at least one care type."); return; }
     if (!home.capacity || parseInt(home.capacity) < 1) { setError("Capacity must be at least 1."); return; }
 
+    // Claiming a listing requires confirming rights to the website's content.
+    if (clevelandFounder && seededHome && !imageRightsAck) {
+      setError("Please confirm you have rights to use your website's photos and content.");
+      return;
+    }
+
     setError(null);
     setSaving(true);
     try {
@@ -299,6 +321,8 @@ export default function OperatorOnboardingStepPage() {
         // Transfer the seeded home to this operator instead of creating a new one
         const res = await fetch(`/api/operator/homes/${seededHome.id}/claim`, {
           method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ imageRightsAcknowledged: imageRightsAck }),
         });
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
@@ -336,6 +360,25 @@ export default function OperatorOnboardingStepPage() {
       setError(e.message || "Something went wrong.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  // ── Step 2: Remove an auto-populated photo ───────────────────────────────
+  const removePhoto = async (photoId: string) => {
+    setRemovingPhotoId(photoId);
+    // Optimistic removal — restore on failure.
+    const prev = photos;
+    setPhotos((ps) => ps.filter((p) => p.id !== photoId));
+    try {
+      const res = await fetch(`/api/operator/onboarding/seeded-photo/${photoId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed to remove photo.");
+    } catch {
+      setPhotos(prev); // restore
+      setError("Couldn't remove that photo — please try again.");
+    } finally {
+      setRemovingPhotoId(null);
     }
   };
 
@@ -688,13 +731,68 @@ export default function OperatorOnboardingStepPage() {
                       </div>
                     </div>
                   )}
+                  {/* Auto-populated photos (Task 5) */}
+                  {photos.length > 0 && (
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 mb-1">
+                        Photos
+                        <ProvenanceBadge provenance={'AI'} />
+                      </label>
+                      <p className="text-xs text-neutral-500 mb-3">
+                        We pre-populated these photos from your website. Click ✕ to remove
+                        any image — only the ones you keep will appear on your public listing.
+                      </p>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                        {photos.map((p) => (
+                          <div
+                            key={p.id}
+                            className="group relative aspect-square overflow-hidden rounded-xl shadow-sm border border-neutral-200 bg-neutral-100"
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={p.url}
+                              alt={p.caption ?? "Facility photo"}
+                              loading="lazy"
+                              className="h-full w-full object-cover cursor-pointer transition-transform duration-300 group-hover:scale-105"
+                              onClick={() => setLightboxUrl(p.url)}
+                            />
+                            <button
+                              type="button"
+                              aria-label="Remove photo"
+                              disabled={removingPhotoId === p.id}
+                              onClick={() => removePhoto(p.id)}
+                              className="absolute top-1.5 right-1.5 h-7 w-7 rounded-full bg-black/55 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 focus:opacity-100 hover:bg-error-600 transition-all disabled:opacity-40"
+                            >
+                              <FiX size={15} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
+
+                {/* Image rights acknowledgment (Task 6) — required to claim a listing */}
+                {clevelandFounder && seededHome && (
+                  <label className="mt-6 flex items-start gap-2.5 text-sm text-neutral-600 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={imageRightsAck}
+                      onChange={(e) => setImageRightsAck(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                    />
+                    <span>
+                      By claiming this listing, I confirm I have rights to use the photos
+                      and content from my website on CareLinkAI.
+                    </span>
+                  </label>
+                )}
 
                 {/* Footer: confirm + reset link */}
                 <button
                   onClick={submitHome}
                   disabled={saving}
-                  className="btn btn-primary w-full mt-6 flex items-center justify-center gap-2"
+                  className="btn btn-primary w-full mt-4 flex items-center justify-center gap-2"
                 >
                   {saving
                     ? "Saving…"
@@ -878,6 +976,30 @@ export default function OperatorOnboardingStepPage() {
           )}
         </div>
       </div>
+
+      {/* Photo lightbox */}
+      {lightboxUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setLightboxUrl(null)}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={lightboxUrl}
+            alt="Facility photo"
+            className="max-h-[90vh] max-w-[90vw] rounded-lg shadow-2xl object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button
+            type="button"
+            aria-label="Close"
+            onClick={() => setLightboxUrl(null)}
+            className="absolute top-4 right-4 h-10 w-10 rounded-full bg-white/15 text-white flex items-center justify-center hover:bg-white/30 transition-colors"
+          >
+            <FiX size={20} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

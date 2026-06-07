@@ -20,12 +20,21 @@ import { UserRole } from '@prisma/client';
  *   - operator.seededHomeId → null (claimed, no longer pending)
  */
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // Optional body: { imageRightsAcknowledged?: boolean }
+  let imageRightsAcknowledged = false;
+  try {
+    const body = await req.json();
+    imageRightsAcknowledged = body?.imageRightsAcknowledged === true;
+  } catch {
+    // No / invalid body — treat as not acknowledged.
   }
 
   const user = await prisma.user.findUnique({ where: { email: session.user.email } });
@@ -54,17 +63,30 @@ export async function POST(
 
   const home = await prisma.assistedLivingHome.findUnique({
     where: { id: params.id },
-    include: { address: true },
+    include: { address: true, _count: { select: { photos: { where: { autoPopulated: true } } } } },
   });
   if (!home) {
     return NextResponse.json({ error: 'Home not found' }, { status: 404 });
+  }
+
+  // If the listing carries auto-populated (scraped) photos, the operator must
+  // confirm they have rights to use their website's photos/content (Task 6).
+  if (home._count.photos > 0 && !imageRightsAcknowledged) {
+    return NextResponse.json(
+      { error: 'Image rights acknowledgment is required to claim a listing with pre-populated photos.' },
+      { status: 400 }
+    );
   }
 
   // Transfer ownership in a transaction
   const [updatedHome] = await prisma.$transaction([
     prisma.assistedLivingHome.update({
       where: { id: params.id },
-      data: { operatorId: operator.id, status: 'ACTIVE' },
+      data: {
+        operatorId: operator.id,
+        status: 'ACTIVE',
+        ...(imageRightsAcknowledged ? { imageRightsAcknowledgedAt: new Date() } : {}),
+      },
       include: { address: true },
     }),
     prisma.operator.update({

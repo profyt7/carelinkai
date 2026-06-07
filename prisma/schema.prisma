@@ -526,6 +526,7 @@ model AssistedLivingHome {
   autoPopulatedVersion    Int?             @default(0)
   preFilledFields         Json?
   aiPopulationConfidence  String?
+  imageRightsAcknowledgedAt DateTime?
   address                Address?
   operator               Operator         @relation(fields: [operatorId], references: [id], onDelete: Cascade)
   bookings               Booking[]
@@ -554,15 +555,17 @@ model AssistedLivingHome {
 }
 
 model HomePhoto {
-  id        String             @id @default(cuid())
-  homeId    String
-  url       String
-  caption   String?
-  isPrimary Boolean            @default(false)
-  sortOrder Int                @default(0)
-  createdAt DateTime           @default(now())
-  updatedAt DateTime           @updatedAt
-  home      AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
+  id            String             @id @default(cuid())
+  homeId        String
+  url           String
+  caption       String?
+  isPrimary     Boolean            @default(false)
+  sortOrder     Int                @default(0)
+  autoPopulated Boolean            @default(false)
+  sourceUrl     String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  home          AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
 
   @@index([homeId])
 }
