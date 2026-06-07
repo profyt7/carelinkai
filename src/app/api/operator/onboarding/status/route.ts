@@ -33,7 +33,13 @@ export async function GET() {
   if (operator.seededHomeId) {
     const home = await prisma.assistedLivingHome.findUnique({
       where: { id: operator.seededHomeId },
-      include: { address: true },
+      include: {
+        address: true,
+        photos: {
+          where: { autoPopulated: true },
+          orderBy: { sortOrder: 'asc' },
+        },
+      },
     });
     if (home) {
       seededHome = {
@@ -58,6 +64,13 @@ export async function GET() {
         autoPopulatedFromUrl: home.autoPopulatedFromUrl ?? null,
         aiPopulationConfidence: home.aiPopulationConfidence ?? null,
         preFilledFields: home.preFilledFields ?? null,
+        imageRightsAcknowledgedAt: home.imageRightsAcknowledgedAt ?? null,
+        // Auto-populated (scraped + AI-screened) marketing photos for review
+        photos: home.photos.map((p) => ({
+          id: p.id,
+          url: p.url,
+          caption: p.caption ?? null,
+        })),
       };
     }
   }

@@ -6,6 +6,7 @@
  */
 
 import { getAnthropicClient } from '@/lib/ai/claude';
+import type { ImageCandidate } from '@/lib/operator-profile-scraper';
 
 export interface HomeData {
   name: string;
@@ -396,6 +397,169 @@ Call the extract_profile tool with all fields you can confidently extract.`;
     tokensIn,
     tokensOut,
   };
+}
+
+// ── Image classification (Task 2) ──────────────────────────────────────────────
+
+export type ImageClassification = 'FACILITY_PHOTO' | 'PROBABLY_NOT' | 'SENSITIVE';
+
+export interface ClassifiedImage extends ImageCandidate {
+  classification: ImageClassification;
+  visualQuality: number; // 1-10, classifier's best guess from URL/alt/context
+  reason: string | null;
+}
+
+export interface ImageClassificationResult {
+  /** Kept facility photos, best-first, capped at maxKeep. */
+  kept: ClassifiedImage[];
+  /** All candidates with their classification (for logging / spot-checks). */
+  all: ClassifiedImage[];
+  tokensIn: number;
+  tokensOut: number;
+}
+
+const MAX_KEPT_IMAGES = 8;
+
+const IMAGE_CLASSIFY_SYSTEM_PROMPT = `You are screening images found on an assisted living facility's own marketing
+website so they can pre-populate the facility's directory listing. You are given,
+for each image, only its URL, alt text, and a context hint (CSS classes) — NOT
+the pixels. Infer from these signals.
+
+Classify EACH image into exactly one of:
+
+- FACILITY_PHOTO: a photo of the building exterior, interior rooms, dining
+  areas, lounges/common areas, gardens/grounds, activities, or residents
+  enjoying the community. These are what we want to keep.
+- PROBABLY_NOT: logos, wordmarks, icons, award/accreditation badges, stock
+  photography, staff headshots/portraits, maps, brochures, decorative
+  graphics, or anything that isn't a genuine photo of this facility.
+- SENSITIVE: anything that looks clinically or medically sensitive — medical
+  equipment in use, bedside/hospital-bed scenes, wound/medical-treatment
+  imagery, or anything that could embarrass or expose an identifiable
+  resident in a care/medical context. Exclude these even though the operator
+  published them.
+
+ALWAYS err toward caution: if an image MIGHT show identifiable medical
+context, classify it SENSITIVE, not FACILITY_PHOTO. If you cannot tell whether
+something is a real facility photo, prefer PROBABLY_NOT over FACILITY_PHOTO.
+
+Also give each image a visualQuality score 1-10 estimating how appealing it is
+likely to be as a listing hero/gallery image (higher = better), based on the
+signals available.`;
+
+/**
+ * Classify candidate images (text-signals only — no vision) and return the best
+ * facility photos to keep. Cheap: ~$0.02-0.05 per facility.
+ */
+export async function classifyFacilityImages(
+  homeName: string,
+  candidates: ImageCandidate[],
+  maxKeep: number = MAX_KEPT_IMAGES,
+): Promise<ImageClassificationResult> {
+  if (candidates.length === 0) {
+    return { kept: [], all: [], tokensIn: 0, tokensOut: 0 };
+  }
+  if (!process.env.ANTHROPIC_API_KEY) {
+    throw new Error('ANTHROPIC_API_KEY is required for image classification');
+  }
+
+  const client = getAnthropicClient();
+
+  const list = candidates
+    .map((c, i) => `${i}. url: ${c.url}\n   alt: ${c.altText ?? '(none)'}\n   context: ${c.contextHint ?? '(none)'}`)
+    .join('\n');
+
+  const userPrompt = `Facility: "${homeName}"
+
+Classify each of the following ${candidates.length} candidate images.
+
+${list}
+
+Call the classify_images tool with one entry per image (by index).`;
+
+  const response = await client.messages.create({
+    model: 'claude-sonnet-4-6',
+    max_tokens: 2048,
+    system: IMAGE_CLASSIFY_SYSTEM_PROMPT,
+    tools: [
+      {
+        name: 'classify_images',
+        description: 'Submit a classification for every candidate image, by index.',
+        input_schema: {
+          type: 'object' as const,
+          properties: {
+            classifications: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  index: { type: 'integer', description: 'The image index from the list' },
+                  label: {
+                    type: 'string',
+                    enum: ['FACILITY_PHOTO', 'PROBABLY_NOT', 'SENSITIVE'],
+                  },
+                  visualQuality: {
+                    type: 'integer',
+                    description: 'Estimated appeal as a listing image, 1-10',
+                  },
+                  reason: { type: 'string', description: 'Brief justification' },
+                },
+                required: ['index', 'label'],
+              },
+            },
+          },
+          required: ['classifications'],
+        },
+      },
+    ],
+    tool_choice: { type: 'tool', name: 'classify_images' },
+    messages: [{ role: 'user', content: userPrompt }],
+  });
+
+  const tokensIn = response.usage.input_tokens;
+  const tokensOut = response.usage.output_tokens;
+
+  const toolBlock = response.content.find((b) => b.type === 'tool_use');
+  if (!toolBlock || toolBlock.type !== 'tool_use') {
+    throw new Error('Claude did not call classify_images tool');
+  }
+
+  const raw = toolBlock.input as { classifications?: unknown };
+  const rows = Array.isArray(raw.classifications) ? raw.classifications : [];
+
+  // Map classifications back onto candidates by index. Any candidate the model
+  // failed to classify defaults to PROBABLY_NOT (safe exclusion).
+  const byIndex = new Map<number, { label: string; visualQuality?: number; reason?: string }>();
+  for (const r of rows as Array<Record<string, unknown>>) {
+    const idx = typeof r.index === 'number' ? r.index : Number(r.index);
+    if (!Number.isInteger(idx)) continue;
+    byIndex.set(idx, {
+      label: String(r.label ?? 'PROBABLY_NOT'),
+      visualQuality: typeof r.visualQuality === 'number' ? r.visualQuality : undefined,
+      reason: r.reason ? String(r.reason) : undefined,
+    });
+  }
+
+  const VALID: ImageClassification[] = ['FACILITY_PHOTO', 'PROBABLY_NOT', 'SENSITIVE'];
+  const all: ClassifiedImage[] = candidates.map((c, i) => {
+    const row = byIndex.get(i);
+    const classification = (row && (VALID as string[]).includes(row.label)
+      ? row.label
+      : 'PROBABLY_NOT') as ImageClassification;
+    return {
+      ...c,
+      classification,
+      visualQuality: row?.visualQuality ?? 5,
+      reason: row?.reason ?? null,
+    };
+  });
+
+  const kept = all
+    .filter((c) => c.classification === 'FACILITY_PHOTO')
+    .sort((a, b) => b.visualQuality - a.visualQuality)
+    .slice(0, maxKeep);
+
+  return { kept, all, tokensIn, tokensOut };
 }
 
 // ── Validation ────────────────────────────────────────────────────────────────

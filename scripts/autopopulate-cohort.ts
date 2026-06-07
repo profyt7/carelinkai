@@ -16,6 +16,11 @@
  *   --dry-run          Run pipeline, show what would update, don't write (default)
  *   --force            Write results to DB
  *   --resume           Skip facilities that already have autoPopulatedAt set
+ *   --with-photos      Also extract photos: scrape <img> candidates, AI-classify,
+ *                      and (on --force) download + re-host on Cloudinary as
+ *                      auto-populated HomePhoto rows. On --dry-run, classifies
+ *                      only (no download/upload). Requires CLOUDINARY_* env vars
+ *                      on a live run.
  *   --facility <id>    Process only this homeId
  */
 
@@ -23,8 +28,9 @@ import { PrismaClient, HomeStatus } from '@prisma/client';
 import { readFileSync } from 'fs';
 import path from 'path';
 import Papa from 'papaparse';
-import { scrapeOperatorWebsite, prepareHtmlForExtraction, ScrapeError } from '../src/lib/operator-profile-scraper';
-import { extractProfileFromWebsite } from '../src/lib/profile-generator/home-profile-generator';
+import { scrapeOperatorWebsite, prepareHtmlForExtraction, ScrapeError, ImageCandidate } from '../src/lib/operator-profile-scraper';
+import { extractProfileFromWebsite, classifyFacilityImages } from '../src/lib/profile-generator/home-profile-generator';
+import { downloadAndRehost } from '../src/lib/profile-generator/photo-rehost';
 
 const prisma = new PrismaClient();
 
@@ -43,9 +49,9 @@ interface CsvRow {
 }
 
 type FacilityResult =
-  | { status: 'success'; homeId: string; homeName: string; fieldsExtracted: number; confidence: string; dollars: number }
+  | { status: 'success'; homeId: string; homeName: string; fieldsExtracted: number; confidence: string; dollars: number; photosUploaded?: number }
   | { status: 'skipped'; homeId: string; homeName: string; reason: string }
-  | { status: 'sparse'; homeId: string; homeName: string; confidence: string; dollars: number }
+  | { status: 'sparse'; homeId: string; homeName: string; confidence: string; dollars: number; photosUploaded?: number }
   | { status: 'blocked'; homeId: string; homeName: string; reason: string };
 
 function parseCsv(filePath: string): CsvRow[] {
@@ -59,7 +65,7 @@ function parseCsv(filePath: string): CsvRow[] {
 
 async function processRow(
   row: CsvRow,
-  { dryRun, resume }: { dryRun: boolean; resume: boolean },
+  { dryRun, resume, withPhotos }: { dryRun: boolean; resume: boolean; withPhotos: boolean },
 ): Promise<FacilityResult> {
   const { homeName, homeId, websiteUrl } = row;
 
@@ -82,10 +88,12 @@ async function processRow(
   // Scrape
   let html: string;
   let finalUrl: string;
+  let imageCandidates: ImageCandidate[] = [];
   try {
     const scraped = await scrapeOperatorWebsite(websiteUrl);
     html = scraped.html;
     finalUrl = scraped.finalUrl;
+    imageCandidates = scraped.imageCandidates;
   } catch (e) {
     const err = e instanceof ScrapeError ? e : new ScrapeError('PERMANENT', String(e));
     return { status: 'blocked', homeId, homeName, reason: err.message };
@@ -196,10 +204,80 @@ async function processRow(
     }
   }
 
-  if (extracted.extractionConfidence === 'LOW') {
-    return { status: 'sparse', homeId, homeName, confidence: extracted.extractionConfidence, dollars };
+  // ── Photo pipeline (Tasks 1-4) — opt-in via --with-photos ──────────────────
+  let imageDollars = 0;
+  let photosUploaded = 0;
+  if (withPhotos) {
+    try {
+      const classification = await classifyFacilityImages(home.name, imageCandidates);
+      imageDollars = cost(classification.tokensIn, classification.tokensOut);
+      const keptCount = classification.kept.length;
+
+      if (dryRun) {
+        console.log(
+          `    📷 ${imageCandidates.length} candidate(s) → ${keptCount} would be kept ` +
+          `(img classify $${imageDollars.toFixed(3)})`,
+        );
+      } else if (keptCount > 0) {
+        const rehost = await downloadAndRehost(
+          homeId,
+          classification.kept.map((k) => ({ url: k.url, altText: k.altText })),
+        );
+
+        if (rehost.uploaded.length > 0) {
+          // Idempotent re-runs: clear prior auto-populated photos before writing.
+          await prisma.homePhoto.deleteMany({ where: { homeId, autoPopulated: true } });
+          const existingCount = await prisma.homePhoto.count({ where: { homeId } });
+
+          let sortOrder = 0;
+          for (const p of rehost.uploaded) {
+            await prisma.homePhoto.create({
+              data: {
+                homeId,
+                url: p.cloudinaryUrl,
+                caption: p.altText ?? null,
+                autoPopulated: true,
+                sourceUrl: p.sourceUrl,
+                sortOrder: sortOrder,
+                // Make the first photo primary only if the home has none yet.
+                isPrimary: existingCount === 0 && sortOrder === 0,
+              },
+            });
+            sortOrder += 1;
+          }
+          photosUploaded = rehost.uploaded.length;
+        }
+
+        console.log(
+          `    📷 ${imageCandidates.length} candidate(s) → ${keptCount} kept → ` +
+          `${photosUploaded} uploaded (${rehost.skipped.length} skipped) ` +
+          `[img classify $${imageDollars.toFixed(3)}]`,
+        );
+        if (rehost.skipped.length > 0) {
+          rehost.skipped.forEach((s) => console.log(`        ↳ skipped ${s.url}: ${s.reason}`));
+        }
+      } else {
+        console.log(
+          `    📷 ${imageCandidates.length} candidate(s) → 0 kept ` +
+          `[img classify $${imageDollars.toFixed(3)}]`,
+        );
+      }
+    } catch (e: any) {
+      console.log(`    📷 photo pipeline error: ${e?.message ?? e}`);
+    }
   }
-  return { status: 'success', homeId, homeName, fieldsExtracted, confidence: extracted.extractionConfidence, dollars };
+
+  const totalDollars = dollars + imageDollars;
+  console.log(
+    `    💵 cost: text $${dollars.toFixed(3)}` +
+    (withPhotos ? ` + images $${imageDollars.toFixed(3)} = $${totalDollars.toFixed(3)}` : '') +
+    (withPhotos && !dryRun ? ` | photos uploaded: ${photosUploaded}` : ''),
+  );
+
+  if (extracted.extractionConfidence === 'LOW') {
+    return { status: 'sparse', homeId, homeName, confidence: extracted.extractionConfidence, dollars: totalDollars, photosUploaded };
+  }
+  return { status: 'success', homeId, homeName, fieldsExtracted, confidence: extracted.extractionConfidence, dollars: totalDollars, photosUploaded };
 }
 
 async function main() {
@@ -207,11 +285,12 @@ async function main() {
   const csvPath = args.find(a => !a.startsWith('--'));
   const dryRun = !args.includes('--force') && (args.includes('--dry-run') || !args.includes('--force'));
   const resume = args.includes('--resume');
+  const withPhotos = args.includes('--with-photos');
   const facilityFlag = args.indexOf('--facility');
   const onlyFacilityId = facilityFlag !== -1 ? args[facilityFlag + 1] : null;
 
   if (!csvPath) {
-    console.error('Usage: autopopulate-cohort.ts <path/to/websites.csv> [--dry-run|--force] [--resume] [--facility <id>]');
+    console.error('Usage: autopopulate-cohort.ts <path/to/websites.csv> [--dry-run|--force] [--resume] [--with-photos] [--facility <id>]');
     process.exit(1);
   }
 
@@ -220,7 +299,19 @@ async function main() {
     process.exit(1);
   }
 
+  // Photo download + re-host requires Cloudinary; only enforced on a live run.
+  if (withPhotos && !dryRun) {
+    const missing = ['CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET'].filter(
+      (k) => !process.env[k],
+    );
+    if (missing.length > 0) {
+      console.error(`ERROR: --with-photos requires Cloudinary env vars. Missing: ${missing.join(', ')}`);
+      process.exit(1);
+    }
+  }
+
   console.log(dryRun ? '=== DRY RUN — no DB writes ===' : '=== LIVE RUN ===');
+  if (withPhotos) console.log(`=== Photo extraction ENABLED ${dryRun ? '(classify only — no download/upload on dry-run)' : '(download + Cloudinary re-host)'} ===`);
   console.log('');
 
   let rows: CsvRow[];
@@ -246,7 +337,7 @@ async function main() {
 
   for (const row of rows) {
     try {
-      const result = await processRow(row, { dryRun, resume });
+      const result = await processRow(row, { dryRun, resume, withPhotos });
       results.push(result);
       if (result.status === 'success' || result.status === 'sparse') {
         totalDollars += result.dollars;
@@ -262,10 +353,18 @@ async function main() {
   const blocked = results.filter(r => r.status === 'blocked').length;
   const skipped = results.filter(r => r.status === 'skipped').length;
 
+  const totalPhotos = results.reduce(
+    (sum, r) => sum + ((r.status === 'success' || r.status === 'sparse') ? (r.photosUploaded ?? 0) : 0),
+    0,
+  );
+
   console.log('');
   console.log('─────────────────────────────────────────────────────────');
   console.log(`${rows.length} facilities processed: ${succeeded} succeeded, ${sparse} sparse, ${blocked} blocked, ${skipped} skipped`);
   console.log(`Total Anthropic spend:  $${totalDollars.toFixed(3)}`);
+  if (withPhotos && !dryRun) {
+    console.log(`Total photos uploaded:  ${totalPhotos}`);
+  }
   if (succeeded + sparse > 0) {
     console.log(`Est. cost per facility: $${(totalDollars / (succeeded + sparse)).toFixed(3)}`);
   }
