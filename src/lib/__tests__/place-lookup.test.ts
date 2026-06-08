@@ -3,6 +3,7 @@ import {
   nameMatchScore,
   isAggregatorUrl,
   evaluateCandidate,
+  evaluateWebResult,
 } from "@/lib/place-lookup";
 
 describe("normalizeForMatch", () => {
@@ -66,5 +67,47 @@ describe("evaluateCandidate", () => {
     });
     expect(r).not.toBeNull();
     expect(r!.confidence).toBe("LOW");
+  });
+});
+
+describe("evaluateWebResult (web-search fallback)", () => {
+  const input = { name: "Canterbury Commons", city: "Twinsburg", state: "OH" };
+
+  it("returns MEDIUM (never HIGH) when the name matches the title", () => {
+    const r = evaluateWebResult(input, {
+      title: "Canterbury Commons | Assisted Living in Twinsburg, OH",
+      link: "https://www.canterburycommons.com/",
+      displayLink: "www.canterburycommons.com",
+    });
+    expect(r).not.toBeNull();
+    expect(r!.source).toBe("web_search");
+    expect(r!.confidence).toBe("MEDIUM");
+  });
+
+  it("corroborates via the domain even when the title is generic", () => {
+    const r = evaluateWebResult(input, {
+      title: "Welcome | Home",
+      link: "https://canterburycommons.com/",
+      displayLink: "canterburycommons.com",
+    });
+    expect(r!.confidence).toBe("MEDIUM");
+  });
+
+  it("drops to LOW when neither title nor domain corroborate", () => {
+    const r = evaluateWebResult(input, {
+      title: "Top 10 Assisted Living Facilities Near You",
+      link: "https://example-blog.com/best-of",
+      displayLink: "example-blog.com",
+    });
+    expect(r!.confidence).toBe("LOW");
+  });
+
+  it("rejects aggregator results", () => {
+    const r = evaluateWebResult(input, {
+      title: "Canterbury Commons - Caring.com",
+      link: "https://www.caring.com/senior-living/canterbury",
+      displayLink: "www.caring.com",
+    });
+    expect(r).toBeNull();
   });
 });

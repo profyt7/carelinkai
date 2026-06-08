@@ -29,7 +29,7 @@
  */
 
 import { PrismaClient, CareLevel, HomeStatus, UserRole } from '@prisma/client';
-import { findWebsiteUrl, isPlaceLookupConfigured } from '../src/lib/place-lookup';
+import { findWebsiteUrl, isAnyLookupConfigured } from '../src/lib/place-lookup';
 
 const prisma = new PrismaClient();
 
@@ -50,12 +50,13 @@ async function discoverAndStoreWebsite(
   const result = await findWebsiteUrl({ name, city, state: 'OH' });
   await sleep(PLACES_DELAY_MS);
   if (!result) return 'no match';
-  if (result.confidence === 'LOW') return `low-confidence (skipped): ${result.url}`;
+  const via = result.source === 'web_search' ? 'web' : 'places';
+  if (result.confidence === 'LOW') return `low-confidence (skipped, ${via}): ${result.url}`;
   await prisma.assistedLivingHome.update({
     where: { id: homeId },
     data: { websiteUrl: result.url },
   });
-  return `${result.confidence}: ${result.url}`;
+  return `${result.confidence} via ${via}: ${result.url}`;
 }
 
 const SEED_USER_EMAIL = 'directory-unclaimed@carelinkai.system';
@@ -146,11 +147,14 @@ async function main() {
   const withWebsites = process.argv.includes('--with-websites');
   console.log(dryRun ? '=== DRY RUN - no writes ===' : '=== LIVE RUN ===');
   if (withWebsites) {
-    if (!isPlaceLookupConfigured()) {
-      console.error('ERROR: --with-websites requires GOOGLE_PLACES_API_KEY to be set.');
+    if (!isAnyLookupConfigured()) {
+      console.error(
+        'ERROR: --with-websites requires GOOGLE_PLACES_API_KEY (Places) and/or ' +
+        'GOOGLE_SEARCH_ENGINE_ID + an API key (web-search fallback).',
+      );
       process.exit(1);
     }
-    console.log('=== Website discovery ENABLED (Google Places) ===');
+    console.log('=== Website discovery ENABLED (Google Places + web-search fallback) ===');
   }
   console.log('Tier A facilities to seed: ' + TIER_A.length + '\n');
 
