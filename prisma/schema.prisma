@@ -527,6 +527,9 @@ model AssistedLivingHome {
   preFilledFields         Json?
   aiPopulationConfidence  String?
   imageRightsAcknowledgedAt DateTime?
+  enrichmentStatus        EnrichmentStatus @default(NONE)
+  enrichmentStartedAt     DateTime?
+  enrichmentError         String?
   address                Address?
   operator               Operator         @relation(fields: [operatorId], references: [id], onDelete: Cascade)
   bookings               Booking[]
@@ -568,6 +571,14 @@ model HomePhoto {
   home          AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
 
   @@index([homeId])
+}
+
+// Lifecycle of on-claim website enrichment (scrape + AI extract + photos).
+enum EnrichmentStatus {
+  NONE     // not started (no website on file, or not yet triggered)
+  RUNNING  // enrichment in progress (background task)
+  READY    // completed successfully
+  FAILED   // completed with an error (operator falls back to manual entry)
 }
 
 model Address {

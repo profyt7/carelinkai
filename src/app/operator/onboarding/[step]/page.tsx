@@ -49,6 +49,8 @@ interface SeededHome {
   aiPopulationConfidence: string | null;
   preFilledFields: Record<string, FieldProvenance> | null;
   imageRightsAcknowledgedAt: string | null;
+  enrichmentStatus: 'NONE' | 'RUNNING' | 'READY' | 'FAILED';
+  enrichmentError: string | null;
   photos: SeededPhoto[];
 }
 
@@ -210,9 +212,38 @@ export default function OperatorOnboardingStepPage() {
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [imageRightsAck, setImageRightsAck] = useState(false);
 
+  // On-claim enrichment lifecycle (scrape + AI + photos)
+  const [enrichStatus, setEnrichStatus] = useState<'NONE' | 'RUNNING' | 'READY' | 'FAILED' | null>(null);
+
   // Only used on Step 3 when the operator manually enters a token
   const [manualToken, setManualToken] = useState("");
   const [claimApplied, setClaimApplied] = useState(false);
+
+  // Apply an onboarding-status payload to local state (reused by polling).
+  const applyStatus = (d: any) => {
+    if (d.clevelandFounder) {
+      setClevelandFounder(true);
+      setClaimApplied(true);
+    }
+    if (d.seededHome) {
+      setSeededHome(d.seededHome);
+      const pre: HomeForm = {
+        name: d.seededHome.name ?? "",
+        description: d.seededHome.description ?? "",
+        street: d.seededHome.address?.street ?? "",
+        city: d.seededHome.address?.city ?? "",
+        state: d.seededHome.address?.state ?? "",
+        zipCode: d.seededHome.address?.zipCode ?? "",
+        capacity: String(d.seededHome.capacity ?? ""),
+        careLevel: d.seededHome.careLevel ?? [],
+      };
+      setHome(pre);
+      if (d.seededHome.autoPopulatedAt) setAiOriginal(pre);
+      if (Array.isArray(d.seededHome.photos)) setPhotos(d.seededHome.photos);
+      if (d.seededHome.imageRightsAcknowledgedAt) setImageRightsAck(true);
+      setEnrichStatus(d.seededHome.enrichmentStatus ?? 'NONE');
+    }
+  };
 
   // Redirect non-operators
   useEffect(() => {
@@ -222,38 +253,28 @@ export default function OperatorOnboardingStepPage() {
     }
   }, [status, session, router]);
 
-  // Load onboarding status + profile on mount
+  // Load onboarding status + profile on mount; kick off enrichment if needed.
   useEffect(() => {
     if (status !== "authenticated") return;
+    let cancelled = false;
 
-    // Fetch onboarding status (includes seededHome for founders)
-    fetch("/api/operator/onboarding/status")
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.clevelandFounder) {
-          setClevelandFounder(true);
-          setClaimApplied(true);
-        }
-        if (d.seededHome) {
-          setSeededHome(d.seededHome);
-          const pre: HomeForm = {
-            name: d.seededHome.name ?? "",
-            description: d.seededHome.description ?? "",
-            street: d.seededHome.address?.street ?? "",
-            city: d.seededHome.address?.city ?? "",
-            state: d.seededHome.address?.state ?? "",
-            zipCode: d.seededHome.address?.zipCode ?? "",
-            capacity: String(d.seededHome.capacity ?? ""),
-            careLevel: d.seededHome.careLevel ?? [],
-          };
-          setHome(pre);
-          // Snapshot AI values so operator can reset later
-          if (d.seededHome.autoPopulatedAt) setAiOriginal(pre);
-          if (Array.isArray(d.seededHome.photos)) setPhotos(d.seededHome.photos);
-          if (d.seededHome.imageRightsAcknowledgedAt) setImageRightsAck(true);
-        }
-      })
-      .catch(() => {});
+    (async () => {
+      const d = await fetch("/api/operator/onboarding/status")
+        .then((r) => r.json())
+        .catch(() => null);
+      if (!d || cancelled) return;
+      applyStatus(d);
+
+      // Claim-start trigger: a seeded home with a website that hasn't been
+      // enriched yet → start the background enrichment job.
+      const sh = d.seededHome;
+      if (sh && sh.websiteUrl && sh.enrichmentStatus === "NONE" && !sh.autoPopulatedAt) {
+        const res = await fetch("/api/operator/onboarding/enrich", { method: "POST" })
+          .then((r) => r.json())
+          .catch(() => null);
+        if (!cancelled && res?.status) setEnrichStatus(res.status);
+      }
+    })();
 
     // Pre-fill company profile
     fetch("/api/operator/profile")
@@ -267,7 +288,21 @@ export default function OperatorOnboardingStepPage() {
         }
       })
       .catch(() => {});
+
+    return () => { cancelled = true; };
   }, [status]);
+
+  // Poll the status endpoint while enrichment is running; stop when it resolves.
+  useEffect(() => {
+    if (enrichStatus !== "RUNNING") return;
+    const id = setInterval(async () => {
+      const d = await fetch("/api/operator/onboarding/status")
+        .then((r) => r.json())
+        .catch(() => null);
+      if (d) applyStatus(d);
+    }, 3000);
+    return () => clearInterval(id);
+  }, [enrichStatus]);
 
   const goToStep = (n: StepNum) => router.push(`/operator/onboarding/${n}`);
 
@@ -528,6 +563,30 @@ export default function OperatorOnboardingStepPage() {
             const sourceDomain = seededHome?.autoPopulatedFromUrl
               ? (() => { try { return new URL(seededHome.autoPopulatedFromUrl).hostname.replace(/^www\./, ''); } catch { return seededHome.autoPopulatedFromUrl; } })()
               : null;
+            const buildDomain = seededHome?.websiteUrl
+              ? (() => { try { return new URL(seededHome.websiteUrl).hostname.replace(/^www\./, ''); } catch { return seededHome.websiteUrl; } })()
+              : null;
+
+            // While enrichment runs, show a "building" state instead of the form.
+            if (enrichStatus === 'RUNNING') {
+              return (
+                <div className="py-10 text-center">
+                  <div className="mx-auto mb-5 h-12 w-12 rounded-full border-[3px] border-violet-200 border-t-violet-600 animate-spin" />
+                  <h1 className="text-2xl font-bold text-neutral-900 mb-2">
+                    Building your profile…
+                  </h1>
+                  <p className="text-neutral-500 text-sm max-w-sm mx-auto">
+                    We're pulling your details and photos{buildDomain ? ` from ${buildDomain}` : " from your website"} and
+                    drafting your listing. This usually takes under a minute.
+                  </p>
+                  <div className="mt-6 flex flex-col items-center gap-2 text-sm text-neutral-400">
+                    <span className="inline-flex items-center gap-2"><span className="text-violet-500">✨</span> Reading your website</span>
+                    <span className="inline-flex items-center gap-2"><span className="text-violet-500">🖼️</span> Selecting your best photos</span>
+                    <span className="inline-flex items-center gap-2"><span className="text-violet-500">📝</span> Drafting your description</span>
+                  </div>
+                </div>
+              );
+            }
 
             return (
               <div>
@@ -550,6 +609,12 @@ export default function OperatorOnboardingStepPage() {
                     Review the fields below. Edit anything that isn't right, then continue.
                     Nothing is committed until you click <strong>Confirm and continue</strong>.
                   </p>
+                )}
+                {enrichStatus === 'FAILED' && !isPrePopulated && (
+                  <div className="mb-5 rounded-lg px-4 py-3 text-sm bg-amber-50 border border-amber-200 text-amber-800">
+                    We couldn't automatically pull your website content this time — no problem,
+                    just fill in the details below and you're all set.
+                  </div>
                 )}
                 {!isPrePopulated && <div className="mb-6" />}
 
