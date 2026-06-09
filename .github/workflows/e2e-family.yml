@@ -307,14 +307,12 @@ jobs:
         run: npx playwright install --with-deps
 
       - name: Run Playwright (Operator claim flow)
-        env:
-          PLAYWRIGHT_WEB_SERVER_CMD: >-
-            cross-env NEXTAUTH_URL=http://localhost:3000 NEXTAUTH_SECRET=$NEXTAUTH_SECRET
-            ALLOW_DEV_ENDPOINTS=1 ALLOW_INSECURE_AUTH_COOKIE=1
-            DATABASE_URL=$DATABASE_URL
-            npm run start
         run: |
-          npx playwright test e2e/operator-claim-flow.spec.ts --workers=1 --reporter=line --retries=1 --trace retain-on-failure --timeout=60000
+          # Uses playwright.e2e.config.ts (testDir: ./e2e) so the spec is actually
+          # discovered — the default config's testDir is ./tests, which silently
+          # matches nothing under ./e2e. webServer runs `npm run dev` and inherits
+          # the job env (ALLOW_DEV_ENDPOINTS / ALLOW_INSECURE_AUTH_COOKIE / DB).
+          npx playwright test --config=playwright.e2e.config.ts e2e/operator-claim-flow.spec.ts --workers=1 --reporter=line
 
       - name: Upload Playwright test artifacts (Operator claim flow) (always)
         if: always()
