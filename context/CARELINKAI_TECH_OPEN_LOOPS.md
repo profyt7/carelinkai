@@ -58,6 +58,19 @@ Each loop: what it is, why it matters, what done looks like.
   4. **Concordia at Sumner** — city/street address not resolved; MEDIUM confidence
 - **Done when:** Each record manually verified and corrected in admin panel before the facility receives a claim link.
 
+### OL-063: e2e suite runs ZERO tests in CI (false-green)
+- **Status:** 🔴 OPEN — discovered 2026-06-09 while wiring the claim-flow guard
+- **What:** Every Playwright config uses `testDir: './tests'`, but the CI e2e jobs (`e2e-family.yml`) run specs from `./e2e/` (`e2e/residents-*`, `e2e/family-*`). A bare `playwright test e2e/<spec>` therefore matches **nothing**, so Playwright would error "No tests found" — except the residents/family jobs pass `--shard`, which tolerates an empty shard and exits 0. Net effect: the entire `e2e/` suite (residents, family, marketplace, messages, operator, auth specs) has been **passing without executing a single test**. Confirmed via job logs (webserver boots, then jumps straight to artifact upload with no "Running N tests" line).
+- **Why it matters:** Our supposed e2e regression coverage is vacuous. Fixing it will likely surface real, long-hidden failures.
+- **Done when:** e2e jobs run against a config whose `testDir` includes `./e2e` (or specs move into `tests/`), the `--shard` empty-tolerance is removed/justified, and the suites actually execute (non-zero test counts in logs) and pass.
+- **Note:** `playwright.e2e.config.ts` (added for the claim-flow job) is a working reference — `testDir: './e2e'` + no `--shard`.
+
+### OL-064: dev-login sessions are not authorized by operator POST routes in CI (claim-flow e2e guard parked)
+- **Status:** 🟡 OPEN — claim-flow guard parked (`test.describe.fixme`) 2026-06-09
+- **What:** In the CI e2e dev-server harness, operator-authenticated POST routes (`/api/operator/claim`, `POST /api/operator/homes/[id]/claim`, acceptance POST) return **403 "Forbidden"** for a `/api/dev/login` session, even though GET routes (`/api/dev/whoami`, `/api/operator/onboarding/status`) resolve the *same* session as role `OPERATOR`. Captured: `operator/claim 403: {"error":"Forbidden"} | whoami={… "role":"OPERATOR" …}`. The claim flow itself works in production (verified by the manual prod smoke test), so this is a harness/auth quirk, not a product bug.
+- **Impact:** `e2e/operator-claim-flow.spec.ts` is parked via `test.describe.fixme`; all supporting infra (`playwright.e2e.config.ts`, the `e2e-operator-claim` CI job, the testDir discovery fix) is retained so it can be re-enabled with a one-line change.
+- **Done when:** Root-caused (Playwright trace / local-DB repro of why operator POST `getServerSession`+DB role check fails while GET succeeds), fixed, and the 3 parked tests re-enabled and green.
+
 ### OL-027: Provider listing fee ($99/mo)
 - **Status:** ✅ CLOSED (2026-05-02)
 - Schema fields + migration, Stripe Checkout + Customer Portal APIs, webhook handler, visibility gate in marketplace API, billing UI at `/settings/provider/billing`. Requires `STRIPE_PRICE_PROVIDER_LISTING` env var in Render.
