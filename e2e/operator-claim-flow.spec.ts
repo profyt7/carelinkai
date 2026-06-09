@@ -16,16 +16,20 @@ import { loginAs } from './_helpers';
  */
 
 const ADMIN_EMAIL = 'admin@carelinkai.com';
-const PASSWORD = 'Test@12345';
 
 function uniqueEmail(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1e4)}@test.carelinkai.com`;
 }
 
 /**
- * Seed an admin + an admin-owned ("seeded") home, issue a founder claim link for
- * it, and register a brand-new operator who redeems that token at signup.
- * Returns the new founder's email and the seeded home id.
+ * Set up a Cleveland founder who has redeemed a claim token for an admin-seeded
+ * home, leaving the founder logged in with clevelandFounder + freeAccessUntil +
+ * seededHomeId established. Returns the founder's email and the seeded home id.
+ *
+ * Uses the deterministic redemption path (POST /api/operator/claim) rather than
+ * register-time `?claimToken=` application — the latter proved unreliable under
+ * the CI dev server. Register-time application is covered separately by
+ * operator-onboarding-wizard.spec.ts.
  */
 async function seedFounderWithSeededHome(
   page: Page,
@@ -51,6 +55,12 @@ async function seedFounderWithSeededHome(
   const homeId: string = seedData.homes?.[0]?.id ?? seedData.homeId;
   expect(homeId).toBeTruthy();
 
+  // The founder's own operator account (exists + ACTIVE).
+  const founderRes = await request.post('/api/dev/upsert-operator', {
+    data: { email: founderEmail, companyName: 'Founder Co' },
+  });
+  expect(founderRes.ok()).toBeTruthy();
+
   // Admin generates the founder claim link for this specific home + email.
   await loginAs(page, ADMIN_EMAIL);
   const claim = await page.evaluate(
@@ -68,20 +78,27 @@ async function seedFounderWithSeededHome(
   expect(claim.status).toBe(200);
   expect(claim.body.token).toBeTruthy();
 
-  // Founder registers carrying the claim token (what the /auth/register page does
-  // with ?claimToken=). This is what grants clevelandFounder + freeAccessUntil.
-  const reg = await request.post('/api/auth/register', {
-    data: {
-      email: founderEmail,
-      password: PASSWORD,
-      firstName: 'Claim',
-      lastName: 'Flow',
-      role: 'OPERATOR',
-      agreeToTerms: true,
-      claimToken: claim.body.token,
-    },
+  // Founder redeems the token via the manual claim endpoint, then we confirm the
+  // founder state landed before any test logic runs.
+  await loginAs(page, founderEmail);
+  const redeem = await page.evaluate(async (t: string) => {
+    const r = await fetch('/api/operator/claim', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ token: t }),
+    });
+    return { status: r.status, body: await r.json() };
+  }, claim.body.token as string);
+  expect(redeem.status).toBe(200);
+
+  const status = await page.evaluate(async () => {
+    const r = await fetch('/api/operator/onboarding/status', { credentials: 'include' });
+    return r.json();
   });
-  expect(reg.status()).toBe(201);
+  expect(status.clevelandFounder).toBe(true);
+  expect(status.freeAccessUntil).toBeTruthy();
+  expect(status.seededHomeId).toBe(homeId);
 
   return { founderEmail, homeId };
 }
