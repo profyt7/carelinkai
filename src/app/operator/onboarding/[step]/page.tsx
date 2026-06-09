@@ -336,8 +336,13 @@ export default function OperatorOnboardingStepPage() {
   const submitHome = async () => {
     if (!home.name.trim()) { setError("Home name is required."); return; }
     if (!home.description.trim()) { setError("A brief description is required."); return; }
-    if (!home.street.trim() || !home.city.trim() || !home.state.trim() || !home.zipCode.trim()) {
-      setError("Full address is required.");
+    const missingAddress: string[] = [];
+    if (!home.street.trim()) missingAddress.push("Street address");
+    if (!home.city.trim()) missingAddress.push("City");
+    if (!home.state.trim()) missingAddress.push("State");
+    if (!home.zipCode.trim()) missingAddress.push("ZIP code");
+    if (missingAddress.length > 0) {
+      setError(`${missingAddress.join(", ")} ${missingAddress.length === 1 ? "is" : "are"} required.`);
       return;
     }
     if (home.careLevel.length === 0) { setError("Select at least one care type."); return; }

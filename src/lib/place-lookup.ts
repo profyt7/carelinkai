@@ -296,3 +296,117 @@ export async function findWebsiteViaPlaces(
   }
   return best;
 }
+
+// ── Address backfill (OL-061) ────────────────────────────────────────────────
+// The website scrape frequently misses a facility's street address. Google
+// Places is authoritative for addresses, so we look the facility up by
+// name + city and read its structured address components. Unlike the website
+// discovery above, this does NOT require the matched place to have a website.
+
+interface PlacesAddressComponent {
+  longText?: string;
+  shortText?: string;
+  types?: string[];
+}
+
+interface PlacesApiPlaceWithAddress extends PlacesApiPlace {
+  addressComponents?: PlacesAddressComponent[];
+}
+
+export interface PlaceAddressResult {
+  street: string | null;
+  city: string | null;
+  state: string | null;
+  zip: string | null;
+  formattedAddress: string | null;
+  confidence: LookupConfidence;
+  matchedName: string | null;
+}
+
+function pickComponent(
+  components: PlacesAddressComponent[] | undefined,
+  type: string,
+  prefer: 'long' | 'short' = 'long',
+): string | null {
+  const c = components?.find((x) => x.types?.includes(type));
+  if (!c) return null;
+  return (prefer === 'short' ? c.shortText : c.longText) ?? c.longText ?? c.shortText ?? null;
+}
+
+function parsePlacesAddress(components?: PlacesAddressComponent[]) {
+  const streetNumber = pickComponent(components, 'street_number');
+  const route = pickComponent(components, 'route');
+  const street = [streetNumber, route].filter(Boolean).join(' ').trim() || null;
+  return {
+    street,
+    city: pickComponent(components, 'locality') ?? pickComponent(components, 'postal_town'),
+    state: pickComponent(components, 'administrative_area_level_1', 'short'),
+    zip: pickComponent(components, 'postal_code'),
+  };
+}
+
+/**
+ * Look up a facility's street address via Google Places (New) Text Search by
+ * name + city. Returns the best name/city-matched candidate's structured
+ * address (highest confidence wins), or null (not configured / network error /
+ * no candidate that yields a street). Server-side only.
+ */
+export async function findAddressViaPlaces(
+  input: PlaceLookupInput,
+): Promise<PlaceAddressResult | null> {
+  const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+  if (!apiKey) return null;
+
+  const locationParts = [input.city, input.state].filter(Boolean);
+  const textQuery = `${input.name} assisted living ${locationParts.join(' ')}`.trim();
+
+  let res: Response;
+  try {
+    res = await fetch(PLACES_SEARCH_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': apiKey,
+        'X-Goog-FieldMask':
+          'places.id,places.displayName,places.formattedAddress,places.addressComponents',
+      },
+      body: JSON.stringify({ textQuery, maxResultCount: 5, regionCode: 'US' }),
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
+  } catch {
+    return null;
+  }
+  if (!res.ok) return null;
+
+  let data: { places?: PlacesApiPlaceWithAddress[] };
+  try {
+    data = await res.json();
+  } catch {
+    return null;
+  }
+
+  const places = Array.isArray(data.places) ? data.places : [];
+  let best: PlaceAddressResult | null = null;
+  for (const p of places) {
+    const matchedName = p.displayName?.text ?? null;
+    const formattedAddress = p.formattedAddress ?? null;
+    const score = matchedName ? nameMatchScore(input.name, matchedName) : 0;
+    const cityMatch =
+      !!input.city && !!formattedAddress &&
+      formattedAddress.toLowerCase().includes(input.city.toLowerCase());
+
+    let confidence: LookupConfidence;
+    if (score >= 0.6 && cityMatch) confidence = 'HIGH';
+    else if (score >= 0.6 || (score >= 0.34 && cityMatch)) confidence = 'MEDIUM';
+    else confidence = 'LOW';
+
+    const parsed = parsePlacesAddress(p.addressComponents);
+    if (!parsed.street) continue; // only candidates that actually yield a street
+
+    if (!best || RANK[confidence] > RANK[best.confidence]) {
+      best = { ...parsed, formattedAddress, confidence, matchedName };
+    }
+    if (confidence === 'HIGH') break;
+  }
+  return best;
+}
