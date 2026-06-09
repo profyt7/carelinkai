@@ -31,6 +31,7 @@ import Papa from 'papaparse';
 import { scrapeOperatorWebsite, prepareHtmlForExtraction, ScrapeError, ImageCandidate } from '../src/lib/operator-profile-scraper';
 import { extractProfileFromWebsite, classifyFacilityImages } from '../src/lib/profile-generator/home-profile-generator';
 import { downloadAndRehost } from '../src/lib/profile-generator/photo-rehost';
+import { findAddressViaPlaces, isPlaceLookupConfigured, type PlaceAddressResult } from '../src/lib/place-lookup';
 
 const prisma = new PrismaClient();
 
@@ -150,15 +151,48 @@ async function processRow(
     preFilledFields['careLevel'] = 'AI';
   }
 
-  // Address: only update fields that are currently empty or missing
+  // Address: only fill fields that are currently empty/missing.
   const addr = extracted.address;
-  if (addr) {
-    if (!home.address?.street && addr.streetAddress) {
-      preFilledFields['street'] = 'AI';
+  const aiStreet = addr?.streetAddress?.trim() || null;
+  const aiZip = addr?.zip?.trim() || null;
+
+  // Google Places address fallback (OL-061): the website scrape frequently
+  // misses the street address (leaving the listing showing the form's
+  // "1234 Oak Lane" placeholder). When neither the DB nor the AI gives us a
+  // street, look the facility up by name + city in Google Places — authoritative
+  // for addresses — and use a HIGH/MEDIUM-confidence match.
+  let placesAddr: PlaceAddressResult | null = null;
+  if (!home.address?.street && !aiStreet && isPlaceLookupConfigured()) {
+    placesAddr = await findAddressViaPlaces({
+      name: home.name,
+      city: home.address?.city ?? null,
+      state: home.address?.state ?? null,
+    });
+    if (placesAddr && placesAddr.street && placesAddr.confidence !== 'LOW') {
+      console.log(
+        `    📍 Places address fallback: "${placesAddr.street}"` +
+        `${placesAddr.zip ? ` ${placesAddr.zip}` : ''} ` +
+        `(${placesAddr.confidence}, matched "${placesAddr.matchedName ?? '?'}")`,
+      );
+    } else {
+      if (placesAddr) {
+        console.log(`    📍 Places address: LOW-confidence match ignored ("${placesAddr.matchedName ?? '?'}")`);
+      }
+      placesAddr = null;
     }
-    if (addr.zipCode && !home.address?.zipCode) {
-      preFilledFields['zipCode'] = 'AI';
-    }
+  }
+
+  // AI scrape first, then the Places fallback, for the street/zip we persist.
+  const resolvedStreet = aiStreet ?? placesAddr?.street ?? null;
+  const resolvedZip = aiZip ?? placesAddr?.zip ?? null;
+
+  // 'AI' provenance covers both scrape- and Places-derived auto-fill for the
+  // operator-facing badge (FieldProvenance has no 'PLACES' variant).
+  if (!home.address?.street && resolvedStreet) {
+    preFilledFields['street'] = 'AI';
+  }
+  if (!home.address?.zipCode && resolvedZip) {
+    preFilledFields['zipCode'] = 'AI';
   }
 
   // Mark existing seed fields (from DOH) as SEED provenance
@@ -193,11 +227,11 @@ async function processRow(
   if (!dryRun) {
     await prisma.assistedLivingHome.update({ where: { id: homeId }, data: updateData });
 
-    // Upsert address if we got street/zip from AI and home already has an address record
-    if (home.address && addr) {
+    // Upsert address — fill empty street/zip from the AI scrape or Places fallback.
+    if (home.address) {
       const addrUpdate: Record<string, string> = {};
-      if (!home.address.street && addr.streetAddress) addrUpdate.street = addr.streetAddress;
-      if (!home.address.zipCode && addr.zip) addrUpdate.zipCode = addr.zip;
+      if (!home.address.street && resolvedStreet) addrUpdate.street = resolvedStreet;
+      if (!home.address.zipCode && resolvedZip) addrUpdate.zipCode = resolvedZip;
       if (Object.keys(addrUpdate).length > 0) {
         await prisma.address.update({ where: { id: home.address.id }, data: addrUpdate });
       }
