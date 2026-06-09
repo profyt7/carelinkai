@@ -160,6 +160,12 @@ type HomeDetail = {
     totalLicenses: number;
     pendingInquiries: number;
   };
+  // AI auto-population (optional — not in all API responses yet)
+  websiteUrl?: string | null;
+  autoPopulatedAt?: string | null;
+  autoPopulatedFromUrl?: string | null;
+  autoPopulatedVersion?: number | null;
+  aiPopulationConfidence?: string | null;
 };
 
 export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: string }> | { id: string } }) {
@@ -748,6 +754,51 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
                     </div>
                   ) : (
                     <p className="text-neutral-500">No photos uploaded</p>
+                  )}
+                </div>
+
+                {/* AI Auto-population status */}
+                <div className="border-t pt-6">
+                  <h3 className="text-sm font-semibold text-neutral-500 uppercase tracking-wide mb-3">
+                    AI Auto-population
+                  </h3>
+                  {(home as any).autoPopulatedAt ? (
+                    <div className="rounded-lg bg-violet-50 border border-violet-200 p-4 text-sm space-y-1.5">
+                      <div className="flex items-center gap-2 text-violet-800 font-medium">
+                        ✨ Pipeline ran on {formatDate((home as any).autoPopulatedAt)}
+                      </div>
+                      <div className="text-neutral-600">
+                        <span className="font-medium">Source URL:</span>{' '}
+                        <a
+                          href={(home as any).autoPopulatedFromUrl ?? (home as any).websiteUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary-600 hover:underline break-all"
+                        >
+                          {(home as any).autoPopulatedFromUrl ?? (home as any).websiteUrl}
+                        </a>
+                      </div>
+                      <div className="text-neutral-600">
+                        <span className="font-medium">Confidence:</span>{' '}
+                        <span className={
+                          (home as any).aiPopulationConfidence === 'HIGH' ? 'text-success-700 font-medium' :
+                          (home as any).aiPopulationConfidence === 'MEDIUM' ? 'text-amber-700 font-medium' :
+                          'text-neutral-500'
+                        }>
+                          {(home as any).aiPopulationConfidence ?? 'N/A'}
+                        </span>
+                      </div>
+                      <div className="text-neutral-600">
+                        <span className="font-medium">Run #:</span>{' '}
+                        {(home as any).autoPopulatedVersion ?? 1}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-neutral-400 text-sm">
+                      {(home as any).websiteUrl
+                        ? `Website on file: ${(home as any).websiteUrl} — pipeline not yet run.`
+                        : 'No website URL set. Run autopopulate-cohort.ts to populate.'}
+                    </p>
                   )}
                 </div>
               </div>

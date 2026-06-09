@@ -17,16 +17,47 @@
  * operator (deduped by name).
  *
  * Usage:
- *   npx tsx scripts/seed-cleveland-directory.ts --dry-run   # preview only
- *   npx tsx scripts/seed-cleveland-directory.ts             # write to DB
+ *   npx tsx scripts/seed-cleveland-directory.ts --dry-run        # preview only
+ *   npx tsx scripts/seed-cleveland-directory.ts                  # write to DB
+ *   npx tsx scripts/seed-cleveland-directory.ts --with-websites  # also auto-discover
+ *                                                                # website URLs via
+ *                                                                # Google Places
+ *   (--with-websites requires GOOGLE_PLACES_API_KEY)
  *
  * Source: ChrisOS vault 03_Execution/CARELINKAI_OPERATOR_OUTREACH_CLEVELAND.md
  * Risk register: Risk 2 (two-sided marketplace cold start).
  */
 
 import { PrismaClient, CareLevel, HomeStatus, UserRole } from '@prisma/client';
+import { findWebsiteUrl, isAnyLookupConfigured } from '../src/lib/place-lookup';
 
 const prisma = new PrismaClient();
+
+// Be polite to the Places API between lookups.
+const PLACES_DELAY_MS = 250;
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Look up and persist a home's website URL via Google Places. Stores only
+ * HIGH/MEDIUM-confidence matches so low-quality guesses don't pollute the data.
+ * Returns a short status string for logging.
+ */
+async function discoverAndStoreWebsite(
+  homeId: string,
+  name: string,
+  city: string,
+): Promise<string> {
+  const result = await findWebsiteUrl({ name, city, state: 'OH' });
+  await sleep(PLACES_DELAY_MS);
+  if (!result) return 'no match';
+  const via = result.source === 'web_search' ? 'web' : 'places';
+  if (result.confidence === 'LOW') return `low-confidence (skipped, ${via}): ${result.url}`;
+  await prisma.assistedLivingHome.update({
+    where: { id: homeId },
+    data: { websiteUrl: result.url },
+  });
+  return `${result.confidence} via ${via}: ${result.url}`;
+}
 
 const SEED_USER_EMAIL = 'directory-unclaimed@carelinkai.system';
 const SEED_OPERATOR_NAME = 'CareLinkAI Directory - Unclaimed Listings';
@@ -113,7 +144,18 @@ function descriptionFor(f: SeedFacility): string {
 
 async function main() {
   const dryRun = process.argv.includes('--dry-run');
+  const withWebsites = process.argv.includes('--with-websites');
   console.log(dryRun ? '=== DRY RUN - no writes ===' : '=== LIVE RUN ===');
+  if (withWebsites) {
+    if (!isAnyLookupConfigured()) {
+      console.error(
+        'ERROR: --with-websites requires GOOGLE_PLACES_API_KEY (Places) and/or ' +
+        'GOOGLE_SEARCH_ENGINE_ID + an API key (web-search fallback).',
+      );
+      process.exit(1);
+    }
+    console.log('=== Website discovery ENABLED (Google Places + web-search fallback) ===');
+  }
   console.log('Tier A facilities to seed: ' + TIER_A.length + '\n');
 
   // 1. Seed User (system placeholder account; no password - cannot be logged in)
@@ -161,16 +203,25 @@ async function main() {
         })
       : null;
     if (existing) {
-      console.log('SKIP  (exists): ' + f.name);
+      // Backfill website for already-seeded homes that don't have one yet.
+      if (withWebsites && !dryRun && !existing.websiteUrl) {
+        const status = await discoverAndStoreWebsite(existing.id, f.name, f.city);
+        console.log('SKIP  (exists): ' + f.name + ' — website ' + status);
+      } else {
+        console.log('SKIP  (exists): ' + f.name);
+      }
       skipped++;
       continue;
     }
     if (dryRun) {
-      console.log('WOULD CREATE:   ' + f.name + ' (' + f.city + ', ' + f.beds + ' beds)');
+      console.log(
+        'WOULD CREATE:   ' + f.name + ' (' + f.city + ', ' + f.beds + ' beds)' +
+        (withWebsites ? ' [+website lookup]' : ''),
+      );
       created++;
       continue;
     }
-    await prisma.assistedLivingHome.create({
+    const home = await prisma.assistedLivingHome.create({
       data: {
         operatorId: seedOperator.id,
         name: f.name,
@@ -180,7 +231,12 @@ async function main() {
         careLevel: [CareLevel.ASSISTED],
       },
     });
-    console.log('CREATED:        ' + f.name + ' (' + f.city + ', ' + f.beds + ' beds)');
+    let websiteNote = '';
+    if (withWebsites) {
+      const status = await discoverAndStoreWebsite(home.id, f.name, f.city);
+      websiteNote = ' — website ' + status;
+    }
+    console.log('CREATED:        ' + f.name + ' (' + f.city + ', ' + f.beds + ' beds)' + websiteNote);
     created++;
   }
 

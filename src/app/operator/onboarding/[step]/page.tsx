@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { FiCheck, FiArrowRight, FiHome, FiUser, FiZap, FiGift } from "react-icons/fi";
+import { FiCheck, FiArrowRight, FiHome, FiUser, FiZap, FiGift, FiX } from "react-icons/fi";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -25,14 +25,33 @@ interface HomeForm {
   careLevel: string[];
 }
 
+type FieldProvenance = 'AI' | 'SEED' | 'OPERATOR';
+
+interface SeededPhoto {
+  id: string;
+  url: string;
+  caption: string | null;
+}
+
 interface SeededHome {
   id: string;
   name: string;
   description: string;
   capacity: number;
   careLevel: string[];
+  amenities: string[];
   status: string;
   address: { street: string; city: string; state: string; zipCode: string } | null;
+  // AI auto-population
+  websiteUrl: string | null;
+  autoPopulatedAt: string | null;
+  autoPopulatedFromUrl: string | null;
+  aiPopulationConfidence: string | null;
+  preFilledFields: Record<string, FieldProvenance> | null;
+  imageRightsAcknowledgedAt: string | null;
+  enrichmentStatus: 'NONE' | 'RUNNING' | 'READY' | 'FAILED';
+  enrichmentError: string | null;
+  photos: SeededPhoto[];
 }
 
 const CARE_LEVELS = [
@@ -139,6 +158,24 @@ function StepIndicator({ current }: { current: StepNum }) {
   );
 }
 
+// ─── Provenance badge ─────────────────────────────────────────────────────────
+
+function ProvenanceBadge({ provenance }: { provenance: FieldProvenance | undefined }) {
+  if (!provenance || provenance === 'OPERATOR') return null;
+  if (provenance === 'AI') {
+    return (
+      <span className="ml-1.5 inline-flex items-center gap-1 text-xs font-medium text-violet-700 bg-violet-50 border border-violet-200 px-1.5 py-0.5 rounded-full">
+        ✨ AI-suggested
+      </span>
+    );
+  }
+  return (
+    <span className="ml-1.5 inline-flex items-center gap-1 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded-full">
+      📋 From OH DOH records
+    </span>
+  );
+}
+
 // ─── Main wizard ──────────────────────────────────────────────────────────────
 
 export default function OperatorOnboardingStepPage() {
@@ -166,9 +203,47 @@ export default function OperatorOnboardingStepPage() {
     careLevel: [],
   });
 
+  // Snapshot of AI-suggested values so operator can reset to them
+  const [aiOriginal, setAiOriginal] = useState<HomeForm | null>(null);
+
+  // Auto-populated (scraped) photos shown for review in Step 2
+  const [photos, setPhotos] = useState<SeededPhoto[]>([]);
+  const [removingPhotoId, setRemovingPhotoId] = useState<string | null>(null);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [imageRightsAck, setImageRightsAck] = useState(false);
+
+  // On-claim enrichment lifecycle (scrape + AI + photos)
+  const [enrichStatus, setEnrichStatus] = useState<'NONE' | 'RUNNING' | 'READY' | 'FAILED' | null>(null);
+
   // Only used on Step 3 when the operator manually enters a token
   const [manualToken, setManualToken] = useState("");
   const [claimApplied, setClaimApplied] = useState(false);
+
+  // Apply an onboarding-status payload to local state (reused by polling).
+  const applyStatus = (d: any) => {
+    if (d.clevelandFounder) {
+      setClevelandFounder(true);
+      setClaimApplied(true);
+    }
+    if (d.seededHome) {
+      setSeededHome(d.seededHome);
+      const pre: HomeForm = {
+        name: d.seededHome.name ?? "",
+        description: d.seededHome.description ?? "",
+        street: d.seededHome.address?.street ?? "",
+        city: d.seededHome.address?.city ?? "",
+        state: d.seededHome.address?.state ?? "",
+        zipCode: d.seededHome.address?.zipCode ?? "",
+        capacity: String(d.seededHome.capacity ?? ""),
+        careLevel: d.seededHome.careLevel ?? [],
+      };
+      setHome(pre);
+      if (d.seededHome.autoPopulatedAt) setAiOriginal(pre);
+      if (Array.isArray(d.seededHome.photos)) setPhotos(d.seededHome.photos);
+      if (d.seededHome.imageRightsAcknowledgedAt) setImageRightsAck(true);
+      setEnrichStatus(d.seededHome.enrichmentStatus ?? 'NONE');
+    }
+  };
 
   // Redirect non-operators
   useEffect(() => {
@@ -178,34 +253,28 @@ export default function OperatorOnboardingStepPage() {
     }
   }, [status, session, router]);
 
-  // Load onboarding status + profile on mount
+  // Load onboarding status + profile on mount; kick off enrichment if needed.
   useEffect(() => {
     if (status !== "authenticated") return;
+    let cancelled = false;
 
-    // Fetch onboarding status (includes seededHome for founders)
-    fetch("/api/operator/onboarding/status")
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.clevelandFounder) {
-          setClevelandFounder(true);
-          setClaimApplied(true);
-        }
-        if (d.seededHome) {
-          setSeededHome(d.seededHome);
-          // Pre-populate Step 2 form with seeded home data
-          setHome({
-            name: d.seededHome.name ?? "",
-            description: d.seededHome.description ?? "",
-            street: d.seededHome.address?.street ?? "",
-            city: d.seededHome.address?.city ?? "",
-            state: d.seededHome.address?.state ?? "",
-            zipCode: d.seededHome.address?.zipCode ?? "",
-            capacity: String(d.seededHome.capacity ?? ""),
-            careLevel: d.seededHome.careLevel ?? [],
-          });
-        }
-      })
-      .catch(() => {});
+    (async () => {
+      const d = await fetch("/api/operator/onboarding/status")
+        .then((r) => r.json())
+        .catch(() => null);
+      if (!d || cancelled) return;
+      applyStatus(d);
+
+      // Claim-start trigger: a seeded home with a website that hasn't been
+      // enriched yet → start the background enrichment job.
+      const sh = d.seededHome;
+      if (sh && sh.websiteUrl && sh.enrichmentStatus === "NONE" && !sh.autoPopulatedAt) {
+        const res = await fetch("/api/operator/onboarding/enrich", { method: "POST" })
+          .then((r) => r.json())
+          .catch(() => null);
+        if (!cancelled && res?.status) setEnrichStatus(res.status);
+      }
+    })();
 
     // Pre-fill company profile
     fetch("/api/operator/profile")
@@ -219,7 +288,21 @@ export default function OperatorOnboardingStepPage() {
         }
       })
       .catch(() => {});
+
+    return () => { cancelled = true; };
   }, [status]);
+
+  // Poll the status endpoint while enrichment is running; stop when it resolves.
+  useEffect(() => {
+    if (enrichStatus !== "RUNNING") return;
+    const id = setInterval(async () => {
+      const d = await fetch("/api/operator/onboarding/status")
+        .then((r) => r.json())
+        .catch(() => null);
+      if (d) applyStatus(d);
+    }, 3000);
+    return () => clearInterval(id);
+  }, [enrichStatus]);
 
   const goToStep = (n: StepNum) => router.push(`/operator/onboarding/${n}`);
 
@@ -253,12 +336,23 @@ export default function OperatorOnboardingStepPage() {
   const submitHome = async () => {
     if (!home.name.trim()) { setError("Home name is required."); return; }
     if (!home.description.trim()) { setError("A brief description is required."); return; }
-    if (!home.street.trim() || !home.city.trim() || !home.state.trim() || !home.zipCode.trim()) {
-      setError("Full address is required.");
+    const missingAddress: string[] = [];
+    if (!home.street.trim()) missingAddress.push("Street address");
+    if (!home.city.trim()) missingAddress.push("City");
+    if (!home.state.trim()) missingAddress.push("State");
+    if (!home.zipCode.trim()) missingAddress.push("ZIP code");
+    if (missingAddress.length > 0) {
+      setError(`${missingAddress.join(", ")} ${missingAddress.length === 1 ? "is" : "are"} required.`);
       return;
     }
     if (home.careLevel.length === 0) { setError("Select at least one care type."); return; }
     if (!home.capacity || parseInt(home.capacity) < 1) { setError("Capacity must be at least 1."); return; }
+
+    // Claiming a listing requires confirming rights to the website's content.
+    if (clevelandFounder && seededHome && !imageRightsAck) {
+      setError("Please confirm you have rights to use your website's photos and content.");
+      return;
+    }
 
     setError(null);
     setSaving(true);
@@ -267,6 +361,8 @@ export default function OperatorOnboardingStepPage() {
         // Transfer the seeded home to this operator instead of creating a new one
         const res = await fetch(`/api/operator/homes/${seededHome.id}/claim`, {
           method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ imageRightsAcknowledged: imageRightsAck }),
         });
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
@@ -304,6 +400,25 @@ export default function OperatorOnboardingStepPage() {
       setError(e.message || "Something went wrong.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  // ── Step 2: Remove an auto-populated photo ───────────────────────────────
+  const removePhoto = async (photoId: string) => {
+    setRemovingPhotoId(photoId);
+    // Optimistic removal — restore on failure.
+    const prev = photos;
+    setPhotos((ps) => ps.filter((p) => p.id !== photoId));
+    try {
+      const res = await fetch(`/api/operator/onboarding/seeded-photo/${photoId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed to remove photo.");
+    } catch {
+      setPhotos(prev); // restore
+      setError("Couldn't remove that photo — please try again.");
+    } finally {
+      setRemovingPhotoId(null);
     }
   };
 
@@ -445,154 +560,333 @@ export default function OperatorOnboardingStepPage() {
             </div>
           )}
 
-          {/* ── Step 2: First Home (or claim seeded home for founders) ── */}
-          {step === 2 && (
-            <div>
-              <h1 className="text-2xl font-bold text-neutral-900 mb-1">
-                {clevelandFounder && seededHome ? "Confirm your home" : "Add your first home"}
-              </h1>
-              <p className="text-neutral-500 text-sm mb-6">
-                {clevelandFounder && seededHome
-                  ? "We've pre-filled your seeded home. Review and confirm to claim it."
-                  : "You can add more homes later."}
-              </p>
+          {/* ── Step 2: First Home (or claim / confirm pre-populated home) ── */}
+          {step === 2 && (() => {
+            const isPrePopulated = !!(clevelandFounder && seededHome?.autoPopulatedAt);
+            const pf = seededHome?.preFilledFields ?? {};
+            const prov = (field: string): FieldProvenance | undefined => pf[field] as FieldProvenance | undefined;
+            const sourceDomain = seededHome?.autoPopulatedFromUrl
+              ? (() => { try { return new URL(seededHome.autoPopulatedFromUrl).hostname.replace(/^www\./, ''); } catch { return seededHome.autoPopulatedFromUrl; } })()
+              : null;
+            const buildDomain = seededHome?.websiteUrl
+              ? (() => { try { return new URL(seededHome.websiteUrl).hostname.replace(/^www\./, ''); } catch { return seededHome.websiteUrl; } })()
+              : null;
 
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">
-                    Home name <span className="text-error-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    className="form-input w-full"
-                    value={home.name}
-                    onChange={(e) => setHome({ ...home, name: e.target.value })}
-                    placeholder="Sunrise East Wing"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">
-                    Description <span className="text-error-500">*</span>
-                  </label>
-                  <textarea
-                    rows={2}
-                    className="form-input w-full"
-                    value={home.description}
-                    onChange={(e) => setHome({ ...home, description: e.target.value })}
-                    placeholder="Warm, community-focused assisted living…"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="sm:col-span-2">
-                    <label className="block text-sm font-medium text-neutral-700 mb-1">
-                      Street address <span className="text-error-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      className="form-input w-full"
-                      value={home.street}
-                      onChange={(e) => setHome({ ...home, street: e.target.value })}
-                      placeholder="1234 Oak Lane"
-                    />
+            // While enrichment runs, show a "building" state instead of the form.
+            if (enrichStatus === 'RUNNING') {
+              return (
+                <div className="py-10 text-center">
+                  <div className="mx-auto mb-5 h-12 w-12 rounded-full border-[3px] border-violet-200 border-t-violet-600 animate-spin" />
+                  <h1 className="text-2xl font-bold text-neutral-900 mb-2">
+                    Building your profile…
+                  </h1>
+                  <p className="text-neutral-500 text-sm max-w-sm mx-auto">
+                    We're pulling your details and photos{buildDomain ? ` from ${buildDomain}` : " from your website"} and
+                    drafting your listing. This usually takes under a minute.
+                  </p>
+                  <div className="mt-6 flex flex-col items-center gap-2 text-sm text-neutral-400">
+                    <span className="inline-flex items-center gap-2"><span className="text-violet-500">✨</span> Reading your website</span>
+                    <span className="inline-flex items-center gap-2"><span className="text-violet-500">🖼️</span> Selecting your best photos</span>
+                    <span className="inline-flex items-center gap-2"><span className="text-violet-500">📝</span> Drafting your description</span>
                   </div>
+                </div>
+              );
+            }
+
+            return (
+              <div>
+                <h1 className="text-2xl font-bold text-neutral-900 mb-1">
+                  {isPrePopulated
+                    ? `We pre-populated your profile`
+                    : clevelandFounder && seededHome
+                    ? "Confirm your home"
+                    : "Add your first home"}
+                </h1>
+                <p className="text-neutral-500 text-sm mb-1">
+                  {isPrePopulated
+                    ? `Content pulled from ${sourceDomain ?? "your website"}.`
+                    : clevelandFounder && seededHome
+                    ? "We've pre-filled your seeded home. Review and confirm to claim it."
+                    : "You can add more homes later."}
+                </p>
+                {isPrePopulated && (
+                  <p className="text-neutral-400 text-xs mb-5">
+                    Review the fields below. Edit anything that isn't right, then continue.
+                    Nothing is committed until you click <strong>Confirm and continue</strong>.
+                  </p>
+                )}
+                {enrichStatus === 'FAILED' && !isPrePopulated && (
+                  <div className="mb-5 rounded-lg px-4 py-3 text-sm bg-amber-50 border border-amber-200 text-amber-800">
+                    We couldn't automatically pull your website content this time — no problem,
+                    just fill in the details below and you're all set.
+                  </div>
+                )}
+                {!isPrePopulated && <div className="mb-6" />}
+
+                {/* Confidence banner for AI-populated homes */}
+                {isPrePopulated && seededHome?.aiPopulationConfidence && (
+                  <div className={`mb-5 rounded-lg px-4 py-3 text-sm flex items-start gap-2 ${
+                    seededHome.aiPopulationConfidence === 'HIGH'
+                      ? 'bg-violet-50 border border-violet-200 text-violet-800'
+                      : seededHome.aiPopulationConfidence === 'MEDIUM'
+                      ? 'bg-amber-50 border border-amber-200 text-amber-800'
+                      : 'bg-neutral-50 border border-neutral-200 text-neutral-600'
+                  }`}>
+                    <span className="text-base leading-none mt-0.5">✨</span>
+                    <span>
+                      <strong>AI extraction confidence: {seededHome.aiPopulationConfidence}</strong>
+                      {seededHome.aiPopulationConfidence === 'LOW' &&
+                        " — the website had limited content. Please fill in any missing fields."}
+                    </span>
+                  </div>
+                )}
+
+                <div className="space-y-4">
+                  {/* Home name */}
                   <div>
                     <label className="block text-sm font-medium text-neutral-700 mb-1">
-                      City <span className="text-error-500">*</span>
+                      Home name <span className="text-error-500">*</span>
+                      <ProvenanceBadge provenance={prov('name')} />
                     </label>
                     <input
                       type="text"
                       className="form-input w-full"
-                      value={home.city}
-                      onChange={(e) => setHome({ ...home, city: e.target.value })}
+                      value={home.name}
+                      onChange={(e) => setHome({ ...home, name: e.target.value })}
+                      placeholder="Sunrise East Wing"
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
+
+                  {/* Description */}
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-1">
+                      Description <span className="text-error-500">*</span>
+                      <ProvenanceBadge provenance={prov('description')} />
+                    </label>
+                    <textarea
+                      rows={isPrePopulated ? 5 : 2}
+                      className="form-input w-full"
+                      value={home.description}
+                      onChange={(e) => setHome({ ...home, description: e.target.value })}
+                      placeholder="Warm, community-focused assisted living…"
+                    />
+                  </div>
+
+                  {/* Address */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="sm:col-span-2">
                       <label className="block text-sm font-medium text-neutral-700 mb-1">
-                        State <span className="text-error-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        maxLength={2}
-                        className="form-input w-full uppercase"
-                        value={home.state}
-                        onChange={(e) =>
-                          setHome({ ...home, state: e.target.value.toUpperCase() })
-                        }
-                        placeholder="OH"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-neutral-700 mb-1">
-                        ZIP <span className="text-error-500">*</span>
+                        Street address <span className="text-error-500">*</span>
+                        <ProvenanceBadge provenance={prov('street')} />
                       </label>
                       <input
                         type="text"
                         className="form-input w-full"
-                        value={home.zipCode}
-                        onChange={(e) => setHome({ ...home, zipCode: e.target.value })}
+                        value={home.street}
+                        onChange={(e) => setHome({ ...home, street: e.target.value })}
+                        placeholder="1234 Oak Lane"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 mb-1">
+                        City <span className="text-error-500">*</span>
+                        <ProvenanceBadge provenance={prov('city')} />
+                      </label>
+                      <input
+                        type="text"
+                        className="form-input w-full"
+                        value={home.city}
+                        onChange={(e) => setHome({ ...home, city: e.target.value })}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-sm font-medium text-neutral-700 mb-1">
+                          State <span className="text-error-500">*</span>
+                          <ProvenanceBadge provenance={prov('state')} />
+                        </label>
+                        <input
+                          type="text"
+                          maxLength={2}
+                          className="form-input w-full uppercase"
+                          value={home.state}
+                          onChange={(e) =>
+                            setHome({ ...home, state: e.target.value.toUpperCase() })
+                          }
+                          placeholder="OH"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-neutral-700 mb-1">
+                          ZIP <span className="text-error-500">*</span>
+                          <ProvenanceBadge provenance={prov('zipCode')} />
+                        </label>
+                        <input
+                          type="text"
+                          className="form-input w-full"
+                          value={home.zipCode}
+                          onChange={(e) => setHome({ ...home, zipCode: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 mb-1">
+                        Capacity <span className="text-error-500">*</span>
+                        <ProvenanceBadge provenance={prov('capacity')} />
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        className="form-input w-full"
+                        value={home.capacity}
+                        onChange={(e) => setHome({ ...home, capacity: e.target.value })}
+                        placeholder="20"
                       />
                     </div>
                   </div>
+
+                  {/* Care types */}
                   <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-1">
-                      Capacity <span className="text-error-500">*</span>
+                    <label className="block text-sm font-medium text-neutral-700 mb-2">
+                      Care types <span className="text-error-500">*</span>
+                      <ProvenanceBadge provenance={prov('careLevel')} />
                     </label>
+                    <div className="flex flex-wrap gap-2">
+                      {CARE_LEVELS.map((cl) => (
+                        <button
+                          key={cl.value}
+                          type="button"
+                          onClick={() =>
+                            setHome((h) => ({
+                              ...h,
+                              careLevel: h.careLevel.includes(cl.value)
+                                ? h.careLevel.filter((v) => v !== cl.value)
+                                : [...h.careLevel, cl.value],
+                            }))
+                          }
+                          className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                            home.careLevel.includes(cl.value)
+                              ? "bg-primary-600 text-white border-primary-600"
+                              : "bg-white text-neutral-600 border-neutral-300 hover:border-primary-400"
+                          }`}
+                        >
+                          {cl.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* AI-suggested amenities (read-only preview) */}
+                  {isPrePopulated && seededHome?.amenities && seededHome.amenities.length > 0 && (
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 mb-2">
+                        Amenities
+                        <ProvenanceBadge provenance={prov('amenities')} />
+                        <span className="ml-2 text-xs text-neutral-400">(editable after onboarding)</span>
+                      </label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {seededHome.amenities.slice(0, 10).map((a) => (
+                          <span
+                            key={a}
+                            className="px-2.5 py-1 rounded-full text-xs bg-violet-50 text-violet-700 border border-violet-200"
+                          >
+                            {a}
+                          </span>
+                        ))}
+                        {seededHome.amenities.length > 10 && (
+                          <span className="px-2.5 py-1 rounded-full text-xs bg-neutral-100 text-neutral-500">
+                            +{seededHome.amenities.length - 10} more
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {/* Auto-populated photos (Task 5) */}
+                  {photos.length > 0 && (
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 mb-1">
+                        Photos
+                        <ProvenanceBadge provenance={'AI'} />
+                      </label>
+                      <p className="text-xs text-neutral-500 mb-3">
+                        We pre-populated these photos from your website. Click ✕ to remove
+                        any image — only the ones you keep will appear on your public listing.
+                      </p>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                        {photos.map((p) => (
+                          <div
+                            key={p.id}
+                            className="group relative aspect-square overflow-hidden rounded-xl shadow-sm border border-neutral-200 bg-neutral-100"
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={p.url}
+                              alt={p.caption ?? "Facility photo"}
+                              loading="lazy"
+                              className="h-full w-full object-cover cursor-pointer transition-transform duration-300 group-hover:scale-105"
+                              onClick={() => setLightboxUrl(p.url)}
+                            />
+                            <button
+                              type="button"
+                              aria-label="Remove photo"
+                              disabled={removingPhotoId === p.id}
+                              onClick={() => removePhoto(p.id)}
+                              className="absolute top-1.5 right-1.5 h-7 w-7 rounded-full bg-black/55 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 focus:opacity-100 hover:bg-error-600 transition-all disabled:opacity-40"
+                            >
+                              <FiX size={15} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Image rights acknowledgment (Task 6) — required to claim a listing */}
+                {clevelandFounder && seededHome && (
+                  <label className="mt-6 flex items-start gap-2.5 text-sm text-neutral-600 cursor-pointer select-none">
                     <input
-                      type="number"
-                      min="1"
-                      className="form-input w-full"
-                      value={home.capacity}
-                      onChange={(e) => setHome({ ...home, capacity: e.target.value })}
-                      placeholder="20"
+                      type="checkbox"
+                      checked={imageRightsAck}
+                      onChange={(e) => setImageRightsAck(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
                     />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Care types <span className="text-error-500">*</span>
+                    <span>
+                      By claiming this listing, I confirm I have rights to use the photos
+                      and content from my website on CareLinkAI.
+                    </span>
                   </label>
-                  <div className="flex flex-wrap gap-2">
-                    {CARE_LEVELS.map((cl) => (
-                      <button
-                        key={cl.value}
-                        type="button"
-                        onClick={() =>
-                          setHome((h) => ({
-                            ...h,
-                            careLevel: h.careLevel.includes(cl.value)
-                              ? h.careLevel.filter((v) => v !== cl.value)
-                              : [...h.careLevel, cl.value],
-                          }))
-                        }
-                        className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
-                          home.careLevel.includes(cl.value)
-                            ? "bg-primary-600 text-white border-primary-600"
-                            : "bg-white text-neutral-600 border-neutral-300 hover:border-primary-400"
-                        }`}
-                      >
-                        {cl.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
+                )}
 
-              <button
-                onClick={submitHome}
-                disabled={saving}
-                className="btn btn-primary w-full mt-6 flex items-center justify-center gap-2"
-              >
-                {saving
-                  ? "Saving…"
-                  : clevelandFounder && seededHome
-                  ? <>Claim this home <FiArrowRight /></>
-                  : <>Continue <FiArrowRight /></>}
-              </button>
-            </div>
-          )}
+                {/* Footer: confirm + reset link */}
+                <button
+                  onClick={submitHome}
+                  disabled={saving}
+                  className="btn btn-primary w-full mt-4 flex items-center justify-center gap-2"
+                >
+                  {saving
+                    ? "Saving…"
+                    : isPrePopulated
+                    ? <>Confirm and continue <FiArrowRight /></>
+                    : clevelandFounder && seededHome
+                    ? <>Claim this home <FiArrowRight /></>
+                    : <>Continue <FiArrowRight /></>}
+                </button>
+
+                {isPrePopulated && aiOriginal && (
+                  <div className="mt-3 text-center">
+                    <button
+                      type="button"
+                      onClick={() => setHome(aiOriginal)}
+                      className="text-xs text-neutral-400 hover:text-violet-600 transition-colors underline underline-offset-2"
+                    >
+                      Reset to AI suggestions
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* ── Step 3: Claim link (Cleveland founder) ── */}
           {step === 3 && (
@@ -752,6 +1046,30 @@ export default function OperatorOnboardingStepPage() {
           )}
         </div>
       </div>
+
+      {/* Photo lightbox */}
+      {lightboxUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setLightboxUrl(null)}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={lightboxUrl}
+            alt="Facility photo"
+            className="max-h-[90vh] max-w-[90vw] rounded-lg shadow-2xl object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button
+            type="button"
+            aria-label="Close"
+            onClick={() => setLightboxUrl(null)}
+            className="absolute top-4 right-4 h-10 w-10 rounded-full bg-white/15 text-white flex items-center justify-center hover:bg-white/30 transition-colors"
+          >
+            <FiX size={20} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

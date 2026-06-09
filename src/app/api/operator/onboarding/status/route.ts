@@ -33,7 +33,13 @@ export async function GET() {
   if (operator.seededHomeId) {
     const home = await prisma.assistedLivingHome.findUnique({
       where: { id: operator.seededHomeId },
-      include: { address: true },
+      include: {
+        address: true,
+        photos: {
+          where: { autoPopulated: true },
+          orderBy: { sortOrder: 'asc' },
+        },
+      },
     });
     if (home) {
       seededHome = {
@@ -42,6 +48,7 @@ export async function GET() {
         description: home.description,
         capacity: home.capacity,
         careLevel: home.careLevel,
+        amenities: home.amenities,
         status: home.status,
         address: home.address
           ? {
@@ -51,6 +58,22 @@ export async function GET() {
               zipCode: home.address.zipCode,
             }
           : null,
+        // AI auto-population fields
+        websiteUrl: home.websiteUrl ?? null,
+        autoPopulatedAt: home.autoPopulatedAt ?? null,
+        autoPopulatedFromUrl: home.autoPopulatedFromUrl ?? null,
+        aiPopulationConfidence: home.aiPopulationConfidence ?? null,
+        preFilledFields: home.preFilledFields ?? null,
+        imageRightsAcknowledgedAt: home.imageRightsAcknowledgedAt ?? null,
+        // On-claim enrichment lifecycle
+        enrichmentStatus: home.enrichmentStatus,
+        enrichmentError: home.enrichmentError ?? null,
+        // Auto-populated (scraped + AI-screened) marketing photos for review
+        photos: home.photos.map((p) => ({
+          id: p.id,
+          url: p.url,
+          caption: p.caption ?? null,
+        })),
       };
     }
   }

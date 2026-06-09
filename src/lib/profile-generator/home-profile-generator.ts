@@ -6,6 +6,7 @@
  */
 
 import { getAnthropicClient } from '@/lib/ai/claude';
+import type { ImageCandidate } from '@/lib/operator-profile-scraper';
 
 export interface HomeData {
   name: string;
@@ -211,6 +212,357 @@ function generateFallbackProfile(data: HomeData): GeneratedProfile {
 
   return { description: description.trim(), highlights: highlights.slice(0, 5) };
 }
+
+// ── Website extraction (Task 3) ───────────────────────────────────────────────
+
+const EXTRACTION_SYSTEM_PROMPT = `You are extracting publicly-available marketing content from an assisted
+living facility's own website to pre-populate their directory listing on
+CareLinkAI.
+
+ABSOLUTE RULES — VIOLATE NONE OF THESE:
+
+1. NEVER extract names of residents, patients, families, or any
+   individuals other than the facility's leadership/management team.
+   If a testimonial includes a resident name, IGNORE that testimonial
+   entirely. Do not summarize testimonials with names removed.
+2. NEVER extract pricing or rates of any kind. Pricing is typically
+   stale on websites and gated behind tours. Set priceMin/priceMax to
+   null.
+3. NEVER extract photos. Photo handling will be added in a separate
+   consent-gated flow.
+4. NEVER extract content that appears to be outdated (e.g., "Now
+   accepting residents for 2024!"). Note in extractionNotes if you see
+   this.
+5. Only extract content suitable for a public marketing listing. If
+   content seems controversial, dated, or unflattering, omit it.
+6. If you cannot confidently extract a field, set it to null and note
+   in extractionNotes. Do not fabricate.
+
+When you see content like "Joe Smith says we changed his mother's life",
+ignore it. When you see content like "Our memory care neighborhood
+features 24-hour nursing", extract that as a service/amenity.`;
+
+const VALID_CARE_LEVELS = ['ASSISTED', 'MEMORY_CARE', 'INDEPENDENT', 'SKILLED_NURSING'] as const;
+
+export interface ExtractedProfile {
+  description: string;
+  shortDescription: string;
+  services: string[];
+  amenities: string[];
+  careLevel: string[];
+  address: {
+    streetAddress: string | null;
+    city: string | null;
+    state: string | null;
+    zip: string | null;
+  } | null;
+  phone: string | null;
+  contactEmail: string | null;
+  tagline: string | null;
+  extractionConfidence: 'HIGH' | 'MEDIUM' | 'LOW';
+  extractionNotes: string | null;
+  tokensIn: number;
+  tokensOut: number;
+}
+
+export async function extractProfileFromWebsite(
+  homeData: HomeData,
+  preparedHtml: string,
+  websiteUrl: string,
+): Promise<ExtractedProfile> {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    throw new Error('ANTHROPIC_API_KEY is required for website extraction');
+  }
+
+  const client = getAnthropicClient();
+
+  const userPrompt = `Extract a directory profile for "${homeData.name}" from the HTML below.
+
+Known seed data (from Ohio DOH records — do NOT contradict unless the site clearly shows otherwise):
+- City: ${homeData.address?.city ?? 'unknown'}
+- State: ${homeData.address?.state ?? 'OH'}
+- Capacity: ${homeData.capacity} beds
+- Website URL: ${websiteUrl}
+
+HTML content:
+---
+${preparedHtml}
+---
+
+Call the extract_profile tool with all fields you can confidently extract.`;
+
+  const response = await client.messages.create({
+    model: 'claude-sonnet-4-6',
+    max_tokens: 2048,
+    system: EXTRACTION_SYSTEM_PROMPT,
+    tools: [
+      {
+        name: 'extract_profile',
+        description: 'Submit the extracted facility profile data',
+        input_schema: {
+          type: 'object' as const,
+          properties: {
+            description: {
+              type: 'string',
+              description: '2-4 paragraph marketing description of the facility',
+            },
+            shortDescription: {
+              type: 'string',
+              description: '1-2 sentence summary for cards and previews',
+            },
+            services: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Services the facility offers',
+            },
+            amenities: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Physical amenities and features',
+            },
+            careLevel: {
+              type: 'array',
+              items: {
+                type: 'string',
+                enum: ['ASSISTED', 'MEMORY_CARE', 'INDEPENDENT', 'SKILLED_NURSING'],
+              },
+              description: 'Care levels offered',
+            },
+            address: {
+              type: 'object',
+              properties: {
+                streetAddress: { type: 'string' },
+                city: { type: 'string' },
+                state: { type: 'string' },
+                zip: { type: 'string' },
+              },
+            },
+            phone: { type: 'string', description: 'Main facility phone number' },
+            contactEmail: { type: 'string', description: 'Contact email address' },
+            tagline: { type: 'string', description: 'Facility tagline or motto' },
+            extractionConfidence: {
+              type: 'string',
+              enum: ['HIGH', 'MEDIUM', 'LOW'],
+              description: 'Overall confidence in the extraction quality',
+            },
+            extractionNotes: {
+              type: 'string',
+              description: "Notes on what couldn't be extracted or caveats",
+            },
+          },
+          required: ['description', 'shortDescription', 'extractionConfidence'],
+        },
+      },
+    ],
+    tool_choice: { type: 'tool', name: 'extract_profile' },
+    messages: [{ role: 'user', content: userPrompt }],
+  });
+
+  const tokensIn = response.usage.input_tokens;
+  const tokensOut = response.usage.output_tokens;
+
+  // Tool use response
+  const toolBlock = response.content.find(b => b.type === 'tool_use');
+  if (!toolBlock || toolBlock.type !== 'tool_use') {
+    throw new Error('Claude did not call extract_profile tool');
+  }
+
+  const raw = toolBlock.input as Record<string, unknown>;
+
+  // Sanitise careLevel — only accept known enum values
+  const rawCareLevel = Array.isArray(raw.careLevel) ? (raw.careLevel as string[]) : [];
+  const careLevel = rawCareLevel.filter(v => (VALID_CARE_LEVELS as readonly string[]).includes(v));
+
+  return {
+    description: String(raw.description ?? ''),
+    shortDescription: String(raw.shortDescription ?? ''),
+    services: Array.isArray(raw.services) ? (raw.services as string[]) : [],
+    amenities: Array.isArray(raw.amenities) ? (raw.amenities as string[]) : [],
+    careLevel,
+    address: raw.address && typeof raw.address === 'object'
+      ? {
+          streetAddress: (raw.address as any).streetAddress ?? null,
+          city: (raw.address as any).city ?? null,
+          state: (raw.address as any).state ?? null,
+          zip: (raw.address as any).zip ?? null,
+        }
+      : null,
+    phone: raw.phone ? String(raw.phone) : null,
+    contactEmail: raw.contactEmail ? String(raw.contactEmail) : null,
+    tagline: raw.tagline ? String(raw.tagline) : null,
+    extractionConfidence: (['HIGH', 'MEDIUM', 'LOW'].includes(String(raw.extractionConfidence))
+      ? raw.extractionConfidence
+      : 'LOW') as 'HIGH' | 'MEDIUM' | 'LOW',
+    extractionNotes: raw.extractionNotes ? String(raw.extractionNotes) : null,
+    tokensIn,
+    tokensOut,
+  };
+}
+
+// ── Image classification (Task 2) ──────────────────────────────────────────────
+
+export type ImageClassification = 'FACILITY_PHOTO' | 'PROBABLY_NOT' | 'SENSITIVE';
+
+export interface ClassifiedImage extends ImageCandidate {
+  classification: ImageClassification;
+  visualQuality: number; // 1-10, classifier's best guess from URL/alt/context
+  reason: string | null;
+}
+
+export interface ImageClassificationResult {
+  /** Kept facility photos, best-first, capped at maxKeep. */
+  kept: ClassifiedImage[];
+  /** All candidates with their classification (for logging / spot-checks). */
+  all: ClassifiedImage[];
+  tokensIn: number;
+  tokensOut: number;
+}
+
+const MAX_KEPT_IMAGES = 8;
+
+const IMAGE_CLASSIFY_SYSTEM_PROMPT = `You are screening images found on an assisted living facility's own marketing
+website so they can pre-populate the facility's directory listing. You are given,
+for each image, only its URL, alt text, and a context hint (CSS classes) — NOT
+the pixels. Infer from these signals.
+
+Classify EACH image into exactly one of:
+
+- FACILITY_PHOTO: a photo of the building exterior, interior rooms, dining
+  areas, lounges/common areas, gardens/grounds, activities, or residents
+  enjoying the community. These are what we want to keep.
+- PROBABLY_NOT: logos, wordmarks, icons, award/accreditation badges, stock
+  photography, staff headshots/portraits, maps, brochures, decorative
+  graphics, or anything that isn't a genuine photo of this facility.
+- SENSITIVE: anything that looks clinically or medically sensitive — medical
+  equipment in use, bedside/hospital-bed scenes, wound/medical-treatment
+  imagery, or anything that could embarrass or expose an identifiable
+  resident in a care/medical context. Exclude these even though the operator
+  published them.
+
+ALWAYS err toward caution: if an image MIGHT show identifiable medical
+context, classify it SENSITIVE, not FACILITY_PHOTO. If you cannot tell whether
+something is a real facility photo, prefer PROBABLY_NOT over FACILITY_PHOTO.
+
+Also give each image a visualQuality score 1-10 estimating how appealing it is
+likely to be as a listing hero/gallery image (higher = better), based on the
+signals available.`;
+
+/**
+ * Classify candidate images (text-signals only — no vision) and return the best
+ * facility photos to keep. Cheap: ~$0.02-0.05 per facility.
+ */
+export async function classifyFacilityImages(
+  homeName: string,
+  candidates: ImageCandidate[],
+  maxKeep: number = MAX_KEPT_IMAGES,
+): Promise<ImageClassificationResult> {
+  if (candidates.length === 0) {
+    return { kept: [], all: [], tokensIn: 0, tokensOut: 0 };
+  }
+  if (!process.env.ANTHROPIC_API_KEY) {
+    throw new Error('ANTHROPIC_API_KEY is required for image classification');
+  }
+
+  const client = getAnthropicClient();
+
+  const list = candidates
+    .map((c, i) => `${i}. url: ${c.url}\n   alt: ${c.altText ?? '(none)'}\n   context: ${c.contextHint ?? '(none)'}`)
+    .join('\n');
+
+  const userPrompt = `Facility: "${homeName}"
+
+Classify each of the following ${candidates.length} candidate images.
+
+${list}
+
+Call the classify_images tool with one entry per image (by index).`;
+
+  const response = await client.messages.create({
+    model: 'claude-sonnet-4-6',
+    max_tokens: 2048,
+    system: IMAGE_CLASSIFY_SYSTEM_PROMPT,
+    tools: [
+      {
+        name: 'classify_images',
+        description: 'Submit a classification for every candidate image, by index.',
+        input_schema: {
+          type: 'object' as const,
+          properties: {
+            classifications: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  index: { type: 'integer', description: 'The image index from the list' },
+                  label: {
+                    type: 'string',
+                    enum: ['FACILITY_PHOTO', 'PROBABLY_NOT', 'SENSITIVE'],
+                  },
+                  visualQuality: {
+                    type: 'integer',
+                    description: 'Estimated appeal as a listing image, 1-10',
+                  },
+                  reason: { type: 'string', description: 'Brief justification' },
+                },
+                required: ['index', 'label'],
+              },
+            },
+          },
+          required: ['classifications'],
+        },
+      },
+    ],
+    tool_choice: { type: 'tool', name: 'classify_images' },
+    messages: [{ role: 'user', content: userPrompt }],
+  });
+
+  const tokensIn = response.usage.input_tokens;
+  const tokensOut = response.usage.output_tokens;
+
+  const toolBlock = response.content.find((b) => b.type === 'tool_use');
+  if (!toolBlock || toolBlock.type !== 'tool_use') {
+    throw new Error('Claude did not call classify_images tool');
+  }
+
+  const raw = toolBlock.input as { classifications?: unknown };
+  const rows = Array.isArray(raw.classifications) ? raw.classifications : [];
+
+  // Map classifications back onto candidates by index. Any candidate the model
+  // failed to classify defaults to PROBABLY_NOT (safe exclusion).
+  const byIndex = new Map<number, { label: string; visualQuality?: number; reason?: string }>();
+  for (const r of rows as Array<Record<string, unknown>>) {
+    const idx = typeof r.index === 'number' ? r.index : Number(r.index);
+    if (!Number.isInteger(idx)) continue;
+    byIndex.set(idx, {
+      label: String(r.label ?? 'PROBABLY_NOT'),
+      visualQuality: typeof r.visualQuality === 'number' ? r.visualQuality : undefined,
+      reason: r.reason ? String(r.reason) : undefined,
+    });
+  }
+
+  const VALID: ImageClassification[] = ['FACILITY_PHOTO', 'PROBABLY_NOT', 'SENSITIVE'];
+  const all: ClassifiedImage[] = candidates.map((c, i) => {
+    const row = byIndex.get(i);
+    const classification = (row && (VALID as string[]).includes(row.label)
+      ? row.label
+      : 'PROBABLY_NOT') as ImageClassification;
+    return {
+      ...c,
+      classification,
+      visualQuality: row?.visualQuality ?? 5,
+      reason: row?.reason ?? null,
+    };
+  });
+
+  const kept = all
+    .filter((c) => c.classification === 'FACILITY_PHOTO')
+    .sort((a, b) => b.visualQuality - a.visualQuality)
+    .slice(0, maxKeep);
+
+  return { kept, all, tokensIn, tokensOut };
+}
+
+// ── Validation ────────────────────────────────────────────────────────────────
 
 /**
  * Validate home data before generating profile

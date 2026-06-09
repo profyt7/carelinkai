@@ -2,6 +2,57 @@
 
 ---
 
+### 2026-06-05 — AI Auto-Population Pipeline: Production Batch Run
+
+- **Objective:** Ship the full AI auto-population pipeline and execute it against the first 15 Cleveland facilities in production.
+
+- **Work completed:**
+  - PR #543 merged: Added API/GraphQL bypass loophole paragraph to CLAUDE.md branching discipline section.
+  - PR #544 merged: `scripts/cleanup-test-operators.ts` (removes profyt7+* test accounts, reverts claimed homes) + claim token expiry extended 48h → 168h (7 days). `--force` run on Render: 4 test users deleted, Canterbury Commons freed.
+  - `scripts/cleanup-non-cleveland-demo-homes.ts` created on branch `chore/remove-non-cleveland-demo-data` — PENDING PR/merge.
+  - PR #545 merged: Full AI auto-population pipeline — 6 new `AssistedLivingHome` schema fields, migration `20260605000001`, `src/lib/operator-profile-scraper.ts` (robots.txt, file cache, SPA detection), `extractProfileFromWebsite()` added to `home-profile-generator.ts`, `scripts/autopopulate-cohort.ts` (CSV batch runner, `--dry-run`/`--force`/`--resume`), onboarding Step 2 pre-populated UX with `ProvenanceBadge`, admin home detail AI panel, `/api/operator/onboarding/status` returns AI fields.
+  - PR #546 merged: Fixed em dash (U+2014) → ASCII hyphen in `BOT_USER_AGENT` constant — was causing "Cannot convert argument to a ByteString" on all 15 facility scrapes.
+  - Production batch: `autopopulate-cohort.ts --force` on 15 Cleveland facilities — **15/15 succeeded**, $1.438 total (~$0.096/facility), 12 HIGH + 3 MEDIUM confidence. DB confirmed: `Homes with autoPopulatedAt: 15`.
+
+- **Files changed:**
+  - `CLAUDE.md`
+  - `src/app/api/admin/homes/[id]/claim-link/route.ts` (expiresInHours 48 → 168)
+  - `scripts/cleanup-test-operators.ts` (NEW)
+  - `scripts/cleanup-non-cleveland-demo-homes.ts` (NEW, pending merge)
+  - `prisma/schema.prisma` (6 new fields on AssistedLivingHome)
+  - `prisma/migrations/20260605000001_home_auto_populate_fields/migration.sql` (NEW)
+  - `src/lib/operator-profile-scraper.ts` (NEW)
+  - `src/lib/profile-generator/home-profile-generator.ts` (ExtractedProfile + extractProfileFromWebsite())
+  - `scripts/autopopulate-cohort.ts` (NEW)
+  - `src/app/operator/onboarding/[step]/page.tsx` (ProvenanceBadge, pre-pop UX in Step 2)
+  - `src/app/api/operator/onboarding/status/route.ts` (AI fields in seededHome response)
+  - `src/app/admin/homes/[id]/page.tsx` (AI auto-population panel)
+
+- **Commands run:**
+  - Render shell: `tsx scripts/cleanup-test-operators.ts --force` — 4 test users deleted
+  - Render shell: `tsx scripts/autopopulate-cohort.ts /tmp/first_batch.csv --dry-run` — 15/15 clean
+  - Render shell: `tsx scripts/autopopulate-cohort.ts /tmp/first_batch.csv --force` — 15/15 written
+  - Render shell: Prisma count query confirmed `autoPopulatedAt: 15`
+
+- **Tests/build status:** CI green on all PRs (#543–#546). All 11 checks passed on final PR.
+
+- **Deployment impact:** 5 PRs merged → 5 Render auto-deploys. Migration `20260605000001` is additive (IF NOT EXISTS ALTER TABLE). 15 Cleveland homes now have AI-generated profiles live in production.
+
+- **New risks/blockers:**
+  - **The Elms** — site identifies facility as "Hudson Elms Skilled Nursing & Rehabilitation Center." Possible wrong home mapped; operator must verify on claim.
+  - **Ohman Family Living at Holly** — capacity discrepancy: DOH 58 beds vs site 92 SN + 26 AL + 24 MC. Flagged in AI notes field.
+  - **O'Neill Healthcare North Ridgeville** — capacity discrepancy: DOH 44 beds vs site 190 total. Flagged in AI notes field.
+  - **Concordia at Sumner** — city/street address unresolved from HTML (MEDIUM confidence). Needs manual verification before publishing.
+  - `chore/remove-non-cleveland-demo-data` branch still pending PR creation and merge.
+
+- **Recommended next step:**
+  1. Create PR for `chore/remove-non-cleveland-demo-data`, run dry-run, then `--force` to remove non-Cleveland demo homes (Golden Years Chicago, Lakeside Rehab Seattle, Harbor View Miami).
+  2. Set `STRIPE_PRICE_AGENCY` in Render (OL-055) — Agency tier Checkout fails without it.
+  3. Run Cleveland founder end-to-end smoke test (OL-056): seed home → generate claim link → register with claimToken → complete all 4 wizard steps → verify free access granted.
+  4. Queue second batch of Cleveland facilities for auto-population.
+
+---
+
 ### 2026-05-16 — HIPAA Phase 3: ePHI Access Dashboard + Operator BAA/DPA Gate + Test-Sentry Gate
 
 - **Objective:** Ship HIPAA Phase 3 as 3 PRs against main (merge A → B → C): E3 ePHI access-logging dashboard, E1 operator BAA/DPA gate, E4 test-sentry route gate.

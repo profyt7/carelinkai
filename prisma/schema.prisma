@@ -514,12 +514,22 @@ model AssistedLivingHome {
   amenities              String[]
   createdAt              DateTime         @default(now())
   updatedAt              DateTime         @updatedAt
-  aiGeneratedDescription String?
-  highlights             String[]         @default([])
-  lastProfileGenerated   DateTime?
-  slug                   String?          @unique
-  isFeatured             Boolean          @default(false)
-  featuredUntil          DateTime?
+  aiGeneratedDescription  String?
+  highlights              String[]         @default([])
+  lastProfileGenerated    DateTime?
+  slug                    String?          @unique
+  isFeatured              Boolean          @default(false)
+  featuredUntil           DateTime?
+  websiteUrl              String?
+  autoPopulatedAt         DateTime?
+  autoPopulatedFromUrl    String?
+  autoPopulatedVersion    Int?             @default(0)
+  preFilledFields         Json?
+  aiPopulationConfidence  String?
+  imageRightsAcknowledgedAt DateTime?
+  enrichmentStatus        EnrichmentStatus @default(NONE)
+  enrichmentStartedAt     DateTime?
+  enrichmentError         String?
   address                Address?
   operator               Operator         @relation(fields: [operatorId], references: [id], onDelete: Cascade)
   bookings               Booking[]
@@ -548,17 +558,27 @@ model AssistedLivingHome {
 }
 
 model HomePhoto {
-  id        String             @id @default(cuid())
-  homeId    String
-  url       String
-  caption   String?
-  isPrimary Boolean            @default(false)
-  sortOrder Int                @default(0)
-  createdAt DateTime           @default(now())
-  updatedAt DateTime           @updatedAt
-  home      AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
+  id            String             @id @default(cuid())
+  homeId        String
+  url           String
+  caption       String?
+  isPrimary     Boolean            @default(false)
+  sortOrder     Int                @default(0)
+  autoPopulated Boolean            @default(false)
+  sourceUrl     String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  home          AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
 
   @@index([homeId])
+}
+
+// Lifecycle of on-claim website enrichment (scrape + AI extract + photos).
+enum EnrichmentStatus {
+  NONE     // not started (no website on file, or not yet triggered)
+  RUNNING  // enrichment in progress (background task)
+  READY    // completed successfully
+  FAILED   // completed with an error (operator falls back to manual entry)
 }
 
 model Address {
