@@ -78,9 +78,19 @@ async function seedFounderWithSeededHome(
   expect(claim.status).toBe(200);
   expect(claim.body.token).toBeTruthy();
 
-  // Founder redeems the token via the manual claim endpoint, then we confirm the
-  // founder state landed before any test logic runs.
-  await loginAs(page, founderEmail);
+  // Founder redeems the token. First make sure the founder session is actually
+  // active — defend against a stale admin cookie left from the claim-link step.
+  let who: any = null;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    await loginAs(page, founderEmail);
+    who = await page.evaluate(async () => {
+      const r = await fetch('/api/dev/whoami', { credentials: 'include' });
+      return r.ok ? await r.json() : { status: r.status };
+    });
+    if (who?.session?.user?.email === founderEmail) break;
+    await page.waitForTimeout(1000);
+  }
+
   const redeem = await page.evaluate(async (t: string) => {
     const r = await fetch('/api/operator/claim', {
       method: 'POST',
@@ -90,7 +100,10 @@ async function seedFounderWithSeededHome(
     });
     return { status: r.status, body: await r.json() };
   }, claim.body.token as string);
-  expect(redeem.status).toBe(200);
+  expect(
+    redeem.status,
+    `operator/claim ${redeem.status}: ${JSON.stringify(redeem.body)} | whoami=${JSON.stringify(who?.session?.user ?? who)}`
+  ).toBe(200);
 
   const status = await page.evaluate(async () => {
     const r = await fetch('/api/operator/onboarding/status', { credentials: 'include' });
