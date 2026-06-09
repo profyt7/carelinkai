@@ -27,6 +27,9 @@
  *                      only scrapes for <img> candidates, classifies, and appends
  *                      auto-populated HomePhoto rows. Implies --with-photos and
  *                      intentionally ignores the --resume "already populated" skip.
+ *   --from-db          Skip the CSV and target all auto-populated DRAFT homes from
+ *                      the database (using each home's stored websiteUrl). Pairs
+ *                      with --photos-only for a no-CSV photo backfill of the cohort.
  *   --facility <id>    Process only this homeId
  */
 
@@ -350,11 +353,13 @@ async function main() {
   const photosOnly = args.includes('--photos-only');
   // Photos-only is a photo run by definition.
   const withPhotos = args.includes('--with-photos') || photosOnly;
+  const fromDb = args.includes('--from-db');
   const facilityFlag = args.indexOf('--facility');
   const onlyFacilityId = facilityFlag !== -1 ? args[facilityFlag + 1] : null;
 
-  if (!csvPath) {
-    console.error('Usage: autopopulate-cohort.ts <path/to/websites.csv> [--dry-run|--force] [--resume] [--with-photos] [--photos-only] [--facility <id>]');
+  if (!csvPath && !fromDb) {
+    console.error('Usage: autopopulate-cohort.ts <path/to/websites.csv> [--dry-run|--force] [--resume] [--with-photos] [--photos-only] [--from-db] [--facility <id>]');
+    console.error('  (omit the CSV path and pass --from-db to target all auto-populated DRAFT homes from the database)');
     process.exit(1);
   }
 
@@ -380,19 +385,47 @@ async function main() {
   console.log('');
 
   let rows: CsvRow[];
-  try {
-    rows = parseCsv(path.resolve(csvPath));
-  } catch (e: any) {
-    console.error(`Failed to parse CSV: ${e.message}`);
-    process.exit(1);
+  if (fromDb) {
+    // Derive the cohort from the DB: all auto-populated DRAFT homes that still
+    // have a usable website URL. This is exactly the set the photo backfill
+    // targets, so no CSV is needed.
+    const homes = await prisma.assistedLivingHome.findMany({
+      where: {
+        status: HomeStatus.DRAFT,
+        autoPopulatedAt: { not: null },
+        OR: [{ websiteUrl: { not: null } }, { autoPopulatedFromUrl: { not: null } }],
+      },
+      select: { id: true, name: true, websiteUrl: true, autoPopulatedFromUrl: true },
+      orderBy: { autoPopulatedAt: 'asc' },
+    });
+    rows = homes
+      .map((h) => ({
+        homeName: h.name,
+        homeId: h.id,
+        websiteUrl: (h.websiteUrl ?? h.autoPopulatedFromUrl) as string,
+      }))
+      .filter((r) => !!r.websiteUrl);
+    console.log(`--from-db: selected ${rows.length} auto-populated DRAFT home(s) from the database.\n`);
+  } else {
+    try {
+      rows = parseCsv(path.resolve(csvPath!));
+    } catch (e: any) {
+      console.error(`Failed to parse CSV: ${e.message}`);
+      process.exit(1);
+    }
   }
 
   if (onlyFacilityId) {
     rows = rows.filter(r => r.homeId === onlyFacilityId);
     if (rows.length === 0) {
-      console.error(`No CSV row found with homeId=${onlyFacilityId}`);
+      console.error(`No ${fromDb ? 'DB home' : 'CSV row'} found with homeId=${onlyFacilityId}`);
       process.exit(1);
     }
+  }
+
+  if (rows.length === 0) {
+    console.error(fromDb ? 'No matching homes found in DB — nothing to do.' : 'CSV contained no rows.');
+    process.exit(1);
   }
 
   console.log(`Processing ${rows.length} facilit${rows.length === 1 ? 'y' : 'ies'}…\n`);
