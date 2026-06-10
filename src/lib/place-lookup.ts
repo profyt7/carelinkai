@@ -31,6 +31,8 @@ export interface PlaceLookupInput {
   state?: string | null;
   street?: string | null;
   zip?: string | null;
+  /** The operator's known website — used to disambiguate Places candidates. */
+  website?: string | null;
 }
 
 export type LookupSource = 'places' | 'web_search';
@@ -345,17 +347,29 @@ function parsePlacesAddress(components?: PlacesAddressComponent[]) {
   };
 }
 
+export interface AddressLookupDiagnostics {
+  status: 'ok' | 'no_match' | 'no_candidates' | 'http_error' | 'network_error' | 'parse_error' | 'not_configured';
+  httpStatus?: number;
+  error?: string;
+  candidateCount: number;
+  topCandidateName: string | null;
+  topCandidateAddress: string | null;
+  result: PlaceAddressResult | null;
+}
+
 /**
  * Look up a facility's street address via Google Places (New) Text Search by
- * name + city. Returns the best name/city-matched candidate's structured
- * address (highest confidence wins), or null (not configured / network error /
- * no candidate that yields a street). Server-side only.
+ * name (+ any known city/state). Ranks candidates by name overlap, a city-match
+ * bonus, and — the strongest signal — a website-host match against
+ * `input.website` (the operator's known site). Returns rich diagnostics so
+ * callers can tell "no candidates" apart from an API/quota error. Server-side only.
  */
-export async function findAddressViaPlaces(
+export async function lookupAddressViaPlaces(
   input: PlaceLookupInput,
-): Promise<PlaceAddressResult | null> {
+): Promise<AddressLookupDiagnostics> {
+  const base = { candidateCount: 0, topCandidateName: null, topCandidateAddress: null, result: null };
   const apiKey = process.env.GOOGLE_PLACES_API_KEY;
-  if (!apiKey) return null;
+  if (!apiKey) return { status: 'not_configured', ...base };
 
   const locationParts = [input.city, input.state].filter(Boolean);
   const textQuery = `${input.name} assisted living ${locationParts.join(' ')}`.trim();
@@ -368,24 +382,41 @@ export async function findAddressViaPlaces(
         'Content-Type': 'application/json',
         'X-Goog-Api-Key': apiKey,
         'X-Goog-FieldMask':
-          'places.id,places.displayName,places.formattedAddress,places.addressComponents',
+          'places.id,places.displayName,places.formattedAddress,places.addressComponents,places.websiteUri',
       },
       body: JSON.stringify({ textQuery, maxResultCount: 5, regionCode: 'US' }),
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
-  } catch {
-    return null;
+  } catch (e: any) {
+    return { status: 'network_error', error: String(e?.message ?? e), ...base };
   }
-  if (!res.ok) return null;
+
+  if (!res.ok) {
+    let body = '';
+    try { body = (await res.text()).slice(0, 300); } catch { /* ignore */ }
+    return { status: 'http_error', httpStatus: res.status, error: body || res.statusText, ...base };
+  }
 
   let data: { places?: PlacesApiPlaceWithAddress[] };
   try {
     data = await res.json();
-  } catch {
-    return null;
+  } catch (e: any) {
+    return { status: 'parse_error', error: String(e?.message ?? e), ...base };
   }
 
   const places = Array.isArray(data.places) ? data.places : [];
+  const top = places[0];
+  const diag = {
+    candidateCount: places.length,
+    topCandidateName: top?.displayName?.text ?? null,
+    topCandidateAddress: top?.formattedAddress ?? null,
+  };
+  if (places.length === 0) {
+    return { status: 'no_candidates', ...diag, result: null };
+  }
+
+  const inputHost = input.website ? hostOf(input.website) : null;
+
   let best: PlaceAddressResult | null = null;
   for (const p of places) {
     const matchedName = p.displayName?.text ?? null;
@@ -394,9 +425,12 @@ export async function findAddressViaPlaces(
     const cityMatch =
       !!input.city && !!formattedAddress &&
       formattedAddress.toLowerCase().includes(input.city.toLowerCase());
+    const candHost = p.websiteUri ? hostOf(p.websiteUri) : null;
+    const websiteMatch = !!inputHost && !!candHost && candHost === inputHost;
 
+    // A website-host match is decisive (it's the operator's own site).
     let confidence: LookupConfidence;
-    if (score >= 0.6 && cityMatch) confidence = 'HIGH';
+    if (websiteMatch || (score >= 0.6 && cityMatch)) confidence = 'HIGH';
     else if (score >= 0.6 || (score >= 0.34 && cityMatch)) confidence = 'MEDIUM';
     else confidence = 'LOW';
 
@@ -408,5 +442,16 @@ export async function findAddressViaPlaces(
     }
     if (confidence === 'HIGH') break;
   }
-  return best;
+
+  return { status: best ? 'ok' : 'no_match', ...diag, result: best };
+}
+
+/**
+ * Convenience wrapper: the best usable address match, or null. Back-compat for
+ * callers that don't need diagnostics.
+ */
+export async function findAddressViaPlaces(
+  input: PlaceLookupInput,
+): Promise<PlaceAddressResult | null> {
+  return (await lookupAddressViaPlaces(input)).result;
 }

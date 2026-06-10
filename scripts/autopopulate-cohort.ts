@@ -47,7 +47,7 @@ import Papa from 'papaparse';
 import { scrapeOperatorWebsite, prepareHtmlForExtraction, ScrapeError, ImageCandidate } from '../src/lib/operator-profile-scraper';
 import { extractProfileFromWebsite, classifyFacilityImages } from '../src/lib/profile-generator/home-profile-generator';
 import { downloadAndRehost } from '../src/lib/profile-generator/photo-rehost';
-import { findAddressViaPlaces, isPlaceLookupConfigured, type PlaceAddressResult } from '../src/lib/place-lookup';
+import { findAddressViaPlaces, lookupAddressViaPlaces, isPlaceLookupConfigured, type PlaceAddressResult } from '../src/lib/place-lookup';
 
 const prisma = new PrismaClient();
 
@@ -196,6 +196,7 @@ async function processRow(
         name: home.name,
         city: home.address?.city ?? null,
         state: home.address?.state ?? null,
+        website: websiteUrl,
       });
       if (placesAddr && placesAddr.street && placesAddr.confidence !== 'LOW') {
         console.log(
@@ -368,6 +369,7 @@ async function processRow(
  */
 async function backfillAddressViaPlaces(
   home: {
+    websiteUrl: string | null;
     preFilledFields: unknown;
     address: { id: string; city: string; state: string; street: string | null; zipCode: string | null } | null;
   },
@@ -380,18 +382,30 @@ async function backfillAddressViaPlaces(
     return { status: 'skipped', homeId, homeName, reason: 'already has a street address' };
   }
 
-  const placesAddr = await findAddressViaPlaces({
+  const lookup = await lookupAddressViaPlaces({
     name: homeName,
     city: existing?.city ?? null,
     state: existing?.state ?? null,
+    website: home.websiteUrl ?? null,
   });
 
+  // Verbose diagnostics — distinguish "no candidates" from an API/quota error.
+  console.log(
+    `  🔎 ${homeName} — Places[${lookup.status}` +
+    `${lookup.httpStatus ? ` http=${lookup.httpStatus}` : ''}] ` +
+    `candidates=${lookup.candidateCount} ` +
+    `top="${lookup.topCandidateName ?? '—'}" @ "${lookup.topCandidateAddress ?? '—'}"` +
+    `${lookup.error ? ` err=${lookup.error.replace(/\s+/g, ' ').slice(0, 160)}` : ''}`,
+  );
+
+  const placesAddr = lookup.result;
   if (!placesAddr || !placesAddr.street || placesAddr.confidence === 'LOW') {
-    console.log(
-      `  📍 ${homeName} — no usable Places address match` +
-      (placesAddr ? ` (LOW: "${placesAddr.matchedName ?? '?'}")` : ''),
-    );
-    return { status: 'skipped', homeId, homeName, reason: 'no usable Places address match' };
+    return {
+      status: 'skipped',
+      homeId,
+      homeName,
+      reason: `no usable Places address match (${lookup.status}${placesAddr ? `, ${placesAddr.confidence}` : ''})`,
+    };
   }
 
   const provenanceFields: string[] = [];
