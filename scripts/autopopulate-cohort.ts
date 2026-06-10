@@ -30,11 +30,13 @@
  *   --from-db          Skip the CSV and target all auto-populated DRAFT homes from
  *                      the database (using each home's stored websiteUrl). Pairs
  *                      with --photos-only for a no-CSV photo backfill of the cohort.
- *   --addresses-only   Backfill street/zip via Google Places ONLY (name + city) —
- *                      no website scrape, no AI text call, no photos. Fills empty
- *                      street/zip on homes that have none; never overwrites. Use
- *                      with --from-db to fix the cohort's addresses without
- *                      re-extracting text. Requires GOOGLE_PLACES_API_KEY.
+ *   --addresses-only   Backfill addresses via Google Places ONLY (name + any
+ *                      known city) — no website scrape, no AI text call, no
+ *                      photos. Fills an empty street/zip, or CREATES the Address
+ *                      record from the Places match when a home has none; never
+ *                      overwrites existing data. Use with --from-db to fix the
+ *                      cohort's addresses without re-extracting text. Requires
+ *                      GOOGLE_PLACES_API_KEY.
  *   --facility <id>    Process only this homeId
  */
 
@@ -356,9 +358,13 @@ async function processRow(
 }
 
 /**
- * --addresses-only backfill: fill a home's empty street/zip from Google Places
- * (name + city) without scraping the website, calling the LLM, or touching any
- * other field. Fill-only — never overwrites an existing street.
+ * --addresses-only backfill: give a home a real street/zip from Google Places
+ * (name + any known city) without scraping the website, calling the LLM, or
+ * touching any other field.
+ *   - Address row exists but has no street → fill street (+ zip if empty).
+ *   - No Address row at all → CREATE one from the Places match (needs a complete
+ *     street/city/state/zip, since those columns are NOT NULL).
+ * Never overwrites real existing data.
  */
 async function backfillAddressViaPlaces(
   home: {
@@ -369,17 +375,15 @@ async function backfillAddressViaPlaces(
   homeId: string,
   dryRun: boolean,
 ): Promise<FacilityResult> {
-  if (!home.address) {
-    return { status: 'skipped', homeId, homeName, reason: 'no address record to update' };
-  }
-  if (home.address.street) {
+  const existing = home.address;
+  if (existing?.street) {
     return { status: 'skipped', homeId, homeName, reason: 'already has a street address' };
   }
 
   const placesAddr = await findAddressViaPlaces({
     name: homeName,
-    city: home.address.city,
-    state: home.address.state,
+    city: existing?.city ?? null,
+    state: existing?.state ?? null,
   });
 
   if (!placesAddr || !placesAddr.street || placesAddr.confidence === 'LOW') {
@@ -390,20 +394,56 @@ async function backfillAddressViaPlaces(
     return { status: 'skipped', homeId, homeName, reason: 'no usable Places address match' };
   }
 
-  console.log(
-    `  📍 ${homeName} — ${placesAddr.street}${placesAddr.zip ? ` ${placesAddr.zip}` : ''} ` +
-    `(${placesAddr.confidence}, matched "${placesAddr.matchedName ?? '?'}")`,
-  );
+  const provenanceFields: string[] = [];
 
-  if (!dryRun) {
-    const addrUpdate: Record<string, string> = { street: placesAddr.street };
-    if (placesAddr.zip && !home.address.zipCode) addrUpdate.zipCode = placesAddr.zip;
-    await prisma.address.update({ where: { id: home.address.id }, data: addrUpdate });
+  if (existing) {
+    // Address row exists but has no street — fill street (+ zip when empty).
+    // Never touch city/state (real existing data).
+    console.log(
+      `  📍 ${homeName} — fill street "${placesAddr.street}"` +
+      `${placesAddr.zip && !existing.zipCode ? ` + zip ${placesAddr.zip}` : ''} ` +
+      `(${placesAddr.confidence}, matched "${placesAddr.matchedName ?? '?'}")`,
+    );
+    if (!dryRun) {
+      const addrUpdate: Record<string, string> = { street: placesAddr.street };
+      if (placesAddr.zip && !existing.zipCode) addrUpdate.zipCode = placesAddr.zip;
+      await prisma.address.update({ where: { id: existing.id }, data: addrUpdate });
+      provenanceFields.push(...Object.keys(addrUpdate));
+    }
+  } else {
+    // No Address row at all — create it from the Places match. Address columns
+    // (street/city/state/zipCode) are all NOT NULL, so only create when Places
+    // returns a complete address.
+    if (!placesAddr.city || !placesAddr.state || !placesAddr.zip) {
+      console.log(
+        `  📍 ${homeName} — Places match incomplete (missing city/state/zip), cannot create address ` +
+        `(matched "${placesAddr.matchedName ?? '?'}")`,
+      );
+      return { status: 'skipped', homeId, homeName, reason: 'Places match missing city/state/zip — cannot create address' };
+    }
+    console.log(
+      `  🏠 ${homeName} — CREATE address: ${placesAddr.street}, ${placesAddr.city}, ` +
+      `${placesAddr.state} ${placesAddr.zip} (${placesAddr.confidence}, matched "${placesAddr.matchedName ?? '?'}")`,
+    );
+    if (!dryRun) {
+      await prisma.address.create({
+        data: {
+          homeId,
+          street: placesAddr.street,
+          city: placesAddr.city,
+          state: placesAddr.state,
+          zipCode: placesAddr.zip,
+        },
+      });
+      provenanceFields.push('street', 'city', 'state', 'zipCode');
+    }
+  }
 
+  if (!dryRun && provenanceFields.length > 0) {
     // Merge provenance: mark the fields we filled without clobbering existing keys.
     const existingProv = (home.preFilledFields as Record<string, string> | null) ?? {};
-    const mergedProv: Record<string, string> = { ...existingProv, street: 'AI' };
-    if (addrUpdate.zipCode) mergedProv.zipCode = 'AI';
+    const mergedProv: Record<string, string> = { ...existingProv };
+    for (const f of provenanceFields) mergedProv[f] = 'AI';
     await prisma.assistedLivingHome.update({
       where: { id: homeId },
       data: { preFilledFields: mergedProv },
