@@ -58,6 +58,19 @@ Each loop: what it is, why it matters, what done looks like.
   4. **Concordia at Sumner** — city/street address not resolved; MEDIUM confidence
 - **Done when:** Each record manually verified and corrected in admin panel before the facility receives a claim link.
 
+### OL-060: First-batch photo backfill (text-only June-5 run had no photos)
+- **Status:** 🟡 OPEN — code ready (#553), pending Render run
+- **What:** The June-5 pipeline run predated the photo feature (#549), so the 15 first-batch Cleveland homes have `autoPopulatedAt` set but **no photos**. `--photos-only` mode (skips text re-extraction + text writes; scrapes images → AI-classify → Cloudinary re-host → append `HomePhoto` rows; idempotent — clears prior auto-populated photos first). `--from-db` targets the auto-populated cohort without a CSV.
+- **Done when:** On Render: `tsx scripts/autopopulate-cohort.ts --from-db --photos-only --dry-run` reviewed, then `--force`. 15 homes have auto-populated photos. (Anthropic spend small — image-classify only; Cloudinary within free tier.)
+
+### OL-061: AI address extraction weak — Google Places fallback
+- **Status:** ✅ CODE MERGED (#554, 2026-06-09) — backfill of the existing 15 still pending
+- **What:** HTML extraction often misses the street (Canterbury Commons showed the `1234 Oak Lane` form placeholder). `findAddressViaPlaces()` in `src/lib/place-lookup.ts` + wired into the populator: when neither DB nor AI yields a street, look the facility up by name + city and fill street/zip from a HIGH/MEDIUM-confidence Google Places match (fill-only, never overwrite). `GOOGLE_PLACES_API_KEY` is set in Render.
+- **Done when (remaining):** Backfill the existing 15 homes' addresses via the `--addresses-only` mode (no text re-extraction) on Render.
+
+### OL-062: "Full address is required" validation doesn't name the empty sub-field
+- **Status:** ✅ CLOSED (#554, 2026-06-09) — `src/app/operator/onboarding/[step]/page.tsx` now names the missing sub-field(s), e.g. "State is required."
+
 ### OL-063: e2e suite runs ZERO tests in CI (false-green)
 - **Status:** 🔴 OPEN — discovered 2026-06-09 while wiring the claim-flow guard
 - **What:** Every Playwright config uses `testDir: './tests'`, but the CI e2e jobs (`e2e-family.yml`) run specs from `./e2e/` (`e2e/residents-*`, `e2e/family-*`). A bare `playwright test e2e/<spec>` therefore matches **nothing**, so Playwright would error "No tests found" — except the residents/family jobs pass `--shard`, which tolerates an empty shard and exits 0. Net effect: the entire `e2e/` suite (residents, family, marketplace, messages, operator, auth specs) has been **passing without executing a single test**. Confirmed via job logs (webserver boots, then jumps straight to artifact upload with no "Running N tests" line).

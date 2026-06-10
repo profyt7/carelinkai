@@ -21,6 +21,20 @@
  *                      auto-populated HomePhoto rows. On --dry-run, classifies
  *                      only (no download/upload). Requires CLOUDINARY_* env vars
  *                      on a live run.
+ *   --photos-only      Backfill photos onto records that ALREADY have their text
+ *                      profile. Skips the AI text extraction + all text-field DB
+ *                      writes entirely (no overwrite, no autoPopulatedVersion bump);
+ *                      only scrapes for <img> candidates, classifies, and appends
+ *                      auto-populated HomePhoto rows. Implies --with-photos and
+ *                      intentionally ignores the --resume "already populated" skip.
+ *   --from-db          Skip the CSV and target all auto-populated DRAFT homes from
+ *                      the database (using each home's stored websiteUrl). Pairs
+ *                      with --photos-only for a no-CSV photo backfill of the cohort.
+ *   --addresses-only   Backfill street/zip via Google Places ONLY (name + city) —
+ *                      no website scrape, no AI text call, no photos. Fills empty
+ *                      street/zip on homes that have none; never overwrites. Use
+ *                      with --from-db to fix the cohort's addresses without
+ *                      re-extracting text. Requires GOOGLE_PLACES_API_KEY.
  *   --facility <id>    Process only this homeId
  */
 
@@ -66,7 +80,7 @@ function parseCsv(filePath: string): CsvRow[] {
 
 async function processRow(
   row: CsvRow,
-  { dryRun, resume, withPhotos }: { dryRun: boolean; resume: boolean; withPhotos: boolean },
+  { dryRun, resume, withPhotos, photosOnly, addressesOnly }: { dryRun: boolean; resume: boolean; withPhotos: boolean; photosOnly: boolean; addressesOnly: boolean },
 ): Promise<FacilityResult> {
   const { homeName, homeId, websiteUrl } = row;
 
@@ -82,11 +96,19 @@ async function processRow(
   if (home.status !== HomeStatus.DRAFT) {
     return { status: 'skipped', homeId, homeName, reason: `status=${home.status} (only DRAFT homes)` };
   }
-  if (resume && home.autoPopulatedAt) {
+  // --resume skips already-populated homes. Photos-only / addresses-only runs
+  // deliberately TARGET those homes (backfilling onto records that already have
+  // text), so the "already populated" skip must not apply in those modes.
+  if (resume && home.autoPopulatedAt && !photosOnly && !addressesOnly) {
     return { status: 'skipped', homeId, homeName, reason: 'already auto-populated (--resume)' };
   }
 
-  // Scrape
+  // Address-only backfill: Google Places only — no scrape, no AI, no photos.
+  if (addressesOnly) {
+    return backfillAddressViaPlaces(home, homeName, homeId, dryRun);
+  }
+
+  // Scrape — needed for both text extraction and image candidates.
   let html: string;
   let finalUrl: string;
   let imageCandidates: ImageCandidate[] = [];
@@ -100,145 +122,153 @@ async function processRow(
     return { status: 'blocked', homeId, homeName, reason: err.message };
   }
 
-  const preparedHtml = prepareHtmlForExtraction(html);
+  let extracted: Awaited<ReturnType<typeof extractProfileFromWebsite>> | null = null;
+  let dollars = 0;
+  let fieldsExtracted = 0;
 
-  // Extract
-  let extracted;
-  try {
-    extracted = await extractProfileFromWebsite(
-      {
-        name: home.name,
-        careLevel: home.careLevel,
-        capacity: home.capacity,
-        currentOccupancy: home.currentOccupancy,
-        amenities: home.amenities,
-        address: home.address
-          ? { city: home.address.city, state: home.address.state }
-          : undefined,
-      },
-      preparedHtml,
-      websiteUrl,
-    );
-  } catch (e: any) {
-    return { status: 'blocked', homeId, homeName, reason: `Extraction failed: ${e?.message ?? e}` };
-  }
+  // ── Text extraction + field writes — skipped entirely in --photos-only mode ──
+  if (!photosOnly) {
+    const preparedHtml = prepareHtmlForExtraction(html);
 
-  const dollars = cost(extracted.tokensIn, extracted.tokensOut);
-
-  // Build update payload
-  const preFilledFields: Record<string, 'AI' | 'SEED'> = {};
-
-  const updateData: Parameters<typeof prisma.assistedLivingHome.update>[0]['data'] = {
-    websiteUrl: websiteUrl,
-    autoPopulatedAt: new Date(),
-    autoPopulatedFromUrl: finalUrl,
-    autoPopulatedVersion: (home.autoPopulatedVersion ?? 0) + 1,
-    aiPopulationConfidence: extracted.extractionConfidence,
-  };
-
-  if (extracted.description) {
-    updateData.description = extracted.description;
-    preFilledFields['description'] = 'AI';
-  }
-
-  if (extracted.amenities.length > 0) {
-    updateData.amenities = extracted.amenities;
-    preFilledFields['amenities'] = 'AI';
-  }
-
-  if (extracted.careLevel.length > 0) {
-    updateData.careLevel = extracted.careLevel as any;
-    preFilledFields['careLevel'] = 'AI';
-  }
-
-  // Address: only fill fields that are currently empty/missing.
-  const addr = extracted.address;
-  const aiStreet = addr?.streetAddress?.trim() || null;
-  const aiZip = addr?.zip?.trim() || null;
-
-  // Google Places address fallback (OL-061): the website scrape frequently
-  // misses the street address (leaving the listing showing the form's
-  // "1234 Oak Lane" placeholder). When neither the DB nor the AI gives us a
-  // street, look the facility up by name + city in Google Places — authoritative
-  // for addresses — and use a HIGH/MEDIUM-confidence match.
-  let placesAddr: PlaceAddressResult | null = null;
-  if (!home.address?.street && !aiStreet && isPlaceLookupConfigured()) {
-    placesAddr = await findAddressViaPlaces({
-      name: home.name,
-      city: home.address?.city ?? null,
-      state: home.address?.state ?? null,
-    });
-    if (placesAddr && placesAddr.street && placesAddr.confidence !== 'LOW') {
-      console.log(
-        `    📍 Places address fallback: "${placesAddr.street}"` +
-        `${placesAddr.zip ? ` ${placesAddr.zip}` : ''} ` +
-        `(${placesAddr.confidence}, matched "${placesAddr.matchedName ?? '?'}")`,
+    // Extract
+    try {
+      extracted = await extractProfileFromWebsite(
+        {
+          name: home.name,
+          careLevel: home.careLevel,
+          capacity: home.capacity,
+          currentOccupancy: home.currentOccupancy,
+          amenities: home.amenities,
+          address: home.address
+            ? { city: home.address.city, state: home.address.state }
+            : undefined,
+        },
+        preparedHtml,
+        websiteUrl,
       );
-    } else {
-      if (placesAddr) {
-        console.log(`    📍 Places address: LOW-confidence match ignored ("${placesAddr.matchedName ?? '?'}")`);
-      }
-      placesAddr = null;
+    } catch (e: any) {
+      return { status: 'blocked', homeId, homeName, reason: `Extraction failed: ${e?.message ?? e}` };
     }
-  }
 
-  // AI scrape first, then the Places fallback, for the street/zip we persist.
-  const resolvedStreet = aiStreet ?? placesAddr?.street ?? null;
-  const resolvedZip = aiZip ?? placesAddr?.zip ?? null;
+    dollars = cost(extracted.tokensIn, extracted.tokensOut);
 
-  // 'AI' provenance covers both scrape- and Places-derived auto-fill for the
-  // operator-facing badge (FieldProvenance has no 'PLACES' variant).
-  if (!home.address?.street && resolvedStreet) {
-    preFilledFields['street'] = 'AI';
-  }
-  if (!home.address?.zipCode && resolvedZip) {
-    preFilledFields['zipCode'] = 'AI';
-  }
+    // Build update payload
+    const preFilledFields: Record<string, 'AI' | 'SEED'> = {};
 
-  // Mark existing seed fields (from DOH) as SEED provenance
-  if (home.name) preFilledFields['name'] = 'SEED';
-  if (home.capacity) preFilledFields['capacity'] = 'SEED';
-  if (home.address?.city) preFilledFields['city'] = 'SEED';
-  if (home.address?.state) preFilledFields['state'] = 'SEED';
+    const updateData: Parameters<typeof prisma.assistedLivingHome.update>[0]['data'] = {
+      websiteUrl: websiteUrl,
+      autoPopulatedAt: new Date(),
+      autoPopulatedFromUrl: finalUrl,
+      autoPopulatedVersion: (home.autoPopulatedVersion ?? 0) + 1,
+      aiPopulationConfidence: extracted.extractionConfidence,
+    };
 
-  updateData.preFilledFields = preFilledFields;
+    if (extracted.description) {
+      updateData.description = extracted.description;
+      preFilledFields['description'] = 'AI';
+    }
 
-  // Count extracted fields (description + services + amenities + careLevel + address fields)
-  const fieldsExtracted = [
-    extracted.description,
-    extracted.services.length > 0,
-    extracted.amenities.length > 0,
-    extracted.careLevel.length > 0,
-    extracted.address?.streetAddress,
-    extracted.address?.zip,
-    extracted.phone,
-    extracted.contactEmail,
-    extracted.tagline,
-  ].filter(Boolean).length;
+    if (extracted.amenities.length > 0) {
+      updateData.amenities = extracted.amenities;
+      preFilledFields['amenities'] = 'AI';
+    }
 
-  const icon = extracted.extractionConfidence === 'LOW' ? '⚠' : '✓';
-  console.log(
-    `  ${icon} ${homeName} — extracted ${fieldsExtracted} fields (${extracted.extractionConfidence} confidence), $${dollars.toFixed(3)}`,
-  );
-  if (extracted.extractionNotes) {
-    console.log(`    Notes: ${extracted.extractionNotes}`);
-  }
+    if (extracted.careLevel.length > 0) {
+      updateData.careLevel = extracted.careLevel as any;
+      preFilledFields['careLevel'] = 'AI';
+    }
 
-  if (!dryRun) {
-    await prisma.assistedLivingHome.update({ where: { id: homeId }, data: updateData });
+    // Address: only fill fields that are currently empty/missing.
+    const addr = extracted.address;
+    const aiStreet = addr?.streetAddress?.trim() || null;
+    const aiZip = addr?.zip?.trim() || null;
 
-    // Upsert address — fill empty street/zip from the AI scrape or Places fallback.
-    if (home.address) {
-      const addrUpdate: Record<string, string> = {};
-      if (!home.address.street && resolvedStreet) addrUpdate.street = resolvedStreet;
-      if (!home.address.zipCode && resolvedZip) addrUpdate.zipCode = resolvedZip;
-      if (Object.keys(addrUpdate).length > 0) {
-        await prisma.address.update({ where: { id: home.address.id }, data: addrUpdate });
+    // Google Places address fallback (OL-061): the website scrape frequently
+    // misses the street address (leaving the listing showing the form's
+    // "1234 Oak Lane" placeholder). When neither the DB nor the AI gives us a
+    // street, look the facility up by name + city in Google Places —
+    // authoritative for addresses — and use a HIGH/MEDIUM-confidence match.
+    let placesAddr: PlaceAddressResult | null = null;
+    if (!home.address?.street && !aiStreet && isPlaceLookupConfigured()) {
+      placesAddr = await findAddressViaPlaces({
+        name: home.name,
+        city: home.address?.city ?? null,
+        state: home.address?.state ?? null,
+      });
+      if (placesAddr && placesAddr.street && placesAddr.confidence !== 'LOW') {
+        console.log(
+          `    📍 Places address fallback: "${placesAddr.street}"` +
+          `${placesAddr.zip ? ` ${placesAddr.zip}` : ''} ` +
+          `(${placesAddr.confidence}, matched "${placesAddr.matchedName ?? '?'}")`,
+        );
+      } else {
+        if (placesAddr) {
+          console.log(`    📍 Places address: LOW-confidence match ignored ("${placesAddr.matchedName ?? '?'}")`);
+        }
+        placesAddr = null;
       }
     }
+
+    // AI scrape first, then the Places fallback, for the street/zip we persist.
+    const resolvedStreet = aiStreet ?? placesAddr?.street ?? null;
+    const resolvedZip = aiZip ?? placesAddr?.zip ?? null;
+
+    // 'AI' provenance covers both scrape- and Places-derived auto-fill for the
+    // operator-facing badge (FieldProvenance has no 'PLACES' variant).
+    if (!home.address?.street && resolvedStreet) {
+      preFilledFields['street'] = 'AI';
+    }
+    if (!home.address?.zipCode && resolvedZip) {
+      preFilledFields['zipCode'] = 'AI';
+    }
+
+    // Mark existing seed fields (from DOH) as SEED provenance
+    if (home.name) preFilledFields['name'] = 'SEED';
+    if (home.capacity) preFilledFields['capacity'] = 'SEED';
+    if (home.address?.city) preFilledFields['city'] = 'SEED';
+    if (home.address?.state) preFilledFields['state'] = 'SEED';
+
+    updateData.preFilledFields = preFilledFields;
+
+    // Count extracted fields (description + services + amenities + careLevel + address fields)
+    fieldsExtracted = [
+      extracted.description,
+      extracted.services.length > 0,
+      extracted.amenities.length > 0,
+      extracted.careLevel.length > 0,
+      extracted.address?.streetAddress,
+      extracted.address?.zip,
+      extracted.phone,
+      extracted.contactEmail,
+      extracted.tagline,
+    ].filter(Boolean).length;
+
+    const icon = extracted.extractionConfidence === 'LOW' ? '⚠' : '✓';
+    console.log(
+      `  ${icon} ${homeName} — extracted ${fieldsExtracted} fields (${extracted.extractionConfidence} confidence), $${dollars.toFixed(3)}`,
+    );
+    if (extracted.extractionNotes) {
+      console.log(`    Notes: ${extracted.extractionNotes}`);
+    }
+
+    if (!dryRun) {
+      await prisma.assistedLivingHome.update({ where: { id: homeId }, data: updateData });
+
+      // Upsert address — fill empty street/zip from the AI scrape or Places fallback.
+      if (home.address) {
+        const addrUpdate: Record<string, string> = {};
+        if (!home.address.street && resolvedStreet) addrUpdate.street = resolvedStreet;
+        if (!home.address.zipCode && resolvedZip) addrUpdate.zipCode = resolvedZip;
+        if (Object.keys(addrUpdate).length > 0) {
+          await prisma.address.update({ where: { id: home.address.id }, data: addrUpdate });
+        }
+      }
+    }
+  } else {
+    console.log(`  📷 ${homeName} — photos-only (text extraction + text writes skipped)`);
   }
 
-  // ── Photo pipeline (Tasks 1-4) — opt-in via --with-photos ──────────────────
+  // ── Photo pipeline (Tasks 1-4) — opt-in via --with-photos / --photos-only ──
   let imageDollars = 0;
   let photosUploaded = 0;
   if (withPhotos) {
@@ -303,15 +333,84 @@ async function processRow(
 
   const totalDollars = dollars + imageDollars;
   console.log(
-    `    💵 cost: text $${dollars.toFixed(3)}` +
-    (withPhotos ? ` + images $${imageDollars.toFixed(3)} = $${totalDollars.toFixed(3)}` : '') +
+    `    💵 cost: ` +
+    (photosOnly
+      ? `images $${imageDollars.toFixed(3)}`
+      : `text $${dollars.toFixed(3)}` +
+        (withPhotos ? ` + images $${imageDollars.toFixed(3)} = $${totalDollars.toFixed(3)}` : '')) +
     (withPhotos && !dryRun ? ` | photos uploaded: ${photosUploaded}` : ''),
   );
 
-  if (extracted.extractionConfidence === 'LOW') {
+  if (extracted && extracted.extractionConfidence === 'LOW') {
     return { status: 'sparse', homeId, homeName, confidence: extracted.extractionConfidence, dollars: totalDollars, photosUploaded };
   }
-  return { status: 'success', homeId, homeName, fieldsExtracted, confidence: extracted.extractionConfidence, dollars: totalDollars, photosUploaded };
+  return {
+    status: 'success',
+    homeId,
+    homeName,
+    fieldsExtracted,
+    confidence: photosOnly ? 'PHOTOS' : (extracted ? extracted.extractionConfidence : 'N/A'),
+    dollars: totalDollars,
+    photosUploaded,
+  };
+}
+
+/**
+ * --addresses-only backfill: fill a home's empty street/zip from Google Places
+ * (name + city) without scraping the website, calling the LLM, or touching any
+ * other field. Fill-only — never overwrites an existing street.
+ */
+async function backfillAddressViaPlaces(
+  home: {
+    preFilledFields: unknown;
+    address: { id: string; city: string; state: string; street: string | null; zipCode: string | null } | null;
+  },
+  homeName: string,
+  homeId: string,
+  dryRun: boolean,
+): Promise<FacilityResult> {
+  if (!home.address) {
+    return { status: 'skipped', homeId, homeName, reason: 'no address record to update' };
+  }
+  if (home.address.street) {
+    return { status: 'skipped', homeId, homeName, reason: 'already has a street address' };
+  }
+
+  const placesAddr = await findAddressViaPlaces({
+    name: homeName,
+    city: home.address.city,
+    state: home.address.state,
+  });
+
+  if (!placesAddr || !placesAddr.street || placesAddr.confidence === 'LOW') {
+    console.log(
+      `  📍 ${homeName} — no usable Places address match` +
+      (placesAddr ? ` (LOW: "${placesAddr.matchedName ?? '?'}")` : ''),
+    );
+    return { status: 'skipped', homeId, homeName, reason: 'no usable Places address match' };
+  }
+
+  console.log(
+    `  📍 ${homeName} — ${placesAddr.street}${placesAddr.zip ? ` ${placesAddr.zip}` : ''} ` +
+    `(${placesAddr.confidence}, matched "${placesAddr.matchedName ?? '?'}")`,
+  );
+
+  if (!dryRun) {
+    const addrUpdate: Record<string, string> = { street: placesAddr.street };
+    if (placesAddr.zip && !home.address.zipCode) addrUpdate.zipCode = placesAddr.zip;
+    await prisma.address.update({ where: { id: home.address.id }, data: addrUpdate });
+
+    // Merge provenance: mark the fields we filled without clobbering existing keys.
+    const existingProv = (home.preFilledFields as Record<string, string> | null) ?? {};
+    const mergedProv: Record<string, string> = { ...existingProv, street: 'AI' };
+    if (addrUpdate.zipCode) mergedProv.zipCode = 'AI';
+    await prisma.assistedLivingHome.update({
+      where: { id: homeId },
+      data: { preFilledFields: mergedProv },
+    });
+  }
+
+  return { status: 'success', homeId, homeName, fieldsExtracted: 1, confidence: 'PLACES', dollars: 0, photosUploaded: 0 };
 }
 
 async function main() {
@@ -319,17 +418,27 @@ async function main() {
   const csvPath = args.find(a => !a.startsWith('--'));
   const dryRun = !args.includes('--force') && (args.includes('--dry-run') || !args.includes('--force'));
   const resume = args.includes('--resume');
-  const withPhotos = args.includes('--with-photos');
+  const photosOnly = args.includes('--photos-only');
+  // Photos-only is a photo run by definition.
+  const withPhotos = args.includes('--with-photos') || photosOnly;
+  const fromDb = args.includes('--from-db');
+  const addressesOnly = args.includes('--addresses-only');
   const facilityFlag = args.indexOf('--facility');
   const onlyFacilityId = facilityFlag !== -1 ? args[facilityFlag + 1] : null;
 
-  if (!csvPath) {
-    console.error('Usage: autopopulate-cohort.ts <path/to/websites.csv> [--dry-run|--force] [--resume] [--with-photos] [--facility <id>]');
+  if (!csvPath && !fromDb) {
+    console.error('Usage: autopopulate-cohort.ts <path/to/websites.csv> [--dry-run|--force] [--resume] [--with-photos] [--photos-only] [--addresses-only] [--from-db] [--facility <id>]');
+    console.error('  (omit the CSV path and pass --from-db to target all auto-populated DRAFT homes from the database)');
     process.exit(1);
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
+  // Addresses-only uses Google Places, not the LLM, so it doesn't need Anthropic.
+  if (!addressesOnly && !process.env.ANTHROPIC_API_KEY) {
     console.error('ERROR: ANTHROPIC_API_KEY environment variable is not set.');
+    process.exit(1);
+  }
+  if (addressesOnly && !isPlaceLookupConfigured()) {
+    console.error('ERROR: --addresses-only requires GOOGLE_PLACES_API_KEY.');
     process.exit(1);
   }
 
@@ -345,23 +454,55 @@ async function main() {
   }
 
   console.log(dryRun ? '=== DRY RUN — no DB writes ===' : '=== LIVE RUN ===');
+  if (addressesOnly) console.log('=== ADDRESSES-ONLY mode: Google Places street/zip backfill (no scrape / AI / photos) ===');
+  if (photosOnly) console.log('=== PHOTOS-ONLY mode: text extraction + text writes skipped, photos appended ===');
   if (withPhotos) console.log(`=== Photo extraction ENABLED ${dryRun ? '(classify only — no download/upload on dry-run)' : '(download + Cloudinary re-host)'} ===`);
   console.log('');
 
   let rows: CsvRow[];
-  try {
-    rows = parseCsv(path.resolve(csvPath));
-  } catch (e: any) {
-    console.error(`Failed to parse CSV: ${e.message}`);
-    process.exit(1);
+  if (fromDb) {
+    // Derive the cohort from the DB: all auto-populated DRAFT homes. Address-only
+    // backfill doesn't need a website; the photo/text paths do, so require a
+    // usable URL there. No CSV needed either way.
+    const homes = await prisma.assistedLivingHome.findMany({
+      where: {
+        status: HomeStatus.DRAFT,
+        autoPopulatedAt: { not: null },
+        ...(addressesOnly
+          ? {}
+          : { OR: [{ websiteUrl: { not: null } }, { autoPopulatedFromUrl: { not: null } }] }),
+      },
+      select: { id: true, name: true, websiteUrl: true, autoPopulatedFromUrl: true },
+      orderBy: { autoPopulatedAt: 'asc' },
+    });
+    rows = homes
+      .map((h) => ({
+        homeName: h.name,
+        homeId: h.id,
+        websiteUrl: (h.websiteUrl ?? h.autoPopulatedFromUrl ?? '') as string,
+      }))
+      .filter((r) => addressesOnly || !!r.websiteUrl);
+    console.log(`--from-db: selected ${rows.length} auto-populated DRAFT home(s) from the database.\n`);
+  } else {
+    try {
+      rows = parseCsv(path.resolve(csvPath!));
+    } catch (e: any) {
+      console.error(`Failed to parse CSV: ${e.message}`);
+      process.exit(1);
+    }
   }
 
   if (onlyFacilityId) {
     rows = rows.filter(r => r.homeId === onlyFacilityId);
     if (rows.length === 0) {
-      console.error(`No CSV row found with homeId=${onlyFacilityId}`);
+      console.error(`No ${fromDb ? 'DB home' : 'CSV row'} found with homeId=${onlyFacilityId}`);
       process.exit(1);
     }
+  }
+
+  if (rows.length === 0) {
+    console.error(fromDb ? 'No matching homes found in DB — nothing to do.' : 'CSV contained no rows.');
+    process.exit(1);
   }
 
   console.log(`Processing ${rows.length} facilit${rows.length === 1 ? 'y' : 'ies'}…\n`);
@@ -371,7 +512,7 @@ async function main() {
 
   for (const row of rows) {
     try {
-      const result = await processRow(row, { dryRun, resume, withPhotos });
+      const result = await processRow(row, { dryRun, resume, withPhotos, photosOnly, addressesOnly });
       results.push(result);
       if (result.status === 'success' || result.status === 'sparse') {
         totalDollars += result.dollars;
