@@ -30,6 +30,11 @@
  *   --from-db          Skip the CSV and target all auto-populated DRAFT homes from
  *                      the database (using each home's stored websiteUrl). Pairs
  *                      with --photos-only for a no-CSV photo backfill of the cohort.
+ *   --addresses-only   Backfill street/zip via Google Places ONLY (name + city) —
+ *                      no website scrape, no AI text call, no photos. Fills empty
+ *                      street/zip on homes that have none; never overwrites. Use
+ *                      with --from-db to fix the cohort's addresses without
+ *                      re-extracting text. Requires GOOGLE_PLACES_API_KEY.
  *   --facility <id>    Process only this homeId
  */
 
@@ -75,7 +80,7 @@ function parseCsv(filePath: string): CsvRow[] {
 
 async function processRow(
   row: CsvRow,
-  { dryRun, resume, withPhotos, photosOnly }: { dryRun: boolean; resume: boolean; withPhotos: boolean; photosOnly: boolean },
+  { dryRun, resume, withPhotos, photosOnly, addressesOnly }: { dryRun: boolean; resume: boolean; withPhotos: boolean; photosOnly: boolean; addressesOnly: boolean },
 ): Promise<FacilityResult> {
   const { homeName, homeId, websiteUrl } = row;
 
@@ -91,11 +96,16 @@ async function processRow(
   if (home.status !== HomeStatus.DRAFT) {
     return { status: 'skipped', homeId, homeName, reason: `status=${home.status} (only DRAFT homes)` };
   }
-  // --resume skips already-populated homes. Photos-only runs deliberately TARGET
-  // those homes (we are backfilling photos onto records that already have text),
-  // so the "already populated" skip must not apply in photos-only mode.
-  if (resume && home.autoPopulatedAt && !photosOnly) {
+  // --resume skips already-populated homes. Photos-only / addresses-only runs
+  // deliberately TARGET those homes (backfilling onto records that already have
+  // text), so the "already populated" skip must not apply in those modes.
+  if (resume && home.autoPopulatedAt && !photosOnly && !addressesOnly) {
     return { status: 'skipped', homeId, homeName, reason: 'already auto-populated (--resume)' };
+  }
+
+  // Address-only backfill: Google Places only — no scrape, no AI, no photos.
+  if (addressesOnly) {
+    return backfillAddressViaPlaces(home, homeName, homeId, dryRun);
   }
 
   // Scrape — needed for both text extraction and image candidates.
@@ -345,6 +355,64 @@ async function processRow(
   };
 }
 
+/**
+ * --addresses-only backfill: fill a home's empty street/zip from Google Places
+ * (name + city) without scraping the website, calling the LLM, or touching any
+ * other field. Fill-only — never overwrites an existing street.
+ */
+async function backfillAddressViaPlaces(
+  home: {
+    preFilledFields: unknown;
+    address: { id: string; city: string; state: string; street: string | null; zipCode: string | null } | null;
+  },
+  homeName: string,
+  homeId: string,
+  dryRun: boolean,
+): Promise<FacilityResult> {
+  if (!home.address) {
+    return { status: 'skipped', homeId, homeName, reason: 'no address record to update' };
+  }
+  if (home.address.street) {
+    return { status: 'skipped', homeId, homeName, reason: 'already has a street address' };
+  }
+
+  const placesAddr = await findAddressViaPlaces({
+    name: homeName,
+    city: home.address.city,
+    state: home.address.state,
+  });
+
+  if (!placesAddr || !placesAddr.street || placesAddr.confidence === 'LOW') {
+    console.log(
+      `  📍 ${homeName} — no usable Places address match` +
+      (placesAddr ? ` (LOW: "${placesAddr.matchedName ?? '?'}")` : ''),
+    );
+    return { status: 'skipped', homeId, homeName, reason: 'no usable Places address match' };
+  }
+
+  console.log(
+    `  📍 ${homeName} — ${placesAddr.street}${placesAddr.zip ? ` ${placesAddr.zip}` : ''} ` +
+    `(${placesAddr.confidence}, matched "${placesAddr.matchedName ?? '?'}")`,
+  );
+
+  if (!dryRun) {
+    const addrUpdate: Record<string, string> = { street: placesAddr.street };
+    if (placesAddr.zip && !home.address.zipCode) addrUpdate.zipCode = placesAddr.zip;
+    await prisma.address.update({ where: { id: home.address.id }, data: addrUpdate });
+
+    // Merge provenance: mark the fields we filled without clobbering existing keys.
+    const existingProv = (home.preFilledFields as Record<string, string> | null) ?? {};
+    const mergedProv: Record<string, string> = { ...existingProv, street: 'AI' };
+    if (addrUpdate.zipCode) mergedProv.zipCode = 'AI';
+    await prisma.assistedLivingHome.update({
+      where: { id: homeId },
+      data: { preFilledFields: mergedProv },
+    });
+  }
+
+  return { status: 'success', homeId, homeName, fieldsExtracted: 1, confidence: 'PLACES', dollars: 0, photosUploaded: 0 };
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const csvPath = args.find(a => !a.startsWith('--'));
@@ -354,17 +422,23 @@ async function main() {
   // Photos-only is a photo run by definition.
   const withPhotos = args.includes('--with-photos') || photosOnly;
   const fromDb = args.includes('--from-db');
+  const addressesOnly = args.includes('--addresses-only');
   const facilityFlag = args.indexOf('--facility');
   const onlyFacilityId = facilityFlag !== -1 ? args[facilityFlag + 1] : null;
 
   if (!csvPath && !fromDb) {
-    console.error('Usage: autopopulate-cohort.ts <path/to/websites.csv> [--dry-run|--force] [--resume] [--with-photos] [--photos-only] [--from-db] [--facility <id>]');
+    console.error('Usage: autopopulate-cohort.ts <path/to/websites.csv> [--dry-run|--force] [--resume] [--with-photos] [--photos-only] [--addresses-only] [--from-db] [--facility <id>]');
     console.error('  (omit the CSV path and pass --from-db to target all auto-populated DRAFT homes from the database)');
     process.exit(1);
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
+  // Addresses-only uses Google Places, not the LLM, so it doesn't need Anthropic.
+  if (!addressesOnly && !process.env.ANTHROPIC_API_KEY) {
     console.error('ERROR: ANTHROPIC_API_KEY environment variable is not set.');
+    process.exit(1);
+  }
+  if (addressesOnly && !isPlaceLookupConfigured()) {
+    console.error('ERROR: --addresses-only requires GOOGLE_PLACES_API_KEY.');
     process.exit(1);
   }
 
@@ -380,20 +454,23 @@ async function main() {
   }
 
   console.log(dryRun ? '=== DRY RUN — no DB writes ===' : '=== LIVE RUN ===');
+  if (addressesOnly) console.log('=== ADDRESSES-ONLY mode: Google Places street/zip backfill (no scrape / AI / photos) ===');
   if (photosOnly) console.log('=== PHOTOS-ONLY mode: text extraction + text writes skipped, photos appended ===');
   if (withPhotos) console.log(`=== Photo extraction ENABLED ${dryRun ? '(classify only — no download/upload on dry-run)' : '(download + Cloudinary re-host)'} ===`);
   console.log('');
 
   let rows: CsvRow[];
   if (fromDb) {
-    // Derive the cohort from the DB: all auto-populated DRAFT homes that still
-    // have a usable website URL. This is exactly the set the photo backfill
-    // targets, so no CSV is needed.
+    // Derive the cohort from the DB: all auto-populated DRAFT homes. Address-only
+    // backfill doesn't need a website; the photo/text paths do, so require a
+    // usable URL there. No CSV needed either way.
     const homes = await prisma.assistedLivingHome.findMany({
       where: {
         status: HomeStatus.DRAFT,
         autoPopulatedAt: { not: null },
-        OR: [{ websiteUrl: { not: null } }, { autoPopulatedFromUrl: { not: null } }],
+        ...(addressesOnly
+          ? {}
+          : { OR: [{ websiteUrl: { not: null } }, { autoPopulatedFromUrl: { not: null } }] }),
       },
       select: { id: true, name: true, websiteUrl: true, autoPopulatedFromUrl: true },
       orderBy: { autoPopulatedAt: 'asc' },
@@ -402,9 +479,9 @@ async function main() {
       .map((h) => ({
         homeName: h.name,
         homeId: h.id,
-        websiteUrl: (h.websiteUrl ?? h.autoPopulatedFromUrl) as string,
+        websiteUrl: (h.websiteUrl ?? h.autoPopulatedFromUrl ?? '') as string,
       }))
-      .filter((r) => !!r.websiteUrl);
+      .filter((r) => addressesOnly || !!r.websiteUrl);
     console.log(`--from-db: selected ${rows.length} auto-populated DRAFT home(s) from the database.\n`);
   } else {
     try {
@@ -435,7 +512,7 @@ async function main() {
 
   for (const row of rows) {
     try {
-      const result = await processRow(row, { dryRun, resume, withPhotos, photosOnly });
+      const result = await processRow(row, { dryRun, resume, withPhotos, photosOnly, addressesOnly });
       results.push(result);
       if (result.status === 'success' || result.status === 'sparse') {
         totalDollars += result.dollars;
