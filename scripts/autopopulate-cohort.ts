@@ -30,6 +30,9 @@
  *   --from-db          Skip the CSV and target all auto-populated DRAFT homes from
  *                      the database (using each home's stored websiteUrl). Pairs
  *                      with --photos-only for a no-CSV photo backfill of the cohort.
+ *   --include-active   With --from-db, target auto-populated homes regardless of
+ *                      DRAFT/ACTIVE status (so an already-claimed listing like the
+ *                      real Canterbury Commons can be backfilled too).
  *   --addresses-only   Backfill addresses via Google Places ONLY (name + any
  *                      known city) — no website scrape, no AI text call, no
  *                      photos. Fills an empty street/zip, or CREATES the Address
@@ -82,7 +85,7 @@ function parseCsv(filePath: string): CsvRow[] {
 
 async function processRow(
   row: CsvRow,
-  { dryRun, resume, withPhotos, photosOnly, addressesOnly }: { dryRun: boolean; resume: boolean; withPhotos: boolean; photosOnly: boolean; addressesOnly: boolean },
+  { dryRun, resume, withPhotos, photosOnly, addressesOnly, includeActive }: { dryRun: boolean; resume: boolean; withPhotos: boolean; photosOnly: boolean; addressesOnly: boolean; includeActive: boolean },
 ): Promise<FacilityResult> {
   const { homeName, homeId, websiteUrl } = row;
 
@@ -95,8 +98,11 @@ async function processRow(
   if (!home) {
     return { status: 'skipped', homeId, homeName, reason: 'Home not found in DB' };
   }
-  if (home.status !== HomeStatus.DRAFT) {
-    return { status: 'skipped', homeId, homeName, reason: `status=${home.status} (only DRAFT homes)` };
+  // By default only DRAFT homes are processed; --include-active also allows
+  // ACTIVE (etc.) homes so an already-claimed auto-populated listing (e.g. the
+  // real Canterbury Commons) can still be backfilled.
+  if (home.status !== HomeStatus.DRAFT && !includeActive) {
+    return { status: 'skipped', homeId, homeName, reason: `status=${home.status} (only DRAFT homes; pass --include-active to include)` };
   }
   // --resume skips already-populated homes. Photos-only / addresses-only runs
   // deliberately TARGET those homes (backfilling onto records that already have
@@ -198,7 +204,10 @@ async function processRow(
         state: home.address?.state ?? null,
         website: websiteUrl,
       });
-      if (placesAddr && placesAddr.street && placesAddr.confidence !== 'LOW') {
+      const accept = placesAddr && placesAddr.street && placesAddr.confidence !== 'LOW'
+        ? placesMatchAcceptable(placesAddr, home.address?.state ?? null)
+        : { ok: false, reason: placesAddr ? `${placesAddr.confidence} confidence` : 'no match' };
+      if (placesAddr && placesAddr.street && accept.ok) {
         console.log(
           `    📍 Places address fallback: "${placesAddr.street}"` +
           `${placesAddr.zip ? ` ${placesAddr.zip}` : ''} ` +
@@ -206,7 +215,7 @@ async function processRow(
         );
       } else {
         if (placesAddr) {
-          console.log(`    📍 Places address: LOW-confidence match ignored ("${placesAddr.matchedName ?? '?'}")`);
+          console.log(`    📍 Places address ignored (${accept.reason}; matched "${placesAddr.matchedName ?? '?'}")`);
         }
         placesAddr = null;
       }
@@ -359,6 +368,26 @@ async function processRow(
 }
 
 /**
+ * OL-066 guard against bad Google Places matches:
+ *   - If we know the home's state, reject a candidate in a different state.
+ *   - If we DON'T know the state (no seeded address), require a HIGH match —
+ *     which, with no city to anchor on, means a website-host-confirmed match —
+ *     so a weak name-only MEDIUM (e.g. The Elms → Westerly, RI) is rejected.
+ */
+function placesMatchAcceptable(
+  placesAddr: PlaceAddressResult,
+  seededState: string | null,
+): { ok: boolean; reason?: string } {
+  if (seededState && placesAddr.state && placesAddr.state.toUpperCase() !== seededState.toUpperCase()) {
+    return { ok: false, reason: `Places state ${placesAddr.state} != seeded state ${seededState}` };
+  }
+  if (!seededState && placesAddr.confidence !== 'HIGH') {
+    return { ok: false, reason: `no seeded state to verify and match is ${placesAddr.confidence} (need a website-confirmed HIGH)` };
+  }
+  return { ok: true };
+}
+
+/**
  * --addresses-only backfill: give a home a real street/zip from Google Places
  * (name + any known city) without scraping the website, calling the LLM, or
  * touching any other field.
@@ -406,6 +435,13 @@ async function backfillAddressViaPlaces(
       homeName,
       reason: `no usable Places address match (${lookup.status}${placesAddr ? `, ${placesAddr.confidence}` : ''})`,
     };
+  }
+
+  // OL-066: guard against a wrong-location match (e.g. The Elms → Westerly RI).
+  const accept = placesMatchAcceptable(placesAddr, existing?.state ?? null);
+  if (!accept.ok) {
+    console.log(`  🚫 ${homeName} — rejected Places match: ${accept.reason} (matched "${placesAddr.matchedName ?? '?'}" @ "${placesAddr.formattedAddress ?? '?'}")`);
+    return { status: 'skipped', homeId, homeName, reason: `Places match rejected — ${accept.reason}` };
   }
 
   const provenanceFields: string[] = [];
@@ -477,11 +513,12 @@ async function main() {
   const withPhotos = args.includes('--with-photos') || photosOnly;
   const fromDb = args.includes('--from-db');
   const addressesOnly = args.includes('--addresses-only');
+  const includeActive = args.includes('--include-active');
   const facilityFlag = args.indexOf('--facility');
   const onlyFacilityId = facilityFlag !== -1 ? args[facilityFlag + 1] : null;
 
   if (!csvPath && !fromDb) {
-    console.error('Usage: autopopulate-cohort.ts <path/to/websites.csv> [--dry-run|--force] [--resume] [--with-photos] [--photos-only] [--addresses-only] [--from-db] [--facility <id>]');
+    console.error('Usage: autopopulate-cohort.ts <path/to/websites.csv> [--dry-run|--force] [--resume] [--with-photos] [--photos-only] [--addresses-only] [--from-db] [--include-active] [--facility <id>]');
     console.error('  (omit the CSV path and pass --from-db to target all auto-populated DRAFT homes from the database)');
     process.exit(1);
   }
@@ -511,16 +548,18 @@ async function main() {
   if (addressesOnly) console.log('=== ADDRESSES-ONLY mode: Google Places street/zip backfill (no scrape / AI / photos) ===');
   if (photosOnly) console.log('=== PHOTOS-ONLY mode: text extraction + text writes skipped, photos appended ===');
   if (withPhotos) console.log(`=== Photo extraction ENABLED ${dryRun ? '(classify only — no download/upload on dry-run)' : '(download + Cloudinary re-host)'} ===`);
+  if (includeActive) console.log('=== INCLUDE-ACTIVE: auto-populated homes are targeted regardless of DRAFT/ACTIVE status ===');
   console.log('');
 
   let rows: CsvRow[];
   if (fromDb) {
-    // Derive the cohort from the DB: all auto-populated DRAFT homes. Address-only
-    // backfill doesn't need a website; the photo/text paths do, so require a
-    // usable URL there. No CSV needed either way.
+    // Derive the cohort from the DB: auto-populated homes (DRAFT only unless
+    // --include-active, which also covers already-claimed ACTIVE listings like
+    // the real Canterbury Commons). Address-only backfill doesn't need a website;
+    // the photo/text paths do, so require a usable URL there. No CSV needed.
     const homes = await prisma.assistedLivingHome.findMany({
       where: {
-        status: HomeStatus.DRAFT,
+        ...(includeActive ? {} : { status: HomeStatus.DRAFT }),
         autoPopulatedAt: { not: null },
         ...(addressesOnly
           ? {}
@@ -536,7 +575,7 @@ async function main() {
         websiteUrl: (h.websiteUrl ?? h.autoPopulatedFromUrl ?? '') as string,
       }))
       .filter((r) => addressesOnly || !!r.websiteUrl);
-    console.log(`--from-db: selected ${rows.length} auto-populated DRAFT home(s) from the database.\n`);
+    console.log(`--from-db: selected ${rows.length} auto-populated home(s)${includeActive ? '' : ' (DRAFT)'} from the database.\n`);
   } else {
     try {
       rows = parseCsv(path.resolve(csvPath!));
@@ -566,7 +605,7 @@ async function main() {
 
   for (const row of rows) {
     try {
-      const result = await processRow(row, { dryRun, resume, withPhotos, photosOnly, addressesOnly });
+      const result = await processRow(row, { dryRun, resume, withPhotos, photosOnly, addressesOnly, includeActive });
       results.push(result);
       if (result.status === 'success' || result.status === 'sparse') {
         totalDollars += result.dollars;
