@@ -50,8 +50,12 @@ jobs:
       ALLOW_INSECURE_AUTH_COOKIE: "1"
       # Cache Playwright browsers to speed up CI
       PLAYWRIGHT_BROWSERS_PATH: ~/.cache/ms-playwright
-      # DB
-      DATABASE_URL: ${{ secrets.E2E_DATABASE_URL }}
+      # DB — MUST be the ephemeral `postgres` service container below, NEVER a
+      # real/staging/prod database. The e2e jobs enable ALLOW_DEV_ENDPOINTS and
+      # seed via /api/dev/* , so pointing this at prod writes test data into
+      # production (this is exactly how 43 test homes leaked into prod). Do not
+      # restore secrets.E2E_DATABASE_URL here.
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/carelinkai_marketplace?schema=public
       # S3 disabled in CI by default (mock URLs)
       S3_DISABLE: "1"
 
@@ -162,8 +166,12 @@ jobs:
       ALLOW_INSECURE_AUTH_COOKIE: "1"
       # Cache Playwright browsers to speed up CI
       PLAYWRIGHT_BROWSERS_PATH: ~/.cache/ms-playwright
-      # DB
-      DATABASE_URL: ${{ secrets.E2E_DATABASE_URL }}
+      # DB — MUST be the ephemeral `postgres` service container below, NEVER a
+      # real/staging/prod database. The e2e jobs enable ALLOW_DEV_ENDPOINTS and
+      # seed via /api/dev/* , so pointing this at prod writes test data into
+      # production (this is exactly how 43 test homes leaked into prod). Do not
+      # restore secrets.E2E_DATABASE_URL here.
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/carelinkai_marketplace?schema=public
       # S3 disabled in CI by default (mock URLs)
       S3_DISABLE: "1"
 
@@ -260,7 +268,9 @@ jobs:
       ALLOW_DEV_ENDPOINTS: "1"
       ALLOW_INSECURE_AUTH_COOKIE: "1"
       PLAYWRIGHT_BROWSERS_PATH: ~/.cache/ms-playwright
-      DATABASE_URL: ${{ secrets.E2E_DATABASE_URL }}
+      # Ephemeral service-container DB only — NEVER prod (see note in the other
+      # e2e jobs). ALLOW_DEV_ENDPOINTS seeding must not reach a real database.
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/carelinkai_marketplace?schema=public
       S3_DISABLE: "1"
 
     steps:
