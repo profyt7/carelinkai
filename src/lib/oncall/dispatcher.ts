@@ -3,6 +3,7 @@ import { loadRules } from './rules';
 import { rankCandidates } from './ranker';
 import { templates } from './messages';
 import { SMSService } from '@/lib/sms/sms-service';
+import { isUnaffiliatedDispatchEnabled } from '@/lib/feature-flags';
 
 const sms = new SMSService();
 
@@ -44,7 +45,9 @@ export async function dispatchWave(shiftNeedId: string): Promise<{
       id: { notIn: [...excludeIds] },
       OR: [
         { employments: { some: { operatorId: need.home.operatorId, endDate: null } } },
-        { employments: { none: {} } },
+        // CNOS: the unaffiliated-caregiver pool (no employer) is frozen — only
+        // reach into it when explicitly enabled (default off).
+        ...(isUnaffiliatedDispatchEnabled() ? [{ employments: { none: {} } as const }] : []),
       ],
     },
     include: {
