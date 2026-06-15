@@ -45,6 +45,7 @@ import PhotoGallery from "@/components/homes/PhotoGallery";
 import PricingCalculator from "@/components/homes/PricingCalculator";
 import type { PricingEstimate } from "@/components/homes/PricingCalculator";
 import { getCloudinaryAvatar, isCloudinaryUrl } from "@/lib/cloudinaryUrl";
+import { buildInquiryPayload } from "@/lib/inquiries/payload";
 
 // Dynamically import the SimpleMap component with SSR disabled
 const SimpleMap = dynamic(
@@ -530,18 +531,12 @@ export default function HomeDetailPage() {
     }
 
     console.log('🔴 [TOUR DIAGNOSTIC] Step 2: Building request payload...');
-    const payload = {
-      homeId: String(id),
-      name: inquiryForm.name.trim(),
-      email: inquiryForm.email.trim(),
-      phone: inquiryForm.phone.trim() || undefined,
-      residentName: inquiryForm.residentName.trim() || undefined,
-      moveInTimeframe: inquiryForm.moveInTimeframe || undefined,
-      careNeeded: inquiryForm.careNeeded,
-      message: inquiryForm.message.trim() || undefined,
-      tourDate: tourDateIso,
-      source: 'home_detail',
-    };
+    // Map the form fields onto the /api/inquiries contract (the canonical
+    // Zod schema). The form historically posted name/email/phone/residentName/
+    // careNeeded/source:'home_detail', none of which match the API, so every
+    // submission failed Zod validation with 400. moveInTimeframe has no column
+    // on Inquiry, so fold it into additionalInfo rather than drop it.
+    const payload = buildInquiryPayload(String(id), inquiryForm, tourDateIso);
     console.log('🔴 [TOUR DIAGNOSTIC] Request payload:', JSON.stringify(payload, null, 2));
 
     try {

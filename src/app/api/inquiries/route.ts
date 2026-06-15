@@ -6,27 +6,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { z } from 'zod';
 import { afterInquiryCreated } from '@/lib/hooks/inquiry-hooks';
 import { smsService } from '@/lib/sms/sms-service';
-
-// Validation schema for creating inquiries
-const createInquirySchema = z.object({
-  familyId: z.string().optional(),
-  homeId: z.string(),
-  contactName: z.string().min(1, 'Contact name is required'),
-  contactEmail: z.string().email('Valid email is required'),
-  contactPhone: z.string().optional(),
-  careRecipientName: z.string().min(1, 'Care recipient name is required'),
-  careRecipientAge: z.number().int().positive().optional(),
-  careNeeds: z.array(z.string()).optional().default([]),
-  additionalInfo: z.string().optional(),
-  message: z.string().optional(),
-  urgency: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).optional().default('MEDIUM'),
-  source: z.enum(['WEBSITE', 'PHONE', 'EMAIL', 'REFERRAL', 'SOCIAL_MEDIA', 'WALK_IN', 'OTHER']).optional().default('WEBSITE'),
-  preferredContactMethod: z.enum(['EMAIL', 'PHONE', 'SMS', 'ANY']).optional().default('EMAIL'),
-  affiliateCode: z.string().optional(), // referral code from ?ref= URL param
-});
+import { createInquirySchema } from '@/lib/inquiries/schema';
 
 /**
  * POST /api/inquiries - Create a new inquiry
