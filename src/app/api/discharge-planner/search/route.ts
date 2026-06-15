@@ -13,6 +13,7 @@ import { requireRole } from "@/lib/auth-utils";
 import { UserRole } from "@prisma/client";
 import { captureError } from "@/lib/sentry";
 import { getAnthropicClient, requireAnthropicKey } from "@/lib/ai/claude";
+import { sanitizeCareLevels, buildLocationWhere } from "@/lib/discharge-planner/criteria";
 
 const searchRequestSchema = z.object({
   query: z.string().min(10, "Query must be at least 10 characters"),
@@ -75,8 +76,10 @@ Extract the following information and return raw JSON only (no markdown, no code
   "cognitiveStatus": ["no dementia", "early dementia", "advanced dementia"],
   "preferences": ["pets", "private room", "shared room", etc.],
   "location": "city, state, or area",
-  "careLevel": ["ASSISTED_LIVING", "MEMORY_CARE", "SKILLED_NURSING"]
-}`;
+  "careLevel": ["INDEPENDENT", "ASSISTED", "MEMORY_CARE", "SKILLED_NURSING"]
+}
+
+For careLevel, use ONLY these exact values: INDEPENDENT, ASSISTED, MEMORY_CARE, SKILLED_NURSING. Map "assisted living" to ASSISTED.`;
 
     const parseResponse = await client.messages.create({
       model: "claude-sonnet-4-6",
@@ -103,17 +106,20 @@ Extract the following information and return raw JSON only (no markdown, no code
 
     const whereClause: any = { status: "ACTIVE" };
 
-    if (parsedCriteria?.careLevel && parsedCriteria.careLevel.length > 0) {
-      whereClause.careLevel = { hasSome: parsedCriteria.careLevel };
+    // careLevel is a CareLevel[] list, so hasSome is correct — but the values
+    // must be valid enum members. Sanitize the AI output (it historically
+    // emitted "ASSISTED_LIVING", which is not a CareLevel and made Prisma
+    // throw PrismaClientValidationError).
+    const careLevels = sanitizeCareLevels(parsedCriteria?.careLevel);
+    if (careLevels.length > 0) {
+      whereClause.careLevel = { hasSome: careLevels };
     }
 
-    if (parsedCriteria?.location) {
-      whereClause.address = {
-        OR: [
-          { city: { contains: parsedCriteria.location, mode: "insensitive" } },
-          { state: { contains: parsedCriteria.location, mode: "insensitive" } },
-        ],
-      };
+    // Match city/state against the correct fields instead of comparing the
+    // full location string against both.
+    const addressWhere = buildLocationWhere(parsedCriteria?.location);
+    if (addressWhere) {
+      whereClause.address = addressWhere;
     }
 
     if (parsedCriteria?.gender && parsedCriteria.gender !== "Any") {
@@ -297,6 +303,17 @@ Consider: timeline urgency/bed availability, care level match, payment type, loc
       matches,
     });
   } catch (error: any) {
+    // A bad/short query is a client error; surface its validation message.
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: error.issues[0]?.message ?? "Invalid search query." },
+        { status: 400 }
+      );
+    }
+
+    // Everything else (Prisma validation errors, AI/network failures, etc.)
+    // is logged server-side only and returned to the client as a generic
+    // message — never leak query shape or schema field names to end users.
     console.error("🏥 [DISCHARGE-PLANNER] ❌ Error:", error);
 
     captureError(error as Error, {
@@ -308,7 +325,7 @@ Consider: timeline urgency/bed availability, care level match, payment type, loc
     });
 
     return NextResponse.json(
-      { error: error?.message ?? "Failed to process search request" },
+      { error: "Search is temporarily unavailable. Please try again." },
       { status: 500 }
     );
   }
