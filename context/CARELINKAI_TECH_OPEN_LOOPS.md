@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-06-05_
+_Last updated: 2026-06-15_
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -83,6 +83,21 @@ Each loop: what it is, why it matters, what done looks like.
 - **What:** In the CI e2e dev-server harness, operator-authenticated POST routes (`/api/operator/claim`, `POST /api/operator/homes/[id]/claim`, acceptance POST) return **403 "Forbidden"** for a `/api/dev/login` session, even though GET routes (`/api/dev/whoami`, `/api/operator/onboarding/status`) resolve the *same* session as role `OPERATOR`. Captured: `operator/claim 403: {"error":"Forbidden"} | whoami={… "role":"OPERATOR" …}`. The claim flow itself works in production (verified by the manual prod smoke test), so this is a harness/auth quirk, not a product bug.
 - **Impact:** `e2e/operator-claim-flow.spec.ts` is parked via `test.describe.fixme`; all supporting infra (`playwright.e2e.config.ts`, the `e2e-operator-claim` CI job, the testDir discovery fix) is retained so it can be re-enabled with a one-line change.
 - **Done when:** Root-caused (Playwright trace / local-DB repro of why operator POST `getServerSession`+DB role check fails while GET succeeds), fixed, and the 3 parked tests re-enabled and green.
+
+### OL-067: Discharge-planner search PrismaClientValidationError + raw-error leak
+- **Status:** ✅ CLOSED (2026-06-15) — Sentry `2f642d88976448d394ec4d7d9fc10ca0`
+- **What:** `POST /api/discharge-planner/search` threw `PrismaClientValidationError: Expected CareLevel` and rendered the raw Prisma message into the UI. Real cause: the AI parser emitted `careLevel "ASSISTED_LIVING"`, not a member of the `CareLevel` enum (`INDEPENDENT/ASSISTED/MEMORY_CARE/SKILLED_NURSING`). `careLevel` is a `CareLevel[]` list so `hasSome` was correct — the values were invalid. Added `sanitizeCareLevels()` (synonym map + drop-invalid) in `src/lib/discharge-planner/criteria.ts`, fixed the parser prompt, fixed the city/state location filter (was matching the full "City, ST" string against both fields), and hardened the catch block to return a generic 500 + Sentry-only logging. Unit tests in `__tests__/discharge-planner.criteria.unit.test.ts`.
+- **Note:** Committed to `claude/inspiring-mayer-rvgyys`; not yet PR'd/merged to main.
+
+### OL-068: Inquiry form 400 — field-name mismatch with /api/inquiries
+- **Status:** ✅ CLOSED (2026-06-15)
+- **What:** The `/homes/[id]` "Send Inquiry" form posted `name/email/phone/residentName/careNeeded` + `source:'home_detail'`, none matching the API Zod schema → every submit `400 Validation failed`. Added `buildInquiryPayload()` (`src/lib/inquiries/payload.ts`) mapping to the canonical contract, extracted the schema to `src/lib/inquiries/schema.ts`, relaxed `careRecipientName` to optional (nullable column, backward compatible). Tests in `__tests__/inquiries.payload.unit.test.ts`.
+- **Note:** Committed to `claude/inspiring-mayer-rvgyys`; not yet PR'd/merged to main.
+
+### OL-069: Port the 25 How-To guides from the ChrisOS vault into the Education Hub
+- **Status:** 🟡 OPEN — infrastructure shipped 2026-06-15, content pending
+- **What:** The role-gated How-To Guides section now exists at `/learn/howto` with a content model that mirrors the vault guide format (`src/app/learn/howto/content.ts`). The 25 source guides in the vault (`04_CareLinkAI/howto/`: family/shared/operator/caregiver/provider/discharge-planner/admin) could NOT be copied because the vault is not present in this environment — only a starter set was seeded.
+- **Done when:** With the vault available, port all guides into `HOWTO_GUIDES` (exclude `admin/00_INTERNAL_admin_overview.md` and any affiliate guides; move NARRATION SCRIPT blocks into `narrationScript`), capture the `(img: …)` assets into `/public/howto/`, and verify each role sees only its guides.
 
 ### OL-027: Provider listing fee ($99/mo)
 - **Status:** ✅ CLOSED (2026-05-02)

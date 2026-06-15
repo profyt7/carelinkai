@@ -1,8 +1,8 @@
 # CareLinkAI — Technical State
-_Last updated: 2026-06-04_
+_Last updated: 2026-06-15_
 
 ## Active Branch
-`main` — PRs #543–#546 merged 2026-06-05. No open PRs. Clean to build from. Pending branch: `chore/remove-non-cleveland-demo-data` (non-Cleveland demo homes cleanup, not yet a PR).
+`main` — through PR #560. Pending branch: `claude/inspiring-mayer-rvgyys` (2026-06-15: discharge-planner search fix [OL-067], inquiry-form 400 fix [OL-068], role-gated How-To Guides hub [OL-069] — 3 commits, not yet PR'd to main). Also pending: `chore/remove-non-cleveland-demo-data` (non-Cleveland demo homes cleanup, not yet a PR).
 
 ## Production URL
 https://carelinkai.onrender.com (also: https://getcarelinkai.com)
@@ -231,6 +231,7 @@ See `REVENUE_MODEL.md` for the full breakdown. 12 streams finalized:
 - **AGENCY tier added at $799/mo** — shown in wizard Step 4 alongside Starter/Professional/Growth; `STRIPE_PRICE_AGENCY` env var needed
 
 ## Immediate Next Priorities
+0. **Open PRs for branch `claude/inspiring-mayer-rvgyys` (2026-06-15)** — 3 commits: (a) discharge-planner search PrismaClientValidationError + raw-error leak fix (Sentry `2f642d88976448d394ec4d7d9fc10ca0`, OL-067); (b) inquiry-form 400 field-mapping fix (OL-068); (c) role-gated How-To Guides hub at `/learn/howto` (OL-069). All unit-tested (24 passing), full typecheck clean, build passes. When the vault is available, port the 25 source guides into `src/app/learn/howto/content.ts` (OL-069).
 1. **Merge non-Cleveland demo homes cleanup** — branch `chore/remove-non-cleveland-demo-data`: create PR, dry-run, then `--force` to delete Golden Years (Chicago), Lakeside Rehab (Seattle), Harbor View (Miami).
 2. **Set `STRIPE_PRICE_AGENCY` in Render (OL-055)** — create $799/mo Agency product in Stripe dashboard, set env var. Agency Stripe Checkout fails without it.
 3. **Cleveland founder end-to-end smoke test (OL-056)** — seed a home, generate claim link, register new operator with claimToken, complete wizard Steps 1-4, verify free access granted, no Stripe redirect.
