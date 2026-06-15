@@ -4,6 +4,14 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { GUIDES } from './guides/content';
+import {
+  HOWTO_GUIDES,
+  AUDIENCE_LABELS,
+  AUDIENCE_ORDER,
+  type HowToAudience,
+  type HowToGuide,
+} from './howto/content';
+import { filterGuidesForRole, type ViewerRole } from '@/lib/howto/access';
 
 export const metadata: Metadata = {
   title: 'Family Education Hub | CareLinkAI',
@@ -15,6 +23,21 @@ export const metadata: Metadata = {
 export default async function LearnPage() {
   const session = await getServerSession(authOptions);
   const isLoggedIn = !!session?.user;
+  const role = (session?.user?.role as ViewerRole) ?? null;
+
+  // Role-gated How-To guides, grouped by audience for display. Each guide can
+  // belong to more than one audience; show it under the first matching group
+  // in display order so it appears once.
+  const visibleHowTo = filterGuidesForRole(HOWTO_GUIDES, role);
+  const shownSlugs = new Set<string>();
+  const howToByAudience: Array<{ audience: HowToAudience; guides: HowToGuide[] }> = [];
+  for (const audience of AUDIENCE_ORDER) {
+    const guides = visibleHowTo.filter(
+      (g) => g.audiences.includes(audience) && !shownSlugs.has(g.slug)
+    );
+    guides.forEach((g) => shownSlugs.add(g.slug));
+    if (guides.length > 0) howToByAudience.push({ audience, guides });
+  }
 
   const content = (
     <div className={isLoggedIn ? '' : 'min-h-screen bg-neutral-50'}>
@@ -60,6 +83,48 @@ export default async function LearnPage() {
             </Link>
           ))}
         </div>
+
+        {/* How-To Guides (role-gated) */}
+        {howToByAudience.length > 0 && (
+          <div className="mt-16">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-neutral-900">How-To Guides</h2>
+              <p className="text-neutral-600 mt-1">
+                Step-by-step help for getting the most out of CareLinkAI.
+              </p>
+            </div>
+
+            {howToByAudience.map(({ audience, guides }) => (
+              <div key={audience} className="mb-10">
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-neutral-500 mb-4">
+                  {AUDIENCE_LABELS[audience]}
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {guides.map((guide) => (
+                    <Link
+                      key={guide.slug}
+                      href={`/learn/howto/${guide.slug}`}
+                      className="group bg-white rounded-xl border border-neutral-200 p-5 hover:border-primary-300 hover:shadow-md transition-all"
+                    >
+                      <div className="flex items-start gap-3">
+                        <span className="text-2xl">{guide.icon}</span>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xs text-neutral-400">{guide.readTime}</span>
+                          </div>
+                          <h4 className="font-semibold text-neutral-900 mb-1 group-hover:text-primary-700 transition-colors">
+                            {guide.title}
+                          </h4>
+                          <p className="text-sm text-neutral-500 leading-relaxed">{guide.summary}</p>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Financing CTA */}
         <div className="mt-8 bg-amber-50 border border-amber-200 rounded-xl p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
