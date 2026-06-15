@@ -4,52 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { FiMail, FiBook, FiHelpCircle, FiVideo, FiFileText, FiChevronDown, FiChevronUp, FiCheckCircle, FiArrowRight } from 'react-icons/fi';
-
-const ROLE_GUIDES: Record<string, { title: string; steps: Array<{ label: string; href: string }> }> = {
-  OPERATOR: {
-    title: 'Getting Started as an Operator',
-    steps: [
-      { label: 'Complete your home profile', href: '/operator/homes' },
-      { label: 'Add your first resident', href: '/operator/residents' },
-      { label: 'Set up your caregiver roster', href: '/operator/caregivers' },
-      { label: 'Create your first open shift', href: '/operator/shifts' },
-      { label: 'Review marketplace applications', href: '/marketplace/listings' },
-      { label: 'Configure billing & payouts', href: '/settings/payouts/operator' },
-    ],
-  },
-  CAREGIVER: {
-    title: 'Getting Started as a Caregiver',
-    steps: [
-      { label: 'Complete your caregiver profile', href: '/settings/aide' },
-      { label: 'Upload your certifications', href: '/settings/credentials' },
-      { label: 'Get background verified', href: '/caregiver/verification' },
-      { label: 'Browse open job listings', href: '/marketplace?tab=jobs' },
-      { label: 'Apply for your first position', href: '/marketplace?tab=jobs' },
-      { label: 'Check your applications status', href: '/caregiver/applications' },
-    ],
-  },
-  FAMILY: {
-    title: 'Getting Started as a Family Member',
-    steps: [
-      { label: 'Set up your family profile', href: '/settings/family' },
-      { label: 'Browse assisted living homes', href: '/discharge-planner' },
-      { label: 'Browse caregivers', href: '/marketplace/aides' },
-      { label: 'Submit a care inquiry', href: '/marketplace/aides' },
-      { label: 'Upload care documents', href: '/family' },
-      { label: 'Set up emergency contacts', href: '/family' },
-    ],
-  },
-  PROVIDER: {
-    title: 'Getting Started as a Provider',
-    steps: [
-      { label: 'Complete your provider profile', href: '/settings/provider' },
-      { label: 'Add your service offerings', href: '/settings/provider' },
-      { label: 'Browse families and operators', href: '/marketplace?tab=providers' },
-      { label: 'Respond to care inquiries', href: '/messages' },
-      { label: 'View your reviews', href: '/marketplace/providers' },
-    ],
-  },
-};
+import { ROLE_GUIDES } from '@/lib/help/getting-started';
 
 const FAQS = [
   {
