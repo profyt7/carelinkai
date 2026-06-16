@@ -49,9 +49,13 @@ export async function POST(request: NextRequest) {
     // Create compliance items from body or defaults
     const now = new Date();
     const compliance = (body.compliance as any[]) ?? [
+      // Deterministic compliance scenario for the family summary buckets (OL-077):
+      // 1 completed (Flu Shot), 1 expiring-soon within 14d (TB Test), 1 expired
+      // (Care Plan Review). The page renders Open=2 (TB + Care Plan), Completed=1,
+      // Due Soon (14d)=1 (TB), Overdue=1 (Care Plan).
       { type: 'IMMUNIZATION_RECORDS', title: 'Flu Shot', status: 'CURRENT', issuedDate: now, expiryDate: new Date(now.getTime() + 365*24*60*60*1000) },
-      { type: 'HEALTH_ASSESSMENTS', title: 'TB Test', status: 'EXPIRING_SOON', issuedDate: new Date(now.getTime() - 350*24*60*60*1000), expiryDate: new Date(now.getTime() + 15*24*60*60*1000) },
-      { type: 'CARE_PLANS', title: 'Care Plan Review', status: 'CURRENT', issuedDate: new Date(now.getTime() - 60*24*60*60*1000), expiryDate: new Date(now.getTime() + 30*24*60*60*1000) },
+      { type: 'HEALTH_ASSESSMENTS', title: 'TB Test', status: 'EXPIRING_SOON', issuedDate: new Date(now.getTime() - 350*24*60*60*1000), expiryDate: new Date(now.getTime() + 10*24*60*60*1000) },
+      { type: 'CARE_PLANS', title: 'Care Plan Review', status: 'EXPIRED', issuedDate: new Date(now.getTime() - 400*24*60*60*1000), expiryDate: new Date(now.getTime() - 5*24*60*60*1000) },
     ];
     if (compliance?.length) {
       await prisma.residentComplianceItem.createMany({

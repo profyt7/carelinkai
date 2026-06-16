@@ -136,11 +136,10 @@ Each loop: what it is, why it matters, what done looks like.
 - **Done when:** operator/residents pages + api/residents routes await their dynamic APIs, the 6 quarantined specs are un-skipped, and the residents e2e job runs them green.
 
 ### OL-077: Reconcile family compliance-summary counts (seed vs page vs test)
-- **Status:** 🟡 OPEN — surfaced 2026-06-16 (PR #572). The underlying page-crash bug is FIXED; this is a semantics/test-data reconciliation.
-- **What:** `family/residents/[id]` renders a Compliance Summary (Open / Completed / Due Soon (14d) / Overdue). The e2e spec `family-resident-readonly.spec.ts` asserts Open=2 / Completed=1 / Due Soon=1 / Overdue=1, but those numbers were never validated (the page always 500'd) and are inconsistent with the current dev seed (`api/dev/seed-family-resident`): Flu Shot=`CURRENT` +365d, TB Test=`EXPIRING_SOON` +15d, Care Plan Review=`CURRENT` +30d. Under any principled bucketing the seed yields Completed=2 / Open=1, and "Overdue" should be 0 (nothing expired) — so the test's expectations are stale. The "Due Soon (14d)" label vs TB Test's +15d expiry is itself inconsistent (window vs `EXPIRING_SOON` status).
-- **Decision needed:** define canonical bucketing — status-based (`CURRENT/COMPLIANT`=completed; `EXPIRING_SOON`=due soon; `EXPIRED`=overdue; rest=open) vs expiry-window-based — then align the page, the dev seed, and BOTH specs (`family-resident-readonly` + the currently-passing `family-notifications`, which must not regress).
-- **Quarantine:** `family-resident-readonly` is `test.skip(!!process.env.CI, …)` for now (its Contacts assertions pass; only the compliance counts are stale). Un-skip once the semantics are settled.
-- **Done when:** canonical bucketing implemented; seed + both specs aligned; `family-resident-readonly` un-quarantined and green.
+- **Status:** ✅ CLOSED (2026-06-16, PR `fix/family-compliance-summary-semantics`).
+- **What it was:** `family/residents/[id]` Compliance Summary (Open / Completed / Due Soon (14d) / Overdue). The page-crash bug was fixed in #572 (await params + valid `ComplianceStatus` enum), but `family-resident-readonly.spec.ts` (Open=2/Completed=1/Due Soon=1/Overdue=1) was stale vs the dev seed and had been CI-quarantined.
+- **Resolution:** Kept the page's principled buckets (Completed=`CURRENT/COMPLIANT`; Open=`EXPIRING_SOON/EXPIRED/PENDING/MISSING`; Due Soon=expiry within 14d; Overdue=expiry past) and made `api/dev/seed-family-resident` produce a deterministic scenario that exercises all four: Flu Shot=`CURRENT` (completed), TB Test=`EXPIRING_SOON` expiry +10d (open + due-soon), Care Plan Review=`EXPIRED` expiry −5d (open + overdue) → Open=2 / Completed=1 / Due Soon=1 / Overdue=1, matching the spec. `family-resident-readonly` **un-quarantined**; `family-notifications` only asserts the cards render, so it's unaffected.
+- **Note:** the separate operator-facing `/api/.../compliance/summary` route uses a different (looser) bucketing and is out of scope here; revisit if that surface needs exact parity.
 
 ### OL-027: Provider listing fee ($99/mo)
 - **Status:** ✅ CLOSED (2026-05-02)
