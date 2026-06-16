@@ -1543,4 +1543,16 @@
 - **New risks/blockers:** PR #572 may legitimately go red once tests run — that's expected and must be triaged, not silenced. Do not merge #572 until triaged.
 - **Recommended next step:** Watch PR #572's e2e jobs; fix/quarantine whatever the now-live suite surfaces.
 
+### 2026-06-16 — Sentry triage (3 issues) + close OL-077 (family compliance summary)
+- **Objective:** Merge the in-flight e2e PRs; triage 3 Sentry prod issues; fix what's real.
+- **Merges:** #572 (e2e false-green fix + family bug fixes + operator quarantine, OL-063/OL-076) merged once green; #573 (open-loops reconciliation) merged.
+- **Sentry triage — all three were already fixed by today's merged PRs (stale issues, pre-deploy):**
+  - **`/family/emergency` `notifyMethods` TypeError** → fixed in #569 (page normalizes `data.preferences`; all `.notifyMethods` reads guarded; `EmergencyTab` uses `prefs?.notifyMethods`). `/help` "Set up emergency contacts" link is present + enabled (`src/lib/help/getting-started.ts`). No change needed.
+  - **`/api/discharge-planner/search` `hasSome` PrismaClientValidationError** → fixed in #564. **Premise correction:** `AssistedLivingHome.careLevel` is `CareLevel[]` (a LIST, schema line 508), so `hasSome` is correct — NOT a scalar enum; switching to `in` would be wrong. Real cause was the invalid enum *value* `ASSISTED_LIVING`, handled by `sanitizeCareLevels()`. Unit tests run in CI (`__tests__/discharge-planner.criteria.unit.test.ts`).
+  - **`/family/residents/[id]` `count()` `select:{_count}` 500** → fixed in #572. That `select:{_count:{_all}}` is Prisma's internal rendering of a failing `count({where})`; the real cause was the invalid `ComplianceStatus` value, now valid.
+- **Real remaining work — OL-077 (PR `fix/family-compliance-summary-semantics`):** the family compliance counts were correct in code but the e2e spec was quarantined because its 2/1/1/1 expectations didn't match the dev seed. Updated `api/dev/seed-family-resident` to a deterministic scenario (Flu Shot=CURRENT / TB Test=EXPIRING_SOON +10d / Care Plan Review=EXPIRED −5d) → page renders Open=2/Completed=1/Due Soon=1/Overdue=1. **Un-quarantined `family-resident-readonly`.** `family-notifications` unaffected (asserts rendering only).
+- **Files changed:** `src/app/api/dev/seed-family-resident/route.ts`, `e2e/family-resident-readonly.spec.ts`, `context/CARELINKAI_TECH_OPEN_LOOPS.md` (OL-077 closed), this file.
+- **Tests/build:** `tsc` clean; e2e verified via the PR's CI (sandbox blocks local Playwright browser).
+- **Recommended next step:** if any of the 3 Sentry issues still report events *after* today's Render deploy, re-open with fresh stack traces — but they should be resolved. OL-076 (operator/residents Next-15 migration) remains the main open e2e item.
+
 <!-- Add new sessions above this line, newest first -->
