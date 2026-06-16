@@ -63,12 +63,43 @@ describe('canViewGuide / filterGuidesForRole', () => {
   it('an operator sees shared/family + operator guides but not caregiver guides', () => {
     const visible = filterGuidesForRole(HOWTO_GUIDES, 'OPERATOR').map((g) => g.slug);
     // operator-only guide is visible
-    expect(visible).toContain('managing-inquiries-as-an-operator');
+    expect(visible).toContain('leads-and-inquiries-pipeline');
     // caregiver-only guide is hidden
-    expect(visible).not.toContain('setting-up-your-caregiver-profile');
+    expect(visible).not.toContain('profile-and-credentials');
     // shared + family always visible
-    expect(visible).toContain('creating-your-carelinkai-account');
-    expect(visible).toContain('finding-a-home-as-a-family');
+    expect(visible).toContain('signup-and-login');
+    expect(visible).toContain('search-homes');
+  });
+
+  it('a family sees only shared + family guides', () => {
+    const visible = filterGuidesForRole(HOWTO_GUIDES, 'FAMILY');
+    const audiences = new Set(visible.flatMap((g) => g.audiences));
+    expect(audiences).toEqual(new Set(['getting-started', 'family']));
+    // no operator/caregiver/provider/discharge-planner content leaks to family
+    for (const a of ['operator', 'caregiver', 'provider', 'discharge-planner'] as const) {
+      expect(audiences.has(a)).toBe(false);
+    }
+  });
+
+  it('ships the full 29-guide catalog with the expected per-role counts', () => {
+    expect(HOWTO_GUIDES).toHaveLength(29);
+    const byAudience = (a: string) => HOWTO_GUIDES.filter((g) => g.audiences.includes(a as any)).length;
+    expect(byAudience('getting-started')).toBe(3);
+    expect(byAudience('family')).toBe(6);
+    expect(byAudience('operator')).toBe(9);
+    expect(byAudience('caregiver')).toBe(6);
+    expect(byAudience('provider')).toBe(3);
+    expect(byAudience('discharge-planner')).toBe(2);
+  });
+
+  it('every guide has content (steps + summary) and a unique slug', () => {
+    const slugs = HOWTO_GUIDES.map((g) => g.slug);
+    expect(new Set(slugs).size).toBe(slugs.length);
+    for (const g of HOWTO_GUIDES) {
+      expect(g.summary.length).toBeGreaterThan(0);
+      expect(g.steps.length).toBeGreaterThan(0);
+      expect(g.audiences.length).toBe(1);
+    }
   });
 
   it('never exposes an audience outside the catalog (no admin/affiliate guides exist)', () => {
@@ -77,5 +108,6 @@ describe('canViewGuide / filterGuidesForRole', () => {
     // The HowToAudience type has no 'admin'/'affiliate' member, so by
     // construction those cannot appear in the public catalog.
     expect([...audiences].every((a) => a !== ('admin' as any))).toBe(true);
+    expect([...audiences].every((a) => a !== ('affiliate' as any))).toBe(true);
   });
 });

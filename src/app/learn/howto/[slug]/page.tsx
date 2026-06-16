@@ -4,9 +4,22 @@ import type { Metadata } from 'next';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { getHowToGuide, HOWTO_GUIDES, AUDIENCE_LABELS } from '../content';
+import { getHowToGuide, HOWTO_GUIDES, AUDIENCE_LABELS, AVAILABLE_HOWTO_IMAGES, type HowToStep } from '../content';
 import { canViewGuide, filterGuidesForRole, type ViewerRole } from '@/lib/howto/access';
 import HowToImage from '../HowToImage';
+
+/** Group consecutive steps under their optional section heading. */
+function groupSteps(steps: HowToStep[]): { section?: string; steps: HowToStep[] }[] {
+  const groups: { section?: string; steps: HowToStep[] }[] = [];
+  for (const step of steps) {
+    if (step.section || groups.length === 0) {
+      groups.push({ section: step.section, steps: [step] });
+    } else {
+      groups[groups.length - 1].steps.push(step);
+    }
+  }
+  return groups;
+}
 
 interface Props {
   params: { slug: string };
@@ -86,20 +99,32 @@ export default async function HowToGuidePage({ params }: Props) {
       </div>
 
       <div className="max-w-3xl mx-auto px-6 py-10">
-        {/* Steps */}
-        <ol className="space-y-8">
-          {guide.steps.map((step, i) => (
-            <li key={i} className="flex gap-4">
-              <span className="flex-shrink-0 flex h-8 w-8 items-center justify-center rounded-full bg-primary-600 text-white text-sm font-semibold">
-                {i + 1}
-              </span>
-              <div className="flex-1">
-                <p className="text-neutral-800 leading-relaxed">{step.text}</p>
-                {step.image && <HowToImage image={step.image} alt={step.imageAlt} />}
-              </div>
-            </li>
+        {/* Steps — grouped under their optional section headings, numbered
+            within each group. */}
+        <div className="space-y-8">
+          {groupSteps(guide.steps).map((group, gi) => (
+            <div key={gi}>
+              {group.section && (
+                <h2 className="text-lg font-semibold text-neutral-900 mb-4">{group.section}</h2>
+              )}
+              <ol className="space-y-5">
+                {group.steps.map((step, i) => (
+                  <li key={i} className="flex gap-4">
+                    <span className="flex-shrink-0 flex h-8 w-8 items-center justify-center rounded-full bg-primary-600 text-white text-sm font-semibold">
+                      {i + 1}
+                    </span>
+                    <div className="flex-1">
+                      <p className="text-neutral-800 leading-relaxed">{step.text}</p>
+                      {step.image && AVAILABLE_HOWTO_IMAGES.has(step.image) && (
+                        <HowToImage image={step.image} alt={step.imageAlt} />
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </div>
           ))}
-        </ol>
+        </div>
 
         {/* Tips */}
         {guide.tips && guide.tips.length > 0 && (
@@ -127,6 +152,24 @@ export default async function HowToGuidePage({ params }: Props) {
             </div>
           </div>
         )}
+
+        {/* Screenshots — only renders images actually present under
+            public/howto (text-first; missing captures render nothing, never a
+            broken link). See AVAILABLE_HOWTO_IMAGES. */}
+        {(() => {
+          const present = (guide.images ?? []).filter((img) => AVAILABLE_HOWTO_IMAGES.has(img));
+          if (present.length === 0) return null;
+          return (
+            <div className="mt-10">
+              <h2 className="text-lg font-semibold text-neutral-900 mb-4">Screenshots</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {present.map((img) => (
+                  <HowToImage key={img} image={img} alt={`${guide.title} screenshot`} />
+                ))}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* NOTE: narrationScript is intentionally NOT rendered — it is internal
             video voiceover content, not for end users. */}

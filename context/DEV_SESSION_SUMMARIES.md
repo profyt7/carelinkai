@@ -1489,4 +1489,23 @@
 - **New risks/blockers:** ChrisOS vault not present in this environment → the 25 source How-To guides could not be ported (OL-067). Branch note: per harness instructions all three units were committed to `claude/inspiring-mayer-rvgyys` as three separate commits rather than three branches/PRs.
 - **Recommended next step:** When the vault is available, port the 25 guides from `04_CareLinkAI/howto/` into `src/app/learn/howto/content.ts` (excluding admin/affiliate, stripping NARRATION SCRIPT into `narrationScript`), capture the `(img: …)` assets into `/public/howto/`, and open the three PRs to main.
 
+### 2026-06-16 — Full How-To guide set ported into /learn (closes OL-069)
+- **Objective:** Replace the How-To hub's starter set with the complete, app-ready guide set as version-controlled content, rendered by the #566 hub. Close OL-069.
+- **Work completed:**
+  - Chris delivered 29 cleaned guides as a zip (`_howto_bundle.zip`) on `chore/howto-bundle-dropoff` (the ChrisOS vault isn't reachable from this dev/CI environment, and a remote session can't mount a local Windows `--add-dir` path — so git drop-off was the path in).
+  - Inspected the merged #566 hub: it renders from a TS data module (`src/app/learn/howto/content.ts` → `HOWTO_GUIDES`), role-gated via `src/lib/howto/access.ts`.
+  - Wrote `scripts/generate-howto-content.ts` (codegen) that transforms the bundle (`manifest.json` + `content/<role>/*.md`) into `content.ts`: maps role→audience, parses `### ` step sections / numbered steps / Tips / FAQ, strips internal cross-file refs and inline markdown, computes readTime, assigns per-guide icons. Generated all **29 guides** (shared 3, family 6, operator 9, caregiver 6, provider 3, discharge-planner 2).
+  - Extended the model minimally: `HowToStep.section?` (group heading), guide-level `images?`, and a build-time `AVAILABLE_HOWTO_IMAGES` set (scanned from `public/howto`). Reworked the detail page to render section-grouped steps (numbered within each group) and a Screenshots gallery that shows **only images that exist** — text-first, zero 404s for the 71 not-yet-captured screenshots.
+  - Generated `public/howto/README.md` — the per-guide checklist of all 71 expected screenshot filenames (drives OL-071).
+  - Deleted the raw `_app_content_bundle` + `_howto_bundle.zip` so neither ships; deleted the `chore/howto-bundle-dropoff` remote branch.
+  - Updated `__tests__/howto.access.unit.test.ts` to the new slugs + added catalog/gating assertions (29 guides, per-role counts, no cross-role leak, unique slugs, every guide has steps).
+- **Files changed:** `scripts/generate-howto-content.ts` (new), `src/app/learn/howto/content.ts` (regenerated, 29 guides), `src/app/learn/howto/[slug]/page.tsx` (section grouping + image gallery), `public/howto/README.md` (new), `__tests__/howto.access.unit.test.ts`, context files.
+- **Commands run:** `npx tsx scripts/generate-howto-content.ts`, `npx jest` (howto+help suites, 44 passing), `npx tsc --noEmit` (exit 0), `npm run build` (Compiled successfully), `npx next lint` (no warnings/errors).
+- **Tests/build status:** ✅ typecheck clean, build passes, 44 unit tests passing, lint clean.
+- **Deployment impact:** Content-only + a presentational detail-page change; no schema/migration. Safe on Render auto-deploy once merged. `/learn` will show all 29 guides with correct gating.
+- **New risks/blockers:** None. Screenshots still pending (OL-071, non-blocking — guides are text-first).
+- **PR / commit:** PR `feat/howto-hub-full-content` (commit hash recorded on push).
+- **Also this session:** merged PRs #564/#565/#566/#567 to main earlier; backfilled the #567 help-links fix as OL-070; closed OL-069; opened OL-071 for screenshot capture.
+- **Recommended next step:** Capture the 71 screenshots into `public/howto/` per the README and re-run the codegen (OL-071).
+
 <!-- Add new sessions above this line, newest first -->

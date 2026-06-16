@@ -1,8 +1,11 @@
 # CareLinkAI — Technical State
-_Last updated: 2026-06-15_
+_Last updated: 2026-06-16_
 
 ## Active Branch
-`main` — through PR #560. Pending branch: `claude/inspiring-mayer-rvgyys` (2026-06-15: discharge-planner search fix [OL-067], inquiry-form 400 fix [OL-068], role-gated How-To Guides hub [OL-069] — 3 commits, not yet PR'd to main). Also pending: `chore/remove-non-cleveland-demo-data` (non-Cleveland demo homes cleanup, not yet a PR).
+`main` — PRs #564 (discharge-planner search fix, OL-067), #565 (inquiry-form 400, OL-068), #566 (role-gated How-To hub), #567 (/help links, OL-070) all merged 2026-06-15. Pending PR: `feat/howto-hub-full-content` (2026-06-16 — full 29-guide How-To content, closes OL-069). Also pending: `chore/remove-non-cleveland-demo-data` (not yet a PR).
+
+## How-To Guides (Education Hub) — content pipeline
+The `/learn` How-To section renders from `src/app/learn/howto/content.ts` (`HOWTO_GUIDES`), role-gated by `src/lib/howto/access.ts` (audience→role; getting-started + family visible to all). That file is **auto-generated** — do not hand-edit. Source content is authored in the ChrisOS vault (`04_CareLinkAI/howto/`), cleaned into an app bundle (`manifest.json` + `content/<role>/*.md`), and transformed by `scripts/generate-howto-content.ts` (`npx tsx scripts/generate-howto-content.ts`). Guide screenshots live under `public/howto/`; the renderer shows only files that exist (build-time `AVAILABLE_HOWTO_IMAGES`), so missing captures are text-first with no 404s. The 71 expected screenshot filenames are checklisted in `public/howto/README.md` (OL-071).
 
 ## Production URL
 https://carelinkai.onrender.com (also: https://getcarelinkai.com)
