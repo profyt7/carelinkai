@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { isMockModeEnabled } from '@/lib/mockMode';
+import { isMockViewerAllowed } from '@/lib/mockMode.server';
 import { getMockProviderDetail } from '@/lib/mock/providers';
 import { computeProviderRideStats } from '@/lib/rideStats';
 
@@ -48,7 +49,9 @@ export async function GET(
       showMarketplace = false;
     }
     
-    if ((mockMode || showMarketplace) && isMarketplaceMockId) {
+    // Only serve a mock provider when the requester may see mocks (prod: admins
+    // only) — so a real family clicking through never lands on demo detail.
+    if ((mockMode || showMarketplace) && isMarketplaceMockId && (await isMockViewerAllowed())) {
       const mockProvider = getMockProviderDetail(id);
       
       if (!mockProvider) {

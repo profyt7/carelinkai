@@ -117,11 +117,16 @@ Each loop: what it is, why it matters, what done looks like.
 - **Status:** ✅ CLOSED (2026-06-16, PR feat/education-hub-tabs)
 - **What:** The How-To tutorials sat below the senior-care articles, so as articles grow How-To would get buried. Added two tabs at the top of `/learn` — **How-To & Tutorials** (default) and **Senior Care Guides** — driven by the `?tab=` query param (URL-stable, refresh-safe, server-rendered, no client JS). Role-gating from #566 preserved under the How-To tab. The `/help` "Education Hub" card still deep-links to `/learn` (defaults to How-To).
 
-### OL-074: Two minor FAMILY-UX observations (backlog, not yet fixed)
+### OL-074: `/family/residents` renders without app chrome (backlog)
 - **Status:** 🟡 OPEN — captured during 2026-06-16 live inspection
 - **(a)** `/family/residents` renders **without the app sidebar/chrome** — confirm whether intended (other `/family/*` pages use `DashboardLayout`). Low priority, cosmetic.
-- **(b)** `/marketplace` **Providers** tab shows demo data ("Golden Years Home Care, San Francisco"). Demo-data cleanup is tracked separately (non-Cleveland demo cleanup, see OL-057 family); spot-check + purge the SF provider demo rows before broader launch.
-- **Done when:** (a) decision recorded + layout aligned if needed; (b) SF/demo provider rows removed from prod.
+- **Done when:** decision recorded + layout aligned if needed.
+
+### OL-075: Marketplace mock data could leak to real users in prod
+- **Status:** ✅ CLOSED (2026-06-16, PR `fix/mock-mode-prod-admin-only`)
+- **What:** The `/marketplace` Providers (and Caregivers) surfaces showed sample data ("Golden Years Home Care, San Francisco") because admin **mock mode** was on (a `carelink_mock_mode` cookie or `SHOW_SITE_MOCKS=1` env). The `_marketplace_mock` default-on path in `providers/[id]` and the on-empty/on-error mock fallbacks in the caregivers route could also surface mocks to real visitors. Founder chose a code hardening over an ops toggle.
+- **Fix:** added `isMockViewerAllowed()` (`src/lib/mockMode.server.ts`) — non-prod: always; **production: ADMIN only** — and gated every mock-serving point in the providers/caregivers + `providers/[id]` routes on it. So a stray cookie/env can no longer leak demo data to families on prod; admins keep the preview in dev/staging. Test: `__tests__/mock-mode.viewer.unit.test.ts` (5 cases).
+- **Note:** This is the durable fix for the OL-074(b) observation. If `SHOW_SITE_MOCKS=1` is *also* set in Render, it's now harmless for end users but can be unset for tidiness.
 
 ### OL-027: Provider listing fee ($99/mo)
 - **Status:** ✅ CLOSED (2026-05-02)
