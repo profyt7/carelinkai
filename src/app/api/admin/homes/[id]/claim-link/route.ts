@@ -5,7 +5,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { UserRole } from '@prisma/client';
-import { signClaimToken } from '@/lib/claim-token';
+import { signClaimToken, DEFAULT_CLAIM_TOKEN_TTL_HOURS } from '@/lib/claim-token';
 
 /**
  * POST /api/admin/homes/[id]/claim-link
@@ -39,7 +39,7 @@ export async function POST(
   const {
     operatorEmail,
     clevelandFounder = true,
-    expiresInHours = 168, // 7 days — matches the Cleveland outreach email's stated window
+    expiresInHours = DEFAULT_CLAIM_TOKEN_TTL_HOURS, // 45 days (callers may override)
   } = body as { operatorEmail?: string; clevelandFounder?: boolean; expiresInHours?: number };
 
   if (!operatorEmail) {
