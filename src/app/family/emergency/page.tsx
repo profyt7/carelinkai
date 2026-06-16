@@ -5,18 +5,12 @@ import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Link from 'next/link';
 import { FiArrowLeft, FiPlus, FiTrash2, FiSave } from 'react-icons/fi';
-
-// Define types for our form
-interface EscalationContact {
-  name: string;
-  phone: string;
-}
-
-interface EmergencyPreference {
-  escalationChain: EscalationContact[];
-  notifyMethods: string[];
-  careInstructions: string;
-}
+import {
+  type EscalationContact,
+  type EmergencyPreference,
+  EMPTY_PREFERENCE,
+  normalizePreference,
+} from '@/lib/family/emergency';
 
 export default function EmergencyPreferencesPage() {
   const router = useRouter();
@@ -30,11 +24,7 @@ export default function EmergencyPreferencesPage() {
   const isGuest = role === 'GUEST';
   
   // Form state
-  const [preferences, setPreferences] = useState<EmergencyPreference>({
-    escalationChain: [],
-    notifyMethods: [],
-    careInstructions: '',
-  });
+  const [preferences, setPreferences] = useState<EmergencyPreference>({ ...EMPTY_PREFERENCE });
 
   // Load existing preferences
   useEffect(() => {
@@ -44,13 +34,16 @@ export default function EmergencyPreferencesPage() {
         setError(null);
         if (!familyId) return;
         const response = await fetch(`/api/family/emergency?familyId=${familyId}`);
-        
+
         if (!response.ok) {
           throw new Error('Failed to load emergency preferences');
         }
-        
+
         const data = await response.json();
-        setPreferences(data.preference);
+        // The API returns { preferences } (null when none exist yet). Normalize
+        // to the safe shape so render never dereferences null/undefined — this
+        // was the cause of the "Something went wrong" error boundary.
+        setPreferences(normalizePreference(data?.preferences));
       } catch (err: any) {
         setError(err.message || 'An error occurred while loading preferences');
         console.error('Error loading emergency preferences:', err);
@@ -58,7 +51,7 @@ export default function EmergencyPreferencesPage() {
         setLoading(false);
       }
     };
-    
+
     loadPreferences();
   }, [familyId]);
 
