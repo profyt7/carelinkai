@@ -106,7 +106,10 @@ export async function GET(req: NextRequest) {
           }
         },
         caregiverAssignments: {
-          where: { isPrimary: true, isActive: true },
+          // CaregiverAssignment has no `isActive` field (that threw
+          // PrismaClientValidationError → 500 on /api/residents). An active
+          // assignment is one that has not ended yet.
+          where: { isPrimary: true, endDate: null },
           take: 1,
           select: {
             caregiver: {

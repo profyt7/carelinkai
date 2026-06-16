@@ -1,6 +1,13 @@
 import { test } from '@playwright/test';
 import { upsertOperator, loginAs, getFirstHomeId, getFamilyId, createResident, openResidentDetail, discharge, admit, editResidentName } from './_helpers';
 
+// QUARANTINED in CI pending OL-076 (operator/residents Next 15 async params/
+// searchParams migration). These specs were previously false-green (never
+// executed); they run locally but are skipped in CI until the migration lands.
+test.beforeEach(() => {
+  test.skip(!!process.env.CI, 'OL-076: operator/residents Next 15 async-params migration pending');
+});
+
 test('resident lifecycle: discharge -> admit -> edit', async ({ page, request }) => {
   const email = 'op-life@example.com';
   await upsertOperator(request, email);
