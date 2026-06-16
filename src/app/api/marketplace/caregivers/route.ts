@@ -9,6 +9,7 @@ import { authOptions } from '@/lib/auth';
 import { Prisma } from '@prisma/client';
 import { rateLimitAsync, getClientIp, buildRateLimitHeaders } from '@/lib/rateLimit';
 import { isMockModeEnabled } from '@/lib/mockMode';
+import { isMockViewerAllowed } from '@/lib/mockMode.server';
 
 /**
  * GET /api/marketplace/caregivers
@@ -439,8 +440,11 @@ export async function GET(request: Request) {
       };
     });
     
-    // If mock mode is enabled OR in development, return mock data when no results found
-    const useMockData = isMockModeEnabled(request) || process.env.NODE_ENV === 'development';
+    // Return mock data when no results found — only when the requester may see
+    // mocks (non-prod, or a prod admin). Real families get a true empty result.
+    const useMockData =
+      (isMockModeEnabled(request) || process.env.NODE_ENV !== 'production') &&
+      (await isMockViewerAllowed());
     if (useMockData && formattedCaregivers.length === 0) {
       // Fetch specialties from DB for more realistic mock data
       let specialtyCategories: string[] = [];
@@ -493,8 +497,11 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error('Error fetching caregivers:', error);
     
-    // If mock mode is enabled OR in development, return mock data on error
-    const useMockData = isMockModeEnabled(request) || process.env.NODE_ENV === 'development';
+    // Fall back to mock data on error only when the requester may see mocks
+    // (non-prod, or a prod admin) — never leak sample data to real users.
+    const useMockData =
+      (isMockModeEnabled(request) || process.env.NODE_ENV !== 'production') &&
+      (await isMockViewerAllowed());
     if (useMockData) {
       const mockCaregivers = generateMockCaregivers(12);
       

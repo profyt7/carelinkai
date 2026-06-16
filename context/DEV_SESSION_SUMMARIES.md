@@ -1521,4 +1521,15 @@
 - **PRs:** #569 (emergency fix) + `feat/education-hub-tabs` (this PR carries the docs).
 - **Recommended next step:** Merge both PRs; then OL-074 (demo-data purge + residents-layout decision) and OL-071 (screenshots) remain.
 
+### 2026-06-16 — Harden marketplace mock mode (prod = admins only)
+- **Objective:** Stop `/marketplace` showing sample providers/caregivers ("Golden Years Home Care, San Francisco") to real families. Founder chose a code hardening over an ops cookie/env toggle.
+- **Work completed:** Root-caused to admin **mock mode** (cookie `carelink_mock_mode` or env `SHOW_SITE_MOCKS`) — a deliberate feature, not seeded data. Added `isMockViewerAllowed()` (`src/lib/mockMode.server.ts`): non-prod always; **production ADMIN only**. Gated every mock-serving point: providers list (primary + error fallback), caregivers list (on-empty + on-error fallbacks), and `providers/[id]` (the default-on `_marketplace_mock` detail path). A stray cookie/env can no longer leak demo data to families on prod; admins keep the preview in dev/staging.
+- **Files changed:** `src/lib/mockMode.server.ts` (new), `src/app/api/marketplace/providers/route.ts`, `src/app/api/marketplace/caregivers/route.ts`, `src/app/api/marketplace/providers/[id]/route.ts`, `__tests__/mock-mode.viewer.unit.test.ts` (new), context files.
+- **Commands run:** `npx jest` (5 passing), `npx tsc --noEmit` (exit 0), `npm run build` (Compiled successfully), `npx next lint` (clean).
+- **Tests/build status:** ✅ all green.
+- **Deployment impact:** No schema/migration. Behavior change only for prod non-admins (they now see real data / true empty states instead of mocks). Safe on Render auto-deploy.
+- **Loops:** closed OL-075 (this fix; the durable resolution of OL-074(b)); OL-074 narrowed to just the `/family/residents` chrome question.
+- **PR:** `fix/mock-mode-prod-admin-only`.
+- **Recommended next step:** Optionally unset `SHOW_SITE_MOCKS` in Render for tidiness; address OL-074(a) (residents layout) if desired.
+
 <!-- Add new sessions above this line, newest first -->

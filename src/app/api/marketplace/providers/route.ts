@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { isMockModeEnabled } from '@/lib/mockMode';
+import { isMockViewerAllowed } from '@/lib/mockMode.server';
 import { generateMockProviders, filterMockProviders } from '@/lib/mock/providers';
 
 /**
@@ -23,9 +24,10 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     
-    // Check if mock mode is enabled via cookie or environment variable
-    const useMockData = isMockModeEnabled(request);
-    
+    // Check if mock mode is requested (cookie/env) AND the requester may see
+    // mocks (prod: admins only). Real families never get sample providers.
+    const useMockData = isMockModeEnabled(request) && (await isMockViewerAllowed());
+
     // If mock mode is enabled, return mock data
     if (useMockData) {
       // Extract filter parameters for mock data filtering
@@ -336,9 +338,12 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error('Error fetching providers:', error);
     
-    // In development mode OR if mock mode is enabled, return mock data as fallback
-    const useMockData = isMockModeEnabled(request) || process.env.NODE_ENV === 'development';
-    
+    // Fall back to mock data only when the requester may see mocks (non-prod,
+    // or a prod admin) — never leak sample data to real users on an error.
+    const useMockData =
+      (isMockModeEnabled(request) || process.env.NODE_ENV !== 'production') &&
+      (await isMockViewerAllowed());
+
     if (useMockData) {
       const mockProviders = generateMockProviders(12);
       
