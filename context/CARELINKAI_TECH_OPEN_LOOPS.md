@@ -109,6 +109,20 @@ Each loop: what it is, why it matters, what done looks like.
 - **Status:** ✅ CLOSED (2026-06-15, PR #567, merged) — backfilled here
 - **What:** The role checklists on `/help` pointed at dead or role-gated routes (FAMILY "Browse assisted living homes" → `/discharge-planner`; `/marketplace/aides` 404; CAREGIVER `/settings/aide` 404; OPERATOR `/marketplace/listings` 404), and DISCHARGE_PLANNER/AFFILIATE had no guide. Repointed every step to a verified, role-accessible route and added the two missing guides. Extracted to `src/lib/help/getting-started.ts` + `__tests__/help.getting-started.unit.test.ts` (33 cases) that fails if any href doesn't resolve to a real `src/app/**/page.tsx` route or a FAMILY step targets a gated portal.
 
+### OL-072: /family/emergency crashed on load (error boundary)
+- **Status:** ✅ CLOSED (2026-06-16, PR #569)
+- **What:** `/family/emergency` tripped the global "Something went wrong" error boundary for FAMILY users. Cause: a client/API contract mismatch — `GET /api/family/emergency` returns `{ preferences }` (plural; `null` when none exist), but the page read `data.preference` (singular → `undefined`) and set state to it, so render dereferenced `undefined.notifyMethods`. Fix: read `data.preferences` and `normalizePreference()` any input (null/partial/free-form JSON `escalationChain`) into the strict UI shape. Extracted to `src/lib/family/emergency.ts` + `__tests__/family.emergency.normalize.unit.test.ts` (6 cases). The `/help` "Set up emergency contacts" link stays enabled (fix ships with it).
+
+### OL-073: Education Hub information architecture — tab split
+- **Status:** ✅ CLOSED (2026-06-16, PR feat/education-hub-tabs)
+- **What:** The How-To tutorials sat below the senior-care articles, so as articles grow How-To would get buried. Added two tabs at the top of `/learn` — **How-To & Tutorials** (default) and **Senior Care Guides** — driven by the `?tab=` query param (URL-stable, refresh-safe, server-rendered, no client JS). Role-gating from #566 preserved under the How-To tab. The `/help` "Education Hub" card still deep-links to `/learn` (defaults to How-To).
+
+### OL-074: Two minor FAMILY-UX observations (backlog, not yet fixed)
+- **Status:** 🟡 OPEN — captured during 2026-06-16 live inspection
+- **(a)** `/family/residents` renders **without the app sidebar/chrome** — confirm whether intended (other `/family/*` pages use `DashboardLayout`). Low priority, cosmetic.
+- **(b)** `/marketplace` **Providers** tab shows demo data ("Golden Years Home Care, San Francisco"). Demo-data cleanup is tracked separately (non-Cleveland demo cleanup, see OL-057 family); spot-check + purge the SF provider demo rows before broader launch.
+- **Done when:** (a) decision recorded + layout aligned if needed; (b) SF/demo provider rows removed from prod.
+
 ### OL-027: Provider listing fee ($99/mo)
 - **Status:** ✅ CLOSED (2026-05-02)
 - Schema fields + migration, Stripe Checkout + Customer Portal APIs, webhook handler, visibility gate in marketplace API, billing UI at `/settings/provider/billing`. Requires `STRIPE_PRICE_PROVIDER_LISTING` env var in Render.
