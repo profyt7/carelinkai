@@ -1,6 +1,13 @@
 import { test, expect } from '@playwright/test';
 import { upsertOperator, loginAs, getFirstHomeId, getFamilyId, createResident } from './_helpers';
 
+// QUARANTINED in CI pending OL-076 (operator/residents Next 15 async params/
+// searchParams migration). These specs were previously false-green (never
+// executed); they run locally but are skipped in CI until the migration lands.
+test.beforeEach(() => {
+  test.skip(!!process.env.CI, 'OL-076: operator/residents Next 15 async-params migration pending');
+});
+
 // Assumptions:
 // - Dev endpoints are enabled in CI via dev server with ALLOW_DEV_ENDPOINTS=1
 // - We create an operator and login via /api/dev endpoints

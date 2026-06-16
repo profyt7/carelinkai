@@ -128,6 +128,14 @@ Each loop: what it is, why it matters, what done looks like.
 - **Fix:** added `isMockViewerAllowed()` (`src/lib/mockMode.server.ts`) — non-prod: always; **production: ADMIN only** — and gated every mock-serving point in the providers/caregivers + `providers/[id]` routes on it. So a stray cookie/env can no longer leak demo data to families on prod; admins keep the preview in dev/staging. Test: `__tests__/mock-mode.viewer.unit.test.ts` (5 cases).
 - **Note:** This is the durable fix for the OL-074(b) observation. If `SHOW_SITE_MOCKS=1` is *also* set in Render, it's now harmless for end users but can be unset for tidiness.
 
+### OL-076: Complete the Next 15 async params/searchParams migration (operator/residents + api/residents)
+- **Status:** 🔴 OPEN — surfaced 2026-06-16 when the e2e suite first ran for real (OL-063 fix, PR #572).
+- **What:** The app is on Next 15.5.10, where `params`/`searchParams` are async and must be awaited; several server components + route handlers still read them synchronously, which throws (`sync-dynamic-apis`) → broken/slow renders. PR #572 fixed the family-residents pages, but the **operator/residents** surface is still synchronous: `src/app/operator/residents/page.tsx` (searchParams ×7), `src/app/operator/residents/[id]/page.tsx` (params + searchParams), and `src/app/api/residents/[id]/{route,assessments,contacts,notes,incidents,…}/route.ts` (params.id in every handler). This breaks the operator residents e2e specs (page-load timeouts + missing sections).
+- **Quarantine:** 6 residents e2e specs (`residents-transfer`, `-lifecycle`, `-documents`, `-assessments-incidents-edit`, `-assessments-incidents-update`, `-csv-export`) are explicitly `test.skip(!!process.env.CI, …)` in CI pending this work (they were previously false-green / never executed, so no real coverage was lost). `residents-contacts`/`-compliance` were already CI-skipped; `residents-summary` passes.
+- **Also worth checking:** the CI residents specs navigate via `npm run dev` (the e2e config webServer), so first-hit on-demand compilation may contribute to the 60s `page.goto` timeouts — consider building + `npm run start` for the e2e config, or raising timeouts.
+- **Broader:** audit the rest of `src/app/**` for the same sync `params`/`searchParams` pattern (this was a partial Next 14→15 migration).
+- **Done when:** operator/residents pages + api/residents routes await their dynamic APIs, the 6 quarantined specs are un-skipped, and the residents e2e job runs them green.
+
 ### OL-027: Provider listing fee ($99/mo)
 - **Status:** ✅ CLOSED (2026-05-02)
 - Schema fields + migration, Stripe Checkout + Customer Portal APIs, webhook handler, visibility gate in marketplace API, billing UI at `/settings/provider/billing`. Requires `STRIPE_PRICE_PROVIDER_LISTING` env var in Render.

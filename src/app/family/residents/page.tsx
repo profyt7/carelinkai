@@ -4,7 +4,7 @@ import { requireAnyRole } from '@/lib/rbac';
 
 export const dynamic = 'force-dynamic';
 
-export default async function FamilyResidentsIndex({ searchParams }: { searchParams?: Record<string, string | string[]> }) {
+export default async function FamilyResidentsIndex({ searchParams }: { searchParams?: Promise<Record<string, string | string[]>> }) {
   const { session, error } = await requireAnyRole(['FAMILY' as any], { forbiddenMessage: 'Family access required' });
   if (error) return error as any;
   const userId = session!.user!.id as string;
@@ -15,9 +15,12 @@ export default async function FamilyResidentsIndex({ searchParams }: { searchPar
   });
   if (!membership) redirect('/family');
 
+  // Next 15: searchParams is async and must be awaited before property access
+  // (a sync read throws → the page hit the "Something went wrong" boundary).
   // ASSUMPTION: TS config has noPropertyAccessFromIndexSignature enabled; use bracket access.
-  const q = (typeof searchParams?.['q'] === 'string' ? searchParams?.['q'] : '').trim();
-  const status = (typeof searchParams?.['status'] === 'string' ? searchParams?.['status'] : '').trim();
+  const sp = (await searchParams) ?? {};
+  const q = (typeof sp['q'] === 'string' ? sp['q'] : '').trim();
+  const status = (typeof sp['status'] === 'string' ? sp['status'] : '').trim();
 
   const residents = await prisma.resident.findMany({
     where: {

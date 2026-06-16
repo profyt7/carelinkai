@@ -9,9 +9,12 @@ import { getMockResident, getMockContacts, getMockAppointments, getMockNotes, ge
 
 export const dynamic = 'force-dynamic';
 
-type Props = { params: { id: string } };
+type Props = { params: Promise<{ id: string }> };
 
 export default async function FamilyResidentPage({ params }: Props) {
+  // Next 15: params is async and must be awaited before property access
+  // (a sync read throws → the page hit the "Something went wrong" boundary).
+  const { id } = await params;
   // Check mock mode from cookie
   const cookieStore = await cookies();
   const mockCookie = cookieStore.get('carelink_mock_mode')?.value?.toString().trim().toLowerCase() || '';
@@ -19,12 +22,12 @@ export default async function FamilyResidentPage({ params }: Props) {
   
   // If mock mode is enabled and the ID matches a mock resident, show mock data
   if (showMock) {
-    const mockResident = getMockResident(params.id);
+    const mockResident = getMockResident(id);
     if (mockResident) {
-      const mockContacts = getMockContacts(params.id);
-      const mockAppts = getMockAppointments(params.id);
-      const mockNotes = getMockNotes(params.id);
-      const mockCompliance = getMockComplianceSummary(params.id);
+      const mockContacts = getMockContacts(id);
+      const mockAppts = getMockAppointments(id);
+      const mockNotes = getMockNotes(id);
+      const mockCompliance = getMockComplianceSummary(id);
       
       const ageYears = mockResident.dateOfBirth 
         ? Math.floor((Date.now() - new Date(mockResident.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
@@ -219,7 +222,7 @@ export default async function FamilyResidentPage({ params }: Props) {
 
   // Fetch resident owned by family, with safe fields only
   const resident = await prisma.resident.findFirst({
-    where: { id: params.id, familyId: membership.familyId },
+    where: { id: id, familyId: membership.familyId },
     select: {
       id: true,
       firstName: true,
@@ -264,26 +267,25 @@ export default async function FamilyResidentPage({ params }: Props) {
 
   // Compliance summary (family-safe counts only)
   const in14 = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+  // ComplianceStatus enum values are CURRENT/EXPIRING_SOON/EXPIRED/NOT_REQUIRED/
+  // PENDING/COMPLIANT/MISSING — the old 'OPEN'/'COMPLETED' literals were invalid
+  // and threw PrismaClientValidationError (500 → "Something went wrong").
   const [openCount, completedCount, dueSoonCount, overdueCount] = await Promise.all([
+    // Outstanding = still needs attention (not yet in good standing)
     prisma.residentComplianceItem.count({
-      where: { residentId: resident.id, status: 'OPEN' as any },
+      where: { residentId: resident.id, status: { in: ['PENDING', 'MISSING', 'EXPIRED', 'EXPIRING_SOON'] } },
     }),
+    // Completed = in good standing
     prisma.residentComplianceItem.count({
-      where: { residentId: resident.id, status: 'COMPLETED' as any },
+      where: { residentId: resident.id, status: { in: ['COMPLIANT', 'CURRENT'] } },
     }),
+    // Due soon = expiring within the next 14 days
     prisma.residentComplianceItem.count({
-      where: {
-        residentId: resident.id,
-        status: 'OPEN' as any,
-        expiryDate: { gte: now, lte: in14 },
-      },
+      where: { residentId: resident.id, expiryDate: { gte: now, lte: in14 } },
     }),
+    // Overdue = already expired
     prisma.residentComplianceItem.count({
-      where: {
-        residentId: resident.id,
-        status: 'OPEN' as any,
-        expiryDate: { lt: now },
-      },
+      where: { residentId: resident.id, expiryDate: { lt: now } },
     }),
   ]);
 
