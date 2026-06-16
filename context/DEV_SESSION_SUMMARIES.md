@@ -1508,4 +1508,17 @@
 - **Also this session:** merged PRs #564/#565/#566/#567 to main earlier; backfilled the #567 help-links fix as OL-070; closed OL-069; opened OL-071 for screenshot capture.
 - **Recommended next step:** Capture the 71 screenshots into `public/howto/` per the README and re-run the codegen (OL-071).
 
+### 2026-06-16 — Education Hub tabs + fix broken /family/emergency
+- **Objective:** Two follow-ups from live FAMILY-role inspection of prod: (1) separate the Education Hub's How-To tutorials from the senior-care articles with tabs; (2) fix `/family/emergency` throwing the error boundary.
+- **Work completed:**
+  - **Task 2 — `/family/emergency` (PR #569, `fix/family-emergency-page`):** Root cause was a client/API contract mismatch — the GET returns `{ preferences }` (null when none), but the page read `data.preference` (singular → undefined) and set state to it, so render dereferenced `undefined.notifyMethods` → error boundary. Fixed to read `data.preferences` + `normalizePreference()` (handles null/partial/free-form JSON). Extracted to `src/lib/family/emergency.ts`; test `__tests__/family.emergency.normalize.unit.test.ts` (6 cases). The `/help` link stays enabled (fix ships with it).
+  - **Task 1 — Education Hub tabs (PR `feat/education-hub-tabs`):** Added two tabs to `/learn` — **How-To & Tutorials** (default) and **Senior Care Guides** — driven by `?tab=` query param (URL-stable, refresh-safe, server-rendered, no client JS). Role-gating from #566 preserved. Responsive (horizontal nav with overflow scroll). Counts shown per tab.
+- **Files changed:** `src/app/family/emergency/page.tsx`, `src/lib/family/emergency.ts` (new), `__tests__/family.emergency.normalize.unit.test.ts` (new); `src/app/learn/page.tsx`; context files.
+- **Commands run:** `npx jest` (emergency suite, 6 passing), `npx tsc --noEmit` (exit 0), `npm run build` (Compiled successfully, both runs), `npx next lint` (clean).
+- **Tests/build status:** ✅ typecheck clean, build passes, tests passing, lint clean.
+- **Deployment impact:** `/family/emergency` no longer crashes for families; `/learn` shows tabs. No schema/migration. Safe on Render auto-deploy once merged.
+- **Loops:** closed OL-072 (emergency fix), OL-073 (Education Hub IA tabs); opened OL-074 (two minor backlog observations: `/family/residents` renders without app chrome; `/marketplace` Providers shows SF demo data).
+- **PRs:** #569 (emergency fix) + `feat/education-hub-tabs` (this PR carries the docs).
+- **Recommended next step:** Merge both PRs; then OL-074 (demo-data purge + residents-layout decision) and OL-071 (screenshots) remain.
+
 <!-- Add new sessions above this line, newest first -->
