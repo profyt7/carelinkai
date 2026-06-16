@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-06-15_
+_Last updated: 2026-06-16_
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -94,10 +94,20 @@ Each loop: what it is, why it matters, what done looks like.
 - **What:** The `/homes/[id]` "Send Inquiry" form posted `name/email/phone/residentName/careNeeded` + `source:'home_detail'`, none matching the API Zod schema → every submit `400 Validation failed`. Added `buildInquiryPayload()` (`src/lib/inquiries/payload.ts`) mapping to the canonical contract, extracted the schema to `src/lib/inquiries/schema.ts`, relaxed `careRecipientName` to optional (nullable column, backward compatible). Tests in `__tests__/inquiries.payload.unit.test.ts`.
 - **Note:** Committed to `claude/inspiring-mayer-rvgyys`; not yet PR'd/merged to main.
 
-### OL-069: Port the 25 How-To guides from the ChrisOS vault into the Education Hub
-- **Status:** 🟡 OPEN — infrastructure shipped 2026-06-15, content pending
-- **What:** The role-gated How-To Guides section now exists at `/learn/howto` with a content model that mirrors the vault guide format (`src/app/learn/howto/content.ts`). The 25 source guides in the vault (`04_CareLinkAI/howto/`: family/shared/operator/caregiver/provider/discharge-planner/admin) could NOT be copied because the vault is not present in this environment — only a starter set was seeded.
-- **Done when:** With the vault available, port all guides into `HOWTO_GUIDES` (exclude `admin/00_INTERNAL_admin_overview.md` and any affiliate guides; move NARRATION SCRIPT blocks into `narrationScript`), capture the `(img: …)` assets into `/public/howto/`, and verify each role sees only its guides.
+### OL-069: Port the full How-To guide set from the ChrisOS vault into the Education Hub
+- **Status:** ✅ CLOSED (2026-06-16, PR feat/howto-hub-full-content) — full content now version-controlled in-repo
+- **What:** The starter set has been replaced with all **29 cleaned, role-facing guides** (shared 3, family 6, operator 9, caregiver 6, provider 3, discharge-planner 2). Chris delivered them as an app-ready bundle (`_app_content_bundle`, via a zip dropped on `chore/howto-bundle-dropoff` since the vault isn't reachable from dev/CI). A codegen script `scripts/generate-howto-content.ts` transforms the bundle (`manifest.json` + `content/<role>/*.md`) into `src/app/learn/howto/content.ts` (role→audience mapping, `### ` step sections, Tips/FAQ, internal cross-refs stripped). Admin-internal + Affiliate guides are deliberately excluded. The raw bundle + zip were removed so nothing extra ships; the dropoff branch was deleted.
+- **Role-gating:** unchanged from #566/#567 — families see shared + family only; each role sees its own; verified by `__tests__/howto.access.unit.test.ts` (per-role counts + no cross-role leak).
+- **Image tail → see OL-071.**
+
+### OL-071: Capture the 71 How-To screenshots into the repo
+- **Status:** 🟡 OPEN — text-first guides are live; screenshots pending
+- **What:** Each guide's frontmatter lists screenshot filenames (71 total) that live in Chris's Downloads, not the repo. The hub renders **text-first**: it shows only images present under `public/howto/` (build-time `AVAILABLE_HOWTO_IMAGES` set), so missing captures render nothing — no 404s, no broken layout. The full per-guide checklist is generated at `public/howto/README.md`.
+- **Done when:** Optimized PNGs are dropped into `public/howto/` by the filenames in that README, `npx tsx scripts/generate-howto-content.ts` is re-run (rescans available images), and the guides show their screenshots. (Optional later: namespace filenames by slug, or host on Cloudinary.)
+
+### OL-070: /help "Getting Started" links broken/role-gated for all roles
+- **Status:** ✅ CLOSED (2026-06-15, PR #567, merged) — backfilled here
+- **What:** The role checklists on `/help` pointed at dead or role-gated routes (FAMILY "Browse assisted living homes" → `/discharge-planner`; `/marketplace/aides` 404; CAREGIVER `/settings/aide` 404; OPERATOR `/marketplace/listings` 404), and DISCHARGE_PLANNER/AFFILIATE had no guide. Repointed every step to a verified, role-accessible route and added the two missing guides. Extracted to `src/lib/help/getting-started.ts` + `__tests__/help.getting-started.unit.test.ts` (33 cases) that fails if any href doesn't resolve to a real `src/app/**/page.tsx` route or a FAMILY step targets a gated portal.
 
 ### OL-027: Provider listing fee ($99/mo)
 - **Status:** ✅ CLOSED (2026-05-02)
