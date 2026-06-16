@@ -9,15 +9,14 @@ Each loop: what it is, why it matters, what done looks like.
 ## 🔴 HIPAA Critical (Blocking First Operator with Real PHI)
 
 ### OL-051: Merge HIPAA Phase 3 PRs #536 → #537 → #538
-- **Status:** 🔴 OPEN — code shipped, awaiting merge
-- **What:** Three PRs pushed 2026-05-16. Must merge in order A (#536) → B (#537) → C (#538). PR B has a schema migration.
-- **PR B impact on existing operators:** Pre-Phase-3 operators get null in all BAA/DPA fields → `isOperatorAcceptanceCurrent()` returns false → they will be redirected to `/operator/acceptance` on next login and must accept BAA+DPA before accessing the platform.
-- **Done when:** All three PRs merged to main, Render auto-deploy completes without migration errors.
+- **Status:** ✅ CLOSED (verified 2026-06-16) — all three merged to main.
+- **Evidence:** commits `0f06d6d` (PR A #536), `61e4803` (PR B #537), `a605a57` (PR C #538) are on `main`; the PR B schema migration `prisma/migrations/20260516000001_add_operator_baa_dpa_acceptance/` is in the tree. Follow-up fix `ec6c12e` (#539) also landed.
+- **Note:** Merging the code ≠ legal sign-off — the BAA/DPA templates are still DRAFTs (see OL-052). The signup gate is live; existing operators get redirected to `/operator/acceptance` as designed.
 
 ### OL-052: Attorney review of BAA/DPA draft templates (HIPAA Punch List F1 / A2)
-- **Status:** 🔴 OPEN — BLOCKING first operator with real PHI
-- **What:** `src/content/legal/baa/v-draft-2026-05-15.md` and `src/content/legal/dpa/v-draft-2026-05-15.md` have mandatory DRAFT banners. Must NOT be presented to operators as binding agreements until reviewed and approved by qualified legal counsel.
-- **Done when:** Attorney reviews + approves both templates → update `BAA_CURRENT_VERSION` / `DPA_CURRENT_VERSION` in `src/lib/legal.ts` to the approved version → redeploy → existing operators re-accept.
+- **Status:** 🔴 OPEN — **blocked on FOUNDER action (attorney outreach), not engineering.** Still BLOCKING first operator with real PHI.
+- **What:** `src/content/legal/baa/v-draft-2026-05-15.md` and `src/content/legal/dpa/v-draft-2026-05-15.md` have mandatory DRAFT banners. Must NOT be presented to operators as binding agreements until reviewed and approved by qualified legal counsel. Engineering is done — `src/lib/legal.ts` still pins `BAA_CURRENT_VERSION = DPA_CURRENT_VERSION = 'draft-2026-05-15'` (verified 2026-06-16); the only remaining step is the legal review + a version bump.
+- **Done when:** Attorney reviews + approves both templates → update `BAA_CURRENT_VERSION` / `DPA_CURRENT_VERSION` in `src/lib/legal.ts` off `draft-2026-05-15` to the approved version → redeploy → existing operators re-accept.
 
 ### OL-053: HIPAA breach response runbook (Risk Register Risk 1 Action 6)
 - **Status:** ❌ OPEN — due 2026-06-30
@@ -38,19 +37,19 @@ Each loop: what it is, why it matters, what done looks like.
 - **What:** Full path: seed a home via `/api/dev/upsert-operator`, generate claim link via admin UI, register new operator with `?claimToken=`, complete all 4 wizard steps, verify free access granted and no Stripe flow triggered.
 - **Done when:** Founder lands on Step 4 free card, clicks "Complete Setup", reaches `/operator` dashboard with no Stripe redirect.
 
-### OL-057: Non-Cleveland demo homes cleanup pending merge
-- **Status:** 🟡 OPEN — script created on `chore/remove-non-cleveland-demo-data`, no PR yet
-- **What:** `scripts/cleanup-non-cleveland-demo-homes.ts` deletes DRAFT homes where `address.state != 'OH'` (Golden Years Chicago, Lakeside Rehab Seattle, Harbor View Miami). Safety: aborts if >3 records found or if any home has bookings/residents/inquiries/tours.
-- **Done when:** PR created, dry-run reviewed, `--force` run completes, 3 homes removed from production DB.
+### OL-057: Non-Cleveland demo homes cleanup
+- **Status:** ✅ EFFECTIVELY DONE (verified 2026-06-16) — residual is a live-DB confirm only.
+- **What:** `scripts/cleanup-non-cleveland-demo-homes.ts` deletes DRAFT homes where `address.state != 'OH'`. **Merged via #551** (the doc's old "no PR yet" was stale). The 2026-06-10 Render cleanup **dry-run found zero non-OH DRAFT homes** (no-op — the earlier non-Cleveland demos were already gone), and **43 leaked e2e test homes were purged via #558 on 2026-06-11**.
+- **Residual:** next time in the Render shell, re-confirm against the live DB that no non-OH DRAFT homes exist. No code work remains.
 
 ### OL-058: Second batch Cleveland facilities auto-population
-- **Status:** 🟡 OPEN — first batch (15 homes) complete; remaining Cleveland facilities in the directory need auto-population
+- **Status:** 🟡 OPEN — likely progressed by the 2026-06-10 Render auto-population session (photos + addresses backfilled, see OL-060/061); confirm the remaining-cohort count against the live DB to decide if any facilities still need a run.
 - **What:** Identify next set of Cleveland-area AssistedLivingHome records with `websiteUrl` available, create CSV, run `autopopulate-cohort.ts --dry-run` then `--force`.
 - **Note:** The Elms (mapped to "Hudson Elms Skilled Nursing & Rehabilitation Center"), Concordia at Sumner (city/address unresolved), Ohman + O'Neill North Ridgeville (capacity discrepancies) should be manually reviewed before operator outreach.
 - **Done when:** All Cleveland directory homes have `autoPopulatedAt` set or are marked as JS_ONLY/BLOCKED with a note.
 
 ### OL-059: AI-populated home data quality review — first-batch flags
-- **Status:** 🟡 OPEN — 4 homes flagged during first batch run
+- **Status:** 🟡 OPEN — the 2026-06-10 backfill improved address/photo data, but the 4 flagged homes below still need a **manual** verification pass before operator outreach; confirm each against the live DB.
 - **What:** Manual verification needed before operator outreach for:
   1. **The Elms** — site says "Hudson Elms Skilled Nursing & Rehabilitation Center"; confirm this is the intended facility
   2. **Ohman Family Living at Holly** — capacity: DOH 58 vs site 92 SN + 26 AL + 24 MC
@@ -59,12 +58,12 @@ Each loop: what it is, why it matters, what done looks like.
 - **Done when:** Each record manually verified and corrected in admin panel before the facility receives a claim link.
 
 ### OL-060: First-batch photo backfill (text-only June-5 run had no photos)
-- **Status:** 🟡 OPEN — code ready (#553), pending Render run
+- **Status:** ✅ LIKELY CLOSED (pending live-DB confirm) — the 2026-06-10 Render session ran the photo backfill: **~70 photos backfilled** across the first-batch homes. Re-confirm `HomePhoto` counts against the live DB before fully closing.
 - **What:** The June-5 pipeline run predated the photo feature (#549), so the 15 first-batch Cleveland homes have `autoPopulatedAt` set but **no photos**. `--photos-only` mode (skips text re-extraction + text writes; scrapes images → AI-classify → Cloudinary re-host → append `HomePhoto` rows; idempotent — clears prior auto-populated photos first). `--from-db` targets the auto-populated cohort without a CSV.
 - **Done when:** On Render: `tsx scripts/autopopulate-cohort.ts --from-db --photos-only --dry-run` reviewed, then `--force`. 15 homes have auto-populated photos. (Anthropic spend small — image-classify only; Cloudinary within free tier.)
 
 ### OL-061: AI address extraction weak — Google Places fallback
-- **Status:** ✅ CODE MERGED (#554, 2026-06-09) — backfill of the existing 15 still pending
+- **Status:** ✅ LIKELY CLOSED (pending live-DB confirm) — code merged (#554, 2026-06-09); the 2026-06-10 Render session ran the address backfill: **12 addresses verified/backfilled** via Google Places. Re-confirm the cohort's `Address` rows against the live DB before fully closing.
 - **What:** HTML extraction often misses the street (Canterbury Commons showed the `1234 Oak Lane` form placeholder). `findAddressViaPlaces()` in `src/lib/place-lookup.ts` + wired into the populator: when neither DB nor AI yields a street, look the facility up by name + city and fill street/zip from a HIGH/MEDIUM-confidence Google Places match (fill-only, never overwrite). `GOOGLE_PLACES_API_KEY` is set in Render.
 - **Done when (remaining):** Backfill the existing 15 homes' addresses via the `--addresses-only` mode (no text re-extraction) on Render.
 
@@ -72,11 +71,11 @@ Each loop: what it is, why it matters, what done looks like.
 - **Status:** ✅ CLOSED (#554, 2026-06-09) — `src/app/operator/onboarding/[step]/page.tsx` now names the missing sub-field(s), e.g. "State is required."
 
 ### OL-063: e2e suite runs ZERO tests in CI (false-green)
-- **Status:** 🔴 OPEN — discovered 2026-06-09 while wiring the claim-flow guard
-- **What:** Every Playwright config uses `testDir: './tests'`, but the CI e2e jobs (`e2e-family.yml`) run specs from `./e2e/` (`e2e/residents-*`, `e2e/family-*`). A bare `playwright test e2e/<spec>` therefore matches **nothing**, so Playwright would error "No tests found" — except the residents/family jobs pass `--shard`, which tolerates an empty shard and exits 0. Net effect: the entire `e2e/` suite (residents, family, marketplace, messages, operator, auth specs) has been **passing without executing a single test**. Confirmed via job logs (webserver boots, then jumps straight to artifact upload with no "Running N tests" line).
-- **Why it matters:** Our supposed e2e regression coverage is vacuous. Fixing it will likely surface real, long-hidden failures.
-- **Done when:** e2e jobs run against a config whose `testDir` includes `./e2e` (or specs move into `tests/`), the `--shard` empty-tolerance is removed/justified, and the suites actually execute (non-zero test counts in logs) and pass.
-- **Note:** `playwright.e2e.config.ts` (added for the claim-flow job) is a working reference — `testDir: './e2e'` + no `--shard`.
+- **Status:** 🟡 OPEN — **fix in flight: PR #572** (`fix/e2e-false-green-family-residents`). Awaiting that PR's CI to surface real failures.
+- **What:** The `e2e-residents` and `e2e-family` jobs ran specs from `./e2e/` against the **default** config (`testDir: './tests'`), so a bare `playwright test e2e/<spec>` matched nothing — and `--shard` makes an empty match exit 0. Verified locally 2026-06-16: `playwright test e2e/family-notifications.spec.ts --shard=1/2 --list` → `Total: 0 tests in 0 files`, exit 0 (vs exit 1 without `--shard`). Net effect: those suites passed without executing a single test. (The `e2e-operator-claim` job was already fixed to use `playwright.e2e.config.ts`.)
+- **Fix (PR #572):** point both jobs at `--config=playwright.e2e.config.ts` (`testDir: './e2e'`) so specs are discovered, and add a pre-run `--list` discovery guard (exits 1 on empty match) so a zero-discovery run fails loudly instead of an empty shard silently passing.
+- **Done when:** PR #572's e2e jobs execute non-zero tests, the genuinely-failing specs are either fixed or explicitly quarantined under their own OL, and the workflow is green for real (not vacuously).
+- **Note:** local execution of the suite was blocked by the sandbox network (Playwright browser download fails); PR #572's CI is the first real run.
 
 ### OL-064: dev-login sessions are not authorized by operator POST routes in CI (claim-flow e2e guard parked)
 - **Status:** 🟡 OPEN — claim-flow guard parked (`test.describe.fixme`) 2026-06-09

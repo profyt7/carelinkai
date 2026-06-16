@@ -1532,4 +1532,15 @@
 - **PR:** `fix/mock-mode-prod-admin-only`.
 - **Recommended next step:** Optionally unset `SHOW_SITE_MOCKS` in Render for tidiness; address OL-074(a) (residents layout) if desired.
 
+### 2026-06-16 — e2e false-green fix (OL-063) + open-loops reconciliation
+- **Objective:** (1) Make the family/residents e2e jobs actually run (OL-063). (2) Reconcile `CARELINKAI_TECH_OPEN_LOOPS.md` with verified repo reality.
+- **Work completed:**
+  - **PR #572 (`fix/e2e-false-green-family-residents`):** Both `e2e-residents` and `e2e-family` jobs ran `e2e/*.spec.ts` against the default config (`testDir: ./tests`), so specs matched nothing and `--shard` made the empty run exit 0. Verified locally: `playwright test e2e/family-notifications.spec.ts --shard=1/2 --list` → `Total: 0 tests in 0 files`, exit 0 (vs exit 1 without `--shard`). Pointed both jobs at `--config=playwright.e2e.config.ts` (testDir `./e2e`) and added a `--list` discovery guard that fails on empty match. Now executes: 9 resident specs + 3 family specs. Stood up local Postgres + migrated to validate, but Playwright browser download is network-blocked in the sandbox, so **PR #572's CI is the first real run** — failures will be triaged from its logs (fix real bugs; quarantine larger issues under new OLs; never paper over).
+  - **PR (`docs/open-loops-verified-2026-06-16`):** Corrected the open-loops doc against evidence — OL-051 CLOSED (PRs #536/#537/#538 merged: `0f06d6d`/`61e4803`/`a605a57` + migration `20260516000001_add_operator_baa_dpa_acceptance`); OL-057 effectively done (script merged #551, 2026-06-10 dry-run found zero non-OH DRAFT homes, 43 test homes purged via #558); OL-060/061 likely-closed (2026-06-10 backfill: ~70 photos + 12 addresses) pending live-DB confirm; OL-058/059 progress-noted; OL-052 re-tagged as blocked-on-founder (attorney outreach), not engineering; OL-063 updated to in-flight + linked to PR #572.
+- **Files changed:** `.github/workflows/e2e-family.yml` (PR #572); `context/CARELINKAI_TECH_OPEN_LOOPS.md` + this file (docs PR).
+- **Commands run:** local Postgres init + `prisma migrate deploy` (ok); `playwright … --list` (discovery confirmed: 3 family, specs found); `tsc --noEmit` (exit 0); YAML validated.
+- **Tests/build status:** tsc clean; workflow YAML valid. e2e suite pending PR #572 CI (first real execution).
+- **New risks/blockers:** PR #572 may legitimately go red once tests run — that's expected and must be triaged, not silenced. Do not merge #572 until triaged.
+- **Recommended next step:** Watch PR #572's e2e jobs; fix/quarantine whatever the now-live suite surfaces.
+
 <!-- Add new sessions above this line, newest first -->
