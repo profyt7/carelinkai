@@ -111,8 +111,25 @@ jobs:
             DATABASE_URL=$DATABASE_URL 
             npm run start
         run: |
-          # Re-enable full Residents suite now that it is stable
-          npx playwright test \
+          # OL-063 guard: discovery must be non-empty. A sharded run silently
+          # passes when zero specs match (e.g. wrong testDir); `--list` (no
+          # shard) instead exits 1 on an empty match, failing the job loudly.
+          echo "Verifying Residents specs are discoverable (OL-063 guard)…"
+          npx playwright test --config=playwright.e2e.config.ts \
+            e2e/residents-transfer.spec.ts \
+            e2e/residents-lifecycle.spec.ts \
+            e2e/residents-summary.spec.ts \
+            e2e/residents-contacts.spec.ts \
+            e2e/residents-documents.spec.ts \
+            e2e/residents-compliance.spec.ts \
+            e2e/residents-csv-export.spec.ts \
+            e2e/residents-assessments-incidents-edit.spec.ts \
+            e2e/residents-assessments-incidents-update.spec.ts \
+            --list
+          # Run the full Residents suite against the ./e2e testDir config so the
+          # specs actually execute (was: default config + testDir ./tests, which
+          # discovered nothing and passed an empty shard — OL-063).
+          npx playwright test --config=playwright.e2e.config.ts \
             e2e/residents-transfer.spec.ts \
             e2e/residents-lifecycle.spec.ts \
             e2e/residents-summary.spec.ts \
@@ -227,7 +244,14 @@ jobs:
             DATABASE_URL=$DATABASE_URL 
             npm run start
         run: |
-          npx playwright test e2e/family-*.spec.ts --reporter=line,blob --retries=1 --trace retain-on-failure --shard=${{ matrix.shard }}/2 --timeout=60000
+          # OL-063 guard: fail loudly if discovery is empty (a sharded run would
+          # otherwise pass an empty shard). `--list` exits 1 when nothing matches.
+          echo "Verifying Family specs are discoverable (OL-063 guard)…"
+          npx playwright test --config=playwright.e2e.config.ts e2e/family-*.spec.ts --list
+          # Run against the ./e2e testDir config so the specs actually execute
+          # (was: default config + testDir ./tests → discovered nothing, passed
+          # an empty shard — OL-063).
+          npx playwright test --config=playwright.e2e.config.ts e2e/family-*.spec.ts --reporter=line,blob --retries=1 --trace retain-on-failure --shard=${{ matrix.shard }}/2 --timeout=60000
 
       - name: Upload Playwright test artifacts (Family shard ${{ matrix.shard }}) (always)
         if: always()
