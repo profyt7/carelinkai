@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { UserRole } from '@prisma/client';
+import { sendOperatorClaimNotification } from '@/lib/email';
 
 /**
  * POST /api/operator/homes/[id]/claim
@@ -94,6 +95,13 @@ export async function POST(
       data: { seededHomeId: null },
     }),
   ]);
+
+  // Surface the claim to the founder/admin in real time (non-blocking).
+  void sendOperatorClaimNotification({
+    facilityName: updatedHome.name,
+    operatorEmail: user.email!,
+    status: 'ACTIVE',
+  }).catch((e) => console.error('[claim] founder notification failed', e));
 
   return NextResponse.json({ home: updatedHome });
 }

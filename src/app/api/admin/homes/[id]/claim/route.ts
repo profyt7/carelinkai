@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { AuditAction } from '@prisma/client';
+import { sendOperatorClaimNotification } from '@/lib/email';
 
 export const dynamic = 'force-dynamic';
 
@@ -115,6 +116,13 @@ export async function POST(
         newStatus: 'PENDING_REVIEW',
       }
     );
+
+    // Surface the claim to the founder/admin in real time (non-blocking).
+    void sendOperatorClaimNotification({
+      facilityName: home.name,
+      operatorEmail: operator.user?.email ?? 'unknown',
+      status: 'PENDING_REVIEW',
+    }).catch((e) => console.error('[admin claim] founder notification failed', e));
 
     return NextResponse.json({
       success: true,
