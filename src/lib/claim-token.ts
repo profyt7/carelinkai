@@ -1,5 +1,18 @@
 import crypto from 'crypto';
 
+/**
+ * Default lifetime of an operator claim link.
+ *
+ * 45 days — long enough for founder outreach + follow-up before a link
+ * expires. The 50-founder-per-metro scarcity cap is enforced separately at
+ * claim time and is independent of this expiry window.
+ *
+ * Note: this is the default applied when a new link is generated. Already-
+ * signed tokens carry their own `exp` and keep their original window until
+ * they are regenerated.
+ */
+export const DEFAULT_CLAIM_TOKEN_TTL_HOURS = 45 * 24; // 45 days
+
 export interface ClaimTokenPayload {
   operatorEmail: string;
   homeId?: string;
