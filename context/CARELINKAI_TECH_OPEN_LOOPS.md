@@ -141,6 +141,17 @@ Each loop: what it is, why it matters, what done looks like.
 - **Resolution:** Kept the page's principled buckets (Completed=`CURRENT/COMPLIANT`; Open=`EXPIRING_SOON/EXPIRED/PENDING/MISSING`; Due Soon=expiry within 14d; Overdue=expiry past) and made `api/dev/seed-family-resident` produce a deterministic scenario that exercises all four: Flu Shot=`CURRENT` (completed), TB Test=`EXPIRING_SOON` expiry +10d (open + due-soon), Care Plan Review=`EXPIRED` expiry −5d (open + overdue) → Open=2 / Completed=1 / Due Soon=1 / Overdue=1, matching the spec. `family-resident-readonly` **un-quarantined**; `family-notifications` only asserts the cards render, so it's unaffected.
 - **Note:** the separate operator-facing `/api/.../compliance/summary` route uses a different (looser) bucketing and is out of scope here; revisit if that surface needs exact parity.
 
+### OL-078: Third-party trackers loaded with no cookie-consent gate (privacy/HIPAA exposure)
+- **Status:** ✅ CLOSED (2026-06-16, PR `feat/cookie-consent-tracker-gating`).
+- **What it was:** `layout.tsx` injected Meta Pixel, Microsoft Clarity, GA4, and GTM unconditionally (gated only by env-var presence, fired `afterInteractive`). The existing `CookieConsent` banner was cosmetic — it only flipped `ga-disable`/`fbq consent` *after* the scripts had already loaded and sent the initial PageView/session. On a HIPAA-positioned site, behavioral trackers fired before consent.
+- **Fix:**
+  - `src/lib/consent.ts` — shared consent state + `CONSENT_EVENT`. `AnalyticsScripts` (`src/components/analytics/AnalyticsScripts.tsx`, client) injects trackers **only after explicit consent** and reacts to the event (loads on opt-in, no reload). **Nothing fires pre-consent.** Removed the unconditional `<Script>` blocks from `layout.tsx`.
+  - **GA4 + GTM:** gated behind `analytics` consent (all pages). Dropped the GTM `<noscript>` (would bypass the JS consent gate).
+  - **Microsoft Clarity:** `analytics` consent only; site-wide masking via `data-clarity-mask="true"` on `<body>` (masks all text/inputs); not initially loaded on sensitive routes (auth + resident/care + logged-in app areas). **Founder action:** also set the Clarity dashboard masking to Strict for belt-and-suspenders.
+  - **Meta Pixel:** `marketing` consent only; **PageView only** (no custom events in the loader); excluded from logged-in operator/family + health/care routes via `SENSITIVE_PREFIXES`.
+  - `CookieConsent` refactored to use the shared helper (Accept All / Necessary Only / Customize) and dispatch the consent event.
+- **Verify:** with no stored consent, the network tab shows no requests to googletagmanager.com / connect.facebook.net / clarity.ms until the user opts in. `tsc` clean, build passes, lint clean.
+
 ### OL-027: Provider listing fee ($99/mo)
 - **Status:** ✅ CLOSED (2026-05-02)
 - Schema fields + migration, Stripe Checkout + Customer Portal APIs, webhook handler, visibility gate in marketplace API, billing UI at `/settings/provider/billing`. Requires `STRIPE_PRICE_PROVIDER_LISTING` env var in Render.
