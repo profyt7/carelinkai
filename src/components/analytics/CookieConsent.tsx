@@ -2,14 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { FiX, FiShield } from 'react-icons/fi';
-
-const COOKIE_CONSENT_KEY = 'carelinkai_cookie_consent';
-
-type ConsentPreferences = {
-  necessary: boolean;
-  analytics: boolean;
-  marketing: boolean;
-};
+import { getConsent, setConsent, type ConsentPreferences } from '@/lib/consent';
 
 export default function CookieConsent() {
   const [showBanner, setShowBanner] = useState(false);
@@ -21,43 +14,22 @@ export default function CookieConsent() {
   });
 
   useEffect(() => {
-    // Check if user has already consented
-    const consent = localStorage.getItem(COOKIE_CONSENT_KEY);
-    if (!consent) {
-      // Show banner after a short delay for better UX
+    // Show the banner only until the user makes an explicit choice. No tracker
+    // fires before that — AnalyticsScripts loads nothing until consent is set.
+    const existing = getConsent();
+    if (!existing) {
       const timer = setTimeout(() => setShowBanner(true), 1000);
       return () => clearTimeout(timer);
-    } else {
-      // Load existing preferences
-      try {
-        const saved = JSON.parse(consent);
-        setPreferences(saved);
-        // Apply saved preferences
-        applyConsent(saved);
-      } catch (e) {
-        console.error('Failed to parse cookie consent:', e);
-      }
-      return undefined;
     }
+    setPreferences(existing);
+    return undefined;
   }, []);
 
-  const applyConsent = (prefs: ConsentPreferences) => {
-    // Enable/disable analytics based on consent
-    if (typeof window !== 'undefined') {
-      (window as any)['ga-disable-' + process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID] = !prefs.analytics;
-      
-      // Facebook Pixel consent
-      if (prefs.marketing && (window as any).fbq) {
-        (window as any).fbq('consent', 'grant');
-      } else if ((window as any).fbq) {
-        (window as any).fbq('consent', 'revoke');
-      }
-    }
-  };
-
   const savePreferences = (prefs: ConsentPreferences) => {
-    localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(prefs));
-    applyConsent(prefs);
+    // Persist + dispatch the consent-changed event so AnalyticsScripts loads
+    // the opted-in trackers immediately (no reload needed).
+    setConsent(prefs);
+    setPreferences(prefs);
     setShowBanner(false);
   };
 

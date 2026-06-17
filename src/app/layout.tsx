@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, DM_Serif_Display } from "next/font/google";
-import Script from "next/script";
 import "./globals.css";
 import { Providers } from "./providers";
 // WebSocket provider for real-time messaging
@@ -22,6 +21,8 @@ import CareConcierge from "../components/CareConcierge";
 import { BugReportButton } from "../components/bug-report/BugReportButton";
 // Cookie consent banner
 import CookieConsent from "../components/analytics/CookieConsent";
+// Consent-gated analytics loader (GA4/GTM, Meta Pixel, Microsoft Clarity)
+import AnalyticsScripts from "../components/analytics/AnalyticsScripts";
 // Error boundary
 import ErrorBoundary from "../components/ErrorBoundary";
 // Onboarding modal
@@ -221,97 +222,15 @@ export default function RootLayout({
         />
         */}
       </head>
-      <body className="min-h-screen bg-neutral-50 antialiased font-sans">
-        {/* Google Tag Manager */}
-        {process.env.NEXT_PUBLIC_GTM_ID && (
-          <>
-            <Script
-              id="gtm-script"
-              strategy="afterInteractive"
-              dangerouslySetInnerHTML={{
-                __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-                new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-                j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-                'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-                })(window,document,'script','dataLayer','${process.env.NEXT_PUBLIC_GTM_ID}');`,
-              }}
-            />
-            <noscript>
-              <iframe
-                src={`https://www.googletagmanager.com/ns.html?id=${process.env.NEXT_PUBLIC_GTM_ID}`}
-                height="0"
-                width="0"
-                style={{ display: 'none', visibility: 'hidden' }}
-              />
-            </noscript>
-          </>
-        )}
-        
-        {/* Google Analytics 4 */}
-        {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
-          <>
-            <Script
-              src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}`}
-              strategy="afterInteractive"
-            />
-            <Script
-              id="ga-script"
-              strategy="afterInteractive"
-              dangerouslySetInnerHTML={{
-                __html: `
-                  window.dataLayer = window.dataLayer || [];
-                  function gtag(){dataLayer.push(arguments);}
-                  gtag('js', new Date());
-                  gtag('config', '${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}', {
-                    page_path: window.location.pathname,
-                    send_page_view: true
-                  });
-                  console.log('[GA4] Google Analytics 4 initialized with ID: ${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}');
-                `,
-              }}
-            />
-          </>
-        )}
-        
-        {/* Facebook Pixel */}
-        {process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID && (
-          <Script
-            id="fb-pixel"
-            strategy="afterInteractive"
-            dangerouslySetInnerHTML={{
-              __html: `
-                !function(f,b,e,v,n,t,s)
-                {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-                n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-                if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-                n.queue=[];t=b.createElement(e);t.async=!0;
-                t.src=v;s=b.getElementsByTagName(e)[0];
-                s.parentNode.insertBefore(t,s)}(window, document,'script',
-                'https://connect.facebook.net/en_US/fbevents.js');
-                fbq('init', '${process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID}');
-                fbq('track', 'PageView');
-              `,
-            }}
-          />
-        )}
-        
-        {/* Microsoft Clarity */}
-        {process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID && (
-          <Script
-            id="clarity-script"
-            strategy="afterInteractive"
-            dangerouslySetInnerHTML={{
-              __html: `
-                (function(c,l,a,r,i,t,y){
-                  c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-                  t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-                  y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-                })(window, document, "clarity", "script", "${process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID}");
-              `,
-            }}
-          />
-        )}
-        
+      {/* data-clarity-mask masks ALL text/inputs site-wide if Microsoft Clarity
+          loads — defense-in-depth for the HIPAA posture (trackers are also
+          consent-gated via AnalyticsScripts). */}
+      <body className="min-h-screen bg-neutral-50 antialiased font-sans" data-clarity-mask="true">
+        {/* Third-party trackers (GA4/GTM, Meta Pixel, Microsoft Clarity) load
+            ONLY after explicit cookie consent — see AnalyticsScripts. Nothing
+            fires before the user opts in (OL-078). */}
+        <AnalyticsScripts />
+
         <WebSocketProvider>
           <Providers>
             <SentryProvider>

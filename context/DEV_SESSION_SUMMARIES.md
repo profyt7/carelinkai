@@ -1555,4 +1555,13 @@
 - **Tests/build:** `tsc` clean; e2e verified via the PR's CI (sandbox blocks local Playwright browser).
 - **Recommended next step:** if any of the 3 Sentry issues still report events *after* today's Render deploy, re-open with fresh stack traces — but they should be resolved. OL-076 (operator/residents Next-15 migration) remains the main open e2e item.
 
+### 2026-06-16 — Tracking consent gate (OL-078) + operator-claim founder email
+- **Objective:** (1) Gate all third-party trackers behind cookie consent (OL-078); (2) email the founder on each operator claim.
+- **Item 1 — consent gating (PR `feat/cookie-consent-tracker-gating`):** `layout.tsx` was loading Meta Pixel / Microsoft Clarity / GA4 / GTM unconditionally `afterInteractive`; the existing banner was cosmetic (flipped flags after scripts already fired). Added `src/lib/consent.ts` + `src/components/analytics/AnalyticsScripts.tsx` (client, consent-gated, reacts to `CONSENT_EVENT`) and removed the unconditional `<Script>` blocks. **Nothing fires pre-consent.** GA4/GTM gated on analytics consent; Clarity on analytics consent + site-wide `data-clarity-mask` on `<body>` + sensitive-route exclusion; Pixel on marketing consent + PageView-only + excluded from logged-in/health routes. Refactored `CookieConsent` to the shared helper. Founder follow-up: set Clarity dashboard masking to Strict.
+- **Item 2 — operator-claim founder email (PR `feat/operator-claim-founder-notification`, #576):** Confirmed no founder email existed on claim (operator self-claim → ACTIVE had none; admin claim → PENDING_REVIEW only made an in-app notification for the operator). Added `sendOperatorClaimNotification()` (Resend) → chris@getcarelinkai.com (env `CLAIM_NOTIFY_EMAIL` override), wired fire-and-forget into both claim routes.
+- **Files:** item 1 — `src/lib/consent.ts` (new), `src/components/analytics/AnalyticsScripts.tsx` (new), `src/app/layout.tsx`, `src/components/analytics/CookieConsent.tsx`, context docs; item 2 — `src/lib/email.ts`, `src/app/api/operator/homes/[id]/claim/route.ts`, `src/app/api/admin/homes/[id]/claim/route.ts`.
+- **Tests/build:** `tsc` clean (both); `npm run build` passes; `next lint` clean. Network-tab verification of "nothing before consent" to be confirmed on the deploy preview.
+- **Loops:** OL-078 closed (added + closed). 
+- **Recommended next step:** verify in prod/preview network tab that no tracker requests fire pre-consent; set Clarity dashboard masking to Strict.
+
 <!-- Add new sessions above this line, newest first -->
