@@ -72,6 +72,71 @@ export async function sendVerificationEmail(
   }
 }
 
+/** Minimal HTML escape for interpolating user-supplied strings into email HTML. */
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
+ * Notify the founder/admin that an operator completed a listing claim, so
+ * claims surface in real time without checking the backend. Fire-and-forget
+ * from the claim routes (failures are logged, never block the claim).
+ *
+ * Recipient defaults to chris@getcarelinkai.com, overridable via
+ * CLAIM_NOTIFY_EMAIL.
+ */
+export async function sendOperatorClaimNotification(args: {
+  facilityName: string;
+  operatorEmail: string;
+  status?: string;
+}): Promise<boolean> {
+  const to = process.env.CLAIM_NOTIFY_EMAIL || 'chris@getcarelinkai.com';
+  try {
+    if (!process.env.RESEND_API_KEY) {
+      console.error('[Resend] RESEND_API_KEY not configured — skipping operator claim notification');
+      return false;
+    }
+    const facilityName = args.facilityName || '(unnamed facility)';
+    const operatorEmail = args.operatorEmail || '(unknown operator)';
+    const status = args.status;
+
+    const { data, error } = await resend.emails.send({
+      from: `${APP_NAME} <${FROM_EMAIL}>`,
+      to: [to],
+      subject: `New operator claim: ${facilityName}`,
+      text:
+        `An operator just claimed a listing on CareLinkAI.\n\n` +
+        `Facility: ${facilityName}\n` +
+        `Operator: ${operatorEmail}\n` +
+        (status ? `Status: ${status}\n` : '') +
+        `\nReview it in the admin panel.`,
+      html:
+        `<p>An operator just claimed a listing on CareLinkAI.</p>` +
+        `<ul>` +
+        `<li><strong>Facility:</strong> ${escapeHtml(facilityName)}</li>` +
+        `<li><strong>Operator:</strong> ${escapeHtml(operatorEmail)}</li>` +
+        (status ? `<li><strong>Status:</strong> ${escapeHtml(status)}</li>` : '') +
+        `</ul>` +
+        `<p>Review it in the admin panel.</p>`,
+    });
+
+    if (error) {
+      console.error('[Resend] Error sending operator claim notification:', error);
+      return false;
+    }
+    console.log('[Resend] ✅ Operator claim notification sent. Email ID:', data?.id);
+    return true;
+  } catch (error) {
+    console.error('[Resend] Exception sending operator claim notification:', error);
+    return false;
+  }
+}
+
 /**
  * Generate HTML content for verification email
  */
