@@ -66,6 +66,11 @@ export async function POST(
     }
 
     const previousOperatorId = home.operatorId;
+    // Idempotency guard for the claim notification: only notify when the home is
+    // actually transitioning INTO PENDING_REVIEW. Re-running an admin claim on a
+    // home that's already PENDING_REVIEW (e.g. reassigning operators) is a no-op
+    // for the founder alert and must not double-send (OL-079).
+    const wasAlreadyPendingReview = home.status === 'PENDING_REVIEW';
 
     // Reassign the listing to the operator and queue it for review
     const updatedHome = await prisma.assistedLivingHome.update({
@@ -117,12 +122,18 @@ export async function POST(
       }
     );
 
-    // Surface the claim to the founder/admin in real time (non-blocking).
-    void sendOperatorClaimNotification({
-      facilityName: home.name,
-      operatorEmail: operator.user?.email ?? 'unknown',
-      status: 'PENDING_REVIEW',
-    }).catch((e) => console.error('[admin claim] founder notification failed', e));
+    // Surface the claim to the founder/admin in real time (non-blocking, OL-079).
+    // Skip if the home was already PENDING_REVIEW — no real claim transition.
+    if (!wasAlreadyPendingReview) {
+      void sendOperatorClaimNotification({
+        facilityName: home.name,
+        operatorEmail: operator.user?.email ?? 'unknown',
+        operatorName:
+          [operator.user?.firstName, operator.user?.lastName].filter(Boolean).join(' ') || undefined,
+        homeId: home.id,
+        status: 'PENDING_REVIEW',
+      }).catch((e) => console.error('[admin claim] founder notification failed', e));
+    }
 
     return NextResponse.json({
       success: true,

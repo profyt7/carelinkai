@@ -152,6 +152,17 @@ Each loop: what it is, why it matters, what done looks like.
   - `CookieConsent` refactored to use the shared helper (Accept All / Necessary Only / Customize) and dispatch the consent event.
 - **Verify:** with no stored consent, the network tab shows no requests to googletagmanager.com / connect.facebook.net / clarity.ms until the user opts in. `tsc` clean, build passes, lint clean.
 
+### OL-079: Operator-claim → instant email notification
+- **Status:** ✅ CLOSED (2026-06-18, PR `feat/claim-notification`).
+- **What it was:** When a home was claimed (operator self-claim onboarding → `ACTIVE`, or admin claim → `PENDING_REVIEW`), the founder had no real-time signal — claims had to be discovered by checking the backend. #576 had added a basic `sendOperatorClaimNotification`, but it sent to `chris@getcarelinkai.com` only, used a plain subject, omitted operator name / timestamp / deep link, had no idempotency on the admin path, and failures were only `console.error`'d (no Sentry).
+- **Fix:**
+  - `src/lib/email.ts` — `sendOperatorClaimNotification` now: **To** `profyt7@gmail.com` (override `CLAIM_NOTIFY_EMAIL`), **cc** `chris@getcarelinkai.com` (override/disable via `CLAIM_NOTIFY_CC=''`); subject `🎉 New CareLinkAI claim — <facility>`; body includes facility, operator name + email, **America/New_York** timestamp (`Intl.DateTimeFormat` ET), and a deep link to the admin home view (`${NEXT_PUBLIC_APP_URL||NEXTAUTH_URL}/admin/homes/<id>`). Non-blocking + `RESEND_API_KEY` guard preserved; failures now also `captureError` to **Sentry** (`feature: claim-notification`).
+  - `src/app/api/operator/homes/[id]/claim/route.ts` — passes `operatorName` + `homeId`. Idempotent by construction (the `seededHomeId` guard means a seeded home can only be claimed once; it's nulled in the same transaction).
+  - `src/app/api/admin/homes/[id]/claim/route.ts` — captures `wasAlreadyPendingReview = home.status === 'PENDING_REVIEW'` before the update and only fires the notification on a real transition INTO `PENDING_REVIEW`, so re-claiming/reassigning an already-pending home never double-sends. Passes `operatorName` + `homeId`.
+- **No schema migration** (idempotency via state-transition guards, not a dedicated sent-flag column).
+- **Residual edge:** two truly-concurrent admin claims on the same home could both observe the pre-update status and double-send; acceptable for a low-volume founder alert (no DB-level dedupe added).
+- **Verify:** `tsc --noEmit` clean, `npm run build` passes.
+
 ### OL-027: Provider listing fee ($99/mo)
 - **Status:** ✅ CLOSED (2026-05-02)
 - Schema fields + migration, Stripe Checkout + Customer Portal APIs, webhook handler, visibility gate in marketplace API, billing UI at `/settings/provider/billing`. Requires `STRIPE_PRICE_PROVIDER_LISTING` env var in Render.

@@ -12,6 +12,7 @@
  */
 
 import { Resend } from 'resend';
+import { captureError } from '@/lib/sentry';
 
 // Initialize Resend with API key from environment
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -83,19 +84,31 @@ function escapeHtml(s: string): string {
 }
 
 /**
- * Notify the founder/admin that an operator completed a listing claim, so
- * claims surface in real time without checking the backend. Fire-and-forget
- * from the claim routes (failures are logged, never block the claim).
+ * Notify the founder/admin the instant an operator claims a listing (either via
+ * the operator self-claim onboarding flow or an admin claim), so claims surface
+ * in real time without polling the backend (OL-079).
  *
- * Recipient defaults to chris@getcarelinkai.com, overridable via
- * CLAIM_NOTIFY_EMAIL.
+ * Fire-and-forget from the claim routes: failures are logged AND reported to
+ * Sentry, but never block the claim itself (the caller never awaits the result
+ * in a way that affects the response).
+ *
+ * Recipient defaults to profyt7@gmail.com (overridable via CLAIM_NOTIFY_EMAIL),
+ * cc'd to chris@getcarelinkai.com (overridable / disableable via
+ * CLAIM_NOTIFY_CC — set to empty string to drop the cc).
  */
 export async function sendOperatorClaimNotification(args: {
   facilityName: string;
   operatorEmail: string;
+  /** Display name of the claiming operator, if known. */
+  operatorName?: string;
+  /** Home id used to build the admin deep link (/admin/homes/<id>). */
+  homeId?: string;
   status?: string;
 }): Promise<boolean> {
-  const to = process.env.CLAIM_NOTIFY_EMAIL || 'chris@getcarelinkai.com';
+  const to = process.env.CLAIM_NOTIFY_EMAIL || 'profyt7@gmail.com';
+  // cc defaults to chris@; CLAIM_NOTIFY_CC='' explicitly drops it.
+  const ccRaw = process.env.CLAIM_NOTIFY_CC ?? 'chris@getcarelinkai.com';
+  const cc = ccRaw.trim() ? [ccRaw.trim()] : undefined;
   try {
     if (!process.env.RESEND_API_KEY) {
       console.error('[Resend] RESEND_API_KEY not configured — skipping operator claim notification');
@@ -103,36 +116,64 @@ export async function sendOperatorClaimNotification(args: {
     }
     const facilityName = args.facilityName || '(unnamed facility)';
     const operatorEmail = args.operatorEmail || '(unknown operator)';
+    const operatorName = args.operatorName?.trim();
     const status = args.status;
+
+    // Timestamp rendered in America/New_York (founder's timezone).
+    const claimedAt = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/New_York',
+      dateStyle: 'full',
+      timeStyle: 'short',
+    }).format(new Date()) + ' ET';
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'https://getcarelinkai.com';
+    const adminLink = args.homeId ? `${appUrl.replace(/\/$/, '')}/admin/homes/${args.homeId}` : null;
+
+    const operatorLine = operatorName
+      ? `${operatorName} <${operatorEmail}>`
+      : operatorEmail;
 
     const { data, error } = await resend.emails.send({
       from: `${APP_NAME} <${FROM_EMAIL}>`,
       to: [to],
-      subject: `New operator claim: ${facilityName}`,
+      ...(cc ? { cc } : {}),
+      subject: `🎉 New CareLinkAI claim — ${facilityName}`,
       text:
         `An operator just claimed a listing on CareLinkAI.\n\n` +
         `Facility: ${facilityName}\n` +
-        `Operator: ${operatorEmail}\n` +
+        `Operator: ${operatorLine}\n` +
         (status ? `Status: ${status}\n` : '') +
-        `\nReview it in the admin panel.`,
+        `Claimed: ${claimedAt}\n` +
+        (adminLink ? `\nReview it: ${adminLink}\n` : `\nReview it in the admin panel.\n`),
       html:
-        `<p>An operator just claimed a listing on CareLinkAI.</p>` +
+        `<p>An operator just claimed a listing on CareLinkAI. 🎉</p>` +
         `<ul>` +
         `<li><strong>Facility:</strong> ${escapeHtml(facilityName)}</li>` +
-        `<li><strong>Operator:</strong> ${escapeHtml(operatorEmail)}</li>` +
+        `<li><strong>Operator:</strong> ${escapeHtml(operatorLine)}</li>` +
         (status ? `<li><strong>Status:</strong> ${escapeHtml(status)}</li>` : '') +
+        `<li><strong>Claimed:</strong> ${escapeHtml(claimedAt)}</li>` +
         `</ul>` +
-        `<p>Review it in the admin panel.</p>`,
+        (adminLink
+          ? `<p><a href="${escapeHtml(adminLink)}">Review it in the admin panel →</a></p>`
+          : `<p>Review it in the admin panel.</p>`),
     });
 
     if (error) {
       console.error('[Resend] Error sending operator claim notification:', error);
+      captureError(
+        error instanceof Error ? error : new Error(String((error as { message?: string })?.message ?? error)),
+        { tags: { feature: 'claim-notification' }, extra: { facilityName, homeId: args.homeId, status } }
+      );
       return false;
     }
     console.log('[Resend] ✅ Operator claim notification sent. Email ID:', data?.id);
     return true;
   } catch (error) {
     console.error('[Resend] Exception sending operator claim notification:', error);
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { feature: 'claim-notification' },
+      extra: { facilityName: args.facilityName, homeId: args.homeId, status: args.status },
+    });
     return false;
   }
 }
