@@ -96,10 +96,15 @@ export async function POST(
     }),
   ]);
 
-  // Surface the claim to the founder/admin in real time (non-blocking).
+  // Surface the claim to the founder/admin in real time (non-blocking, OL-079).
+  // Idempotent by construction: the seededHomeId guard above means a given
+  // seeded home can only be successfully claimed once (it's nulled in the same
+  // transaction), so this path never double-sends.
   void sendOperatorClaimNotification({
     facilityName: updatedHome.name,
     operatorEmail: user.email!,
+    operatorName: [user.firstName, user.lastName].filter(Boolean).join(' ') || undefined,
+    homeId: updatedHome.id,
     status: 'ACTIVE',
   }).catch((e) => console.error('[claim] founder notification failed', e));
 

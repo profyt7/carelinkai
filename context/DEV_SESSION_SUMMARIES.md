@@ -1564,4 +1564,17 @@
 - **Loops:** OL-078 closed (added + closed). 
 - **Recommended next step:** verify in prod/preview network tab that no tracker requests fire pre-consent; set Clarity dashboard masking to Strict.
 
+### 2026-06-18 — OL-079: operator-claim → instant founder email (Resend + Sentry)
+- **Objective:** Fire a real-time email the moment a home is claimed (operator self-claim → ACTIVE, and admin claim → PENDING_REVIEW), idempotent and non-blocking.
+- **Work completed:**
+  - `src/lib/email.ts` — upgraded `sendOperatorClaimNotification`: To `profyt7@gmail.com` (`CLAIM_NOTIFY_EMAIL`), cc `chris@getcarelinkai.com` (`CLAIM_NOTIFY_CC`, `''` disables); subject `🎉 New CareLinkAI claim — <facility>`; body now carries facility, operator name + email, America/New_York timestamp, and an admin deep link (`/admin/homes/<id>`). Failures `captureError` → Sentry (`feature: claim-notification`); still `RESEND_API_KEY`-guarded and fire-and-forget.
+  - `src/app/api/operator/homes/[id]/claim/route.ts` — passes `operatorName` + `homeId`; idempotent via the existing `seededHomeId` one-shot guard.
+  - `src/app/api/admin/homes/[id]/claim/route.ts` — added `wasAlreadyPendingReview` transition-guard so notification only fires on a real claim into PENDING_REVIEW (no double-send on reassignment); passes `operatorName` + `homeId`.
+- **Files changed:** `src/lib/email.ts`, `src/app/api/operator/homes/[id]/claim/route.ts`, `src/app/api/admin/homes/[id]/claim/route.ts`, `context/CARELINKAI_TECH_OPEN_LOOPS.md`, `context/DEV_SESSION_SUMMARIES.md`.
+- **Commands run:** `npx tsc --noEmit` (clean), `npm run build` (passes).
+- **Tests/build:** `tsc` clean; `npm run build` passes.
+- **Deployment impact:** No schema migration. Optional new env vars `CLAIM_NOTIFY_EMAIL` / `CLAIM_NOTIFY_CC` (both have sensible defaults). Relies on existing `RESEND_API_KEY` / `EMAIL_FROM` and `NEXT_PUBLIC_APP_URL`/`NEXTAUTH_URL` for the deep link.
+- **New risks/blockers:** Residual: two truly-concurrent admin claims on the same home could both pre-read the old status and double-send — acceptable for a low-volume founder alert.
+- **Recommended next step:** after deploy, do a live claim (or admin claim) and confirm the 🎉 email lands at profyt7@gmail.com with a working admin deep link.
+
 <!-- Add new sessions above this line, newest first -->
