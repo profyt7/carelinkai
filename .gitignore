@@ -25,3 +25,6 @@ playwright-report/
 
 # Operator website scrape cache
 scripts/scraped-cache/
+
+# Claude Code local worktrees (transient background-agent state)
+.claude/worktrees/

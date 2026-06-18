@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { isHouseholdEmployerLaneEnabled } from "@/lib/feature-flags";
 import { format, parseISO } from "date-fns";
 import {
   FiCheckCircle, FiCalendar, FiBriefcase, FiUser, FiPlus,
@@ -277,6 +278,9 @@ export default function MyHiresPage() {
   const router = useRouter();
   const role = (session?.user as { role?: string })?.role;
   const isFamily = role === "FAMILY";
+  // CNOS: the family household-employer lane is gated off pending legal review.
+  const householdEnabled = isHouseholdEmployerLaneEnabled();
+  const householdGatedOff = isFamily && !householdEnabled;
 
   // Family state
   const [familyHires, setFamilyHires] = useState<FamilyHire[]>([]);
@@ -295,7 +299,9 @@ export default function MyHiresPage() {
     try {
       setLoading(true);
       setError(null);
-      if (isFamily) {
+      if (householdGatedOff) {
+        setFamilyHires([]);
+      } else if (isFamily) {
         const res = await fetch("/api/family/household", { cache: "no-store" });
         if (!res.ok) throw new Error("Failed to load hires");
         const json = await res.json();
@@ -311,7 +317,7 @@ export default function MyHiresPage() {
     } finally {
       setLoading(false);
     }
-  }, [status, isFamily]);
+  }, [status, isFamily, householdGatedOff]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -340,7 +346,17 @@ export default function MyHiresPage() {
         </div>
       )}
 
-      {!loading && !error && isEmpty && (
+      {householdGatedOff && !loading && (
+        <div className="rounded-lg border border-neutral-200 bg-white p-12 text-center shadow-sm">
+          <FiBriefcase size={48} className="mx-auto text-neutral-300 mb-4" />
+          <h2 className="text-lg font-semibold text-neutral-900 mb-2">Household scheduling isn’t available</h2>
+          <p className="text-neutral-500">
+            Direct household hiring &amp; shift scheduling isn’t available on CareLinkAI right now.
+          </p>
+        </div>
+      )}
+
+      {!loading && !error && isEmpty && !householdGatedOff && (
         <div className="rounded-lg border border-neutral-200 bg-white p-12 text-center shadow-sm">
           <FiBriefcase size={48} className="mx-auto text-neutral-300 mb-4" />
           <h2 className="text-lg font-semibold text-neutral-900 mb-2">No hires yet</h2>
