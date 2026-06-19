@@ -163,6 +163,12 @@ Each loop: what it is, why it matters, what done looks like.
 - **Residual edge:** two truly-concurrent admin claims on the same home could both observe the pre-update status and double-send; acceptable for a low-volume founder alert (no DB-level dedupe added).
 - **Verify:** `tsc --noEmit` clean, `npm run build` passes.
 
+### OL-080: Phone (and capacity) not persisted on AssistedLivingHome by the enrich pipeline
+- **Status:** 🔴 OPEN — surfaced 2026-06-19 during batch-2 supply prep (`chore/batch2-enrich`).
+- **What:** `AssistedLivingHome` has **no `phone` column**, and the PR #545 auto-populator (`scripts/autopopulate-cohort.ts`) extracts a phone from the website (`extracted.phone`) but **never writes it** — it's only counted toward `fieldsExtracted`. Same for **capacity**: the pipeline never writes `capacity`, so freshly-seeded homes (e.g. batch-2, seeded `capacity: 0`) stay at their seed value until an operator claim or a manual update. Net effect: the outreach step-4 handoff (`{homeId, name, city, phone, status}`) can't be fully DB-backed — phone has to come from Cowork's manual contact-research pass.
+- **Fix (when prioritized):** add `phone String?` (and optionally a structured capacity refresh) to `AssistedLivingHome` + migration; persist `extracted.phone` in `autopopulate-cohort.ts` (with provenance, like the address fallback); optionally surface it on the admin/operator listing views. Small, self-contained — deferred out of the batch-2 scope on purpose.
+- **Done when:** the enrich pipeline stores a verified phone on the listing and `report-directory-homes.ts` can emit phone directly (no manual research column).
+
 ### OL-027: Provider listing fee ($99/mo)
 - **Status:** ✅ CLOSED (2026-05-02)
 - Schema fields + migration, Stripe Checkout + Customer Portal APIs, webhook handler, visibility gate in marketplace API, billing UI at `/settings/provider/billing`. Requires `STRIPE_PRICE_PROVIDER_LISTING` env var in Render.
