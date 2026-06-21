@@ -1,8 +1,8 @@
 # CareLinkAI — Technical State
-_Last updated: 2026-06-16_
+_Last updated: 2026-06-21_
 
 ## Active Branch
-`main` — PRs #564–#568 merged (discharge-planner fix, inquiry 400, How-To hub + full 29-guide content, /help links). Pending PRs (2026-06-16): #569 `fix/family-emergency-page` (OL-072) and `feat/education-hub-tabs` (OL-073). Also pending: `chore/remove-non-cleveland-demo-data` (not yet a PR).
+`main` — latest merges: #578 (OL-079 instant claim email), #579 (batch-2 Cleveland supply seed + enrich runbook), **#580 (batch-2 cleanup script, `b19b9c2`)**. Batch-2 cleanup + address backfill executed on the Render production DB 2026-06-21 (see Recent Decisions). Session-wrap committed on `docs/session-wrap-2026-06-21` (fresh off main). ⚠️ `claude/inspiring-mayer-rvgyys` is a stale graveyard branch — do not push onto it (7 conflicts vs main, incl. code already merged via PRs). Earlier (2026-06-16) PRs #564–#568 merged (discharge-planner fix, inquiry 400, How-To hub, /help links).
 
 ## How-To Guides (Education Hub) — content pipeline
 The `/learn` How-To section renders from `src/app/learn/howto/content.ts` (`HOWTO_GUIDES`), role-gated by `src/lib/howto/access.ts` (audience→role; getting-started + family visible to all). That file is **auto-generated** — do not hand-edit. Source content is authored in the ChrisOS vault (`04_CareLinkAI/howto/`), cleaned into an app bundle (`manifest.json` + `content/<role>/*.md`), and transformed by `scripts/generate-howto-content.ts` (`npx tsx scripts/generate-howto-content.ts`). Guide screenshots live under `public/howto/`; the renderer shows only files that exist (build-time `AVAILABLE_HOWTO_IMAGES`), so missing captures are text-first with no 404s. The 71 expected screenshot filenames are checklisted in `public/howto/README.md` (OL-071). **IA (2026-06-16):** `/learn` is split into two tabs via the `?tab=` query param — **How-To & Tutorials** (default) and **Senior Care Guides** (the `GUIDES` articles in `src/app/learn/guides/content.ts`) — so How-To stays one click from the top as the article library grows.
@@ -221,6 +221,12 @@ See `REVENUE_MODEL.md` for the full breakdown. 12 streams finalized:
 - **Provider onboarding welcome email:** Fires after PROVIDER registration (fire-and-forget). 3 steps: complete profile → upload credentials → activate listing. Links corrected to `/settings/provider`, `/settings/provider/credentials`, `/settings/provider/billing`.
 - **Provider profile completeness checklist:** 8-step progress widget on provider dashboard. Shows % complete + progress bar + per-item checklist with direct CTAs. Disappears when all 8 steps done. Credentials quick-action tile added (shows X/3 verified).
 
+## Recent Technical Decisions (2026-06-21 — batch-2 cleanup)
+- **Guarded data-ops via hardcoded-id script, not ad-hoc SQL** — `scripts/cleanup-batch2.ts` (PR #580) is dry-run by default; only deletes/retires a home when it is `status=DRAFT` AND zero-activity across all child relations (inquiries, residents, bookings, tours, placements, waitlist, shifts, reviews, favorites, matches), with a per-target name check so a wrong id can't hit the wrong listing. Anything else is skipped + flagged. Reusable pattern for future cohort cleanups.
+- **INACTIVE is the soft-delete** — no `deletedAt` column on `AssistedLivingHome`; Villa Serena was retired via `status=INACTIVE` (reversible) rather than a hard delete, since it's a real facility just out of AL outreach scope (HUD 202 independent-living).
+- **Address backfill is Places-only and write-additive** — `autopopulate-cohort.ts --addresses-only` uses Google Places (no scrape/AI/photos, $0 Anthropic) and only fills a missing street/zip from a HIGH-confidence match (OL-066 guard rejects wrong-location/low matches); it does not set `autoPopulatedAt`, so backfilled homes stay `enriched=no` until a full enrich.
+- **Stale graveyard branch confirmed** — `claude/inspiring-mayer-rvgyys` carries How-To/discharge-planner work that was independently merged to main via PRs; merging main into it throws 7 conflicts incl. code files. Session-wraps and new work go on fresh branches off main (CLAUDE.md branching discipline), not onto it.
+
 ## Recent Technical Decisions (2026-06-05)
 - **Claim token expiry raised to 7 days (168h)** — 48h was too short for founders to act on email; NEXTAUTH_SECRET rotation is now the only invalidation path
 - **Inline robots.txt parser** — no external dependency; avoids npm dep for a small parsing task
@@ -234,7 +240,7 @@ See `REVENUE_MODEL.md` for the full breakdown. 12 streams finalized:
 - **AGENCY tier added at $799/mo** — shown in wizard Step 4 alongside Starter/Professional/Growth; `STRIPE_PRICE_AGENCY` env var needed
 
 ## Immediate Next Priorities
-0. **Open PRs for branch `claude/inspiring-mayer-rvgyys` (2026-06-15)** — 3 commits: (a) discharge-planner search PrismaClientValidationError + raw-error leak fix (Sentry `2f642d88976448d394ec4d7d9fc10ca0`, OL-067); (b) inquiry-form 400 field-mapping fix (OL-068); (c) role-gated How-To Guides hub at `/learn/howto` (OL-069). All unit-tested (24 passing), full typecheck clean, build passes. When the vault is available, port the 25 source guides into `src/app/learn/howto/content.ts` (OL-069).
+0. **Batch-2 punch list (2026-06-21)** — (a) fix Windsor Heights `websiteUrl` (still points to the wrong Sunshine/Beachwood Retirement site), then full-enrich the 3 address-only homes (Windsor Heights, Bickford, Rocky River Village) once working non-SPA URLs exist; (b) reconcile rebrand names — Bickford of Rocky River → "Bloom of Rocky River" and Rocky River Village → "Meadow Falls of Rocky River" (addresses confirm same buildings; mirror the Anthology→Ashton rename); (c) optional `--addresses-only` pass on The Ashton (shows `city=(pending)` despite enriched=yes). See OL-081.
 1. **Merge non-Cleveland demo homes cleanup** — branch `chore/remove-non-cleveland-demo-data`: create PR, dry-run, then `--force` to delete Golden Years (Chicago), Lakeside Rehab (Seattle), Harbor View (Miami).
 2. **Set `STRIPE_PRICE_AGENCY` in Render (OL-055)** — create $799/mo Agency product in Stripe dashboard, set env var. Agency Stripe Checkout fails without it.
 3. **Cleveland founder end-to-end smoke test (OL-056)** — seed a home, generate claim link, register new operator with claimToken, complete wizard Steps 1-4, verify free access granted, no Stripe redirect.

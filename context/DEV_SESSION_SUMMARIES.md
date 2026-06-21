@@ -2,6 +2,46 @@
 
 ---
 
+### 2026-06-21 — Batch-2 Cleveland cohort: cleanup + address backfill
+
+- **Objective:** Land the guarded batch-2 cleanup script (PR #580), execute it on the production DB, and backfill addresses for the 3 fixable batch-2 homes — leaving the Cleveland directory cohort clean and outreach-ready.
+
+- **Work completed:**
+  - **PR #580 merged** (squash `b19b9c2`) — `scripts/cleanup-batch2.ts`, a single hardcoded-id, dry-run-by-default data-ops script. CI green (build-and-test, quality, migrate-deploy, Set-Cookie, e2e shards all passed). Merged after a clean dry-run review.
+  - **Cleanup executed on Render (`--force`)** — 4 actions applied, 0 skipped:
+    1. RENAME `cmql0xbpm…` "Anthology of Mayfield Heights" → **"The Ashton at Mayfield Heights"** (Sonida rebrand).
+    2. SOFT-DELETE `cmql0xbpo…` "Villa Serena" → `status=INACTIVE` (HUD 202 independent-living — out of AL outreach scope).
+    3. PURGE (hard delete, cascade) two leftover test homes: "Test Senior Living Cleveland" (`cmptv5deb…`) and "Chris Senior Care Home" (`cmpv5rg35…`). Both verified DRAFT + zero-activity + system directory operator before deletion.
+  - **Address backfill (`autopopulate-cohort.ts --addresses-only --force`)** on the 3 fixable homes — 3/3 succeeded, $0 Anthropic spend (Places-only, no scrape/AI/photos):
+    - Windsor Heights → **23311 Harvard Rd, Beachwood OH 44122** (HIGH).
+    - Bickford of Rocky River → **21600 Detroit Rd, Rocky River OH 44116** (HIGH; Places matched "Bloom of Rocky River" — rebrand).
+    - Rocky River Village → **22900 Center Ridge Rd, Rocky River OH 44116** (HIGH; Places matched "Meadow Falls of Rocky River" — rebrand).
+  - **Step-4 confirmation** via `report-directory-homes.ts --tsv`: Ashton renamed (enriched=yes), Villa Serena INACTIVE, both test homes gone, 3 backfilled homes now carry their city. Two new rebrands surfaced for the rename punch list (Bickford→Bloom, Rocky River Village→Meadow Falls).
+
+- **Files changed:** `scripts/cleanup-batch2.ts` (NEW, via #580). This session-wrap: `context/DEV_SESSION_SUMMARIES.md`, `context/CARELINKAI_TECHNICAL_STATE.md`, `context/CARELINKAI_TECH_OPEN_LOOPS.md`.
+
+- **Commands run (Render shell):**
+  - `npx tsx scripts/cleanup-batch2.ts` (dry-run) → `--force` (Applied: 4, Skipped: 0).
+  - `npx tsx scripts/autopopulate-cohort.ts /tmp/batch2_addr.csv --addresses-only --dry-run` → `--force` (3/3 succeeded).
+  - `npx tsx scripts/report-directory-homes.ts --tsv > /tmp/dir_after.tsv` + grep confirmation.
+
+- **Tests/build status:** PR #580 CI fully green before merge. Cleanup script typechecks clean (strict, standalone; `scripts/` excluded from app tsconfig). No app code changed.
+
+- **Deployment impact:** One PR merged → one Render auto-deploy (script-only, no migration, no runtime path change). Production DB mutated by the Render `--force` runs (4 cleanup actions + 3 address rows). All affected homes stay DRAFT/INACTIVE — no emails, no public listings.
+
+- **New risks/blockers:**
+  - **Windsor Heights `websiteUrl` is wrong** — still points to the Sunshine/Beachwood Retirement URL, not Windsor Heights. Must be corrected before that listing goes public.
+  - **Rebrand name reconciliation** — Bickford→Bloom and Rocky River Village→Meadow Falls (addresses confirm same buildings); canonical-name decision pending (Ashton already renamed).
+  - The 3 address-only homes are still `enriched=no` (verified address, no description/photos) — full enrich needs working non-SPA URLs.
+  - The designated session branch `claude/inspiring-mayer-rvgyys` is a stale graveyard (7 conflicts vs main incl. code files); this wrap was committed on a fresh `docs/session-wrap-2026-06-21` branch off main per CLAUDE.md branching discipline.
+
+- **Recommended next step:**
+  1. Fix Windsor Heights `websiteUrl` (find the real site or clear it), then full-enrich the 3 address-only homes once working URLs exist.
+  2. Decide canonical names for Bloom of Rocky River / Meadow Falls of Rocky River and rename (mirror the Ashton change).
+  3. Optionally run `--addresses-only` once on The Ashton (shows `city=(pending)` despite enriched=yes).
+
+---
+
 ### 2026-06-05 — AI Auto-Population Pipeline: Production Batch Run
 
 - **Objective:** Ship the full AI auto-population pipeline and execute it against the first 15 Cleveland facilities in production.
