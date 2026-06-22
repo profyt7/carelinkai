@@ -43,7 +43,7 @@ Each loop: what it is, why it matters, what done looks like.
 - **Residual:** next time in the Render shell, re-confirm against the live DB that no non-OH DRAFT homes exist. No code work remains.
 
 ### OL-058: Second batch Cleveland facilities auto-population
-- **Status:** 🟡 OPEN — **batch-2 seeded + partially cleaned (2026-06-19/21).** Supply staged via #579; cleanup script #580 applied 2026-06-21 (rename Anthology→Ashton, retire Villa Serena, purge 2 test homes); 3 fixable homes got Places address backfill. Remaining: full text/photo enrich of the 3 address-only homes + the per-home punch list (see **OL-081**).
+- **Status:** 🟡 OPEN — **batch-2 seeded + partially cleaned (2026-06-19/21).** Supply staged via #579; cleanup script #580 applied 2026-06-21 (rename Anthology→Ashton, retire Villa Serena, purge 2 test homes); 3 fixable homes got Places address backfill, then manual send-ready content via #582. Remaining: photo uploads for the 3 held homes (see **OL-081** residual).
 - **What:** Identify next set of Cleveland-area AssistedLivingHome records with `websiteUrl` available, create CSV, run `autopopulate-cohort.ts --dry-run` then `--force`.
 - **Note:** The Elms (mapped to "Hudson Elms Skilled Nursing & Rehabilitation Center"), Concordia at Sumner (city/address unresolved), Ohman + O'Neill North Ridgeville (capacity discrepancies) should be manually reviewed before operator outreach.
 - **Done when:** All Cleveland directory homes have `autoPopulatedAt` set or are marked as JS_ONLY/BLOCKED with a note.
@@ -170,13 +170,16 @@ Each loop: what it is, why it matters, what done looks like.
 - **Done when:** the enrich pipeline stores a verified phone on the listing and `report-directory-homes.ts` can emit phone directly (no manual research column).
 
 ### OL-081: Batch-2 cohort punch list (post-cleanup, 2026-06-21)
-- **Status:** 🟡 OPEN — cleanup + address backfill done; data-quality follow-ups remain before these homes are outreach-ready. The structural cleanup is **CLOSED**: PR #580 applied on Render (`--force`, Applied: 4) — Anthology→**The Ashton at Mayfield Heights**, Villa Serena→**INACTIVE**, "Test Senior Living Cleveland" + "Chris Senior Care Home" **purged**.
-- **What remains:**
-  1. **Windsor Heights `websiteUrl` is wrong** (`cmql0xbos…`) — stored URL points to the Sunshine/Beachwood Retirement site, not Windsor Heights. Address is correct (23311 Harvard Rd, Beachwood 44122, via Places); the website must be corrected (or cleared) before the listing goes public, and before any full enrich (a wrong URL would scrape the wrong facility).
-  2. **Rebrand name reconciliation** — Bickford of Rocky River (`cmql0xbp9…`) → Places matched **"Bloom of Rocky River"**; Rocky River Village (`cmql0xbpc…`) → matched **"Meadow Falls of Rocky River"**. Same buildings (addresses confirm). Decide canonical names + rename, mirroring Anthology→Ashton.
-  3. **3 homes are `enriched=no`** — Windsor Heights / Bickford / Rocky River Village have verified addresses (Places, `--addresses-only`) but no description/photos. `--addresses-only` does not set `autoPopulatedAt`. Full enrich needs working non-SPA URLs (blocked on #1/#2).
-  4. **The Ashton shows `city=(pending)`** despite `enriched=yes` — one `--addresses-only` pass would backfill its address.
-- **Done when:** Windsor Heights URL fixed, rebrand names reconciled, and the 3 address-only homes fully enriched (or marked JS_ONLY/BLOCKED with a note).
+- **Status:** 🟢 MOSTLY DONE — structural cleanup + name/URL reconciliation + send-ready content all **CLOSED**; only a photo-upload residual remains. The structural cleanup (PR #580, applied on Render `--force`, Applied: 4) — Anthology→**The Ashton at Mayfield Heights**, Villa Serena→**INACTIVE**, "Test Senior Living Cleveland" + "Chris Senior Care Home" **purged**. The 3 held homes' content was landed manually (PR #582, `scripts/enrich-batch2-held-homes.ts --force` on Render 2026-06-21, Applied: 3).
+- **Resolved:**
+  1. ✅ **Windsor Heights `websiteUrl`** (`cmql0xbos…`) — investigation showed the seeded Sunshine/Beachwood URL was **actually correct** (Sunshine Retirement Living operates Windsor Heights at that page; the "wrong URL" was a misread). UTM params stripped. Address verified 23311 Harvard Rd, Beachwood 44122.
+  2. ✅ **Rebrand name reconciliation** — Bickford of Rocky River (`cmql0xbp9…`) → **"Bloom at Rocky River"** (`bloomseniorliving.com/bloom-at-rocky-river/`); Rocky River Village (`cmql0xbpc…`) → **"Meadow Falls of Rocky River"** (`meadowfallsseniorliving.com/rocky-river/`). Names + URLs set in DB.
+  3. ✅ **Send-ready content for all 3** — name + official URL + description + care levels + amenities + highlights set via PR #582 (manual copy from official + public listings). All kept DRAFT. **Note on the report:** these show `enriched=no` **by design** — the script sets `aiPopulationConfidence='MANUAL'` but deliberately leaves `autoPopulatedAt` null (manual, not machine-scraped), so the report flag is NOT the right "done" signal here; the populated `description`/`careLevel`/`amenities` are.
+     - **Why manual, not the scrape pipeline:** all 3 official sites sit behind WAF bot-protection that 403s datacenter IPs (verified browser-UA); our scraper (`operator-profile-scraper.ts:198`) treats 403 as `BLOCKED` and writes no text, so `autopopulate --with-photos` cannot reach them.
+- **Residual (still 🟡 OPEN):**
+  1. **No photos** on the 3 held homes — the same WAF block prevents image scraping. They stay photo-less until a **manual Cloudinary upload pass** (or a future scrape via a non-blocked path). Low priority; does not block DRAFT outreach prep.
+  2. **The Ashton shows `city=(pending)`** despite `enriched=yes` — one `--addresses-only` pass would backfill its address.
+- **Done when:** the 3 held homes have at least a hero photo (manual upload) and The Ashton's address is backfilled. (Name/URL/content reconciliation is complete; Cowork has the final values for `batch2_email_research`.)
 
 ### OL-027: Provider listing fee ($99/mo)
 - **Status:** ✅ CLOSED (2026-05-02)
