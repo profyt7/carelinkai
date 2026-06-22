@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-06-21_
+_Last updated: 2026-06-22_
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -180,6 +180,15 @@ Each loop: what it is, why it matters, what done looks like.
   1. **No photos** on the 3 held homes — the same WAF block prevents image scraping. They stay photo-less until a **manual Cloudinary upload pass** (or a future scrape via a non-blocked path). Low priority; does not block DRAFT outreach prep.
   2. **The Ashton shows `city=(pending)`** despite `enriched=yes` — one `--addresses-only` pass would backfill its address.
 - **Done when:** the 3 held homes have at least a hero photo (manual upload) and The Ashton's address is backfilled. (Name/URL/content reconciliation is complete; Cowork has the final values for `batch2_email_research`.)
+
+### OL-082: Batch-2 founder outreach — send + residuals (2026-06-22)
+- **Status:** 🟡 OPEN — **audience loaded, broadcast NOT yet sent.** Send prep ran on Render via `scripts/batch2-send-prep.ts --push` (PR #584, `90950a2`): generated 11 per-home founder claim links (`clevelandFounder:true`, 45-day expiry — links **exp 2026-08-06**, `NEXTAUTH_SECRET`-signed) and loaded the Resend audience **"Batch 2"** (`4a80d88c-97cb-4241-984f-764b69273b89`) with **11 contacts** (all HTTP 201, properties `facility_name` + `claim_link` + `first_name`/`email`). All 11 homes stay **DRAFT**; no email/broadcast sent — **Chris sends from Resend.**
+  - The 11: Rose Senior Living Beachwood, Windsor Heights, Beachwood Commons, Solon Pointe, Vitalia Solon, Fairmont of Westlake, Bloom at Rocky River, Vitalia Strongsville, Symphony at Mentor, Vista Springs Ravinia Estate, Jennings at Brecksville.
+- **Residuals (still OPEN):**
+  1. **HOLD trio needs emails** — Meadow Falls of Rocky River (`cmql0xbpc…`), Embassy of Rockport (`cmql0xbpf…`), The Ashton at Mayfield Heights (`cmql0xbpm…`) are phone-call rows with no email yet. When contacts are found, extend the `HOMES` array in `scripts/batch2-send-prep.ts` and re-run `--push` to add them to "Batch 2". (Villa Serena is out of scope — INACTIVE.)
+  2. **Photos for the 3 WAF-blocked homes** — Windsor Heights / Bloom / Meadow Falls still have no photos (WAF blocks image scraping). Cross-ref **OL-081** residual; manual Cloudinary upload.
+  3. **Beachwood Commons email unverified** — `asarota@npseniorliving.com` flagged LOW (bounce risk). Verify or replace before relying on the send; it's loaded into "Batch 2" but may bounce.
+- **Done when:** the broadcast is sent from Resend, the HOLD trio is emailed (or explicitly dropped), and the Beachwood Commons email is verified/replaced.
 
 ### OL-027: Provider listing fee ($99/mo)
 - **Status:** ✅ CLOSED (2026-05-02)
