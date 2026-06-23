@@ -209,7 +209,7 @@ async function processRow(
         website: websiteUrl,
       });
       const accept = placesAddr && placesAddr.street && placesAddr.confidence !== 'LOW'
-        ? placesMatchAcceptable(placesAddr, home.address?.state ?? null)
+        ? placesMatchAcceptable(placesAddr, home.address?.state ?? null, home.address?.city ?? null)
         : { ok: false, reason: placesAddr ? `${placesAddr.confidence} confidence` : 'no match' };
       if (placesAddr && placesAddr.street && accept.ok) {
         console.log(
@@ -371,9 +371,24 @@ async function processRow(
   };
 }
 
+/** Normalize a city for comparison: lowercase, drop punctuation and the
+ * township/village/twp qualifiers Places sometimes appends (e.g. "Newbury Township"). */
+function normalizeCity(c: string): string {
+  return c
+    .toLowerCase()
+    .replace(/[.,]/g, ' ')
+    .replace(/\b(township|twp|village)\b/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 /**
  * OL-066 guard against bad Google Places matches:
- *   - If we know the home's state, reject a candidate in a different state.
+ *   - If we know the home's state, reject a candidate in a different state
+ *     (e.g. Princeton Place, Huntsburg OH → "Princeton Place of Ruston" LA).
+ *   - If we know the home's city, reject a candidate in a clearly different city
+ *     (e.g. Brookdale Willoughby → "Brookdale Mentor"). Erring toward a reject is
+ *     safe: the home is just held, not published with a wrong address.
  *   - If we DON'T know the state (no seeded address), require a HIGH match —
  *     which, with no city to anchor on, means a website-host-confirmed match —
  *     so a weak name-only MEDIUM (e.g. The Elms → Westerly, RI) is rejected.
@@ -381,9 +396,13 @@ async function processRow(
 function placesMatchAcceptable(
   placesAddr: PlaceAddressResult,
   seededState: string | null,
+  seededCity: string | null,
 ): { ok: boolean; reason?: string } {
   if (seededState && placesAddr.state && placesAddr.state.toUpperCase() !== seededState.toUpperCase()) {
     return { ok: false, reason: `Places state ${placesAddr.state} != seeded state ${seededState}` };
+  }
+  if (seededCity && placesAddr.city && normalizeCity(placesAddr.city) !== normalizeCity(seededCity)) {
+    return { ok: false, reason: `Places city ${placesAddr.city} != seeded city ${seededCity}` };
   }
   if (!seededState && placesAddr.confidence !== 'HIGH') {
     return { ok: false, reason: `no seeded state to verify and match is ${placesAddr.confidence} (need a website-confirmed HIGH)` };
@@ -442,7 +461,7 @@ async function backfillAddressViaPlaces(
   }
 
   // OL-066: guard against a wrong-location match (e.g. The Elms → Westerly RI).
-  const accept = placesMatchAcceptable(placesAddr, existing?.state ?? null);
+  const accept = placesMatchAcceptable(placesAddr, existing?.state ?? null, existing?.city ?? null);
   if (!accept.ok) {
     console.log(`  🚫 ${homeName} — rejected Places match: ${accept.reason} (matched "${placesAddr.matchedName ?? '?'}" @ "${placesAddr.formattedAddress ?? '?'}")`);
     return { status: 'skipped', homeId, homeName, reason: `Places match rejected — ${accept.reason}` };
