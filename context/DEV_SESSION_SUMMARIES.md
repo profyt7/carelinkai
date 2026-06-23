@@ -2,6 +2,24 @@
 
 ---
 
+### 2026-06-23 (evening) — Directory "richer listings" Step 2: URL hygiene (#601), text-enrich, sparse-write guard (#602) + incident cleanup
+
+- **Objective:** Clean the directory homes' stored website URLs, then run the AI **text** enrich, without scraping another facility's content onto our listings.
+- **Work completed:**
+  - **#601** (squash `86aad9f`) — `scripts/verify-directory-websites.ts` (NEW). Re-verifies each directory home's `websiteUrl` via Google Places using the home's anchored city; keeps a URL only if the matched business name corresponds to our facility (**city tokens removed** before comparison, so a city-only overlap — the rebrand signature — is rejected); nulls the rest. Founder ran `--force` on Render: **12 nulled** (rebrands: Brookdale Stow→Vitalia, HarborChase/Sunrise Shaker→StoryPoint, Elmcroft/Lantern/Gables, etc.), **11 refreshed**, **95 kept**.
+  - **Manual null of 2 name-collision cross-matches** the city-token filter let through (same name, different state/city): **Princeton Place (Huntsburg)** → `princetonplaceruston.com` (Louisiana) and **Vista Springs Macedonia** → Ravinia (Independence). Inline Prisma `updateMany`.
+  - **Enrich run** — `autopopulate-cohort.ts --from-db --include-unpopulated --include-active --force` over **105 homes: 90 enriched** (HIGH/MEDIUM), **13 sparse**, **2 blocked** (Legacy Place-Parma 404, Ivy House 403). **$8.47** Anthropic (~$0.082/home). **TEXT ONLY — no photos** (no `--with-photos`).
+  - **#602** (squash `50c720d`) — one-line guard in `autopopulate-cohort.ts`: skip the DB write when `extractionConfidence === 'LOW'`. Empty/JS-rendered pages make the extractor emit a literal `"<UNKNOWN>"` description (truthy) that the old code wrote over the listing **and** stamped `autoPopulatedAt` (hiding it from `--resume`).
+- **⚠️ INCIDENT (handled):** the #602 branch was **not** used for the live enrich — the **Render shell has no usable git remote** (`fatal: 'origin' does not appear to be a git repository`), so `git checkout fix/...` silently failed and the run used **un-patched deployed code**. Result: 13 LOW rows written — **9 got `"<UNKNOWN>"` descriptions (7 of them ACTIVE/public)**, 4 got real-but-generic text. **Cleanup (inline Prisma):** repaired the 9 `"<UNKNOWN>"` homes with a seed-based fallback description (`description` is **NOT NULL** in schema, so a fallback string, not null) + cleared `autoPopulatedAt`/`aiPopulationConfidence`/`autoPopulatedFromUrl`. Also cleaned **Brookdale Willoughby** (wrong-page generic Brookdale boilerplate + 20 global-UI amenities → neutral fallback + `amenities=[]`). Left East Park + 2× Grande Village as-is (real, topical text).
+- **Files changed:** `scripts/verify-directory-websites.ts` (NEW, #601); `scripts/autopopulate-cohort.ts` (1-line guard, #602). Script-only; `tsc --noEmit` + eslint clean.
+- **Commands run (Render prod):** `verify-directory-websites.ts` (dry + `--force`); inline Prisma nulls (Princeton / Vista Springs Macedonia); `autopopulate-cohort.ts --force` (enrich); inline Prisma repair (9× `<UNKNOWN>`, Brookdale Willoughby).
+- **Tests/build status:** #601 + #602 both green on full CI (quality + build-and-test + e2e); merged via squash.
+- **Deployment impact:** Render auto-deploys main; both PRs script-only (no runtime app path change). Production DB mutated by the founder's Render runs.
+- **New risks/blockers:** (1) **13 homes have JS-rendered/empty-HTML sites** — can't be text-enriched without a headless browser; currently on seed-fallback descriptions (see **OL-084**). (2) **Render shell has no git remote** — ad-hoc code can't be `git pull`'d there; use inline `npx tsx -e` or wait for main auto-deploy. (3) **No photos imported** for the directory cohort — needs a `--photos-only` pass (see **OL-085**).
+- **Recommended next step:** build the headless-browser fetch for the JS-rendered homes (**OL-084**), then a `--photos-only` Cloudinary pass (**OL-085**); hand operator-contact data to Cowork to populate `outreachEmail`/`outreachPhone` and scale claim-nudges past the current 11.
+
+---
+
 ### 2026-06-23 (launch) — OL-083 CLOSED: Greater-Cleveland directory LIVE (128 listings)
 
 - **Outcome:** The 6-county directory is **public** — 128 ACTIVE unclaimed listings across Cuyahoga, Summit, Lorain, Lake, Geauga, Medina. Cold-start supply problem solved. $0 Anthropic spend (Google Places only).
