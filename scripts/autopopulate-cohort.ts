@@ -27,6 +27,10 @@
  *                      only scrapes for <img> candidates, classifies, and appends
  *                      auto-populated HomePhoto rows. Implies --with-photos and
  *                      intentionally ignores the --resume "already populated" skip.
+ *   --include-unpopulated  With --from-db, also target freshly-seeded directory
+ *                      homes that have NO autoPopulatedAt yet (first enrich / first
+ *                      address backfill). Scoped to the directory sentinel operator
+ *                      only — never a real operator's un-populated DRAFT.
  *   --from-db          Skip the CSV and target all auto-populated DRAFT homes from
  *                      the database (using each home's stored websiteUrl). Pairs
  *                      with --photos-only for a no-CSV photo backfill of the cohort.
@@ -514,12 +518,18 @@ async function main() {
   const fromDb = args.includes('--from-db');
   const addressesOnly = args.includes('--addresses-only');
   const includeActive = args.includes('--include-active');
+  // --include-unpopulated: with --from-db, also target freshly-seeded directory homes
+  // that have NO autoPopulatedAt yet (the first-enrich / first-address case). Scoped
+  // strictly to the directory sentinel operator so we never touch a real operator's
+  // un-populated DRAFT. Without this flag, --from-db keeps its original meaning
+  // (already auto-populated homes only).
+  const includeUnpopulated = args.includes('--include-unpopulated');
   const facilityFlag = args.indexOf('--facility');
   const onlyFacilityId = facilityFlag !== -1 ? args[facilityFlag + 1] : null;
 
   if (!csvPath && !fromDb) {
-    console.error('Usage: autopopulate-cohort.ts <path/to/websites.csv> [--dry-run|--force] [--resume] [--with-photos] [--photos-only] [--addresses-only] [--from-db] [--include-active] [--facility <id>]');
-    console.error('  (omit the CSV path and pass --from-db to target all auto-populated DRAFT homes from the database)');
+    console.error('Usage: autopopulate-cohort.ts <path/to/websites.csv> [--dry-run|--force] [--resume] [--with-photos] [--photos-only] [--addresses-only] [--from-db] [--include-active] [--include-unpopulated] [--facility <id>]');
+    console.error('  (omit the CSV path and pass --from-db to target auto-populated DRAFT homes; add --include-unpopulated to also reach freshly-seeded directory homes)');
     process.exit(1);
   }
 
@@ -557,10 +567,30 @@ async function main() {
     // --include-active, which also covers already-claimed ACTIVE listings like
     // the real Canterbury Commons). Address-only backfill doesn't need a website;
     // the photo/text paths do, so require a usable URL there. No CSV needed.
+    //
+    // --include-unpopulated drops the autoPopulatedAt requirement to reach
+    // freshly-seeded homes (first enrich / first address backfill), but ONLY within
+    // the directory sentinel operator — never a real operator's un-populated DRAFT.
+    const DIRECTORY_EMAIL = 'directory-unclaimed@carelinkai.system';
+    let directoryOperatorId: string | null = null;
+    if (includeUnpopulated) {
+      const sentinel = await prisma.user.findUnique({
+        where: { email: DIRECTORY_EMAIL },
+        select: { operator: { select: { id: true } } },
+      });
+      if (!sentinel?.operator) {
+        console.error(`ERROR: --include-unpopulated needs the directory sentinel operator (${DIRECTORY_EMAIL}), which was not found.`);
+        process.exit(1);
+      }
+      directoryOperatorId = sentinel.operator.id;
+      console.log(`=== INCLUDE-UNPOPULATED: also targeting not-yet-enriched DRAFT homes under the directory operator (${directoryOperatorId}) ===`);
+    }
     const homes = await prisma.assistedLivingHome.findMany({
       where: {
         ...(includeActive ? {} : { status: HomeStatus.DRAFT }),
-        autoPopulatedAt: { not: null },
+        ...(includeUnpopulated
+          ? { operatorId: directoryOperatorId! }
+          : { autoPopulatedAt: { not: null } }),
         ...(addressesOnly
           ? {}
           : { OR: [{ websiteUrl: { not: null } }, { autoPopulatedFromUrl: { not: null } }] }),
