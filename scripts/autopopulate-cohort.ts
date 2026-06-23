@@ -267,7 +267,13 @@ async function processRow(
       console.log(`    Notes: ${extracted.extractionNotes}`);
     }
 
-    if (!dryRun) {
+    // Don't persist sparse/LOW-confidence extractions. These come from empty or
+    // JS-rendered pages where the model falls back to an "UNKNOWN" placeholder
+    // description (a truthy string that would otherwise overwrite the listing and
+    // stamp autoPopulatedAt, permanently hiding the home from --resume retries).
+    // Skipping the write leaves the home DRAFT and un-stamped for a later re-scrape;
+    // it is still reported as `sparse` in the run summary below.
+    if (!dryRun && extracted.extractionConfidence !== 'LOW') {
       await prisma.assistedLivingHome.update({ where: { id: homeId }, data: updateData });
 
       // Upsert address — fill empty street/zip from the AI scrape or Places fallback.
