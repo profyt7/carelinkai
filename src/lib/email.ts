@@ -179,6 +179,74 @@ export async function sendOperatorClaimNotification(args: {
 }
 
 /**
+ * Inquiry→claim "pull" engine (OL-083): when a family inquires on an UNCLAIMED
+ * listing and we know the operator's outreach email, nudge them to claim their
+ * free listing so they can respond. The notification IS the claim CTA.
+ *
+ * HIPAA: the body is intentionally GENERIC — it names only the facility and says
+ * a family is trying to reach them. It MUST NOT contain any inquiry/health
+ * details; those stay behind auth and are revealed only after the operator
+ * claims. Fire-and-forget: failures are logged + sent to Sentry, never thrown.
+ */
+export async function sendInquiryClaimNudgeEmail(args: {
+  facilityName: string;
+  toEmail: string;
+  claimUrl: string;
+  waitingCount?: number;
+}): Promise<boolean> {
+  const facilityName = args.facilityName?.trim() || 'your community';
+  const count = args.waitingCount && args.waitingCount > 1 ? args.waitingCount : 1;
+  const leadPhrase =
+    count > 1 ? `${count} families are trying to reach` : `A family is trying to reach`;
+  try {
+    if (!process.env.RESEND_API_KEY) {
+      console.error('[Resend] RESEND_API_KEY not configured — skipping inquiry claim nudge');
+      return false;
+    }
+    const safeFacility = escapeHtml(facilityName);
+    const subject = `${leadPhrase} ${facilityName} on CareLinkAI`;
+    const text =
+      `${leadPhrase} ${facilityName} on CareLinkAI.\n\n` +
+      `Claim your free listing in about 2 minutes to view and respond securely:\n${args.claimUrl}\n\n` +
+      `Inquiry details are kept private until you claim. There is no cost to claim or respond.`;
+    const html = `
+<!DOCTYPE html>
+<html><body style="font-family:Arial,sans-serif;color:#1f2937;line-height:1.5">
+  <p>${escapeHtml(leadPhrase)} <strong>${safeFacility}</strong> on CareLinkAI.</p>
+  <p>Claim your free listing in about 2 minutes to view and respond securely:</p>
+  <p><a href="${escapeHtml(args.claimUrl)}" style="display:inline-block;background:#0d9488;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600">Claim ${safeFacility}</a></p>
+  <p style="color:#6b7280;font-size:13px">Inquiry details are kept private until you claim. There is no cost to claim or respond.</p>
+</body></html>`;
+
+    const { data, error } = await resend.emails.send({
+      from: `${APP_NAME} <${FROM_EMAIL}>`,
+      to: [args.toEmail],
+      subject,
+      text,
+      html,
+    });
+
+    if (error) {
+      console.error('[Resend] Error sending inquiry claim nudge:', error);
+      captureError(
+        error instanceof Error ? error : new Error(String((error as { message?: string })?.message ?? error)),
+        { tags: { feature: 'inquiry-claim-notification' }, extra: { facilityName } }
+      );
+      return false;
+    }
+    console.log('[Resend] ✅ Inquiry claim nudge sent. Email ID:', data?.id);
+    return true;
+  } catch (error) {
+    console.error('[Resend] Exception sending inquiry claim nudge:', error);
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { feature: 'inquiry-claim-notification' },
+      extra: { facilityName },
+    });
+    return false;
+  }
+}
+
+/**
  * Generate HTML content for verification email
  */
 function generateVerificationEmailHTML(

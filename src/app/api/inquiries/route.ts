@@ -9,6 +9,7 @@ import { authOptions } from '@/lib/auth';
 import { afterInquiryCreated } from '@/lib/hooks/inquiry-hooks';
 import { smsService } from '@/lib/sms/sms-service';
 import { createInquirySchema } from '@/lib/inquiries/schema';
+import { notifyUnclaimedHomeInquiry } from '@/lib/claim-engine/inquiry-claim-notification';
 
 /**
  * POST /api/inquiries - Create a new inquiry
@@ -107,7 +108,8 @@ export async function POST(request: NextRequest) {
       console.error('Failed to schedule follow-ups:', err);
     });
 
-    // SMS alert to operator (non-blocking)
+    // SMS alert to operator (non-blocking) — claimed homes only (the directory
+    // sentinel operator on unclaimed homes has no phone, so this no-ops there).
     const operatorPhone = inquiry.home?.operator?.user?.phone;
     if (operatorPhone) {
       smsService.sendNewInquiryAlert(
@@ -118,6 +120,11 @@ export async function POST(request: NextRequest) {
         inquiry.home.name
       ).catch(() => {});
     }
+
+    // Inquiry→claim "pull" engine (OL-083): if the home is UNCLAIMED, best-effort
+    // nudge the operator to claim (generic copy only — no PHI). Self-filters to
+    // unclaimed homes with a known outreach email; non-blocking.
+    notifyUnclaimedHomeInquiry({ homeId: inquiry.homeId, inquiryId: inquiry.id }).catch(() => {});
     
     return NextResponse.json(
       { success: true, inquiry },

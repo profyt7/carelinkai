@@ -190,6 +190,22 @@ Each loop: what it is, why it matters, what done looks like.
   3. **Beachwood Commons email unverified** — `asarota@npseniorliving.com` flagged LOW (bounce risk). Verify or replace before relying on the send; it's loaded into "Batch 2" but may bounce.
 - **Done when:** the broadcast is sent from Resend, the HOLD trio is emailed (or explicitly dropped), and the Beachwood Commons email is verified/replaced.
 
+### OL-083: Inquiry → Claim "pull" engine (2026-06-22)
+- **Status:** 🟢 BUILT (PR `feat/inquiry-claim-notification`, pending merge) — turns real demand on an unclaimed listing into a claim trigger. Sibling of OL-079. *(Note: the founder's ticket called this "OL-082", but that number was already taken by the batch-2 outreach loop above, so it's filed as OL-083.)*
+- **What it does:** when a family inquires on an **unclaimed/directory-owned** home, the inquiry is **always captured** (existing `Inquiry` row; `/api/inquiries` has no status guard) and surfaces on the operator dashboard the moment they claim (inquiries key off `homeId`, which reassigns on claim — no extra wiring). On top of that capture: a **best-effort notify** nudges the operator to claim.
+- **Build:**
+  - **Schema (migration `20260622000001_inquiry_claim_outreach_fields`, additive):** `AssistedLivingHome.outreachEmail`, `outreachPhone`, `claimNudgeLastSentAt`.
+  - **`src/lib/claim-engine/inquiry-claim-notification.ts`** — `notifyUnclaimedHomeInquiry({homeId, inquiryId})`: self-filters to unclaimed homes (directory sentinel operator `directory-unclaimed@carelinkai.system`); if `outreachEmail` known + not nudged in last 24h, mints a 45-day founder claim link (`signClaimToken`, `clevelandFounder:true`) and sends a **Resend email + Twilio SMS** (reusing existing infra), then stamps `claimNudgeLastSentAt`. Non-blocking, Sentry-tagged `feature: 'inquiry-claim-notification'`, idempotent (24h throttle).
+  - **`src/lib/email.ts` `sendInquiryClaimNudgeEmail` + `sms-service.ts` `sendInquiryClaimNudge`** — generic copy ("a family is trying to reach <Facility>… claim to respond securely"); the link IS the CTA.
+  - **Public counter:** `/api/homes/[id]` returns `unclaimed` + `pendingInquiryCount` (count of NEW inquiries); `src/app/homes/[id]/page.tsx` shows "N families have inquired — claim to view & respond securely" (or a soft "claim this listing" when 0).
+  - **Wire:** one non-blocking call in `/api/inquiries` POST. Unit test for the unclaimed gate.
+- **HIPAA:** inquiries may carry PHI (care needs). The email/SMS body and the public counter are **generic only** — facility name + a generic "a family is trying to reach you" / a bare count. Actual inquiry content stays behind auth, revealed only after claim.
+- **Residual / dependencies (OPEN):**
+  1. **Populate `outreachEmail`/`outreachPhone`** — the email/SMS branch is dormant until these are filled (from Cowork's batch research / the "Batch 2" contacts). A small backfill script can map the batch-2 outreach emails onto the home rows. Until then, only the **public counter** path is active.
+  2. **Anonymous capture** — `/api/inquiries` still requires a `familyId`; a family with no account inquiring on a public listing currently 400s. Owned by the **publish-wide rollout ticket** (listings must be PUBLIC + anonymous inquiry capture) — not built here. Within current auth, capture is intact.
+  3. **AI triage auto-ack** (optional in the ticket) — deferred to a phase 2; would auto-acknowledge the family to hold them while the operator claims.
+- **Done when:** outreach contacts are populated so the notify fires in production, the publish-wide ticket lands (public listings + anonymous capture), and (optionally) the AI auto-ack ships.
+
 ### OL-027: Provider listing fee ($99/mo)
 - **Status:** ✅ CLOSED (2026-05-02)
 - Schema fields + migration, Stripe Checkout + Customer Portal APIs, webhook handler, visibility gate in marketplace API, billing UI at `/settings/provider/billing`. Requires `STRIPE_PRICE_PROVIDER_LISTING` env var in Render.

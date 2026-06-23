@@ -772,6 +772,36 @@ export default function HomeDetailPage() {
             <div className="flex flex-col lg:flex-row lg:space-x-8">
               {/* Left column */}
               <div className="flex-1">
+                {/* Unclaimed listing → claim driver (OL-083). HIPAA: count only,
+                    no inquiry/health details surfaced publicly. */}
+                {realHome.unclaimed && (
+                  realHome.pendingInquiryCount > 0 ? (
+                    <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary-200 bg-primary-50 p-4">
+                      <p className="text-sm font-medium text-primary-900">
+                        📩 {realHome.pendingInquiryCount} {realHome.pendingInquiryCount === 1 ? 'family has' : 'families have'} inquired about this community — claim the listing to view &amp; respond securely.
+                      </p>
+                      <a
+                        href="/auth/register?role=OPERATOR"
+                        className="shrink-0 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
+                      >
+                        Claim this listing
+                      </a>
+                    </div>
+                  ) : (
+                    <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-neutral-200 bg-neutral-50 p-4">
+                      <p className="text-sm text-neutral-700">
+                        Are you the operator of this community? Claim your free listing to manage it and respond to families.
+                      </p>
+                      <a
+                        href="/auth/register?role=OPERATOR"
+                        className="shrink-0 rounded-lg border border-primary-600 px-4 py-2 text-sm font-semibold text-primary-700 hover:bg-primary-50"
+                      >
+                        Claim this listing
+                      </a>
+                    </div>
+                  )
+                )}
+
                 {/* Header */}
                 <div className="mb-6">
                   <div className="flex flex-wrap items-start justify-between gap-3">

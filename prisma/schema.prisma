@@ -530,6 +530,13 @@ model AssistedLivingHome {
   enrichmentStatus        EnrichmentStatus @default(NONE)
   enrichmentStartedAt     DateTime?
   enrichmentError         String?
+  // Best-effort operator contact for UNCLAIMED/directory listings (from outreach
+  // research) — used by the inquiry→claim "pull" engine (OL-083) to nudge the
+  // operator to claim. Null on most listings; the public waiting-leads counter is
+  // the fallback when no contact is known.
+  outreachEmail           String?
+  outreachPhone           String?
+  claimNudgeLastSentAt    DateTime?
   address                Address?
   operator               Operator         @relation(fields: [operatorId], references: [id], onDelete: Cascade)
   bookings               Booking[]
