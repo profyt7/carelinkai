@@ -19,7 +19,7 @@ const INDIVIDUAL_FEATURES = [
   'Placement request management and history',
   'Analytics dashboard — placements, response times, outcomes',
   'Priority support from our care coordination team',
-  'HIPAA-compliant data handling',
+  'HIPAA-aligned data handling',
 ];
 
 const DEPT_FEATURES = [

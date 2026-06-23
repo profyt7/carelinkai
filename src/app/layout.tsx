@@ -61,7 +61,7 @@ export const metadata: Metadata = {
     "elderly care",
     "family portal",
     "care matching",
-    "HIPAA compliant",
+    "HIPAA-aligned safeguards",
   ],
   authors: [{ name: "CareLinkAI Team" }],
   creator: "CareLinkAI",

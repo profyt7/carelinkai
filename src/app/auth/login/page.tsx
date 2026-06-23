@@ -147,7 +147,7 @@ export default function LoginPage() {
             <ul className="mt-10 space-y-3">
               {[
                 "Personalized AI-powered care matching",
-                "HIPAA-compliant secure platform",
+                "HIPAA-aligned secure platform",
                 "Streamlined placement process",
                 "Comprehensive care management tools",
               ].map((item) => (
