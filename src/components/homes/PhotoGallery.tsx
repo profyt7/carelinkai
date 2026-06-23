@@ -10,7 +10,7 @@ import {
   FiMinimize,
   FiGrid
 } from 'react-icons/fi';
-import { Camera } from 'lucide-react';
+import HomeImagePlaceholder from './HomeImagePlaceholder';
 
 export interface Photo {
   id: string;
@@ -147,16 +147,9 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
     setIsLoading(false);
   };
 
-  // If no photos, show placeholder
+  // If no photos, show a clean branded placeholder (not a broken image).
   if (!photos.length) {
-    return (
-      <div className="relative h-64 w-full rounded-lg bg-neutral-200 md:h-96">
-        <div className="flex h-full w-full flex-col items-center justify-center">
-          <Camera className="mb-2 h-10 w-10 text-neutral-400" />
-          <p className="text-sm text-neutral-500">No photos available</p>
-        </div>
-      </div>
-    );
+    return <HomeImagePlaceholder className="h-64 w-full rounded-lg md:h-96" />;
   }
 
   return (
