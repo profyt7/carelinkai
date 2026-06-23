@@ -298,6 +298,21 @@ function descriptionFor(f: MetroFacility): string {
   );
 }
 
+/**
+ * Ensure a directory home carries at least a partial Address with its known city +
+ * state=OH (street/zip left empty). This anchors the later Google Places address
+ * backfill (autopopulate-cohort.ts --addresses-only): it makes the Places query
+ * municipality-specific and lets the match guard reject cross-state / cross-city
+ * results. The publish gate still holds the home until street + zip are filled.
+ * Returns true if it created a new partial address.
+ */
+async function ensurePartialAddress(homeId: string, city: string): Promise<boolean> {
+  const existingAddr = await prisma.address.findFirst({ where: { homeId }, select: { id: true } });
+  if (existingAddr) return false;
+  await prisma.address.create({ data: { homeId, street: '', city, state: 'OH', zipCode: '' } });
+  return true;
+}
+
 async function discoverAndStoreWebsite(homeId: string, name: string, city: string): Promise<string> {
   const result = await findWebsiteUrl({ name, city, state: 'OH' });
   await sleep(PLACES_DELAY_MS);
@@ -326,11 +341,11 @@ async function main() {
 
   // Build dedupe index from ALL existing homes (any operator), keyed by normalized name.
   const existing = await prisma.assistedLivingHome.findMany({
-    select: { name: true, address: { select: { city: true } } },
+    select: { id: true, name: true, operatorId: true, address: { select: { id: true, city: true } } },
   });
-  const existingByNorm = new Map<string, { name: string; city: string | null }>();
+  const existingByNorm = new Map<string, { id: string; name: string; operatorId: string; city: string | null; hasAddress: boolean }>();
   for (const h of existing) {
-    existingByNorm.set(normName(h.name), { name: h.name, city: h.address?.city ?? null });
+    existingByNorm.set(normName(h.name), { id: h.id, name: h.name, operatorId: h.operatorId, city: h.address?.city ?? null, hasAddress: !!h.address });
   }
   console.log(`Existing homes in DB: ${existing.length} (deduping against all of them)\n`);
 
@@ -364,6 +379,7 @@ async function main() {
   let created = 0;
   let skippedDup = 0;
   let heldSnf = 0;
+  let addressesAdded = 0;
   const createdRows: string[] = [];
   const skippedRows: string[] = [];
   const heldRows: string[] = [];
@@ -376,7 +392,21 @@ async function main() {
     if (dupHit || ALIAS_SKIP.has(norm)) {
       skippedDup++;
       const why = dupHit ? `matches existing "${dupHit.name}"` : 'known rebrand alias';
-      skippedRows.push(`  SKIP (dup):  ${f.name} (${f.city}) — ${why}`);
+      // Idempotently anchor a previously-seeded directory home that still lacks an
+      // address (e.g. the metro homes from a prior run), so the Places backfill works.
+      let anchorNote = '';
+      const canAnchor = dupHit && seedOperator && dupHit.operatorId === seedOperator.id && !dupHit.hasAddress;
+      if (canAnchor) {
+        if (dryRun) {
+          anchorNote = ' [would add city/OH anchor]';
+          addressesAdded++;
+        } else if (await ensurePartialAddress(dupHit!.id, f.city)) {
+          anchorNote = ' [+city/OH anchor]';
+          dupHit!.hasAddress = true;
+          addressesAdded++;
+        }
+      }
+      skippedRows.push(`  SKIP (dup):  ${f.name} (${f.city}) — ${why}${anchorNote}`);
       continue;
     }
 
@@ -389,8 +419,9 @@ async function main() {
 
     // 3. Create (or preview).
     if (dryRun) {
-      createdRows.push(`  WOULD CREATE: ${f.name} (${f.city}, ${f.county}) [${f.careLevel.join(', ')}]${f.snfPrimary ? ' [SNF-primary]' : ''}`);
+      createdRows.push(`  WOULD CREATE: ${f.name} (${f.city}, ${f.county}) [${f.careLevel.join(', ')}]${f.snfPrimary ? ' [SNF-primary]' : ''} (+city/OH anchor)`);
       created++;
+      addressesAdded++;
       continue;
     }
     if (!seedOperator) throw new Error('Seed operator was not initialized.');
@@ -409,9 +440,12 @@ async function main() {
       const status = await discoverAndStoreWebsite(home.id, f.name, f.city);
       websiteNote = ' — website ' + status;
     }
+    // Anchor the home's city + state=OH so the Places address backfill queries and
+    // verifies precisely (no cross-state/city matches).
+    if (await ensurePartialAddress(home.id, f.city)) addressesAdded++;
     createdRows.push(`  CREATED: ${f.name} (${f.city}, ${f.county})${websiteNote}`);
     // Register so a later same-norm row in this run also dedupes.
-    existingByNorm.set(norm, { name: f.name, city: f.city });
+    existingByNorm.set(norm, { id: home.id, name: f.name, operatorId: seedOperator.id, city: f.city, hasAddress: true });
     created++;
   }
 
@@ -433,6 +467,7 @@ async function main() {
   console.log(`${dryRun ? 'Would create' : 'Created'}: ${created}`);
   console.log(`Held (SNF-primary):          ${heldSnf}`);
   console.log(`Skipped (dup / rebrand):     ${skippedDup}`);
+  console.log(`City/OH anchors ${dryRun ? 'to add' : 'added'}:     ${addressesAdded}`);
   console.log(`Source total:                ${METRO.length}`);
   console.log('─────────────────────────────────────────────');
 
