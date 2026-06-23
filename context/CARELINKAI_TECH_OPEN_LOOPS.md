@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-06-23 (directory launch)_
+_Last updated: 2026-06-23 (directory richer-listings text-enrich)_
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -212,10 +212,24 @@ Each loop: what it is, why it matters, what done looks like.
   1. **~24 directory homes held without addresses** (publish gate: missing street/zip). Two groups: (a) ~9 *correct* homes held on a city-label technicality where Google's municipality ≠ the seeded city (Judson Park & Cedarwood Plaza = Cleveland vs Cleveland Heights; Marymount Place, Pleasant Lake Villa, Light of Hearts Villa, Arden Courts of Chagrin Falls, South Franklin Circle, Pines at Brooks House, Vitalia Montrose) — rescuable by relaxing the city check or hand-setting their address; (b) un-anchored older Tier-A names not in the metro list (Slovene, Welsh, Windsor House, St Joseph Center, Avenue at Lyndhurst, Resorts at Daughters of Miriam, Ancora, Autumn Hills, Thistle House, Ohman ×2, Inn at the Pines, Divine Living) — these hit the "no seeded state" guard; anchor them (city/OH) and re-run.
   2. **5 same-city cross-matches held** via `hold-crossmatch-homes.ts` (reverted to DRAFT, street/zip cleared): Brookdale Gardens at Westlake, Homestead I, StoryPoint Medina West, Elmcroft of Medina, Gardens of Western Reserve. Need a correct address (or operator claim) before re-publish.
   3. **20 SNF-primary rows** held out of the seed pending `ltc.ohio.gov` verification — re-run `seed-cleveland-metro.ts --include-unverified` for any that carry a real AL/RCF wing.
-  4. **Text-enrich deferred:** `seed-cleveland-metro.ts --with-websites` stored website URLs, but several cross-matched (Princeton Place→a LA site, Brookdale Stow→Vitalia Stow, etc.). These are NOT publicly rendered (only the enrich/onboarding paths read `websiteUrl`), so harmless now — but clean them before running the text/photo enrich (`autopopulate-cohort.ts --from-db --include-unpopulated` without `--addresses-only`, which costs Anthropic).
+  4. **Text-enrich — ✅ DONE 2026-06-23 (evening).** URLs cleaned via `verify-directory-websites.ts` (#601: 12 nulled rebrands, 11 refreshed, 95 kept) + 2 manual name-collision nulls (Princeton Place→LA, Vista Springs Macedonia→Ravinia), then `autopopulate-cohort.ts --from-db --include-unpopulated --include-active --force` enriched 90/105 (HIGH/MEDIUM), $8.47, **text only**. See OL-084 (13 JS-rendered homes still un-enriched) and OL-085 (photos never imported).
   5. **Populate `outreachEmail`/`outreachPhone`** so the claim-nudge email/SMS fires (currently only the public counter path is active).
   6. **Anonymous-inquiry → family link-by-email** and **AI triage auto-ack** — deferred to a later phase.
 - **Done when:** ✅ DONE — directory live with 128 listings. Remaining items above are incremental polish, not blockers.
+
+### OL-084: Headless-browser scrape for JS-rendered directory homes
+- **Status:** 🟡 OPEN — surfaced by the 2026-06-23 text-enrich run.
+- **What:** 13 directory homes returned **empty `<html></html>`** to the current scraper (`operator-profile-scraper`) because their sites are JS-rendered or bot-blocking, so the AI enrich produced LOW/`"<UNKNOWN>"` output. After cleanup they carry **seed-based fallback descriptions** (name + city + care levels), not real content. The homes: **Meadow Falls of Rocky River, Windsor Heights, Homestead I, Homestead II, Oaks of Brecksville, Brookdale Bath, Mulberry Gardens, St. Luke Lutheran (Portage Lakes), Marymount Place** (the 9 repaired `<UNKNOWN>`), plus **Grande Village Suites, Grande Village Villas, East Park Retirement Community** (LOW but real-ish corporate/hero text, left as-is) and **Brookdale Willoughby** (cleaned — wrong-page generic content + 20 bogus amenities removed; its URL is a Wickliffe mismatch needing a correct community page). Also re-check the 2 **blocked** homes: Legacy Place-Parma (404 — dead URL) and Ivy House (403 — bot block).
+- **Why it matters:** these listings are public (ACTIVE) with thin fallback text; richer content improves SEO + claim conversion.
+- **Note:** #602 (`50c720d`, merged) now **skips DB writes for LOW-confidence extractions**, so a future enrich won't re-clobber these — but it also won't improve them until the scraper can render JS. Needs a headless fetch (Playwright/Puppeteer or a render-API) feeding the existing extractor. These homes are **un-stamped** (`autoPopulatedAt` null) so they're cleanly retryable.
+- **Done when:** the JS-rendered homes return real HTML and re-enrich to HIGH/MEDIUM, or are explicitly marked JS_ONLY/BLOCKED with a note.
+
+### OL-085: Photo import for the Greater-Cleveland directory cohort
+- **Status:** 🟡 OPEN — the 2026-06-23 enrich was **text-only** (no `--with-photos`).
+- **What:** Run the photo pipeline over the enriched directory homes: `autopopulate-cohort.ts --from-db --include-active --photos-only --force` (classifies candidate images, downloads + re-hosts to **Cloudinary**, idempotent — clears prior `autoPopulated` photos first). Listings currently show the branded `HomeImagePlaceholder` (#593). Skip the 13 JS-rendered homes (no scrapable images until OL-084).
+- **Why it matters:** photos materially lift listing quality + claim conversion; the "Claim & add photos" nudge (#593) assumes most listings start photo-less.
+- **Cost/infra note:** image classification adds Anthropic spend (~per-home) on top of Cloudinary storage; budget a dry-run first. **Render shell can't `git pull`** — the script is already on deployed main, so it runs as-is; do ad-hoc tweaks via inline `npx tsx -e`.
+- **Done when:** directory homes with scrapable galleries have ≥1 Cloudinary-hosted `autoPopulated` photo, or are noted as image-less.
 
 ### OL-027: Provider listing fee ($99/mo)
 - **Status:** ✅ CLOSED (2026-05-02)
