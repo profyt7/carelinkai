@@ -31,6 +31,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { formatCurrency } from '@/lib/utils';
 import { calculateAIMatchScore, calculateAIMatchBreakdown } from '@/lib/ai-matching';
+import { isUnclaimedHome } from '@/lib/claim-engine/inquiry-claim-notification';
 import { prisma } from '@/lib/prisma';
 
 // Constants
@@ -491,6 +492,7 @@ export function generateMockHomes(count: number = 12) {
       aiMatchFactors: undefined,
       aiMatchWeights: undefined,
       isFavorited: false,
+      isUnclaimed: false,
     };
   });
 }
@@ -781,6 +783,10 @@ export async function GET(request: NextRequest) {
           name: `${home.operator.user.firstName} ${home.operator.user.lastName}`,
           email: home.operator.user.email
         } : null,
+        // A listing still owned by the directory sentinel operator is "unclaimed"
+        // — surfaced in results so the seeded directory shows, badged so families
+        // know no operator manages it yet.
+        isUnclaimed: isUnclaimedHome(home.operator?.user?.email),
         aiMatchScore,
         aiMatchFactors,
         aiMatchWeights,
