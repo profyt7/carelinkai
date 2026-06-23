@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-06-23_
+_Last updated: 2026-06-23 (directory launch)_
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -190,8 +190,9 @@ Each loop: what it is, why it matters, what done looks like.
   3. **Beachwood Commons email unverified** — `asarota@npseniorliving.com` flagged LOW (bounce risk). Verify or replace before relying on the send; it's loaded into "Batch 2" but may bounce.
 - **Done when:** the broadcast is sent from Resend, the HOLD trio is emailed (or explicitly dropped), and the Beachwood Commons email is verified/replaced.
 
-### OL-083: Inquiry → Claim "pull" engine (2026-06-22)
-- **Status:** 🟢 BUILT (PR `feat/inquiry-claim-notification`, pending merge) — turns real demand on an unclaimed listing into a claim trigger. Sibling of OL-079. *(Note: the founder's ticket called this "OL-082", but that number was already taken by the batch-2 outreach loop above, so it's filed as OL-083.)*
+### OL-083: Inquiry → Claim "pull" engine + publish-wide directory (2026-06-22)
+- **Status:** ✅ **CLOSED 2026-06-23 — Greater-Cleveland directory is LIVE (128 public listings across 6 counties).** The publish-wide rollout + Part B metro seed shipped and the founder ran the full seed→anchor→enrich→publish→cleanup sequence on Render. Sibling of OL-079. *(Note: the founder's ticket called this "OL-082", but that number was already taken by the batch-2 outreach loop above, so it's filed as OL-083.)*
+- **Launch result (2026-06-23, Render prod):** 118 metro homes seeded + 138 city/OH address anchors → Places address backfill (117 filled, all in-state) → `publish-directory-homes.ts --force` published **133**, then `hold-crossmatch-homes.ts --force` reverted **5** same-city cross-matches → **128 live ACTIVE listings**. $0 Anthropic spend (Places-only).
 - **What it does:** when a family inquires on an **unclaimed/directory-owned** home, the inquiry is **always captured** (existing `Inquiry` row; `/api/inquiries` has no status guard) and surfaces on the operator dashboard the moment they claim (inquiries key off `homeId`, which reassigns on claim — no extra wiring). On top of that capture: a **best-effort notify** nudges the operator to claim.
 - **Build:**
   - **Schema (migration `20260622000001_inquiry_claim_outreach_fields`, additive):** `AssistedLivingHome.outreachEmail`, `outreachPhone`, `claimNudgeLastSentAt`.
@@ -207,14 +208,14 @@ Each loop: what it is, why it matters, what done looks like.
   - **#591 (C8)** `scripts/pre-publish-test-demo-sweep.ts` (dry-run default).
   - **#592 (C7)** `scripts/publish-directory-homes.ts` — quality-gated DRAFT→ACTIVE publisher (dry-run default).
   - **#593** branded `HomeImagePlaceholder` + photo-aware "Claim & add photos" nudge.
-- **Residual / dependencies (OPEN):**
-  1. **Populate `outreachEmail`/`outreachPhone`** — the email/SMS branch is dormant until these are filled (from Cowork's batch research / the "Batch 2" contacts). A small backfill script can map the batch-2 outreach emails onto the home rows. Until then, only the **public counter** path is active.
-  2. **Run the publish tooling on Render (FOUNDER action):** `pre-publish-test-demo-sweep.ts` (preview → `--force`) then `publish-directory-homes.ts` (preview → `--force`) to take the seeded DRAFT homes live. Nothing is public until executed. _(2026-06-23: founder ran both dry-runs — sweep found 0 purge-eligible / 2 ACTIVE demo homes held; publisher found 16 publishable / 0 held. Awaiting `--force`.)_
-  3. **Part B — metro seed→enrich ✅ SEED SHIPPED (#595, `seed-cleveland-metro.ts`).** Cowork delivered the 6-county RCF master list (169 rows → `context/METRO_RCF_MASTER_LIST.md`); the seed script dedupes vs all existing homes (normalized name + rebrand alias set), gates the 20 SNF-primary rows behind `--include-unverified`, and seeds 168 candidate rows as DRAFT. **Remaining (FOUNDER, on Render):** run `seed-cleveland-metro.ts --dry-run` → seed → `autopopulate-cohort.ts` (enrich) → `publish-directory-homes.ts --force`. **(Cowork/founder):** verify SNF-primary rows against `ltc.ohio.gov` before folding them in with `--include-unverified`.
-  4. **Anonymous-inquiry → family link-by-email** (future): when a family later registers, link their earlier anonymous inquiries by email match. Deliberately deferred.
-  5. **AI triage auto-ack** (optional in the ticket) — deferred to a phase 2.
-  6. **(Flagged)** search result cards still use the deterministic **stock-photo fallback** (`HOME_IMAGES`) rather than the new branded placeholder; switching for directory-wide consistency is a separate decision.
-- **Done when:** outreach contacts are populated so the notify fires in production; the founder runs the publish tooling; ~~Part B (Cowork list → seed/enrich/publish) lands~~ Part B seed shipped — founder runs the seed→enrich→publish sequence on Render.
+- **Follow-ups (non-blocking, post-launch):**
+  1. **~24 directory homes held without addresses** (publish gate: missing street/zip). Two groups: (a) ~9 *correct* homes held on a city-label technicality where Google's municipality ≠ the seeded city (Judson Park & Cedarwood Plaza = Cleveland vs Cleveland Heights; Marymount Place, Pleasant Lake Villa, Light of Hearts Villa, Arden Courts of Chagrin Falls, South Franklin Circle, Pines at Brooks House, Vitalia Montrose) — rescuable by relaxing the city check or hand-setting their address; (b) un-anchored older Tier-A names not in the metro list (Slovene, Welsh, Windsor House, St Joseph Center, Avenue at Lyndhurst, Resorts at Daughters of Miriam, Ancora, Autumn Hills, Thistle House, Ohman ×2, Inn at the Pines, Divine Living) — these hit the "no seeded state" guard; anchor them (city/OH) and re-run.
+  2. **5 same-city cross-matches held** via `hold-crossmatch-homes.ts` (reverted to DRAFT, street/zip cleared): Brookdale Gardens at Westlake, Homestead I, StoryPoint Medina West, Elmcroft of Medina, Gardens of Western Reserve. Need a correct address (or operator claim) before re-publish.
+  3. **20 SNF-primary rows** held out of the seed pending `ltc.ohio.gov` verification — re-run `seed-cleveland-metro.ts --include-unverified` for any that carry a real AL/RCF wing.
+  4. **Text-enrich deferred:** `seed-cleveland-metro.ts --with-websites` stored website URLs, but several cross-matched (Princeton Place→a LA site, Brookdale Stow→Vitalia Stow, etc.). These are NOT publicly rendered (only the enrich/onboarding paths read `websiteUrl`), so harmless now — but clean them before running the text/photo enrich (`autopopulate-cohort.ts --from-db --include-unpopulated` without `--addresses-only`, which costs Anthropic).
+  5. **Populate `outreachEmail`/`outreachPhone`** so the claim-nudge email/SMS fires (currently only the public counter path is active).
+  6. **Anonymous-inquiry → family link-by-email** and **AI triage auto-ack** — deferred to a later phase.
+- **Done when:** ✅ DONE — directory live with 128 listings. Remaining items above are incremental polish, not blockers.
 
 ### OL-027: Provider listing fee ($99/mo)
 - **Status:** ✅ CLOSED (2026-05-02)
