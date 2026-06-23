@@ -6,16 +6,22 @@
  * server. Used by the auto-populator (CLI) — server context, never the browser.
  *
  * Safety rules (Task 3):
- *  - Skip images > 4MB
+ *  - Skip images > 12MB
  *  - Skip 404 / 403 silently
  *  - Skip anything that fails a basic image magic-byte decode check
+ *  - AVIF/HEIF (e.g. Webflow sites) are transcoded to JPEG via sharp before
+ *    upload — Cloudinary/our magic-byte check don't accept them directly (OL-086)
  *  - Abort remaining downloads once the per-facility budget (90s) is exceeded
  */
 
 import { createHash } from 'crypto';
+import sharp from 'sharp';
 import { uploadToCloudinary, isCloudinaryConfigured } from '@/lib/cloudinary';
 
-const MAX_IMAGE_BYTES = 4 * 1024 * 1024; // 4MB
+// Raised from 4MB → 12MB: legitimate facility hero photos routinely exceed 4MB
+// (e.g. Ohio Living's 5–8MB JPEGs were being skipped). Cloudinary's incoming
+// transformation limits the stored asset to 1600px, so storage stays bounded.
+const MAX_IMAGE_BYTES = 12 * 1024 * 1024; // 12MB
 const PER_IMAGE_TIMEOUT_MS = 20_000;
 const PER_FACILITY_BUDGET_MS = 90_000;
 
@@ -46,7 +52,7 @@ export interface RehostResult {
 }
 
 /** Validate the first bytes look like a real raster image we can serve. */
-function sniffImageType(buf: Buffer): 'jpeg' | 'png' | 'gif' | 'webp' | null {
+function sniffImageType(buf: Buffer): 'jpeg' | 'png' | 'gif' | 'webp' | 'avif' | 'heic' | null {
   if (buf.length < 12) return null;
   // JPEG: FF D8 FF
   if (buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return 'jpeg';
@@ -62,7 +68,27 @@ function sniffImageType(buf: Buffer): 'jpeg' | 'png' | 'gif' | 'webp' | null {
     buf[0] === 0x52 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x46 &&
     buf[8] === 0x57 && buf[9] === 0x45 && buf[10] === 0x42 && buf[11] === 0x50
   ) return 'webp';
+  // ISO-BMFF (AVIF/HEIF): bytes 4-7 = "ftyp", brand at bytes 8-11.
+  if (buf[4] === 0x66 && buf[5] === 0x74 && buf[6] === 0x79 && buf[7] === 0x70) {
+    const brand = buf.toString('ascii', 8, 12);
+    if (brand === 'avif' || brand === 'avis') return 'avif';
+    if (['heic', 'heix', 'hevc', 'heim', 'heis', 'mif1', 'msf1'].includes(brand)) return 'heic';
+  }
   return null;
+}
+
+/**
+ * Decode AVIF/HEIF to a JPEG buffer via sharp (libvips/libheif). Cloudinary
+ * and our magic-byte check don't accept these container formats directly, so
+ * Webflow-style sites (East Park, Merriman) were yielding zero photos. Returns
+ * null if the buffer can't be decoded so the caller skips it gracefully.
+ */
+async function transcodeToJpeg(buf: Buffer): Promise<Buffer | null> {
+  try {
+    return await sharp(buf).rotate().jpeg({ quality: 82 }).toBuffer();
+  } catch {
+    return null;
+  }
 }
 
 /** Stable Cloudinary public_id for a given source URL, so re-runs overwrite. */
@@ -142,9 +168,21 @@ export async function downloadAndRehost(
     }
 
     // Decode / magic-byte check
-    if (!sniffImageType(buffer)) {
+    const imageType = sniffImageType(buffer);
+    if (!imageType) {
       skipped.push({ url: candidate.url, reason: 'not a decodable image' });
       continue;
+    }
+
+    // AVIF/HEIF aren't accepted by our check or Cloudinary directly — transcode
+    // to JPEG first (OL-086). On decode failure, skip rather than upload garbage.
+    if (imageType === 'avif' || imageType === 'heic') {
+      const jpeg = await transcodeToJpeg(buffer);
+      if (!jpeg) {
+        skipped.push({ url: candidate.url, reason: `${imageType} transcode failed` });
+        continue;
+      }
+      buffer = jpeg;
     }
 
     // Re-host on Cloudinary
