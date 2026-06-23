@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-06-23 (directory richer-listings text-enrich)_
+_Last updated: 2026-06-23 (directory photos + AVIF fix; OL-084 deferred)_
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -218,18 +218,25 @@ Each loop: what it is, why it matters, what done looks like.
 - **Done when:** ✅ DONE — directory live with 128 listings. Remaining items above are incremental polish, not blockers.
 
 ### OL-084: Headless-browser scrape for JS-rendered directory homes
-- **Status:** 🟡 OPEN — surfaced by the 2026-06-23 text-enrich run.
+- **Status:** 🟡 OPEN — **deferred 2026-06-23 (founder decision)** as a larger infra task; not a same-night change.
 - **What:** 13 directory homes returned **empty `<html></html>`** to the current scraper (`operator-profile-scraper`) because their sites are JS-rendered or bot-blocking, so the AI enrich produced LOW/`"<UNKNOWN>"` output. After cleanup they carry **seed-based fallback descriptions** (name + city + care levels), not real content. The homes: **Meadow Falls of Rocky River, Windsor Heights, Homestead I, Homestead II, Oaks of Brecksville, Brookdale Bath, Mulberry Gardens, St. Luke Lutheran (Portage Lakes), Marymount Place** (the 9 repaired `<UNKNOWN>`), plus **Grande Village Suites, Grande Village Villas, East Park Retirement Community** (LOW but real-ish corporate/hero text, left as-is) and **Brookdale Willoughby** (cleaned — wrong-page generic content + 20 bogus amenities removed; its URL is a Wickliffe mismatch needing a correct community page). Also re-check the 2 **blocked** homes: Legacy Place-Parma (404 — dead URL) and Ivy House (403 — bot block).
 - **Why it matters:** these listings are public (ACTIVE) with thin fallback text; richer content improves SEO + claim conversion.
-- **Note:** #602 (`50c720d`, merged) now **skips DB writes for LOW-confidence extractions**, so a future enrich won't re-clobber these — but it also won't improve them until the scraper can render JS. Needs a headless fetch (Playwright/Puppeteer or a render-API) feeding the existing extractor. These homes are **un-stamped** (`autoPopulatedAt` null) so they're cleanly retryable.
+- **2026-06-23 investigation (where a browser can run):** `@playwright/test` is a **devDependency only** and the production Docker image (`docker/Dockerfile`) has **no Chromium**, so the **Render container cannot run a headless browser**, and the Render shell can't `git pull` to add one ad-hoc. CI *does* have Playwright (the e2e jobs run `npx playwright install --with-deps`) and a `secrets.DATABASE_URL`, **but** the e2e workflows carry an explicit warning — *"NEVER point at prod … this is how 43 test homes leaked into production"* — so a CI-writes-to-prod scraper cuts against a known scar. Three viable paths weighed: **(A)** a gated `workflow_dispatch` Action (Playwright render → extract → write to prod, dry-run default + explicit apply input, scoped to the directory operator + #602's LOW-skip guard; the dry-run doubles as a test of which sites a browser actually recovers); **(B)** add Chromium to the prod Docker image (`playwright-core` + `@sparticuz/chromium`) + a `--render` flag in the scraper, run from the Render shell — heavier image/build/memory; **(C)** defer. **Founder chose C.** When picked up, **A is the recommended path** — least infra bloat, and the dry-run de-risks the unknown (some of these sites may be Cloudflare-hard-blocked, not just JS-rendered).
+- **Note:** #602 (`50c720d`, merged) **skips DB writes for LOW-confidence extractions**, so a future enrich won't re-clobber these — but it also won't improve them until the scraper can render JS. These homes are **un-stamped** (`autoPopulatedAt` null) so they're cleanly retryable.
 - **Done when:** the JS-rendered homes return real HTML and re-enrich to HIGH/MEDIUM, or are explicitly marked JS_ONLY/BLOCKED with a note.
 
 ### OL-085: Photo import for the Greater-Cleveland directory cohort
-- **Status:** 🟡 OPEN — the 2026-06-23 enrich was **text-only** (no `--with-photos`).
-- **What:** Run the photo pipeline over the enriched directory homes: `autopopulate-cohort.ts --from-db --include-active --photos-only --force` (classifies candidate images, downloads + re-hosts to **Cloudinary**, idempotent — clears prior `autoPopulated` photos first). Listings currently show the branded `HomeImagePlaceholder` (#593). Skip the 13 JS-rendered homes (no scrapable images until OL-084).
-- **Why it matters:** photos materially lift listing quality + claim conversion; the "Claim & add photos" nudge (#593) assumes most listings start photo-less.
-- **Cost/infra note:** image classification adds Anthropic spend (~per-home) on top of Cloudinary storage; budget a dry-run first. **Render shell can't `git pull`** — the script is already on deployed main, so it runs as-is; do ad-hoc tweaks via inline `npx tsx -e`.
-- **Done when:** directory homes with scrapable galleries have ≥1 Cloudinary-hosted `autoPopulated` photo, or are noted as image-less.
+- **Status:** ✅ **DONE 2026-06-23 (evening).** `autopopulate-cohort.ts --from-db --include-active --photos-only --force` run twice on Render (initial 398 photos, then **417** after OL-086 landed). 93 homes processed; ~74 have ≥1 Cloudinary photo, the rest are logo-only sites (classifier kept 0). $1.43 Anthropic per run. The 12 un-stamped JS-rendered homes were excluded from selection (no scrapable images — see OL-084).
+- **What:** Run the photo pipeline over the enriched directory homes: `autopopulate-cohort.ts --from-db --include-active --photos-only --force` (classifies candidate images, downloads + re-hosts to **Cloudinary**, idempotent — clears prior `autoPopulated` photos first).
+- **Cost/infra note:** image classification adds ~$1.43 Anthropic per full run on top of Cloudinary storage (within free tier). **Render shell can't `git pull`** — the script is already on deployed main, so it runs as-is; do ad-hoc tweaks via inline `npx tsx -e`.
+- **Done when:** ✅ directory homes with scrapable galleries have ≥1 Cloudinary-hosted `autoPopulated` photo.
+
+### OL-086: AVIF/HEIF support in the photo-rehost pipeline
+- **Status:** ✅ **DONE 2026-06-23 (evening) — PR #604 (`8c6088f`).**
+- **What:** The first photo run left **East Park** and **Merriman** (Webflow sites serving **AVIF**) with 0 photos — `photo-rehost.ts`'s `sniffImageType` only accepted JPEG/PNG/GIF/WEBP, so every AVIF was rejected as "not a decodable image". A few 5–8MB facility JPEGs (Rockynol, Nason) were also skipped by the old 4MB cap.
+- **Fix:** `sniffImageType` now detects ISO-BMFF (`ftyp` brand → `avif`/`heic`) and the download loop transcodes those to JPEG via **sharp** (already a prod dep; libheif present) before upload; size cap raised 4MB → 12MB (Cloudinary's incoming transform still bounds the stored asset to 1600px).
+- **Verified:** after deploy, the photo re-run uploaded **East Park 8/8, Merriman 8/8, Rockynol 8, Nason 8** — total directory photos 398 → **417**.
+- **Done when:** ✅ AVIF-serving homes upload photos.
 
 ### OL-027: Provider listing fee ($99/mo)
 - **Status:** ✅ CLOSED (2026-05-02)

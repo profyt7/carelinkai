@@ -2,6 +2,22 @@
 
 ---
 
+### 2026-06-23 (late evening) — Directory photos imported (417) + AVIF fix (#604); OL-084 deferred
+
+- **Objective:** Finish the directory "richer listings" arc — import photos (OL-085) and knock out the follow-ups discovered along the way (OL-086 AVIF, OL-084 headless scrape).
+- **Work completed:**
+  - **OL-085 photos — DONE.** Ran `autopopulate-cohort.ts --from-db --include-active --photos-only --force` on Render: classifies `<img>` candidates, downloads, re-hosts to **Cloudinary** (idempotent — clears prior `autoPopulated` photos, deterministic public_id). First run **398 photos** across 93 homes ($1.43); ~74 homes got ≥1 photo, rest are logo-only sites the classifier correctly rejects.
+  - **OL-086 AVIF — DONE (#604 `8c6088f`).** First run left **East Park** + **Merriman** (Webflow/AVIF) at 0 photos — `photo-rehost.ts`'s `sniffImageType` only accepted JPEG/PNG/GIF/WEBP. Fix: detect ISO-BMFF (`ftyp`→`avif`/`heic`) + transcode to JPEG via **sharp** (already prod dep, libheif present) before upload; size cap 4MB→12MB (Rockynol/Nason 5–8MB JPEGs were being skipped). Smoke-tested the AVIF→JPEG round-trip. After merge+deploy, re-ran photos → **East Park 8/8, Merriman 8/8, Rockynol 8, Nason 8**; total **398 → 417 photos**.
+  - **OL-084 headless scrape — DEFERRED (founder decision).** Investigated execution paths: prod Docker (`docker/Dockerfile`) has **no Chromium**, Playwright is a **devDependency**, and the Render shell can't `git pull` — so a headless scrape can't run on Render. CI has Playwright + `secrets.DATABASE_URL`, but the e2e workflows explicitly warn against pointing CI at prod ("43 test homes leaked"). Weighed (A) gated `workflow_dispatch` Action [recommended], (B) Chromium in the prod image, (C) defer. Founder chose **defer**; findings + recommendation captured in OL-084 for next session.
+- **Files changed:** `src/lib/profile-generator/photo-rehost.ts` (#604: AVIF/HEIF sniff + sharp transcode, 12MB cap). Plus this docs wrap (`context/*`).
+- **Commands run (Render prod):** `autopopulate-cohort.ts --photos-only` (dry-run preview, $1.43), `--photos-only --force` ×2 (pre- and post-#604).
+- **Tests/build status:** #604 green on full CI (quality + build-and-test + e2e), merged squash. `tsc`/eslint clean. AVIF round-trip verified locally.
+- **Deployment impact:** #604 deployed via Render auto-deploy; photo runs mutated prod DB (HomePhoto rows) + Cloudinary assets. ~$2.86 Anthropic total for the two photo runs; Cloudinary within free tier.
+- **New risks/blockers:** None new. OL-084 remains open (deferred). Minor: Embassy of Rockport 1 photo skipped (HTTP 400 on a Next.js image-optimizer URL) — cosmetic.
+- **Recommended next step:** OL-084 when ready (gated `workflow_dispatch` Playwright Action — dry-run first to see which sites a browser actually recovers). Separately: hand operator-contact data to Cowork to populate `outreachEmail`/`outreachPhone` and scale claim-nudges past the current 11.
+
+---
+
 ### 2026-06-23 (evening) — Directory "richer listings" Step 2: URL hygiene (#601), text-enrich, sparse-write guard (#602) + incident cleanup
 
 - **Objective:** Clean the directory homes' stored website URLs, then run the AI **text** enrich, without scraping another facility's content onto our listings.
