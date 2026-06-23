@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-06-23 (directory photos + AVIF fix; OL-084 deferred)_
+_Last updated: 2026-06-23 (directory photos + AVIF fix; OL-084 deferred; OL-087 claim hardening logged)_
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -237,6 +237,16 @@ Each loop: what it is, why it matters, what done looks like.
 - **Fix:** `sniffImageType` now detects ISO-BMFF (`ftyp` brand → `avif`/`heic`) and the download loop transcodes those to JPEG via **sharp** (already a prod dep; libheif present) before upload; size cap raised 4MB → 12MB (Cloudinary's incoming transform still bounds the stored asset to 1600px).
 - **Verified:** after deploy, the photo re-run uploaded **East Park 8/8, Merriman 8/8, Rockynol 8, Nason 8** — total directory photos 398 → **417**.
 - **Done when:** ✅ AVIF-serving homes upload photos.
+
+### OL-087: Directory claim-flow hardening (defense-in-depth)
+- **Status:** 🟡 OPEN — logged 2026-06-23. Not urgent; current guardrails already block the "random competitor grabs a listing" scenario.
+- **Current guardrails (verified 2026-06-23, already solid):** Claims require an **HMAC-signed token** (`src/lib/claim-token.ts`, signed with `NEXTAUTH_SECRET` — unforgeable). `/api/operator/claim` enforces **token.operatorEmail === logged-in user's email** (can't use someone else's link). `/api/operator/homes/[id]/claim` transfers ownership only if **`operator.clevelandFounder === true` AND `operator.seededHomeId === homeId`** — so you can only claim the *one* home your token was minted for; there is **no "claim arbitrary listing by ID" path**. Minting is admin-only (`/api/admin/homes/[id]/claim-link`) or via the nudge engine (emails the link to the facility's researched `outreachEmail`). Image-rights ack required if the listing has scraped photos; every claim fires a real-time admin notification; 50-founder-per-metro cap.
+- **Residual risk this loop addresses:** the model **trusts whoever controls the minted email**. (1) If a link is minted to a wrong/generic email (bad research data) or a bad actor controls the facility's listed email, they could claim. (2) Claims take effect **immediately** (detection-after via the admin notification, not approval-before). (3) There is **no listing content-version history** — a bad post-claim edit can't be one-click reverted (we have `autoPopulatedVersion` but not full content snapshots).
+- **Proposed hardening (pick per appetite):**
+  1. **Domain-match guard** — at mint and/or claim, warn/block when the claim email's domain doesn't match the facility's `websiteUrl` domain (skip for generic mailbox providers).
+  2. **PENDING-review gate for directory claims** — directory-sentinel claims land in a `PENDING` state requiring a quick admin OK before the listing flips to the new owner (approval-before instead of detection-after).
+  3. **Listing edit-history / snapshots** — capture description/amenities/careLevel/photos versions so a defaced listing can be rolled back; pairs with an admin "revert to version N" action.
+- **Done when:** at least the domain-match guard + a rollback path exist, or the founder explicitly accepts the current email-trust model as sufficient and closes this.
 
 ### OL-027: Provider listing fee ($99/mo)
 - **Status:** ✅ CLOSED (2026-05-02)
