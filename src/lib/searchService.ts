@@ -103,6 +103,8 @@ export interface SearchResultItem {
   };
   /** Indicates whether the currently-logged-in family has favorited this home */
   isFavorited?: boolean;
+  /** True when the listing is still directory-owned (no operator has claimed it) */
+  isUnclaimed?: boolean;
 }
 
 /**

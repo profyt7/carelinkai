@@ -1013,6 +1013,13 @@ export default function SearchPage() {
                               Waitlist
                             </div>
                           )}
+
+                          {/* Unclaimed (directory) badge */}
+                          {home.isUnclaimed && (
+                            <div className="absolute left-2 top-2 rounded-full bg-amber-100 px-2 py-1 text-xs font-medium text-amber-800 shadow-md border border-amber-200">
+                              Unclaimed
+                            </div>
+                          )}
                         </div>
                         
                         <div className="flex flex-col p-4">
@@ -1154,6 +1161,13 @@ export default function SearchPage() {
                           ) : (
                             <div className="absolute right-2 top-2 rounded-full bg-neutral-500 px-2 py-1 text-xs font-medium text-white shadow-md">
                               Waitlist
+                            </div>
+                          )}
+
+                          {/* Unclaimed (directory) badge */}
+                          {home.isUnclaimed && (
+                            <div className="absolute left-2 top-2 rounded-full bg-amber-100 px-2 py-1 text-xs font-medium text-amber-800 shadow-md border border-amber-200">
+                              Unclaimed
                             </div>
                           )}
                         </div>
