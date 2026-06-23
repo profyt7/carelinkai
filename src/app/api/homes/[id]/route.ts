@@ -7,6 +7,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { formatCurrency } from '@/lib/utils';
 import { createAuditLogFromRequest } from '@/lib/audit';
+import { isUnclaimedHome } from '@/lib/claim-engine/inquiry-claim-notification';
 
 /**
  * City coordinates lookup for homes without geo data
@@ -186,6 +187,14 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       ? ratings.reduce((sum, r) => sum + r, 0) / ratings.length
       : null;
 
+    // Inquiry→claim "pull" engine (OL-083): on UNCLAIMED listings, surface a
+    // waiting-leads counter as the organic claim driver. HIPAA: count ONLY — no
+    // inquiry/health details are exposed publicly.
+    const unclaimed = isUnclaimedHome(home.operator?.user?.email);
+    const pendingInquiryCount = unclaimed
+      ? await prisma.inquiry.count({ where: { homeId: home.id, status: 'NEW' } })
+      : 0;
+
     // Choose primary image with fallback
     const primary = sanitizeImageUrl(home.photos?.find((p) => p.isPrimary)?.url ?? null);
     const fallback = HOME_IMAGES[home.id.length % HOME_IMAGES.length];
@@ -238,6 +247,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       rating: averageRating,
       reviewCount: ratings.length,
       isFavorited,
+      unclaimed,
+      pendingInquiryCount,
     };
 
     // Best-effort audit log (non-blocking)
