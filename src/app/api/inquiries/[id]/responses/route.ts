@@ -40,7 +40,7 @@ async function hasInquiryAccess(userId: string, userRole: string, inquiryId: str
   }
   
   if (userRole === 'FAMILY') {
-    return inquiry.family.userId === userId;
+    return inquiry.family?.userId === userId;
   }
   
   if (userRole === 'OPERATOR') {
@@ -135,9 +135,9 @@ export async function POST(
     let toAddress = data.toAddress;
     if (!toAddress) {
       if (data.channel === 'EMAIL' || data.channel === 'IN_APP') {
-        toAddress = inquiry.contactEmail || inquiry.family.user.email;
+        toAddress = inquiry.contactEmail || inquiry.family?.user?.email;
       } else if (data.channel === 'SMS' || data.channel === 'PHONE') {
-        toAddress = inquiry.contactPhone || inquiry.family.user.phone || undefined;
+        toAddress = inquiry.contactPhone || inquiry.family?.user?.phone || undefined;
       }
     }
     

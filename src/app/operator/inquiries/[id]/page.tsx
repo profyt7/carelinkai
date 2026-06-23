@@ -26,13 +26,21 @@ type InquiryDetail = {
     name: string; 
     address?: { street: string; city: string; state: string; }
   };
-  family: { 
-    id: string; 
-    name: string; 
-    email: string; 
-    phone: string | null; 
-    user: { firstName: string; lastName: string; email: string; phone?: string; }
+  // On-row lead contact — source of truth for anonymous (unlinked) inquiries.
+  contact?: {
+    name: string | null;
+    email: string | null;
+    phone: string | null;
+    careRecipientName: string | null;
   };
+  // Null for anonymous inquiries that aren't linked to a family account yet.
+  family: {
+    id: string;
+    name: string;
+    email: string | null;
+    phone: string | null;
+    user: { firstName: string; lastName: string; email: string; phone?: string; } | null;
+  } | null;
   convertedToResidentId?: string | null;
   conversionDate?: string | null;
   convertedResident?: {
@@ -218,7 +226,8 @@ export default function OperatorLeadDetailPage() {
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Left column */}
           <div className="space-y-6 lg:col-span-2">
-            {/* Family contact */}
+            {/* Contact — linked family account, or anonymous on-row lead contact */}
+            {data.family ? (
             <div className="rounded-lg border border-neutral-200 bg-white p-4">
               <div className="mb-3 flex items-center justify-between">
                 <div className="text-sm font-medium text-neutral-800">Family Contact</div>
@@ -263,6 +272,40 @@ export default function OperatorLeadDetailPage() {
                 </div>
               </div>
             </div>
+            ) : (
+            <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <div className="text-sm font-medium text-neutral-800">Lead Contact</div>
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 border border-amber-200">
+                  Not linked to a family account
+                </span>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <div className="text-xs text-neutral-500">Name</div>
+                  <div className="font-medium text-neutral-900">{data.contact?.name || '—'}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-neutral-500">Email</div>
+                  {data.contact?.email ? (
+                    <a className="font-medium text-primary-600 hover:underline" href={`mailto:${data.contact.email}`}>{data.contact.email}</a>
+                  ) : (
+                    <div className="font-medium text-neutral-900">—</div>
+                  )}
+                </div>
+                <div>
+                  <div className="text-xs text-neutral-500">Phone</div>
+                  <div className="font-medium text-neutral-900">{data.contact?.phone || '—'}</div>
+                </div>
+                {data.contact?.careRecipientName && (
+                  <div>
+                    <div className="text-xs text-neutral-500">Care recipient</div>
+                    <div className="font-medium text-neutral-900">{data.contact.careRecipientName}</div>
+                  </div>
+                )}
+              </div>
+            </div>
+            )}
 
             {/* Inquiry details */}
             <div className="rounded-lg border border-neutral-200 bg-white p-4">
@@ -349,6 +392,7 @@ export default function OperatorLeadDetailPage() {
                 )}
               </div>
             ) : !isFamily && canConvert && ['QUALIFIED', 'CONVERTING', 'TOUR_COMPLETED', 'PLACEMENT_OFFERED'].includes(data.status) ? (
+              data.family ? (
               <div className="rounded-lg border border-neutral-200 bg-white p-4">
                 <button
                   onClick={() => setShowConvertModal(true)}
@@ -363,6 +407,14 @@ export default function OperatorLeadDetailPage() {
                   Create a resident profile from this inquiry
                 </p>
               </div>
+              ) : (
+              <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-4">
+                <p className="text-sm font-medium text-amber-800">Link to a family first</p>
+                <p className="text-xs text-amber-700 mt-1">
+                  This lead isn't linked to a family account yet. Link it to a family before converting to a resident.
+                </p>
+              </div>
+              )
             ) : null}
           </div>
         </div>
@@ -373,7 +425,7 @@ export default function OperatorLeadDetailPage() {
             inquiry={{
               id: data.id,
               family: {
-                user: data.family.user,
+                user: data.family?.user,
               },
               home: {
                 name: data.home.name,

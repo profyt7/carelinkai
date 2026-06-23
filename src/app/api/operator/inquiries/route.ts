@@ -184,6 +184,24 @@ export async function GET(request: NextRequest) {
             },
           },
         },
+        // On-row contact fields — covers anonymous inquiries with no linked family
+        {
+          contactName: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+        {
+          contactEmail: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+        {
+          contactPhone: {
+            contains: search,
+          },
+        },
         {
           message: {
             contains: search,

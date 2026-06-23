@@ -40,7 +40,7 @@ async function hasResponseAccess(userId: string, userRole: string, responseId: s
   }
   
   if (userRole === 'FAMILY') {
-    return response.inquiry.family.userId === userId;
+    return response.inquiry.family?.userId === userId;
   }
   
   if (userRole === 'OPERATOR') {

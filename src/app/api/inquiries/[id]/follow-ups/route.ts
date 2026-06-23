@@ -49,7 +49,7 @@ async function hasInquiryAccess(userId: string, userRole: string, inquiryId: str
   }
   
   if (userRole === 'FAMILY') {
-    return inquiry.family.userId === userId;
+    return inquiry.family?.userId === userId;
   }
   
   if (userRole === 'OPERATOR') {

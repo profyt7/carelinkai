@@ -38,10 +38,11 @@ interface Inquiry {
       user: { firstName: string; lastName: string; email: string };
     };
   };
+  // Nullable: anonymous inquiries have no linked family account.
   family: {
     id: string;
     user: { firstName: string; lastName: string; email: string; phone: string | null };
-  };
+  } | null;
   assignedTo: { id: string; firstName: string; lastName: string; email: string } | null;
   convertedResident: { id: string; firstName: string; lastName: string } | null;
   followUps: { id: string; scheduledFor: string; type: string }[];

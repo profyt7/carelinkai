@@ -7,14 +7,17 @@ import { FiX, FiUser, FiHome, FiCalendar, FiAlertCircle } from 'react-icons/fi';
 interface ConvertInquiryModalProps {
   inquiry: {
     id: string;
-    family: {
-      user: {
+    family?: {
+      user?: {
         firstName: string;
         lastName: string;
         email: string;
         phone?: string;
-      };
-    };
+      } | null;
+    } | null;
+    contactName?: string | null;
+    contactEmail?: string | null;
+    contactPhone?: string | null;
     home: {
       name: string;
       address?: {
@@ -40,9 +43,13 @@ export default function ConvertInquiryModal({
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Pre-fill from the linked family account when present, otherwise fall back to
+  // the on-row lead contact name (anonymous inquiries).
+  const [fallbackFirst = '', ...fallbackRest] = (inquiry.contactName || '').trim().split(/\s+/);
+  const fallbackLast = fallbackRest.join(' ');
   const [formData, setFormData] = useState({
-    firstName: inquiry.family.user.firstName || '',
-    lastName: inquiry.family.user.lastName || '',
+    firstName: inquiry.family?.user?.firstName || fallbackFirst || '',
+    lastName: inquiry.family?.user?.lastName || fallbackLast || '',
     dateOfBirth: '',
     gender: 'PREFER_NOT_TO_SAY' as 'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY',
     moveInDate: '',
@@ -150,13 +157,15 @@ export default function ConvertInquiryModal({
               <div className="flex items-start gap-2">
                 <FiUser className="w-4 h-4 text-primary-600 mt-0.5" />
                 <div>
-                  <span className="font-medium">Family Contact:</span>
+                  <span className="font-medium">{inquiry.family ? 'Family Contact:' : 'Lead Contact:'}</span>
                   <p className="text-neutral-700">
-                    {inquiry.family.user.firstName} {inquiry.family.user.lastName}
+                    {inquiry.family?.user
+                      ? `${inquiry.family.user.firstName} ${inquiry.family.user.lastName}`
+                      : inquiry.contactName || '—'}
                   </p>
-                  <p className="text-neutral-600">{inquiry.family.user.email}</p>
-                  {inquiry.family.user.phone && (
-                    <p className="text-neutral-600">{inquiry.family.user.phone}</p>
+                  <p className="text-neutral-600">{inquiry.family?.user?.email || inquiry.contactEmail || ''}</p>
+                  {(inquiry.family?.user?.phone || inquiry.contactPhone) && (
+                    <p className="text-neutral-600">{inquiry.family?.user?.phone || inquiry.contactPhone}</p>
                   )}
                 </div>
               </div>

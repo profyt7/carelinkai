@@ -78,7 +78,8 @@ export enum FollowUpStatus {
 // Main Inquiry interface
 export interface Inquiry {
   id: string;
-  familyId: string;
+  // Nullable: anonymous inquiries are not linked to a family account.
+  familyId?: string | null;
   homeId: string;
   status: InquiryStatus;
   message?: string | null;

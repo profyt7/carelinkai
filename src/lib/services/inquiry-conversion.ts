@@ -86,6 +86,18 @@ export async function convertInquiryToResident(
       };
     }
 
+    // Anonymous (no-family) inquiries cannot be converted until linked to a
+    // family account — a Resident requires a family. The operator links the
+    // lead to a family first, then converts.
+    if (!inquiry.familyId) {
+      return {
+        success: false,
+        inquiryId: validated.inquiryId,
+        error: 'This lead is not linked to a family account yet. Link it to a family before converting to a resident.',
+      };
+    }
+    const familyId = inquiry.familyId; // non-null past the guard
+
     // Check if already converted
     if (inquiry.convertedToResidentId) {
       return {
@@ -110,7 +122,7 @@ export async function convertInquiryToResident(
       // Create resident record
       const resident = await tx.resident.create({
         data: {
-          familyId: inquiry.familyId,
+          familyId,
           homeId: inquiry.homeId,
           firstName: validated.firstName,
           lastName: validated.lastName,
@@ -128,7 +140,7 @@ export async function convertInquiryToResident(
       });
 
       // Create primary family contact from inquiry family
-      if (inquiry.family.user) {
+      if (inquiry.family?.user) {
         await tx.familyContact.create({
           data: {
             residentId: resident.id,
@@ -175,7 +187,7 @@ export async function convertInquiryToResident(
         : 'OPERATOR';
       triggerAffiliateCommission(
         inquiry.affiliateCode,
-        inquiry.contactEmail || inquiry.family.user?.email || null,
+        inquiry.contactEmail || inquiry.family?.user?.email || null,
         validated.inquiryId,
         referralType as 'FAMILY' | 'OPERATOR'
       ).catch((err) => console.error('[AFFILIATE] Unexpected error:', err));
@@ -401,6 +413,13 @@ export async function canConvertInquiry(inquiryId: string): Promise<{
 
   if (inquiry.convertedToResidentId) {
     return { canConvert: false, reason: 'Already converted to resident' };
+  }
+
+  if (!inquiry.familyId) {
+    return {
+      canConvert: false,
+      reason: 'Lead is not linked to a family account yet. Link it to a family before converting.',
+    };
   }
 
   const allowedStatuses = ['QUALIFIED', 'CONVERTING', 'TOUR_COMPLETED', 'PLACEMENT_OFFERED'];
