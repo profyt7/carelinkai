@@ -209,12 +209,12 @@ Each loop: what it is, why it matters, what done looks like.
   - **#593** branded `HomeImagePlaceholder` + photo-aware "Claim & add photos" nudge.
 - **Residual / dependencies (OPEN):**
   1. **Populate `outreachEmail`/`outreachPhone`** — the email/SMS branch is dormant until these are filled (from Cowork's batch research / the "Batch 2" contacts). A small backfill script can map the batch-2 outreach emails onto the home rows. Until then, only the **public counter** path is active.
-  2. **Run the publish tooling on Render (FOUNDER action):** `pre-publish-test-demo-sweep.ts` (preview → `--force`) then `publish-directory-homes.ts` (preview → `--force`) to take the ~65 seeded DRAFT homes live. Nothing is public until executed.
-  3. **Part B — metro seed→enrich (BLOCKED on Cowork)** delivering the 6-county RCF list (`name, city, county, license_type`, bed count). Then dedupe → seed gap DRAFT → enrich → re-run the publisher.
+  2. **Run the publish tooling on Render (FOUNDER action):** `pre-publish-test-demo-sweep.ts` (preview → `--force`) then `publish-directory-homes.ts` (preview → `--force`) to take the seeded DRAFT homes live. Nothing is public until executed. _(2026-06-23: founder ran both dry-runs — sweep found 0 purge-eligible / 2 ACTIVE demo homes held; publisher found 16 publishable / 0 held. Awaiting `--force`.)_
+  3. **Part B — metro seed→enrich ✅ SEED SHIPPED (#595, `seed-cleveland-metro.ts`).** Cowork delivered the 6-county RCF master list (169 rows → `context/METRO_RCF_MASTER_LIST.md`); the seed script dedupes vs all existing homes (normalized name + rebrand alias set), gates the 20 SNF-primary rows behind `--include-unverified`, and seeds 168 candidate rows as DRAFT. **Remaining (FOUNDER, on Render):** run `seed-cleveland-metro.ts --dry-run` → seed → `autopopulate-cohort.ts` (enrich) → `publish-directory-homes.ts --force`. **(Cowork/founder):** verify SNF-primary rows against `ltc.ohio.gov` before folding them in with `--include-unverified`.
   4. **Anonymous-inquiry → family link-by-email** (future): when a family later registers, link their earlier anonymous inquiries by email match. Deliberately deferred.
   5. **AI triage auto-ack** (optional in the ticket) — deferred to a phase 2.
   6. **(Flagged)** search result cards still use the deterministic **stock-photo fallback** (`HOME_IMAGES`) rather than the new branded placeholder; switching for directory-wide consistency is a separate decision.
-- **Done when:** outreach contacts are populated so the notify fires in production; the founder runs the publish tooling; Part B (Cowork list → seed/enrich/publish) lands.
+- **Done when:** outreach contacts are populated so the notify fires in production; the founder runs the publish tooling; ~~Part B (Cowork list → seed/enrich/publish) lands~~ Part B seed shipped — founder runs the seed→enrich→publish sequence on Render.
 
 ### OL-027: Provider listing fee ($99/mo)
 - **Status:** ✅ CLOSED (2026-05-02)

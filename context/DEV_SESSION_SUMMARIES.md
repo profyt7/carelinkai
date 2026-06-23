@@ -2,6 +2,16 @@
 
 ---
 
+### 2026-06-23 (addendum) — OL-083 Part B: metro RCF seed shipped (#595)
+
+- **Trigger:** Cowork delivered the 6-county Greater-Cleveland RCF/AL master list (169 rows); founder also ran both publish-phase dry-runs on Render (sweep: 0 purge-eligible, 2 ACTIVE demo homes held; publisher: 16 publishable, 0 held — awaiting `--force`).
+- **Work:** New `scripts/seed-cleveland-metro.ts` (dry-run default, idempotent) seeds the metro list as DRAFT under the directory sentinel operator. Dedupes vs ALL existing homes by normalized name (stopword + `saint→st`) plus a curated alias-skip set for rebrands the normalizer can't catch (Anthology→Ashton, Bickford/Sunrise→Bloom). The 20 `*(SNF-primary)*` rows are HELD by default (ODH-verify first), `--include-unverified` overrides. 168 rows (source 169; duplicate O'Neill N. Ridgeville campus collapsed). Source list committed to `context/METRO_RCF_MASTER_LIST.md` for provenance.
+- **Files:** `scripts/seed-cleveland-metro.ts` (NEW), `context/METRO_RCF_MASTER_LIST.md` (NEW). Merged via **#595** (squash `a193dad`). Standalone `tsc --noEmit` strict + `eslint` clean; no app code touched.
+- **Remaining (FOUNDER, Render):** `seed-cleveland-metro.ts --dry-run` → seed → `autopopulate-cohort.ts` (enrich) → `publish-directory-homes.ts --force`. **(Cowork):** verify SNF-primary rows vs `ltc.ohio.gov`.
+- **Next step:** founder executes the seed→enrich→publish sequence; then the metro directory is live and OL-083 fully closes.
+
+---
+
 ### 2026-06-23 — OL-083 publish-wide rollout: anonymous capture, unclaimed UX, claim softening, publish tooling
 
 - **Objective:** Execute the publish-wide rollout under OL-083 — make the seeded Cleveland directory usable by the public: capture anonymous inquiries, surface/badge unclaimed listings, soften unsubstantiated compliance claims, and ship the (dry-run) tooling to purge test/demo rows and publish DRAFT→ACTIVE. Six PRs, each branched off main and merged on green.
