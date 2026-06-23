@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-06-22_
+_Last updated: 2026-06-23_
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -200,11 +200,21 @@ Each loop: what it is, why it matters, what done looks like.
   - **Public counter:** `/api/homes/[id]` returns `unclaimed` + `pendingInquiryCount` (count of NEW inquiries); `src/app/homes/[id]/page.tsx` shows "N families have inquired — claim to view & respond securely" (or a soft "claim this listing" when 0).
   - **Wire:** one non-blocking call in `/api/inquiries` POST. Unit test for the unclaimed gate.
 - **HIPAA:** inquiries may carry PHI (care needs). The email/SMS body and the public counter are **generic only** — facility name + a generic "a family is trying to reach you" / a bare count. Actual inquiry content stays behind auth, revealed only after claim.
+- **Publish-wide rollout (2026-06-23): ✅ SHIPPED — 6 PRs merged to main.** The "listings PUBLIC + anonymous capture" ticket that this loop depended on is done:
+  - **#588 (C9)** soften compliance claims → "HIPAA-aligned safeguards".
+  - **#589 (A2) anonymous capture — `Inquiry.familyId` now nullable** (migration `20260623000001_inquiry_nullable_family`). Public anonymous inquiries no longer 400; entire inquiry surface guarded for null-family; conversion blocked until linked.
+  - **#590 (A1)** search badges unclaimed/directory listings (`isUnclaimed` via `isUnclaimedHome()`).
+  - **#591 (C8)** `scripts/pre-publish-test-demo-sweep.ts` (dry-run default).
+  - **#592 (C7)** `scripts/publish-directory-homes.ts` — quality-gated DRAFT→ACTIVE publisher (dry-run default).
+  - **#593** branded `HomeImagePlaceholder` + photo-aware "Claim & add photos" nudge.
 - **Residual / dependencies (OPEN):**
   1. **Populate `outreachEmail`/`outreachPhone`** — the email/SMS branch is dormant until these are filled (from Cowork's batch research / the "Batch 2" contacts). A small backfill script can map the batch-2 outreach emails onto the home rows. Until then, only the **public counter** path is active.
-  2. **Anonymous capture** — `/api/inquiries` still requires a `familyId`; a family with no account inquiring on a public listing currently 400s. Owned by the **publish-wide rollout ticket** (listings must be PUBLIC + anonymous inquiry capture) — not built here. Within current auth, capture is intact.
-  3. **AI triage auto-ack** (optional in the ticket) — deferred to a phase 2; would auto-acknowledge the family to hold them while the operator claims.
-- **Done when:** outreach contacts are populated so the notify fires in production, the publish-wide ticket lands (public listings + anonymous capture), and (optionally) the AI auto-ack ships.
+  2. **Run the publish tooling on Render (FOUNDER action):** `pre-publish-test-demo-sweep.ts` (preview → `--force`) then `publish-directory-homes.ts` (preview → `--force`) to take the ~65 seeded DRAFT homes live. Nothing is public until executed.
+  3. **Part B — metro seed→enrich (BLOCKED on Cowork)** delivering the 6-county RCF list (`name, city, county, license_type`, bed count). Then dedupe → seed gap DRAFT → enrich → re-run the publisher.
+  4. **Anonymous-inquiry → family link-by-email** (future): when a family later registers, link their earlier anonymous inquiries by email match. Deliberately deferred.
+  5. **AI triage auto-ack** (optional in the ticket) — deferred to a phase 2.
+  6. **(Flagged)** search result cards still use the deterministic **stock-photo fallback** (`HOME_IMAGES`) rather than the new branded placeholder; switching for directory-wide consistency is a separate decision.
+- **Done when:** outreach contacts are populated so the notify fires in production; the founder runs the publish tooling; Part B (Cowork list → seed/enrich/publish) lands.
 
 ### OL-027: Provider listing fee ($99/mo)
 - **Status:** ✅ CLOSED (2026-05-02)

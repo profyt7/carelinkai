@@ -2,6 +2,41 @@
 
 ---
 
+### 2026-06-23 — OL-083 publish-wide rollout: anonymous capture, unclaimed UX, claim softening, publish tooling
+
+- **Objective:** Execute the publish-wide rollout under OL-083 — make the seeded Cleveland directory usable by the public: capture anonymous inquiries, surface/badge unclaimed listings, soften unsubstantiated compliance claims, and ship the (dry-run) tooling to purge test/demo rows and publish DRAFT→ACTIVE. Six PRs, each branched off main and merged on green.
+
+- **Work completed (all 6 PRs merged to main):**
+  - **#588 — C9 soften compliance claims.** Reworded public marketing: "fully HIPAA compliant"/"full HIPAA compliance" → "HIPAA-aligned safeguards"; dropped "bank-level security/encryption" and "regular security audits" → replaced with what we actually do (encryption in transit + at rest, role-based access controls, audit logging); flat "HIPAA Compliant" badges → "HIPAA-Aligned". Internal code comments left as-is. Files: `page.tsx` (hero, ×3 trust badges, 2 cards, discharge feature list, security FAQ), `auth/login`, `privacy`, `layout.tsx` (SEO keyword), `discharge-planner/billing`.
+  - **#589 — A2 anonymous inquiry capture.** Made `Inquiry.familyId` **nullable** (migration `20260623000001_inquiry_nullable_family` — `ALTER COLUMN "familyId" DROP NOT NULL`, additive, FK + cascade preserved). This fixes a **live bug**: the public home-detail form already POSTs anonymously and was silently 400ing. `/api/inquiries` POST drops the familyId 400; anonymous leads ride on-row contact fields. Audited & guarded the entire inquiry surface (~17 files) against null-family: operator list search now covers contactName/email/phone; InquiryCard + operator detail render an anonymous "Lead Contact / not yet linked" state; conversion is **blocked until linked** (a Resident requires a family); FAMILY-role authz uses `family?.userId`.
+  - **#590 — A1 unclaimed-listing badge in search.** `/api/search` derives `isUnclaimed` per result via `isUnclaimedHome()` on the already-included operator email (no extra query); search result cards (grid + list) show an amber "Unclaimed" badge.
+  - **#591 — C8 pre-publish test/demo sweep** (`scripts/pre-publish-test-demo-sweep.ts`, dry-run default). Broad owner-agnostic name/description signature sweep; eligible-to-purge only if DRAFT + autoPopulatedAt null + zero activity; reports test-looking inquiries (read-only); aborts > 25. Final confirmation sweep — prior targeted cleanups already ran.
+  - **#592 — C7 quality-gated publisher** (`scripts/publish-directory-homes.ts`, dry-run default). Promotes **directory-sentinel-owned** DRAFT homes (state default OH) to ACTIVE only if they clear the bar: complete address + description ≥ 40 chars + at least one of ASSISTED/MEMORY_CARE/SKILLED_NURSING (IL-only held). `--force` flips via guarded still-DRAFT `updateMany`. Never publishes a real operator's DRAFT.
+  - **#593 — branded photo placeholder + add-photos nudge.** New `HomeImagePlaceholder` (brand gradient + building/camera icon); PhotoGallery empty state uses it; unclaimed listing detail CTA is photo-aware ("Claim & add photos") when the home has no photos. Photos are NOT required to publish (operators add on claim).
+
+- **Decisions made this session (founder-confirmed via AskUserQuestion):**
+  - Anonymous capture approach: **nullable `familyId`, no guest accounts**, link to a real family later by email match (future).
+  - Compliance claims: **soften aggressively** to provable language.
+  - Publish phase: build C8 + C7 as **dry-run-default scripts**, founder runs `--force` on Render; nothing public until he executes.
+  - Publish quality bar: **valid address + non-empty description + RCF/AL care-type (exclude IL-only/closed); NO photo requirement** (would hold WAF-blocked homes and shrink metro coverage). Render photo-less homes with a branded placeholder + "add your photos" nudge.
+
+- **Files changed:** see per-PR list above. Migration: `prisma/migrations/20260623000001_inquiry_nullable_family/migration.sql` (NEW). Scripts: `pre-publish-test-demo-sweep.ts`, `publish-directory-homes.ts` (NEW). Component: `src/components/homes/HomeImagePlaceholder.tsx` (NEW). This wrap: the three `context/` files.
+
+- **Commands run:** `prisma validate`, `prisma generate`, `tsc --noEmit` (clean after each PR), `eslint` (0 errors; pre-existing `<img>`/useEffect-dep warnings only); standalone tsc for the two scripts (`scripts/` excluded from app tsconfig).
+
+- **Tests/build status:** All 6 PRs — CI quality checks green before merge. No test files added this session.
+
+- **Deployment impact:** 6 PRs → Render auto-deploys. One **additive migration** (familyId nullable) runs via migrate-deploy. **No production data mutated yet** — the purge (C8) and publish (C7) scripts are dry-run-default and await the founder's `--force` on Render. The app changes (anon capture, badges, placeholder, softened claims) are live on deploy.
+
+- **New risks/blockers:**
+  - **Part B (metro seed→enrich) is blocked on Cowork** delivering the 6-county RCF list (`name, city, county, license_type`, bed count). Until then the publisher (C7) only has the existing ~65 seeded DRAFT homes to act on.
+  - **Operator runbook pending founder action:** on Render, run `pre-publish-test-demo-sweep.ts` (preview → `--force`), then `publish-directory-homes.ts` (preview → `--force`) to take the directory live.
+  - GitHub MCP token expired mid-session then auto-refreshed; one branch slip (placeholder commit briefly on the C7 branch) was caught and corrected before #593 — no mixed-workstream PR shipped.
+
+- **Recommended next step:** (1) Founder runs the two dry-run scripts on Render, reviews output, `--force` to publish. (2) When Cowork delivers the RCF list, do Part B: dedupe vs the ~65 seeded → seed gap as DRAFT → enrich → re-run the publisher. (3) Future: anonymous-inquiry → family link-by-email.
+
+---
+
 ### 2026-06-21 — Batch-2 Cleveland cohort: cleanup + address backfill
 
 - **Objective:** Land the guarded batch-2 cleanup script (PR #580), execute it on the production DB, and backfill addresses for the 3 fixable batch-2 homes — leaving the Cleveland directory cohort clean and outreach-ready.
