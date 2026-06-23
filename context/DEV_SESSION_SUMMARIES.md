@@ -2,6 +2,22 @@
 
 ---
 
+### 2026-06-23 (launch) — OL-083 CLOSED: Greater-Cleveland directory LIVE (128 listings)
+
+- **Outcome:** The 6-county directory is **public** — 128 ACTIVE unclaimed listings across Cuyahoga, Summit, Lorain, Lake, Geauga, Medina. Cold-start supply problem solved. $0 Anthropic spend (Google Places only).
+- **Render sequence executed (prod):**
+  1. `seed-cleveland-metro.ts` → 118 metro homes created (+ city/OH address anchors, 138 total).
+  2. `autopopulate-cohort.ts --from-db --include-unpopulated --addresses-only --force` → 117 addresses filled via Places, all in-state.
+  3. `publish-directory-homes.ts --force` → **133 DRAFT→ACTIVE** (29 held, missing address).
+  4. `hold-crossmatch-homes.ts --force` → reverted **5** same-city cross-matches to DRAFT → **128 net live**.
+- **Mid-flight fixes shipped this session (PRs):** #597 `--include-unpopulated` (reach fresh seeds for enrich/address); #598 city/OH **address anchor** in the seed + **city-and-state match guard** in `placesMatchAcceptable` (this killed the Princeton Place→Louisiana and Brookdale Willoughby→Mentor cross-matches and rescued ~40 wrongly-rejected OH homes); #599 `hold-crossmatch-homes.ts` cleanup.
+- **Key lesson:** seeded homes need a structured **city + state anchor** for the Places backfill to be both accurate (query the right municipality) and safe (reject cross-state/city). Name-only matching produced an out-of-state address (LA) that nearly published.
+- **Files:** `scripts/hold-crossmatch-homes.ts` (NEW), edits to `scripts/seed-cleveland-metro.ts` + `scripts/autopopulate-cohort.ts`. All script-only; typecheck + eslint clean; no app code.
+- **Open follow-ups (non-blocking):** ~24 address-less homes held (9 border-city rescuable + ~13 un-anchored Tier-A); 5 cross-matches awaiting a correct address; 20 SNF-primary pending ODH verification; text-enrich deferred until website URLs are cleaned. See OL-083 follow-ups.
+- **Next step:** verify a few live listings render correctly; optionally rescue the border-city holds and correct the 5 cross-matches; hand SNF-primary list to Cowork for `ltc.ohio.gov` verification.
+
+---
+
 ### 2026-06-23 (addendum) — OL-083 Part B: metro RCF seed shipped (#595)
 
 - **Trigger:** Cowork delivered the 6-county Greater-Cleveland RCF/AL master list (169 rows); founder also ran both publish-phase dry-runs on Render (sweep: 0 purge-eligible, 2 ACTIVE demo homes held; publisher: 16 publishable, 0 held — awaiting `--force`).
