@@ -47,7 +47,7 @@ export default function PrivacyPolicyPage() {
           <div className="bg-success-50 border border-success-200 rounded-lg p-4 mb-10 flex items-center justify-center">
             <FiShield className="text-success-600 mr-3 w-6 h-6" />
             <span className="text-success-800 font-medium">
-              HIPAA Compliant • GDPR & CCPA Aware
+              HIPAA-Aligned Safeguards • GDPR & CCPA Aware
             </span>
           </div>
 
@@ -159,7 +159,7 @@ export default function PrivacyPolicyPage() {
                 <li><strong>Monitoring:</strong> Continuous security monitoring and intrusion detection</li>
                 <li><strong>Audits:</strong> Regular security assessments and penetration testing</li>
                 <li><strong>Training:</strong> Employee security awareness training</li>
-                <li><strong>Compliance:</strong> HIPAA compliant infrastructure</li>
+                <li><strong>Compliance:</strong> HIPAA-aligned infrastructure</li>
               </ul>
             </section>
 

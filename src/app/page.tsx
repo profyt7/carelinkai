@@ -210,7 +210,7 @@ export default function HomePage() {
               </h1>
               
               <p className="mt-6 text-xl text-neutral-700 max-w-xl leading-relaxed">
-                The all-in-one AI platform for senior care — intelligent matching for families, smart shift coverage for operators, and instant placements for discharge planners. HIPAA-compliant and live today.
+                The all-in-one AI platform for senior care — intelligent matching for families, smart shift coverage for operators, and instant placements for discharge planners. Built with HIPAA-aligned safeguards and live today.
               </p>
               
               {/* CTAs */}
@@ -254,7 +254,7 @@ export default function HomePage() {
                 </div>
                 <div className="flex items-center">
                   <FiShield className="text-secondary-500 mr-2 flex-shrink-0" />
-                  <span>HIPAA compliant</span>
+                  <span>HIPAA-aligned safeguards</span>
                 </div>
                 <div className="flex items-center">
                   <FiZap className="text-secondary-500 mr-2 flex-shrink-0" />
@@ -903,8 +903,8 @@ export default function HomePage() {
                     <FiShield className="text-white text-xl" />
                   </div>
                   <div>
-                    <h4 className="text-lg font-bold text-neutral-900 mb-2">HIPAA Secure</h4>
-                    <p className="text-neutral-500">Your health information is protected with bank-level security and full HIPAA compliance.</p>
+                    <h4 className="text-lg font-bold text-neutral-900 mb-2">HIPAA-Aligned Security</h4>
+                    <p className="text-neutral-500">Your health information is protected with encryption in transit and at rest, access controls, and audit logging.</p>
                   </div>
                 </div>
                 <div className="flex items-start space-x-4">
@@ -1109,8 +1109,8 @@ export default function HomePage() {
                     <FiShield className="text-white text-xl" />
                   </div>
                   <div>
-                    <h4 className="text-lg font-bold text-neutral-900 mb-2">HIPAA Compliant</h4>
-                    <p className="text-neutral-500">All patient information is securely handled with full HIPAA compliance.</p>
+                    <h4 className="text-lg font-bold text-neutral-900 mb-2">HIPAA-Aligned</h4>
+                    <p className="text-neutral-500">Patient information is handled with HIPAA-aligned safeguards — encryption, access controls, and audit logging.</p>
                   </div>
                 </div>
                 <div className="flex items-start space-x-4">
@@ -1440,7 +1440,7 @@ export default function HomePage() {
                   <div className="text-sm text-neutral-500 mt-1">1 planner · 14-day free trial</div>
                 </div>
                 <ul className="space-y-3 mb-8 flex-1">
-                  {['AI placement search', 'Multi-facility requests', 'Real-time bed availability', 'Placement history & analytics', 'HIPAA-compliant'].map((f) => (
+                  {['AI placement search', 'Multi-facility requests', 'Real-time bed availability', 'Placement history & analytics', 'HIPAA-aligned safeguards'].map((f) => (
                     <li key={f} className="flex items-center gap-2 text-sm text-neutral-500">
                       <FiCheck className="text-success-500 flex-shrink-0" /> {f}
                     </li>
@@ -1592,8 +1592,8 @@ export default function HomePage() {
             <div className="inline-flex items-center bg-white border-2 border-primary-500 rounded-full px-6 py-3 shadow-lg">
               <FiShield className="text-primary-500 text-2xl mr-3" />
               <div className="text-left">
-                <p className="font-bold text-neutral-900">HIPAA Compliant</p>
-                <p className="text-xs text-neutral-500">Your data is secure and protected</p>
+                <p className="font-bold text-neutral-900">HIPAA-Aligned</p>
+                <p className="text-xs text-neutral-500">Your data is secured with encryption and audit logging</p>
               </div>
             </div>
           </div>
@@ -1662,7 +1662,7 @@ export default function HomePage() {
                 {openFaqIndex === 1 && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
                     <div className="px-6 pb-5 text-neutral-500">
-                      <p>Absolutely. We are fully HIPAA compliant with bank-level encryption, secure data storage, comprehensive audit logging, and regular security audits. Your health information is protected at every level of our platform.</p>
+                      <p>We follow HIPAA-aligned safeguards: encryption in transit and at rest, role-based access controls, and audit logging. Your health information is protected across the platform.</p>
                     </div>
                   </motion.div>
                 )}
@@ -1999,7 +1999,7 @@ export default function HomePage() {
             <p>© {new Date().getFullYear()} CareLinkAI. All rights reserved.</p>
             <div className="flex items-center mt-4 md:mt-0">
               <FiShield className="text-primary-500 mr-2" />
-              <span>HIPAA Compliant</span>
+              <span>HIPAA-Aligned</span>
             </div>
           </div>
         </div>
