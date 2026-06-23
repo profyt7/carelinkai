@@ -17,7 +17,9 @@ type Inquiry = {
   createdAt: string;
   tourDate: string | null;
   home: { id: string; name: string };
-  family: { id: string; name: string };
+  // Nullable: anonymous inquiries have no linked family account.
+  family?: { id: string; name?: string | null } | null;
+  contactName?: string | null;
 };
 
 type PaginationData = {
@@ -331,7 +333,7 @@ export default function InquiriesFilterPanel({ homes, initialFilters = {} }: Inq
                         {inquiry.home.name}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600">
-                        {inquiry.family.name}
+                        {inquiry.family?.name || inquiry.contactName || 'Unlinked lead'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600">
                         {new Date(inquiry.createdAt).toLocaleDateString()}
@@ -403,7 +405,7 @@ export default function InquiriesFilterPanel({ homes, initialFilters = {} }: Inq
                         {inquiry.status.replace(/_/g, ' ')}
                       </span>
                     </div>
-                    <div className="text-sm text-neutral-600">{inquiry.family.name}</div>
+                    <div className="text-sm text-neutral-600">{inquiry.family?.name || inquiry.contactName || 'Unlinked lead'}</div>
                     <div className="flex items-center justify-between text-xs text-neutral-500">
                       <span>Created: {new Date(inquiry.createdAt).toLocaleDateString()}</span>
                       {inquiry.tourDate && (

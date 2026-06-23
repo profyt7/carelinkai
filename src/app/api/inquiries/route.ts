@@ -42,19 +42,16 @@ export async function POST(request: NextRequest) {
           select: { id: true, referredByCode: true },
         })
       : null;
-    const familyId = familyRecord?.id ?? data.familyId;
+    // Anonymous public submissions are allowed: when no family is resolved the
+    // inquiry is captured against its on-row contact fields (contactName/
+    // contactEmail are required by the schema) with familyId = null. An operator
+    // can link it to a real family later.
+    const familyId = familyRecord?.id ?? data.familyId ?? null;
 
     // Fall back to the family's stored referral code if none passed explicitly
     const resolvedAffiliateCode =
       data.affiliateCode || familyRecord?.referredByCode || null;
-    
-    if (!familyId) {
-      return NextResponse.json(
-        { success: false, error: 'Family ID is required for inquiry creation' },
-        { status: 400 }
-      );
-    }
-    
+
     // Create the inquiry
     const inquiry = await prisma.inquiry.create({
       data: {

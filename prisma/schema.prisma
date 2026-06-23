@@ -834,7 +834,10 @@ model ResidentNote {
 
 model Inquiry {
   id                     String             @id @default(cuid())
-  familyId               String
+  /// Nullable: anonymous public inquiries are captured with no linked family
+  /// account. On-row contact fields (contactName/contactEmail/contactPhone)
+  /// carry the lead's details; an operator can link to a real family later.
+  familyId               String?
   homeId                 String
   status                 InquiryStatus      @default(NEW)
   message                String?
@@ -866,7 +869,7 @@ model Inquiry {
   assignedTo             User?              @relation("AssignedInquiries", fields: [assignedToId], references: [id])
   convertedBy            User?              @relation("InquiryConverter", fields: [convertedByUserId], references: [id])
   convertedResident      Resident?          @relation("ConvertedFromInquiry", fields: [convertedToResidentId], references: [id])
-  family                 Family             @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  family                 Family?            @relation(fields: [familyId], references: [id], onDelete: Cascade)
   home                   AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
   documents              InquiryDocument[]
   responses              InquiryResponse[]

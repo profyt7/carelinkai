@@ -49,13 +49,18 @@ export interface InquiryCardData {
     id: string;
     name: string;
   };
-  family: {
+  // Nullable: anonymous public inquiries have no linked family account.
+  family?: {
     id: string;
-    name: string;
+    name?: string | null;
     primaryContactName?: string | null;
     phone?: string | null;
     emergencyPhone?: string | null;
-  };
+  } | null;
+  // On-row contact details — the source of truth for anonymous inquiries.
+  contactName?: string | null;
+  contactEmail?: string | null;
+  contactPhone?: string | null;
   aiMatchScore?: number | null;
   // Future fields
   source?: InquirySource;
@@ -82,9 +87,15 @@ export default function InquiryCard({ inquiry, onEdit, onContact, isFamily = fal
     tourDate: inquiry.tourDate,
   });
 
-  // Get contact info
-  const contactName = inquiry.family.primaryContactName || inquiry.family.name;
-  const phone = inquiry.family.phone || inquiry.family.emergencyPhone;
+  // Get contact info — fall back to on-row fields for anonymous (no-family) leads
+  const contactName =
+    inquiry.family?.primaryContactName ||
+    inquiry.family?.name ||
+    inquiry.contactName ||
+    'Unknown contact';
+  const phone =
+    inquiry.family?.phone || inquiry.family?.emergencyPhone || inquiry.contactPhone;
+  const isUnlinkedLead = !inquiry.family;
 
   return (
     <div
@@ -143,10 +154,21 @@ export default function InquiryCard({ inquiry, onEdit, onContact, isFamily = fal
               </a>
             </div>
           )}
-          <div className="flex items-center gap-2 text-sm text-neutral-700">
-            <FiUser className="w-4 h-4 text-neutral-400" />
-            <span>{inquiry.family.name}</span>
-          </div>
+          {(inquiry.family?.name || inquiry.contactEmail) && (
+            <div className="flex items-center gap-2 text-sm text-neutral-700">
+              {inquiry.contactEmail && !inquiry.family ? (
+                <FiMail className="w-4 h-4 text-neutral-400" />
+              ) : (
+                <FiUser className="w-4 h-4 text-neutral-400" />
+              )}
+              <span>{inquiry.family?.name || inquiry.contactEmail}</span>
+            </div>
+          )}
+          {isUnlinkedLead && (
+            <div className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 border border-amber-200">
+              New lead · not yet linked
+            </div>
+          )}
         </div>
 
         {/* Key Dates */}

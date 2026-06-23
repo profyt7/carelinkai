@@ -33,7 +33,7 @@ async function hasResponseAccess(userId: string, userRole: string, responseId: s
   }
   
   if (userRole === 'FAMILY') {
-    return response.inquiry.family.userId === userId;
+    return response.inquiry.family?.userId === userId;
   }
   
   if (userRole === 'OPERATOR') {
@@ -153,7 +153,7 @@ export async function POST(
     if (familyPhone) {
       smsService.sendInquiryResponseReceived(
         familyPhone,
-        response.inquiry.family.user!.firstName,
+        response.inquiry.family?.user?.firstName ?? '',
         response.inquiry.home?.name ?? 'an assisted living home'
       ).catch(() => {});
     }

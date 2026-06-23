@@ -51,12 +51,23 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       message: inquiry.message || null,
       internalNotes: inquiry.internalNotes || '',
       home: { id: inquiry.home.id, name: inquiry.home.name },
-      family: {
-        id: inquiry.family.id,
-        name: [inquiry.family.user.firstName, inquiry.family.user.lastName].filter(Boolean).join(' '),
-        email: inquiry.family.user.email,
-        phone: inquiry.family.user.phone || null,
+      // On-row lead contact — source of truth for anonymous (unlinked) inquiries.
+      contact: {
+        name: inquiry.contactName || null,
+        email: inquiry.contactEmail || null,
+        phone: inquiry.contactPhone || null,
+        careRecipientName: inquiry.careRecipientName || null,
       },
+      // Null for anonymous inquiries that aren't linked to a family account yet.
+      family: inquiry.family
+        ? {
+            id: inquiry.family.id,
+            name: [inquiry.family.user?.firstName, inquiry.family.user?.lastName].filter(Boolean).join(' '),
+            email: inquiry.family.user?.email || null,
+            phone: inquiry.family.user?.phone || null,
+            user: inquiry.family.user || null,
+          }
+        : null,
     };
 
     return NextResponse.json({ inquiry: data });

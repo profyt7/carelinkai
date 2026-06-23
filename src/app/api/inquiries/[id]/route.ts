@@ -58,7 +58,8 @@ async function hasInquiryAccess(userId: string, userRole: string, inquiryId: str
   }
   
   if (userRole === 'FAMILY') {
-    return inquiry.family.userId === userId;
+    // Anonymous (no-family) inquiries are never owned by a family user.
+    return inquiry.family?.userId === userId;
   }
   
   if (userRole === 'OPERATOR') {

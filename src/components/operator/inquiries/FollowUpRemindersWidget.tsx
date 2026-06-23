@@ -13,12 +13,13 @@ interface Reminder {
   completed: boolean;
   inquiry: {
     id: string;
-    family: {
-      user: {
+    family?: {
+      user?: {
         firstName: string;
         lastName: string;
-      };
-    };
+      } | null;
+    } | null;
+    contactName?: string | null;
   };
 }
 
@@ -128,8 +129,9 @@ export function FollowUpRemindersWidget({ reminders, onUpdate }: FollowUpReminde
                     href={`/operator/inquiries/${reminder.inquiry.id}`}
                     className="text-primary-600 hover:text-primary-800 truncate"
                   >
-                    {reminder.inquiry.family.user.firstName}{' '}
-                    {reminder.inquiry.family.user.lastName}
+                    {reminder.inquiry.family?.user
+                      ? `${reminder.inquiry.family.user.firstName} ${reminder.inquiry.family.user.lastName}`
+                      : reminder.inquiry.contactName || 'Unlinked lead'}
                   </Link>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-neutral-600">
