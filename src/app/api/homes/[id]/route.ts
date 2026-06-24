@@ -215,7 +215,10 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       name: home.name,
       description: home.description,
       tagline: home.tagline,
-      phone: home.phone,
+      // Direct phone is gated to CLAIMED listings: on unclaimed/directory homes
+      // we keep the inquiry-capture + claim-nudge flow primary (OL-083), so the
+      // facility's line isn't surfaced (or scrapable via this API) until claimed.
+      phone: unclaimed ? null : home.phone,
       address: home.address
         ? {
             street: home.address.street,

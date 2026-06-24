@@ -1024,10 +1024,13 @@ export default function SearchPage() {
                         
                         <div className="flex flex-col p-4">
                           <h3 className="mb-1 text-lg font-medium text-neutral-800">{home.name}</h3>
-                          <p className="mb-2 text-sm text-neutral-600">
+                          <p className="mb-1 text-sm text-neutral-600">
                             {home.address?.city}, {home.address?.state}
                           </p>
-                          
+                          {home.tagline && (
+                            <p className="mb-2 line-clamp-1 text-xs italic text-neutral-500">{home.tagline}</p>
+                          )}
+
                           {/* Care levels */}
                           <div className="mb-3 flex flex-wrap gap-1">
                             {home.careLevel.map((level) => (
@@ -1184,7 +1187,11 @@ export default function SearchPage() {
                               </p>
                             </div>
                           </div>
-                          
+
+                          {home.tagline && (
+                            <p className="mb-2 line-clamp-1 text-sm italic text-neutral-500">{home.tagline}</p>
+                          )}
+
                           <p className="mb-3 line-clamp-2 text-sm text-neutral-600">{home.description}</p>
                           
                           {/* Care levels */}

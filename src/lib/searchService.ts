@@ -73,6 +73,10 @@ export interface SearchResultItem {
   id: string;
   name: string;
   description: string;
+  tagline?: string | null;
+  // Direct phone is only present on CLAIMED listings (gated server-side for
+  // unclaimed/directory homes to keep the inquiry/claim flow primary).
+  phone?: string | null;
   address: AddressInfo | null;
   careLevel: CareLevel[];
   priceRange: PriceRange;

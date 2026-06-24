@@ -466,6 +466,8 @@ export function generateMockHomes(count: number = 12) {
       id: `mock-home-${i}`,
       name: `Mock Home ${i + 1}`,
       description: `A lovely community number ${i + 1} with excellent services.`,
+      tagline: null,
+      phone: null,
       address: {
         street: `${100 + i} Main St`,
         street2: null,
@@ -754,11 +756,17 @@ export async function GET(request: NextRequest) {
         ? getApproximateCoordinates(home.address.city, home.address.state)
         : null;
       const coordinates = dbCoords || fallbackCoords;
+      const unclaimed = isUnclaimedHome(home.operator?.user?.email);
 
       return {
         id: home.id,
         name: home.name,
         description: home.description,
+        tagline: home.tagline,
+        // Direct phone gated to CLAIMED listings (OL-083 lead-capture): unclaimed
+        // directory homes keep the inquiry / claim-nudge flow primary, so the
+        // facility's line isn't surfaced or scrapable until an operator claims.
+        phone: unclaimed ? null : home.phone,
         address: home.address ? {
           street: home.address.street,
           street2: home.address.street2,
@@ -786,7 +794,7 @@ export async function GET(request: NextRequest) {
         // A listing still owned by the directory sentinel operator is "unclaimed"
         // — surfaced in results so the seeded directory shows, badged so families
         // know no operator manages it yet.
-        isUnclaimed: isUnclaimedHome(home.operator?.user?.email),
+        isUnclaimed: unclaimed,
         aiMatchScore,
         aiMatchFactors,
         aiMatchWeights,
