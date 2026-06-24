@@ -214,6 +214,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       id: home.id,
       name: home.name,
       description: home.description,
+      tagline: home.tagline,
+      phone: home.phone,
       address: home.address
         ? {
             street: home.address.street,
