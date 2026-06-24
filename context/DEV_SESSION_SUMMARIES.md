@@ -2,6 +2,24 @@
 
 ---
 
+### 2026-06-24 — OL-080 closed: enrich persists phone/contactEmail/tagline (#607)
+
+- **Objective:** Highest-leverage facility item after the directory launch — the enrich pipeline extracted phone/contactEmail/tagline but discarded them, so all ~90 listings lacked public phone/tagline.
+- **Work completed (PR #607, `5092c85`):**
+  - **Schema:** added `phone`/`contactEmail`/`tagline` (`String?`) to `AssistedLivingHome` + additive migration `20260624000001_home_public_contact_fields` (`ADD COLUMN IF NOT EXISTS`). Distinct from `outreachEmail`/`outreachPhone` (the unclaimed-listing nudge channel).
+  - **Enrich** (`autopopulate-cohort.ts`): persist the three fields in `updateData` with `AI` provenance. `capacity` deliberately left untouched (DOH-vs-site conflicts → OL-059).
+  - **API** (`/api/homes/[id]`): expose phone + tagline; `contactEmail` kept DB-only (operator/admin handoff, not public, to avoid spam-scraping).
+  - **Public listing** (`homes/[id]/page.tsx`, real-data path): render tagline under the name + a clickable `tel:` phone.
+  - **Report** (`report-directory-homes.ts`): emit phone for the step-4 Cowork handoff; dropped the stale "no phone column" note.
+- **Backfill (Render, re-enrich `--from-db --include-unpopulated --include-active --force`):** 91 enriched, 12 sparse (correctly LOW-skipped per #602 — fallback descriptions untouched), 2 blocked (Ivy House 403, Legacy Place-Parma 404), $8.46. Verify: **total 183 directory homes | 82 with phone | 74 tagline | 8 contactEmail.**
+- **Files changed:** `prisma/schema.prisma`, `prisma/migrations/20260624000001_home_public_contact_fields/migration.sql` (NEW), `scripts/autopopulate-cohort.ts`, `scripts/report-directory-homes.ts`, `src/app/api/homes/[id]/route.ts`, `src/app/homes/[id]/page.tsx`.
+- **Tests/build status:** #607 green on full CI (quality + build-and-test + e2e + migrate-deploy ×2 validating the migration); merged squash. `tsc` + eslint clean. AVIF-style smoke not needed (no image path).
+- **Deployment impact:** Render auto-deploy ran the migration on startup (added columns); backfill mutated prod DB (phone/tagline/contactEmail on 82/74/8 homes).
+- **New risks/blockers:** none new. contactEmail intentionally low (sites obfuscate/omit). The 12 sparse + 2 blocked homes still lack phone — they're OL-084's JS-render job (or dead/blocked URLs).
+- **Recommended next step:** OL-059 (verify the capacity-flagged homes: Ohman, Regina, O'Neill N. Ridgeville, Concordia) → publish the held DRAFTs → OL-084 (JS-rendered homes). Plus hand the phone-populated `report-directory-homes.ts --tsv` to Cowork to seed `outreachEmail`/`outreachPhone` and scale claim-nudges past 11.
+
+---
+
 ### 2026-06-23 (late evening) — Directory photos imported (417) + AVIF fix (#604); OL-084 deferred
 
 - **Objective:** Finish the directory "richer listings" arc — import photos (OL-085) and knock out the follow-ups discovered along the way (OL-086 AVIF, OL-084 headless scrape).
