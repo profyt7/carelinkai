@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-06-23 (directory photos + AVIF fix; OL-084 deferred; OL-087 claim hardening logged)_
+_Last updated: 2026-06-24 (OL-080 closed — phone/tagline persisted, 82 phones live)_
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -164,10 +164,10 @@ Each loop: what it is, why it matters, what done looks like.
 - **Verify:** `tsc --noEmit` clean, `npm run build` passes.
 
 ### OL-080: Phone (and capacity) not persisted on AssistedLivingHome by the enrich pipeline
-- **Status:** 🔴 OPEN — surfaced 2026-06-19 during batch-2 supply prep (`chore/batch2-enrich`).
-- **What:** `AssistedLivingHome` has **no `phone` column**, and the PR #545 auto-populator (`scripts/autopopulate-cohort.ts`) extracts a phone from the website (`extracted.phone`) but **never writes it** — it's only counted toward `fieldsExtracted`. Same for **capacity**: the pipeline never writes `capacity`, so freshly-seeded homes (e.g. batch-2, seeded `capacity: 0`) stay at their seed value until an operator claim or a manual update. Net effect: the outreach step-4 handoff (`{homeId, name, city, phone, status}`) can't be fully DB-backed — phone has to come from Cowork's manual contact-research pass.
-- **Fix (when prioritized):** add `phone String?` (and optionally a structured capacity refresh) to `AssistedLivingHome` + migration; persist `extracted.phone` in `autopopulate-cohort.ts` (with provenance, like the address fallback); optionally surface it on the admin/operator listing views. Small, self-contained — deferred out of the batch-2 scope on purpose.
-- **Done when:** the enrich pipeline stores a verified phone on the listing and `report-directory-homes.ts` can emit phone directly (no manual research column).
+- **Status:** ✅ **CLOSED 2026-06-24 — PR #607 (`5092c85`).** Backfilled on Render: **82 homes now have a phone, 74 a tagline, 8 a contactEmail** (low email count expected — most facility sites Cloudflare-obfuscate or omit it).
+- **What:** `AssistedLivingHome` had **no `phone`/`contactEmail`/`tagline` columns**, and the auto-populator (`scripts/autopopulate-cohort.ts`) extracted all three (`extracted.phone` etc.) but **never wrote them** — only counted toward `fieldsExtracted`. So every enriched listing was missing public phone/email/tagline.
+- **Fix shipped (#607):** migration `20260624000001_home_public_contact_fields` adds `phone`/`contactEmail`/`tagline` (`String?`); `autopopulate-cohort.ts` persists them with `AI` provenance; `/api/homes/[id]` exposes phone + tagline (contactEmail kept DB-only — operator/admin handoff, not public, to avoid spam-scraping); the public listing renders the tagline + a clickable `tel:` phone; `report-directory-homes.ts` emits the phone column. **`capacity` intentionally NOT auto-written** — site values conflict with DOH (Ohman 58-vs-92, Regina 54-vs-99); reconciliation is OL-059's manual-verify job.
+- **Done when:** ✅ enrich stores phone/tagline on the listing, they render publicly, and `report-directory-homes.ts` emits phone. (Capacity reconciliation tracked separately under OL-059.)
 
 ### OL-081: Batch-2 cohort punch list (post-cleanup, 2026-06-21)
 - **Status:** 🟢 MOSTLY DONE — structural cleanup + name/URL reconciliation + send-ready content all **CLOSED**; only a photo-upload residual remains. The structural cleanup (PR #580, applied on Render `--force`, Applied: 4) — Anthology→**The Ashton at Mayfield Heights**, Villa Serena→**INACTIVE**, "Test Senior Living Cleveland" + "Chris Senior Care Home" **purged**. The 3 held homes' content was landed manually (PR #582, `scripts/enrich-batch2-held-homes.ts --force` on Render 2026-06-21, Applied: 3).
