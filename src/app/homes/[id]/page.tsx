@@ -809,10 +809,24 @@ export default function HomeDetailPage() {
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <h1 className="text-2xl font-bold text-neutral-800 md:text-3xl">{realHome.name}</h1>
+                      {realHome.tagline && (
+                        <p className="mt-1 text-sm italic text-neutral-500">{realHome.tagline}</p>
+                      )}
                       <div className="mt-1 flex items-center">
                         <FiMapPin className="mr-1 h-4 w-4 text-neutral-500" />
                         <span className="text-sm text-neutral-600">{addrText}</span>
                       </div>
+                      {realHome.phone && (
+                        <div className="mt-1 flex items-center">
+                          <FiPhone className="mr-1 h-4 w-4 text-neutral-500" />
+                          <a
+                            href={`tel:${String(realHome.phone).replace(/[^0-9+]/g, '')}`}
+                            className="text-sm text-primary-600 hover:underline"
+                          >
+                            {realHome.phone}
+                          </a>
+                        </div>
+                      )}
                       <div className="mt-2 flex flex-wrap gap-2">
                         {(realHome.careLevel || []).map((level: string) => (
                           <span key={level} className="rounded-full bg-neutral-100 px-3 py-1 text-sm font-medium text-neutral-700">

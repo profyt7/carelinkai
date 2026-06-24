@@ -13,9 +13,9 @@
  *   - Step 4: export the batch-2 set ({homeId, name, city, status}) for the
  *             Cowork ED/email contact-research pass once enrich has run.
  *
- * NOTE: there is no phone column on AssistedLivingHome, and the PR #545 enrich
- * pipeline does not persist a phone, so "phone" for the step-4 handoff comes
- * from the Cowork research pass — it is intentionally omitted here.
+ * The enrich pipeline now persists a `phone` on AssistedLivingHome (OL-080), so
+ * the step-4 handoff includes the website-scraped phone where available; blank
+ * means enrich found none and it still needs the Cowork research pass.
  *
  * City is read from the home's Address; freshly-seeded batch-2 homes show
  * "(pending)" until the enrich/Places step creates the address row.
@@ -58,6 +58,7 @@ async function main() {
       name: true,
       status: true,
       websiteUrl: true,
+      phone: true,
       autoPopulatedAt: true,
       address: { select: { city: true } },
     },
@@ -70,13 +71,14 @@ async function main() {
     city: h.address?.city ?? '(pending)',
     status: h.status,
     enriched: h.autoPopulatedAt ? 'yes' : 'no',
+    phone: h.phone ?? '',
     website: h.websiteUrl ?? '',
   }));
 
   if (tsv) {
-    console.log(['homeId', 'name', 'city', 'status', 'enriched', 'website'].join('\t'));
+    console.log(['homeId', 'name', 'city', 'status', 'enriched', 'phone', 'website'].join('\t'));
     for (const r of rows) {
-      console.log([r.homeId, r.name, r.city, r.status, r.enriched, r.website].join('\t'));
+      console.log([r.homeId, r.name, r.city, r.status, r.enriched, r.phone, r.website].join('\t'));
     }
   } else {
     console.table(rows);

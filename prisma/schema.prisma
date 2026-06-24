@@ -526,6 +526,12 @@ model AssistedLivingHome {
   autoPopulatedVersion    Int?             @default(0)
   preFilledFields         Json?
   aiPopulationConfidence  String?
+  // Public listing contact + marketing fields populated by the enrich pipeline
+  // (OL-080). Distinct from outreachEmail/outreachPhone below, which are the
+  // unclaimed-listing nudge channel, not public display.
+  phone                   String?
+  contactEmail            String?
+  tagline                 String?
   imageRightsAcknowledgedAt DateTime?
   enrichmentStatus        EnrichmentStatus @default(NONE)
   enrichmentStartedAt     DateTime?

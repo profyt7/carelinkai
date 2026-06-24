@@ -190,6 +190,22 @@ async function processRow(
       preFilledFields['careLevel'] = 'AI';
     }
 
+    // Public contact + marketing fields the extractor returns (OL-080). Were
+    // previously counted toward fieldsExtracted but never written, so every
+    // enriched listing was missing its phone / email / tagline.
+    if (extracted.phone?.trim()) {
+      updateData.phone = extracted.phone.trim();
+      preFilledFields['phone'] = 'AI';
+    }
+    if (extracted.contactEmail?.trim()) {
+      updateData.contactEmail = extracted.contactEmail.trim();
+      preFilledFields['contactEmail'] = 'AI';
+    }
+    if (extracted.tagline?.trim()) {
+      updateData.tagline = extracted.tagline.trim();
+      preFilledFields['tagline'] = 'AI';
+    }
+
     // Address: only fill fields that are currently empty/missing.
     const addr = extracted.address;
     const aiStreet = addr?.streetAddress?.trim() || null;
