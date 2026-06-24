@@ -1027,7 +1027,7 @@ export default function SearchPage() {
                           <p className="mb-1 text-sm text-neutral-600">
                             {home.address?.city}, {home.address?.state}
                           </p>
-                          {home.tagline && (
+                          {!home.isUnclaimed && home.tagline && (
                             <p className="mb-2 line-clamp-1 text-xs italic text-neutral-500">{home.tagline}</p>
                           )}
 
@@ -1188,7 +1188,7 @@ export default function SearchPage() {
                             </div>
                           </div>
 
-                          {home.tagline && (
+                          {!home.isUnclaimed && home.tagline && (
                             <p className="mb-2 line-clamp-1 text-sm italic text-neutral-500">{home.tagline}</p>
                           )}
 
