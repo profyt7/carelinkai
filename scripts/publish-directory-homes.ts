@@ -13,12 +13,19 @@
  *     Real operators' DRAFT homes are THEIRS to publish — never auto-published here.
  *   - address.state === target state (default 'OH'; override with --state=XX)
  *
+ * AL/RCF-only policy (codified): the directory is assisted-living discovery, so a
+ * home is only in scope if it offers ASSISTED or MEMORY_CARE. Homes whose care is
+ * SKILLED_NURSING-only / SNF-primary (SNF +/- INDEPENDENT, no AL/MC) or INDEPENDENT-only
+ * are SKIPPED as out-of-scope — a permanent policy exclusion, NOT a fixable-content
+ * hold (we don't chase their addresses). Mixed AL/SNF facilities stay eligible
+ * because they carry ASSISTED.
+ *
  * Quality bar (a home is PUBLISHABLE only if ALL hold):
+ *   - in AL/RCF scope: careLevel includes ASSISTED or MEMORY_CARE
  *   - complete address: non-empty street, city, state, zipCode
  *   - description present and substantive (>= MIN_DESC_LEN chars)
- *   - at least one real care type: ASSISTED, MEMORY_CARE, or SKILLED_NURSING
- *     (an INDEPENDENT-only listing is held — the platform targets AL/MC/SNF)
- * Anything failing is HELD with reasons and left DRAFT.
+ * In-scope homes failing a content check are HELD with reasons and left DRAFT.
+ * Out-of-scope homes are SKIPPED (also left DRAFT) and reported separately.
  *
  * Safety:
  *   - Dry-run by default; only writes with --force.
@@ -39,18 +46,29 @@ const prisma = new PrismaClient();
 
 const DIRECTORY_EMAIL = 'directory-unclaimed@carelinkai.system';
 const MIN_DESC_LEN = 40;
-const REAL_CARE_TYPES: CareLevel[] = [CareLevel.ASSISTED, CareLevel.MEMORY_CARE, CareLevel.SKILLED_NURSING];
+// AL/RCF scope: only homes offering assisted living or memory care belong in the
+// directory. SKILLED_NURSING / INDEPENDENT alone do not qualify on their own.
+const AL_CARE_TYPES: CareLevel[] = [CareLevel.ASSISTED, CareLevel.MEMORY_CARE];
 
 function getFlag(name: string, fallback: string): string {
   const hit = process.argv.find((a) => a.startsWith(`--${name}=`));
   return hit ? hit.split('=')[1] : fallback;
 }
 
-function publishability(home: {
+type DraftHome = {
   description: string | null;
   careLevel: CareLevel[];
   address: { street: string; city: string; state: string; zipCode: string } | null;
-}): string[] {
+};
+
+/** Out of AL/RCF scope: has care type(s) but none is ASSISTED/MEMORY_CARE
+ *  (SNF-primary, SNF+IL, or INDEPENDENT-only). Permanent policy exclusion. */
+function isOutOfScope(home: DraftHome): boolean {
+  return home.careLevel.length > 0 && !home.careLevel.some((c) => AL_CARE_TYPES.includes(c));
+}
+
+/** Content checks for an in-scope home. Empty array ⇒ publishable. */
+function contentReasons(home: DraftHome): string[] {
   const reasons: string[] = [];
   const a = home.address;
   if (!a) {
@@ -64,10 +82,9 @@ function publishability(home: {
   if (!home.description || home.description.trim().length < MIN_DESC_LEN) {
     reasons.push(`description too short (< ${MIN_DESC_LEN} chars)`);
   }
+  // No care type at all is a content gap (enrich could add AL/MC), not a policy skip.
   if (!home.careLevel || home.careLevel.length === 0) {
     reasons.push('no careLevel');
-  } else if (!home.careLevel.some((c) => REAL_CARE_TYPES.includes(c))) {
-    reasons.push('INDEPENDENT-only (no AL/MC/SNF care type)');
   }
   return reasons;
 }
@@ -107,32 +124,46 @@ async function main() {
 
   const publishable: typeof drafts = [];
   const held: { home: (typeof drafts)[number]; reasons: string[] }[] = [];
+  const skipped: typeof drafts = [];
 
   for (const h of drafts) {
-    const reasons = publishability(h);
+    if (isOutOfScope(h)) {
+      skipped.push(h);
+      continue;
+    }
+    const reasons = contentReasons(h);
     if (reasons.length === 0) publishable.push(h);
     else held.push({ home: h, reasons });
   }
 
   console.log(`DRAFT directory listings in ${state}: ${drafts.length}`);
-  console.log(`  → publishable: ${publishable.length}`);
-  console.log(`  → held:        ${held.length}\n`);
+  console.log(`  → publishable:        ${publishable.length}`);
+  console.log(`  → held (fix content): ${held.length}`);
+  console.log(`  → skipped (off-scope): ${skipped.length}\n`);
 
   for (const h of publishable) {
     console.log(`  PUBLISH  "${h.name}" (${h.id})  ${h.address?.city}, ${h.address?.state}  [${h.careLevel.join(', ')}]`);
   }
 
   if (held.length > 0) {
-    console.log(`\n⚠ ${held.length} held (left DRAFT — fix content then re-run):`);
+    console.log(`\n⚠ ${held.length} held (in scope — fix content then re-run):`);
     for (const h of held) {
-      console.log(`  - "${h.home.name}" (${h.home.id})`);
+      console.log(`  - "${h.home.name}" (${h.home.id})  [${h.home.careLevel.join(', ')}]`);
       for (const r of h.reasons) console.log(`      • ${r}`);
+    }
+  }
+
+  if (skipped.length > 0) {
+    console.log(`\n⊘ ${skipped.length} skipped — out of AL/RCF scope (no ASSISTED/MEMORY_CARE; left DRAFT):`);
+    for (const h of skipped) {
+      console.log(`  - "${h.name}" (${h.id})  [${h.careLevel.join(', ')}]`);
     }
   }
 
   console.log('\n─────────────────────────────────────────────');
   console.log(`To publish: ${publishable.length}`);
   console.log(`Held:       ${held.length}`);
+  console.log(`Skipped:    ${skipped.length}`);
   console.log('─────────────────────────────────────────────');
 
   if (dryRun) {
@@ -152,6 +183,7 @@ async function main() {
   console.log('\n─────────────────────────────────────────────');
   console.log(`Published (DRAFT → ACTIVE): ${count}`);
   console.log(`Still held in DRAFT:        ${held.length}`);
+  console.log(`Skipped (off-scope):        ${skipped.length}`);
   console.log('─────────────────────────────────────────────');
   console.log('Publish complete.');
 }
