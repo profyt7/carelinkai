@@ -247,6 +247,78 @@ export async function sendInquiryClaimNudgeEmail(args: {
 }
 
 /**
+ * PROACTIVE directory claim invite (distinct from sendInquiryClaimNudgeEmail).
+ *
+ * Used by the batch claim-nudge sender to invite an operator to claim their free
+ * directory listing — BEFORE any family inquiry exists. The copy is therefore
+ * honest about the context: it does NOT claim "families are trying to reach you"
+ * (that wording belongs only to the inquiry-triggered nudge). It states plainly
+ * that the facility is listed and can be claimed for free.
+ *
+ * Includes a clear opt-out line (reply to be removed) and the sender identity for
+ * basic CAN-SPAM hygiene. Fire-and-forget: returns false on any failure.
+ */
+export async function sendDirectoryClaimInviteEmail(args: {
+  facilityName: string;
+  toEmail: string;
+  claimUrl: string;
+}): Promise<boolean> {
+  const facilityName = args.facilityName?.trim() || 'your community';
+  try {
+    if (!process.env.RESEND_API_KEY) {
+      console.error('[Resend] RESEND_API_KEY not configured — skipping directory claim invite');
+      return false;
+    }
+    const safeFacility = escapeHtml(facilityName);
+    const subject = `Claim your free ${APP_NAME} listing for ${facilityName}`;
+    const text =
+      `${facilityName} is listed on CareLinkAI, the senior-care discovery platform helping ` +
+      `Greater Cleveland families find assisted living and memory care.\n\n` +
+      `Claim your free listing in about 2 minutes to manage your profile, add photos and ` +
+      `details, and respond to family inquiries:\n${args.claimUrl}\n\n` +
+      `There is no cost to claim or to keep your listing. If you're not the right person at ` +
+      `${facilityName}, please forward this to whoever manages marketing or admissions.\n\n` +
+      `If you'd prefer not to receive these, just reply "remove" and we'll take you off the list.\n` +
+      `— The CareLinkAI team, Cleveland, OH`;
+    const html = `
+<!DOCTYPE html>
+<html><body style="font-family:Arial,sans-serif;color:#1f2937;line-height:1.5">
+  <p><strong>${safeFacility}</strong> is listed on CareLinkAI, the senior-care discovery platform helping Greater Cleveland families find assisted living and memory care.</p>
+  <p>Claim your free listing in about 2 minutes to manage your profile, add photos and details, and respond to family inquiries:</p>
+  <p><a href="${escapeHtml(args.claimUrl)}" style="display:inline-block;background:#0d9488;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600">Claim ${safeFacility}</a></p>
+  <p style="color:#6b7280;font-size:13px">There is no cost to claim or to keep your listing. If you're not the right person at ${safeFacility}, please forward this to whoever manages marketing or admissions.</p>
+  <p style="color:#9ca3af;font-size:12px">If you'd prefer not to receive these, just reply &ldquo;remove&rdquo; and we'll take you off the list.<br/>— The CareLinkAI team, Cleveland, OH</p>
+</body></html>`;
+
+    const { data, error } = await resend.emails.send({
+      from: `${APP_NAME} <${FROM_EMAIL}>`,
+      to: [args.toEmail],
+      subject,
+      text,
+      html,
+    });
+
+    if (error) {
+      console.error('[Resend] Error sending directory claim invite:', error);
+      captureError(
+        error instanceof Error ? error : new Error(String((error as { message?: string })?.message ?? error)),
+        { tags: { feature: 'directory-claim-invite' }, extra: { facilityName } }
+      );
+      return false;
+    }
+    console.log('[Resend] ✅ Directory claim invite sent. Email ID:', data?.id);
+    return true;
+  } catch (error) {
+    console.error('[Resend] Exception sending directory claim invite:', error);
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { feature: 'directory-claim-invite' },
+      extra: { facilityName },
+    });
+    return false;
+  }
+}
+
+/**
  * Generate HTML content for verification email
  */
 function generateVerificationEmailHTML(
