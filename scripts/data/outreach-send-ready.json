@@ -1,0 +1,633 @@
+[
+  {
+    "homeId": "cmqqrl9u4004srlmbdlrrxwzh",
+    "name": "St. Mary of the Woods",
+    "op": "send",
+    "email": "traceym@sainttherese.org",
+    "phone": "(440) 937-3111",
+    "confidence": "HIGH",
+    "inPilot": true
+  },
+  {
+    "homeId": "cmp71kmtc0026lpion3ikc66y",
+    "name": "The Gardens of French Creek at Avon Oaks",
+    "op": "send",
+    "email": "nsalti@avonoaks.net",
+    "phone": "(440) 934-5204",
+    "confidence": "HIGH",
+    "inPilot": true
+  },
+  {
+    "homeId": "cmqqrl7iu004irlmbfb8b7onx",
+    "name": "Avenue Assisted Living",
+    "op": "send",
+    "email": "JCoe@SprengerHealthCare.com",
+    "phone": "(440) 930-6700",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmp71kmu0002olpio2i7liyzd",
+    "name": "Pleasant Pointe Assisted Living",
+    "op": "send",
+    "email": "teresa@pleasantviewhealthcare.com",
+    "phone": "330-848-5028",
+    "confidence": "HIGH",
+    "inPilot": true
+  },
+  {
+    "homeId": "cmqqrkmww0020rlmbthcvype7",
+    "name": "Park East",
+    "op": "hold"
+  },
+  {
+    "homeId": "cmql0xbos0006r7jcitqgqhds",
+    "name": "Windsor Heights",
+    "op": "send",
+    "email": "brandy.delp@sunshineret.com",
+    "phone": "(216) 245-0455",
+    "confidence": "HIGH",
+    "inPilot": true
+  },
+  {
+    "homeId": "cmqqrkj50001krlmbx4qkh8jp",
+    "name": "Light of Hearts Villa",
+    "op": "send",
+    "email": "kate.mach@lightofheartsvilla.org",
+    "phone": "440.232.1991 ext 520",
+    "confidence": "HIGH",
+    "inPilot": true
+  },
+  {
+    "homeId": "cmqqrklyn001wrlmbt6hki35l",
+    "name": "Oaks of Brecksville",
+    "op": "hold"
+  },
+  {
+    "homeId": "cmqqrlo85006krlmbl79j6l27",
+    "name": "Eliza at Chagrin Falls",
+    "op": "send",
+    "email": "alovano@elizajen.org",
+    "phone": "440.543.4221",
+    "confidence": "HIGH",
+    "inPilot": true
+  },
+  {
+    "homeId": "cmp71kmsp001mlpiot2a118ng",
+    "name": "South Franklin Circle",
+    "op": "send",
+    "email": "communications@judsonsmartliving.org",
+    "phone": "440-457-8280",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmp71kms50014lpiooje7mtml",
+    "name": "Algart Health Care",
+    "op": "send",
+    "email": "info@algart.com",
+    "phone": "(216) 631-1550",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmqqrkd2h000urlmbsoe33ysh",
+    "name": "Eliza Jennings",
+    "op": "send",
+    "email": "lfluhart@elizajen.org",
+    "phone": "216.226.5000",
+    "confidence": "HIGH",
+    "inPilot": true
+  },
+  {
+    "homeId": "cmp71kmre000ilpion9d442k6",
+    "name": "Judson Manor",
+    "op": "send",
+    "email": "communications@judsonsmartliving.org",
+    "phone": "(216) 791-2004",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmp71kmr9000elpiozlpku0wq",
+    "name": "Singleton Health Care Center",
+    "op": "send",
+    "email": "tbruno@singletonhcc.com",
+    "phone": "(216) 231-8467 ext 110",
+    "confidence": "HIGH",
+    "inPilot": true
+  },
+  {
+    "homeId": "cmqqrkggg0018rlmb9ql5qbwx",
+    "name": "Judson Park",
+    "op": "send",
+    "email": "communications@judsonsmartliving.org",
+    "phone": "(216) 532-1350",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmp71kmsc001alpioawg1lbup",
+    "name": "Hilltop Village Assisted Living",
+    "op": "send",
+    "email": "info@hilltopvillage.com",
+    "phone": "216-261-8383",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmqqrkjm9001mrlmb9umruvps",
+    "name": "Marymount Place",
+    "op": "send",
+    "email": "info@marymounthealth.org",
+    "phone": "216-332-1100",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmqqrkt7m002srlmbv9kt8po5",
+    "name": "Crown Center at Laurel Lake",
+    "op": "send",
+    "email": "info@laurellake.org",
+    "phone": "330-650-0681",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmqqrky1c003crlmbocgnuoq2",
+    "name": "Heritage of Hudson",
+    "op": "hold"
+  },
+  {
+    "homeId": "cmp71kmty002mlpion9nyi9d2",
+    "name": "The Elms Assisted Living",
+    "op": "hold"
+  },
+  {
+    "homeId": "cmqqrl8hf004mrlmbvsxilf5r",
+    "name": "Elmcroft of Lorain",
+    "op": "send",
+    "email": "contact@sinceriseniorliving.com",
+    "phone": "(440) 960-2813",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmqqrkhpb001erlmb83zsyyhk",
+    "name": "Heritage of Lyndhurst",
+    "op": "send",
+    "email": "info@heritage-rc.com",
+    "phone": "440-460-1000",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmqqrkpl2002crlmbhj7ksqix",
+    "name": "Avenue at Macedonia",
+    "op": "hold"
+  },
+  {
+    "homeId": "cmqqrleah005crlmbqbcz3m0s",
+    "name": "Lantern of Madison",
+    "op": "send",
+    "email": "info@meadowfallsseniorliving.com",
+    "phone": "(440) 428-2664",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmqqrki6j001grlmbevwl3hue",
+    "name": "Landerbrook Transitional Care",
+    "op": "hold"
+  },
+  {
+    "homeId": "cmqqrlmby006arlmbyyuhra21",
+    "name": "Briarcliff Manor",
+    "op": "dup"
+  },
+  {
+    "homeId": "cmqqrl08g003mrlmbczapzk5t",
+    "name": "Mulberry Gardens",
+    "op": "send",
+    "email": "mulberrygardenssl@SinceriSL.com",
+    "phone": "(330) 634-9919",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmqqrlmnv006crlmb18mwhnq5",
+    "name": "Holly Hill",
+    "op": "send",
+    "email": "info.holly@ohmanfamilyliving.com",
+    "phone": "(440) 338-8220",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmp71kms70016lpioahtq3nc0",
+    "name": "Village of the Falls",
+    "op": "clear",
+    "phone": "(440) 235-7590"
+  },
+  {
+    "homeId": "cmp71kmrh000klpiouf5sm5rk",
+    "name": "Pleasant Lake Villa",
+    "op": "send",
+    "email": "info@lhshealth.com",
+    "phone": "440-842-2273",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmqqrl14z003qrlmby7e8l0rl",
+    "name": "Renaissance Assisted Living",
+    "op": "send",
+    "email": "info@renaissanceofrichfield.com",
+    "phone": "330-313-7000",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmqqrkfhn0014rlmbtqruq6x2",
+    "name": "Harbor Court Retirement Community",
+    "op": "dup"
+  },
+  {
+    "homeId": "cmqqrkp57002arlmbvqnyq71f",
+    "name": "The Woodlands of Shaker Heights",
+    "op": "send",
+    "email": "info@heritage-rc.com",
+    "phone": "216-751-0930",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmqqrli42005srlmb0rd3pdrk",
+    "name": "Inn at Coal Ridge",
+    "op": "send",
+    "email": "contact@innatcoalridge.com",
+    "phone": "(330) 334-1546",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmqqrlikp005urlmbirf806mo",
+    "name": "Liberty Residence Holdings",
+    "op": "send",
+    "email": "lmiller@woodlandsofliberty.com",
+    "phone": "(330) 336-3616",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmqqrlji1005yrlmb0sq7gzjf",
+    "name": "Sanctuary Wadsworth",
+    "op": "send",
+    "email": "kristie.burss@sanctuaryhealthnetwork.com",
+    "phone": "330.335.1558",
+    "confidence": "HIGH",
+    "inPilot": true
+  },
+  {
+    "homeId": "cmqqrk8xx000crlmbtl4lnkuw",
+    "name": "Belvedere of Westlake",
+    "op": "send",
+    "email": "ColleenN@SaintTherese.org",
+    "phone": "(440) 835-4000",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmqqrkc4w000qrlmbqrgzwpfk",
+    "name": "Devon Oaks",
+    "op": "send",
+    "email": "kcolby@elizajen.org",
+    "phone": "(216) 226-5000",
+    "confidence": "HIGH",
+    "inPilot": true
+  },
+  {
+    "homeId": "cmqqrles0005erlmbl17xexe1",
+    "name": "Nason Center of Breckenridge Village",
+    "op": "hold"
+  },
+  {
+    "homeId": "cmp71kmu6002slpio3rpxs9gv",
+    "name": "Arden Courts (Bath)",
+    "op": "clear",
+    "phone": "330-668-6889"
+  },
+  {
+    "homeId": "cmqqrkqwf002irlmbc9lqw5x7",
+    "name": "Brookdale Bath",
+    "op": "send",
+    "email": "info@meadowfallsseniorliving.com",
+    "phone": "(330) 666-7011",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmqqrkkkp001qrlmbjagomjv1",
+    "name": "O'Neill Healthcare Bay Village",
+    "op": "send",
+    "email": "Dir.sales@oneillhc.com",
+    "phone": "440-808-5500",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmql0xbov0008r7jcgq2lih67",
+    "name": "Beachwood Commons",
+    "op": "send",
+    "email": "info@npseniorliving.com",
+    "phone": "216-295-1700",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmqqrkbn2000orlmbh8i5fbax",
+    "name": "Danbury Senior Living Broadview Heights",
+    "op": "send",
+    "email": "marketing@csig.com",
+    "phone": "440-577-5206",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmqqrlh7w005orlmbdrwzx02f",
+    "name": "Danbury Brunswick",
+    "op": "send",
+    "email": "marketing@csig.com",
+    "phone": "330-302-2588",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmqqrln04006erlmbpae67m2d",
+    "name": "Maplewood at Heather Hill",
+    "op": "send",
+    "email": "maplewoodinfo@maplewoodsl.com",
+    "phone": "440-285-3300",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmp71kmse001clpiofgsupc5e",
+    "name": "Arden Courts (Parma)",
+    "op": "clear",
+    "phone": "440-886-5858"
+  },
+  {
+    "homeId": "cmp71kmsa0018lpiojjzghsq0",
+    "name": "O'Neill Healthcare Lakewood",
+    "op": "send",
+    "email": "Dir.sales@oneillhc.com",
+    "phone": "440-808-5500",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmp71kmtv002klpio0b5064xx",
+    "name": "Cuyahoga Falls Danbury Woods",
+    "op": "dup"
+  },
+  {
+    "homeId": "cmqqrkyy9003grlmbc31bx8yt",
+    "name": "Maplewood at Cuyahoga Falls",
+    "op": "send",
+    "email": "maplewoodinfo@maplewoodsl.com",
+    "phone": "234-208-9871",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmqqrkkza001srlmbwjt84vnm",
+    "name": "O'Neill Healthcare Fairview Park",
+    "op": "send",
+    "email": "Dir.sales@oneillhc.com",
+    "phone": "440-808-5500",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmqqrkgww001arlmbbvzh32kc",
+    "name": "Kemper House Highland Heights",
+    "op": "send",
+    "email": "info@kemperhouse.com",
+    "phone": "(440) 461-0600",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmql0xbpv000ur7jcxxgh999r",
+    "name": "Vista Springs Ravinia Estate",
+    "op": "send",
+    "email": "Leads@VistaSpringsLiving.com",
+    "phone": "(216) 232-4900",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmqqrkg080016rlmbu76acaxz",
+    "name": "Haven at Lakewood",
+    "op": "send",
+    "email": "havenatlakewood.sales@npseniorliving.com",
+    "phone": "(216) 228-2266",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmqqrljyy0060rlmbvjs0wgdy",
+    "name": "StoryPoint Medina East",
+    "op": "send",
+    "email": "marketing@csig.com",
+    "phone": "330-590-5647",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmqqrlker0062rlmbwi0mpuvs",
+    "name": "StoryPoint Medina West",
+    "op": "send",
+    "email": "marketing@csig.com",
+    "phone": "330-661-9786",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmqqrlclc0054rlmb2o5awfyo",
+    "name": "Danbury Mentor",
+    "op": "send",
+    "email": "marketing@csig.com",
+    "phone": "440-762-7072",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmqqrlfa4005grlmbkwkcolv9",
+    "name": "Salida Woods Assisted Living",
+    "op": "send",
+    "email": "salidawoods.sales@npseniorliving.com",
+    "phone": "440-257-3866",
+    "confidence": "HIGH",
+    "inPilot": true
+  },
+  {
+    "homeId": "cmql0xbps000sr7jcpmmboica",
+    "name": "Symphony at Mentor",
+    "op": "clear",
+    "phone": "440-207-9714"
+  },
+  {
+    "homeId": "cmqqrka8c000irlmb28e0u22z",
+    "name": "Brookdale Middleburg Heights",
+    "op": "send",
+    "email": "kcordek@paramountsl.net",
+    "phone": "440-887-1125",
+    "confidence": "HIGH",
+    "inPilot": true
+  },
+  {
+    "homeId": "cmqqrllu60068rlmb2s9y5s9m",
+    "name": "Ohman Family Living at Briar",
+    "op": "send",
+    "email": "info@ohmanfamilyliving.com",
+    "phone": "440-632-5241",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmqqrklgi001urlmbljqiw9p7",
+    "name": "O'Neill Healthcare North Olmsted",
+    "op": "send",
+    "email": "Dir.sales@oneillhc.com",
+    "phone": "440-808-5500",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmqqrl80y004krlmb33c3lq4a",
+    "name": "Danbury North Ridgeville",
+    "op": "send",
+    "email": "marketing@csig.com",
+    "phone": "440-745-7513",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmp71kmta0024lpioz3wfhely",
+    "name": "O'Neill Healthcare North Ridgeville",
+    "op": "send",
+    "email": "Dir.sales@oneillhc.com",
+    "phone": "440-808-5500",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmqqrkinf001irlmbmyyu5cc2",
+    "name": "Legacy Place - Parma",
+    "op": "send",
+    "email": "info@lhshealth.com",
+    "phone": "440-845-0200",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmql0xbp9000gr7jcpmm4c9ps",
+    "name": "Bloom at Rocky River",
+    "op": "send",
+    "email": "cdecker@bloomseniorliving.com",
+    "phone": "440-356-9797",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmql0xbpc000ir7jc3zf5c77q",
+    "name": "Meadow Falls of Rocky River",
+    "op": "send",
+    "email": "info@meadowfallsseniorliving.com",
+    "phone": "440-356-2282",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmqqrko6c0026rlmbp4r307ll",
+    "name": "Sunrise at Shaker Heights",
+    "op": "hold"
+  },
+  {
+    "homeId": "cmql0xboz000ar7jcfnjgumpm",
+    "name": "Solon Pointe",
+    "op": "dup"
+  },
+  {
+    "homeId": "cmqqrkna30022rlmb9tsdrvzm",
+    "name": "Solon Pointe at Emerald Ridge",
+    "op": "send",
+    "email": "info@solonpointehc.com",
+    "phone": "440-498-3000",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmqqrkrtz002mrlmbmx9iuuvz",
+    "name": "Brookdale Stow",
+    "op": "send",
+    "email": "info@edenvistastow.com",
+    "phone": "(330) 342-0934",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmqqrkh90001crlmbnexxgwqj",
+    "name": "Kemper House Strongsville",
+    "op": "send",
+    "email": "info@kemperhouse.com",
+    "phone": "(440) 846-1100",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmql0xbpj000mr7jctdsu6m7n",
+    "name": "Vitalia Strongsville",
+    "op": "clear",
+    "phone": "(440) 878-3737"
+  },
+  {
+    "homeId": "cmqqrkxjg003arlmbw6qywbk9",
+    "name": "Heather Knoll Retirement Village",
+    "op": "hold"
+  },
+  {
+    "homeId": "cmqqrkyi2003erlmbg1lq5e3x",
+    "name": "Legacy Place - Twinsburg",
+    "op": "hold"
+  },
+  {
+    "homeId": "cmqqrkze8003irlmbe65ithsz",
+    "name": "Maplewood at Twinsburg",
+    "op": "send",
+    "email": "twinsburged@maplewoodsl.com",
+    "phone": "330-840-7404",
+    "confidence": "HIGH",
+    "inPilot": true
+  },
+  {
+    "homeId": "cmqqrlbrc0050rlmbdpf37w19",
+    "name": "Brookdale Wickliffe",
+    "op": "send",
+    "email": "info@meadowfallsseniorliving.com",
+    "phone": "(440) 943-2050",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  },
+  {
+    "homeId": "cmqqrlc5m0052rlmbbocwczdc",
+    "name": "Brookdale Willoughby",
+    "op": "send",
+    "email": "info@mapleridgeseniorliving.com",
+    "phone": "(440) 269-8600",
+    "confidence": "MEDIUM",
+    "inPilot": false
+  }
+]
