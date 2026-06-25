@@ -263,6 +263,11 @@ Each loop: what it is, why it matters, what done looks like.
 - **What shipped:** **#609** gates public phone to operator-claimed homes only (unclaimed listings show the inquiry path, protecting the claim-nudge funnel). **#610** codifies an AL/RCF-only publish policy directly in `publish-directory-homes.ts` — homes with no ASSISTED/MEMORY_CARE careLevel (SNF-primary) are skipped and stay DRAFT (Cedarwood Plaza, Gardens of Western Reserve held on the go-live run). **#611/#612/#613** delivered the verified-address + rebrand + stale-description batches that unblocked the publish (see OL-083 follow-up #1). Net go-live: **22 DRAFT→ACTIVE**.
 - **Note:** rename safety confirmed — home detail routes are id-based, `name` is non-unique, directory homes have no slug, so renaming a published listing is non-breaking.
 
+### OL-091: Possible duplicate — "Ohman Family Living at Briar" (DRAFT pending vs ACTIVE)
+- **Status:** 🟡 OPEN — spotted 2026-06-24 (night) in the post-publish `report-directory-homes.ts` dump.
+- **What:** Two rows share the name "Ohman Family Living at Briar": an **ACTIVE** Middlefield listing (id `cmqqrllu60068rlmb2s9y5s9m`, the Batch B rebrand of "Briar Hill Health Care Residence", #612) and an older **DRAFT "(pending)"** row (id `cmp71kmsl001ilpiovrsvq7zu`, no city/address). The DRAFT pending row looks like a stale seed duplicate of the now-active facility. (Note: "Briarcliff Manor" / "Briar Hill" / Ohman "Holly Hill" are nearby but distinct Ohman properties — verify before merging anything.)
+- **Done when:** confirm the DRAFT "(pending)" row is a true duplicate of the ACTIVE one (vs a separate Ohman property), then archive/delete it so it can't be accidentally published or claimed.
+
 ### OL-027: Provider listing fee ($99/mo)
 - **Status:** ✅ CLOSED (2026-05-02)
 - Schema fields + migration, Stripe Checkout + Customer Portal APIs, webhook handler, visibility gate in marketplace API, billing UI at `/settings/provider/billing`. Requires `STRIPE_PRICE_PROVIDER_LISTING` env var in Render.
