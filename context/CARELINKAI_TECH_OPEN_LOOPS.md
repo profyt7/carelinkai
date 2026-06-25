@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-06-24 (OL-080 closed — phone/tagline persisted, 82 phones live)_
+_Last updated: 2026-06-24 (night) — directory go-live: +22 ACTIVE; phone gated to claimed listings; AL/RCF-only publish policy_
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -209,7 +209,7 @@ Each loop: what it is, why it matters, what done looks like.
   - **#592 (C7)** `scripts/publish-directory-homes.ts` — quality-gated DRAFT→ACTIVE publisher (dry-run default).
   - **#593** branded `HomeImagePlaceholder` + photo-aware "Claim & add photos" nudge.
 - **Follow-ups (non-blocking, post-launch):**
-  1. **~24 directory homes held without addresses** (publish gate: missing street/zip). Two groups: (a) ~9 *correct* homes held on a city-label technicality where Google's municipality ≠ the seeded city (Judson Park & Cedarwood Plaza = Cleveland vs Cleveland Heights; Marymount Place, Pleasant Lake Villa, Light of Hearts Villa, Arden Courts of Chagrin Falls, South Franklin Circle, Pines at Brooks House, Vitalia Montrose) — rescuable by relaxing the city check or hand-setting their address; (b) un-anchored older Tier-A names not in the metro list (Slovene, Welsh, Windsor House, St Joseph Center, Avenue at Lyndhurst, Resorts at Daughters of Miriam, Ancora, Autumn Hills, Thistle House, Ohman ×2, Inn at the Pines, Divine Living) — these hit the "no seeded state" guard; anchor them (city/OH) and re-run.
+  1. **~24 directory homes held without addresses** — ✅ **largely resolved 2026-06-24 (night).** Two verified-address batches shipped + published: **Batch A** (#611, `backfill-verified-addresses.ts`) wrote addresses to 11 OPEN current-name homes; **Batch B** (#612, `rebrand-and-address-batch-b.ts`) renamed + addressed 11 rebranded homes; **#613** cleaned the one stale description (Eliza). `publish-directory-homes.ts --force` then took **22 DRAFT→ACTIVE**. Remaining held: **Altercare St Joseph** (CLOSED 2019 → see OL-088), **Brookdale Medina North** (address medium-confidence → see OL-089), **Princeton Place** (no confident OH match), **Montefiore** (now SNF, out of AL/RCF scope per OL-090 policy). _Original detail:_ two groups — (a) ~9 *correct* homes held on a city-label technicality where Google's municipality ≠ the seeded city; (b) un-anchored older Tier-A names not in the metro list hitting the "no seeded state" guard.
   2. **5 same-city cross-matches held** via `hold-crossmatch-homes.ts` (reverted to DRAFT, street/zip cleared): Brookdale Gardens at Westlake, Homestead I, StoryPoint Medina West, Elmcroft of Medina, Gardens of Western Reserve. Need a correct address (or operator claim) before re-publish.
   3. **20 SNF-primary rows** held out of the seed pending `ltc.ohio.gov` verification — re-run `seed-cleveland-metro.ts --include-unverified` for any that carry a real AL/RCF wing.
   4. **Text-enrich — ✅ DONE 2026-06-23 (evening).** URLs cleaned via `verify-directory-websites.ts` (#601: 12 nulled rebrands, 11 refreshed, 95 kept) + 2 manual name-collision nulls (Princeton Place→LA, Vista Springs Macedonia→Ravinia), then `autopopulate-cohort.ts --from-db --include-unpopulated --include-active --force` enriched 90/105 (HIGH/MEDIUM), $8.47, **text only**. See OL-084 (13 JS-rendered homes still un-enriched) and OL-085 (photos never imported).
@@ -247,6 +247,21 @@ Each loop: what it is, why it matters, what done looks like.
   2. **PENDING-review gate for directory claims** — directory-sentinel claims land in a `PENDING` state requiring a quick admin OK before the listing flips to the new owner (approval-before instead of detection-after).
   3. **Listing edit-history / snapshots** — capture description/amenities/careLevel/photos versions so a defaced listing can be rolled back; pairs with an admin "revert to version N" action.
 - **Done when:** at least the domain-match guard + a rollback path exist, or the founder explicitly accepts the current email-trust model as sufficient and closes this.
+
+### OL-088: Archive closed facility — Altercare at Saint Joseph Center
+- **Status:** 🟡 OPEN — logged 2026-06-24 (night). Low urgency (currently invisible), but worth a real fix.
+- **What:** "Altercare at Saint Joseph Center" (id `cmqqrk7gu0006rlmb2nfqnrvn`) is **CLOSED since Nov 2019** (Crain's + Cleveland Jewish News). It was deliberately excluded from the Batch B rebrand PR (#612). Right now it stays out of the public directory **only because it has no street/zip** — the publish gate holds it. That's incidental, not intentional: if anyone later backfills an address, it would publish a defunct facility.
+- **Done when:** the home is given an explicit non-publishable status (archived/closed flag, or hard-deleted) so it can never flip to ACTIVE, independent of whether it has an address.
+
+### OL-089: Re-verify Brookdale Medina North → Medina Pointe address, then publish
+- **Status:** 🟡 OPEN — logged 2026-06-24 (night).
+- **What:** "Brookdale Medina North" (id `cmqqrlg91005krlmbyqjdxy5t`) is a real OPEN home that has rebranded to **Medina Pointe Senior Living**, but the address found during Batch B was only **medium-confidence**, so it was intentionally held out of #612. Held today by missing street/zip.
+- **Done when:** address re-verified against the operator site + a 2nd source, applied (extend the Batch B script's TARGETS or a one-off), and `publish-directory-homes.ts --force` takes it ACTIVE (→ +1 listing).
+
+### OL-090: AL/RCF-only publish policy (codified) + verified-address batches
+- **Status:** ✅ CLOSED 2026-06-24 (night).
+- **What shipped:** **#609** gates public phone to operator-claimed homes only (unclaimed listings show the inquiry path, protecting the claim-nudge funnel). **#610** codifies an AL/RCF-only publish policy directly in `publish-directory-homes.ts` — homes with no ASSISTED/MEMORY_CARE careLevel (SNF-primary) are skipped and stay DRAFT (Cedarwood Plaza, Gardens of Western Reserve held on the go-live run). **#611/#612/#613** delivered the verified-address + rebrand + stale-description batches that unblocked the publish (see OL-083 follow-up #1). Net go-live: **22 DRAFT→ACTIVE**.
+- **Note:** rename safety confirmed — home detail routes are id-based, `name` is non-unique, directory homes have no slug, so renaming a published listing is non-breaking.
 
 ### OL-027: Provider listing fee ($99/mo)
 - **Status:** ✅ CLOSED (2026-05-02)

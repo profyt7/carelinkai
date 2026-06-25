@@ -2,6 +2,25 @@
 
 ---
 
+### 2026-06-24 (night) — Directory go-live: phone gating, AL/RCF policy, verified addresses + rebrands (#609–#613)
+
+- **Objective:** "Do it all" — take the held DRAFT directory cohort live: gate phone to claimed listings, codify an AL/RCF-only publish policy, give the held homes verified addresses (incl. the rebranded ones), then publish.
+- **Work completed (5 PRs, all squash-merged to main, full CI green):**
+  - **#609 — phone gated to claimed listings.** Public phone now renders only on operator-claimed homes; unclaimed directory listings show the inquiry path instead (prevents families calling an unstaffed directory row, and protects the claim-nudge funnel).
+  - **#610 — AL/RCF-only publish policy.** `publish-directory-homes.ts` now skips SNF-primary homes (no ASSISTED/MEMORY_CARE careLevel) — they stay DRAFT instead of going live as out-of-scope listings. Codifies the scope rule in the publisher itself.
+  - **#611 — Batch A verified addresses (`backfill-verified-addresses.ts`, NEW).** 11 OPEN, current-name, two-source-verified homes that were held only by a missing street/zip. Guarded (id + status=DRAFT), dry-run default, idempotent, marks address fields VERIFIED. Founder ran `--force` on Render → 11 written. Includes 3 city corrections (South Franklin Circle Bainbridge→Chagrin Falls, Van Gorder Manor Elyria→Willoughby, Pines at Brooks House Burton→Hiram).
+  - **#612 — Batch B rename + verified addresses (`rebrand-and-address-batch-b.ts`, NEW).** 11 OPEN homes seeded under brands since renamed/sold; updates BOTH display name AND full address so families find the current name. Each verified against operator site + a 2nd source. Includes a **stale-description guard** (flags, never rewrites, when the old brand token survives in the description). Founder ran `--force` → 11 written; one ⚠ (Eliza). Held (not in PR): Brookdale Medina North (address medium-confidence), Altercare St Joseph (CLOSED since 2019), Princeton Place (no confident OH match), Montefiore (now SNF, out of scope).
+  - **#613 — stale Eliza description fix (`fix-stale-descriptions-batch-b.ts`, NEW).** The one ⚠ from #612: "Eliza at Chagrin Falls" (fka Weils of Bainbridge) still carried `(Note: aka The Weils)` + old municipality "Bainbridge". Regenerates a clean, brand-neutral description from the same seed template with corrected city/county; guarded by status=DRAFT + presence of a stale token (never clobbers a human-edited desc); idempotent; marks description VERIFIED. Founder ran `--force` → 1 written.
+- **Publish (Render `publish-directory-homes.ts --force`):** of 28 DRAFT OH listings → **22 published DRAFT→ACTIVE**, 4 held (missing address: Altercare-closed, Brookdale Medina North, Princeton Place, Montefiore), 2 skipped as SNF-only (Cedarwood Plaza, Gardens of Western Reserve at Cuyahoga Falls). All 22 carry verified names + addresses; all have ASSISTED or MEMORY_CARE.
+- **Files changed:** `scripts/backfill-verified-addresses.ts` (NEW), `scripts/rebrand-and-address-batch-b.ts` (NEW), `scripts/fix-stale-descriptions-batch-b.ts` (NEW), plus the #609/#610 publish-policy + phone-gating changes, plus this docs wrap (`context/*`).
+- **Commands run (Render prod):** dry-run + `--force` for each of `backfill-verified-addresses.ts`, `rebrand-and-address-batch-b.ts`, `fix-stale-descriptions-batch-b.ts`, then `publish-directory-homes.ts` dry-run + `--force`.
+- **Tests/build status:** all 5 PRs green on full CI (quality + build-and-test + e2e + migrate-deploy); `tsc --noEmit` clean. Script-only DB writes (no schema migration this session).
+- **Deployment impact:** Render auto-deployed each PR; prod DB mutated by the Render runs (22 homes ACTIVE, 11 addresses, 11 renames, 1 description). No app-runtime regression risk — renames are id-routed, name is non-unique, directory homes have no slug.
+- **New risks/blockers:** none new. Two cleanups remain (below).
+- **Recommended next step:** (1) **Archive Altercare St Joseph** explicitly (confirmed CLOSED 2019; currently held only by missing address — add a non-publishable status so it can never accidentally go live). (2) **Re-verify Brookdale Medina North → Medina Pointe** address, then publish (→ +1 ACTIVE). Then resume OL-059 capacity verification.
+
+---
+
 ### 2026-06-24 — OL-080 closed: enrich persists phone/contactEmail/tagline (#607)
 
 - **Objective:** Highest-leverage facility item after the directory launch — the enrich pipeline extracted phone/contactEmail/tagline but discarded them, so all ~90 listings lacked public phone/tagline.
