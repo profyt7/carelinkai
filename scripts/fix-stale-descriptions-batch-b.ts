@@ -65,6 +65,16 @@ const FIXES: Fix[] = [
     careTypes: 'assisted living, memory care, skilled nursing',
     staleTokens: ['Weils', 'Weil'],
   },
+  {
+    // OL-089 — Brookdale Medina North → Medina Pointe Senior Living. No-op unless the
+    // seeded description actually carries the old brand token (the guard skips otherwise).
+    id: 'cmqqrlg91005krlmbyqjdxy5t',
+    name: 'Medina Pointe Senior Living',
+    city: 'Medina',
+    county: 'Medina',
+    careTypes: 'assisted living, memory care',
+    staleTokens: ['Brookdale'],
+  },
 ];
 
 async function main() {
