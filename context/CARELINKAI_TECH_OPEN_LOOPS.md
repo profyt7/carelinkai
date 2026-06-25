@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-06-24 (night) — directory go-live: +22 ACTIVE; phone gated to claimed listings; AL/RCF-only publish policy_
+_Last updated: 2026-06-25 — claim-nudge pilot SENT (13 HIGH); directory deduped to 163; 61 contacts loaded; OL-088/089/091 closed_
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -249,12 +249,12 @@ Each loop: what it is, why it matters, what done looks like.
 - **Done when:** at least the domain-match guard + a rollback path exist, or the founder explicitly accepts the current email-trust model as sufficient and closes this.
 
 ### OL-088: Archive closed facility — Altercare at Saint Joseph Center
-- **Status:** 🟡 OPEN — logged 2026-06-24 (night). Low urgency (currently invisible), but worth a real fix.
+- **Status:** ✅ CLOSED 2026-06-25 — `archive-stale-directory-homes.ts` (#615) set it INACTIVE on Render (founder ran `--force`); permanently non-publishable now.
 - **What:** "Altercare at Saint Joseph Center" (id `cmqqrk7gu0006rlmb2nfqnrvn`) is **CLOSED since Nov 2019** (Crain's + Cleveland Jewish News). It was deliberately excluded from the Batch B rebrand PR (#612). Right now it stays out of the public directory **only because it has no street/zip** — the publish gate holds it. That's incidental, not intentional: if anyone later backfills an address, it would publish a defunct facility.
 - **Done when:** the home is given an explicit non-publishable status (archived/closed flag, or hard-deleted) so it can never flip to ACTIVE, independent of whether it has an address.
 
 ### OL-089: Re-verify Brookdale Medina North → Medina Pointe address, then publish
-- **Status:** 🟡 OPEN — logged 2026-06-24 (night).
+- **Status:** ✅ CLOSED 2026-06-25 — address re-verified to two sources (49-A Leisure Ln, Medina 44256; Sinceri's Medina Pointe Senior Living), added as Batch B's 12th target (#615), renamed + addressed + published on Render → directory reached 168.
 - **What:** "Brookdale Medina North" (id `cmqqrlg91005krlmbyqjdxy5t`) is a real OPEN home that has rebranded to **Medina Pointe Senior Living**, but the address found during Batch B was only **medium-confidence**, so it was intentionally held out of #612. Held today by missing street/zip.
 - **Done when:** address re-verified against the operator site + a 2nd source, applied (extend the Batch B script's TARGETS or a one-off), and `publish-directory-homes.ts --force` takes it ACTIVE (→ +1 listing).
 
@@ -263,10 +263,27 @@ Each loop: what it is, why it matters, what done looks like.
 - **What shipped:** **#609** gates public phone to operator-claimed homes only (unclaimed listings show the inquiry path, protecting the claim-nudge funnel). **#610** codifies an AL/RCF-only publish policy directly in `publish-directory-homes.ts` — homes with no ASSISTED/MEMORY_CARE careLevel (SNF-primary) are skipped and stay DRAFT (Cedarwood Plaza, Gardens of Western Reserve held on the go-live run). **#611/#612/#613** delivered the verified-address + rebrand + stale-description batches that unblocked the publish (see OL-083 follow-up #1). Net go-live: **22 DRAFT→ACTIVE**.
 - **Note:** rename safety confirmed — home detail routes are id-based, `name` is non-unique, directory homes have no slug, so renaming a published listing is non-breaking.
 
-### OL-091: Possible duplicate — "Ohman Family Living at Briar" (DRAFT pending vs ACTIVE)
-- **Status:** 🟡 OPEN — spotted 2026-06-24 (night) in the post-publish `report-directory-homes.ts` dump.
-- **What:** Two rows share the name "Ohman Family Living at Briar": an **ACTIVE** Middlefield listing (id `cmqqrllu60068rlmb2s9y5s9m`, the Batch B rebrand of "Briar Hill Health Care Residence", #612) and an older **DRAFT "(pending)"** row (id `cmp71kmsl001ilpiovrsvq7zu`, no city/address). The DRAFT pending row looks like a stale seed duplicate of the now-active facility. (Note: "Briarcliff Manor" / "Briar Hill" / Ohman "Holly Hill" are nearby but distinct Ohman properties — verify before merging anything.)
-- **Done when:** confirm the DRAFT "(pending)" row is a true duplicate of the ACTIVE one (vs a separate Ohman property), then archive/delete it so it can't be accidentally published or claimed.
+### OL-091: Duplicate directory listings (same facility seeded twice)
+- **Status:** ✅ CLOSED 2026-06-25 — the DRAFT-pending Ohman-at-Briar twin was archived via #615; then Cowork's research surfaced 5 more ACTIVE duplicate pairs, all resolved by `dedupe-directory-homes.ts` (#617, founder ran `--force`): Briarcliff Manor=Ohman at Briar, Harbor Court=Meadow Falls of Rocky River, Cuyahoga Falls Danbury Woods=Danbury Woods, Solon Pointe=Solon Pointe at Emerald Ridge, Sunrise at Shaker Heights=The Woodlands of Shaker Heights, Ohman at Holly=Holly Hill. Directory 168→**163**. Keeper-must-be-ACTIVE guard ensured no facility was orphaned.
+- **Residual:** Nason Center of Breckenridge Village vs Ohio Living Breckenridge Village left for manual review (possible-only; Nason is the SNF health center, likely a distinct unit) — see OL-093.
+
+### OL-092: Claim-nudge pilot — measure, then scale to MEDIUM tier (+ CAN-SPAM)
+- **Status:** 🟡 OPEN — pilot SENT 2026-06-25. The proactive batch sender (`scripts/send-claim-nudges.ts`, #618) emailed the **13 HIGH-confidence** operators their claim invite via Resend (honest "claim your free listing" copy + signed 45-day token + 24h throttle).
+- **What's next:**
+  1. **Measure (~3–5 business days):** `npx tsx scripts/report-claim-funnel.ts` (#619) reports how many nudged homes were claimed (ownership left the directory sentinel). Opens/clicks live in the Resend dashboard.
+  2. **Deliverability:** confirm getcarelinkai.com is Verified in Resend (DKIM/SPF) — almost certainly yes (domain already sends prod transactional), but eyeball before the bigger blast.
+  3. **CAN-SPAM before scaling:** the pilot uses reply-to-opt-out; add a real **unsubscribe link + physical postal address** to `sendDirectoryClaimInviteEmail()` before the MEDIUM blast.
+  4. **Scale:** if claim rate is healthy, `send-claim-nudges.ts --tier medium --force` reaches the ~50 MEDIUM contacts. Then the 92 phone-only homes become a VA call list (export via `report-directory-homes.ts --csv`).
+- **Done when:** pilot measured; CAN-SPAM unsubscribe shipped; MEDIUM tier sent; claim conversion tracked.
+
+### OL-093: Remaining directory data-quality (rebrands, SNF/category, stale URLs)
+- **Status:** 🟡 OPEN — surfaced by Cowork's 2026-06-25 research pass.
+- **What:**
+  1. **Rebrand renames** — `rename-rebranded-homes.ts` (#619) renames 12 ACTIVE listings still showing a defunct brand (Brookdale Stow→Eden Vista Stow, Belvedere of Westlake→Saint Therese of Westlake, HarborChase of Shaker Heights→StoryPoint Shaker Heights, etc.). Run on Render after #619 merges. **Held:** Brookdale Richmond Heights→Richmond Heights Place (Cowork: confirm operator).
+  2. **SNF/category flags (~15)** — listings Cowork flagged as primarily skilled-nursing/rehab, weak AL fit (Avenue at Macedonia, Landerbrook Transitional Care, Heather Knoll, Park East, Oaks of Brecksville, Heritage of Hudson, etc.). Review against the AL/RCF-only policy (#610); reclassify or retire those without a real AL/RCF wing.
+  3. **Stale/wrong website URLs (3)** — Ivy House (magnoliaresidence URL is wrong → ivyhouseassistedliving.com), Brookdale Willoughby (points to brookdale-wickliffe → maple ridge), Homestead I (Saber URL is the wrong record).
+  4. **Nason Center vs Ohio Living Breckenridge Village** — confirm distinct (Nason = SNF health center on the campus) or merge.
+- **Done when:** renames applied; SNF-only rows reconciled; the 3 URLs corrected; Nason/Breckenridge resolved.
 
 ### OL-027: Provider listing fee ($99/mo)
 - **Status:** ✅ CLOSED (2026-05-02)
