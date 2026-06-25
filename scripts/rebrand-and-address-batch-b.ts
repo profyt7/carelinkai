@@ -49,7 +49,8 @@ type Target = {
 };
 
 // Batch B — OPEN, rebranded, two-source-verified (2026-06-24).
-// Brookdale Medina North is intentionally NOT here (address medium-confidence; held for re-verify).
+// Brookdale Medina North added 2026-06-25 (OL-089) after its address was re-verified to two
+// independent sources (49-A Leisure Ln); it was originally held out as medium-confidence.
 const TARGETS: Target[] = [
   {
     id: 'cmqqrlgra005mrlmbn1qbtn2q', oldName: 'Brookdale Medina South', newName: 'Traditions of Medina',
@@ -105,6 +106,11 @@ const TARGETS: Target[] = [
     id: 'cmqqrkq2y002erlmbedkk2hfa', oldName: 'Briarwood', newName: 'The Briarwood Healthcare Community',
     street: '3700 Englewood Dr', city: 'Stow', state: 'OH', zipCode: '44224',
     staleTokens: [], source: 'thebriarwood.com + caring.com (open AL/MC/SNF, Stow)',
+  },
+  {
+    id: 'cmqqrlg91005krlmbyqjdxy5t', oldName: 'Brookdale Medina North', newName: 'Medina Pointe Senior Living',
+    street: '49-A Leisure Ln', city: 'Medina', state: 'OH', zipCode: '44256',
+    staleTokens: ['Brookdale'], source: 'seniorlivingguide.com (49-A Leisure Ln) + aplaceformom.com — Medina Pointe (fka Brookdale Medina North), Sinceri Senior Living (OL-089 re-verify)',
   },
 ];
 

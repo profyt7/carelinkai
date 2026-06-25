@@ -26,6 +26,11 @@
  *   npx tsx scripts/report-directory-homes.ts                 # all directory homes
  *   npx tsx scripts/report-directory-homes.ts --unenriched    # only enriched=no
  *   npx tsx scripts/report-directory-homes.ts --tsv           # tab-separated (paste to a sheet)
+ *   npx tsx scripts/report-directory-homes.ts --csv           # RFC-4180 CSV (quoted; save as a .csv)
+ *   npx tsx scripts/report-directory-homes.ts --active-only   # only status=ACTIVE (the live unclaimed listings)
+ *
+ * For the Cowork outreach handoff, the clean export is:
+ *   npx tsx scripts/report-directory-homes.ts --csv --active-only
  */
 
 import { PrismaClient } from '@prisma/client';
@@ -34,9 +39,16 @@ const prisma = new PrismaClient();
 
 const SEED_USER_EMAIL = 'directory-unclaimed@carelinkai.system';
 
+/** Quote a value for RFC-4180 CSV (wrap in quotes, double any internal quotes). */
+function csvCell(v: string): string {
+  return `"${String(v).replace(/"/g, '""')}"`;
+}
+
 async function main() {
   const unenrichedOnly = process.argv.includes('--unenriched');
   const tsv = process.argv.includes('--tsv');
+  const csv = process.argv.includes('--csv');
+  const activeOnly = process.argv.includes('--active-only');
 
   const seedUser = await prisma.user.findUnique({ where: { email: SEED_USER_EMAIL } });
   const seedOperator = seedUser
@@ -52,6 +64,7 @@ async function main() {
     where: {
       operatorId: seedOperator.id,
       ...(unenrichedOnly ? { autoPopulatedAt: null } : {}),
+      ...(activeOnly ? { status: 'ACTIVE' } : {}),
     },
     select: {
       id: true,
@@ -75,8 +88,14 @@ async function main() {
     website: h.websiteUrl ?? '',
   }));
 
-  if (tsv) {
-    console.log(['homeId', 'name', 'city', 'status', 'enriched', 'phone', 'website'].join('\t'));
+  const header = ['homeId', 'name', 'city', 'status', 'enriched', 'phone', 'website'] as const;
+  if (csv) {
+    console.log(header.map(csvCell).join(','));
+    for (const r of rows) {
+      console.log([r.homeId, r.name, r.city, r.status, r.enriched, r.phone, r.website].map(csvCell).join(','));
+    }
+  } else if (tsv) {
+    console.log(header.join('\t'));
     for (const r of rows) {
       console.log([r.homeId, r.name, r.city, r.status, r.enriched, r.phone, r.website].join('\t'));
     }
@@ -85,10 +104,14 @@ async function main() {
   }
 
   const enrichedCount = homes.filter((h) => h.autoPopulatedAt).length;
-  console.log(
-    `\n${homes.length} directory home(s)${unenrichedOnly ? ' (unenriched only)' : ''}: ` +
-    `${enrichedCount} enriched, ${homes.length - enrichedCount} not enriched.`,
-  );
+  // Suppress the trailing summary in machine-readable modes so the output is a clean paste/file.
+  if (!csv && !tsv) {
+    console.log(
+      `\n${homes.length} directory home(s)` +
+      `${unenrichedOnly ? ' (unenriched only)' : ''}${activeOnly ? ' (active only)' : ''}: ` +
+      `${enrichedCount} enriched, ${homes.length - enrichedCount} not enriched.`,
+    );
+  }
 }
 
 main()
