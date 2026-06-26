@@ -51,13 +51,13 @@ const MAX_PAGE_SIZE = 50;
  * NOTE: keep the list static so the assignment is deterministic across requests.
  */
 const PLACEHOLDER_IMAGES: string[] = [
-  'https://res.cloudinary.com/dygtsnu8z/image/upload/v1782506192/carelinkai/placeholders/placeholder-1.jpg',
-  'https://res.cloudinary.com/dygtsnu8z/image/upload/v1782506195/carelinkai/placeholders/placeholder-2.jpg',
+  'https://res.cloudinary.com/dygtsnu8z/image/upload/v1782507649/carelinkai/placeholders/placeholder-1.jpg',
+  'https://res.cloudinary.com/dygtsnu8z/image/upload/v1782507654/carelinkai/placeholders/placeholder-2.jpg',
   'https://res.cloudinary.com/dygtsnu8z/image/upload/v1782506198/carelinkai/placeholders/placeholder-3.jpg',
-  'https://res.cloudinary.com/dygtsnu8z/image/upload/v1782506202/carelinkai/placeholders/placeholder-4.jpg',
-  'https://res.cloudinary.com/dygtsnu8z/image/upload/v1782506206/carelinkai/placeholders/placeholder-5.jpg',
-  'https://res.cloudinary.com/dygtsnu8z/image/upload/v1782506210/carelinkai/placeholders/placeholder-6.jpg',
-  'https://res.cloudinary.com/dygtsnu8z/image/upload/v1782506240/carelinkai/placeholders/placeholder-7.jpg',
+  'https://res.cloudinary.com/dygtsnu8z/image/upload/v1782507657/carelinkai/placeholders/placeholder-4.jpg',
+  'https://res.cloudinary.com/dygtsnu8z/image/upload/v1782507662/carelinkai/placeholders/placeholder-5.jpg',
+  'https://res.cloudinary.com/dygtsnu8z/image/upload/v1782507667/carelinkai/placeholders/placeholder-6.jpg',
+  'https://res.cloudinary.com/dygtsnu8z/image/upload/v1782507672/carelinkai/placeholders/placeholder-7.jpg',
   'https://res.cloudinary.com/dygtsnu8z/image/upload/v1782506214/carelinkai/placeholders/placeholder-8.jpg',
   'https://res.cloudinary.com/dygtsnu8z/image/upload/v1782506217/carelinkai/placeholders/placeholder-9.jpg',
   'https://res.cloudinary.com/dygtsnu8z/image/upload/v1782506222/carelinkai/placeholders/placeholder-10.jpg',
