@@ -649,7 +649,7 @@ export default function EditHomePage() {
                     className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                     value={form.city}
                     onChange={(e) => handleInputChange('city', e.target.value)}
-                    placeholder="Seattle"
+                    placeholder="Cleveland"
                   />
                 </div>
 

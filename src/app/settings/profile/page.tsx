@@ -1611,7 +1611,7 @@ export default function ProfileSettings() {
                 type="text"
                 name="coverageAreaCities"
                 id="coverageAreaCities"
-                placeholder="Seattle, Bellevue, Redmond"
+                placeholder="Cleveland, Lakewood, Beachwood"
                 value={(formData.coverageArea?.cities || []).join(", ")}
                 onChange={(e) => {
                   const cities = e.target.value.split(",").map(c => c.trim()).filter(c => c);

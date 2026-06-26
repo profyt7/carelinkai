@@ -596,7 +596,7 @@ function SearchPageContent() {
               <FiSearch className="text-neutral-400" />
               <input
                 type="text"
-                placeholder="Try 'Memory care near San Francisco' or 'Assisted living under $5000'"
+                placeholder="Try 'Memory care near Beachwood' or 'Assisted living with a garden under $5,000 in Lakewood'"
                 value={naturalQuery}
                 onChange={(e) => handleNaturalQueryChange(e.target.value)}
                 className="w-full border-none py-3 pl-2 text-sm focus:outline-none focus:ring-0"
@@ -1376,7 +1376,7 @@ function SearchPageContent() {
                   <FiMessageCircle className="mr-1 inline" /> Search Tips
                 </h3>
                 <p className="text-xs text-neutral-600">
-                  Try natural language searches like "memory care near San Francisco" or "assisted living with garden under $5000". 
+                  Try natural language searches like "memory care near Beachwood" or "assisted living with a garden under $5,000 in Lakewood".
                   Our AI will understand your needs and find the best matches.
                 </p>
               </div>

@@ -368,7 +368,7 @@ export default function NewHomePage() {
                     }`}
                     value={form.city}
                     onChange={(e) => handleInputChange('city', e.target.value)}
-                    placeholder="Seattle"
+                    placeholder="Cleveland"
                   />
                   {errors.city && (
                     <p className="mt-1 text-sm text-error-600">{errors.city}</p>
