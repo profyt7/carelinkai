@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-06-26 — claim-nudge SCALE WAVE SENT (28 collapsed emails → 46 homes); ~59 homes / ~41 operators contacted. Now measuring conversion._
+_Last updated: 2026-06-26 — INCIDENT resolved: 11 demo/test homes archived from prod directory (now 144 real OH); seed prod-guard added (#629/#630); /search Suspense fix._
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -282,6 +282,14 @@ Each loop: what it is, why it matters, what done looks like.
 
 ### OL-095: Multi-home claim from one collapsed email
 - **Status:** ✅ CLOSED 2026-06-26 (#625). The collapse (#624) sends a shared-inbox operator one email with N claim links; the single-use `seededHomeId` guard previously let them claim only the first. New `/claim?token=` landing page verifies the signed token and, for the already-signed-in addressed operator, re-arms `seededHomeId` (existing `/api/operator/claim`) → onboarding step 2 claims it (image-rights ack + transfer). First-timers fall through to the unchanged register/redeem flow. Sentinel-owned safety check; transfer endpoint + its e2e untouched.
+
+### OL-096: INCIDENT — demo/test homes leaked into prod directory (resolved)
+- **Status:** ✅ CLOSED 2026-06-26 (#629 + #630). **11 demo/test homes were ACTIVE in the production directory, ranking on family `/search`.** Archived (status → INACTIVE, NOT deleted — kept for the OL-068 How-To recordings) via `scripts/archive-demo-test-homes.ts --force`: directory dropped from 155 → **144 real OH "Unclaimed Listings" homes**; re-run dry-run confirmed 0 junk remaining.
+- **The 11:** E2E Test Home, DeepAgent Test Home, Sunshine Care Home (CA), and 8 out-of-state city homes (Sunny Meadows/MA, Harbor View/FL, Peaceful Pines/CO, Rose Garden/OR, Golden Years/IL, Veterans Care/CA, Lakeside Rehab/WA, Comfort Care/AZ) — operators "Sunshine Valley Care" / "CareLink Services Inc."
+- **Root cause:** the CLI seed scripts had **no production guard**, so running a demo/test seed against the prod `DATABASE_URL` (e.g. on the Render shell) injected test data. CI e2e was already safe (seeds a localhost Postgres — the June "43 test homes" fix holds).
+- **Guard shipped (#629):** `prisma/seed-guard.ts` `assertSeedAllowed()` refuses to run unless the target DB host is local, unless `ALLOW_PROD_SEED=1`; wired into seed-e2e / seed-simple / seed-demo. Plus a data-layer guard inside `runDemoSeed()` (blocked in prod unless `ALLOW_DEMO_SEED_IN_PROD=1`). **Rule going forward: demo/test seeds only run with a local DATABASE_URL** (or an explicit allow-flag for a known non-prod remote).
+- **Also fixed (#629):** `/search` `useSearchParams()` wrapped in `<Suspense>` — a cold first load was intermittently hitting the global "Something went wrong" error boundary and only working on retry.
+- **Reversal:** to restore a demo home for recording, flip its status back to ACTIVE (the rows are intact).
 
 ### OL-093: Remaining directory data-quality (rebrands, SNF/category, stale URLs)
 - **Status:** 🟡 OPEN — mostly resolved 2026-06-25; 2 items remain.
