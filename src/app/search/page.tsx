@@ -1226,12 +1226,18 @@ function SearchPageContent() {
                           {/* Price + actions */}
                           <div className="mt-auto flex items-center justify-between">
                             <div>
-                              <span className="text-lg font-semibold text-neutral-800">
-                                {home.priceRange.formattedMin || "$0"}
-                              </span>
-                              <span className="text-sm text-neutral-500">
-                                {" - "}{home.priceRange.formattedMax || "$0"}/mo
-                              </span>
+                              {home.priceRange.formattedMin ? (
+                                <>
+                                  <span className="text-lg font-semibold text-neutral-800">
+                                    {home.priceRange.formattedMin}
+                                  </span>
+                                  <span className="text-sm text-neutral-500">
+                                    {home.priceRange.formattedMax ? ` - ${home.priceRange.formattedMax}/mo` : "/mo"}
+                                  </span>
+                                </>
+                              ) : (
+                                <span className="text-sm font-medium text-neutral-500">Price on request</span>
+                              )}
                             </div>
 
                             <div className="flex items-center space-x-2">
