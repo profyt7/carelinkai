@@ -55,7 +55,9 @@ function claimUrl(homeId: string, operatorEmail: string, secret: string): string
     { operatorEmail: operatorEmail.toLowerCase(), homeId, clevelandFounder: true, iat: now, exp: now + DEFAULT_CLAIM_TOKEN_TTL_HOURS * 3600 },
     secret,
   );
-  return `${appUrl()}/auth/register?role=OPERATOR&claimToken=${encodeURIComponent(token)}`;
+  // → /claim landing page: works for first-timers (redirects to register/redeem) AND for
+  //   already-signed-in operators (re-arm + claim), so one collapsed email can claim many homes.
+  return `${appUrl()}/claim?token=${encodeURIComponent(token)}`;
 }
 
 function unsubscribeUrl(email: string, secret: string): string {
