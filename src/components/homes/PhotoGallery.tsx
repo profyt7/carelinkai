@@ -11,6 +11,7 @@ import {
   FiGrid
 } from 'react-icons/fi';
 import HomeImagePlaceholder from './HomeImagePlaceholder';
+import { PLACEHOLDER_CAPTION } from '@/lib/placeholder-images';
 
 export interface Photo {
   id: string;
@@ -21,11 +22,18 @@ export interface Photo {
 interface PhotoGalleryProps {
   photos: Photo[];
   initialIndex?: number;
+  /**
+   * When there are no real photos, show this representative stand-in image
+   * (deterministic per home) with an honest caption, instead of the blank
+   * "Photos coming soon" box. Real photos always take precedence.
+   */
+  placeholderImageUrl?: string;
 }
 
-const PhotoGallery: React.FC<PhotoGalleryProps> = ({ 
-  photos, 
-  initialIndex = 0 
+const PhotoGallery: React.FC<PhotoGalleryProps> = ({
+  photos,
+  initialIndex = 0,
+  placeholderImageUrl,
 }) => {
   const [activeIndex, setActiveIndex] = useState(initialIndex);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -147,8 +155,26 @@ const PhotoGallery: React.FC<PhotoGalleryProps> = ({
     setIsLoading(false);
   };
 
-  // If no photos, show a clean branded placeholder (not a broken image).
+  // If no real photos: prefer a representative stand-in image (deterministic per
+  // home) with an honest caption; fall back to the branded box if none supplied.
   if (!photos.length) {
+    if (placeholderImageUrl) {
+      return (
+        <div className="relative h-64 w-full overflow-hidden rounded-lg bg-neutral-100 md:h-96">
+          <Image
+            src={placeholderImageUrl}
+            alt="Representative senior-living photo (no operator photo yet)"
+            fill
+            sizes="(max-width: 768px) 100vw, 50vw"
+            className="object-cover"
+            priority
+          />
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
+            <p className="text-xs text-white/90">{PLACEHOLDER_CAPTION}</p>
+          </div>
+        </div>
+      );
+    }
     return <HomeImagePlaceholder className="h-64 w-full rounded-lg md:h-96" />;
   }
 
