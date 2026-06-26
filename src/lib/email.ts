@@ -250,44 +250,72 @@ export async function sendInquiryClaimNudgeEmail(args: {
  * PROACTIVE directory claim invite (distinct from sendInquiryClaimNudgeEmail).
  *
  * Used by the batch claim-nudge sender to invite an operator to claim their free
- * directory listing — BEFORE any family inquiry exists. The copy is therefore
- * honest about the context: it does NOT claim "families are trying to reach you"
- * (that wording belongs only to the inquiry-triggered nudge). It states plainly
- * that the facility is listed and can be claimed for free.
+ * directory listing(s) — BEFORE any family inquiry exists. Copy is honest about the
+ * context (it does NOT say "families are trying to reach you").
  *
- * Includes a clear opt-out line (reply to be removed) and the sender identity for
- * basic CAN-SPAM hygiene. Fire-and-forget: returns false on any failure.
+ * COLLAPSED BY ADDRESS: one email per unique recipient. When the recipient operates
+ * multiple unclaimed communities (e.g. a corporate marketing inbox), every community is
+ * listed with its OWN claim link, so the recipient can claim all of them from one email.
+ *
+ * CAN-SPAM: includes a working one-click unsubscribe link, the company physical mailing
+ * address (caller-supplied — the batch sender refuses to run if it's unset), and clear
+ * sender identity. Sets the List-Unsubscribe + List-Unsubscribe-Post (RFC 8058) headers
+ * so Gmail/Apple Mail render a native one-click unsubscribe. Returns false on any failure.
  */
 export async function sendDirectoryClaimInviteEmail(args: {
-  facilityName: string;
   toEmail: string;
-  claimUrl: string;
+  communities: { name: string; claimUrl: string }[];
+  unsubscribeUrl: string;
+  postalAddress: string;
 }): Promise<boolean> {
-  const facilityName = args.facilityName?.trim() || 'your community';
+  const communities = (args.communities ?? []).filter((c) => c?.name && c?.claimUrl);
+  if (communities.length === 0) return false;
+  const multi = communities.length > 1;
   try {
     if (!process.env.RESEND_API_KEY) {
       console.error('[Resend] RESEND_API_KEY not configured — skipping directory claim invite');
       return false;
     }
-    const safeFacility = escapeHtml(facilityName);
-    const subject = `Claim your free ${APP_NAME} listing for ${facilityName}`;
+    const subject = multi
+      ? `Claim your ${communities.length} free ${APP_NAME} listings`
+      : `Claim your free ${APP_NAME} listing for ${communities[0].name}`;
+
+    const intro =
+      `${multi ? 'Your communities are' : `${communities[0].name} is`} listed on CareLinkAI, the ` +
+      `senior-care discovery platform helping Greater Cleveland families find assisted living and memory care.`;
+    const ask = multi
+      ? `Claim each free listing (about 2 minutes each) to manage the profile, add photos and details, and respond to family inquiries:`
+      : `Claim your free listing in about 2 minutes to manage your profile, add photos and details, and respond to family inquiries:`;
+
+    // ----- plain text -----
+    const textLines = communities.map((c) => `• ${c.name}: ${c.claimUrl}`).join('\n');
     const text =
-      `${facilityName} is listed on CareLinkAI, the senior-care discovery platform helping ` +
-      `Greater Cleveland families find assisted living and memory care.\n\n` +
-      `Claim your free listing in about 2 minutes to manage your profile, add photos and ` +
-      `details, and respond to family inquiries:\n${args.claimUrl}\n\n` +
-      `There is no cost to claim or to keep your listing. If you're not the right person at ` +
-      `${facilityName}, please forward this to whoever manages marketing or admissions.\n\n` +
-      `If you'd prefer not to receive these, just reply "remove" and we'll take you off the list.\n` +
-      `— The CareLinkAI team, Cleveland, OH`;
+      `${intro}\n\n${ask}\n\n${textLines}\n\n` +
+      `There is no cost to claim or to keep a listing. If you're not the right person, please ` +
+      `forward this to whoever manages marketing or admissions.\n\n` +
+      `---\n` +
+      `${APP_NAME} · ${args.postalAddress}\n` +
+      `Unsubscribe (you won't be emailed about these listings again): ${args.unsubscribeUrl}`;
+
+    // ----- html -----
+    const ctas = communities
+      .map(
+        (c) =>
+          `<p style="margin:10px 0"><a href="${escapeHtml(c.claimUrl)}" style="display:inline-block;background:#0d9488;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:600">Claim ${escapeHtml(c.name)}</a></p>`,
+      )
+      .join('\n');
     const html = `
 <!DOCTYPE html>
 <html><body style="font-family:Arial,sans-serif;color:#1f2937;line-height:1.5">
-  <p><strong>${safeFacility}</strong> is listed on CareLinkAI, the senior-care discovery platform helping Greater Cleveland families find assisted living and memory care.</p>
-  <p>Claim your free listing in about 2 minutes to manage your profile, add photos and details, and respond to family inquiries:</p>
-  <p><a href="${escapeHtml(args.claimUrl)}" style="display:inline-block;background:#0d9488;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600">Claim ${safeFacility}</a></p>
-  <p style="color:#6b7280;font-size:13px">There is no cost to claim or to keep your listing. If you're not the right person at ${safeFacility}, please forward this to whoever manages marketing or admissions.</p>
-  <p style="color:#9ca3af;font-size:12px">If you'd prefer not to receive these, just reply &ldquo;remove&rdquo; and we'll take you off the list.<br/>— The CareLinkAI team, Cleveland, OH</p>
+  <p>${escapeHtml(intro)}</p>
+  <p>${escapeHtml(ask)}</p>
+  ${ctas}
+  <p style="color:#6b7280;font-size:13px">There is no cost to claim or to keep a listing. If you're not the right person, please forward this to whoever manages marketing or admissions.</p>
+  <hr style="border:none;border-top:1px solid #e5e7eb;margin:20px 0"/>
+  <p style="color:#9ca3af;font-size:12px">
+    ${APP_NAME} · ${escapeHtml(args.postalAddress)}<br/>
+    <a href="${escapeHtml(args.unsubscribeUrl)}" style="color:#9ca3af">Unsubscribe</a> — you won't be emailed about these listings again.
+  </p>
 </body></html>`;
 
     const { data, error } = await resend.emails.send({
@@ -296,13 +324,17 @@ export async function sendDirectoryClaimInviteEmail(args: {
       subject,
       text,
       html,
+      headers: {
+        'List-Unsubscribe': `<${args.unsubscribeUrl}>, <mailto:${FROM_EMAIL}?subject=unsubscribe>`,
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+      },
     });
 
     if (error) {
       console.error('[Resend] Error sending directory claim invite:', error);
       captureError(
         error instanceof Error ? error : new Error(String((error as { message?: string })?.message ?? error)),
-        { tags: { feature: 'directory-claim-invite' }, extra: { facilityName } }
+        { tags: { feature: 'directory-claim-invite' }, extra: { toEmail: args.toEmail, count: communities.length } }
       );
       return false;
     }
@@ -312,7 +344,7 @@ export async function sendDirectoryClaimInviteEmail(args: {
     console.error('[Resend] Exception sending directory claim invite:', error);
     captureError(error instanceof Error ? error : new Error(String(error)), {
       tags: { feature: 'directory-claim-invite' },
-      extra: { facilityName },
+      extra: { toEmail: args.toEmail },
     });
     return false;
   }
