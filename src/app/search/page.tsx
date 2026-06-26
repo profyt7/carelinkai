@@ -140,6 +140,36 @@ function SearchPageContent() {
   
   // State for search results
   const [searchResponse, setSearchResponse] = useState<SearchResponse | null>(null);
+
+  // Map view plots ALL matching homes (not just the current page) — fetched as lightweight
+  // markers from /api/search?markers=1 with the same filters. Grid/list stay paginated.
+  const [mapMarkers, setMapMarkers] = useState<any[] | null>(null);
+  useEffect(() => {
+    if (viewType !== "map") return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const qp = new URLSearchParams();
+        if (filters.query) qp.set("q", String(filters.query));
+        if (filters.location) qp.set("location", String(filters.location));
+        (filters.careLevels ?? []).forEach((l) => qp.append("careLevel", l));
+        if (filters.priceMin) qp.set("priceMin", String(filters.priceMin));
+        if (filters.priceMax) qp.set("priceMax", String(filters.priceMax));
+        if (filters.gender) qp.set("gender", String(filters.gender));
+        if (filters.availability) qp.set("availability", "true");
+        if (filters.verified) qp.set("verified", "true");
+        if (filters.radius) qp.set("radius", String(filters.radius));
+        qp.set("markers", "1");
+        const res = await fetch(`/api/search?${qp.toString()}`, { cache: "no-store" });
+        if (!res.ok) return;
+        const j = await res.json();
+        if (!cancelled) setMapMarkers(Array.isArray(j?.markers) ? j.markers : []);
+      } catch {
+        if (!cancelled) setMapMarkers(null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [viewType, filters, searchResponse]);
   
   // State for loading status
   const [isLoading, setIsLoading] = useState(false);
@@ -1119,11 +1149,11 @@ function SearchPageContent() {
               </div>
             )}
             
-            {/* Map view */}
-            {!isLoading && viewType === "map" && searchResults.length > 0 && (
+            {/* Map view — plots ALL matching homes (markers), not just the current page */}
+            {!isLoading && viewType === "map" && (mapMarkers ?? searchResults).length > 0 && (
               <div className="h-[calc(100vh-12rem)] w-full">
                 <SimpleMap
-                  homes={searchResults as any}
+                  homes={(mapMarkers ?? searchResults) as any}
                   onToggleFavorite={handleToggleFavorite}
                   favorites={Array.from(favoriteIds)}
                 />

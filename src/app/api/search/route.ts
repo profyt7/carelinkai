@@ -552,6 +552,10 @@ export async function GET(request: NextRequest) {
       MAX_PAGE_SIZE
     );
     const offset = (page - 1) * limit;
+    // Map view: return ALL matching homes (lightweight markers), unpaginated, so the map
+    // plots the full result set instead of just the current page. Capped for safety.
+    const markersOnly = searchParams.get('markers') === '1';
+    const MARKERS_MAX = 1000;
 
     // New Phase-1 query params
     const radius = searchParams.get('radius')
@@ -680,8 +684,8 @@ export async function GET(request: NextRequest) {
               take: 1
             }
           },
-          skip: offset,
-          take: limit
+          skip: markersOnly ? 0 : offset,
+          take: markersOnly ? MARKERS_MAX : limit
         }),
         prisma.assistedLivingHome.count({
           where: whereClause
@@ -691,6 +695,36 @@ export async function GET(request: NextRequest) {
       console.error('DB query failed, falling back to mocks:', dbErr);
       homes = [];
       totalCount = 0;
+    }
+
+    // Map view: return lightweight markers for ALL matching homes (no pagination, no AI
+    // scoring / favorites / image work) so the map can plot the full result set.
+    if (markersOnly) {
+      const markers = homes.map((home: any) => {
+        const dbCoords = home.address?.latitude && home.address?.longitude
+          ? { lat: home.address.latitude, lng: home.address.longitude }
+          : null;
+        const coordinates = dbCoords
+          || (home.address ? getApproximateCoordinates(home.address.city, home.address.state) : null);
+        return {
+          id: home.id,
+          name: home.name,
+          careLevel: home.careLevel,
+          priceRange: {
+            min: home.priceMin ? Number(home.priceMin) : null,
+            max: home.priceMax ? Number(home.priceMax) : null,
+            formattedMin: home.priceMin ? formatCurrency(Number(home.priceMin)) : null,
+          },
+          coordinates,
+          address: home.address ? {
+            street: home.address.street,
+            city: home.address.city,
+            state: home.address.state,
+            coordinates,
+          } : null,
+        };
+      });
+      return NextResponse.json({ markers, total: totalCount });
     }
 
     // --- favourites ----
