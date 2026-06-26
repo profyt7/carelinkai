@@ -38,7 +38,7 @@ import {
 } from "react-icons/fi";
 import { Camera, MessageSquare } from "lucide-react";
 
-import DashboardLayout from "@/components/layout/DashboardLayout";
+import BrowseShell from "@/components/layout/BrowseShell";
 import TourRequestModal from "@/components/tours/TourRequestModal";
 // Import our new components
 import PhotoGallery from "@/components/homes/PhotoGallery";
@@ -704,26 +704,26 @@ export default function HomeDetailPage() {
 
     if (loadError) {
       return (
-        <DashboardLayout title="Home Details">
+        <BrowseShell title="Home Details">
           <div className="p-4 md:p-6">
             <div className="rounded-lg border border-error-200 bg-error-50 p-6">
               <h2 className="text-lg font-semibold text-error-700 mb-2">Could not load listing</h2>
               <p className="text-error-700">{loadError}</p>
             </div>
           </div>
-        </DashboardLayout>
+        </BrowseShell>
       );
     }
 
     if (!realHome) {
       return (
-        <DashboardLayout title="Home Details">
+        <BrowseShell title="Home Details">
           <div className="p-4 md:p-6">
             <div className="rounded-lg border border-neutral-200 bg-white p-6">
               <p className="text-neutral-600">No data found.</p>
             </div>
           </div>
-        </DashboardLayout>
+        </BrowseShell>
       );
     }
 
@@ -733,7 +733,7 @@ export default function HomeDetailPage() {
     const photos = (realHome.photos || []).map((p: any) => ({ id: p.id, url: p.url, caption: p.caption || '' }));
 
     return (
-      <DashboardLayout title={`Home Details - ${realHome.name}`}>
+      <BrowseShell title={`Home Details - ${realHome.name}`}>
         <div className="min-h-screen bg-neutral-50 pb-28">
           {/* Sticky top nav */}
           <div className="sticky top-0 z-20 bg-white shadow-sm">
@@ -1292,12 +1292,12 @@ export default function HomeDetailPage() {
             </div>
           </div>
         </div>
-      </DashboardLayout>
+      </BrowseShell>
     );
   }
   
   return (
-    <DashboardLayout title={`Home Details - ${home.name}`}>
+    <BrowseShell title={`Home Details - ${home.name}`}>
     <div className="min-h-screen bg-neutral-50 pb-28">
       {/* Back button */}
       <div className="sticky top-0 z-20 bg-white shadow-sm">
@@ -2290,6 +2290,6 @@ export default function HomeDetailPage() {
         }}
       />
     </div>
-    </DashboardLayout>
+    </BrowseShell>
   );
 }
