@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-06-25 — claim-nudge pilot SENT (13 HIGH); directory deduped to 163; 61 contacts loaded; OL-088/089/091 closed_
+_Last updated: 2026-06-25 (late) — SEND_READY backfill applied; HOLD review resolved; directory ~155 ACTIVE; rebrands done; scale wave (46) parked_
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -268,22 +268,28 @@ Each loop: what it is, why it matters, what done looks like.
 - **Residual:** Nason Center of Breckenridge Village vs Ohio Living Breckenridge Village left for manual review (possible-only; Nason is the SNF health center, likely a distinct unit) — see OL-093.
 
 ### OL-092: Claim-nudge pilot — measure, then scale to MEDIUM tier (+ CAN-SPAM)
-- **Status:** 🟡 OPEN — pilot SENT 2026-06-25. The proactive batch sender (`scripts/send-claim-nudges.ts`, #618) emailed the **13 HIGH-confidence** operators their claim invite via Resend (honest "claim your free listing" copy + signed 45-day token + 24h throttle).
+- **Status:** 🟡 OPEN — pilot SENT 2026-06-25 (13 HIGH via `send-claim-nudges.ts`, #618). **Outreach data finalized** via the SEND_READY backfill (`load-outreach-send-ready.ts`, #621, founder ran `--force`): **59 verified emails** set (13 pilot + **46 scale wave LOADED but not sent**); **5 hard-bounced cleared → CALL-ONLY** (Arden Courts Parma/Bath, Vitalia Strongsville, Village of the Falls, Symphony at Mentor); 4 dup + 10 hold emails suppressed.
 - **What's next:**
-  1. **Measure (~3–5 business days):** `npx tsx scripts/report-claim-funnel.ts` (#619) reports how many nudged homes were claimed (ownership left the directory sentinel). Opens/clicks live in the Resend dashboard.
-  2. **Deliverability:** confirm getcarelinkai.com is Verified in Resend (DKIM/SPF) — almost certainly yes (domain already sends prod transactional), but eyeball before the bigger blast.
+  1. **Measure (~3–5 business days):** `npx tsx scripts/report-claim-funnel.ts` (#619) reports how many nudged homes were claimed. Opens/clicks live in the Resend dashboard.
+  2. **Resend suppression:** confirm the 5–7 bounced addresses are on Resend's suppression list (dashboard — engineering can't touch it from the repo env). Also confirm getcarelinkai.com is Verified (DKIM/SPF).
   3. **CAN-SPAM before scaling:** the pilot uses reply-to-opt-out; add a real **unsubscribe link + physical postal address** to `sendDirectoryClaimInviteEmail()` before the MEDIUM blast.
-  4. **Scale:** if claim rate is healthy, `send-claim-nudges.ts --tier medium --force` reaches the ~50 MEDIUM contacts. Then the 92 phone-only homes become a VA call list (export via `report-directory-homes.ts --csv`).
-- **Done when:** pilot measured; CAN-SPAM unsubscribe shipped; MEDIUM tier sent; claim conversion tracked.
+  4. **Send the scale wave:** the **46 MEDIUM-tier contacts are loaded and parked** — `send-claim-nudges.ts --tier medium --force` fires them on the founder's go. Then the phone-only homes become a VA call list (export via `report-directory-homes.ts --csv`).
+- **Done when:** pilot measured; CAN-SPAM unsubscribe shipped; scale wave sent; claim conversion tracked.
 
 ### OL-093: Remaining directory data-quality (rebrands, SNF/category, stale URLs)
-- **Status:** 🟡 OPEN — surfaced by Cowork's 2026-06-25 research pass.
-- **What:**
-  1. **Rebrand renames** — `rename-rebranded-homes.ts` (#619) renames 12 ACTIVE listings still showing a defunct brand (Brookdale Stow→Eden Vista Stow, Belvedere of Westlake→Saint Therese of Westlake, HarborChase of Shaker Heights→StoryPoint Shaker Heights, etc.). Run on Render after #619 merges. **Held:** Brookdale Richmond Heights→Richmond Heights Place (Cowork: confirm operator).
-  2. **SNF/category flags (~15)** — listings Cowork flagged as primarily skilled-nursing/rehab, weak AL fit (Avenue at Macedonia, Landerbrook Transitional Care, Heather Knoll, Park East, Oaks of Brecksville, Heritage of Hudson, etc.). Review against the AL/RCF-only policy (#610); reclassify or retire those without a real AL/RCF wing.
-  3. **Stale/wrong website URLs (3)** — Ivy House (magnoliaresidence URL is wrong → ivyhouseassistedliving.com), Brookdale Willoughby (points to brookdale-wickliffe → maple ridge), Homestead I (Saber URL is the wrong record).
-  4. **Nason Center vs Ohio Living Breckenridge Village** — confirm distinct (Nason = SNF health center on the campus) or merge.
-- **Done when:** renames applied; SNF-only rows reconciled; the 3 URLs corrected; Nason/Breckenridge resolved.
+- **Status:** 🟡 OPEN — mostly resolved 2026-06-25; 2 items remain.
+- **Done this session:**
+  1. ✅ **Rebrand renames** — `rename-rebranded-homes.ts` (#619, founder ran `--force`) renamed the 12 ACTIVE listings to current brands (Eden Vista Stow, Saint Therese of Westlake, StoryPoint Shaker Heights, Lorain Estates, Maple Ridge, Middleburg Heights Assisted Living, etc.). **Held:** Brookdale Richmond Heights→Richmond Heights Place (confirm operator).
+  2. ✅ **SNF/category + HOLD review** — `archive-hold-resolved-homes.ts` (#622, founder ran `--force`) archived **6 pure-SNF** (Park East, Oaks of Brecksville, Heritage of Hudson, Avenue at Macedonia, Landerbrook, Heather Knoll) + **3 dups** (Legacy Place-Twinsburg→keep Canterbury Commons; Nason→keep Ohio Living Breckenridge Village; Sunrise already INACTIVE) → INACTIVE. **Nason/Breckenridge resolved** (Nason archived). Directory settled to **~155 ACTIVE**.
+- **Remaining:**
+  1. **Stale/wrong website URLs (3)** — Ivy House (magnoliaresidence URL wrong → ivyhouseassistedliving.com), Brookdale Willoughby/Maple Ridge (points to brookdale-wickliffe), Homestead I (Saber URL is the wrong record).
+  2. **Brookdale Richmond Heights → Richmond Heights Place** — held rename pending operator confirmation.
+- **Done when:** the 3 URLs corrected; Richmond Heights rename confirmed + applied.
+
+### OL-094: The Elms / Hudson Elms — confirm AL wing still admitting (ops call)
+- **Status:** 🟡 OPEN — non-engineering. Kept ACTIVE as CALL-ONLY in the 2026-06-25 HOLD review.
+- **What:** "The Elms Assisted Living" (id `cmp71kmty002mlpion9nyi9d2`, Hudson) has a real 25-suite AL wing (+50 SNF), but the brand now markets as "Hudson Elms Skilled Nursing & Rehab." Before actively promoting it (or building outreach), one phone call to confirm the AL wing is still admitting.
+- **Done when:** founder/VA confirms AL availability by phone; promote or retire accordingly.
 
 ### OL-027: Provider listing fee ($99/mo)
 - **Status:** ✅ CLOSED (2026-05-02)
