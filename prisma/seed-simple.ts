@@ -14,10 +14,12 @@ import {
   HomeStatus,
   CareLevel,
 } from '@prisma/client';
+import { assertSeedAllowed } from './seed-guard';
 
 const prisma = new PrismaClient();
 
 async function main() {
+  assertSeedAllowed('seed-simple'); // never write demo homes to a remote/prod DB
   console.log('Starting database seed...');
 
   // Create admin user
