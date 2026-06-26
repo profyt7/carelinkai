@@ -54,6 +54,22 @@ const SimpleMap = dynamic(
   { ssr: false }
 );
 
+// Readable care-level phrase for GENERAL (clearly non-facility-specific) empty-state copy.
+const CARE_LEVEL_WORDS: Record<string, string> = {
+  ASSISTED: "assisted living",
+  MEMORY_CARE: "memory care",
+  INDEPENDENT: "independent living",
+  SKILLED_NURSING: "skilled nursing",
+};
+function careLevelPhrase(levels: unknown): string {
+  const arr = Array.isArray(levels) ? (levels as string[]) : [];
+  const mapped = arr.map((l) => CARE_LEVEL_WORDS[l]).filter(Boolean);
+  if (mapped.length === 0) return "senior care";
+  if (mapped.length === 1) return mapped[0];
+  if (mapped.length === 2) return `${mapped[0]} and ${mapped[1]}`;
+  return `${mapped.slice(0, -1).join(", ")}, and ${mapped[mapped.length - 1]}`;
+}
+
 // Mock data for a single home
 const MOCK_HOME = {
   id: "home_1",
@@ -981,7 +997,21 @@ export default function HomeDetailPage() {
                       )}
                     </div>
                   ) : (
-                    <div className="rounded-lg border border-neutral-200 bg-white p-6 text-neutral-500">No amenities listed.</div>
+                    <div className="rounded-lg border border-neutral-200 bg-white p-6">
+                      <p className="text-neutral-600">
+                        Specific amenities haven&apos;t been added to this listing yet. Communities offering{" "}
+                        {careLevelPhrase(realHome.careLevel)} typically provide assistance with daily living,
+                        meals, housekeeping, and social activities — though offerings vary by community.
+                      </p>
+                      {realHome.unclaimed && (
+                        <a
+                          href="/auth/register?role=OPERATOR"
+                          className="mt-3 inline-flex items-center rounded-md border border-primary-600 px-3 py-1.5 text-sm font-semibold text-primary-700 hover:bg-primary-50"
+                        >
+                          Claim this listing to add verified amenities
+                        </a>
+                      )}
+                    </div>
                   )}
                 </div>
 
@@ -1016,7 +1046,23 @@ export default function HomeDetailPage() {
                         </div>
                       </>
                     ) : (
-                      <p className="text-neutral-600">Contact the facility directly for current pricing.</p>
+                      <div>
+                        <p className="font-medium text-neutral-700">Pricing isn&apos;t published for this listing yet.</p>
+                        <p className="mt-1 text-sm text-neutral-600">
+                          Monthly costs depend on care level, room type, and the services each resident needs.
+                          {realHome.unclaimed
+                            ? " Operators can add current pricing by claiming this free listing."
+                            : " Contact the community for a current quote."}
+                        </p>
+                        {realHome.unclaimed && (
+                          <a
+                            href="/auth/register?role=OPERATOR"
+                            className="mt-3 inline-flex items-center rounded-md border border-primary-600 px-3 py-1.5 text-sm font-semibold text-primary-700 hover:bg-primary-50"
+                          >
+                            Claim this listing to add pricing
+                          </a>
+                        )}
+                      </div>
                     )}
                     {/* Financing CTA */}
                     <div className="mt-4 rounded-lg bg-amber-50 border border-amber-200 p-4 flex items-start gap-3">
