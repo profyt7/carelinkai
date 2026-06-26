@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
+import toast from "react-hot-toast";
 import Link from "next/link";
 import { 
   FiSearch, 
@@ -37,7 +39,7 @@ import {
   getFavorites,
   toggleFavorite,
 } from "@/lib/favoritesService";
-import DashboardLayout from "@/components/layout/DashboardLayout";
+import BrowseShell from "@/components/layout/BrowseShell";
 import SearchFilters from "@/components/search/SearchFilters";
 import HomeCompareModal from "@/components/family/HomeCompareModal";
 import dynamic from "next/dynamic";
@@ -84,6 +86,8 @@ function SearchPageContent() {
   // Search params and router for query handling
   const searchParams = useSearchParams();
   const router = useRouter();
+  // Auth status — anonymous families can browse + inquire; saving prompts signup.
+  const { status: authStatus } = useSession();
   // Runtime mock toggle fetched from API
   const [showMock, setShowMock] = useState(false);
   useEffect(() => {
@@ -163,8 +167,9 @@ function SearchPageContent() {
   // ---- Favorites -----------------------------------------------------------------
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
 
-  // Fetch favorites once (or when session changes in future)
+  // Fetch favorites once — only for signed-in families (the API 401s for anon).
   useEffect(() => {
+    if (authStatus !== "authenticated") return;
     async function fetchFavorites() {
       try {
         const favs = await getFavorites();
@@ -174,14 +179,35 @@ function SearchPageContent() {
       }
     }
     fetchFavorites();
-  }, []);
+  }, [authStatus]);
 
   const handleToggleFavorite = async (homeId: string, e?: React.MouseEvent) => {
     if (e) {
       e.preventDefault(); // prevent link navigation
       e.stopPropagation(); // prevent bubbling
     }
-    
+
+    // Anonymous visitors can browse freely, but saving requires an account —
+    // trigger signup here (not a login wall on browsing).
+    if (authStatus !== "authenticated") {
+      toast(
+        (t) => (
+          <span>
+            Create a free account to save homes.{" "}
+            <a
+              href="/auth/register"
+              className="font-semibold text-teal-700 underline"
+              onClick={() => toast.dismiss(t.id)}
+            >
+              Sign up
+            </a>
+          </span>
+        ),
+        { duration: 6000 },
+      );
+      return;
+    }
+
     // optimistic UI
     setFavoriteIds((prev) => {
       const newSet = new Set(prev);
@@ -587,7 +613,7 @@ function SearchPageContent() {
   };
   
   return (
-    <DashboardLayout title="Search Homes" showSearch={false}>
+    <BrowseShell title="Search Homes" showSearch={false}>
       <div className="p-4 md:p-6">
         {/* Natural language search bar */}
         <div className="relative mb-6">
@@ -1597,7 +1623,7 @@ function SearchPageContent() {
           </div>
         </div>
       )}
-    </DashboardLayout>
+    </BrowseShell>
   );
 }
 

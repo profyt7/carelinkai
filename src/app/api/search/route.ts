@@ -123,7 +123,16 @@ function getApproximateCoordinates(city: string | null, state: string | null): {
       };
     }
   }
-  
+
+  // Final fallback: the directory is Greater-Cleveland-only, so an unlisted OH city (or a
+  // home with no state) defaults to a Cleveland-metro point — NOT the state centroid /
+  // central Ohio — so any future coord-less home stays local instead of drifting away.
+  // (All current homes have real geocoded coords; this only guards future gaps.)
+  if (!state || state.toLowerCase() === 'oh' || state.toLowerCase() === 'ohio') {
+    const offset = () => (Math.random() - 0.5) * 0.1; // ~5km jitter within the metro
+    return { lat: 41.4993 + offset(), lng: -81.6944 + offset() }; // downtown Cleveland
+  }
+
   return null;
 }
 
