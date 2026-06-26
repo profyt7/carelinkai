@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-06-26 — INCIDENT resolved: 11 demo/test homes archived from prod directory (now 144 real OH); seed prod-guard added (#629/#630); /search Suspense fix._
+_Last updated: 2026-06-26 — family-facing prod fixes shipped (OL-097): anonymous public browse (#635), 144 home map coords re-geocoded (#634), no-price markers (#633). Directory 144 real OH. Founder TODO: rotate demo.* passwords._
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -290,6 +290,13 @@ Each loop: what it is, why it matters, what done looks like.
 - **Guard shipped (#629):** `prisma/seed-guard.ts` `assertSeedAllowed()` refuses to run unless the target DB host is local, unless `ALLOW_PROD_SEED=1`; wired into seed-e2e / seed-simple / seed-demo. Plus a data-layer guard inside `runDemoSeed()` (blocked in prod unless `ALLOW_DEMO_SEED_IN_PROD=1`). **Rule going forward: demo/test seeds only run with a local DATABASE_URL** (or an explicit allow-flag for a known non-prod remote).
 - **Also fixed (#629):** `/search` `useSearchParams()` wrapped in `<Suspense>` — a cold first load was intermittently hitting the global "Something went wrong" error boundary and only working on retry.
 - **Reversal:** to restore a demo home for recording, flip its status back to ACTIVE (the rows are intact).
+
+### OL-097: Family-facing production fixes — public browse + map coords + price markers (resolved)
+- **Status:** ✅ CLOSED 2026-06-26 (#633 C, #634 B, #635 A). Three getcarelinkai.com family-facing issues.
+- **A — anonymous public browse (#635):** logged-out families hitting `/search` or `/homes/[id]` were redirected to `/auth/login` (member `DashboardLayout` client-redirect; `/homes/[id]` also edge-blocked) — a login wall on what should be public. Fix: new `PublicShell` (minimal anon chrome) + `BrowseShell` (session-aware: authenticated → DashboardLayout, anon/loading → PublicShell); `/search` + `/homes/[id]` wrap in BrowseShell; `/homes` added to middleware public lists; anon Save → signup toast (signup only at save/inquiry, never a browse wall); server-side auth-gate layouts added for `/background-checks` + `/messages`. **A#1 verified: production does NOT leak sessions** — anon gets no session (mockSession null in prod, mocks ADMIN-only); the observed "demo.family on /search" was a sticky browser cookie, not a leak. **A#4 (founder TODO): rotate the demo.\* prod passwords** (low urgency; no auto-login / no data exposure).
+- **B — wrong map coordinates (#634):** ALL 144 ACTIVE homes had NULL `Address.latitude/longitude` (seed never geocoded), so `/api/search` fell back to a city table / centroid → everything clustered in central Ohio (East Park showed 40.42,-82.84). Fix: `scripts/audit-home-coordinates.ts` flagged all 144 (out of metro box) and `--force` re-geocoded each via Google Places, writing only in-box results: **144 fixed, 0 skipped** (~$5 one-time). Map now shows real NE-Ohio locations live (no deploy needed — `dbCoords` wins). Fallback default also repointed central-OH → Cleveland-metro (future coord-less homes stay local).
+- **C — price markers (#633):** unclaimed (no-price) listings showed a confusing `$?` map bubble and `$0 - $0/mo` card. Fix: map marker shows the facility initial when no price; popup + card show "Price on request".
+- **Known follow-up (out of scope today):** the `/homes/[id]` favorite button is a local no-op stub (doesn't persist) — separate pre-existing bug if detail-page saves are wanted.
 
 ### OL-093: Remaining directory data-quality (rebrands, SNF/category, stale URLs)
 - **Status:** 🟡 OPEN — mostly resolved 2026-06-25; 2 items remain.
