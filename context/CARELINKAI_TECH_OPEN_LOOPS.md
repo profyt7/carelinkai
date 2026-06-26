@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-06-26 — family-facing prod fixes shipped (OL-097): anonymous public browse (#635), 144 home map coords re-geocoded (#634), no-price markers (#633). Directory 144 real OH. Founder TODO: rotate demo.* passwords._
+_Last updated: 2026-06-26 — /search polish shipped (OL-098): distinct deterministic placeholders (#638) + full-result map (#637); 418 real photos enriched. Prior: OL-097 public browse/map coords/price markers. Founder TODO: rotate demo.* passwords; incognito-verify anon /search._
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -297,6 +297,13 @@ Each loop: what it is, why it matters, what done looks like.
 - **B — wrong map coordinates (#634):** ALL 144 ACTIVE homes had NULL `Address.latitude/longitude` (seed never geocoded), so `/api/search` fell back to a city table / centroid → everything clustered in central Ohio (East Park showed 40.42,-82.84). Fix: `scripts/audit-home-coordinates.ts` flagged all 144 (out of metro box) and `--force` re-geocoded each via Google Places, writing only in-box results: **144 fixed, 0 skipped** (~$5 one-time). Map now shows real NE-Ohio locations live (no deploy needed — `dbCoords` wins). Fallback default also repointed central-OH → Cleveland-metro (future coord-less homes stay local).
 - **C — price markers (#633):** unclaimed (no-price) listings showed a confusing `$?` map bubble and `$0 - $0/mo` card. Fix: map marker shows the facility initial when no price; popup + card show "Price on request".
 - **Known follow-up (out of scope today):** the `/homes/[id]` favorite button is a local no-op stub (doesn't persist) — separate pre-existing bug if detail-page saves are wanted.
+
+### OL-098: Family `/search` polish — distinct placeholders + full-result map (resolved)
+- **Status:** ✅ CLOSED 2026-06-26 (#637 map markers, #638 placeholders). Two `/search` UX issues.
+- **Placeholders (#638):** 73 of 144 listings had `primaryPhoto=null` and all rendered the SAME generic kitchen. Root cause (confirmed via Cloudinary search): the 12 `carelinkai/homes/home-1..12` assets were **11 byte-identical copies** of one image (97,608 B each except home-2). Fix: uploaded **12 distinct senior-living images** to `carelinkai/placeholders/placeholder-1..12` (Pexels, commercial-free, no attribution — 6 founder-vetted exteriors/gardens + 6 curated interiors) and replaced the page-position `HOME_IMAGES[i % len]` with `placeholderImageFor(home.id)` (djb2 hash → stable per home, varied grid). Real `home.photos[0]` still preferred. **Sourcing note:** the agent can't render images in-sandbox; Cloudinary fetched the URLs server-side, and the 6 swapped images were founder-eyeballed before merge. Old `home-*` assets left in place (reversible).
+- **Map all markers (#637):** Map view only plotted the current page (10 of 144). Fix: `/api/search?markers=1` returns an unpaginated lightweight marker set (capped 1000); `search/page.tsx` fetches it in map mode while grid/list stay paginated.
+- **Preceding enrichment (founder Render run):** `autopopulate-cohort.ts --photos-only --force` added **418 real Google Places photos across 93 homes ($1.42)**; ~18 of those still have 0 photos (Canterbury Commons, Embassy of Rockport, Fairmont of Westlake, Rose Senior Living Beachwood, both Solon Pointes, Briarcliff Manor, Heritage of Hudson, NCR Portage Trail, Plum Creek, Sanctuary Wadsworth, Gardens of Western Reserve, Bloom at Rocky River, Cedarwood Plaza, both Kemper Houses, Avenue at Macedonia, Wesleyan Village) → now covered by placeholders.
+- **Follow-ups (optional):** residual ~18 photo-less homes could get a 2nd Places pass or manual photos; prune superseded old-version placeholder assets + original `home-*` set from Cloudinary if desired.
 
 ### OL-093: Remaining directory data-quality (rebrands, SNF/category, stale URLs)
 - **Status:** 🟡 OPEN — mostly resolved 2026-06-25; 2 items remain.

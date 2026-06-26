@@ -2,6 +2,22 @@
 
 ---
 
+### 2026-06-26 — Family /search fixes: distinct placeholders + full-result map (#637, #638)
+
+- **Objective:** Two family-facing `/search` improvements on getcarelinkai.com — (1) photo-less homes all rendered the SAME generic kitchen ("wall of identical homes"); (2) Map view only plotted the current page (10 of 144) instead of the full match set.
+- **Work completed:**
+  - **#637 (merged earlier this session) — Map plots ALL matching homes.** Added a lightweight `?markers=1` mode to `/api/search` (unpaginated, capped at 1000) returning `{ id, name, careLevel, priceRange, coordinates, address }` per home; `search/page.tsx` fetches it when `viewType === "map"` and renders `mapMarkers ?? searchResults`. Grid/list stay paginated.
+  - **#638 (merged) — Distinct, deterministic placeholders.** Root cause confirmed via Cloudinary: the 12 `carelinkai/homes/home-1..12` assets were **11 byte-identical copies** of one kitchen (97,608 B each except home-2). Replaced with **12 distinct senior-living images** uploaded to `carelinkai/placeholders/placeholder-1..12` (Pexels, free for commercial use, no attribution). 6 (exteriors/gardens, no people) were **founder-vetted**; 6 interiors kept from the auto-curated set. Assignment changed from `HOME_IMAGES[i % len]` (keyed off page position) to `placeholderImageFor(home.id)` (djb2 hash → stable per home, varied grid). Real `home.photos[0]` still preferred — placeholders only fill photo-less homes.
+  - **Photo enrichment (founder ran on Render, precedes #638):** `autopopulate-cohort.ts --from-db --include-active --photos-only --force` → **93 facilities, 418 real Google Places photos uploaded, $1.42** Anthropic spend. ~18 of the 93 still have 0 photos (Canterbury Commons, Embassy of Rockport, Fairmont of Westlake, Rose Senior Living Beachwood, both Solon Pointes, Briarcliff Manor, Heritage of Hudson, NCR Portage Trail, Plum Creek, Sanctuary Wadsworth, Gardens of Western Reserve, Bloom at Rocky River, Cedarwood Plaza, both Kemper Houses, Avenue at Macedonia, Wesleyan Village) — these + any non-auto-populated homes are what the placeholders now cover.
+- **Files changed:** `src/app/api/search/route.ts` (markers mode + placeholder set/hash/picker), `src/app/search/page.tsx` (markers fetch + map render). Cloudinary: 12 new `carelinkai/placeholders/*` assets.
+- **Commands run:** `tsc --noEmit` (0 errors); Cloudinary MCP upload/search/delete; `autopopulate-cohort.ts --photos-only --force` (Render, by founder).
+- **Tests/build status:** #637 and #638 both green on full CI (build-and-test, quality, e2e suites), squash-merged. `tsc --noEmit` clean.
+- **Deployment impact:** Render auto-deploys both from main. No schema/DB migration. The 418 enrichment photos + placeholder swap are live imagery changes on `/search`. Old `home-*` Cloudinary assets left in place → reversible.
+- **New risks/blockers:** none. Placeholders sourced sight-unseen by the agent (sandbox can't render images) but the 6 swapped were founder-vetted and the rest verified via Pexels titles + Cloudinary color analysis.
+- **Recommended next step:** Founder's open TODOs — rotate `demo.*` prod passwords; incognito-verify anonymous `/search` browse. Optional cleanup: prune superseded old-version placeholder assets + original `home-*` set from Cloudinary. Residual ~18 photo-less homes could get a second Places enrichment pass or manual photos.
+
+---
+
 ### 2026-06-25 — Operator-acquisition engine: contacts loaded + claim-nudge pilot SENT (#615–#619)
 
 - **Objective:** Turn the live directory into an operator-acquisition engine — finish directory cleanup, load researched outreach contacts, build a proactive claim-nudge sender, and send the first real claim invites.
