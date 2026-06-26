@@ -2,6 +2,22 @@
 
 ---
 
+### 2026-06-26 (later) — VA-sourced operator-email gap-fill + CAN-SPAM re-verify (#640)
+
+- **Objective:** Backfill 5 VA-sourced (Anita), phone-verified operator emails into the claim-nudge channel and re-confirm the medium-wave is CAN-SPAM-ready.
+- **Work completed:**
+  - **#640** — new guarded script `scripts/backfill-va-operator-emails.ts`. For Arden Courts (Parma), Village of the Falls, The Residence of Chardon, Danbury Woods (kept dup), and O'Neill Lakewood: set the verified admin `outreachEmail`, tag `preFilledFields.outreachEmail='MEDIUM'` (send-eligibility, matching the `load-directory-outreach-contacts.ts` confidence convention), flip `status → ACTIVE`. Sentinel-owner guard, name sanity warning, dry-run default, idempotent.
+  - **Founder ran on Render** (dry-run → `--force`): **Applied: 5, Skipped: 0**. Two (Arden Parma, Village of the Falls) had their dead/bounced addresses already `BOUNCED-CLEARED` → installed fresh + re-armed to MEDIUM; Chardon + Danbury fresh; O'Neill Lakewood upgraded `Dir.sales@ → administrator.lw@` (already MEDIUM). All 5 were already ACTIVE (status flip was a no-op).
+  - **Excluded (CALL-ONLY, per founder):** Arden Courts Bath (HR-only inbox), Concordia at Sumner (no email).
+  - **CAN-SPAM re-verified (no code change):** claim-invite email + sender already fully compliant — per-recipient signed unsubscribe token (`/api/outreach/unsubscribe` upserts `EmailSuppression`), `COMPANY_POSTAL_ADDRESS` hard-gate (sender exits if unset), suppression skip, `List-Unsubscribe`/RFC 8058 headers (shipped #624, OL-092).
+- **Files changed:** `scripts/backfill-va-operator-emails.ts` (NEW). Plus this docs wrap.
+- **Tests/build status:** #640 green CI, squash-merged. Script excluded from project `tsc` (tsconfig `exclude`), but mirrors the proven batch-loader pattern; runtime-verified by the founder's Render run.
+- **Deployment impact:** Render auto-deployed the script; prod DB mutated by the Render `--force` run (5 homes: outreachEmail + preFilledFields + status). No emails sent — these sit dormant at MEDIUM tier.
+- **New risks/blockers:** none. The 5 join the next `--tier medium` send (parked pending pilot go/no-go per founder).
+- **Recommended next step:** measure the already-sent pilot+wave via `report-claim-funnel.ts`; when firing the next medium run, the 24h per-address throttle naturally protects re-sends.
+
+---
+
 ### 2026-06-26 — Family /search fixes: distinct placeholders + full-result map (#637, #638)
 
 - **Objective:** Two family-facing `/search` improvements on getcarelinkai.com — (1) photo-less homes all rendered the SAME generic kitchen ("wall of identical homes"); (2) Map view only plotted the current page (10 of 144) instead of the full match set.
