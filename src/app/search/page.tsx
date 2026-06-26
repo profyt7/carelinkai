@@ -1038,12 +1038,24 @@ function SearchPageContent() {
                             </div>
                           )}
                           
-                          {/* AI Match Score */}
-                          <div className="absolute left-2 top-2 rounded-full bg-gradient-to-r from-primary-500 to-primary-600 px-2 py-1 text-xs font-medium text-white shadow-md">
-                            <div className="flex items-center">
-                              <FiAward className="mr-1" />
-                              {home.aiMatchScore}% Match
-                            </div>
+                          {/* Top-left badges, stacked so they never overlap. The "% Match" badge
+                              renders ONLY with real personalization (aiMatchFactors present); anon /
+                              no-preference sessions would otherwise show a meaningless constant 50%,
+                              so they get a clean single "Unclaimed" badge instead. */}
+                          <div className="absolute left-2 top-2 flex flex-col items-start gap-1">
+                            {home.aiMatchFactors && (
+                              <div className="rounded-full bg-gradient-to-r from-primary-500 to-primary-600 px-2 py-1 text-xs font-medium text-white shadow-md">
+                                <div className="flex items-center">
+                                  <FiAward className="mr-1" />
+                                  {home.aiMatchScore}% Match
+                                </div>
+                              </div>
+                            )}
+                            {home.isUnclaimed && (
+                              <div className="rounded-full bg-amber-100 px-2 py-1 text-xs font-medium text-amber-800 shadow-md border border-amber-200">
+                                Unclaimed
+                              </div>
+                            )}
                           </div>
                           {/* Why this match - top factors (grid card) */}
                           {home.aiMatchFactors && (
@@ -1067,13 +1079,6 @@ function SearchPageContent() {
                           ) : (
                             <div className="absolute right-2 top-2 rounded-full bg-neutral-500 px-2 py-1 text-xs font-medium text-white shadow-md">
                               Waitlist
-                            </div>
-                          )}
-
-                          {/* Unclaimed (directory) badge */}
-                          {home.isUnclaimed && (
-                            <div className="absolute left-2 top-2 rounded-full bg-amber-100 px-2 py-1 text-xs font-medium text-amber-800 shadow-md border border-amber-200">
-                              Unclaimed
                             </div>
                           )}
                         </div>
@@ -1191,12 +1196,24 @@ function SearchPageContent() {
                             </div>
                           )}
                           
-                          {/* AI Match Score */}
-                          <div className="absolute left-2 top-2 rounded-full bg-gradient-to-r from-primary-500 to-primary-600 px-2 py-1 text-xs font-medium text-white shadow-md">
-                            <div className="flex items-center">
-                              <FiAward className="mr-1" />
-                              {home.aiMatchScore}% Match
-                            </div>
+                          {/* Top-left badges, stacked so they never overlap. The "% Match" badge
+                              renders ONLY with real personalization (aiMatchFactors present); anon /
+                              no-preference sessions would otherwise show a meaningless constant 50%,
+                              so they get a clean single "Unclaimed" badge instead. */}
+                          <div className="absolute left-2 top-2 flex flex-col items-start gap-1">
+                            {home.aiMatchFactors && (
+                              <div className="rounded-full bg-gradient-to-r from-primary-500 to-primary-600 px-2 py-1 text-xs font-medium text-white shadow-md">
+                                <div className="flex items-center">
+                                  <FiAward className="mr-1" />
+                                  {home.aiMatchScore}% Match
+                                </div>
+                              </div>
+                            )}
+                            {home.isUnclaimed && (
+                              <div className="rounded-full bg-amber-100 px-2 py-1 text-xs font-medium text-amber-800 shadow-md border border-amber-200">
+                                Unclaimed
+                              </div>
+                            )}
                           </div>
                           {/* Why this match - top factors (list card) */}
                           {home.aiMatchFactors && (
@@ -1220,13 +1237,6 @@ function SearchPageContent() {
                           ) : (
                             <div className="absolute right-2 top-2 rounded-full bg-neutral-500 px-2 py-1 text-xs font-medium text-white shadow-md">
                               Waitlist
-                            </div>
-                          )}
-
-                          {/* Unclaimed (directory) badge */}
-                          {home.isUnclaimed && (
-                            <div className="absolute left-2 top-2 rounded-full bg-amber-100 px-2 py-1 text-xs font-medium text-amber-800 shadow-md border border-amber-200">
-                              Unclaimed
                             </div>
                           )}
                         </div>
