@@ -109,6 +109,10 @@ export interface SearchResultItem {
   isFavorited?: boolean;
   /** True when the listing is still directory-owned (no operator has claimed it) */
   isUnclaimed?: boolean;
+  /** Google aggregate rating (trust badge). Rating + count + place id only — no review text. */
+  googleRating?: number | null;
+  googleRatingCount?: number | null;
+  googlePlaceId?: string | null;
 }
 
 /**

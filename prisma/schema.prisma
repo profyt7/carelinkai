@@ -526,6 +526,13 @@ model AssistedLivingHome {
   autoPopulatedVersion    Int?             @default(0)
   preFilledFields         Json?
   aiPopulationConfidence  String?
+  // Google Places aggregate rating for a "See reviews on Google" trust badge.
+  // Rating + review count + place id ONLY — NO review text is stored (Maps ToS).
+  // Populated by scripts/backfill-google-ratings.ts; badge hidden when null.
+  googleRating            Float?
+  googleRatingCount       Int?
+  googlePlaceId           String?
+  googleRatingUpdatedAt   DateTime?
   // Public listing contact + marketing fields populated by the enrich pipeline
   // (OL-080). Distinct from outreachEmail/outreachPhone below, which are the
   // unclaimed-listing nudge channel, not public display.

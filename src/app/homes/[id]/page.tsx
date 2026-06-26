@@ -43,6 +43,7 @@ import TourRequestModal from "@/components/tours/TourRequestModal";
 // Import our new components
 import PhotoGallery from "@/components/homes/PhotoGallery";
 import { placeholderImageFor } from "@/lib/placeholder-images";
+import GoogleRatingBadge from "@/components/homes/GoogleRatingBadge";
 import PricingCalculator from "@/components/homes/PricingCalculator";
 import type { PricingEstimate } from "@/components/homes/PricingCalculator";
 import { getCloudinaryAvatar, isCloudinaryUrl } from "@/lib/cloudinaryUrl";
@@ -833,6 +834,15 @@ export default function HomeDetailPage() {
                         <FiMapPin className="mr-1 h-4 w-4 text-neutral-500" />
                         <span className="text-sm text-neutral-600">{addrText}</span>
                       </div>
+                      {realHome.googleRating != null && (
+                        <div className="mt-1.5">
+                          <GoogleRatingBadge
+                            rating={realHome.googleRating}
+                            count={realHome.googleRatingCount}
+                            placeId={realHome.googlePlaceId}
+                          />
+                        </div>
+                      )}
                       {realHome.phone && (
                         <div className="mt-1 flex items-center">
                           <FiPhone className="mr-1 h-4 w-4 text-neutral-500" />

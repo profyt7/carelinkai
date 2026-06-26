@@ -35,6 +35,7 @@ import {
 } from "@/lib/searchService";
 import { MOCK_HOMES } from "@/lib/mock/homes";
 import { formatCurrency } from "@/lib/utils";
+import GoogleRatingBadge from "@/components/homes/GoogleRatingBadge";
 import {
   getFavorites,
   toggleFavorite,
@@ -1088,6 +1089,11 @@ function SearchPageContent() {
                           <p className="mb-1 text-sm text-neutral-600">
                             {home.address?.city}, {home.address?.state}
                           </p>
+                          {home.googleRating != null && (
+                            <p className="mb-1">
+                              <GoogleRatingBadge rating={home.googleRating} count={home.googleRatingCount} compact />
+                            </p>
+                          )}
                           {!home.isUnclaimed && home.tagline && (
                             <p className="mb-2 line-clamp-1 text-xs italic text-neutral-500">{home.tagline}</p>
                           )}
@@ -1247,10 +1253,15 @@ function SearchPageContent() {
                             <div>
                               <h3 className="text-lg font-medium text-neutral-800">{home.name}</h3>
                               <p className="text-sm text-neutral-600">
-                                {home.address ? 
-                                  `${home.address.street}, ${home.address.city}, ${home.address.state} ${home.address.zipCode}` : 
+                                {home.address ?
+                                  `${home.address.street}, ${home.address.city}, ${home.address.state} ${home.address.zipCode}` :
                                   "Address not available"}
                               </p>
+                              {home.googleRating != null && (
+                                <p className="mt-1">
+                                  <GoogleRatingBadge rating={home.googleRating} count={home.googleRatingCount} compact />
+                                </p>
+                              )}
                             </div>
                           </div>
 

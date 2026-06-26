@@ -486,6 +486,9 @@ export function generateMockHomes(count: number = 12) {
       aiMatchWeights: undefined,
       isFavorited: false,
       isUnclaimed: false,
+      googleRating: null,
+      googleRatingCount: null,
+      googlePlaceId: null,
     };
   });
 }
@@ -821,6 +824,10 @@ export async function GET(request: NextRequest) {
         // — surfaced in results so the seeded directory shows, badged so families
         // know no operator manages it yet.
         isUnclaimed: unclaimed,
+        // Google aggregate rating (trust badge) — rating + count + place id only.
+        googleRating: home.googleRating ?? null,
+        googleRatingCount: home.googleRatingCount ?? null,
+        googlePlaceId: home.googlePlaceId ?? null,
         aiMatchScore,
         aiMatchFactors,
         aiMatchWeights,
