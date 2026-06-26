@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-06-25 (late) — SEND_READY backfill applied; HOLD review resolved; directory ~155 ACTIVE; rebrands done; scale wave (46) parked_
+_Last updated: 2026-06-26 — claim-nudge sender hardened (collapse by email + CAN-SPAM #624); multi-home claim shipped (#625, OL-095). Gate before scale send: set COMPANY_POSTAL_ADDRESS._
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -269,12 +269,19 @@ Each loop: what it is, why it matters, what done looks like.
 
 ### OL-092: Claim-nudge pilot — measure, then scale to MEDIUM tier (+ CAN-SPAM)
 - **Status:** 🟡 OPEN — pilot SENT 2026-06-25 (13 HIGH via `send-claim-nudges.ts`, #618). **Outreach data finalized** via the SEND_READY backfill (`load-outreach-send-ready.ts`, #621, founder ran `--force`): **59 verified emails** set (13 pilot + **46 scale wave LOADED but not sent**); **5 hard-bounced cleared → CALL-ONLY** (Arden Courts Parma/Bath, Vitalia Strongsville, Village of the Falls, Symphony at Mentor); 4 dup + 10 hold emails suppressed.
+- **Sender hardened for scale (2026-06-26):**
+  - ✅ **Collapse by unique email** (#624) — `send-claim-nudges.ts` now sends ONE email per address; a shared inbox gets a single email listing every community with its own claim link. Preview: 59 homes → **41 unique sends** (csig→6, oneillhc→5, meadowfalls→4, judson→3…). 24h throttle is now per-address; INACTIVE excluded.
+  - ✅ **CAN-SPAM** (#624) — `EmailSuppression` model + migration `20260626000001_email_suppression`; one-click unsubscribe route `/api/outreach/unsubscribe` (signed token, `List-Unsubscribe` + RFC 8058 headers); sender skips suppressed addresses every run. Email footer carries the unsubscribe link + company physical address + clear sender identity.
+  - ✅ **Multi-home claim** (#625, OL-095) — new `/claim?token=` landing lets one operator claim ALL their listings from the collapsed email.
 - **What's next:**
-  1. **Measure (~3–5 business days):** `npx tsx scripts/report-claim-funnel.ts` (#619) reports how many nudged homes were claimed. Opens/clicks live in the Resend dashboard.
-  2. **Resend suppression:** confirm the 5–7 bounced addresses are on Resend's suppression list (dashboard — engineering can't touch it from the repo env). Also confirm getcarelinkai.com is Verified (DKIM/SPF).
-  3. **CAN-SPAM before scaling:** the pilot uses reply-to-opt-out; add a real **unsubscribe link + physical postal address** to `sendDirectoryClaimInviteEmail()` before the MEDIUM blast.
-  4. **Send the scale wave:** the **46 MEDIUM-tier contacts are loaded and parked** — `send-claim-nudges.ts --tier medium --force` fires them on the founder's go. Then the phone-only homes become a VA call list (export via `report-directory-homes.ts --csv`).
-- **Done when:** pilot measured; CAN-SPAM unsubscribe shipped; scale wave sent; claim conversion tracked.
+  1. **⛔ SET `COMPANY_POSTAL_ADDRESS`** (real mailing address / registered PO box) in Render env — the sender REFUSES to `--force` until it's set (placeholder rejected). This is the one hard gate before any scale send.
+  2. **Measure the pilot (~3–5 business days):** `npx tsx scripts/report-claim-funnel.ts` (#619). Opens/clicks live in the Resend dashboard.
+  3. **Resend suppression:** confirm the 5 bounced addresses are on Resend's suppression list (dashboard) + getcarelinkai.com is Verified (DKIM/SPF).
+  4. **Send the scale wave:** `send-claim-nudges.ts --tier medium` (dry-run → review collapsed list + sample email) → `--force` (≈41 collapsed sends, after the env var is set). Then the phone-only homes become a VA call list (`report-directory-homes.ts --csv`).
+- **Done when:** COMPANY_POSTAL_ADDRESS set; pilot measured; scale wave sent; claim conversion tracked.
+
+### OL-095: Multi-home claim from one collapsed email
+- **Status:** ✅ CLOSED 2026-06-26 (#625). The collapse (#624) sends a shared-inbox operator one email with N claim links; the single-use `seededHomeId` guard previously let them claim only the first. New `/claim?token=` landing page verifies the signed token and, for the already-signed-in addressed operator, re-arms `seededHomeId` (existing `/api/operator/claim`) → onboarding step 2 claims it (image-rights ack + transfer). First-timers fall through to the unchanged register/redeem flow. Sentinel-owned safety check; transfer endpoint + its e2e untouched.
 
 ### OL-093: Remaining directory data-quality (rebrands, SNF/category, stale URLs)
 - **Status:** 🟡 OPEN — mostly resolved 2026-06-25; 2 items remain.
