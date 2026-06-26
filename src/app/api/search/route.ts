@@ -33,58 +33,11 @@ import { formatCurrency } from '@/lib/utils';
 import { calculateAIMatchScore, calculateAIMatchBreakdown } from '@/lib/ai-matching';
 import { isUnclaimedHome } from '@/lib/claim-engine/inquiry-claim-notification';
 import { prisma } from '@/lib/prisma';
+import { placeholderImageFor } from '@/lib/placeholder-images';
 
 // Constants
 const DEFAULT_PAGE_SIZE = 10;
 const MAX_PAGE_SIZE = 50;
-
-/**
- * Distinct senior-living placeholder photos (Pexels, free for commercial use,
- * no attribution required) used only for homes that have NO real photo.
- *
- * Replaces the previous `home-1..12` set, which were 11 byte-identical copies of
- * a single kitchen image — so every photo-less listing rendered the same picture
- * (a "wall of identical homes"). This set mixes residential exteriors, gardens,
- * and warm common areas so the grid looks varied. A home is assigned one of these
- * deterministically by `placeholderImageFor(home.id)` (stable per home).
- *
- * NOTE: keep the list static so the assignment is deterministic across requests.
- */
-const PLACEHOLDER_IMAGES: string[] = [
-  'https://res.cloudinary.com/dygtsnu8z/image/upload/v1782507649/carelinkai/placeholders/placeholder-1.jpg',
-  'https://res.cloudinary.com/dygtsnu8z/image/upload/v1782507654/carelinkai/placeholders/placeholder-2.jpg',
-  'https://res.cloudinary.com/dygtsnu8z/image/upload/v1782506198/carelinkai/placeholders/placeholder-3.jpg',
-  'https://res.cloudinary.com/dygtsnu8z/image/upload/v1782507657/carelinkai/placeholders/placeholder-4.jpg',
-  'https://res.cloudinary.com/dygtsnu8z/image/upload/v1782507662/carelinkai/placeholders/placeholder-5.jpg',
-  'https://res.cloudinary.com/dygtsnu8z/image/upload/v1782507667/carelinkai/placeholders/placeholder-6.jpg',
-  'https://res.cloudinary.com/dygtsnu8z/image/upload/v1782507672/carelinkai/placeholders/placeholder-7.jpg',
-  'https://res.cloudinary.com/dygtsnu8z/image/upload/v1782506214/carelinkai/placeholders/placeholder-8.jpg',
-  'https://res.cloudinary.com/dygtsnu8z/image/upload/v1782506217/carelinkai/placeholders/placeholder-9.jpg',
-  'https://res.cloudinary.com/dygtsnu8z/image/upload/v1782506222/carelinkai/placeholders/placeholder-10.jpg',
-  'https://res.cloudinary.com/dygtsnu8z/image/upload/v1782506227/carelinkai/placeholders/placeholder-11.jpg',
-  'https://res.cloudinary.com/dygtsnu8z/image/upload/v1782506246/carelinkai/placeholders/placeholder-12.jpg',
-];
-
-/**
- * Stable 32-bit string hash (djb2). Lets us pick a placeholder image from a
- * home's id so the SAME home always gets the SAME image — regardless of which
- * result page / sort position it lands on.
- */
-function hashStringToInt(str: string): number {
-  let hash = 5381;
-  for (let i = 0; i < str.length; i++) {
-    hash = ((hash << 5) + hash + str.charCodeAt(i)) | 0; // hash * 33 + c
-  }
-  return Math.abs(hash);
-}
-
-/**
- * Deterministic placeholder image for a home with no real photo.
- * Stable per `id`, so the grid stays varied but each home is consistent.
- */
-function placeholderImageFor(id: string): string {
-  return PLACEHOLDER_IMAGES[hashStringToInt(id) % PLACEHOLDER_IMAGES.length];
-}
 
 /**
  * City coordinates lookup for homes without geo data

@@ -42,6 +42,7 @@ import BrowseShell from "@/components/layout/BrowseShell";
 import TourRequestModal from "@/components/tours/TourRequestModal";
 // Import our new components
 import PhotoGallery from "@/components/homes/PhotoGallery";
+import { placeholderImageFor } from "@/lib/placeholder-images";
 import PricingCalculator from "@/components/homes/PricingCalculator";
 import type { PricingEstimate } from "@/components/homes/PricingCalculator";
 import { getCloudinaryAvatar, isCloudinaryUrl } from "@/lib/cloudinaryUrl";
@@ -764,7 +765,7 @@ export default function HomeDetailPage() {
 
           {/* Photos */}
           <div className="container mx-auto px-4 pt-6">
-            <PhotoGallery photos={photos} />
+            <PhotoGallery photos={photos} placeholderImageUrl={placeholderImageFor(realHome.id)} />
           </div>
 
           {/* Main content */}
@@ -1334,7 +1335,7 @@ export default function HomeDetailPage() {
       
       {/* Photo gallery */}
       <div className="container mx-auto px-4 pt-6">
-        <PhotoGallery photos={home.photos} />
+        <PhotoGallery photos={home.photos} placeholderImageUrl={placeholderImageFor(home.id)} />
       </div>
       
       {/* Main content */}
