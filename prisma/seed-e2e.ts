@@ -10,10 +10,12 @@
 
 import { PrismaClient, UserRole, UserStatus, HomeStatus, CareLevel } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { assertSeedAllowed } from './seed-guard';
 
 const prisma = new PrismaClient();
 
 async function main() {
+  assertSeedAllowed('seed-e2e'); // never write E2E test homes to a remote/prod DB
   console.log('🧪 Starting E2E test data seeding...');
 
   // Hash passwords

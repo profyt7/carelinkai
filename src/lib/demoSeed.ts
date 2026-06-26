@@ -8,6 +8,12 @@ function randomChoice<T>(arr: readonly T[]): T {
 }
 
 export async function runDemoSeed() {
+  // Data-layer guard (defense-in-depth alongside the /api/admin/seed-demo route check):
+  // never write demo data to production unless explicitly allowed. Prevents demo homes
+  // from leaking into the prod directory regardless of which caller invokes this.
+  if (process.env['NODE_ENV'] === 'production' && process.env['ALLOW_DEMO_SEED_IN_PROD'] !== '1') {
+    throw new Error('runDemoSeed blocked in production (set ALLOW_DEMO_SEED_IN_PROD=1 to override)');
+  }
   const pwdOp = await bcrypt.hash('Operator123!', 10);
   const opUser = await prisma.user.upsert({
     where: { email: 'operator+seed@carelinkai.com' },

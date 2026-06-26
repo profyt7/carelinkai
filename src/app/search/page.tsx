@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { 
@@ -80,7 +80,7 @@ const GENDER_OPTIONS = [
   { id: "MALE", label: "Male Only" }
 ];
 
-export default function SearchPage() {
+function SearchPageContent() {
   // Search params and router for query handling
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -1592,5 +1592,28 @@ export default function SearchPage() {
         </div>
       )}
     </DashboardLayout>
+  );
+}
+
+// Graceful loading shell shown while useSearchParams() resolves on first load.
+// Wrapping SearchPageContent in <Suspense> is required by the Next.js App Router for
+// useSearchParams(); without it, a cold/first render could bail to the global error
+// boundary ("Something went wrong") and only work on retry.
+function SearchPageFallback() {
+  return (
+    <div className="flex min-h-[60vh] items-center justify-center">
+      <div className="text-center text-neutral-500">
+        <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-neutral-300 border-t-teal-600" />
+        Loading search…
+      </div>
+    </div>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={<SearchPageFallback />}>
+      <SearchPageContent />
+    </Suspense>
   );
 }

@@ -5,12 +5,14 @@
 
 import { PrismaClient, UserRole, LeadTargetType, LeadStatus } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { assertSeedAllowed } from './seed-guard';
 
 const prisma = new PrismaClient();
 
 const DEMO_PASSWORD = 'DemoUser123!';
 
 async function main() {
+  assertSeedAllowed('seed-demo'); // never write demo homes to a remote/prod DB
   console.log('🌱 Starting demo seed...\n');
 
   // Hash password once for all accounts
