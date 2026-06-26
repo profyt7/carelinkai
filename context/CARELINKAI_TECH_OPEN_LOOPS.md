@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-06-26 — /search polish shipped (OL-098): distinct deterministic placeholders (#638) + full-result map (#637); 418 real photos enriched. Prior: OL-097 public browse/map coords/price markers. Founder TODO: rotate demo.* passwords; incognito-verify anon /search._
+_Last updated: 2026-06-26 — VA email gap-fill (#640): 5 phone-verified operator emails → MEDIUM tier (OL-092), CAN-SPAM re-verified. Prior: /search polish (OL-098, #637/#638). Founder TODO: rotate demo.* passwords; incognito-verify anon /search; measure claim funnel before next medium send._
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -274,6 +274,7 @@ Each loop: what it is, why it matters, what done looks like.
   - ✅ **CAN-SPAM** (#624) — `EmailSuppression` model + migration `20260626000001_email_suppression`; one-click unsubscribe route `/api/outreach/unsubscribe` (signed token, `List-Unsubscribe` + RFC 8058 headers); sender skips suppressed addresses every run. Email footer carries the unsubscribe link + company physical address + clear sender identity.
   - ✅ **Multi-home claim** (#625, OL-095) — new `/claim?token=` landing lets one operator claim ALL their listings from the collapsed email.
 - ✅ `COMPANY_POSTAL_ADDRESS` set in Render; sender hardened (#624 collapse + CAN-SPAM) and multi-home claim shipped (#625) before the send.
+- **Gap-fill (2026-06-26, #640):** 5 VA-sourced (Anita), phone-verified operator emails backfilled via `scripts/backfill-va-operator-emails.ts` (founder ran `--force`: 5 applied) — Arden Courts Parma (`ncosta@arden-courts.com`, replaced dead promedica.org), Village of the Falls (`hcorwin@sprengerhealthcare.com`, replaced bounced hjohnson@), The Residence of Chardon (`cagardner@sonidaliving.com`), Danbury Woods (`mcollage@danburyseniorliving.com`, kept-dup), O'Neill Lakewood (`administrator.lw@oneillhc.com`, upgraded from Dir.sales@). All tagged `preFilledFields.outreachEmail='MEDIUM'` + status ACTIVE → queued for the **next** `--tier medium` send (24h per-address throttle protects re-sends). Excluded CALL-ONLY: Arden Courts Bath (HR inbox), Concordia at Sumner (no email). CAN-SPAM re-verified end-to-end (unsubscribe→`EmailSuppression` upsert + postal hard-gate) — no code change needed.
 - **What's next:**
   1. **Measure (~3–5 business days):** `npx tsx scripts/report-claim-funnel.ts` (#619) — now covers all ~59 (pilot + scale wave). Opens/clicks live in the Resend dashboard.
   2. **Watch for bounces:** a few generic `info@` inboxes may hard-bounce; Resend auto-suppresses them. (Optional follow-up: sync Resend bounces into our `EmailSuppression` table so our own re-runs also skip them.)
