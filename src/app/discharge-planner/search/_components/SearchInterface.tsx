@@ -28,10 +28,10 @@ interface SearchResponse {
 }
 
 const EXAMPLE_QUERIES = [
-  "I need a memory care facility in Boston for a 78-year-old with moderate Alzheimer's, budget around $6,000/month",
-  "Looking for assisted living in Miami with physical therapy, 24/7 nursing, accepts Medicaid",
-  "Need a home in San Francisco for a veteran with PTSD, private room, pet-friendly, under $5,000/month",
-  "Seeking skilled nursing facility in Chicago for post-stroke patient, needs speech therapy, Medicare coverage"
+  "I need a memory care facility in Beachwood for a 78-year-old with moderate Alzheimer's, budget around $6,000/month",
+  "Looking for assisted living in Lakewood with physical therapy, 24/7 nursing, accepts Medicaid",
+  "Need a home in Parma for a veteran with PTSD, private room, pet-friendly, under $5,000/month",
+  "Seeking skilled nursing facility in Westlake for post-stroke patient, needs speech therapy, Medicare coverage"
 ];
 
 export default function SearchInterface() {
@@ -93,7 +93,7 @@ export default function SearchInterface() {
               id="search-query"
               value={query}
               onChange={(e) => setQuery(e?.target?.value || '')}
-              placeholder="E.g., I need a memory care facility in Boston for a 78-year-old with moderate Alzheimer's, budget around $6,000/month..."
+              placeholder="E.g., I need a memory care facility in Beachwood for a 78-year-old with moderate Alzheimer's, budget around $6,000/month..."
               rows={4}
               className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none text-base"
               disabled={isSearching}
