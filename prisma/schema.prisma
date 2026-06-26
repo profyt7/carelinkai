@@ -3117,3 +3117,16 @@ enum AccessTier {
   FULL
   READ_ONLY
 }
+
+/// CAN-SPAM suppression list for cold-outreach (claim-nudge) email. An address here is
+/// permanently skipped by the batch sender (scripts/send-claim-nudges.ts). Populated by
+/// the one-click unsubscribe route (/api/outreach/unsubscribe) and, optionally, bounces.
+model EmailSuppression {
+  id           String   @id @default(cuid())
+  email        String   @unique // always lowercased
+  reason       String? // 'unsubscribe' | 'bounce' | 'manual'
+  source       String? // e.g. 'claim-nudge'
+  suppressedAt DateTime @default(now())
+
+  @@index([email])
+}

@@ -2,42 +2,37 @@
 /**
  * scripts/send-claim-nudges.ts
  *
- * PROACTIVE batch claim-nudge sender. The existing nudge engine
- * (src/lib/claim-engine/inquiry-claim-notification.ts) only fires reactively when a
- * family inquiry lands on an unclaimed listing. This script lets us deliberately
- * invite operators to claim their free directory listing, in controlled batches.
+ * PROACTIVE batch claim-nudge sender, COLLAPSED BY UNIQUE EMAIL. The reactive engine
+ * (src/lib/claim-engine/inquiry-claim-notification.ts) only fires on a real family
+ * inquiry; this deliberately invites operators to claim their free directory listing(s).
  *
- * It reuses the same primitives as the reactive engine — signed 45-day claim token
- * (src/lib/claim-token.ts) + the 24h `claimNudgeLastSentAt` throttle — but sends the
- * HONEST proactive copy (sendDirectoryClaimInviteEmail), NOT the "families are trying
- * to reach you" inquiry copy (which would be false with zero inquiries).
+ * KEY BEHAVIORS:
+ *   - Collapse by lower(outreachEmail): exactly ONE email per unique address, never one
+ *     per home. When an address maps to several unclaimed communities (e.g.
+ *     marketing@csig.com → many StoryPoint homes), the single email lists each community
+ *     with its OWN claim link, so the recipient claims them all from one message.
+ *   - Targets ACTIVE listings owned by the directory sentinel (truly unclaimed + public).
+ *     INACTIVE/archived homes are excluded entirely.
+ *   - Suppression: skips any address on the EmailSuppression list (unsubscribes/bounces).
+ *   - Throttle: 24h PER ADDRESS (an address is throttled if ANY of its homes was nudged
+ *     in the last 24h). On send, claimNudgeLastSentAt is stamped on every home in the group.
+ *   - CAN-SPAM: each email carries a one-click unsubscribe link (+ List-Unsubscribe header)
+ *     and the company physical address. The script REFUSES to send if COMPANY_POSTAL_ADDRESS
+ *     is unset/placeholder.
  *
- * PILOT-FIRST: defaults to the HIGH-confidence tier (named decision-makers, best
- * deliverability) so we can measure opens/claims before scaling. The loader
- * (load-directory-outreach-contacts.ts) stamped preFilledFields.outreachEmail with the
- * Cowork confidence ('HIGH'/'MEDIUM'), which is how we tier here.
- *
- * Targets: ACTIVE listings still owned by the directory sentinel operator (i.e. truly
- * unclaimed + public), with an outreachEmail set, not nudged within the throttle window.
- *
- * SAFETY:
- *   - DRY-RUN BY DEFAULT. Prints exactly who would be emailed + the claim URL. No send,
- *     no DB write. Sending requires --force.
- *   - Tiered: --tier high (default) | medium | all. `all` REQUIRES an explicit --limit
- *     so a full blast is never one keystroke away.
- *   - 24h throttle respected (won't re-nudge a recently-nudged home).
- *   - --limit N caps the batch. Email-only (no SMS) for the pilot.
+ * Tiers (by preFilledFields.outreachEmail confidence): high (default) | medium | all.
+ * DRY-RUN BY DEFAULT — prints the collapsed unique-send list (address → [homes]) and a
+ * sample rendered email; --force to actually send. `--tier all` requires an explicit --limit.
  *
  * Usage:
- *   npx tsx scripts/send-claim-nudges.ts                       # DRY RUN, high tier
- *   npx tsx scripts/send-claim-nudges.ts --limit 5             # DRY RUN, first 5 high
- *   npx tsx scripts/send-claim-nudges.ts --force               # SEND high tier
- *   npx tsx scripts/send-claim-nudges.ts --tier medium --force # SEND high+medium
- *   npx tsx scripts/send-claim-nudges.ts --tier all --limit 20 --force
+ *   npx tsx scripts/send-claim-nudges.ts                        # DRY RUN, high tier
+ *   npx tsx scripts/send-claim-nudges.ts --tier medium          # DRY RUN, high+medium
+ *   npx tsx scripts/send-claim-nudges.ts --tier medium --force  # SEND
  */
 
 import { PrismaClient } from '@prisma/client';
 import { signClaimToken, DEFAULT_CLAIM_TOKEN_TTL_HOURS } from '../src/lib/claim-token';
+import { signUnsubscribeToken } from '../src/lib/unsubscribe-token';
 import { sendDirectoryClaimInviteEmail } from '../src/lib/email';
 
 const prisma = new PrismaClient();
@@ -50,15 +45,31 @@ function argValue(flag: string): string | undefined {
   return i >= 0 ? process.argv[i + 1] : undefined;
 }
 
-function buildClaimUrl(homeId: string, operatorEmail: string, secret: string): string {
+function appUrl(): string {
+  return (process.env['NEXT_PUBLIC_APP_URL'] || process.env['NEXTAUTH_URL'] || 'https://getcarelinkai.com').replace(/\/$/, '');
+}
+
+function claimUrl(homeId: string, operatorEmail: string, secret: string): string {
   const now = Math.floor(Date.now() / 1000);
   const token = signClaimToken(
     { operatorEmail: operatorEmail.toLowerCase(), homeId, clevelandFounder: true, iat: now, exp: now + DEFAULT_CLAIM_TOKEN_TTL_HOURS * 3600 },
     secret,
   );
-  const appUrl = process.env['NEXT_PUBLIC_APP_URL'] || process.env['NEXTAUTH_URL'] || 'https://getcarelinkai.com';
-  return `${appUrl.replace(/\/$/, '')}/auth/register?role=OPERATOR&claimToken=${encodeURIComponent(token)}`;
+  return `${appUrl()}/auth/register?role=OPERATOR&claimToken=${encodeURIComponent(token)}`;
 }
+
+function unsubscribeUrl(email: string, secret: string): string {
+  return `${appUrl()}/api/outreach/unsubscribe?token=${encodeURIComponent(signUnsubscribeToken(email, secret))}`;
+}
+
+/** A real postal address must be configured for CAN-SPAM. Reject obvious placeholders. */
+function postalAddressOrNull(): string | null {
+  const v = (process.env['COMPANY_POSTAL_ADDRESS'] || '').trim();
+  if (!v || /your address|placeholder|street address|123 /i.test(v)) return null;
+  return v;
+}
+
+type HomeRow = { id: string; name: string; outreachEmail: string; claimNudgeLastSentAt: Date | null; preFilledFields: unknown };
 
 async function main() {
   const isForce = process.argv.includes('--force');
@@ -67,94 +78,117 @@ async function main() {
   const limitRaw = argValue('--limit');
   const limit = limitRaw ? parseInt(limitRaw, 10) : undefined;
 
-  if (!['high', 'medium', 'all'].includes(tier)) {
-    console.error(`Invalid --tier "${tier}" (use: high | medium | all)`);
-    process.exit(1);
-  }
-  if (tier === 'all' && !limit) {
-    console.error('Refusing "--tier all" without an explicit --limit (guards against a full blast). Add e.g. --limit 20.');
-    process.exit(1);
-  }
-
-  console.log(dryRun ? '=== DRY RUN — no emails sent ===' : '=== LIVE — sending claim invites ===');
-  console.log(`Tier: ${tier}${limit ? `  ·  limit: ${limit}` : ''}\n`);
-
-  const seedUser = await prisma.user.findUnique({ where: { email: DIRECTORY_UNCLAIMED_EMAIL } });
-  const seedOperator = seedUser
-    ? await prisma.operator.findUnique({ where: { userId: seedUser.id } })
-    : null;
-  if (!seedOperator) {
-    console.error('Directory seed operator not found — aborting.');
-    process.exit(1);
-  }
+  if (!['high', 'medium', 'all'].includes(tier)) { console.error(`Invalid --tier "${tier}"`); process.exit(1); }
+  if (tier === 'all' && !limit) { console.error('Refusing "--tier all" without --limit.'); process.exit(1); }
 
   const secret = process.env['NEXTAUTH_SECRET'] || '';
-  if (!secret) {
-    console.error('NEXTAUTH_SECRET not set — cannot mint claim links. Aborting.');
+  if (!secret) { console.error('NEXTAUTH_SECRET not set — aborting.'); process.exit(1); }
+
+  const postalAddress = postalAddressOrNull();
+  if (!dryRun && !postalAddress) {
+    console.error('\n⛔ COMPANY_POSTAL_ADDRESS is not set (or is a placeholder).');
+    console.error('   CAN-SPAM requires a real physical mailing address in every cold email.');
+    console.error('   Set COMPANY_POSTAL_ADDRESS in Render env, then re-run with --force.\n');
     process.exit(1);
   }
+  const addrForRender = postalAddress ?? '«SET COMPANY_POSTAL_ADDRESS BEFORE --force»';
 
-  const throttleCutoff = new Date(Date.now() - THROTTLE_HOURS * 3600 * 1000);
+  console.log(dryRun ? '=== DRY RUN — no emails sent ===' : '=== LIVE — sending claim invites ===');
+  console.log(`Tier: ${tier}${limit ? `  ·  limit (unique sends): ${limit}` : ''}\n`);
 
-  const homes = await prisma.assistedLivingHome.findMany({
-    where: {
-      operatorId: seedOperator.id,
-      status: 'ACTIVE',
-      outreachEmail: { not: null },
-      OR: [{ claimNudgeLastSentAt: null }, { claimNudgeLastSentAt: { lt: throttleCutoff } }],
-    },
+  const seedUser = await prisma.user.findUnique({ where: { email: DIRECTORY_UNCLAIMED_EMAIL } });
+  const seedOperator = seedUser ? await prisma.operator.findUnique({ where: { userId: seedUser.id } }) : null;
+  if (!seedOperator) { console.error('Directory seed operator not found — aborting.'); process.exit(1); }
+
+  // Suppression set (unsubscribes / bounces) — lowercased.
+  const suppressed = new Set((await prisma.emailSuppression.findMany({ select: { email: true } })).map((s) => s.email.toLowerCase()));
+
+  const homes = (await prisma.assistedLivingHome.findMany({
+    where: { operatorId: seedOperator.id, status: 'ACTIVE', outreachEmail: { not: null } },
     select: { id: true, name: true, outreachEmail: true, claimNudgeLastSentAt: true, preFilledFields: true },
     orderBy: { name: 'asc' },
-  });
+  })) as HomeRow[];
 
-  const tierAllows = (conf: string | undefined): boolean => {
-    if (tier === 'all') return true;
-    if (tier === 'medium') return conf === 'HIGH' || conf === 'MEDIUM';
-    return conf === 'HIGH';
-  };
+  const tierAllows = (conf: string | undefined): boolean =>
+    tier === 'all' ? true : tier === 'medium' ? conf === 'HIGH' || conf === 'MEDIUM' : conf === 'HIGH';
 
-  let eligible = homes.filter((h) => {
-    const conf = (h.preFilledFields as Record<string, string> | null)?.outreachEmail;
-    return tierAllows(conf);
-  });
-  const totalEligible = eligible.length;
-  if (limit) eligible = eligible.slice(0, limit);
+  const eligibleHomes = homes.filter((h) => tierAllows((h.preFilledFields as Record<string, string> | null)?.outreachEmail));
 
-  let sent = 0;
-  let failed = 0;
+  // Collapse by lower(email).
+  const groups = new Map<string, HomeRow[]>();
+  for (const h of eligibleHomes) {
+    const key = h.outreachEmail.trim().toLowerCase();
+    (groups.get(key) ?? groups.set(key, []).get(key)!).push(h);
+  }
 
-  for (const h of eligible) {
-    const email = h.outreachEmail!.trim();
-    const conf = (h.preFilledFields as Record<string, string> | null)?.outreachEmail ?? '?';
-    const claimUrl = buildClaimUrl(h.id, email, secret);
+  const cutoff = Date.now() - THROTTLE_HOURS * 3600 * 1000;
+  let suppressedCount = 0, throttledCount = 0;
+  const sendable: { email: string; homes: HomeRow[] }[] = [];
+  for (const [email, grp] of groups) {
+    if (suppressed.has(email)) { suppressedCount++; continue; }
+    const lastSent = grp.reduce<number>((mx, h) => Math.max(mx, h.claimNudgeLastSentAt ? h.claimNudgeLastSentAt.getTime() : 0), 0);
+    if (lastSent > cutoff) { throttledCount++; continue; }
+    sendable.push({ email, homes: grp });
+  }
+  sendable.sort((a, b) => a.email.localeCompare(b.email));
+  const batch = limit ? sendable.slice(0, limit) : sendable;
 
-    if (dryRun) {
-      console.log(`  ✉ WOULD SEND → ${email} [${conf}]  "${h.name}"`);
-      continue;
-    }
+  console.log(`Collapse: ${eligibleHomes.length} homes → ${groups.size} unique addresses ` +
+    `(${suppressedCount} suppressed, ${throttledCount} throttled) → ${sendable.length} sendable${limit ? `, ${batch.length} this batch` : ''}\n`);
 
-    const ok = await sendDirectoryClaimInviteEmail({ facilityName: h.name, toEmail: email, claimUrl });
+  console.log('── Unique sends (address → communities) ──');
+  for (const g of batch) {
+    console.log(`  ✉ ${g.email}  (${g.homes.length} ${g.homes.length > 1 ? 'communities' : 'community'})`);
+    for (const h of g.homes) console.log(`       • ${h.name}`);
+  }
+
+  // Sample rendered email (first multi-home group if any, else first group).
+  const sample = batch.find((g) => g.homes.length > 1) ?? batch[0];
+  if (sample) {
+    const comms = sample.homes.map((h) => ({ name: h.name, claimUrl: claimUrl(h.id, sample.email, secret) }));
+    const unsub = unsubscribeUrl(sample.email, secret);
+    console.log('\n── Sample rendered email (text) ──');
+    console.log(`To: ${sample.email}`);
+    console.log(`Subject: ${comms.length > 1 ? `Claim your ${comms.length} free CareLinkAI listings` : `Claim your free CareLinkAI listing for ${comms[0].name}`}`);
+    console.log('List-Unsubscribe: <' + unsub + '>, <mailto:noreply@getcarelinkai.com?subject=unsubscribe>');
+    console.log('---');
+    console.log(`${comms.length > 1 ? 'Your communities are' : `${comms[0].name} is`} listed on CareLinkAI…\n`);
+    for (const c of comms) console.log(`• ${c.name}: ${c.claimUrl}`);
+    console.log(`\n---\nCareLinkAI · ${addrForRender}\nUnsubscribe: ${unsub}`);
+  }
+
+  if (dryRun) {
+    console.log('\n─────────────────────────────────────────────');
+    console.log(`Would send: ${batch.length} emails to ${batch.length} unique addresses (${batch.reduce((n, g) => n + g.homes.length, 0)} homes)`);
+    console.log('─────────────────────────────────────────────');
+    console.log('\nDRY RUN complete. Re-run with --force to send.');
+    if (!postalAddress) console.log('⚠ Set COMPANY_POSTAL_ADDRESS (real mailing address) before --force — required for CAN-SPAM.');
+    return;
+  }
+
+  let sent = 0, failed = 0, homesSent = 0;
+  for (const g of batch) {
+    const comms = g.homes.map((h) => ({ name: h.name, claimUrl: claimUrl(h.id, g.email, secret) }));
+    const ok = await sendDirectoryClaimInviteEmail({
+      toEmail: g.email,
+      communities: comms,
+      unsubscribeUrl: unsubscribeUrl(g.email, secret),
+      postalAddress: postalAddress!,
+    });
     if (ok) {
-      await prisma.assistedLivingHome.update({ where: { id: h.id }, data: { claimNudgeLastSentAt: new Date() } });
-      console.log(`  ✅ SENT → ${email} [${conf}]  "${h.name}"`);
-      sent++;
+      await prisma.assistedLivingHome.updateMany({ where: { id: { in: g.homes.map((h) => h.id) } }, data: { claimNudgeLastSentAt: new Date() } });
+      console.log(`  ✅ SENT → ${g.email} (${g.homes.length} home${g.homes.length > 1 ? 's' : ''})`);
+      sent++; homesSent += g.homes.length;
     } else {
-      console.log(`  ❌ FAILED → ${email}  "${h.name}" (left un-throttled to retry)`);
+      console.log(`  ❌ FAILED → ${g.email} (left un-throttled to retry)`);
       failed++;
     }
   }
-
   console.log('\n─────────────────────────────────────────────');
-  console.log(`Eligible (tier=${tier}, not throttled): ${totalEligible}`);
-  console.log(`${dryRun ? 'Would send' : 'Sent'}: ${dryRun ? eligible.length : sent}`);
-  if (!dryRun && failed) console.log(`Failed:    ${failed}`);
+  console.log(`Sent: ${sent} emails  ·  ${homesSent} homes  ·  ${failed} failed`);
   console.log('─────────────────────────────────────────────');
-  if (dryRun) console.log('\nDRY RUN complete. Re-run with --force to actually send.');
 }
 
 main()
-  .catch((e) => {
-    console.error('FATAL:', e);
-    process.exit(1);
-  })
+  .catch((e) => { console.error('FATAL:', e); process.exit(1); })
   .finally(() => prisma.$disconnect());
