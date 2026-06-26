@@ -97,9 +97,10 @@ ABSOLUTE RULES — violate none:
 2. You MAY add GENERAL, clearly non-specific context: what the stated care level(s) TYPICALLY provide, and general facts about the named city/county/area (e.g., proximity to highways or hospitals). Frame these as general context, never as specific claims about this community.
 3. Never state a number (capacity, price, year, ratio) you were not given.
 4. Tone: warm, factual, plain. No marketing superlatives (no "luxurious", "premier", "best", "state-of-the-art"). No markdown, no headings, third person.
-5. Length: 90–140 words.
+5. Length: 90–140 words, written as ONE flowing paragraph — no line breaks or blank lines.
 6. Naturally include the city, the county (if provided), and the care type — for local SEO.
-7. END with: one sentence stating the listing reflects public licensing records and that the operator can claim it to add photos, current pricing, and verified details — immediately followed by a short tour/inquiry call to action.`;
+7. END with: one sentence stating the listing reflects public licensing records and that the operator can claim it to add photos, current pricing, and verified details — immediately followed by a short tour/inquiry call to action.
+8. VARY your wording. Do NOT reuse a fixed stock sentence about what the care level provides — phrase the general care context differently each time so listings don't read as templated.`;
 
 function buildUserPrompt(f: UnclaimedFacts): string {
   const careText = readableCareLevels(f.careLevel);
