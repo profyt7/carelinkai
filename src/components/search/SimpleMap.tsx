@@ -90,11 +90,16 @@ const getLng = (home: HomeData): number | undefined => {
   return toNumber(home.coordinates?.lng);
 };
 
-const createCustomIcon = (price: number | null, isSelected: boolean = false) => {
-  const priceDisplay = price ? `$${Math.floor(price / 1000)}k+` : '$?';
+const createCustomIcon = (price: number | null, isSelected: boolean = false, name?: string) => {
   const color = isSelected ? '#dc2626' : '#3b82f6';
+  const hasPrice = typeof price === 'number' && price > 0;
+  // When price is unknown (unclaimed listings have no price), show the facility's
+  // initial instead of a confusing "$?" price bubble.
+  const initial = (name ?? '').replace(/[^A-Za-z0-9]/g, '').charAt(0).toUpperCase() || '•';
+  const label = hasPrice ? `$${Math.floor(price / 1000)}k+` : initial;
+  const fontSize = hasPrice ? 12 : 18;
   return L.divIcon({
-    html: `<div style="background-color:${color};color:white;border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;box-shadow:0 2px 5px rgba(0,0,0,0.2)">${priceDisplay}</div>`,
+    html: `<div style="background-color:${color};color:white;border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:${fontSize}px;box-shadow:0 2px 5px rgba(0,0,0,0.2)">${label}</div>`,
     className: '',
     iconSize: [40, 40],
     iconAnchor: [20, 40],
@@ -245,7 +250,7 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
       const lng = getLng(home);
       if (lat !== undefined && lng !== undefined) {
         const marker = L.marker([lat, lng], {
-          icon: createCustomIcon(home.priceRange.min, selectedHome === home.id)
+          icon: createCustomIcon(home.priceRange.min, selectedHome === home.id, home.name)
         }).addTo(map);
         
         // Create popup content inline using current favorites ref
@@ -261,7 +266,7 @@ const SimpleMap: React.FC<SimpleMapProps> = ({
                 </button>
               </div>
               <p class="text-xs text-neutral-600 mb-2">${addressText}</p>
-              <div class="flex items-center text-xs text-neutral-500 mb-2"><span class="mr-1">$</span>${home.priceRange.formattedMin || '$?'}+/month</div>
+              <div class="flex items-center text-xs text-neutral-500 mb-2">${home.priceRange.formattedMin ? `<span class="mr-1">$</span>${home.priceRange.formattedMin}+/month` : 'Price on request'}</div>
               <a href="/homes/${home.id}" class="block w-full text-center bg-primary-500 hover:bg-primary-600 text-white text-xs py-1.5 rounded transition-colors">View Details</a>
             </div>
           `;
