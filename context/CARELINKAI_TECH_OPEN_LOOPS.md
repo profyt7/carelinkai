@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-06-26 — claim-nudge sender hardened (collapse by email + CAN-SPAM #624); multi-home claim shipped (#625, OL-095). Gate before scale send: set COMPANY_POSTAL_ADDRESS._
+_Last updated: 2026-06-26 — claim-nudge SCALE WAVE SENT (28 collapsed emails → 46 homes); ~59 homes / ~41 operators contacted. Now measuring conversion._
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -267,18 +267,18 @@ Each loop: what it is, why it matters, what done looks like.
 - **Status:** ✅ CLOSED 2026-06-25 — the DRAFT-pending Ohman-at-Briar twin was archived via #615; then Cowork's research surfaced 5 more ACTIVE duplicate pairs, all resolved by `dedupe-directory-homes.ts` (#617, founder ran `--force`): Briarcliff Manor=Ohman at Briar, Harbor Court=Meadow Falls of Rocky River, Cuyahoga Falls Danbury Woods=Danbury Woods, Solon Pointe=Solon Pointe at Emerald Ridge, Sunrise at Shaker Heights=The Woodlands of Shaker Heights, Ohman at Holly=Holly Hill. Directory 168→**163**. Keeper-must-be-ACTIVE guard ensured no facility was orphaned.
 - **Residual:** Nason Center of Breckenridge Village vs Ohio Living Breckenridge Village left for manual review (possible-only; Nason is the SNF health center, likely a distinct unit) — see OL-093.
 
-### OL-092: Claim-nudge pilot — measure, then scale to MEDIUM tier (+ CAN-SPAM)
-- **Status:** 🟡 OPEN — pilot SENT 2026-06-25 (13 HIGH via `send-claim-nudges.ts`, #618). **Outreach data finalized** via the SEND_READY backfill (`load-outreach-send-ready.ts`, #621, founder ran `--force`): **59 verified emails** set (13 pilot + **46 scale wave LOADED but not sent**); **5 hard-bounced cleared → CALL-ONLY** (Arden Courts Parma/Bath, Vitalia Strongsville, Village of the Falls, Symphony at Mentor); 4 dup + 10 hold emails suppressed.
+### OL-092: Claim-nudge — pilot + scale wave SENT; now measuring
+- **Status:** 🟢 SENT — measurement pending. **Pilot** SENT 2026-06-25 (13 HIGH). **Scale wave SENT 2026-06-26** via `send-claim-nudges.ts --tier medium --force`: **28 collapsed emails → 46 homes, 0 failed** (all Resend-accepted), after `COMPANY_POSTAL_ADDRESS` was set in Render (6545 Market Ave N, Ste 100, Canton OH 44721). **Total: ~59 unclaimed homes contacted across ~41 operators.** Outreach data finalized via the SEND_READY backfill (`load-outreach-send-ready.ts`, #621): 59 verified emails; 5 hard-bounced → CALL-ONLY; 4 dup + 10 hold suppressed.
 - **Sender hardened for scale (2026-06-26):**
   - ✅ **Collapse by unique email** (#624) — `send-claim-nudges.ts` now sends ONE email per address; a shared inbox gets a single email listing every community with its own claim link. Preview: 59 homes → **41 unique sends** (csig→6, oneillhc→5, meadowfalls→4, judson→3…). 24h throttle is now per-address; INACTIVE excluded.
   - ✅ **CAN-SPAM** (#624) — `EmailSuppression` model + migration `20260626000001_email_suppression`; one-click unsubscribe route `/api/outreach/unsubscribe` (signed token, `List-Unsubscribe` + RFC 8058 headers); sender skips suppressed addresses every run. Email footer carries the unsubscribe link + company physical address + clear sender identity.
   - ✅ **Multi-home claim** (#625, OL-095) — new `/claim?token=` landing lets one operator claim ALL their listings from the collapsed email.
+- ✅ `COMPANY_POSTAL_ADDRESS` set in Render; sender hardened (#624 collapse + CAN-SPAM) and multi-home claim shipped (#625) before the send.
 - **What's next:**
-  1. **⛔ SET `COMPANY_POSTAL_ADDRESS`** (real mailing address / registered PO box) in Render env — the sender REFUSES to `--force` until it's set (placeholder rejected). This is the one hard gate before any scale send.
-  2. **Measure the pilot (~3–5 business days):** `npx tsx scripts/report-claim-funnel.ts` (#619). Opens/clicks live in the Resend dashboard.
-  3. **Resend suppression:** confirm the 5 bounced addresses are on Resend's suppression list (dashboard) + getcarelinkai.com is Verified (DKIM/SPF).
-  4. **Send the scale wave:** `send-claim-nudges.ts --tier medium` (dry-run → review collapsed list + sample email) → `--force` (≈41 collapsed sends, after the env var is set). Then the phone-only homes become a VA call list (`report-directory-homes.ts --csv`).
-- **Done when:** COMPANY_POSTAL_ADDRESS set; pilot measured; scale wave sent; claim conversion tracked.
+  1. **Measure (~3–5 business days):** `npx tsx scripts/report-claim-funnel.ts` (#619) — now covers all ~59 (pilot + scale wave). Opens/clicks live in the Resend dashboard.
+  2. **Watch for bounces:** a few generic `info@` inboxes may hard-bounce; Resend auto-suppresses them. (Optional follow-up: sync Resend bounces into our `EmailSuppression` table so our own re-runs also skip them.)
+  3. **Then the long tail:** the ~78 phone-only homes become a VA call list (`report-directory-homes.ts --csv`).
+- **Done when:** claim conversion measured; healthy operators onboarded. (Pilot + scale wave both SENT — the build/send arc is complete.)
 
 ### OL-095: Multi-home claim from one collapsed email
 - **Status:** ✅ CLOSED 2026-06-26 (#625). The collapse (#624) sends a shared-inbox operator one email with N claim links; the single-use `seededHomeId` guard previously let them claim only the first. New `/claim?token=` landing page verifies the signed token and, for the already-signed-in addressed operator, re-arms `seededHomeId` (existing `/api/operator/claim`) → onboarding step 2 claims it (image-rights ack + transfer). First-timers fall through to the unchanged register/redeem flow. Sentinel-owned safety check; transfer endpoint + its e2e untouched.
