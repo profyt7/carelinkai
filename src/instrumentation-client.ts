@@ -35,6 +35,16 @@ if (SENTRY_DSN) {
     // HIPAA: never send PII/PHI to Sentry by default
     sendDefaultPii: false,
 
+    // Drop known third-party browser noise (browser extensions / email link-scanners /
+    // client adblockers) so it doesn't burn Sentry quota. None of these are app errors.
+    ignoreErrors: [
+      // MS Outlook "SafeLink" / extension false positive on link pre-fetch
+      'Object Not Found Matching Id',
+      'Non-Error promise rejection captured with value: Object Not Found Matching Id',
+      // Client adblocker/network blocking js.stripe.com
+      'Failed to load Stripe.js',
+    ],
+
     // Integrations
     integrations: [
       // Session Replay — mask all inputs (form fields are primary PHI risk in replays)
@@ -53,6 +63,14 @@ if (SENTRY_DSN) {
     beforeSend(event) {
       // Filter noisy ResizeObserver errors
       if (event.exception?.values?.[0]?.value?.includes('ResizeObserver')) {
+        return null;
+      }
+      // Belt-and-suspenders for the known third-party noise above: these often arrive as
+      // a promise-rejection `message` rather than an exception value, which ignoreErrors
+      // can miss. Drop them so they don't burn quota.
+      const noise = ['Object Not Found Matching Id', 'Failed to load Stripe.js'];
+      const haystack = `${event.message ?? ''} ${event.exception?.values?.[0]?.value ?? ''}`;
+      if (noise.some((n) => haystack.includes(n))) {
         return null;
       }
       // Scrub PHI/PII from captured events

@@ -6,20 +6,11 @@ import React, {
   useState,
   useEffect,
   useReducer,
-  useMemo,
 } from "react";
 import { SessionProvider } from "next-auth/react";
-import { Elements } from "@stripe/react-stripe-js";
-import { loadStripe } from "@stripe/stripe-js";
-import type { StripeElementsOptions } from "@stripe/stripe-js";
 import { io, Socket } from "socket.io-client";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "react-hot-toast";
-
-// Initialize Stripe
-const publishableKey =
-  process.env["NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY"];
-const stripePromise = publishableKey ? loadStripe(publishableKey) : null;
 
 // Socket.io Context
 type SocketContextType = {
@@ -352,20 +343,6 @@ function AppProvider({ children }: { children: React.ReactNode }) {
 
 // Main Providers component that wraps the app
 export function Providers({ children }: { children: React.ReactNode }) {
-  // Stripe payment options with HIPAA compliance considerations
-  const stripeOptions = useMemo<StripeElementsOptions>(
-    () => ({
-      locale: "en",
-      // HIPAA compliance: Ensure proper data handling
-      appearance: {
-        theme: "stripe",
-        variables: {
-          colorPrimary: "#0099e6",
-        },
-      },
-    }),
-    []
-  );
 
   const e2eEnvBypass = process.env['NODE_ENV'] !== 'production' && process.env['NEXT_PUBLIC_E2E_AUTH_BYPASS'] === '1';
   const e2eCookieBypass = typeof window !== 'undefined' && document.cookie.includes('e2e-bypass=1');
@@ -398,15 +375,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <UserProvider>
           <AppProvider>
-            <SocketProvider>
-              {stripePromise ? (
-                <Elements stripe={stripePromise} options={stripeOptions}>
-                  {children}
-                </Elements>
-              ) : (
-                children
-              )}
-            </SocketProvider>
+            {/* Stripe <Elements> is mounted per-route by the components that need it
+                (DepositModal, BackgroundCheckOrderPanel, /background-checks), so we no
+                longer load Stripe.js app-wide — it was initializing on /auth/login and
+                throwing "Failed to load Stripe.js" when a client blocked js.stripe.com. */}
+            <SocketProvider>{children}</SocketProvider>
           </AppProvider>
         </UserProvider>
       </ThemeProvider>
