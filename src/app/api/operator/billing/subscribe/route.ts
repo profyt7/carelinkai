@@ -6,13 +6,9 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { stripe } from '@/lib/stripe';
 import { UserRole } from '@prisma/client';
+import { priceIdForPlan, planLabel } from '@/lib/operator-plans';
 
-const PLAN_PRICE_MAP: Record<string, string | undefined> = {
-  STARTER:      process.env['STRIPE_PRICE_STARTER'],
-  PROFESSIONAL: process.env['STRIPE_PRICE_PROFESSIONAL'],
-  GROWTH:       process.env['STRIPE_PRICE_GROWTH'],
-  AGENCY:       process.env['STRIPE_PRICE_AGENCY'],
-};
+const SUPPORT_EMAIL = 'hello@getcarelinkai.com';
 
 /**
  * POST /api/operator/billing/subscribe
@@ -38,10 +34,15 @@ export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => ({}));
   const plan: string = (body.plan || 'STARTER').toUpperCase();
 
-  const priceId = PLAN_PRICE_MAP[plan];
+  // A tier is only purchasable if its Stripe Price ID is configured. If not, this
+  // is a config gap (e.g. STRIPE_PRICE_AGENCY unset) — never show the operator an
+  // env-var name; log the detail server-side and point them to support. The UI
+  // hides unconfigured tiers, so reaching here means a stale client or direct call.
+  const priceId = priceIdForPlan(plan);
   if (!priceId) {
+    console.error(`[billing/subscribe] No Stripe Price ID for plan "${plan}" — STRIPE_PRICE_${plan} is not set.`);
     return NextResponse.json(
-      { error: `No Stripe Price ID configured for plan "${plan}". Set STRIPE_PRICE_${plan} in your environment variables.` },
+      { error: `The ${planLabel(plan)} plan isn't available for self-serve checkout yet. Email ${SUPPORT_EMAIL} and we'll set you up.` },
       { status: 400 }
     );
   }
@@ -49,21 +50,6 @@ export async function POST(request: NextRequest) {
   const operator = await prisma.operator.findUnique({ where: { userId: user.id } });
   if (!operator) {
     return NextResponse.json({ error: 'Operator not found' }, { status: 404 });
-  }
-
-  // Create or retrieve Stripe customer
-  let stripeCustomerId = operator.stripeCustomerId;
-  if (!stripeCustomerId) {
-    const customer = await stripe.customers.create({
-      email: user.email!,
-      name: `${user.firstName} ${user.lastName}`.trim() || operator.companyName,
-      metadata: { operatorId: operator.id, userId: user.id },
-    });
-    stripeCustomerId = customer.id;
-    await prisma.operator.update({
-      where: { id: operator.id },
-      data: { stripeCustomerId },
-    });
   }
 
   // Derive the base URL from the incoming request so the success/cancel URLs always
@@ -77,19 +63,53 @@ export async function POST(request: NextRequest) {
     : request.headers.get('origin');
   const appUrl = requestOrigin || process.env['NEXT_PUBLIC_APP_URL'] || 'https://getcarelinkai.com';
 
-  const checkoutSession = await stripe.checkout.sessions.create({
-    customer: stripeCustomerId,
-    mode: 'subscription',
-    line_items: [{ price: priceId, quantity: 1 }],
-    subscription_data: {
-      trial_period_days: 14,
-      metadata: { operatorId: operator.id, plan },
-    },
-    success_url: `${appUrl}/operator/billing?subscription=success`,
-    cancel_url: `${appUrl}/operator/billing?subscription=canceled`,
-    metadata: { operatorId: operator.id, plan },
-    allow_promotion_codes: false,
-  });
+  // Everything that talks to Stripe is wrapped so a Stripe/network failure returns
+  // a clean, actionable message instead of a bodyless 500 that dead-ends the
+  // operator mid-checkout (lost MRR + lost trust).
+  try {
+    // Create or retrieve Stripe customer
+    let stripeCustomerId = operator.stripeCustomerId;
+    if (!stripeCustomerId) {
+      const customer = await stripe.customers.create({
+        email: user.email!,
+        name: `${user.firstName} ${user.lastName}`.trim() || operator.companyName,
+        metadata: { operatorId: operator.id, userId: user.id },
+      });
+      stripeCustomerId = customer.id;
+      await prisma.operator.update({
+        where: { id: operator.id },
+        data: { stripeCustomerId },
+      });
+    }
 
-  return NextResponse.json({ url: checkoutSession.url });
+    const checkoutSession = await stripe.checkout.sessions.create({
+      customer: stripeCustomerId,
+      mode: 'subscription',
+      line_items: [{ price: priceId, quantity: 1 }],
+      subscription_data: {
+        trial_period_days: 14,
+        metadata: { operatorId: operator.id, plan },
+      },
+      success_url: `${appUrl}/operator/billing?subscription=success`,
+      cancel_url: `${appUrl}/operator/billing?subscription=canceled`,
+      metadata: { operatorId: operator.id, plan },
+      allow_promotion_codes: false,
+    });
+
+    if (!checkoutSession.url) {
+      console.error('[billing/subscribe] Stripe returned a checkout session with no URL.');
+      return NextResponse.json(
+        { error: `We couldn't start checkout right now. Please try again in a moment, or email ${SUPPORT_EMAIL}.` },
+        { status: 502 }
+      );
+    }
+
+    return NextResponse.json({ url: checkoutSession.url });
+  } catch (err) {
+    console.error('[billing/subscribe] Stripe error:', err);
+    return NextResponse.json(
+      { error: `We couldn't start checkout right now. Please try again in a moment, or email ${SUPPORT_EMAIL}.` },
+      { status: 502 }
+    );
+  }
 }

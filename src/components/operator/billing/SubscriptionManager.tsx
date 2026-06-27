@@ -82,6 +82,9 @@ export default function SubscriptionManager() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [showPlanChange, setShowPlanChange] = useState(false);
+  // Tiers with a configured Stripe price. null = not loaded; until then we hide
+  // AGENCY so a tier that would dead-end at checkout never appears as buyable.
+  const [availablePlans, setAvailablePlans] = useState<string[] | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -94,6 +97,11 @@ export default function SubscriptionManager() {
       })
       .catch(() => setError('Could not load billing data.'))
       .finally(() => setLoading(false));
+
+    fetch('/api/operator/billing/plans')
+      .then((r) => r.json())
+      .then((d) => { if (Array.isArray(d?.available)) setAvailablePlans(d.available); })
+      .catch(() => {});
   }, []);
 
   async function handleSubscribe(plan: string) {
@@ -165,6 +173,13 @@ export default function SubscriptionManager() {
   const currentPlan = subscription?.subscriptionPlan;
   const planDetails = currentPlan ? PLAN_DETAILS[currentPlan] : null;
   const currentRank = currentPlan ? (PLAN_RANK[currentPlan] ?? 0) : 0;
+  // Show a tier if it's purchasable (configured Stripe price) or it's the
+  // operator's current plan. Until availability loads, hide AGENCY so a tier
+  // that would dead-end at checkout never appears.
+  const visiblePlans = PLAN_ORDER.filter((plan) =>
+    plan === currentPlan ||
+    (availablePlans === null ? plan !== 'AGENCY' : availablePlans.includes(plan))
+  );
 
   return (
     <div className="space-y-4">
@@ -238,7 +253,7 @@ export default function SubscriptionManager() {
             Select a new plan — changes take effect immediately with prorated billing.
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {PLAN_ORDER.map((plan) => {
+            {visiblePlans.map((plan) => {
               const details = PLAN_DETAILS[plan];
               const isCurrent = plan === currentPlan;
               const isUpgrade = PLAN_RANK[plan] > currentRank;
@@ -352,7 +367,7 @@ export default function SubscriptionManager() {
             Choose a plan — 14-day free trial, no credit card required at signup
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {PLAN_ORDER.map((plan) => {
+            {visiblePlans.map((plan) => {
               const details = PLAN_DETAILS[plan];
               const isLoading = actionLoading === plan;
               return (
