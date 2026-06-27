@@ -49,6 +49,9 @@ import PricingCalculator from "@/components/homes/PricingCalculator";
 import type { PricingEstimate } from "@/components/homes/PricingCalculator";
 import { getCloudinaryAvatar, isCloudinaryUrl } from "@/lib/cloudinaryUrl";
 import { buildInquiryPayload } from "@/lib/inquiries/payload";
+import { useSession } from "next-auth/react";
+import toast from "react-hot-toast";
+import { toggleFavorite as toggleFavoriteApi } from "@/lib/favoritesService";
 
 // Dynamically import the SimpleMap component with SSR disabled
 const SimpleMap = dynamic(
@@ -269,6 +272,7 @@ const CARE_LEVELS = [
 export default function HomeDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { status: authStatus } = useSession();
   const { id } = params;
   
   // State for the home data
@@ -360,7 +364,10 @@ export default function HomeDetailPage() {
           if (!cancelled) setLoadError('Malformed response');
           return;
         }
-        if (!cancelled) setRealHome(j.data);
+        if (!cancelled) {
+          setRealHome(j.data);
+          setIsFavorite(Boolean(j.data?.isFavorited));
+        }
       } catch (e: any) {
         if (!cancelled) setLoadError(e?.message || 'Network error');
       } finally {
@@ -664,10 +671,33 @@ export default function HomeDetailPage() {
     }
   };
   
-  // Toggle favorite
-  const toggleFavorite = () => {
-    setIsFavorite(!isFavorite);
-    // In a real app, we would save this to the user's profile
+  // Toggle favorite — persists to the user's saved homes (matches /search). Anon
+  // visitors can browse freely; saving prompts signup (not a login wall).
+  const toggleFavorite = async () => {
+    if (authStatus !== 'authenticated') {
+      toast(
+        (t) => (
+          <span>
+            Create a free account to save homes.{' '}
+            <a href="/auth/register" className="font-semibold text-teal-700 underline" onClick={() => toast.dismiss(t.id)}>
+              Sign up
+            </a>
+          </span>
+        ),
+        { duration: 6000 },
+      );
+      return;
+    }
+    const homeId = realHome?.id;
+    if (!homeId) return;
+    const next = !isFavorite;
+    setIsFavorite(next); // optimistic
+    try {
+      await toggleFavoriteApi(homeId);
+    } catch {
+      setIsFavorite(!next); // revert on error
+      toast.error('Could not update your saved homes. Please try again.');
+    }
   };
   
   // Handle pricing estimate updates
