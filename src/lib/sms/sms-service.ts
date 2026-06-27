@@ -122,6 +122,16 @@ export class SMSService {
     return this.sendSMS(to, msg);
   }
 
+  // ── Operator (UNCLAIMED listing): TOUR→claim nudge — hottest lead, urgent copy ──
+  async sendTourClaimNudge(
+    to: string,
+    facilityName: string,
+    claimUrl: string
+  ): Promise<boolean> {
+    const msg = `A family wants to TOUR ${facilityName} on CareLinkAI. Claim your free listing (~2 min) to confirm the visit: ${claimUrl}`;
+    return this.sendSMS(to, msg);
+  }
+
   // Legacy — kept for backward compatibility
   async sendFollowUpSMS(to: string, contactName: string, inquiryId: string): Promise<boolean> {
     const msg = `Hi ${contactName}, this is CareLinkAI following up on your senior care inquiry. We're here to help! Reply YES to speak with an advisor or visit carelinkai.com. Ref: ${inquiryId.slice(0, 8)}`;

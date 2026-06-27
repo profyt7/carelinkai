@@ -65,8 +65,10 @@ function buildClaimUrl(homeId: string, operatorEmail: string, secret: string): s
 export async function notifyUnclaimedHomeInquiry(params: {
   homeId: string;
   inquiryId: string;
+  /** What triggered the nudge. A tour is the hottest lead → more urgent copy. */
+  trigger?: 'inquiry' | 'tour';
 }): Promise<void> {
-  const { homeId, inquiryId } = params;
+  const { homeId, inquiryId, trigger = 'inquiry' } = params;
   try {
     const home = await prisma.assistedLivingHome.findUnique({
       where: { id: homeId },
@@ -112,10 +114,15 @@ export async function notifyUnclaimedHomeInquiry(params: {
       toEmail: outreachEmail,
       claimUrl,
       waitingCount,
+      trigger,
     });
 
     if (outreachPhone) {
-      await smsService.sendInquiryClaimNudge(outreachPhone, home.name, claimUrl);
+      if (trigger === 'tour') {
+        await smsService.sendTourClaimNudge(outreachPhone, home.name, claimUrl);
+      } else {
+        await smsService.sendInquiryClaimNudge(outreachPhone, home.name, claimUrl);
+      }
     }
 
     await prisma.assistedLivingHome.update({

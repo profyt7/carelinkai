@@ -16,6 +16,8 @@ import { z } from "zod";
 import { smsService } from "@/lib/sms/sms-service";
 import { sendTourConfirmationEmail } from "@/lib/notifications/tour-notifications";
 import { captureError } from '@/lib/sentry';
+import { notifyUnclaimedHomeInquiry, isUnclaimedHome } from "@/lib/claim-engine/inquiry-claim-notification";
+import { sendNewLeadOperatorEmail } from "@/lib/email";
 
 const tourRequestSchema = z.object({
   homeId: z.string(),
@@ -454,6 +456,29 @@ export async function POST(request: NextRequest) {
         tourRequest.home.name
       ).catch(() => {});
     }
+
+    // Email backup of the operator tour alert — CLAIMED homes only (never the
+    // directory sentinel). SMS can be missing/undeliverable; email is reliable.
+    const operatorEmail = tourRequest.operator?.user?.email;
+    if (operatorEmail && !isUnclaimedHome(operatorEmail)) {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'https://getcarelinkai.com';
+      sendNewLeadOperatorEmail({
+        facilityName: tourRequest.home.name,
+        toEmail: operatorEmail,
+        operatorFirstName: tourRequest.operator?.user?.firstName,
+        leadType: 'tour',
+        ctaUrl: `${appUrl.replace(/\/$/, '')}/operator/tours`,
+      }).catch(() => {});
+    }
+
+    // Tour→claim "pull" engine: a tour is the HOTTEST lead — nudge an UNCLAIMED
+    // facility to claim with urgent copy ("confirm the visit"). Self-filters to
+    // unclaimed homes with a known outreach email; non-blocking, generic (no PHI).
+    notifyUnclaimedHomeInquiry({
+      homeId: tourRequest.homeId,
+      inquiryId: tourRequest.id,
+      trigger: 'tour',
+    }).catch(() => {});
 
     // === STEP 10: Prepare Response ===
     console.log('🟢 [TOUR API] Step 10: Sending Response');
