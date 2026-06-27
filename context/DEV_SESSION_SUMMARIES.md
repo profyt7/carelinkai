@@ -2,6 +2,23 @@
 
 ---
 
+### 2026-06-27 (latest) — Lead-funnel: tour nudge, family fallback, claimed-op email, per-facility claim drip (#654–#657)
+
+- **Objective:** Close the inquiry/tour → operator-acquisition loop. Founder asked: when a family inquires/tours, does the facility get told + is there a follow-up sales procedure? Audit found gaps (tour requests never nudged unclaimed facilities; one-touch only; no family fallback; SMS-only for claimed). Built the fixes in order.
+- **Preceding fix:** **#654** — street-qualified re-match script for the conflated Brookdale Westlake Google place id (NOT a dedup; verifies separateness).
+- **Work completed (4 PRs):**
+  - **#655 (a + b):** Tour requests on UNCLAIMED homes now fire the claim-nudge with **tour-urgency** copy ("a family wants to tour — claim to confirm the visit"); engine gained a `trigger` param (inquiry copy unchanged). **(b)** New inquiries AND tour requests also **email** CLAIMED operators (`sendNewLeadOperatorEmail`) as a backup to the existing SMS (guarded to real operators, no PHI).
+  - **#656 (2):** Honest **family-side fallback** — unclaimed inquiry/tour success screens drop the false "representative will contact you in 24h" promise, set real expectations, and add a "browse similar communities ready to respond" link. UI-only via `realHome.unclaimed` + a `homeUnclaimed` prop on `TourRequestModal`.
+  - **#657 (3):** **Per-facility, email-only multi-touch claim drip.** Migration `20260627000002` adds `claimDripStartedAt/Step/NextAt/StoppedReason` (+ index). One drip per facility, started on first lead, advanced by a daily cron. Cadence days 0/3/7/14 then exhausted; copy **escalates** per touch (lead → "N waiting" → "you're missing leads" → "final notice") always surfacing the live N-waiting count. CAN-SPAM (unsubscribe + postal + List-Unsubscribe; refuses to send without `COMPANY_POSTAL_ADDRESS`). Hard stops: claimed/unsubscribe/bounce/no_email/exhausted. **`notifyUnclaimedHomeInquiry` now delegates** to `startClaimDripOnLead` (removed the old inline email+SMS+24h throttle — cold path is **email-only**, no SMS per TCPA/A2P; SMS reserved for claimed operators). `report-claim-drip.ts` attributes **claims by touch**.
+  - **Cron wiring:** new `.github/workflows/claim-drip.yml` (daily 14:00 UTC + manual dispatch) hits `/api/cron/claim-drip` with `secrets.CRON_SECRET` — mirrors the existing free GitHub Actions cron pattern (`process-followups.yml`). **Render cron in render.yaml needs a Standard plan (cost) — left commented; GHA is the active free scheduler.**
+- **Files changed:** `prisma/schema.prisma` + migration `20260627000002_home_claim_drip`; `src/lib/claim-engine/{claim-drip.ts (NEW), inquiry-claim-notification.ts}`; `src/lib/email.ts`; `src/lib/sms/sms-service.ts`; `src/app/api/{inquiries,family/tours/request}/route.ts`; `src/app/api/cron/claim-drip/route.ts` (NEW); `src/app/homes/[id]/page.tsx`, `src/components/tours/TourRequestModal.tsx`; `scripts/{fix-conflated-google-ratings,report-claim-drip}.ts` (NEW); `.github/workflows/claim-drip.yml` (NEW); `render.yaml`.
+- **Tests/build status:** #654–#657 green on full CI (incl. migrate-deploy); `tsc` clean; reviews + inquiry-claim-notification + inquiries-payload unit suites pass.
+- **Deployment impact:** Render auto-deployed; migration `20260627000002` ran. Cold pre-claim outreach is now an email-only drip. **Founder action:** ensure `CRON_SECRET` is set as a GitHub Actions secret (it already powers process-followups) so the daily claim-drip workflow can authenticate; `COMPANY_POSTAL_ADDRESS` already set.
+- **New risks/blockers:** none. Drip is CAN-SPAM-safe and self-stops. Watch the first cron run (manual `workflow_dispatch`) to confirm green.
+- **Recommended next step:** after ~a week, run `report-claim-drip.ts` for claims-by-touch and tune cadence/copy. Founder TODO open: rotate `demo.*` passwords; incognito-verify anon `/search`; verify Brookdale Westlake re-match (`fix-conflated-google-ratings.ts`).
+
+---
+
 ### 2026-06-27 (later) — First-party reviews (#5) + ratings populated (#650–#652)
 
 - **Objective:** Build the first-party review system (last enrichment item) and populate the Google rating badge.

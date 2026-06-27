@@ -34,6 +34,9 @@ services:
 #       sync: false  # Pull from environment variables
 #
 # Per-facility claim drip — advance due touches once daily (email-only).
+# NOTE: the ACTIVE (free) scheduler is the GitHub Actions workflow
+# .github/workflows/claim-drip.yml (Render cron needs Standard plan). This block
+# is the paid Render-cron equivalent for if/when the app leaves Starter.
 # - type: cron
 #   name: claim-drip
 #   runtime: node
