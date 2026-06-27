@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import authOptions from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
-import { FiArrowLeft, FiUsers, FiDollarSign, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
+import { FiArrowLeft, FiUsers, FiCheckCircle } from 'react-icons/fi';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Discharge Planner Management | Admin' };
@@ -17,8 +17,6 @@ const STATUS_STYLES: Record<string, string> = {
   INCOMPLETE_EXPIRED: 'bg-error-100 text-error-700',
   PAUSED: 'bg-amber-100 text-amber-700',
 };
-
-const SEAT_PRICE = 99; // $99/seat/mo
 
 export default async function AdminDischargePlannersPage() {
   const session = await getServerSession(authOptions);
@@ -41,10 +39,8 @@ export default async function AdminDischargePlannersPage() {
     orderBy: { createdAt: 'desc' },
   });
 
-  const activeCount = planners.filter((p) => p.subscriptionStatus === 'ACTIVE').length;
-  const trialingCount = planners.filter((p) => p.subscriptionStatus === 'TRIALING').length;
-  const pastDueCount = planners.filter((p) => p.subscriptionStatus === 'PAST_DUE').length;
-  const mrr = activeCount * SEAT_PRICE;
+  // Discharge planners are FREE (ratified 2026-06-27) — no DP subscription/MRR.
+  const activeAccounts = planners.filter((p) => p.user.status === 'ACTIVE').length;
 
   return (
     <div className="min-h-screen bg-neutral-50">
@@ -60,9 +56,7 @@ export default async function AdminDischargePlannersPage() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {[
             { label: 'Total Planners', value: planners.length, icon: FiUsers, color: 'bg-primary-100 text-primary-600' },
-            { label: 'Active Seats', value: activeCount, icon: FiCheckCircle, color: 'bg-success-100 text-success-600' },
-            { label: 'In Trial', value: trialingCount, icon: FiDollarSign, color: 'bg-secondary-100 text-secondary-600' },
-            { label: 'Past Due', value: pastDueCount, icon: FiAlertCircle, color: 'bg-error-100 text-error-600' },
+            { label: 'Active Accounts', value: activeAccounts, icon: FiCheckCircle, color: 'bg-success-100 text-success-600' },
           ].map((s) => (
             <div key={s.label} className="bg-white rounded-lg border border-neutral-200 p-5 flex items-center gap-3">
               <div className={`p-2.5 rounded-lg ${s.color}`}><s.icon size={18} /></div>
@@ -74,15 +68,15 @@ export default async function AdminDischargePlannersPage() {
           ))}
         </div>
 
-        {/* MRR banner */}
-        <div className="mb-6 bg-primary-600 rounded-xl p-5 flex items-center justify-between text-white">
+        {/* Free-access banner — DP is not a revenue line (operator subscriptions only) */}
+        <div className="mb-6 bg-success-600 rounded-xl p-5 flex items-center justify-between text-white">
           <div>
-            <p className="text-primary-200 text-sm">Discharge Planner MRR</p>
-            <p className="text-3xl font-bold">${mrr.toLocaleString()}<span className="text-primary-300 text-lg font-normal">/mo</span></p>
+            <p className="text-success-100 text-sm">Discharge Planner access</p>
+            <p className="text-2xl font-bold">Free — no subscription</p>
           </div>
-          <div className="text-right text-primary-200 text-sm">
-            <p>{activeCount} active seats × ${SEAT_PRICE}/seat</p>
-            <p>{trialingCount} in trial · {pastDueCount} past due</p>
+          <div className="text-right text-success-100 text-sm">
+            <p>Revenue is operator subscriptions only.</p>
+            <p>{planners.length} planner accounts · {activeAccounts} active</p>
           </div>
         </div>
 
@@ -91,14 +85,14 @@ export default async function AdminDischargePlannersPage() {
           <div className="px-6 py-4 border-b border-neutral-200 flex items-center justify-between">
             <div>
               <h2 className="font-semibold text-neutral-900">All Discharge Planners ({planners.length})</h2>
-              <p className="text-sm text-neutral-500 mt-0.5">Hospital and facility-based discharge coordinators on the $99/seat/mo plan.</p>
+              <p className="text-sm text-neutral-500 mt-0.5">Hospital and facility-based discharge coordinators — free access, no subscription.</p>
             </div>
           </div>
           {planners.length === 0 ? (
             <div className="p-12 text-center">
               <FiUsers size={32} className="mx-auto text-neutral-300 mb-3" />
               <p className="text-neutral-500 font-medium">No discharge planners yet</p>
-              <p className="text-neutral-400 text-sm mt-1">Discharge planners sign up at /discharge-planner/billing for a $99/seat/mo subscription.</p>
+              <p className="text-neutral-400 text-sm mt-1">Discharge planners sign up free at /auth/register?role=discharge_planner — no subscription.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">

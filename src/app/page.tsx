@@ -1289,7 +1289,7 @@ export default function HomePage() {
               Simple, Transparent Pricing
             </h2>
             <p className="text-xl text-neutral-500 max-w-3xl mx-auto">
-              Families are always free. Caregivers are free to start, Pro optional. Operators, providers, and discharge planners subscribe.
+              Families and discharge planners are always free. Caregivers are free to start, Pro optional. Operators and providers subscribe.
             </p>
           </div>
 
@@ -1422,55 +1422,20 @@ export default function HomePage() {
             </p>
           </div>
 
-          {/* Discharge Planner pricing */}
-          <div className="max-w-6xl mx-auto mt-14">
-            <div className="text-center mb-8">
-              <div className="inline-flex items-center gap-2 text-neutral-500 text-sm">
-                <div className="h-px w-16 bg-neutral-200"></div>
-                <span className="font-semibold uppercase tracking-widest text-xs">Discharge Planner &amp; Case Manager Plans</span>
-                <div className="h-px w-16 bg-neutral-200"></div>
+          {/* Discharge planners & case managers — FREE */}
+          <div className="max-w-2xl mx-auto mt-14">
+            <div className="bg-gradient-to-r from-secondary-50 to-success-50 border-2 border-success-300 rounded-2xl p-6 md:p-8 text-center">
+              <div className="inline-flex flex-wrap items-center justify-center gap-2 mb-2">
+                <span className="text-2xl">🏥</span>
+                <h3 className="text-xl font-bold text-neutral-900">Free for Discharge Planners &amp; Case Managers</h3>
+                <span className="bg-success-500 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">$0</span>
               </div>
-            </div>
-            <div className="grid sm:grid-cols-2 gap-6 max-w-2xl mx-auto pt-6">
-              {/* Individual */}
-              <div className="border-2 border-neutral-200 rounded-2xl p-7 flex flex-col hover:border-secondary-500 hover:shadow-lg transition-all">
-                <div className="mb-4">
-                  <div className="text-sm font-semibold text-neutral-500 uppercase tracking-wide mb-2">Individual</div>
-                  <div className="text-4xl font-bold text-neutral-900">$99<span className="text-lg font-normal text-neutral-500">/mo</span></div>
-                  <div className="text-sm text-neutral-500 mt-1">1 planner · 14-day free trial</div>
-                </div>
-                <ul className="space-y-3 mb-8 flex-1">
-                  {['AI placement search', 'Multi-facility requests', 'Real-time bed availability', 'Placement history & analytics', 'HIPAA-aligned safeguards'].map((f) => (
-                    <li key={f} className="flex items-center gap-2 text-sm text-neutral-500">
-                      <FiCheck className="text-success-500 flex-shrink-0" /> {f}
-                    </li>
-                  ))}
-                </ul>
-                <Link href="/auth/register?role=discharge_planner&plan=individual" className="w-full text-center border-2 border-secondary-500 text-secondary-500 px-6 py-3 rounded-lg font-semibold hover:bg-secondary-500 hover:text-white transition-all">
-                  Start Free Trial
-                </Link>
-              </div>
-              {/* Department */}
-              <div className="border-2 border-secondary-500 rounded-2xl p-7 flex flex-col shadow-xl relative bg-gradient-to-b from-secondary-50 to-white">
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                  <span className="bg-gradient-to-r from-secondary-500 to-primary-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow whitespace-nowrap">BEST FOR HOSPITALS</span>
-                </div>
-                <div className="mb-4">
-                  <div className="text-sm font-semibold text-secondary-500 uppercase tracking-wide mb-2">Department</div>
-                  <div className="text-4xl font-bold text-neutral-900">$499<span className="text-lg font-normal text-neutral-500">/mo</span></div>
-                  <div className="text-sm text-neutral-500 mt-1">Up to 10 planner seats · one invoice</div>
-                </div>
-                <ul className="space-y-3 mb-8 flex-1">
-                  {['Everything in Individual', 'Up to 10 planner seats', 'Shared department dashboard', 'Centralized billing', '14-day free trial'].map((f) => (
-                    <li key={f} className="flex items-center gap-2 text-sm text-neutral-500">
-                      <FiCheck className="text-secondary-500 flex-shrink-0" /> {f}
-                    </li>
-                  ))}
-                </ul>
-                <Link href="/auth/register?role=discharge_planner&plan=department" className="w-full text-center bg-gradient-to-r from-secondary-500 to-primary-500 text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity shadow-lg">
-                  Start Free Trial
-                </Link>
-              </div>
+              <p className="text-neutral-600 text-sm leading-relaxed max-w-xl mx-auto mb-5">
+                Hospital social workers and case managers get full access to AI placement search, multi-facility requests, real-time bed availability, and placement history &amp; analytics — at no cost, with HIPAA-aligned safeguards.
+              </p>
+              <Link href="/auth/register?role=discharge_planner" className="inline-block bg-gradient-to-r from-secondary-500 to-primary-500 text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity shadow-lg">
+                Get Free Access
+              </Link>
             </div>
           </div>
         </div>
@@ -1506,7 +1471,7 @@ export default function HomePage() {
                 { icon: <FiBriefcase />, title: 'Direct Caregiver Hire', desc: 'Operators hire from the marketplace in 3 clicks — employment record created instantly' },
                 { icon: <FiUsers />, title: 'Caregiver Reliability Score', desc: '0–100 score computed from reviews, shifts, background check, and call-off history' },
                 { icon: <FiAward />, title: 'Caregiver Points & Tiers', desc: 'Bronze → Platinum gamification with points for reliability, reviews, and consistency' },
-                { icon: <FiActivity />, title: 'Discharge Planner Portal', desc: 'AI placement search for social workers with individual ($99) and department ($499) licensing' },
+                { icon: <FiActivity />, title: 'Discharge Planner Portal', desc: 'Free AI placement search for hospital social workers & case managers — multi-facility requests and live bed availability' },
                 { icon: <FiBarChart />, title: 'Compliance Document Kits', desc: 'Ohio ALF compliance kits ($149–$199) — one-click purchase, instant access' },
                 { icon: <FiTrendingUp />, title: 'Affiliate Program', desc: 'Tiered commissions (20/25/30%) with family referral tracking and live dashboard' },
                 { icon: <FiShield />, title: 'Caregiver Marketplace', desc: 'Browse, shortlist, and hire verified caregivers with background check badges and reviews' },

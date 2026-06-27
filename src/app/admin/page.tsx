@@ -18,8 +18,6 @@ async function getAdminStats() {
     activeOperators,
     proCaregiversCount,
     activeProvidersCount,
-    dpIndividualSeats,
-    dpDepartmentCount,
     familyPlusCount,
   ] = await Promise.all([
     prisma.user.count(),
@@ -36,13 +34,6 @@ async function getAdminStats() {
     }),
     (prisma as any).caregiver.count({ where: { proStatus: { in: ['ACTIVE', 'TRIALING'] } } }),
     (prisma as any).provider.count({ where: { listingStatus: { in: ['ACTIVE', 'TRIALING'] } } }),
-    (prisma as any).dischargePlannerProfile.aggregate({
-      where: { subscriptionStatus: { in: ['ACTIVE', 'TRIALING'] }, licenseType: 'INDIVIDUAL' },
-      _sum: { seatCount: true },
-    }),
-    (prisma as any).dischargePlannerProfile.count({
-      where: { subscriptionStatus: { in: ['ACTIVE', 'TRIALING'] }, licenseType: 'DEPARTMENT' },
-    }),
     prisma.family.count({ where: { plusStatus: { in: ['ACTIVE', 'TRIALING'] } } }),
   ]);
 
@@ -62,7 +53,7 @@ async function getAdminStats() {
   }, 0);
   const providerMRR = (activeProvidersCount as number) * 99;
   const caregiverProMRR = (proCaregiversCount as number) * 19;
-  const dpMRR = ((dpIndividualSeats as any)._sum?.seatCount ?? 0) * 99 + (dpDepartmentCount as number) * 499;
+  const dpMRR = 0; // Discharge planners are FREE (ratified 2026-06-27) — not a revenue line.
   const familyPlusMRR = (familyPlusCount as number) * 19;
   const totalMRR = operatorMRR + providerMRR + caregiverProMRR + dpMRR + familyPlusMRR;
 
@@ -79,8 +70,6 @@ async function getAdminStats() {
       operators: (activeOperators as any[]).length,
       providers: activeProvidersCount as number,
       proCaregiversCount: proCaregiversCount as number,
-      dpIndividualSeats: (dpIndividualSeats as any)._sum?.seatCount ?? 0,
-      dpDepartment: dpDepartmentCount as number,
       familyPlus: familyPlusCount as number,
     },
   };
@@ -133,7 +122,7 @@ export default async function AdminDashboard() {
     },
     {
       title: 'Discharge Planners',
-      description: 'Manage hospital discharge planner subscriptions and seat billing',
+      description: 'Manage hospital discharge planner accounts (free access)',
       icon: FiActivity,
       href: '/admin/discharge-planners',
       color: 'from-teal-500 to-teal-600',
@@ -294,9 +283,9 @@ export default async function AdminDashboard() {
                 <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Discharge Planners</p>
                 <FiCreditCard className="text-teal-400 text-sm" />
               </div>
-              <p className="text-2xl font-bold text-neutral-900">${stats.mrr.dp.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-neutral-900">Free</p>
               <p className="text-xs text-neutral-500 mt-1">
-                {stats.mrrCounts.dpIndividualSeats} seats · {stats.mrrCounts.dpDepartment} dept
+                no subscription · operator revenue only
               </p>
             </div>
             <div className="bg-white rounded-lg border border-neutral-200 p-5">
