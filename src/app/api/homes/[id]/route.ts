@@ -181,6 +181,16 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       }
     }
 
+    // Is the viewer the operator who owns this (claimed) home? Lets them reply to reviews.
+    let viewerIsOwner = false;
+    if (session?.user?.email) {
+      const viewerUser = await prisma.user.findUnique({
+        where: { email: session.user.email as string },
+        select: { operator: { select: { id: true } } },
+      });
+      viewerIsOwner = Boolean(viewerUser?.operator && viewerUser.operator.id === home.operatorId);
+    }
+
     // Compute rating
     const ratings = home.reviews?.map((r) => r.rating) ?? [];
     const averageRating = ratings.length > 0
@@ -252,6 +262,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       rating: averageRating,
       reviewCount: ratings.length,
       isFavorited,
+      viewerIsOwner,
       unclaimed,
       // Google aggregate rating (trust badge) — rating + count + place id only, no review text.
       googleRating: home.googleRating ?? null,
