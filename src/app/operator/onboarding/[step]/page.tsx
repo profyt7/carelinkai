@@ -218,6 +218,10 @@ export default function OperatorOnboardingStepPage() {
   // Only used on Step 3 when the operator manually enters a token
   const [manualToken, setManualToken] = useState("");
   const [claimApplied, setClaimApplied] = useState(false);
+  // Which paid tiers are actually purchasable (have a configured Stripe price).
+  // null = not loaded yet; before it loads we hide AGENCY so a tier that would
+  // dead-end at checkout never flashes. Once loaded we render exactly this set.
+  const [availablePlans, setAvailablePlans] = useState<string[] | null>(null);
 
   // Apply an onboarding-status payload to local state (reused by polling).
   const applyStatus = (d: any) => {
@@ -291,6 +295,15 @@ export default function OperatorOnboardingStepPage() {
 
     return () => { cancelled = true; };
   }, [status]);
+
+  // Learn which paid tiers are purchasable so the plan picker hides any tier
+  // whose Stripe price isn't configured (e.g. AGENCY) — no broken checkout clicks.
+  useEffect(() => {
+    fetch("/api/operator/billing/plans")
+      .then((r) => r.json())
+      .then((d) => { if (Array.isArray(d?.available)) setAvailablePlans(d.available); })
+      .catch(() => {});
+  }, []);
 
   // Poll the status endpoint while enrichment is running; stop when it resolves.
   useEffect(() => {
@@ -994,9 +1007,12 @@ export default function OperatorOnboardingStepPage() {
                   </button>
                 </div>
               ) : (
-                /* Paid plans */
+                /* Paid plans — only those actually purchasable (configured Stripe price).
+                   Before availability loads, hide AGENCY so a dead-end tier never flashes. */
                 <div className="space-y-3">
-                  {PLANS.map((plan) => (
+                  {PLANS.filter((plan) =>
+                    availablePlans === null ? plan.key !== "AGENCY" : availablePlans.includes(plan.key)
+                  ).map((plan) => (
                     <div
                       key={plan.key}
                       className={`rounded-xl border p-4 ${

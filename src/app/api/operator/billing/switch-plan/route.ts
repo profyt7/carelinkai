@@ -6,20 +6,9 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { stripe } from '@/lib/stripe';
 import { UserRole } from '@prisma/client';
+import { priceIdForPlan, planLabel } from '@/lib/operator-plans';
 
-const PLAN_PRICE_MAP: Record<string, string | undefined> = {
-  STARTER:      process.env['STRIPE_PRICE_STARTER'],
-  PROFESSIONAL: process.env['STRIPE_PRICE_PROFESSIONAL'],
-  GROWTH:       process.env['STRIPE_PRICE_GROWTH'],
-  AGENCY:       process.env['STRIPE_PRICE_AGENCY'],
-};
-
-const PLAN_LABEL: Record<string, string> = {
-  STARTER:      'Starter',
-  PROFESSIONAL: 'Professional',
-  GROWTH:       'Growth',
-  AGENCY:       'Agency',
-};
+const SUPPORT_EMAIL = 'hello@getcarelinkai.com';
 
 /**
  * POST /api/operator/billing/switch-plan
@@ -43,10 +32,11 @@ export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => ({}));
   const plan: string = (body.plan || '').toUpperCase();
 
-  const priceId = PLAN_PRICE_MAP[plan];
+  const priceId = priceIdForPlan(plan);
   if (!priceId) {
+    console.error(`[switch-plan] No Stripe Price ID for plan "${plan}" — STRIPE_PRICE_${plan} is not set.`);
     return NextResponse.json(
-      { error: `No Stripe Price ID configured for plan "${plan}".` },
+      { error: `The ${planLabel(plan)} plan isn't available yet. Email ${SUPPORT_EMAIL} and we'll set you up.` },
       { status: 400 }
     );
   }
@@ -102,10 +92,12 @@ export async function POST(request: NextRequest) {
       data: { subscriptionPlan: plan as any },
     });
 
-    return NextResponse.json({ success: true, plan, label: PLAN_LABEL[plan] });
-  } catch (err: any) {
+    return NextResponse.json({ success: true, plan, label: planLabel(plan) });
+  } catch (err) {
     console.error('[switch-plan] Stripe error:', err);
-    const message = err?.raw?.message || err?.message || 'Stripe error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: `We couldn't switch your plan right now. Please try again in a moment, or email ${SUPPORT_EMAIL}.` },
+      { status: 502 }
+    );
   }
 }
