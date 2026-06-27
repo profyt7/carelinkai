@@ -193,29 +193,40 @@ export async function sendInquiryClaimNudgeEmail(args: {
   toEmail: string;
   claimUrl: string;
   waitingCount?: number;
+  /** A tour request is the hottest lead — use more urgent copy than an inquiry. */
+  trigger?: 'inquiry' | 'tour';
 }): Promise<boolean> {
   const facilityName = args.facilityName?.trim() || 'your community';
+  const isTour = args.trigger === 'tour';
   const count = args.waitingCount && args.waitingCount > 1 ? args.waitingCount : 1;
-  const leadPhrase =
-    count > 1 ? `${count} families are trying to reach` : `A family is trying to reach`;
+  const leadPhrase = isTour
+    ? `A family wants to tour`
+    : count > 1
+    ? `${count} families are trying to reach`
+    : `A family is trying to reach`;
   try {
     if (!process.env.RESEND_API_KEY) {
       console.error('[Resend] RESEND_API_KEY not configured — skipping inquiry claim nudge');
       return false;
     }
     const safeFacility = escapeHtml(facilityName);
-    const subject = `${leadPhrase} ${facilityName} on CareLinkAI`;
+    const subject = isTour
+      ? `A family wants to tour ${facilityName} — claim to confirm the visit`
+      : `${leadPhrase} ${facilityName} on CareLinkAI`;
+    const actionLine = isTour
+      ? 'Claim your free listing in about 2 minutes to confirm the visit and respond securely:'
+      : 'Claim your free listing in about 2 minutes to view and respond securely:';
     const text =
-      `${leadPhrase} ${facilityName} on CareLinkAI.\n\n` +
-      `Claim your free listing in about 2 minutes to view and respond securely:\n${args.claimUrl}\n\n` +
-      `Inquiry details are kept private until you claim. There is no cost to claim or respond.`;
+      (isTour ? `A family wants to tour ${facilityName} on CareLinkAI.\n\n` : `${leadPhrase} ${facilityName} on CareLinkAI.\n\n`) +
+      `${actionLine}\n${args.claimUrl}\n\n` +
+      `Details are kept private until you claim. There is no cost to claim or respond.`;
     const html = `
 <!DOCTYPE html>
 <html><body style="font-family:Arial,sans-serif;color:#1f2937;line-height:1.5">
-  <p>${escapeHtml(leadPhrase)} <strong>${safeFacility}</strong> on CareLinkAI.</p>
-  <p>Claim your free listing in about 2 minutes to view and respond securely:</p>
-  <p><a href="${escapeHtml(args.claimUrl)}" style="display:inline-block;background:#0d9488;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600">Claim ${safeFacility}</a></p>
-  <p style="color:#6b7280;font-size:13px">Inquiry details are kept private until you claim. There is no cost to claim or respond.</p>
+  <p>${isTour ? `A family wants to <strong>tour</strong> ` : `${escapeHtml(leadPhrase)} `}<strong>${safeFacility}</strong> on CareLinkAI.</p>
+  <p>${escapeHtml(actionLine)}</p>
+  <p><a href="${escapeHtml(args.claimUrl)}" style="display:inline-block;background:#0d9488;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600">${isTour ? 'Claim &amp; confirm the tour' : `Claim ${safeFacility}`}</a></p>
+  <p style="color:#6b7280;font-size:13px">Details are kept private until you claim. There is no cost to claim or respond.</p>
 </body></html>`;
 
     const { data, error } = await resend.emails.send({
@@ -241,6 +252,60 @@ export async function sendInquiryClaimNudgeEmail(args: {
     captureError(error instanceof Error ? error : new Error(String(error)), {
       tags: { feature: 'inquiry-claim-notification' },
       extra: { facilityName },
+    });
+    return false;
+  }
+}
+
+/**
+ * Email backup of the operator SMS lead alert, for CLAIMED homes. SMS can be
+ * missing/wrong/undeliverable, so a new inquiry or tour request also emails the
+ * operator. HIPAA: generic only — names the facility + lead type, never the
+ * family's name or any care/health detail. The CTA is the operator dashboard.
+ */
+export async function sendNewLeadOperatorEmail(args: {
+  facilityName: string;
+  toEmail: string;
+  operatorFirstName?: string;
+  leadType: 'inquiry' | 'tour';
+  ctaUrl: string;
+}): Promise<boolean> {
+  try {
+    if (!process.env.RESEND_API_KEY) return false;
+    const facility = escapeHtml(args.facilityName?.trim() || 'your community');
+    const hi = args.operatorFirstName ? `Hi ${escapeHtml(args.operatorFirstName)}, ` : '';
+    const lead = args.leadType === 'tour' ? 'tour request' : 'inquiry';
+    const subject = args.leadType === 'tour'
+      ? `New tour request for ${args.facilityName} on CareLinkAI`
+      : `New inquiry for ${args.facilityName} on CareLinkAI`;
+    const text =
+      `${args.operatorFirstName ? `Hi ${args.operatorFirstName}, ` : ''}you have a new ${lead} for ${args.facilityName} on CareLinkAI.\n\n` +
+      `Log in to view the details and respond:\n${args.ctaUrl}\n\n` +
+      `Details are kept private and secure on CareLinkAI.`;
+    const html = `
+<!DOCTYPE html>
+<html><body style="font-family:Arial,sans-serif;color:#1f2937;line-height:1.5">
+  <p>${hi}you have a new ${lead} for <strong>${facility}</strong> on CareLinkAI.</p>
+  <p><a href="${escapeHtml(args.ctaUrl)}" style="display:inline-block;background:#0d9488;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600">View &amp; respond</a></p>
+  <p style="color:#6b7280;font-size:13px">Details are kept private and secure on CareLinkAI.</p>
+</body></html>`;
+
+    const { error } = await resend.emails.send({
+      from: `${APP_NAME} <${FROM_EMAIL}>`,
+      to: [args.toEmail],
+      subject,
+      text,
+      html,
+    });
+    if (error) {
+      captureError(error instanceof Error ? error : new Error(String((error as { message?: string })?.message ?? error)),
+        { tags: { feature: 'operator-lead-alert' }, extra: { facilityName: args.facilityName, leadType: args.leadType } });
+      return false;
+    }
+    return true;
+  } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { feature: 'operator-lead-alert' }, extra: { facilityName: args.facilityName },
     });
     return false;
   }

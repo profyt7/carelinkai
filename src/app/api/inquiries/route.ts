@@ -9,7 +9,8 @@ import { authOptions } from '@/lib/auth';
 import { afterInquiryCreated } from '@/lib/hooks/inquiry-hooks';
 import { smsService } from '@/lib/sms/sms-service';
 import { createInquirySchema } from '@/lib/inquiries/schema';
-import { notifyUnclaimedHomeInquiry } from '@/lib/claim-engine/inquiry-claim-notification';
+import { notifyUnclaimedHomeInquiry, isUnclaimedHome } from '@/lib/claim-engine/inquiry-claim-notification';
+import { sendNewLeadOperatorEmail } from '@/lib/email';
 
 /**
  * POST /api/inquiries - Create a new inquiry
@@ -92,7 +93,7 @@ export async function POST(request: NextRequest) {
               select: {
                 id: true,
                 companyName: true,
-                user: { select: { firstName: true, phone: true } },
+                user: { select: { firstName: true, phone: true, email: true } },
               },
             },
           },
@@ -116,6 +117,21 @@ export async function POST(request: NextRequest) {
         inquiry.careRecipientName || 'your loved one',
         inquiry.home.name
       ).catch(() => {});
+    }
+
+    // Email backup of the operator alert — CLAIMED homes only (never the directory
+    // sentinel). SMS can be missing/wrong/undeliverable; email is the reliable
+    // channel. Generic copy only — no PHI.
+    const operatorEmail = inquiry.home?.operator?.user?.email;
+    if (operatorEmail && !isUnclaimedHome(operatorEmail)) {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'https://getcarelinkai.com';
+      sendNewLeadOperatorEmail({
+        facilityName: inquiry.home.name,
+        toEmail: operatorEmail,
+        operatorFirstName: inquiry.home.operator?.user?.firstName,
+        leadType: 'inquiry',
+        ctaUrl: `${appUrl.replace(/\/$/, '')}/operator/inquiries`,
+      }).catch(() => {});
     }
 
     // Inquiry→claim "pull" engine (OL-083): if the home is UNCLAIMED, best-effort
