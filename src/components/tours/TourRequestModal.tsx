@@ -23,6 +23,8 @@ interface TourRequestModalProps {
   onClose: () => void;
   homeId: string;
   homeName: string;
+  /** True when the home is an unclaimed directory listing — softens the confirmation copy. */
+  homeUnclaimed?: boolean;
   onSuccess?: () => void;
 }
 
@@ -40,6 +42,7 @@ export default function TourRequestModal({
   onClose,
   homeId,
   homeName,
+  homeUnclaimed = false,
   onSuccess,
 }: TourRequestModalProps) {
   const [currentStep, setCurrentStep] = useState<Step>("date-range");
@@ -482,13 +485,32 @@ export default function TourRequestModal({
                       <h3 className="mt-4 text-lg font-medium text-neutral-900">
                         Tour Request Submitted!
                       </h3>
-                      <p className="mt-2 text-sm text-neutral-600">
-                        Your tour request has been sent to {homeName}. They will confirm your
-                        appointment shortly.
-                      </p>
-                      <p className="mt-4 text-xs text-neutral-500">
-                        You'll receive an email confirmation once the tour is confirmed.
-                      </p>
+                      {homeUnclaimed ? (
+                        <>
+                          <p className="mt-2 text-sm text-neutral-600">
+                            Your tour request has been sent to {homeName} and we&apos;ve let them know a
+                            family wants to visit. Some communities haven&apos;t set up their CareLinkAI
+                            page yet, so confirmation can take a little longer — we&apos;ll email you the
+                            moment they respond.
+                          </p>
+                          <a
+                            href="/search"
+                            className="mt-4 inline-flex items-center rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
+                          >
+                            Browse similar communities ready to respond
+                          </a>
+                        </>
+                      ) : (
+                        <>
+                          <p className="mt-2 text-sm text-neutral-600">
+                            Your tour request has been sent to {homeName}. They will confirm your
+                            appointment shortly.
+                          </p>
+                          <p className="mt-4 text-xs text-neutral-500">
+                            You&apos;ll receive an email confirmation once the tour is confirmed.
+                          </p>
+                        </>
+                      )}
                     </div>
                   )}
 

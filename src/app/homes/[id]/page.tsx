@@ -1345,8 +1345,24 @@ export default function HomeDetailPage() {
                           <div className="rounded-full bg-success-100 p-4"><FiCheck className="h-8 w-8 text-success-600" /></div>
                         </div>
                         <h3 className="mb-2 text-lg font-semibold text-neutral-800">Request Submitted!</h3>
-                        <p className="mb-4 text-sm text-neutral-600">We've received your inquiry for {realHome.name}. A representative will contact you within 24 hours.</p>
-                        <button onClick={() => setBookingStep(0)} className="text-sm text-primary-600 hover:underline">Submit another inquiry</button>
+                        {realHome.unclaimed ? (
+                          <>
+                            <p className="mb-3 text-sm text-neutral-600">
+                              We&apos;ve sent your inquiry to {realHome.name} and let them know a family is waiting. Some communities haven&apos;t set up their CareLinkAI page yet, so a direct reply can take a little longer — we&apos;ll route their response to you as soon as it comes in.
+                            </p>
+                            <a
+                              href={`/search?location=${encodeURIComponent(realHome.address?.city || '')}${realHome.careLevel?.[0] ? `&careLevel=${encodeURIComponent(realHome.careLevel[0])}` : ''}`}
+                              className="inline-flex items-center rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
+                            >
+                              Browse similar communities ready to respond
+                            </a>
+                          </>
+                        ) : (
+                          <p className="mb-4 text-sm text-neutral-600">We&apos;ve received your inquiry for {realHome.name}. A representative will contact you within 24 hours.</p>
+                        )}
+                        <div className="mt-3">
+                          <button onClick={() => setBookingStep(0)} className="text-sm text-primary-600 hover:underline">Submit another inquiry</button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -2348,6 +2364,7 @@ export default function HomeDetailPage() {
         onClose={() => setShowTourModal(false)}
         homeId={realHome?.id || String(id)}
         homeName={realHome?.name || home.name}
+        homeUnclaimed={Boolean(realHome?.unclaimed)}
         onSuccess={() => {
           console.log("Tour request submitted successfully!");
         }}
