@@ -2,6 +2,24 @@
 
 ---
 
+### 2026-06-27 — Unclaimed-listing enrichment batch + /search badge fix (#642–#648)
+
+- **Objective:** Enrich sparse UNCLAIMED directory listings (hero image, descriptions, empty states, Google rating badge) — strictly HONEST, never fabricating facility specifics — plus a /search card badge-overlap fix.
+- **Work completed (7 PRs, all squash-merged):**
+  - **#642** — /search card badge overlap: "% Match" and "Unclaimed" were both `absolute left-2 top-2` (overlapping). Now "% Match" renders only with real personalization (`aiMatchFactors`), and both top-left badges share one `flex-col` container so they stack. Anon sessions get a clean single "Unclaimed" badge (the old constant 50% is gone).
+  - **#643 (enrich 1)** — detail-page hero placeholder: photo-less `/homes/[id]` heroes show the deterministic per-home placeholder + "Representative photo — pending operator upload" caption; real photos override. Extracted `PLACEHOLDER_IMAGES`/hash/picker → shared `src/lib/placeholder-images.ts` (search route imports it).
+  - **#644 (enrich 4, step 1)** — read-only `scripts/report-google-rating-coverage.ts`. Founder ran `--limit 10`: **9/10 (90%) have a Google rating, avg 4.24★, median 43 reviews** → badge justified.
+  - **#645 + #647 (enrich 2)** — NEW honest facts-only generator `src/lib/profile-generator/unclaimed-description-generator.ts` (known facts + general care/area context only; never invents amenities/pricing/staff/awards; 90–140 words; East Park structure; claim-CTA close) + `scripts/enrich-unclaimed-descriptions.ts` (`--sample` gate / `--force`, sparse-by-default, tags `preFilledFields.description='AI_PUBLIC_DATA'` for clean overwrite-on-claim). Distinct from `generateHomeProfile` (which permits invented marketing copy). #647 polished to single-paragraph + varied phrasing. Founder approved the 3-sample voice and ran `--force`: **25/25 sparse homes written ($0.10).**
+  - **#646 (enrich 3)** — warmer, honest empty states for amenities & pricing (clearly-general "typical for [care level]" copy, no invented numbers) + claim CTA on unclaimed listings.
+  - **#648 (enrich 4)** — Google rating trust badge. Migration `20260626000002` adds `googleRating/googleRatingCount/googlePlaceId/googleRatingUpdatedAt` to `AssistedLivingHome`; `scripts/backfill-google-ratings.ts` (confident-match writes, clears stale, ~$5/144, refreshable); `GoogleRatingBadge` (hidden when no rating; card = attribution-only on-site, detail = "See reviews on Google" link); surfaced via `/api/search` + `/api/homes/[id]`. **Rating + count + place id ONLY — no review text (Maps ToS).**
+- **Files changed:** `src/lib/placeholder-images.ts` (NEW), `src/lib/profile-generator/unclaimed-description-generator.ts` (NEW), `src/components/homes/{GoogleRatingBadge,PhotoGallery}.tsx`, `src/lib/searchService.ts`, `src/app/api/search/route.ts`, `src/app/api/homes/[id]/route.ts`, `src/app/search/page.tsx`, `src/app/homes/[id]/page.tsx`, `prisma/schema.prisma` + migration `20260626000002_home_google_rating`, scripts `report-google-rating-coverage.ts` / `enrich-unclaimed-descriptions.ts` / `backfill-google-ratings.ts` (all NEW).
+- **Tests/build status:** all 7 PRs green on full CI, squash-merged; `tsc --noEmit` clean throughout. Migration additive + idempotent.
+- **Deployment impact:** Render auto-deployed each; migration `20260626000002` ran on deploy. Founder Render run: `enrich-unclaimed-descriptions --force` → 25 descriptions written. **PENDING:** `backfill-google-ratings --force` (~$5) — the rating badge stays hidden until ratings are populated.
+- **New risks/blockers:** none. All enrichment is honest-by-design; AI descriptions tagged for clean overwrite on claim.
+- **Recommended next step:** founder runs `backfill-google-ratings --force` to light up the badge; then **#5 first-party reviews** (last enrichment item, not started — `HomeReview` model + `reviews` relation already exist; `/api/homes/[id]` already computes `rating`/`reviewCount`).
+
+---
+
 ### 2026-06-26 (later) — VA-sourced operator-email gap-fill + CAN-SPAM re-verify (#640)
 
 - **Objective:** Backfill 5 VA-sourced (Anita), phone-verified operator emails into the claim-nudge channel and re-confirm the medium-wave is CAN-SPAM-ready.
