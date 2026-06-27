@@ -1,0 +1,32 @@
+name: Claim Drip
+
+on:
+  # Once daily — advance due claim-drip touches (email-only). ~14:00 UTC ≈ 9-10am ET.
+  schedule:
+    - cron: '0 14 * * *'
+  # Allow manual trigger
+  workflow_dispatch:
+
+jobs:
+  claim-drip:
+    name: Advance due claim drips
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call Claim-Drip Cron Endpoint
+        run: |
+          response=$(curl -s -w "\n%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            https://carelinkai.onrender.com/api/cron/claim-drip)
+
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | head -n-1)
+
+          echo "HTTP Status: $http_code"
+          echo "Response: $body"
+
+          if [ "$http_code" -ne 200 ]; then
+            echo "::error::Claim-drip cron failed with status $http_code"
+            exit 1
+          fi
+
+          echo "Claim drips advanced successfully"

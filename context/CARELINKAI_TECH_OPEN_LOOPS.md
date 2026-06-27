@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-06-27 — OL-099 CLOSED: enrichment batch (#642–#648) + first-party reviews #5 (#650–#652) + Google ratings populated (133/144). Founder TODO: rotate demo.* passwords; incognito-verify anon /search. Open: dedup Brookdale Westlake pair (OL-093)._
+_Last updated: 2026-06-27 — OL-100 DELIVERED: lead-funnel (#654–#657) — tour→claim nudge, claimed-op email, family fallback, per-facility email-only claim drip (cron via GHA). Prior: OL-099 enrichment + reviews. Founder TODO: confirm CRON_SECRET GH secret + dispatch claim-drip once; rotate demo.* passwords; incognito-verify anon /search; verify Brookdale Westlake re-match._
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -318,6 +318,15 @@ Each loop: what it is, why it matters, what done looks like.
 - **Google ratings — DONE 2026-06-27:** founder ran `backfill-google-ratings.ts --force` → **133/144 rated** (8 weak skipped, 3 cleared); badge live. ⚠ Brookdale Gardens at Westlake / Brookdale Westlake Village share one Google place id (possible duplicate) → flagged for OL-093 dedup review.
 - **DONE — #5 first-party reviews (#650/#651/#652):** **5a** (#650) — `HomeReview.operatorResponse` + migration `20260627000001`; POST eligibility broadened booking-only → **inquiry/tour/booking** (booking → `isVerified`); operator-reply endpoint `POST/DELETE /api/reviews/homes/[id]/response`; unit tests updated (20/20). **5b** (#651) — real `HomeReviews` section on the listing ("No reviews yet — be the first" empty state, eligible-family submit form, inline operator replies, privacy-safe identities), replacing the legacy mock block. **5c** (#652) — `/api/homes/[id]` returns `viewerIsOwner`; owning operator gets an inline "Respond as the operator" reply form; claim pitch advertises "showcase & respond to reviews". No third-party review text stored/shown (Maps/APFM/Caring ToS). First-party → every listing starts empty and accrues from real CareLinkAI families.
 - **OL-099 fully delivered** (#642–#648 + #650–#652); all founder Render runs done.
+
+### OL-100: Lead-funnel — inquiry/tour → operator-acquisition (tour nudge, family fallback, claimed-op email, claim drip)
+- **Status:** ✅ DELIVERED 2026-06-27 (#654–#657). Closes the inquiry/tour → claim loop.
+- **Audit (the "what happens on a lead?" question):** inquiry on CLAIMED home → operator SMS (now + email backup); inquiry on UNCLAIMED home → claim drip (below); tour requests previously nudged NO unclaimed facility (gap, fixed).
+- **#655 (a/b):** tour→claim nudge with urgent copy (`trigger` param); claimed-operator EMAIL backup on inquiry + tour (`sendNewLeadOperatorEmail`).
+- **#656 (2):** honest unclaimed inquiry/tour family fallback (no false 24h promise + "browse similar communities ready to respond").
+- **#657 (3):** per-facility, EMAIL-ONLY multi-touch claim drip. Migration `20260627000002` (`claimDripStartedAt/Step/NextAt/StoppedReason` + index). Cadence 0/3/7/14 → exhausted; escalating copy w/ live N-waiting; CAN-SPAM; hard stops claimed/unsubscribe/bounce/no_email/exhausted. `notifyUnclaimedHomeInquiry` delegates to `startClaimDripOnLead`. Cron: `/api/cron/claim-drip` + `.github/workflows/claim-drip.yml` (daily, free GHA — Render cron needs Standard plan). `report-claim-drip.ts` = claims-by-touch.
+- **Policy:** cold pre-claim outreach is EMAIL-ONLY forever (TCPA/A2P); SMS reserved for CLAIMED operators (implied consent).
+- **Founder follow-up:** confirm `CRON_SECRET` GitHub Actions secret exists (powers process-followups already); manually `workflow_dispatch` the claim-drip workflow once to confirm green; review `report-claim-drip.ts` in ~a week to tune cadence.
 
 ### OL-093: Remaining directory data-quality (rebrands, SNF/category, stale URLs)
 - **Status:** 🟡 OPEN — mostly resolved 2026-06-25; 2 items remain.
