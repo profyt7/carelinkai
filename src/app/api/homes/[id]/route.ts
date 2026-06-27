@@ -250,6 +250,10 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       availability: home.capacity - home.currentOccupancy,
       gender: home.genderRestriction || 'ALL',
       amenities: home.amenities,
+      // VA-collected (phone) price/amenities are approximate until the operator
+      // confirms — surfaced as "pending operator confirmation", cleared on claim+edit.
+      pricePending: (home.preFilledFields as Record<string, unknown> | null)?.priceRange === 'VA_UNVERIFIED',
+      amenitiesPending: (home.preFilledFields as Record<string, unknown> | null)?.amenities === 'VA_UNVERIFIED',
       primaryPhoto,
       photos: (home.photos || []).map((p) => ({ id: p.id, url: p.url, caption: p.caption || '' })),
       operator: home.operator
