@@ -2,6 +2,22 @@
 
 ---
 
+### 2026-06-27 (latest+2) — Money-path hardening + DP-billing teardown + OL-102 parked (#665–#668)
+- **Objective:** Protect the conversion → subscription money path (the real bottleneck), and finish DP-free cleanup now that the old paid-DP Stripe prices were found still wired in Render env. Also park the facility placement-fee idea as a scoping-only open loop.
+- **Work completed:**
+  - **OL-102 parked (#665):** facility placement-fee revenue stream added to open loops — scoping only, attorney-gated, hard AKS guardrails, NO code.
+  - **DP-billing safety report (#666):** `scripts/report-dp-subscriptions.ts` (read-only) flags any discharge planner still on a billing Stripe subscription from before DP went free; prints customer/subscription IDs to cancel. Never touches Stripe.
+  - **Money-path hardening (#667):** `src/lib/operator-plans.ts` = single source of truth for purchasable tiers (configured Stripe price); new `GET /api/operator/billing/plans`; wizard Step 4 + SubscriptionManager hide any unconfigured tier (closes OL-055 — Agency no longer dead-ends); subscribe route wraps Stripe in try/catch (clean 502, no bodyless 500) + stops leaking env-var names; switch-plan gets friendly errors.
+  - **DP price decommission (#668):** removed `STRIPE_PRICE_DISCHARGE_PLANNER` + `_DEPT` from `.env.example` (DECOMMISSIONED note); added `scripts/archive-dp-stripe-prices.ts` (dry-run default) to archive both prices in Stripe. No live code referenced these vars.
+- **Files changed:** `src/lib/operator-plans.ts` (new), `src/app/api/operator/billing/plans/route.ts` (new), `src/app/api/operator/billing/subscribe/route.ts`, `src/app/api/operator/billing/switch-plan/route.ts`, `src/components/operator/billing/SubscriptionManager.tsx`, `src/app/operator/onboarding/[step]/page.tsx`, `scripts/report-dp-subscriptions.ts` (new), `scripts/archive-dp-stripe-prices.ts` (new), `.env.example`, `context/*`.
+- **Commands run:** `tsc --noEmit` (clean), `next lint` on touched files (clean), standalone `tsc` on both new scripts (clean).
+- **Tests/build status:** CI green on all four PRs (build-and-test, quality/jest, e2e suites, migrate-deploy). Squash-merged #665, #666, #667, #668 to main.
+- **Deployment impact:** No schema/migration. New unauthenticated GET endpoint (returns only which tier names are buyable). Render auto-deploys from main.
+- **New risks/blockers:** None in code. Founder Render runbook pending.
+- **Recommended next step (founder, Render, in order):** (1) `report-dp-subscriptions.ts` → cancel any flagged DP sub in Stripe; (2) `archive-dp-stripe-prices.ts --force`; (3) remove the two `STRIPE_PRICE_DISCHARGE_PLANNER*` env vars; (4) confirm `STRIPE_PRICE_AGENCY` is a real `price_…` value. Then incognito-verify the operator wizard Step 4 shows only purchasable tiers.
+
+---
+
 ### 2026-06-27 (latest+1) — DP-free, VA price/amenities, UX loose ends, Westlake Pointe rebrand (#659–#663)
 
 - **Objective:** Four cleanups: ratify Discharge Planner = FREE; load VA-collected price/amenities onto unclaimed listings; fix two UX loose ends; resolve the Brookdale Westlake rating conflation.
