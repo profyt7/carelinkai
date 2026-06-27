@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-06-27 — OL-102 PARKED (scoping only): facility placement-fee revenue stream, attorney-gated — NO code yet. OL-101 DELIVERED: DP-free (#659), VA price/amenities load (#660), UX loose ends (#661), Westlake Pointe rebrand fix (#663). Prior: OL-100 lead-funnel/claim-drip. Founder TODO: build VA CSV → load-va-pricing-amenities --force; confirm CRON_SECRET + dispatch claim-drip once; rotate demo.* passwords; incognito-verify anon /search._
+_Last updated: 2026-06-27 — OL-103 DELIVERED (code): money-path hardening (#667, closes OL-055), DP-billing safety report (#666), DP price decommission (#668). OL-102 PARKED (scoping only): facility placement-fee, attorney-gated — NO code. OL-101: DP-free (#659), VA price/amenities (#660), UX loose ends (#661), Westlake Pointe rebrand (#663). Founder TODO (Render): report-dp-subscriptions → cancel any DP sub; archive-dp-stripe-prices --force; remove the 2 DP price env vars; confirm STRIPE_PRICE_AGENCY value; build VA CSV → load-va-pricing-amenities --force; dispatch claim-drip once; rotate demo.* passwords._
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -28,9 +28,10 @@ Each loop: what it is, why it matters, what done looks like.
 ## 🔴 Critical (Blocking Revenue / Demos)
 
 ### OL-055: STRIPE_PRICE_AGENCY env var not set in Render
-- **Status:** 🔴 OPEN — AGENCY tier ($799/mo) is visible in wizard Step 4 but Stripe Checkout will fail without this env var
-- **What:** Create a $799/month recurring product in the Stripe dashboard, copy the price ID, set `STRIPE_PRICE_AGENCY` in Render environment variables.
-- **Done when:** Env var set in Render + operator can successfully start Agency Stripe Checkout from wizard Step 4.
+- **Status:** ✅ CLOSED 2026-06-27 — founder confirmed `STRIPE_PRICE_AGENCY` IS set in Render. Also hardened in code so this class of bug can't recur (#667).
+- **What was:** AGENCY tier ($799/mo) was visible in wizard Step 4 / billing manager but Stripe Checkout 400'd without the env var.
+- **Hardening (#667):** `src/lib/operator-plans.ts` is now the single source of truth for which tiers are purchasable (have a configured Stripe price); `GET /api/operator/billing/plans` exposes that set; the wizard + SubscriptionManager **hide any tier whose price isn't configured** (empty string counts as unset → tier auto-hides instead of dead-ending). The subscribe route also wraps Stripe in try/catch (clean 502 instead of bodyless 500) and no longer leaks env-var names to operators.
+- **Founder reminder:** confirm the `STRIPE_PRICE_AGENCY` value is a real `price_…` ID (not blank); with the hardening, a blank value safely hides Agency rather than breaking checkout.
 
 ### OL-056: Cleveland founder end-to-end production smoke test needed
 - **Status:** 🔴 OPEN — code shipped in PR #542, not yet verified on production
@@ -344,6 +345,17 @@ Each loop: what it is, why it matters, what done looks like.
   - (b) Cleanest for **PRIVATE-PAY AL placements**. Medicaid-waiver placements sourced via a discharge planner need a specifically-structured flat **FMV "marketing fee"** — not a % and not tied to federal-program patients.
 - **DEPENDENCY:** do NOT build placement-tracking or per-placement billing until a healthcare attorney blesses the structure. Parking-lot only — no code yet.
 - **When greenlit (post-attorney):** needs placement-event tracking (tour → move-in confirmation) + Stripe invoicing, separate from subscription billing.
+
+### OL-103: Money-path hardening + DP-billing teardown (#665–#668)
+- **Status:** ✅ DELIVERED 2026-06-27 (code). 🟡 Founder Render runbook below still pending.
+- **Money path (#667):** hardened operator conversion → subscription (the real bottleneck). Hides any subscription tier whose Stripe price isn't configured (no dead-end checkout clicks — see OL-055), wraps Stripe in try/catch (clean 502, not a bodyless 500), stops leaking env-var names to operators. New `src/lib/operator-plans.ts` + `GET /api/operator/billing/plans`.
+- **DP-billing safety (#666):** `scripts/report-dp-subscriptions.ts` — read-only; flags any discharge planner still on a billing Stripe subscription from before DP went free (#659). Prints the `stripeCustomerId`/`stripeSubscriptionId` to cancel.
+- **DP price decommission (#668):** old paid-DP Stripe prices wired via `STRIPE_PRICE_DISCHARGE_PLANNER` + `_DEPT` (founder confirmed both still in Render env, so a DP could be on one). Removed from `.env.example` (DECOMMISSIONED note); added `scripts/archive-dp-stripe-prices.ts` (dry-run default) to set `active:false` on both. No live code referenced these vars.
+- **Founder runbook (Render, in order):**
+  1. `npx tsx scripts/report-dp-subscriptions.ts` → cancel any flagged DP sub in the Stripe dashboard.
+  2. `npx tsx scripts/archive-dp-stripe-prices.ts --force` → archive the two DP prices.
+  3. Remove `STRIPE_PRICE_DISCHARGE_PLANNER` + `STRIPE_PRICE_DISCHARGE_PLANNER_DEPT` from Render env.
+  4. Confirm `STRIPE_PRICE_AGENCY` is a real `price_…` value (Agency shows as buyable only when set).
 
 ### OL-093: Remaining directory data-quality (rebrands, SNF/category, stale URLs)
 - **Status:** 🟡 OPEN — mostly resolved 2026-06-25; 2 items remain.
