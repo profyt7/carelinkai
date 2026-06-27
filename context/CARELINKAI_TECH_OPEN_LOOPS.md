@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-06-27 — OL-101 DELIVERED: DP-free (#659), VA price/amenities load (#660), UX loose ends (#661), Westlake Pointe rebrand fix (#663). Prior: OL-100 lead-funnel/claim-drip. Founder TODO: build VA CSV → load-va-pricing-amenities --force; confirm CRON_SECRET + dispatch claim-drip once; rotate demo.* passwords; incognito-verify anon /search._
+_Last updated: 2026-06-27 — OL-102 PARKED (scoping only): facility placement-fee revenue stream, attorney-gated — NO code yet. OL-101 DELIVERED: DP-free (#659), VA price/amenities load (#660), UX loose ends (#661), Westlake Pointe rebrand fix (#663). Prior: OL-100 lead-funnel/claim-drip. Founder TODO: build VA CSV → load-va-pricing-amenities --force; confirm CRON_SECRET + dispatch claim-drip once; rotate demo.* passwords; incognito-verify anon /search._
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -335,6 +335,15 @@ Each loop: what it is, why it matters, what done looks like.
 - **UX (#661):** `/homes/[id]` Save persists (favorites API, anon→signup); `/auth/logout` page added (was 404).
 - **Westlake Pointe rebrand (#654/#662/#663):** "Brookdale Gardens at Westlake" was a STALE BRAND at the WRONG (Westlake Village) address. Web-confirmed rebrand → **Westlake Pointe Senior Living** @ 27569 Detroit Rd. Founder ran `fix-westlake-pointe-rebrand.ts --force`: renamed + address (re-geocoded) + own 4.4★(35) rating + de-staled description. **NOT a dedup** — two distinct buildings. **This closes the Brookdale-Westlake item flagged in OL-099/OL-093.**
 - **Reusable:** `fix-conflated-google-ratings.ts` (#654) remains for any future same-brand co-located rating conflation (`--name` filter).
+
+### OL-102: Facility placement-fee revenue stream (parked; attorney-gated — SCOPING ONLY, do NOT build)
+- **Status:** 🅿️ PARKED — **scoping only. NO code until a healthcare attorney blesses the structure.** Business/revenue idea, not an engineering task.
+- **Plan (ONENOTE §2.2):** flat $250–500 charged to the **FACILITY** per successful placement (tour → move-in), separate from operator subscriptions; can apply even during a founder facility's free-subscription window.
+- **HARD AKS guardrails:**
+  - (a) Fee is on the **FACILITY only** — NEVER paid to or shared with a referral source (discharge planner, nurse, social worker, affiliate). Paying a referral source per placement is an Anti-Kickback violation, already prohibited per the risk register.
+  - (b) Cleanest for **PRIVATE-PAY AL placements**. Medicaid-waiver placements sourced via a discharge planner need a specifically-structured flat **FMV "marketing fee"** — not a % and not tied to federal-program patients.
+- **DEPENDENCY:** do NOT build placement-tracking or per-placement billing until a healthcare attorney blesses the structure. Parking-lot only — no code yet.
+- **When greenlit (post-attorney):** needs placement-event tracking (tour → move-in confirmation) + Stripe invoicing, separate from subscription billing.
 
 ### OL-093: Remaining directory data-quality (rebrands, SNF/category, stale URLs)
 - **Status:** 🟡 OPEN — mostly resolved 2026-06-25; 2 items remain.
