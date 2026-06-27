@@ -253,6 +253,10 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       reviewCount: ratings.length,
       isFavorited,
       unclaimed,
+      // Google aggregate rating (trust badge) — rating + count + place id only, no review text.
+      googleRating: home.googleRating ?? null,
+      googleRatingCount: home.googleRatingCount ?? null,
+      googlePlaceId: home.googlePlaceId ?? null,
       pendingInquiryCount,
     };
 
