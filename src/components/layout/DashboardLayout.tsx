@@ -219,14 +219,8 @@ const navItems: NavItem[] = [
     roleRestriction: ["OPERATOR", "ADMIN"],
   },
 
-  // 8a. Discharge Planner Billing
-  {
-    name: "Billing",
-    icon: <FiDollarSign size={20} />,
-    href: "/discharge-planner/billing",
-    showInMobileBar: false,
-    roleRestriction: ["DISCHARGE_PLANNER"],
-  },
+  // 8a. (removed) Discharge Planner Billing — DP access is FREE (ratified 2026-06-27);
+  // no subscription, so no billing nav for discharge planners.
 
   // 8b-i. Provider Listing Billing
   {
