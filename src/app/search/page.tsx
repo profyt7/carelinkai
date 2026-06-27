@@ -1111,8 +1111,8 @@ function SearchPageContent() {
                           </div>
                           
                           <div className="mt-auto flex items-center justify-between">
-                            <span className="text-sm font-semibold text-neutral-900">
-                              {home.priceRange.formattedMin}<span className="text-xs font-normal text-neutral-500">/mo+</span>
+                            <span className="text-sm font-semibold text-neutral-900" title={home.pricePending ? 'Approximate — pending operator confirmation' : undefined}>
+                              {home.pricePending && home.priceRange.formattedMin ? '~' : ''}{home.priceRange.formattedMin}<span className="text-xs font-normal text-neutral-500">/mo+</span>
                             </span>
                             <div className="flex items-center gap-2">
                               <button
@@ -1304,14 +1304,14 @@ function SearchPageContent() {
                           <div className="mt-auto flex items-center justify-between">
                             <div>
                               {home.priceRange.formattedMin ? (
-                                <>
+                                <span title={home.pricePending ? 'Approximate — pending operator confirmation' : undefined}>
                                   <span className="text-lg font-semibold text-neutral-800">
-                                    {home.priceRange.formattedMin}
+                                    {home.pricePending ? '~' : ''}{home.priceRange.formattedMin}
                                   </span>
                                   <span className="text-sm text-neutral-500">
                                     {home.priceRange.formattedMax ? ` - ${home.priceRange.formattedMax}/mo` : "/mo"}
                                   </span>
-                                </>
+                                </span>
                               ) : (
                                 <span className="text-sm font-medium text-neutral-500">Price on request</span>
                               )}

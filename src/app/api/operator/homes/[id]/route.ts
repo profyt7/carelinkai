@@ -76,6 +76,15 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       };
     }
 
+    // When the operator confirms price/amenities, clear the VA "pending" flag for
+    // that field so the approximate badge drops and their values become authoritative.
+    const prevPff = (home.preFilledFields && typeof home.preFilledFields === 'object' ? home.preFilledFields : {}) as Record<string, unknown>;
+    const pff = { ...prevPff };
+    let pffChanged = false;
+    if ((data.priceMin !== undefined || data.priceMax !== undefined) && pff.priceRange === 'VA_UNVERIFIED') { delete pff.priceRange; pffChanged = true; }
+    if (data.amenities !== undefined && pff.amenities === 'VA_UNVERIFIED') { delete pff.amenities; pffChanged = true; }
+    if (pffChanged) data.preFilledFields = pff;
+
     const updated = await prisma.assistedLivingHome.update({ where: { id: home.id }, data });
     return NextResponse.json({ id: updated.id });
   } catch (e) {

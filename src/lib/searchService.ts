@@ -113,6 +113,8 @@ export interface SearchResultItem {
   googleRating?: number | null;
   googleRatingCount?: number | null;
   googlePlaceId?: string | null;
+  /** VA-collected approximate price, pending operator confirmation (card shows "~"). */
+  pricePending?: boolean;
 }
 
 /**

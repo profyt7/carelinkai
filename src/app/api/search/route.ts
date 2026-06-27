@@ -489,6 +489,7 @@ export function generateMockHomes(count: number = 12) {
       googleRating: null,
       googleRatingCount: null,
       googlePlaceId: null,
+      pricePending: false,
     };
   });
 }
@@ -811,6 +812,8 @@ export async function GET(request: NextRequest) {
           formattedMin: home.priceMin ? formatCurrency(Number(home.priceMin)) : null,
           formattedMax: home.priceMax ? formatCurrency(Number(home.priceMax)) : null,
         },
+        // VA-collected approximate price (pending operator confirmation) → card shows "~".
+        pricePending: (home.preFilledFields as Record<string, unknown> | null)?.priceRange === 'VA_UNVERIFIED',
         capacity: home.capacity,
         availability: home.capacity - home.currentOccupancy,
         gender: home.genderRestriction || 'ALL',

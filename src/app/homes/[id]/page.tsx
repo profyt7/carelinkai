@@ -983,7 +983,14 @@ export default function HomeDetailPage() {
 
                 {/* Amenities */}
                 <div ref={amenitiesRef} className="mb-8 scroll-mt-20">
-                  <h2 className="mb-4 text-xl font-semibold text-neutral-800">Amenities & Services</h2>
+                  <div className="mb-4 flex flex-wrap items-center gap-2">
+                    <h2 className="text-xl font-semibold text-neutral-800">Amenities & Services</h2>
+                    {realHome.amenitiesPending && Array.isArray(realHome.amenities) && realHome.amenities.length > 0 && (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800">
+                        Approximate · pending operator confirmation
+                      </span>
+                    )}
+                  </div>
                   {Array.isArray(realHome.amenities) && realHome.amenities.length > 0 ? (
                     <div className="rounded-lg border border-neutral-200 bg-white p-6">
                       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
@@ -1042,6 +1049,11 @@ export default function HomeDetailPage() {
                               : `Up to ${formatCurrency(realHome.priceRange.max)}`}
                           </p>
                           <p className="text-sm text-neutral-500 mt-1">per month</p>
+                          {realHome.pricePending && (
+                            <p className="mt-2 inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800">
+                              Approximate starting price · pending operator confirmation
+                            </p>
+                          )}
                         </div>
                         <p className="text-sm text-neutral-600 mb-4">
                           Actual costs vary based on care level, room type, and additional services required. Contact the facility for a personalized quote.
