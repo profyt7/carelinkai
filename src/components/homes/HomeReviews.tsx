@@ -18,6 +18,8 @@ interface ReviewItem {
 interface HomeReviewsProps {
   homeId: string;
   homeName: string;
+  /** True when the viewer is the operator who owns this claimed home (can reply). */
+  canRespond?: boolean;
 }
 
 function Stars({ rating, className = '' }: { rating: number; className?: string }) {
@@ -36,8 +38,30 @@ function Stars({ rating, className = '' }: { rating: number; className?: string 
  * who has engaged the home (inquiry/tour/booking) leave one. Operator replies are
  * shown inline. No third-party review text is ever displayed here.
  */
-export default function HomeReviews({ homeId, homeName }: HomeReviewsProps) {
+export default function HomeReviews({ homeId, homeName, canRespond = false }: HomeReviewsProps) {
   const { data: session } = useSession();
+  const [respondingTo, setRespondingTo] = useState<string | null>(null);
+  const [responseText, setResponseText] = useState('');
+  const [savingResponse, setSavingResponse] = useState(false);
+
+  const saveResponse = async (reviewId: string) => {
+    if (!responseText.trim()) return;
+    setSavingResponse(true);
+    try {
+      const res = await fetch(`/api/reviews/homes/${reviewId}/response`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ response: responseText.trim() }),
+      });
+      if (res.ok) {
+        setRespondingTo(null);
+        setResponseText('');
+        await load();
+      }
+    } finally {
+      setSavingResponse(false);
+    }
+  };
   const [reviews, setReviews] = useState<ReviewItem[]>([]);
   const [stats, setStats] = useState<{ averageRating: number; totalReviews: number }>({ averageRating: 0, totalReviews: 0 });
   const [loading, setLoading] = useState(true);
@@ -145,6 +169,42 @@ export default function HomeReviews({ homeId, homeName }: HomeReviewsProps) {
                   <p className="text-xs font-semibold text-primary-800">Response from {homeName}</p>
                   <p className="mt-0.5 text-sm text-neutral-700">{r.operatorResponse}</p>
                 </div>
+              )}
+
+              {canRespond && !r.operatorResponse && (
+                respondingTo === r.id ? (
+                  <div className="mt-3">
+                    <textarea
+                      value={responseText}
+                      onChange={(e) => setResponseText(e.target.value)}
+                      placeholder="Write a public response to this review…"
+                      rows={3}
+                      maxLength={2000}
+                      className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+                    />
+                    <div className="mt-2 flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => saveResponse(r.id)}
+                        disabled={savingResponse}
+                        className="rounded-md bg-primary-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50"
+                      >
+                        {savingResponse ? 'Posting…' : 'Post response'}
+                      </button>
+                      <button type="button" onClick={() => setRespondingTo(null)} className="text-sm text-neutral-500 hover:text-neutral-700">
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => { setRespondingTo(r.id); setResponseText(''); }}
+                    className="mt-3 text-sm font-medium text-primary-600 hover:text-primary-700"
+                  >
+                    Respond as the operator
+                  </button>
+                )
               )}
             </div>
           ))}

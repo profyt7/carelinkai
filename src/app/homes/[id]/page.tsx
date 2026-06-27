@@ -810,8 +810,8 @@ export default function HomeDetailPage() {
                     <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-neutral-200 bg-neutral-50 p-4">
                       <p className="text-sm text-neutral-700">
                         {photos.length === 0
-                          ? 'Are you the operator of this community? Claim your free listing to add your photos, manage it, and respond to families.'
-                          : 'Are you the operator of this community? Claim your free listing to manage it and respond to families.'}
+                          ? 'Are you the operator of this community? Claim your free listing to add your photos, showcase & respond to reviews, manage it, and respond to families.'
+                          : 'Are you the operator of this community? Claim your free listing to showcase & respond to reviews, manage it, and respond to families.'}
                       </p>
                       <a
                         href="/auth/register?role=OPERATOR"
@@ -1105,7 +1105,7 @@ export default function HomeDetailPage() {
 
                 {/* Reviews (first-party, real data) */}
                 <div ref={reviewsRef} className="mb-8 scroll-mt-20">
-                  <HomeReviews homeId={realHome.id} homeName={realHome.name} />
+                  <HomeReviews homeId={realHome.id} homeName={realHome.name} canRespond={Boolean(realHome.viewerIsOwner)} />
                 </div>
 
                 {/* Location */}
