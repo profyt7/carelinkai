@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-06-27 — unclaimed-listing enrichment batch (OL-099, #642–#648): hero placeholder, facts-only descriptions (25 written), warmer empty states, Google rating badge (90% coverage). PENDING: backfill-google-ratings --force. NEXT: #5 first-party reviews. Founder TODO: rotate demo.* passwords; incognito-verify anon /search._
+_Last updated: 2026-06-27 — OL-099 CLOSED: enrichment batch (#642–#648) + first-party reviews #5 (#650–#652) + Google ratings populated (133/144). Founder TODO: rotate demo.* passwords; incognito-verify anon /search. Open: dedup Brookdale Westlake pair (OL-093)._
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -315,8 +315,9 @@ Each loop: what it is, why it matters, what done looks like.
   - #645/#647 — facts-only description generator + script; founder ran `--force`: **25 sparse homes written**, tagged `preFilledFields.description='AI_PUBLIC_DATA'` (clean overwrite on claim).
   - #646 — warmer/honest amenities + pricing empty states (general "typical for [care level]", no invented numbers) + claim CTA.
   - #648 — Google rating badge: migration `20260626000002` (`googleRating/googleRatingCount/googlePlaceId/googleRatingUpdatedAt`) + `backfill-google-ratings.ts` + `GoogleRatingBadge` on cards (attribution-only) + detail ("See reviews on Google" link). Rating + count + place id only — **no review text** (Maps ToS).
-- **PENDING founder Render run:** `npx tsx scripts/backfill-google-ratings.ts --force` (~$5) — the badge stays hidden until ratings are populated. (Dry: `--limit 10`.)
-- **OPEN — #5 first-party reviews (last item, NOT started):** `HomeReview` model + `reviews` relation already exist; `/api/homes/[id]` already computes `rating`/`reviewCount`. Scope: submit-after-inquiry/tour, display, operator response after claim, surface "showcase & respond to reviews" as a claim incentive. Do NOT scrape/republish Google/APFM/Caring review text.
+- **Google ratings — DONE 2026-06-27:** founder ran `backfill-google-ratings.ts --force` → **133/144 rated** (8 weak skipped, 3 cleared); badge live. ⚠ Brookdale Gardens at Westlake / Brookdale Westlake Village share one Google place id (possible duplicate) → flagged for OL-093 dedup review.
+- **DONE — #5 first-party reviews (#650/#651/#652):** **5a** (#650) — `HomeReview.operatorResponse` + migration `20260627000001`; POST eligibility broadened booking-only → **inquiry/tour/booking** (booking → `isVerified`); operator-reply endpoint `POST/DELETE /api/reviews/homes/[id]/response`; unit tests updated (20/20). **5b** (#651) — real `HomeReviews` section on the listing ("No reviews yet — be the first" empty state, eligible-family submit form, inline operator replies, privacy-safe identities), replacing the legacy mock block. **5c** (#652) — `/api/homes/[id]` returns `viewerIsOwner`; owning operator gets an inline "Respond as the operator" reply form; claim pitch advertises "showcase & respond to reviews". No third-party review text stored/shown (Maps/APFM/Caring ToS). First-party → every listing starts empty and accrues from real CareLinkAI families.
+- **OL-099 fully delivered** (#642–#648 + #650–#652); all founder Render runs done.
 
 ### OL-093: Remaining directory data-quality (rebrands, SNF/category, stale URLs)
 - **Status:** 🟡 OPEN — mostly resolved 2026-06-25; 2 items remain.

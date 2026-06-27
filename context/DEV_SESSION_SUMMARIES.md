@@ -2,6 +2,22 @@
 
 ---
 
+### 2026-06-27 (later) — First-party reviews (#5) + ratings populated (#650–#652)
+
+- **Objective:** Build the first-party review system (last enrichment item) and populate the Google rating badge.
+- **Work completed:**
+  - **#650 (5a)** — `HomeReview.operatorResponse`/`operatorRespondedAt` (migration `20260627000001`); POST `/api/reviews/homes` eligibility broadened from booking-only to **inquiry/tour/booking** (booking → `isVerified`); new `POST/DELETE /api/reviews/homes/[id]/response` operator-reply endpoint; **updated `home.reviews.api.test.ts`** for the new rules + mocks (CI caught the stale booking-only assertions; 20/20 after fix).
+  - **#651 (5b)** — `HomeReviews` client component on the real listing: aggregate + list, **"No reviews yet — be the first"** empty state, eligible-family submit form (earned-review explainer + 403 handling), inline operator replies, privacy-safe identities ("CareLinkAI member" / "Verified family"). Replaced the legacy mock review block.
+  - **#652 (5c)** — `/api/homes/[id]` returns `viewerIsOwner`; `HomeReviews` `canRespond` mode gives the owning operator an inline "Respond as the operator" form; claim pitch advertises "showcase & respond to reviews".
+  - **Google ratings populated:** founder ran `backfill-google-ratings.ts --force` → **133/144 rated** (avg ~4.2★), 8 weak skipped, 3 cleared. Badge live.
+- **Files changed:** `prisma/schema.prisma` + migration `20260627000001_home_review_operator_response`; `src/app/api/reviews/homes/route.ts`, `src/app/api/reviews/homes/[id]/response/route.ts` (NEW), `src/app/api/homes/[id]/route.ts`; `src/components/homes/HomeReviews.tsx` (NEW); `src/app/homes/[id]/page.tsx`; `__tests__/home.reviews.api.test.ts`.
+- **Tests/build status:** #650–#652 green on full CI (incl. migrate-deploy), squash-merged; `tsc` clean; reviews unit suite 20/20.
+- **Deployment impact:** Render auto-deployed; migration `20260627000001` ran on deploy. No third-party review text stored/shown anywhere (Maps/APFM/Caring ToS). Reviews are first-party → listings start empty and accrue from real families.
+- **New risks/blockers:** none. Dedup follow-up flagged: Brookdale Gardens at Westlake / Brookdale Westlake Village share one Google place id (OL-093).
+- **Recommended next step:** OL-099 closed. Optional: `minReviewCount` gate for thin-volume Google ratings (left off per founder's "show even when low"); dedup the Brookdale Westlake pair; founder TODOs (rotate `demo.*` passwords, incognito-verify anon `/search`).
+
+---
+
 ### 2026-06-27 — Unclaimed-listing enrichment batch + /search badge fix (#642–#648)
 
 - **Objective:** Enrich sparse UNCLAIMED directory listings (hero image, descriptions, empty states, Google rating badge) — strictly HONEST, never fabricating facility specifics — plus a /search card badge-overlap fix.
