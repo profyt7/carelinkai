@@ -60,6 +60,12 @@ jest.mock('@/lib/prisma', () => {
       },
       booking: {
         findFirst: jest.fn(),
+      },
+      inquiry: {
+        findFirst: jest.fn(),
+      },
+      tourRequest: {
+        findFirst: jest.fn(),
       }
     }
   };
@@ -320,45 +326,77 @@ describe('Home Reviews API', () => {
       expect(await response.json()).toEqual({ error: "You have already reviewed this home" });
     });
     
-    test('returns 403 when user has no booking with the home', async () => {
+    test('returns 403 when user has not engaged the home (no inquiry/tour/booking)', async () => {
       (getServerSession as jest.Mock).mockResolvedValueOnce({
         user: mockUser,
       });
-      
+
       (prisma.assistedLivingHome.findUnique as jest.Mock).mockResolvedValueOnce(mockHome);
       (prisma.family.findUnique as jest.Mock).mockResolvedValueOnce(mockFamily);
       (prisma.operator.findUnique as jest.Mock).mockResolvedValueOnce(null);
       (prisma.homeReview.findFirst as jest.Mock).mockResolvedValueOnce(null);
       (prisma.booking.findFirst as jest.Mock).mockResolvedValueOnce(null);
-      
+      (prisma.inquiry.findFirst as jest.Mock).mockResolvedValueOnce(null);
+      (prisma.tourRequest.findFirst as jest.Mock).mockResolvedValueOnce(null);
+
       const request = createMockRequest({}, 'POST');
       request.json = jest.fn().mockResolvedValueOnce(validReviewData);
-      
+
       const response = await POST(request);
-      
+
       expect(response.status).toBe(403);
-      expect(await response.json()).toEqual({ error: "You do not have permission to review this home" });
+      expect(await response.json()).toEqual({
+        error: "You can review a community after you've inquired, requested a tour, or booked it through CareLinkAI.",
+      });
     });
-    
-    test('successfully creates a review', async () => {
+
+    test('allows a review from an inquiry (unverified) even without a booking', async () => {
       (getServerSession as jest.Mock).mockResolvedValueOnce({
         user: mockUser,
       });
-      
+
+      (prisma.assistedLivingHome.findUnique as jest.Mock).mockResolvedValueOnce(mockHome);
+      (prisma.family.findUnique as jest.Mock).mockResolvedValueOnce(mockFamily);
+      (prisma.operator.findUnique as jest.Mock).mockResolvedValueOnce(null);
+      (prisma.homeReview.findFirst as jest.Mock).mockResolvedValueOnce(null);
+      (prisma.booking.findFirst as jest.Mock).mockResolvedValueOnce(null);
+      (prisma.inquiry.findFirst as jest.Mock).mockResolvedValueOnce({ id: 'inquiry-1' });
+      (prisma.tourRequest.findFirst as jest.Mock).mockResolvedValueOnce(null);
+      (prisma.homeReview.create as jest.Mock).mockResolvedValueOnce(mockReview);
+
+      const request = createMockRequest({}, 'POST');
+      request.json = jest.fn().mockResolvedValueOnce(validReviewData);
+
+      const response = await POST(request);
+
+      expect(response.status).toBe(200);
+      // An inquiry/tour reviewer is genuine but NOT a verified stay.
+      expect(prisma.homeReview.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ isVerified: false }),
+      });
+    });
+
+    test('successfully creates a review (booking → verified)', async () => {
+      (getServerSession as jest.Mock).mockResolvedValueOnce({
+        user: mockUser,
+      });
+
       (prisma.assistedLivingHome.findUnique as jest.Mock).mockResolvedValueOnce(mockHome);
       (prisma.family.findUnique as jest.Mock).mockResolvedValueOnce(mockFamily);
       (prisma.operator.findUnique as jest.Mock).mockResolvedValueOnce(null);
       (prisma.homeReview.findFirst as jest.Mock).mockResolvedValueOnce(null);
       (prisma.booking.findFirst as jest.Mock).mockResolvedValueOnce(mockBooking);
+      (prisma.inquiry.findFirst as jest.Mock).mockResolvedValueOnce(null);
+      (prisma.tourRequest.findFirst as jest.Mock).mockResolvedValueOnce(null);
       (prisma.homeReview.create as jest.Mock).mockResolvedValueOnce(mockReview);
-      
+
       const request = createMockRequest({}, 'POST');
       request.json = jest.fn().mockResolvedValueOnce(validReviewData);
-      
+
       const response = await POST(request);
-      
+
       expect(response.status).toBe(200);
-      
+
       const data = await response.json();
       expect(data.success).toBe(true);
       expect(data.review).toEqual(expect.objectContaining({
@@ -366,14 +404,14 @@ describe('Home Reviews API', () => {
         homeId: mockReview.homeId,
         rating: mockReview.rating,
       }));
-      
-      // Verify create was called with correct data
+
+      // Verify create was called with correct data (a booking → isVerified true)
       expect(prisma.homeReview.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           homeId: mockHomeId,
           reviewerId: mockUser.id,
           rating: validReviewData.rating,
-          isVerified: false,
+          isVerified: true,
         }),
       });
     });

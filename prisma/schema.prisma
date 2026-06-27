@@ -1199,6 +1199,10 @@ model HomeReview {
   content    String?
   isPublic   Boolean            @default(true)
   isVerified Boolean            @default(false)
+  // Operator's public reply to a review — available once the operator has claimed
+  // the listing. A claim incentive ("showcase & respond to reviews").
+  operatorResponse    String?
+  operatorRespondedAt DateTime?
   createdAt  DateTime           @default(now())
   updatedAt  DateTime           @updatedAt
   home       AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
