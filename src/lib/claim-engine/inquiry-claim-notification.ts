@@ -6,25 +6,18 @@
  * leads are never lost and surface on the operator dashboard the moment the home
  * is claimed (inquiries are keyed by `homeId`, which reassigns on claim).
  *
- * This function is the BEST-EFFORT notify layer on top of that capture: if we
- * know the operator's outreach email, mint a 45-day founder claim link and send
- * a Resend email (+ Twilio SMS when a phone is known). The notification IS the
- * claim CTA. When no contact is known, this no-ops and the public waiting-leads
- * counter on the listing is the organic claim driver instead.
+ * This is the BEST-EFFORT notify layer on top of that capture. As of the
+ * per-facility claim DRIP, it simply DELEGATES to `startClaimDripOnLead`: the
+ * first lead starts an email-only drip (touch 1) and the claim-drip cron advances
+ * touches 2-4; later leads just grow the public waiting count. EMAIL ONLY — no SMS
+ * in the cold pre-claim path (TCPA / A2P caution). When no outreach email is known
+ * this no-ops and the public waiting-leads counter is the organic claim driver.
  *
- * HIPAA: an inquiry may contain PHI (care needs). This path sends GENERIC copy
- * only — facility name + "a family is trying to reach you" — never inquiry/health
- * details. Actual content stays behind auth and is revealed only after claim.
- *
- * Idempotent (24h throttle via `claimNudgeLastSentAt`), non-blocking (callers
- * fire-and-forget), and Sentry-logged on failure — never throws.
+ * HIPAA: copy is GENERIC only — facility name + "a family is trying to reach you"
+ * — never inquiry/health details. Non-blocking; never throws.
  */
 
-import { prisma } from '@/lib/prisma';
-import { signClaimToken, DEFAULT_CLAIM_TOKEN_TTL_HOURS } from '@/lib/claim-token';
-import { sendInquiryClaimNudgeEmail } from '@/lib/email';
-import { smsService } from '@/lib/sms/sms-service';
-import { captureError } from '@/lib/sentry';
+import { startClaimDripOnLead } from './claim-drip';
 
 /** Sentinel operator that owns unclaimed/directory listings (see seed scripts). */
 export const DIRECTORY_UNCLAIMED_EMAIL = 'directory-unclaimed@carelinkai.system';
@@ -40,23 +33,6 @@ export function isUnclaimedHome(operatorUserEmail: string | null | undefined): b
   return (operatorUserEmail ?? '').toLowerCase() === DIRECTORY_UNCLAIMED_EMAIL;
 }
 
-function buildClaimUrl(homeId: string, operatorEmail: string, secret: string): string {
-  const now = Math.floor(Date.now() / 1000);
-  const token = signClaimToken(
-    {
-      operatorEmail: operatorEmail.toLowerCase(),
-      homeId,
-      clevelandFounder: true,
-      iat: now,
-      exp: now + DEFAULT_CLAIM_TOKEN_TTL_HOURS * 3600,
-    },
-    secret,
-  );
-  const appUrl =
-    process.env['NEXT_PUBLIC_APP_URL'] || process.env['NEXTAUTH_URL'] || 'https://getcarelinkai.com';
-  return `${appUrl.replace(/\/$/, '')}/auth/register?role=OPERATOR&claimToken=${encodeURIComponent(token)}`;
-}
-
 /**
  * Best-effort: nudge the operator of an unclaimed listing to claim, off the back
  * of a real inquiry. Safe to call on ANY inquiry — it self-filters to unclaimed
@@ -68,73 +44,10 @@ export async function notifyUnclaimedHomeInquiry(params: {
   /** What triggered the nudge. A tour is the hottest lead → more urgent copy. */
   trigger?: 'inquiry' | 'tour';
 }): Promise<void> {
-  const { homeId, inquiryId, trigger = 'inquiry' } = params;
-  try {
-    const home = await prisma.assistedLivingHome.findUnique({
-      where: { id: homeId },
-      select: {
-        id: true,
-        name: true,
-        outreachEmail: true,
-        outreachPhone: true,
-        claimNudgeLastSentAt: true,
-        operator: { select: { user: { select: { email: true } } } },
-      },
-    });
-
-    if (!home) return;
-    // Claimed homes are handled by the existing operator-alert path — skip.
-    if (!isUnclaimedHome(home.operator?.user?.email)) return;
-
-    const outreachEmail = home.outreachEmail?.trim();
-    const outreachPhone = home.outreachPhone?.trim();
-    // No bound email → nothing to send; the public waiting-leads counter drives
-    // the claim instead. (A phone alone can't bind a claim token to an account.)
-    if (!outreachEmail) return;
-
-    // Idempotency: don't re-nudge within the throttle window.
-    if (
-      home.claimNudgeLastSentAt &&
-      Date.now() - home.claimNudgeLastSentAt.getTime() < NUDGE_THROTTLE_HOURS * 3600 * 1000
-    ) {
-      return;
-    }
-
-    const secret = process.env['NEXTAUTH_SECRET'] || '';
-    if (!secret) {
-      console.error('[claim-engine] NEXTAUTH_SECRET not set — cannot mint claim link for nudge');
-      return;
-    }
-
-    const waitingCount = await prisma.inquiry.count({ where: { homeId, status: 'NEW' } });
-    const claimUrl = buildClaimUrl(home.id, outreachEmail, secret);
-
-    await sendInquiryClaimNudgeEmail({
-      facilityName: home.name,
-      toEmail: outreachEmail,
-      claimUrl,
-      waitingCount,
-      trigger,
-    });
-
-    if (outreachPhone) {
-      if (trigger === 'tour') {
-        await smsService.sendTourClaimNudge(outreachPhone, home.name, claimUrl);
-      } else {
-        await smsService.sendInquiryClaimNudge(outreachPhone, home.name, claimUrl);
-      }
-    }
-
-    await prisma.assistedLivingHome.update({
-      where: { id: home.id },
-      data: { claimNudgeLastSentAt: new Date() },
-    });
-
-    console.log(`[claim-engine] Sent inquiry→claim nudge for "${home.name}" (${home.id})`);
-  } catch (error) {
-    captureError(error instanceof Error ? error : new Error(String(error)), {
-      tags: { feature: 'inquiry-claim-notification' },
-      extra: { homeId, inquiryId },
-    });
-  }
+  // The per-facility claim DRIP owns all cold pre-claim outreach (email-only — no
+  // SMS, per TCPA/A2P caution). On the FIRST lead it starts the drip (touch 1);
+  // subsequent leads are no-ops here — the public waiting count grows and the
+  // claim-drip cron advances touches 2-4. startClaimDripOnLead self-filters to
+  // unclaimed homes with a bound outreach email and never throws.
+  await startClaimDripOnLead({ homeId: params.homeId, trigger: params.trigger ?? 'inquiry' });
 }

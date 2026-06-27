@@ -32,3 +32,18 @@ services:
 #       value: production
 #     - key: CRON_SECRET
 #       sync: false  # Pull from environment variables
+#
+# Per-facility claim drip — advance due touches once daily (email-only).
+# - type: cron
+#   name: claim-drip
+#   runtime: node
+#   region: oregon
+#   plan: starter
+#   schedule: "0 14 * * *"  # 14:00 UTC daily (~9-10am ET)
+#   buildCommand: npm install
+#   startCommand: |
+#     curl -sS -H "Authorization: Bearer $CRON_SECRET" \
+#       https://getcarelinkai.com/api/cron/claim-drip
+#   envVars:
+#     - key: CRON_SECRET
+#       sync: false

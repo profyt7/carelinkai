@@ -312,6 +312,99 @@ export async function sendNewLeadOperatorEmail(args: {
 }
 
 /**
+ * One touch of the per-facility CLAIM DRIP (email-only). Escalating copy by touch
+ * (1 = lead nudge, 2 = growing demand, 3 = missing-leads/loss, 4 = final notice)
+ * that always surfaces the live waiting count. CAN-SPAM compliant: one-click
+ * unsubscribe link + company postal address + List-Unsubscribe / RFC 8058 headers.
+ * Generic copy only — never PHI. Returns false on failure.
+ */
+export async function sendClaimDripEmail(args: {
+  facilityName: string;
+  toEmail: string;
+  claimUrl: string;
+  unsubscribeUrl: string;
+  postalAddress: string;
+  touch: number; // 1..4
+  waitingCount: number;
+  trigger?: 'inquiry' | 'tour';
+}): Promise<boolean> {
+  try {
+    if (!process.env.RESEND_API_KEY) return false;
+    const facility = args.facilityName?.trim() || 'your community';
+    const n = Math.max(1, args.waitingCount || 1);
+    const fam = n === 1 ? 'family' : 'families';
+    const isTour = args.trigger === 'tour';
+
+    let subject: string;
+    let lead: string;
+    switch (args.touch) {
+      case 1:
+        subject = isTour
+          ? `A family wants to tour ${facility} — claim to confirm the visit`
+          : `A family is trying to reach ${facility} on CareLinkAI`;
+        lead = isTour
+          ? `A family wants to tour ${facility} on CareLinkAI.`
+          : `A family is trying to reach ${facility} on CareLinkAI.`;
+        break;
+      case 2:
+        subject = `${n} ${fam} waiting to hear from ${facility}`;
+        lead = `${n} ${fam} ${n === 1 ? 'is' : 'are'} now waiting to hear from ${facility} on CareLinkAI. Your free listing is unclaimed, so no one can respond yet.`;
+        break;
+      case 3:
+        subject = `You're missing leads at ${facility} (${n} waiting)`;
+        lead = `${facility} is missing leads. ${n} ${fam} ${n === 1 ? 'has' : 'have'} reached out on CareLinkAI and ${n === 1 ? 'is' : 'are'} still waiting because the listing is unclaimed.`;
+        break;
+      default: // 4 — final
+        subject = `Final notice: ${n} ${fam} waiting at ${facility}`;
+        lead = `Final notice — ${n} ${fam} ${n === 1 ? 'is' : 'are'} waiting to connect with ${facility} on CareLinkAI. This is the last email we'll send about these leads. Claim your free listing to respond before they choose another community.`;
+        break;
+    }
+    const cta = args.touch >= 3 ? 'Claim now &amp; respond' : `Claim ${escapeHtml(facility)}`;
+    const text =
+      `${lead}\n\n` +
+      `Claim your free listing in about 2 minutes to view and respond securely:\n${args.claimUrl}\n\n` +
+      `Details are kept private until you claim. There is no cost to claim or respond.\n\n` +
+      `${APP_NAME} · ${args.postalAddress}\n` +
+      `Unsubscribe (you won't be emailed about these leads again): ${args.unsubscribeUrl}`;
+    const html = `
+<!DOCTYPE html>
+<html><body style="font-family:Arial,sans-serif;color:#1f2937;line-height:1.5">
+  <p>${escapeHtml(lead)}</p>
+  <p><a href="${escapeHtml(args.claimUrl)}" style="display:inline-block;background:#0d9488;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600">${cta}</a></p>
+  <p style="color:#6b7280;font-size:13px">Details are kept private until you claim. There is no cost to claim or respond.</p>
+  <hr style="border:none;border-top:1px solid #e5e7eb;margin:16px 0"/>
+  <p style="color:#9ca3af;font-size:12px">
+    ${APP_NAME} · ${escapeHtml(args.postalAddress)}<br/>
+    <a href="${escapeHtml(args.unsubscribeUrl)}" style="color:#9ca3af">Unsubscribe</a> — you won't be emailed about these leads again.
+  </p>
+</body></html>`;
+
+    const { error } = await resend.emails.send({
+      from: `${APP_NAME} <${FROM_EMAIL}>`,
+      to: [args.toEmail],
+      subject,
+      text,
+      html,
+      headers: {
+        'List-Unsubscribe': `<${args.unsubscribeUrl}>, <mailto:${FROM_EMAIL}?subject=unsubscribe>`,
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+      },
+    });
+    if (error) {
+      captureError(error instanceof Error ? error : new Error(String((error as { message?: string })?.message ?? error)),
+        { tags: { feature: 'claim-drip' }, extra: { facilityName: facility, touch: args.touch } });
+      return false;
+    }
+    return true;
+  } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { feature: 'claim-drip' }, extra: { facilityName: args.facilityName },
+    });
+    return false;
+  }
+}
+
+/**
  * PROACTIVE directory claim invite (distinct from sendInquiryClaimNudgeEmail).
  *
  * Used by the batch claim-nudge sender to invite an operator to claim their free

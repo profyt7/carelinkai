@@ -550,6 +550,13 @@ model AssistedLivingHome {
   outreachEmail           String?
   outreachPhone           String?
   claimNudgeLastSentAt    DateTime?
+  // Per-facility claim drip (email-only): one active sequence per home, started on
+  // the first lead, advanced by the claim-drip cron. step = touches sent (0-4);
+  // stoppedReason = claimed | unsubscribed | bounce | exhausted | no_email.
+  claimDripStartedAt      DateTime?
+  claimDripStep           Int       @default(0)
+  claimDripNextAt         DateTime?
+  claimDripStoppedReason  String?
   address                Address?
   operator               Operator         @relation(fields: [operatorId], references: [id], onDelete: Cascade)
   bookings               Booking[]
@@ -573,6 +580,7 @@ model AssistedLivingHome {
   @@index([status])
   @@index([priceMin, priceMax])
   @@index([careLevel])
+  @@index([claimDripNextAt])
   @@index([lastProfileGenerated])
   @@index([isFeatured])
 }
