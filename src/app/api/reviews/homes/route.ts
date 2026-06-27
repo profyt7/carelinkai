@@ -76,6 +76,8 @@ export async function GET(request: NextRequest) {
           title: true,
           content: true,
           isVerified: true,
+          operatorResponse: true,
+          operatorRespondedAt: true,
           createdAt: true,
           updatedAt: true
         }
@@ -206,22 +208,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify permission: user's family must have a booking for this home
-    const hasBooking = await prisma.booking.findFirst({
-      where: {
-        familyId: family.id,
-        homeId
-      }
-    });
+    // Eligibility: the family must have engaged this home via CareLinkAI — an
+    // inquiry, a tour request, or a booking. Reviews are first-party and earned,
+    // not anonymous drive-by ratings.
+    const [hasBooking, hasInquiry, hasTour] = await Promise.all([
+      prisma.booking.findFirst({ where: { familyId: family.id, homeId }, select: { id: true } }),
+      prisma.inquiry.findFirst({ where: { familyId: family.id, homeId }, select: { id: true } }),
+      prisma.tourRequest.findFirst({ where: { familyId: family.id, homeId }, select: { id: true } }),
+    ]);
 
-    if (!hasBooking) {
+    if (!hasBooking && !hasInquiry && !hasTour) {
       return NextResponse.json(
-        { error: "You do not have permission to review this home" },
+        { error: "You can review a community after you've inquired, requested a tour, or booked it through CareLinkAI." },
         { status: 403 }
       );
     }
 
-    // Create the review
+    // Create the review. A booking implies an actual placement → mark verified;
+    // inquiry/tour reviewers are genuine CareLinkAI users but not a verified stay.
     const review = await prisma.homeReview.create({
       data: {
         homeId,
@@ -230,7 +234,7 @@ export async function POST(request: NextRequest) {
         title,
         content,
         isPublic,
-        isVerified: false // Default to unverified
+        isVerified: Boolean(hasBooking)
       }
     });
 
