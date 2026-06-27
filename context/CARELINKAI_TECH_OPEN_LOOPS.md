@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-06-27 — OL-100 DELIVERED: lead-funnel (#654–#657) — tour→claim nudge, claimed-op email, family fallback, per-facility email-only claim drip (cron via GHA). Prior: OL-099 enrichment + reviews. Founder TODO: confirm CRON_SECRET GH secret + dispatch claim-drip once; rotate demo.* passwords; incognito-verify anon /search; verify Brookdale Westlake re-match._
+_Last updated: 2026-06-27 — OL-101 DELIVERED: DP-free (#659), VA price/amenities load (#660), UX loose ends (#661), Westlake Pointe rebrand fix (#663). Prior: OL-100 lead-funnel/claim-drip. Founder TODO: build VA CSV → load-va-pricing-amenities --force; confirm CRON_SECRET + dispatch claim-drip once; rotate demo.* passwords; incognito-verify anon /search._
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -327,6 +327,14 @@ Each loop: what it is, why it matters, what done looks like.
 - **#657 (3):** per-facility, EMAIL-ONLY multi-touch claim drip. Migration `20260627000002` (`claimDripStartedAt/Step/NextAt/StoppedReason` + index). Cadence 0/3/7/14 → exhausted; escalating copy w/ live N-waiting; CAN-SPAM; hard stops claimed/unsubscribe/bounce/no_email/exhausted. `notifyUnclaimedHomeInquiry` delegates to `startClaimDripOnLead`. Cron: `/api/cron/claim-drip` + `.github/workflows/claim-drip.yml` (daily, free GHA — Render cron needs Standard plan). `report-claim-drip.ts` = claims-by-touch.
 - **Policy:** cold pre-claim outreach is EMAIL-ONLY forever (TCPA/A2P); SMS reserved for CLAIMED operators (implied consent).
 - **Founder follow-up:** confirm `CRON_SECRET` GitHub Actions secret exists (powers process-followups already); manually `workflow_dispatch` the claim-drip workflow once to confirm green; review `report-claim-drip.ts` in ~a week to tune cadence.
+
+### OL-101: DP-free + VA price/amenities + UX loose ends + Westlake Pointe rebrand (#659–#663)
+- **Status:** ✅ DELIVERED 2026-06-27.
+- **DP FREE (#659):** Discharge Planners are free, not a paid cohort. Removed homepage DP pricing (framing kept), DP billing nav/page/subscribe + DP MRR; confirmed DP feature routes have no paywall. `subscription.ts DISCHARGE_PLANNER='GROWTH'` is operator-side (operator revenue), left. Revenue = operator subscriptions only.
+- **VA price/amenities (#660):** `load-va-pricing-amenities.ts` loads Anita's phone-collected starting prices + amenities onto UNCLAIMED listings, flagged `VA_UNVERIFIED` → shown "approximate · pending operator confirmation" (cards: `~` price), cleared when the operator edits the field. **PENDING founder Render run** with the CSV.
+- **UX (#661):** `/homes/[id]` Save persists (favorites API, anon→signup); `/auth/logout` page added (was 404).
+- **Westlake Pointe rebrand (#654/#662/#663):** "Brookdale Gardens at Westlake" was a STALE BRAND at the WRONG (Westlake Village) address. Web-confirmed rebrand → **Westlake Pointe Senior Living** @ 27569 Detroit Rd. Founder ran `fix-westlake-pointe-rebrand.ts --force`: renamed + address (re-geocoded) + own 4.4★(35) rating + de-staled description. **NOT a dedup** — two distinct buildings. **This closes the Brookdale-Westlake item flagged in OL-099/OL-093.**
+- **Reusable:** `fix-conflated-google-ratings.ts` (#654) remains for any future same-brand co-located rating conflation (`--name` filter).
 
 ### OL-093: Remaining directory data-quality (rebrands, SNF/category, stale URLs)
 - **Status:** 🟡 OPEN — mostly resolved 2026-06-25; 2 items remain.
