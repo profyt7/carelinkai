@@ -44,6 +44,7 @@ import TourRequestModal from "@/components/tours/TourRequestModal";
 import PhotoGallery from "@/components/homes/PhotoGallery";
 import { placeholderImageFor } from "@/lib/placeholder-images";
 import GoogleRatingBadge from "@/components/homes/GoogleRatingBadge";
+import HomeReviews from "@/components/homes/HomeReviews";
 import PricingCalculator from "@/components/homes/PricingCalculator";
 import type { PricingEstimate } from "@/components/homes/PricingCalculator";
 import { getCloudinaryAvatar, isCloudinaryUrl } from "@/lib/cloudinaryUrl";
@@ -1100,6 +1101,11 @@ export default function HomeDetailPage() {
                       </button>
                     </div>
                   </div>
+                </div>
+
+                {/* Reviews (first-party, real data) */}
+                <div ref={reviewsRef} className="mb-8 scroll-mt-20">
+                  <HomeReviews homeId={realHome.id} homeName={realHome.name} />
                 </div>
 
                 {/* Location */}
