@@ -2,6 +2,22 @@
 
 ---
 
+### 2026-06-27 (latest+1) — DP-free, VA price/amenities, UX loose ends, Westlake Pointe rebrand (#659–#663)
+
+- **Objective:** Four cleanups: ratify Discharge Planner = FREE; load VA-collected price/amenities onto unclaimed listings; fix two UX loose ends; resolve the Brookdale Westlake rating conflation.
+- **Work completed:**
+  - **#659 — DP is FREE.** Removed DP pricing from the homepage (the $99/$499 plan cards → a free callout; pricing summary lists DPs as always-free; roadmap blurb de-priced; register CTA drops `&plan=`). Confirmed DP feature routes (search/placement-request/dashboard) have **no paywall**; removed the DP "Billing" nav, `/discharge-planner/billing` → redirect, subscribe API → 410, DP out of admin MRR (`dpMRR=0`). `subscription.ts DISCHARGE_PLANNER='GROWTH'` is an OPERATOR feature gate (operator revenue) — left as-is. Revenue = operator subscriptions only.
+  - **#660 — VA price/amenities load.** `scripts/load-va-pricing-amenities.ts` (CSV `homeId,priceMin,priceMax,amenities`, pipe-separated amenities) sets price/amenities on UNCLAIMED listings flagged `preFilledFields.priceRange/amenities='VA_UNVERIFIED'`. Detail page shows "Approximate · pending operator confirmation"; cards prefix price with `~`; `/api/homes/[id]` + `/api/search` expose `pricePending`/`amenitiesPending`. The operator home PATCH clears the flag when the operator edits the field (override-on-claim). Only writes sentinel-owned homes.
+  - **#661 — UX loose ends.** `/homes/[id]` Save now persists via the favorites API (inits from `isFavorited`, anon→signup prompt, reverts on error) — matches `/search`. Added `/auth/logout` page (NextAuth signOut) — was a 404.
+  - **#654/#662/#663 — Brookdale Westlake → Westlake Pointe rebrand.** The dry-run of the street-qualified re-match (#654) revealed the row "Brookdale Gardens at Westlake" stored the WRONG street (Westlake Village's 28550 Westlake Village Dr) AND is a STALE BRAND — the building (27569 Detroit Rd) rebranded to **Westlake Pointe Senior Living** (web-confirmed). #662 (address-only) was superseded by **#663** (full rebrand fix). Founder ran `fix-westlake-pointe-rebrand.ts --force`: **renamed → Westlake Pointe Senior Living, address → 27569 Detroit Rd (re-geocoded), rating → its own 4.4★(35), description de-staled.** Westlake Village untouched. NOT a dedup — two distinct buildings.
+- **Files changed:** `src/app/page.tsx`, `src/app/discharge-planner/billing/page.tsx`, `src/app/api/discharge-planner/billing/subscribe/route.ts`, `src/app/admin/{page,discharge-planners/page}.tsx`, `src/components/layout/DashboardLayout.tsx`; `src/app/homes/[id]/page.tsx`, `src/components/tours/...`, `src/app/api/{homes/[id],search,operator/homes/[id]}/route.ts`, `src/lib/searchService.ts`, `src/app/search/page.tsx`; `src/app/auth/logout/page.tsx` (NEW); scripts `load-va-pricing-amenities.ts`, `fix-conflated-google-ratings.ts`, `fix-westlake-pointe-rebrand.ts` (NEW).
+- **Tests/build status:** #659–#663 green on full CI; `tsc` clean; 56 DP unit tests pass.
+- **Deployment impact:** Render auto-deployed. Founder Render run: `fix-westlake-pointe-rebrand --force` (1 listing corrected live). DP free is live; VA load is ready (founder runs with Anita's CSV).
+- **New risks/blockers:** none. VA values flagged approximate + cleared on operator edit.
+- **Recommended next step:** founder builds the VA CSV from Anita's calls → `load-va-pricing-amenities.ts --force`. Older TODOs: rotate `demo.*` passwords; incognito-verify anon `/search`; dispatch the claim-drip GHA workflow once to confirm green.
+
+---
+
 ### 2026-06-27 (latest) — Lead-funnel: tour nudge, family fallback, claimed-op email, per-facility claim drip (#654–#657)
 
 - **Objective:** Close the inquiry/tour → operator-acquisition loop. Founder asked: when a family inquires/tours, does the facility get told + is there a follow-up sales procedure? Audit found gaps (tour requests never nudged unclaimed facilities; one-touch only; no family fallback; SMS-only for claimed). Built the fixes in order.
