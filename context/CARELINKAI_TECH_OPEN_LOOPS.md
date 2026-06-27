@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-06-26 — VA email gap-fill (#640): 5 phone-verified operator emails → MEDIUM tier (OL-092), CAN-SPAM re-verified. Prior: /search polish (OL-098, #637/#638). Founder TODO: rotate demo.* passwords; incognito-verify anon /search; measure claim funnel before next medium send._
+_Last updated: 2026-06-27 — unclaimed-listing enrichment batch (OL-099, #642–#648): hero placeholder, facts-only descriptions (25 written), warmer empty states, Google rating badge (90% coverage). PENDING: backfill-google-ratings --force. NEXT: #5 first-party reviews. Founder TODO: rotate demo.* passwords; incognito-verify anon /search._
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -305,6 +305,18 @@ Each loop: what it is, why it matters, what done looks like.
 - **Map all markers (#637):** Map view only plotted the current page (10 of 144). Fix: `/api/search?markers=1` returns an unpaginated lightweight marker set (capped 1000); `search/page.tsx` fetches it in map mode while grid/list stay paginated.
 - **Preceding enrichment (founder Render run):** `autopopulate-cohort.ts --photos-only --force` added **418 real Google Places photos across 93 homes ($1.42)**; ~18 of those still have 0 photos (Canterbury Commons, Embassy of Rockport, Fairmont of Westlake, Rose Senior Living Beachwood, both Solon Pointes, Briarcliff Manor, Heritage of Hudson, NCR Portage Trail, Plum Creek, Sanctuary Wadsworth, Gardens of Western Reserve, Bloom at Rocky River, Cedarwood Plaza, both Kemper Houses, Avenue at Macedonia, Wesleyan Village) → now covered by placeholders.
 - **Follow-ups (optional):** residual ~18 photo-less homes could get a 2nd Places pass or manual photos; prune superseded old-version placeholder assets + original `home-*` set from Cloudinary if desired.
+
+### OL-099: Unclaimed-listing enrichment — images, descriptions, empty states, Google rating badge
+- **Status:** 🟡 MOSTLY DONE 2026-06-27 (#642–#648). Honest enrichment of sparse unclaimed directory listings (overarching rule: never fabricate facility specifics; general info clearly labeled; real data overrides).
+- **Done:**
+  - #642 — /search badge overlap fixed (% Match only with real personalization; badges stack).
+  - #643 — detail hero placeholder + "Representative photo" caption (shared `src/lib/placeholder-images.ts`).
+  - #644 — rating coverage: **90%** of homes have a Google rating (avg 4.24★, median 43).
+  - #645/#647 — facts-only description generator + script; founder ran `--force`: **25 sparse homes written**, tagged `preFilledFields.description='AI_PUBLIC_DATA'` (clean overwrite on claim).
+  - #646 — warmer/honest amenities + pricing empty states (general "typical for [care level]", no invented numbers) + claim CTA.
+  - #648 — Google rating badge: migration `20260626000002` (`googleRating/googleRatingCount/googlePlaceId/googleRatingUpdatedAt`) + `backfill-google-ratings.ts` + `GoogleRatingBadge` on cards (attribution-only) + detail ("See reviews on Google" link). Rating + count + place id only — **no review text** (Maps ToS).
+- **PENDING founder Render run:** `npx tsx scripts/backfill-google-ratings.ts --force` (~$5) — the badge stays hidden until ratings are populated. (Dry: `--limit 10`.)
+- **OPEN — #5 first-party reviews (last item, NOT started):** `HomeReview` model + `reviews` relation already exist; `/api/homes/[id]` already computes `rating`/`reviewCount`. Scope: submit-after-inquiry/tour, display, operator response after claim, surface "showcase & respond to reviews" as a claim incentive. Do NOT scrape/republish Google/APFM/Caring review text.
 
 ### OL-093: Remaining directory data-quality (rebrands, SNF/category, stale URLs)
 - **Status:** 🟡 OPEN — mostly resolved 2026-06-25; 2 items remain.
