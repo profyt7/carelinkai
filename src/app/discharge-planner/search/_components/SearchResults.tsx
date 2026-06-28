@@ -11,11 +11,12 @@ interface SearchResult {
   score: number;
   reasoning: string;
   careTypes: string[];
-  availableBeds: number;
-  startingPrice: number;
+  availableBeds: number | null;
+  startingPrice: number | null;
   amenities: string[];
   contactEmail?: string;
   contactPhone?: string;
+  isUnclaimed?: boolean;
 }
 
 interface SearchResultsProps {
@@ -178,7 +179,9 @@ export default function SearchResults({ searchId, query, matches, totalMatches }
                   <p className="text-2xl font-bold text-neutral-900">
                     {home?.homeId && liveAvailability[home.homeId] !== undefined
                       ? liveAvailability[home.homeId]
-                      : (home?.availableBeds || 0)}
+                      : home?.availableBeds != null
+                        ? home.availableBeds
+                        : <span className="text-base font-semibold text-neutral-500">Availability on request</span>}
                   </p>
                 </div>
 
@@ -188,7 +191,11 @@ export default function SearchResults({ searchId, query, matches, totalMatches }
                     <DollarSign className="h-5 w-5 text-success-600" />
                     <span className="text-sm font-semibold text-neutral-700">Starting Price</span>
                   </div>
-                  <p className="text-2xl font-bold text-neutral-900">${(home?.startingPrice || 0)?.toLocaleString()}<span className="text-sm text-neutral-600">/mo</span></p>
+                  <p className="text-2xl font-bold text-neutral-900">
+                    {home?.startingPrice != null
+                      ? <>${home.startingPrice.toLocaleString()}<span className="text-sm text-neutral-600">/mo</span></>
+                      : <span className="text-base font-semibold text-neutral-500">Pricing not verified</span>}
+                  </p>
                 </div>
 
                 {/* Care Types */}
@@ -246,17 +253,23 @@ export default function SearchResults({ searchId, query, matches, totalMatches }
               {/* Contact Info & Action */}
               <div className="flex items-center justify-between pt-6 border-t border-neutral-200">
                 <div className="flex items-center gap-4 text-sm text-neutral-600">
-                  {home?.contactEmail && (
-                    <div className="flex items-center gap-2">
-                      <Mail className="h-4 w-4" />
-                      <span>{home.contactEmail}</span>
-                    </div>
-                  )}
-                  {home?.contactPhone && (
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4" />
-                      <span>{home.contactPhone}</span>
-                    </div>
+                  {home?.isUnclaimed ? (
+                    <span className="text-neutral-400 italic">Unclaimed — request via CareLinkAI</span>
+                  ) : (
+                    <>
+                      {home?.contactEmail && (
+                        <div className="flex items-center gap-2">
+                          <Mail className="h-4 w-4" />
+                          <span>{home.contactEmail}</span>
+                        </div>
+                      )}
+                      {home?.contactPhone && (
+                        <div className="flex items-center gap-2">
+                          <Phone className="h-4 w-4" />
+                          <span>{home.contactPhone}</span>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
 
