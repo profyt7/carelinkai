@@ -22,6 +22,13 @@ const FROM_EMAIL = process.env.EMAIL_FROM || 'noreply@getcarelinkai.com';
 const APP_NAME = 'CareLinkAI';
 const TOKEN_EXPIRY_HOURS = 24;
 
+// Monitored inbox that operator REPLIES to cold/outreach emails should land in.
+// FROM_EMAIL is a noreply address, so without an explicit reply-to an interested
+// operator who just hits "Reply" is lost. Defaults to chris@getcarelinkai.com;
+// override with OUTREACH_REPLY_TO (falls back to ADMIN_NOTIFY_EMAIL).
+const OUTREACH_REPLY_TO =
+  process.env.OUTREACH_REPLY_TO || process.env.ADMIN_NOTIFY_EMAIL || 'chris@getcarelinkai.com';
+
 /**
  * Send a verification email to a new user
  * 
@@ -92,9 +99,10 @@ function escapeHtml(s: string): string {
  * Sentry, but never block the claim itself (the caller never awaits the result
  * in a way that affects the response).
  *
- * Recipient defaults to profyt7@gmail.com (overridable via CLAIM_NOTIFY_EMAIL),
- * cc'd to chris@getcarelinkai.com (overridable / disableable via
- * CLAIM_NOTIFY_CC — set to empty string to drop the cc).
+ * Recipient defaults to chris@getcarelinkai.com (the business inbox), overridable
+ * via ADMIN_NOTIFY_EMAIL (or the legacy CLAIM_NOTIFY_EMAIL, kept for back-compat).
+ * Optional cc via CLAIM_NOTIFY_CC — set to empty string to drop it; a cc that
+ * equals the primary recipient is dropped automatically.
  */
 export async function sendOperatorClaimNotification(args: {
   facilityName: string;
@@ -105,10 +113,11 @@ export async function sendOperatorClaimNotification(args: {
   homeId?: string;
   status?: string;
 }): Promise<boolean> {
-  const to = process.env.CLAIM_NOTIFY_EMAIL || 'profyt7@gmail.com';
-  // cc defaults to chris@; CLAIM_NOTIFY_CC='' explicitly drops it.
-  const ccRaw = process.env.CLAIM_NOTIFY_CC ?? 'chris@getcarelinkai.com';
-  const cc = ccRaw.trim() ? [ccRaw.trim()] : undefined;
+  const to = process.env.ADMIN_NOTIFY_EMAIL || process.env.CLAIM_NOTIFY_EMAIL || 'chris@getcarelinkai.com';
+  // Optional cc (CLAIM_NOTIFY_CC=''  drops it). Default to none; drop a cc that
+  // just duplicates the primary recipient.
+  const ccRaw = (process.env.CLAIM_NOTIFY_CC ?? '').trim();
+  const cc = ccRaw && ccRaw.toLowerCase() !== to.toLowerCase() ? [ccRaw] : undefined;
   try {
     if (!process.env.RESEND_API_KEY) {
       console.error('[Resend] RESEND_API_KEY not configured — skipping operator claim notification');
@@ -232,6 +241,7 @@ export async function sendInquiryClaimNudgeEmail(args: {
     const { data, error } = await resend.emails.send({
       from: `${APP_NAME} <${FROM_EMAIL}>`,
       to: [args.toEmail],
+      replyTo: OUTREACH_REPLY_TO,
       subject,
       text,
       html,
@@ -293,6 +303,7 @@ export async function sendNewLeadOperatorEmail(args: {
     const { error } = await resend.emails.send({
       from: `${APP_NAME} <${FROM_EMAIL}>`,
       to: [args.toEmail],
+      replyTo: OUTREACH_REPLY_TO,
       subject,
       text,
       html,
@@ -382,6 +393,7 @@ export async function sendClaimDripEmail(args: {
     const { error } = await resend.emails.send({
       from: `${APP_NAME} <${FROM_EMAIL}>`,
       to: [args.toEmail],
+      replyTo: OUTREACH_REPLY_TO,
       subject,
       text,
       html,
@@ -479,6 +491,7 @@ export async function sendDirectoryClaimInviteEmail(args: {
     const { data, error } = await resend.emails.send({
       from: `${APP_NAME} <${FROM_EMAIL}>`,
       to: [args.toEmail],
+      replyTo: OUTREACH_REPLY_TO,
       subject,
       text,
       html,
