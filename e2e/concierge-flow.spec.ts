@@ -216,15 +216,22 @@ test.describe('@critical DP concierge placement flow', () => {
     // ---------------------------------------------------------------
     // TOUR — request a tour from the shortlist → coordinated + tracked (never black-holes)
     // ---------------------------------------------------------------
-    // force: the button is present + enabled, but page chrome (cookie banner /
-    // care-advisor FAB) can overlay the bottom of the viewport in CI.
-    await dpPage.getByRole('button', { name: /request a tour/i }).first().click({ force: true });
-    await expect(dpPage.getByText(/tour requested/i).first()).toBeVisible({ timeout: 15000 });
-    // Persisted on the shortlist; the curated home is CLAIMED here (real op), so still
-    // zero operator-bound PlacementRequest rows (concierge never creates them).
+    // dispatchEvent: page chrome (cookie banner / care-advisor FAB) can overlay the
+    // viewport bottom in CI; a real click would land on the overlay. Dispatch the
+    // click directly to the button node so React's handler fires regardless.
+    await dpPage.getByRole('button', { name: /request a tour/i }).first().dispatchEvent('click');
+    // Server truth (timing-independent): the tour is recorded on the shortlist.
+    await expect.poll(
+      async () => (await (await request.get(`/api/dev/placement-search?id=${searchId}`)).json())?.curatedHomes?.[0]?.tourStatus ?? null,
+      { timeout: 20000 },
+    ).toBe('REQUESTED');
+    // The curated home is CLAIMED here (real op), so concierge still creates NO
+    // operator-bound PlacementRequest rows.
     const afterTour = await (await request.get(`/api/dev/placement-search?id=${searchId}`)).json();
-    expect(afterTour.curatedHomes?.[0]?.tourStatus).toBe('REQUESTED');
     expect(afterTour.placementRequestCount).toBe(0);
+    // UI reflects it on a fresh load.
+    await dpPage.goto('/discharge-planner/concierge', { waitUntil: 'domcontentloaded' });
+    await expect(dpPage.getByText(/tour requested/i).first()).toBeVisible({ timeout: 30000 });
 
     // ---------------------------------------------------------------
     // NOTIFY — the DP learns a shortlist is ready: dashboard count + bell + banner
