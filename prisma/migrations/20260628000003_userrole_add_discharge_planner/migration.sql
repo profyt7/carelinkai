@@ -1,0 +1,13 @@
+-- Backfill the DISCHARGE_PLANNER value on the UserRole enum.
+--
+-- Like the PlacementSearch tables (OL-105), this enum value was added to
+-- schema.prisma via `prisma db push` and never captured in a migration — every
+-- other UserRole value is present in the migration history, but DISCHARGE_PLANNER
+-- is not. A fresh `prisma migrate deploy` (e2e CI DB, new env) therefore builds a
+-- UserRole enum WITHOUT it, so creating a discharge-planner user fails with
+-- "invalid input value for enum UserRole: DISCHARGE_PLANNER".
+--
+-- Idempotent (IF NOT EXISTS): a no-op in prod (where db push already added it),
+-- adds it on a fresh DB. PG 12+ permits ADD VALUE inside a transaction as long as
+-- the value is not used in the same transaction (it isn't here).
+ALTER TYPE "UserRole" ADD VALUE IF NOT EXISTS 'DISCHARGE_PLANNER';

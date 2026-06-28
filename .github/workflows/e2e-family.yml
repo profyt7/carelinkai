@@ -358,6 +358,95 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  e2e-concierge:
+    # Discharge-planner concierge placement flow regression guard (PR #671).
+    # Scoped to the single spec; self-seeds via /api/dev/* (ALLOW_DEV_ENDPOINTS=1).
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: carelinkai_marketplace
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      NODE_OPTIONS: --max-old-space-size=4096
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: ${{ secrets.E2E_NEXTAUTH_SECRET }}
+      ALLOW_DEV_ENDPOINTS: "1"
+      ALLOW_INSECURE_AUTH_COOKIE: "1"
+      PLAYWRIGHT_BROWSERS_PATH: ~/.cache/ms-playwright
+      # Ephemeral service-container DB only — NEVER prod (see note in the other
+      # e2e jobs). ALLOW_DEV_ENDPOINTS seeding must not reach a real database.
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/carelinkai_marketplace?schema=public
+      S3_DISABLE: "1"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies (including dev)
+        run: npm ci --include=dev
+
+      - name: Get Playwright version
+        id: pw-version
+        shell: bash
+        run: |
+          v=$(npx playwright --version | awk '{print $2}')
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-browsers-${{ runner.os }}-${{ steps.pw-version.outputs.version }}
+
+      - name: Cache Next.js build cache
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: next-cache-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            next-cache-${{ runner.os }}-
+
+      - name: Prepare database schema
+        run: npx prisma migrate deploy
+
+      - name: Build app
+        run: npm run build
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Run Playwright (DP concierge flow)
+        run: |
+          npx playwright test --config=playwright.e2e.config.ts e2e/concierge-flow.spec.ts --workers=1 --reporter=line
+
+      - name: Upload Playwright test artifacts (Concierge flow) (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results-concierge
+          path: |
+            test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
   e2e-merge-reports:
     name: Merge Playwright reports
     runs-on: ubuntu-latest
