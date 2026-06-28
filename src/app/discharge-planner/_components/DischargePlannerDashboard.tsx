@@ -25,6 +25,8 @@ type DashboardData = {
     pendingResponses: number;
     searchesLast30Days: number;
     placementsLast30Days: number;
+    conciergeShortlistReady?: number;
+    conciergeActive?: number;
   };
 };
 
@@ -114,6 +116,51 @@ export default function DischargePlannerDashboard() {
           Start New Search
         </button>
       </motion.div>
+
+      {/* Concierge surfacing — a curated shortlist (tracked on PlacementSearch) does
+          not move the legacy placement counters, so make it visible on the landing page. */}
+      {(stats?.conciergeShortlistReady ?? 0) > 0 ? (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-gradient-to-r from-success-50 to-secondary-50 border-2 border-success-300 rounded-lg p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+        >
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-success-100 rounded-full">
+              <FiCheckCircle className="text-success-600" size={22} />
+            </div>
+            <div>
+              <p className="font-bold text-neutral-900">
+                {stats.conciergeShortlistReady} curated shortlist{stats.conciergeShortlistReady === 1 ? "" : "s"} ready
+              </p>
+              <p className="text-sm text-neutral-600">
+                Your CareLinkAI care team matched options with confirmed availability.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/discharge-planner/concierge"
+            className="bg-success-600 hover:bg-success-700 text-white px-5 py-2.5 rounded-lg font-medium whitespace-nowrap text-center transition-colors"
+          >
+            View shortlists →
+          </Link>
+        </motion.div>
+      ) : (stats?.conciergeActive ?? 0) > 0 ? (
+        <div className="bg-primary-50 border border-primary-200 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-3 text-sm text-primary-800">
+            <FiClock className="text-primary-500 flex-shrink-0" />
+            <span>
+              {stats.conciergeActive} concierge request{stats.conciergeActive === 1 ? "" : "s"} in progress — our care team is curating your shortlist.
+            </span>
+          </div>
+          <Link
+            href="/discharge-planner/concierge"
+            className="text-sm font-medium text-primary-700 hover:text-primary-800 whitespace-nowrap"
+          >
+            View →
+          </Link>
+        </div>
+      ) : null}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

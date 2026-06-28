@@ -248,6 +248,60 @@ export async function sendConciergeRequestNotification(args: {
 }
 
 /**
+ * Tell a discharge planner their concierge shortlist is ready (sent when an admin
+ * curates + "Send to DP"). Goes to the DP's OWN account email.
+ *
+ * HIPAA: PHI-FREE by construction — names only the option count and links into the
+ * app where the (auth-gated) shortlist lives. NEVER includes patient details or
+ * the facility names/notes. Fire-and-forget: logged + Sentry on failure, never thrown.
+ */
+export async function sendConciergeShortlistReadyEmail(args: {
+  toEmail: string;
+  count: number;
+}): Promise<boolean> {
+  const toEmail = args.toEmail?.trim();
+  if (!toEmail) return false;
+  try {
+    if (!process.env.RESEND_API_KEY) {
+      console.error('[Resend] RESEND_API_KEY not configured — skipping concierge shortlist-ready email');
+      return false;
+    }
+    const n = args.count > 0 ? args.count : 1;
+    const optionWord = n === 1 ? 'option' : 'options';
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'https://getcarelinkai.com').replace(/\/$/, '');
+    const link = `${appUrl}/discharge-planner/concierge`;
+    const { data, error } = await resend.emails.send({
+      from: `${APP_NAME} <${FROM_EMAIL}>`,
+      to: [toEmail],
+      replyTo: OUTREACH_REPLY_TO,
+      subject: `Your CareLinkAI shortlist is ready — ${n} ${optionWord}`,
+      text:
+        `Your CareLinkAI care team has curated ${n} ${optionWord} for your placement request.\n\n` +
+        `View your shortlist (with confirmed availability) in the app:\n${link}\n\n` +
+        `Details are kept private and secure in CareLinkAI.`,
+      html:
+        `<p>Your CareLinkAI care team has curated <strong>${n} ${optionWord}</strong> for your placement request.</p>` +
+        `<p><a href="${escapeHtml(link)}" style="display:inline-block;background:#0d9488;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600">View your shortlist</a></p>` +
+        `<p style="color:#6b7280;font-size:13px">Details are kept private and secure in CareLinkAI.</p>`,
+    });
+    if (error) {
+      console.error('[Resend] Error sending concierge shortlist-ready email:', error);
+      captureError(error instanceof Error ? error : new Error(String((error as { message?: string })?.message ?? error)),
+        { tags: { feature: 'concierge-shortlist-ready' }, extra: { count: n } });
+      return false;
+    }
+    console.log('[Resend] ✅ Concierge shortlist-ready email sent. Email ID:', data?.id);
+    return true;
+  } catch (error) {
+    console.error('[Resend] Exception sending concierge shortlist-ready email:', error);
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { feature: 'concierge-shortlist-ready' },
+    });
+    return false;
+  }
+}
+
+/**
  * Inquiry→claim "pull" engine (OL-083): when a family inquires on an UNCLAIMED
  * listing and we know the operator's outreach email, nudge them to claim their
  * free listing so they can respond. The notification IS the claim CTA.

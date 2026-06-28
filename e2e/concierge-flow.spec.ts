@@ -211,5 +211,24 @@ test.describe('@critical DP concierge placement flow', () => {
     const tour = dpPage.getByRole('link', { name: /request a tour/i }).first();
     await expect(tour).toBeVisible();
     await expect(tour).toHaveAttribute('href', new RegExp(`/homes/${homes[0].id}`));
+
+    // ---------------------------------------------------------------
+    // NOTIFY — the DP learns a shortlist is ready: dashboard count + bell + banner
+    // ---------------------------------------------------------------
+    // (a) Main dashboard API reflects the ready shortlist (legacy counters stay 0).
+    const dash = await api(dpPage, 'GET', '/api/discharge-planner/dashboard');
+    expect(dash.status).toBe(200);
+    expect(dash.json?.stats?.conciergeShortlistReady ?? 0).toBeGreaterThanOrEqual(1);
+
+    // (b) An in-app (bell) notification was created, linking to the concierge page.
+    const notifs = await api(dpPage, 'GET', '/api/notifications');
+    expect(notifs.status).toBe(200);
+    const bell = (notifs.json?.notifications ?? []).find((n: any) => n.link === '/discharge-planner/concierge');
+    expect(bell, 'expected a concierge shortlist-ready bell notification').toBeTruthy();
+
+    // (c) The LANDING dashboard surfaces it (not just the Concierge tab).
+    await dpPage.goto('/discharge-planner', { waitUntil: 'domcontentloaded' });
+    await expect(dpPage.getByText(/curated shortlist(s)? ready/i)).toBeVisible({ timeout: 30000 });
+    await expect(dpPage.getByRole('link', { name: /view shortlists/i })).toBeVisible();
   });
 });
