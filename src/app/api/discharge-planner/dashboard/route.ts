@@ -118,6 +118,18 @@ export async function GET(request: NextRequest) {
       }),
     };
 
+    // Concierge requests are tracked on PlacementSearch (not PlacementRequest), so
+    // the legacy placement counters above stay 0 for them — surface them explicitly
+    // so a ready shortlist shows on the landing dashboard, not just the Concierge tab.
+    const conciergeStats = {
+      conciergeShortlistReady: await prisma.placementSearch.count({
+        where: { userId: user.id, isConcierge: true, conciergeStatus: 'SHORTLIST_READY' },
+      }),
+      conciergeActive: await prisma.placementSearch.count({
+        where: { userId: user.id, isConcierge: true, conciergeStatus: { in: ['SUBMITTED', 'MATCHING'] } },
+      }),
+    };
+
     console.log("📊 [DP-DASHBOARD] ✅ Dashboard data fetched");
 
     return NextResponse?.json?.(
@@ -127,6 +139,7 @@ export async function GET(request: NextRequest) {
         stats: {
           ...stats,
           ...recentStats,
+          ...conciergeStats,
         },
       },
       { status: 200 }

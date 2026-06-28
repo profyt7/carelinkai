@@ -18,6 +18,8 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { requireRole } from '@/lib/auth-utils';
 import { UserRole } from '@prisma/client';
+import { createInAppNotification } from '@/lib/services/notifications';
+import { sendConciergeShortlistReadyEmail } from '@/lib/email';
 
 function authErr(error: any): NextResponse | null {
   if (error?.name === 'UnauthenticatedError') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -85,7 +87,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 
     const existing = await prisma.placementSearch.findUnique({
       where: { id: params.id },
-      select: { id: true, isConcierge: true },
+      select: { id: true, isConcierge: true, userId: true, user: { select: { email: true } } },
     });
     if (!existing || !existing.isConcierge) {
       return NextResponse.json({ error: 'Concierge request not found' }, { status: 404 });
@@ -135,6 +137,21 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
         conciergeRespondedAt: new Date(),
       },
     });
+
+    // Tell the DP their shortlist is ready: in-app bell badge + PHI-free email.
+    // Fire-and-forget — never block or fail the admin's send on a notify hiccup.
+    const optionWord = curated.length === 1 ? 'option' : 'options';
+    void createInAppNotification({
+      userId: existing.userId,
+      type: 'ALERT',
+      title: 'Your shortlist is ready',
+      message: `Your CareLinkAI care team curated ${curated.length} ${optionWord} for your placement request.`,
+      link: '/discharge-planner/concierge',
+      data: { kind: 'concierge_shortlist_ready', searchId: params.id, count: curated.length },
+    });
+    if (existing.user?.email) {
+      void sendConciergeShortlistReadyEmail({ toEmail: existing.user.email, count: curated.length });
+    }
 
     return NextResponse.json({ ok: true, status: 'SHORTLIST_READY', curatedCount: curated.length });
   } catch (error: any) {
