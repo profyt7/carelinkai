@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { MapPin, Bed, DollarSign, CheckCircle, Send, Phone, Mail, Star, RefreshCw } from 'lucide-react';
+import { MapPin, Bed, DollarSign, CheckCircle, Send, Phone, Mail, Star, RefreshCw, ShieldCheck } from 'lucide-react';
 import PlacementRequestModal from './PlacementRequestModal';
 
 interface SearchResult {
@@ -32,8 +32,16 @@ export default function SearchResults({ searchId, query, matches, totalMatches }
   const [refreshingAvailability, setRefreshingAvailability] = useState(false);
   const [availabilityFetchedAt, setAvailabilityFetchedAt] = useState<string | null>(null);
 
+  // Concierge is the pilot default: a request routes to the CareLinkAI care team
+  // (in-app), never an auto-email to the operator. Clicking a specific home just
+  // records it as a preferred option for the curator.
   const handleSendRequest = (home: SearchResult) => {
     setSelectedHome(home);
+    setIsModalOpen(true);
+  };
+
+  const handleConcierge = () => {
+    setSelectedHome(null);
     setIsModalOpen(true);
   };
 
@@ -94,6 +102,29 @@ export default function SearchResults({ searchId, query, matches, totalMatches }
           <p className="text-sm text-neutral-700">
             <span className="font-semibold">Your search:</span> {query}
           </p>
+        </div>
+      </div>
+
+      {/* Concierge CTA — the pilot default. Routes to the CareLinkAI care team in-app. */}
+      <div className="bg-gradient-to-r from-primary-600 to-purple-600 rounded-2xl shadow-lg p-6 text-white">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <p className="inline-flex items-center gap-1.5 text-xs font-semibold bg-white/15 rounded-full px-3 py-1 mb-2">
+              <ShieldCheck className="h-4 w-4" /> AI-matched, care-team-verified
+            </p>
+            <h3 className="text-xl font-bold">Have CareLinkAI build your shortlist</h3>
+            <p className="text-primary-100 text-sm mt-1 max-w-xl">
+              Share the patient&apos;s needs once. Our care team confirms real-time availability and sends
+              a curated shortlist back to you in the app. Patient details stay private — never emailed.
+            </p>
+          </div>
+          <button
+            onClick={handleConcierge}
+            className="shrink-0 bg-white text-primary-700 py-3 px-6 rounded-xl font-semibold hover:bg-primary-50 transition-colors inline-flex items-center justify-center gap-2 shadow-md"
+          >
+            <Send className="h-4 w-4" />
+            Request a shortlist
+          </button>
         </div>
       </div>
 
@@ -234,7 +265,7 @@ export default function SearchResults({ searchId, query, matches, totalMatches }
                   className="bg-gradient-to-r from-primary-600 to-purple-600 text-white py-3 px-6 rounded-xl font-semibold hover:from-primary-700 hover:to-purple-700 transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl"
                 >
                   <Send className="h-4 w-4" />
-                  <span>Send Placement Request</span>
+                  <span>Request via CareLinkAI</span>
                 </button>
               </div>
             </div>
@@ -242,15 +273,14 @@ export default function SearchResults({ searchId, query, matches, totalMatches }
         ))}
       </div>
 
-      {/* Placement Request Modal */}
-      {selectedHome && (
-        <PlacementRequestModal
-          isOpen={isModalOpen}
-          onClose={handleCloseModal}
-          home={selectedHome}
-          searchId={searchId}
-        />
-      )}
+      {/* Concierge request modal (home is an optional "preferred" hint). */}
+      <PlacementRequestModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        home={selectedHome}
+        searchId={searchId}
+        mode="concierge"
+      />
     </div>
   );
 }

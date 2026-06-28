@@ -188,6 +188,66 @@ export async function sendOperatorClaimNotification(args: {
 }
 
 /**
+ * Notify the care team (admin) that a discharge planner submitted an in-app
+ * CONCIERGE placement request, so Chris can curate a shortlist. This is the
+ * "Wizard of Oz" path — the DP sees an AI-powered concierge; behind the scenes
+ * a human curates.
+ *
+ * HIPAA: this email is intentionally PHI-FREE. It NEVER includes patient details
+ * or the DP's free-text query (which can contain patient info). It carries only
+ * the DP's name/org and a deep link into the admin concierge queue, where the
+ * patient data lives behind auth. Fire-and-forget; logs + Sentry on failure.
+ *
+ * Recipient defaults to chris@getcarelinkai.com, overridable via ADMIN_NOTIFY_EMAIL.
+ */
+export async function sendConciergeRequestNotification(args: {
+  /** Concierge request id (PlacementSearch id) for the admin deep link. */
+  requestId: string;
+  /** Display name of the submitting discharge planner, if known. */
+  dpName?: string;
+  /** DP organization, if known. */
+  dpOrganization?: string;
+}): Promise<boolean> {
+  const to = process.env.ADMIN_NOTIFY_EMAIL || process.env.CLAIM_NOTIFY_EMAIL || 'chris@getcarelinkai.com';
+  try {
+    if (!process.env.RESEND_API_KEY) {
+      console.error('[Resend] RESEND_API_KEY not configured — skipping concierge request notification');
+      return false;
+    }
+    const who = [args.dpName?.trim(), args.dpOrganization?.trim()].filter(Boolean).join(' · ') || 'A discharge planner';
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'https://getcarelinkai.com').replace(/\/$/, '');
+    const adminLink = `${appUrl}/admin/concierge/${args.requestId}`;
+    const { data, error } = await resend.emails.send({
+      from: `${APP_NAME} <${FROM_EMAIL}>`,
+      to: [to],
+      replyTo: OUTREACH_REPLY_TO,
+      subject: '🧑‍⚕️ New concierge placement request',
+      text:
+        `${who} submitted a concierge placement request on CareLinkAI.\n\n` +
+        `Patient details are kept in-app (never emailed). Review and build the shortlist here:\n${adminLink}\n`,
+      html:
+        `<p>${escapeHtml(who)} submitted a <strong>concierge placement request</strong> on CareLinkAI.</p>` +
+        `<p style="color:#6b7280;font-size:13px">Patient details are kept in-app (never emailed).</p>` +
+        `<p><a href="${escapeHtml(adminLink)}">Review &amp; build the shortlist →</a></p>`,
+    });
+    if (error) {
+      console.error('[Resend] Error sending concierge request notification:', error);
+      captureError(error instanceof Error ? error : new Error(String((error as { message?: string })?.message ?? error)),
+        { tags: { feature: 'concierge-notification' }, extra: { requestId: args.requestId } });
+      return false;
+    }
+    console.log('[Resend] ✅ Concierge request notification sent. Email ID:', data?.id);
+    return true;
+  } catch (error) {
+    console.error('[Resend] Exception sending concierge request notification:', error);
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { feature: 'concierge-notification' }, extra: { requestId: args.requestId },
+    });
+    return false;
+  }
+}
+
+/**
  * Inquiry→claim "pull" engine (OL-083): when a family inquires on an UNCLAIMED
  * listing and we know the operator's outreach email, nudge them to claim their
  * free listing so they can respond. The notification IS the claim CTA.

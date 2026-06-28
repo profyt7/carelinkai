@@ -2135,6 +2135,16 @@ model PlacementSearch {
   parsedCriteria     Json               // AI-extracted criteria
   searchResults      Json               // Matched homes with scores
   status             PlacementStatus    @default(SEARCHING)
+  // Concierge (Wizard-of-Oz) placement: the DP submits a patient's needs IN THE APP
+  // and CareLinkAI (admin) curates a shortlist by hand, then sends it back IN THE APP.
+  // No PHI ever leaves the app — patientInfo stays here and is never emailed.
+  isConcierge          Boolean          @default(false)
+  conciergeStatus      String?          // SUBMITTED | MATCHING | SHORTLIST_READY
+  patientInfo          Json?            // minimum-necessary intake; in-app storage only
+  curatedHomes         Json?            // [{ homeId, name, address, note, confirmedAvailability }]
+  conciergeNote        String?          // overall care-team message to the DP
+  conciergeSubmittedAt DateTime?
+  conciergeRespondedAt DateTime?
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
   user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -2143,6 +2153,7 @@ model PlacementSearch {
   @@index([userId])
   @@index([status])
   @@index([createdAt])
+  @@index([conciergeStatus])
 }
 
 /// Placement request sent to homes

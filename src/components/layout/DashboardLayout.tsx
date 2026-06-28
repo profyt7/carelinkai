@@ -132,6 +132,7 @@ const navItems: NavItem[] = [
     children: [
       { name: "AI Match", icon: <FiZap size={18} />, href: "/dashboard/find-care", showInMobileBar: true, roleRestriction: ["FAMILY", "OPERATOR", "ADMIN"] },
       { name: "Discharge Planner", icon: <Stethoscope size={18} />, href: "/discharge-planner", showInMobileBar: true, roleRestriction: ["DISCHARGE_PLANNER"] },
+      { name: "Concierge", icon: <Stethoscope size={18} />, href: "/discharge-planner/concierge", showInMobileBar: false, roleRestriction: ["DISCHARGE_PLANNER"] },
     ]
   },
   
@@ -280,6 +281,7 @@ const navItems: NavItem[] = [
       { name: "Inquiries", icon: <FiFileText size={18} />, href: "/admin/inquiries", showInMobileBar: false, roleRestriction: ["ADMIN"] },
       { name: "Affiliates", icon: <FiUsers size={18} />, href: "/admin/affiliates", showInMobileBar: false, roleRestriction: ["ADMIN"] },
       { name: "Discharge Planners", icon: <FiFileText size={18} />, href: "/admin/discharge-planners", showInMobileBar: false, roleRestriction: ["ADMIN"] },
+      { name: "Concierge Queue", icon: <Stethoscope size={18} />, href: "/admin/concierge", showInMobileBar: false, roleRestriction: ["ADMIN"] },
       { name: "Analytics", icon: <FiBarChart2 size={18} />, href: "/admin/analytics", showInMobileBar: false, roleRestriction: ["ADMIN"] },
       { name: "Audit Logs", icon: <FiFileText size={18} />, href: "/admin/audit-logs", showInMobileBar: false, roleRestriction: ["ADMIN"] },
       { name: "ePHI Access Log", icon: <FiShield size={18} />, href: "/admin/phi-access", showInMobileBar: false, roleRestriction: ["ADMIN"] },
