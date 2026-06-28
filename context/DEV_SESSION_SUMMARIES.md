@@ -2,6 +2,20 @@
 
 ---
 
+### 2026-06-28 — In-app DP concierge placement flow + claim-notify routing (#670–#671)
+- **Objective:** Build the in-app DP "concierge" placement flow (Wizard of Oz) and route claim-admin notifications/replies to the business inbox. Investigated DP-facing surface + the "46 nudged" funnel question first.
+- **Work completed:**
+  - **Claim-notify (#670):** claim-admin email already existed (OL-079) but defaulted to profyt7@gmail.com; now defaults to chris@getcarelinkai.com via `ADMIN_NOTIFY_EMAIL` (legacy `CLAIM_NOTIFY_EMAIL` fallback). Added `OUTREACH_REPLY_TO` Reply-To (default chris@) to the four operator-facing cold emails (inquiry nudge, claim drip, directory invite, new-lead alert) — replies no longer hit the noreply black hole.
+  - **DP concierge (#671):** new in-app flow — DP submits patient needs → routes to CareLinkAI (admin), not auto-emailed to the operator. `POST /api/discharge-planner/concierge` (flag PlacementSearch + store patientInfo in-app + PHI-free admin alert). Admin queue/curate at `/admin/concierge` + `/admin/concierge/[id]` (GET + PATCH matching|respond). DP status + curated shortlist at `/discharge-planner/concierge`. Concierge modal mode in `PlacementRequestModal`; SearchResults leads with concierge CTA; direct-operator-email path no longer invoked. Framing: "AI-matched, care-team-verified."
+  - **Investigations (read-only):** DP role/feature audit (role live; AI search + placement-request all built; no concierge-to-CareLinkAI intake existed → that gap is what #671 fills). Confirmed the "46 nudged 2026-06-26" was a manual `send-claim-nudges.ts --force` (high-tier wave), NOT a drip auto-blast (drip fires per real inquiry/tour, idempotent per home; cron only advances started drips).
+- **Files changed:** `src/lib/email.ts`; `src/app/api/discharge-planner/concierge/route.ts` (new); `src/app/api/admin/concierge/route.ts` + `[id]/route.ts` (new); `src/app/discharge-planner/concierge/page.tsx`, `src/app/admin/concierge/page.tsx` + `[id]/page.tsx` (new); `PlacementRequestModal.tsx`, `SearchResults.tsx`, `DischargePlannerDashboard.tsx`, `DashboardLayout.tsx`; `prisma/schema.prisma` + migration `20260628000001_placement_concierge`; `.env.example`.
+- **Tests/build status:** `tsc` + `next lint` + `prisma validate` clean. CI initially red — all e2e failed because migration `20260628000001` ALTERed `PlacementSearch`, which has **no creating migration** (db-push-only table) so a fresh `migrate deploy` lacked it. Fixed by guarding the ALTERs with `to_regclass(...)` (no-op where absent). Re-run green; squash-merged #670, #671.
+- **Deployment impact:** Additive migration only; columns apply in prod (table exists). Render auto-deploys from main.
+- **New risks/blockers:** OL-105 — PlacementSearch/PlacementRequest lack creating migrations (schema drift); stopgap-guarded, baseline migration recommended.
+- **Recommended next step:** Pilot the concierge with a real DP (point them to in-app submit, NOT the legacy direct flow). Consider the OL-105 baseline migration. Founder Render runbook from OL-103 still pending.
+
+---
+
 ### 2026-06-27 (latest+2) — Money-path hardening + DP-billing teardown + OL-102 parked (#665–#668)
 - **Objective:** Protect the conversion → subscription money path (the real bottleneck), and finish DP-free cleanup now that the old paid-DP Stripe prices were found still wired in Render env. Also park the facility placement-fee idea as a scoping-only open loop.
 - **Work completed:**

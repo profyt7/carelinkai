@@ -1,5 +1,5 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-06-27 — OL-103 DELIVERED (code): money-path hardening (#667, closes OL-055), DP-billing safety report (#666), DP price decommission (#668). OL-102 PARKED (scoping only): facility placement-fee, attorney-gated — NO code. OL-101: DP-free (#659), VA price/amenities (#660), UX loose ends (#661), Westlake Pointe rebrand (#663). Founder TODO (Render): report-dp-subscriptions → cancel any DP sub; archive-dp-stripe-prices --force; remove the 2 DP price env vars; confirm STRIPE_PRICE_AGENCY value; build VA CSV → load-va-pricing-amenities --force; dispatch claim-drip once; rotate demo.* passwords._
+_Last updated: 2026-06-28 — OL-104 DELIVERED: in-app DP concierge placement flow (#671, replaces manual email concierge). OL-105 OPEN: PlacementSearch/Request have no creating migration (schema drift, stopgap-guarded). Also delivered (#670): claim-admin alert → chris@ (ADMIN_NOTIFY_EMAIL) + Reply-To on operator outreach. OL-103: money-path hardening (#667, closes OL-055), DP-billing safety report (#666), DP price decommission (#668). OL-102 PARKED: facility placement-fee (attorney-gated). Founder TODO (Render): report-dp-subscriptions → cancel any DP sub; archive-dp-stripe-prices --force; remove the 2 DP price env vars; confirm STRIPE_PRICE_AGENCY value; build VA CSV → load-va-pricing-amenities --force; dispatch claim-drip once; rotate demo.* passwords._
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
@@ -356,6 +356,20 @@ Each loop: what it is, why it matters, what done looks like.
   2. `npx tsx scripts/archive-dp-stripe-prices.ts --force` → archive the two DP prices.
   3. Remove `STRIPE_PRICE_DISCHARGE_PLANNER` + `STRIPE_PRICE_DISCHARGE_PLANNER_DEPT` from Render env.
   4. Confirm `STRIPE_PRICE_AGENCY` is a real `price_…` value (Agency shows as buyable only when set).
+
+### OL-104: In-app DP concierge placement flow (#671)
+- **Status:** ✅ DELIVERED 2026-06-28. Replaces the manual email concierge.
+- **What:** A discharge planner submits a patient's needs IN THE APP and gets a CareLinkAI-curated shortlist back IN THE APP. Wizard-of-Oz: real AI search + human (Chris) curation; framed honestly as "AI-matched, care-team-verified" (never "fully automated").
+- **Routing:** `POST /api/discharge-planner/concierge` flags the `PlacementSearch` (`isConcierge`, status SUBMITTED), stores minimum-necessary `patientInfo` IN-APP, notifies chris@ via a **PHI-free** email (`sendConciergeRequestNotification` — DP identity + admin link only; never patient data or the free-text query). Concierge is the pilot DEFAULT; the old direct-to-operator email path (black-holed on unclaimed/sentinel homes) is no longer invoked from the UI.
+- **Admin curate:** `/admin/concierge` (queue) + `/admin/concierge/[id]` (curate). Chris sees the patient intake + AI candidate matches pre-loaded, includes/excludes homes, adds per-home note + confirmed availability + overall message, then "Send to DP" (or "Mark Matching"). APIs: `GET /api/admin/concierge`, `GET`/`PATCH /api/admin/concierge/[id]`.
+- **DP-facing:** `/discharge-planner/concierge` shows status (Submitted → Matching → Shortlist ready) + curated shortlist (home + confirmed availability + care-team note) + "View & request a tour" (reuses existing home/tour flow).
+- **PHI:** patient data stays in `PlacementSearch.patientInfo` (minimum-necessary), never emailed. Migration `20260628000001` (additive, guarded — see OL-105).
+
+### OL-105: PlacementSearch/PlacementRequest have no creating migration (schema drift)
+- **Status:** 🟡 OPEN — latent tech debt surfaced by #671. Not blocking.
+- **What:** `PlacementSearch` + `PlacementRequest` exist in `schema.prisma` but were created via `prisma db push` historically — there is NO migration that `CREATE TABLE`s them. A fresh `prisma migrate deploy` (e2e CI DB, disaster recovery, any new env) therefore produces a DB **without** these tables, silently breaking the DP search + concierge features there. Prod has the tables (DP search works), so #671's concierge columns apply in prod.
+- **Stopgap (shipped in #671):** migration `20260628000001` guards its ALTERs with `to_regclass('"PlacementSearch"')` so it no-ops where the table is absent (kept e2e green) and applies where it exists.
+- **Done when:** a baseline migration is added that `CREATE TABLE IF NOT EXISTS`es `PlacementSearch` + `PlacementRequest` (+ the `PlacementStatus`/`RequestStatus` enums + FKs/indexes), so fresh `migrate deploy` yields a complete DB. (Audit for other db-push-only tables while at it.)
 
 ### OL-093: Remaining directory data-quality (rebrands, SNF/category, stale URLs)
 - **Status:** 🟡 OPEN — mostly resolved 2026-06-25; 2 items remain.
