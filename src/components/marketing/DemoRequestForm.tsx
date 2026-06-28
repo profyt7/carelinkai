@@ -6,6 +6,7 @@ import { FiCheck, FiAlertCircle, FiArrowRight, FiLoader } from "react-icons/fi";
 const ROLE_OPTIONS = [
   { value: "operator", label: "Assisted Living Operator / Administrator" },
   { value: "family", label: "Family Member / Care Manager" },
+  { value: "discharge_planner", label: "Discharge Planner / Hospital Case Manager" },
   { value: "caregiver", label: "Caregiver / Care Professional" },
   { value: "provider", label: "Home Care Agency" },
   { value: "other", label: "Other" },

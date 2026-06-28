@@ -753,7 +753,10 @@ export default function HomePage() {
                 <div className="inline-flex h-16 w-16 rounded-full bg-gradient-to-br from-secondary-500 to-primary-500 items-center justify-center mb-4">
                   <FiBriefcase className="text-white text-2xl" />
                 </div>
-                <h3 className="text-xl font-bold text-neutral-900">For Discharge Planners</h3>
+                <div className="flex items-center justify-center gap-2">
+                  <h3 className="text-xl font-bold text-neutral-900">For Discharge Planners</h3>
+                  <span className="text-xs font-bold bg-success-100 text-success-700 border border-success-200 rounded-full px-2.5 py-1 uppercase tracking-wide">Free</span>
+                </div>
               </div>
               <div className="space-y-4">
                 <div className="flex items-start">
@@ -785,7 +788,7 @@ export default function HomePage() {
                 </div>
               </div>
               <div className="mt-4 pt-4 border-t border-secondary-500/20 text-xs text-neutral-500 text-center">
-                Individual license <span className="font-semibold text-neutral-700">$99/mo</span> · Department (up to 10 seats) <span className="font-semibold text-neutral-700">$499/mo</span>
+                Always free — no card required.
               </div>
             </div>
           </div>
@@ -1123,13 +1126,16 @@ export default function HomePage() {
                   </div>
                 </div>
               </div>
-              <div className="mt-8 bg-gradient-to-r from-secondary-500/10 to-primary-500/10 rounded-xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4 border border-secondary-500/20">
+              <div className="mt-8 bg-gradient-to-r from-secondary-50 to-success-50 rounded-xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4 border-2 border-success-300">
                 <div>
-                  <div className="font-bold text-neutral-900 text-lg">Individual: $99/mo · Department (up to 10 seats): $499/mo</div>
-                  <div className="text-sm text-neutral-500 mt-1">14-day free trial. Individual planners or entire hospital departments — one invoice. Cancel anytime.</div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-bold text-neutral-900 text-lg">Always free for discharge planners &amp; case managers</span>
+                    <span className="bg-success-500 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">Free</span>
+                  </div>
+                  <div className="text-sm text-neutral-500 mt-1">Full access to AI placement search — no subscription, no credit card.</div>
                 </div>
                 <Link href="/auth/register?role=discharge_planner" className="bg-gradient-to-r from-secondary-500 to-primary-500 text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity whitespace-nowrap shadow-lg">
-                  Start Free →
+                  Get Free Access →
                 </Link>
               </div>
               </div>
@@ -1643,7 +1649,7 @@ export default function HomePage() {
               <AnimatePresence>
                 {openFaqIndex === 2 && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
-                    <div className="px-6 pb-5 text-neutral-500"><p>For families, CareLinkAI is completely free to use - no credit card required. Care homes and healthcare professionals have subscription plans starting at $99/month with different tiers based on features and volume needs.</p></div>
+                    <div className="px-6 pb-5 text-neutral-500"><p>Families, caregivers, and discharge planners use CareLinkAI free — no credit card required. Care home operators have subscription plans starting at $99/month with different tiers based on features and volume needs.</p></div>
                   </motion.div>
                 )}
               </AnimatePresence>

@@ -126,9 +126,9 @@ const roleOptions = [
   },
   {
     id: "DISCHARGE_PLANNER" as UserRole,
-    label: "Healthcare Professional",
+    label: "Discharge Planner / Case Manager",
     description:
-      "I work at a hospital, rehab center, or healthcare facility",
+      "Hospital discharge planner, case manager, or social worker placing patients.",
     icon: <FiActivity className="h-5 w-5" />,
   },
   {
