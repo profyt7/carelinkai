@@ -13,6 +13,8 @@ type CuratedHome = {
   address?: string;
   note?: string;
   confirmedAvailability?: string;
+  tourStatus?: 'REQUESTED';
+  tourRequestedAt?: string;
 };
 
 type ConciergeRequest = {
@@ -68,6 +70,40 @@ export default function DischargePlannerConciergePage() {
   const [requests, setRequests] = useState<ConciergeRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [tourBusy, setTourBusy] = useState<string | null>(null); // `${searchId}:${homeId}` in flight
+
+  // Ask CareLinkAI to coordinate a tour for one shortlist home. Routes via the
+  // concierge tour endpoint (claimed → operator + Chris; unclaimed → Chris +
+  // claim signal) and never black-holes. Optimistically reflects the status.
+  const requestTour = async (searchId: string, homeId: string) => {
+    const key = `${searchId}:${homeId}`;
+    setTourBusy(key);
+    try {
+      const res = await fetch(`/api/discharge-planner/concierge/${searchId}/tour`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ homeId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || 'Could not request the tour');
+      setRequests((prev) =>
+        prev.map((r) =>
+          r.id !== searchId
+            ? r
+            : {
+                ...r,
+                curatedHomes: (r.curatedHomes ?? []).map((h) =>
+                  h.homeId === homeId ? { ...h, tourStatus: 'REQUESTED' as const } : h,
+                ),
+              },
+        ),
+      );
+    } catch (e: any) {
+      setError(e?.message || 'Could not request the tour');
+    } finally {
+      setTourBusy(null);
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -171,13 +207,34 @@ export default function DischargePlannerConciergePage() {
                                     </p>
                                   )}
                                   {h.note && <p className="text-sm text-neutral-700 mt-2">{h.note}</p>}
+                                  {h.tourStatus === 'REQUESTED' && (
+                                    <p className="text-sm text-success-700 mt-2 inline-flex items-center gap-1 font-medium">
+                                      <CheckCircle className="h-3.5 w-3.5" /> Tour requested — CareLinkAI is coordinating
+                                    </p>
+                                  )}
                                 </div>
-                                <Link
-                                  href={`/homes/${h.homeId}`}
-                                  className="shrink-0 inline-flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
-                                >
-                                  <CalendarCheck className="h-4 w-4" /> View &amp; request a tour
-                                </Link>
+                                <div className="shrink-0 flex flex-col gap-2 items-stretch">
+                                  <Link
+                                    href={`/homes/${h.homeId}?concierge=${r.id}`}
+                                    className="inline-flex items-center justify-center gap-2 border border-neutral-300 text-neutral-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-neutral-50 transition-colors"
+                                  >
+                                    <MapPin className="h-4 w-4" /> View listing
+                                  </Link>
+                                  {h.tourStatus === 'REQUESTED' ? (
+                                    <span className="inline-flex items-center justify-center gap-2 bg-success-50 text-success-700 border border-success-200 px-4 py-2 rounded-lg text-sm font-medium">
+                                      <CheckCircle className="h-4 w-4" /> Tour requested
+                                    </span>
+                                  ) : (
+                                    <button
+                                      onClick={() => requestTour(r.id, h.homeId)}
+                                      disabled={tourBusy === `${r.id}:${h.homeId}`}
+                                      className="inline-flex items-center justify-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors disabled:opacity-50"
+                                    >
+                                      {tourBusy === `${r.id}:${h.homeId}` ? <Loader2 className="h-4 w-4 animate-spin" /> : <CalendarCheck className="h-4 w-4" />}
+                                      Request a tour
+                                    </button>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           ))}

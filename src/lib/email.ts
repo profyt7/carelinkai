@@ -302,6 +302,72 @@ export async function sendConciergeShortlistReadyEmail(args: {
 }
 
 /**
+ * Notify the care team (admin) that a DP requested a tour from a concierge
+ * shortlist, so Chris can coordinate it on the family's behalf. The concierge
+ * promise: this NEVER black-holes — for an unclaimed home the operator is also
+ * nudged (claim drip) but only CareLinkAI can actually coordinate.
+ *
+ * HIPAA: PHI-FREE — names the facility, the DP, and whether the home is claimed,
+ * plus a deep link into the admin concierge request (where the patient's initials
+ * + callback live, auth-gated). NEVER includes patient details. Fire-and-forget.
+ *
+ * Recipient defaults to chris@getcarelinkai.com (ADMIN_NOTIFY_EMAIL).
+ */
+export async function sendConciergeTourNotification(args: {
+  /** Concierge request id (PlacementSearch id) for the admin deep link. */
+  requestId: string;
+  facilityName: string;
+  /** true = claimed (operator notified directly); false = unclaimed (Chris coordinates). */
+  claimed: boolean;
+  dpName?: string;
+  dpOrganization?: string;
+}): Promise<boolean> {
+  const to = process.env.ADMIN_NOTIFY_EMAIL || process.env.CLAIM_NOTIFY_EMAIL || 'chris@getcarelinkai.com';
+  try {
+    if (!process.env.RESEND_API_KEY) {
+      console.error('[Resend] RESEND_API_KEY not configured — skipping concierge tour notification');
+      return false;
+    }
+    const who = [args.dpName?.trim(), args.dpOrganization?.trim()].filter(Boolean).join(' · ') || 'A discharge planner';
+    const facility = args.facilityName?.trim() || 'a facility';
+    const claimLine = args.claimed
+      ? 'This home is CLAIMED — the operator was notified directly; you are cc’d to help coordinate.'
+      : 'This home is UNCLAIMED — please coordinate the tour on the family’s behalf (the operator was also nudged to claim).';
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'https://getcarelinkai.com').replace(/\/$/, '');
+    const adminLink = `${appUrl}/admin/concierge/${args.requestId}`;
+    const { data, error } = await resend.emails.send({
+      from: `${APP_NAME} <${FROM_EMAIL}>`,
+      to: [to],
+      replyTo: OUTREACH_REPLY_TO,
+      subject: `🗓️ Concierge tour request — ${facility}`,
+      text:
+        `${who} requested a tour at ${facility} from their CareLinkAI concierge shortlist.\n\n` +
+        `${claimLine}\n\n` +
+        `Patient details are kept in-app (never emailed). Coordinate here:\n${adminLink}\n`,
+      html:
+        `<p>${escapeHtml(who)} requested a <strong>tour at ${escapeHtml(facility)}</strong> from their CareLinkAI concierge shortlist.</p>` +
+        `<p>${escapeHtml(claimLine)}</p>` +
+        `<p style="color:#6b7280;font-size:13px">Patient details are kept in-app (never emailed).</p>` +
+        `<p><a href="${escapeHtml(adminLink)}">Coordinate this tour →</a></p>`,
+    });
+    if (error) {
+      console.error('[Resend] Error sending concierge tour notification:', error);
+      captureError(error instanceof Error ? error : new Error(String((error as { message?: string })?.message ?? error)),
+        { tags: { feature: 'concierge-tour' }, extra: { requestId: args.requestId } });
+      return false;
+    }
+    console.log('[Resend] ✅ Concierge tour notification sent. Email ID:', data?.id);
+    return true;
+  } catch (error) {
+    console.error('[Resend] Exception sending concierge tour notification:', error);
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { feature: 'concierge-tour' }, extra: { requestId: args.requestId },
+    });
+    return false;
+  }
+}
+
+/**
  * Inquiry→claim "pull" engine (OL-083): when a family inquires on an UNCLAIMED
  * listing and we know the operator's outreach email, nudge them to claim their
  * free listing so they can respond. The notification IS the claim CTA.

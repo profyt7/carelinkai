@@ -208,9 +208,21 @@ test.describe('@critical DP concierge placement flow', () => {
     await expect(dpPage.getByText(/your curated shortlist/i)).toBeVisible({ timeout: 30000 });
     await expect(dpPage.getByText(homes[0].name)).toBeVisible();
     await expect(dpPage.getByText(/2 beds, ready this week/i)).toBeVisible();
-    const tour = dpPage.getByRole('link', { name: /request a tour/i }).first();
-    await expect(tour).toBeVisible();
-    await expect(tour).toHaveAttribute('href', new RegExp(`/homes/${homes[0].id}`));
+    // "View listing" deep-links to the home carrying the concierge param.
+    const viewLink = dpPage.getByRole('link', { name: /view listing/i }).first();
+    await expect(viewLink).toBeVisible();
+    await expect(viewLink).toHaveAttribute('href', new RegExp(`/homes/${homes[0].id}\\?concierge=`));
+
+    // ---------------------------------------------------------------
+    // TOUR — request a tour from the shortlist → coordinated + tracked (never black-holes)
+    // ---------------------------------------------------------------
+    await dpPage.getByRole('button', { name: /request a tour/i }).first().click();
+    await expect(dpPage.getByText(/tour requested/i).first()).toBeVisible({ timeout: 15000 });
+    // Persisted on the shortlist; the curated home is CLAIMED here (real op), so still
+    // zero operator-bound PlacementRequest rows (concierge never creates them).
+    const afterTour = await (await request.get(`/api/dev/placement-search?id=${searchId}`)).json();
+    expect(afterTour.curatedHomes?.[0]?.tourStatus).toBe('REQUESTED');
+    expect(afterTour.placementRequestCount).toBe(0);
 
     // ---------------------------------------------------------------
     // NOTIFY — the DP learns a shortlist is ready: dashboard count + bell + banner
