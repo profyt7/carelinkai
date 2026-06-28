@@ -25,6 +25,8 @@ export default function LoginPage() {
   const callbackUrl = searchParams.get("callbackUrl") || "/";
   const registeredParam = searchParams.get("registered");
   const verifiedParam = searchParams.get("verified");
+  const verifyParam = searchParams.get("verify");
+  const emailParam = searchParams.get("email");
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,14 +36,29 @@ export default function LoginPage() {
   const [userEmail, setUserEmail] = useState<string>("");
 
   useEffect(() => {
+    // Post-registration: an account starts PENDING and CANNOT sign in until the
+    // emailed verification link is clicked. Guide the user to verify rather than
+    // (misleadingly) telling them to sign in. Surface the resend control too.
+    if (verifyParam === "1") {
+      setSuccess(
+        emailParam
+          ? `Account created. We've sent a verification link to ${emailParam} — please verify your email before signing in.`
+          : "Account created. We've sent you a verification link — please verify your email before signing in."
+      );
+      if (emailParam) setUserEmail(emailParam);
+      setShowVerificationHelp(true);
+      return;
+    }
     if (registeredParam === "true") {
-      setSuccess("Your account has been created. Please sign in below.");
+      // Legacy entry point — still gated on verification, so don't imply "just sign in".
+      setSuccess("Account created. Please verify your email before signing in — check your inbox for the verification link.");
+      setShowVerificationHelp(true);
       return;
     }
     if (verifiedParam === "true") {
       setSuccess("Your email has been verified. You can now sign in.");
     }
-  }, [registeredParam, verifiedParam]);
+  }, [registeredParam, verifiedParam, verifyParam, emailParam]);
 
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>();
 

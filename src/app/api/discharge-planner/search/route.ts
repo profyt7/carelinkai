@@ -15,6 +15,9 @@ import { captureError } from "@/lib/sentry";
 import { getAnthropicClient, requireAnthropicKey } from "@/lib/ai/claude";
 import { sanitizeCareLevels, buildLocationWhere } from "@/lib/discharge-planner/criteria";
 
+// Sentinel operator that owns unclaimed/directory listings — must never surface to a DP.
+const DIRECTORY_UNCLAIMED_EMAIL = "directory-unclaimed@carelinkai.system";
+
 const searchRequestSchema = z.object({
   query: z.string().min(10, "Query must be at least 10 characters"),
 });
@@ -269,6 +272,15 @@ Consider: timeline urgency/bed availability, care level match, payment type, loc
           ? `${home.address.street}, ${home.address.city}, ${home.address.state} ${home.address.zipCode}`
           : "Address not available";
 
+        // Unclaimed/directory listings are owned by the sentinel operator. Never
+        // expose that internal address (or any operator contact) to a DP — and
+        // treat their price/occupancy data as UNVERIFIED so the card shows a
+        // neutral state instead of a misleading "$0/mo" / "0 beds".
+        const ownerEmail = (home.operator?.user?.email ?? "").toLowerCase();
+        const isUnclaimed = ownerEmail === DIRECTORY_UNCLAIMED_EMAIL;
+        const priceMin = home.priceMin != null ? parseFloat(home.priceMin.toString()) : 0;
+        const beds = home.capacity - home.currentOccupancy;
+
         return {
           homeId: home.id,
           homeName: home.name,
@@ -276,11 +288,15 @@ Consider: timeline urgency/bed availability, care level match, payment type, loc
           score: match.score ?? 0,
           reasoning: match.reasoning ?? "Good match",
           careTypes: home.careLevel,
-          availableBeds: home.capacity - home.currentOccupancy,
-          startingPrice: parseFloat(home.priceMin?.toString() ?? "0"),
+          // null = unverified/unknown → card shows "Availability on request", not 0.
+          availableBeds: isUnclaimed || !(home.capacity > 0) ? null : beds,
+          // null = pricing not verified → card shows "Pricing not verified", not "$0/mo".
+          startingPrice: priceMin > 0 ? priceMin : null,
           amenities: home.amenities,
-          contactEmail: home.operator?.user?.email ?? undefined,
-          contactPhone: home.operator?.user?.phone ?? undefined,
+          // Never leak the sentinel address; unclaimed leads route via CareLinkAI.
+          contactEmail: isUnclaimed ? undefined : home.operator?.user?.email ?? undefined,
+          contactPhone: isUnclaimed ? undefined : home.operator?.user?.phone ?? undefined,
+          isUnclaimed,
         };
       })
       .filter((m) => m !== null);

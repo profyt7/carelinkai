@@ -305,7 +305,7 @@ export default function RegisterPage() {
               router.push("/dashboard");
             }
           } else {
-            router.push("/auth/login?registered=true");
+            router.push(`/auth/login?verify=1&email=${encodeURIComponent(data.email)}`);
           }
         } catch (signInError) {
           console.error("Auto sign-in error:", signInError);
