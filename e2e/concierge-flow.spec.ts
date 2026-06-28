@@ -216,7 +216,9 @@ test.describe('@critical DP concierge placement flow', () => {
     // ---------------------------------------------------------------
     // TOUR — request a tour from the shortlist → coordinated + tracked (never black-holes)
     // ---------------------------------------------------------------
-    await dpPage.getByRole('button', { name: /request a tour/i }).first().click();
+    // force: the button is present + enabled, but page chrome (cookie banner /
+    // care-advisor FAB) can overlay the bottom of the viewport in CI.
+    await dpPage.getByRole('button', { name: /request a tour/i }).first().click({ force: true });
     await expect(dpPage.getByText(/tour requested/i).first()).toBeVisible({ timeout: 15000 });
     // Persisted on the shortlist; the curated home is CLAIMED here (real op), so still
     // zero operator-bound PlacementRequest rows (concierge never creates them).
