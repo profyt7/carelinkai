@@ -208,9 +208,30 @@ test.describe('@critical DP concierge placement flow', () => {
     await expect(dpPage.getByText(/your curated shortlist/i)).toBeVisible({ timeout: 30000 });
     await expect(dpPage.getByText(homes[0].name)).toBeVisible();
     await expect(dpPage.getByText(/2 beds, ready this week/i)).toBeVisible();
-    const tour = dpPage.getByRole('link', { name: /request a tour/i }).first();
-    await expect(tour).toBeVisible();
-    await expect(tour).toHaveAttribute('href', new RegExp(`/homes/${homes[0].id}`));
+    // "View listing" deep-links to the home carrying the concierge param.
+    const viewLink = dpPage.getByRole('link', { name: /view listing/i }).first();
+    await expect(viewLink).toBeVisible();
+    await expect(viewLink).toHaveAttribute('href', new RegExp(`/homes/${homes[0].id}\\?concierge=`));
+
+    // ---------------------------------------------------------------
+    // TOUR — request a tour from the shortlist → coordinated + tracked (never black-holes)
+    // ---------------------------------------------------------------
+    // dispatchEvent: page chrome (cookie banner / care-advisor FAB) can overlay the
+    // viewport bottom in CI; a real click would land on the overlay. Dispatch the
+    // click directly to the button node so React's handler fires regardless.
+    await dpPage.getByRole('button', { name: /request a tour/i }).first().dispatchEvent('click');
+    // Server truth (timing-independent): the tour is recorded on the shortlist.
+    await expect.poll(
+      async () => (await (await request.get(`/api/dev/placement-search?id=${searchId}`)).json())?.curatedHomes?.[0]?.tourStatus ?? null,
+      { timeout: 20000 },
+    ).toBe('REQUESTED');
+    // The curated home is CLAIMED here (real op), so concierge still creates NO
+    // operator-bound PlacementRequest rows.
+    const afterTour = await (await request.get(`/api/dev/placement-search?id=${searchId}`)).json();
+    expect(afterTour.placementRequestCount).toBe(0);
+    // UI reflects it on a fresh load.
+    await dpPage.goto('/discharge-planner/concierge', { waitUntil: 'domcontentloaded' });
+    await expect(dpPage.getByText(/tour requested/i).first()).toBeVisible({ timeout: 30000 });
 
     // ---------------------------------------------------------------
     // NOTIFY — the DP learns a shortlist is ready: dashboard count + bell + banner

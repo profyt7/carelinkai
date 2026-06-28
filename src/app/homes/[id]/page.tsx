@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { 
@@ -274,6 +274,11 @@ export default function HomeDetailPage() {
   const router = useRouter();
   const { status: authStatus } = useSession();
   const { id } = params;
+  // Set when a discharge planner arrives from their concierge shortlist
+  // (?concierge=<searchId>): tour/inquiry actions here are coordinated by the
+  // CareLinkAI care team, not the gated family tour flow.
+  const searchParams = useSearchParams();
+  const conciergeSearchId = searchParams?.get("concierge") || null;
   
   // State for the home data
   const [home, setHome] = useState(MOCK_HOME);
@@ -502,6 +507,34 @@ export default function HomeDetailPage() {
   };
   
   // Handle tour scheduling
+  // Concierge tour: when a DP arrives via ?concierge=<searchId>, the "Schedule a
+  // Tour" CTA routes to the concierge endpoint (claimed → operator + Chris;
+  // unclaimed → Chris + claim signal) instead of the family tour modal (which a
+  // DP can't use). Non-concierge users are unaffected — they get the modal.
+  const [conciergeTourState, setConciergeTourState] = useState<'idle' | 'sending' | 'done'>('idle');
+  const handleConciergeTour = async () => {
+    if (!conciergeSearchId) return;
+    setConciergeTourState('sending');
+    try {
+      const res = await fetch(`/api/discharge-planner/concierge/${conciergeSearchId}/tour`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ homeId: String(id) }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || 'Could not request the tour');
+      setConciergeTourState('done');
+      toast.success('Tour requested — CareLinkAI is coordinating.');
+    } catch (e: any) {
+      setConciergeTourState('idle');
+      toast.error(e?.message || 'Could not request the tour');
+    }
+  };
+  const onScheduleTour = () => {
+    if (conciergeSearchId) { void handleConciergeTour(); return; }
+    setShowTourModal(true);
+  };
+
   const handleTourSchedule = async (e: React.FormEvent) => {
     console.log('🔴🔴🔴 [TOUR DIAGNOSTIC] ========================================');
     console.log('🔴 [TOUR DIAGNOSTIC] Tour schedule handler called');
@@ -562,7 +595,12 @@ export default function HomeDetailPage() {
     // careNeeded/source:'home_detail', none of which match the API, so every
     // submission failed Zod validation with 400. moveInTimeframe has no column
     // on Inquiry, so fold it into additionalInfo rather than drop it.
-    const payload = buildInquiryPayload(String(id), inquiryForm, tourDateIso);
+    const payload = {
+      ...buildInquiryPayload(String(id), inquiryForm, tourDateIso),
+      // Concierge-aware: loops in the care team + marks the DP's shortlist so a
+      // generic-page inquiry from a concierge shortlist never black-holes either.
+      ...(conciergeSearchId ? { conciergeSearchId } : {}),
+    };
     console.log('🔴 [TOUR DIAGNOSTIC] Request payload:', JSON.stringify(payload, null, 2));
 
     try {
@@ -1135,7 +1173,7 @@ export default function HomeDetailPage() {
                     </div>
                     <div className="mt-4">
                       <button
-                        onClick={() => setShowTourModal(true)}
+                        onClick={onScheduleTour}
                         className="flex items-center rounded-md bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600"
                       >
                         <FiCalendar className="mr-2 h-4 w-4" />
@@ -1230,7 +1268,7 @@ export default function HomeDetailPage() {
                       <h3 className="mb-2 text-base font-medium text-neutral-800">Need Help?</h3>
                       <p className="mb-3 text-sm text-neutral-600">Our CareLinkAI care advisors can help you navigate your options and find the right home.</p>
                       <button
-                        onClick={() => setShowTourModal(true)}
+                        onClick={onScheduleTour}
                         className="flex items-center rounded-md bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600"
                       >
                         <MessageSquare className="mr-2 h-4 w-4" />
@@ -1248,14 +1286,22 @@ export default function HomeDetailPage() {
                     {bookingStep === 0 && (
                       <>
                         <h3 className="mb-3 text-lg font-semibold text-neutral-800">Interested in {realHome.name}?</h3>
-                        <p className="mb-4 text-sm text-neutral-600">
-                          {realHome.availability > 0
-                            ? `${realHome.availability} spot${realHome.availability > 1 ? 's' : ''} available. Schedule a tour or send an inquiry.`
-                            : 'Currently on waitlist. Send an inquiry to learn more.'}
-                        </p>
+                        {conciergeSearchId ? (
+                          <div className="mb-4 rounded-lg border border-primary-200 bg-primary-50 p-3 text-sm text-primary-800">
+                            {conciergeTourState === 'done'
+                              ? '✓ Tour requested — CareLinkAI is coordinating it on the patient’s behalf.'
+                              : 'You’re acting on a patient’s behalf via CareLinkAI Concierge — request a tour and our care team coordinates it for you.'}
+                          </div>
+                        ) : (
+                          <p className="mb-4 text-sm text-neutral-600">
+                            {realHome.availability > 0
+                              ? `${realHome.availability} spot${realHome.availability > 1 ? 's' : ''} available. Schedule a tour or send an inquiry.`
+                              : 'Currently on waitlist. Send an inquiry to learn more.'}
+                          </p>
+                        )}
                         <div className="space-y-3">
                           <button
-                            onClick={() => setShowTourModal(true)}
+                            onClick={onScheduleTour}
                             className="flex w-full items-center justify-center rounded-md bg-primary-500 px-4 py-2 font-medium text-white hover:bg-primary-600"
                           >
                             <FiCalendar className="mr-2 h-5 w-5" />
@@ -2026,7 +2072,7 @@ export default function HomeDetailPage() {
                     
                     <div className="space-y-3">
                       <button
-                        onClick={() => setShowTourModal(true)}
+                        onClick={onScheduleTour}
                         className="flex w-full items-center justify-center rounded-md bg-primary-500 px-4 py-2 font-medium text-white hover:bg-primary-600"
                       >
                         <FiCalendar className="mr-2 h-5 w-5" />
@@ -2383,7 +2429,7 @@ export default function HomeDetailPage() {
       <div className="fixed bottom-0 inset-x-0 z-20 border-t border-neutral-200 bg-white p-3 shadow-[0_-2px_8px_rgba(0,0,0,0.06)] md:hidden">
         <div className="flex gap-2 sm:flex-row flex-col">
           <button
-            onClick={() => setShowTourModal(true)}
+            onClick={onScheduleTour}
             className="flex-1 rounded-md bg-primary-500 px-4 py-2 font-medium text-white hover:bg-primary-600"
           >
             Schedule Tour

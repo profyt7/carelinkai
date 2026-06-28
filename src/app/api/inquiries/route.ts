@@ -11,6 +11,7 @@ import { smsService } from '@/lib/sms/sms-service';
 import { createInquirySchema } from '@/lib/inquiries/schema';
 import { notifyUnclaimedHomeInquiry, isUnclaimedHome } from '@/lib/claim-engine/inquiry-claim-notification';
 import { sendNewLeadOperatorEmail } from '@/lib/email';
+import { coordinateConciergeInquiry } from '@/lib/concierge/tour-coordination';
 
 /**
  * POST /api/inquiries - Create a new inquiry
@@ -138,7 +139,23 @@ export async function POST(request: NextRequest) {
     // nudge the operator to claim (generic copy only — no PHI). Self-filters to
     // unclaimed homes with a known outreach email; non-blocking.
     notifyUnclaimedHomeInquiry({ homeId: inquiry.homeId, inquiryId: inquiry.id }).catch(() => {});
-    
+
+    // Concierge-aware (Option 3): if this inquiry came from a DP's concierge
+    // shortlist (the "View listing" deep link carries ?concierge=<searchId>),
+    // loop in the care team to coordinate + mark the shortlist so the DP sees a
+    // status — so a generic-page inquiry never black-holes either. Operator email
+    // / claim drip already fired above; this only adds the admin notify + status.
+    const conciergeSearchId = typeof body?.conciergeSearchId === 'string' ? body.conciergeSearchId.trim() : '';
+    if (conciergeSearchId && session?.user?.id) {
+      coordinateConciergeInquiry({
+        searchId: conciergeSearchId,
+        homeId: inquiry.homeId,
+        requesterUserId: session.user.id,
+        facilityName: inquiry.home?.name ?? 'a facility',
+        claimed: !!(operatorEmail && !isUnclaimedHome(operatorEmail)),
+      }).catch(() => {});
+    }
+
     return NextResponse.json(
       { success: true, inquiry },
       { status: 201 }

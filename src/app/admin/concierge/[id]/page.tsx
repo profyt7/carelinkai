@@ -39,7 +39,7 @@ type Detail = {
   searchResults: { matches?: Match[] } | null;
   patientInfo: PatientInfo | null;
   conciergeStatus: string | null;
-  curatedHomes: { homeId: string; note?: string; confirmedAvailability?: string }[] | null;
+  curatedHomes: { homeId: string; note?: string; confirmedAvailability?: string; tourStatus?: 'REQUESTED'; tourRequestedAt?: string }[] | null;
   conciergeNote: string | null;
   conciergeSubmittedAt: string | null;
   conciergeRespondedAt: string | null;
@@ -151,6 +151,7 @@ export default function AdminConciergeCuratePage() {
 
   const p = detail.patientInfo ?? {};
   const matches = detail.searchResults?.matches ?? [];
+  const tourRequestedHomeIds = new Set((detail.curatedHomes ?? []).filter((h) => h.tourStatus === 'REQUESTED').map((h) => h.homeId));
   const dpName = [detail.user?.firstName, detail.user?.lastName].filter(Boolean).join(' ') || detail.user?.email || 'Discharge planner';
   const selectedCount = Object.values(sel).filter((s) => s.included).length;
   const isReady = detail.conciergeStatus === 'SHORTLIST_READY';
@@ -219,6 +220,9 @@ export default function AdminConciergeCuratePage() {
                         <span className="font-semibold text-neutral-900">{m.homeName}</span>
                         {typeof m.score === 'number' && (
                           <span className="inline-flex items-center gap-1 bg-primary-100 text-primary-800 px-2 py-0.5 rounded-full text-xs font-medium"><Star className="h-3 w-3 fill-current" /> {m.score}</span>
+                        )}
+                        {tourRequestedHomeIds.has(m.homeId) && (
+                          <span className="inline-flex items-center gap-1 bg-success-100 text-success-800 px-2 py-0.5 rounded-full text-xs font-medium">🗓️ Tour requested</span>
                         )}
                         <Link href={`/homes/${m.homeId}`} target="_blank" className="text-xs text-primary-600 underline">view</Link>
                       </div>
