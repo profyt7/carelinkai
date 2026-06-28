@@ -121,6 +121,6 @@ cleanup may namespace these by slug.)
   - [ ] `01_dashboard.png`
   - [ ] `02_search.png`
   - [ ] `03_results.png`
-- **Refer & Inquire on Behalf of a Patient** — _(no screenshots)_
+- **Request a Care-Team Shortlist (Concierge)** (`refer-and-inquire-on-behalf`) — _(no screenshots)_
 
 **Total screenshots referenced: 71**

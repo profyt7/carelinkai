@@ -67,10 +67,9 @@ export const ROLE_GUIDES: Record<string, GettingStartedGuide> = {
     steps: [
       { label: 'Open your discharge planner dashboard', href: '/discharge-planner' },
       { label: 'Run an AI placement search', href: '/discharge-planner/search' },
-      { label: 'Track your placement requests', href: '/discharge-planner/requests' },
+      { label: 'Request a care-team shortlist & track it', href: '/discharge-planner/concierge' },
       { label: 'Review your search history', href: '/discharge-planner/history' },
       { label: 'View placement analytics', href: '/discharge-planner/analytics' },
-      { label: 'Manage your billing', href: '/discharge-planner/billing' },
     ],
   },
   AFFILIATE: {
