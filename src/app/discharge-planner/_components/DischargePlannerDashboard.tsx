@@ -343,6 +343,15 @@ export default function DischargePlannerDashboard() {
           </Link>
 
           <Link
+            href="/discharge-planner/concierge"
+            className="p-4 border-2 border-neutral-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors group"
+          >
+            <FiUsers className="text-primary-600 mb-2 group-hover:scale-110 transition-transform" size={24} />
+            <p className="font-medium text-neutral-900">Concierge</p>
+            <p className="text-xs text-neutral-600 mt-1">Care-team shortlists</p>
+          </Link>
+
+          <Link
             href="/discharge-planner/history"
             className="p-4 border-2 border-neutral-200 rounded-lg hover:border-success-500 hover:bg-success-50 transition-colors group"
           >

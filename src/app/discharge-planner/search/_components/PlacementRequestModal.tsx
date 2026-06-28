@@ -2,91 +2,103 @@
 
 import { useState, Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { X, Send, CheckCircle, AlertCircle } from 'lucide-react';
+import { X, Send, CheckCircle, AlertCircle, ShieldCheck } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 interface PlacementRequestModalProps {
   isOpen: boolean;
   onClose: () => void;
-  home: {
+  /** Optional "preferred" home the DP clicked from results (concierge hint only). */
+  home?: {
     homeId: string;
     homeName: string;
-    address: string;
-    contactEmail?: string;
-  };
+    address?: string;
+  } | null;
   searchId: string;
+  /** 'concierge' (default) routes to CareLinkAI; 'direct' is the legacy operator email. */
+  mode?: 'concierge' | 'direct';
+  onSubmitted?: () => void;
 }
 
-export default function PlacementRequestModal({ isOpen, onClose, home, searchId }: PlacementRequestModalProps) {
-  const [formData, setFormData] = useState({
+export default function PlacementRequestModal({
+  isOpen,
+  onClose,
+  home,
+  searchId,
+  mode = 'concierge',
+  onSubmitted,
+}: PlacementRequestModalProps) {
+  const concierge = mode !== 'direct';
+
+  const emptyForm = {
     patientName: '',
     patientAge: '',
     medicalNeeds: '',
     timeline: 'immediate',
     paymentType: 'private',
     additionalNotes: '',
-  });
-
+  };
+  const [formData, setFormData] = useState(emptyForm);
   const [isSending, setIsSending] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    if (!e || !e.target) return;
+    if (!e?.target) return;
     const { name, value } = e.target;
     if (!name) return;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validate required fields before submission
-    if (!formData.patientName || !formData.patientAge || !formData.medicalNeeds) {
-      setError('Please fill in all required fields');
+
+    // Minimum-necessary: care needs are required; patient name is optional
+    // (initials are fine). Direct mode keeps the stricter legacy validation.
+    if (!formData.medicalNeeds || (!concierge && (!formData.patientName || !formData.patientAge))) {
+      setError(concierge ? 'Please describe the care needs.' : 'Please fill in all required fields.');
       return;
     }
-    
+
     setIsSending(true);
     setError(null);
 
     try {
-      const response = await fetch('/api/discharge-planner/placement-request', {
+      const url = concierge
+        ? '/api/discharge-planner/concierge'
+        : '/api/discharge-planner/placement-request';
+      const body = concierge
+        ? {
+            searchId,
+            patientInfo: {
+              ...formData,
+              ...(home?.homeId ? { preferredHomeId: home.homeId, preferredHomeName: home.homeName } : {}),
+            },
+          }
+        : { searchId, homeId: home?.homeId, patientInfo: formData };
+
+      const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          searchId,
-          homeId: home?.homeId,
-          patientInfo: formData,
-        }),
+        body: JSON.stringify(body),
       });
-
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData?.error || 'Failed to send placement request');
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data?.error || 'Failed to submit request');
       }
 
-      const data = await response.json();
       setSuccess(true);
-      toast.success('Placement request sent successfully!');
+      toast.success(concierge ? 'Sent to the CareLinkAI care team' : 'Placement request sent');
+      onSubmitted?.();
 
-      // Auto-close after 2 seconds
       setTimeout(() => {
         onClose();
         setSuccess(false);
-        setFormData({
-          patientName: '',
-          patientAge: '',
-          medicalNeeds: '',
-          timeline: 'immediate',
-          paymentType: 'private',
-          additionalNotes: '',
-        });
-      }, 2000);
+        setFormData(emptyForm);
+      }, 1800);
     } catch (err: any) {
-      console.error('Placement request error:', err);
-      setError(err?.message || 'Failed to send placement request');
-      toast.error(err?.message || 'Failed to send request');
+      setError(err?.message || 'Failed to submit request');
+      toast.error(err?.message || 'Failed to submit request');
     } finally {
       setIsSending(false);
     }
@@ -97,12 +109,8 @@ export default function PlacementRequestModal({ isOpen, onClose, home, searchId 
       <Dialog as="div" className="relative z-50" onClose={onClose}>
         <Transition.Child
           as={Fragment}
-          enter="ease-out duration-300"
-          enterFrom="opacity-0"
-          enterTo="opacity-100"
-          leave="ease-in duration-200"
-          leaveFrom="opacity-100"
-          leaveTo="opacity-0"
+          enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100"
+          leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0"
         >
           <div className="fixed inset-0 bg-black bg-opacity-40" />
         </Transition.Child>
@@ -111,15 +119,10 @@ export default function PlacementRequestModal({ isOpen, onClose, home, searchId 
           <div className="flex min-h-full items-center justify-center p-4 text-center">
             <Transition.Child
               as={Fragment}
-              enter="ease-out duration-300"
-              enterFrom="opacity-0 scale-95"
-              enterTo="opacity-100 scale-100"
-              leave="ease-in duration-200"
-              leaveFrom="opacity-100 scale-100"
-              leaveTo="opacity-0 scale-95"
+              enter="ease-out duration-300" enterFrom="opacity-0 scale-95" enterTo="opacity-100 scale-100"
+              leave="ease-in duration-200" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95"
             >
               <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-white p-8 text-left align-middle shadow-xl transition-all">
-                {/* Close Button */}
                 <button
                   onClick={onClose}
                   className="absolute top-4 right-4 p-2 text-neutral-400 hover:text-neutral-600 transition-colors"
@@ -127,141 +130,131 @@ export default function PlacementRequestModal({ isOpen, onClose, home, searchId 
                   <X className="h-5 w-5" />
                 </button>
 
-                {/* Success State */}
                 {success ? (
                   <div className="text-center py-8">
                     <div className="mx-auto w-16 h-16 bg-success-100 rounded-full flex items-center justify-center mb-4">
                       <CheckCircle className="h-10 w-10 text-success-600" />
                     </div>
-                    <h3 className="text-2xl font-bold text-neutral-900 mb-2">Request Sent Successfully!</h3>
-                    <p className="text-neutral-600">The facility will receive your placement request shortly.</p>
+                    <h3 className="text-2xl font-bold text-neutral-900 mb-2">
+                      {concierge ? 'Request submitted' : 'Request Sent Successfully!'}
+                    </h3>
+                    <p className="text-neutral-600">
+                      {concierge
+                        ? 'Our care team is building your shortlist. Track it under Concierge.'
+                        : 'The facility will receive your placement request shortly.'}
+                    </p>
                   </div>
                 ) : (
                   <>
-                    {/* Header */}
-                    <Dialog.Title as="h3" className="text-2xl font-bold text-neutral-900 mb-2">
-                      Send Placement Request
+                    <Dialog.Title as="h3" className="text-2xl font-bold text-neutral-900 mb-1">
+                      {concierge ? 'Request a CareLinkAI shortlist' : 'Send Placement Request'}
                     </Dialog.Title>
-                    <p className="text-neutral-600 mb-6">
-                      To: <span className="font-semibold">{home?.homeName || 'Unknown Home'}</span>
-                    </p>
+                    {concierge ? (
+                      <div className="mb-5">
+                        <p className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-700 bg-primary-50 border border-primary-100 rounded-full px-3 py-1">
+                          <ShieldCheck className="h-4 w-4" /> AI-matched, care-team-verified
+                        </p>
+                        <p className="text-neutral-600 text-sm mt-2">
+                          Share the patient&apos;s needs. Our care team reviews real-time availability and
+                          sends you a curated shortlist in the app — patient details stay private and are
+                          never emailed.
+                          {home?.homeName ? (
+                            <> We&apos;ll note your interest in <span className="font-semibold">{home.homeName}</span>.</>
+                          ) : null}
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-neutral-600 mb-6">
+                        To: <span className="font-semibold">{home?.homeName || 'Unknown Home'}</span>
+                      </p>
+                    )}
 
-                    {/* Form */}
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                      {/* Patient Name */}
+                    <form onSubmit={handleSubmit} className="space-y-5">
                       <div>
                         <label htmlFor="patientName" className="block text-sm font-semibold text-neutral-700 mb-2">
-                          Patient Name *
+                          Patient Name or Initials {concierge ? '(optional)' : '*'}
                         </label>
                         <input
-                          type="text"
-                          id="patientName"
-                          name="patientName"
-                          value={formData.patientName}
-                          onChange={handleChange}
-                          required
+                          type="text" id="patientName" name="patientName"
+                          value={formData.patientName} onChange={handleChange}
+                          required={!concierge}
                           className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                          placeholder="John Doe"
-                          autoComplete="name"
-                        />
-                      </div>
-
-                      {/* Patient Age */}
-                      <div>
-                        <label htmlFor="patientAge" className="block text-sm font-semibold text-neutral-700 mb-2">
-                          Patient Age *
-                        </label>
-                        <input
-                          type="number"
-                          id="patientAge"
-                          name="patientAge"
-                          value={formData.patientAge}
-                          onChange={handleChange}
-                          required
-                          min="0"
-                          max="150"
-                          className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                          placeholder="78"
+                          placeholder={concierge ? 'e.g., J.D.' : 'John Doe'}
                           autoComplete="off"
                         />
                       </div>
 
-                      {/* Medical Needs */}
+                      <div>
+                        <label htmlFor="patientAge" className="block text-sm font-semibold text-neutral-700 mb-2">
+                          Patient Age {concierge ? '(optional)' : '*'}
+                        </label>
+                        <input
+                          type="number" id="patientAge" name="patientAge"
+                          value={formData.patientAge} onChange={handleChange}
+                          required={!concierge} min="0" max="150"
+                          className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                          placeholder="78" autoComplete="off"
+                        />
+                      </div>
+
                       <div>
                         <label htmlFor="medicalNeeds" className="block text-sm font-semibold text-neutral-700 mb-2">
-                          Medical Needs & Care Requirements *
+                          Care Needs &amp; Requirements *
                         </label>
                         <textarea
-                          id="medicalNeeds"
-                          name="medicalNeeds"
-                          value={formData.medicalNeeds}
-                          onChange={handleChange}
-                          required
-                          rows={4}
+                          id="medicalNeeds" name="medicalNeeds"
+                          value={formData.medicalNeeds} onChange={handleChange}
+                          required rows={4}
                           className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
                           placeholder="E.g., Moderate Alzheimer's, requires 24/7 supervision, physical therapy 3x/week..."
                         />
                       </div>
 
-                      {/* Timeline */}
-                      <div>
-                        <label htmlFor="timeline" className="block text-sm font-semibold text-neutral-700 mb-2">
-                          Timeline for Placement *
-                        </label>
-                        <select
-                          id="timeline"
-                          name="timeline"
-                          value={formData.timeline}
-                          onChange={handleChange}
-                          required
-                          className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                        >
-                          <option value="immediate">Immediate (within 1 week)</option>
-                          <option value="urgent">Urgent (1-2 weeks)</option>
-                          <option value="planned">Planned (2-4 weeks)</option>
-                          <option value="flexible">Flexible (1+ months)</option>
-                        </select>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label htmlFor="timeline" className="block text-sm font-semibold text-neutral-700 mb-2">
+                            Timeline
+                          </label>
+                          <select
+                            id="timeline" name="timeline" value={formData.timeline} onChange={handleChange}
+                            className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                          >
+                            <option value="immediate">Immediate (within 1 week)</option>
+                            <option value="urgent">Urgent (1-2 weeks)</option>
+                            <option value="planned">Planned (2-4 weeks)</option>
+                            <option value="flexible">Flexible (1+ months)</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label htmlFor="paymentType" className="block text-sm font-semibold text-neutral-700 mb-2">
+                            Payment Type
+                          </label>
+                          <select
+                            id="paymentType" name="paymentType" value={formData.paymentType} onChange={handleChange}
+                            className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                          >
+                            <option value="private">Private Pay</option>
+                            <option value="medicare">Medicare</option>
+                            <option value="medicaid">Medicaid</option>
+                            <option value="insurance">Private Insurance</option>
+                            <option value="va">VA Benefits</option>
+                            <option value="mixed">Mixed/Multiple Sources</option>
+                          </select>
+                        </div>
                       </div>
 
-                      {/* Payment Type */}
-                      <div>
-                        <label htmlFor="paymentType" className="block text-sm font-semibold text-neutral-700 mb-2">
-                          Payment Type *
-                        </label>
-                        <select
-                          id="paymentType"
-                          name="paymentType"
-                          value={formData.paymentType}
-                          onChange={handleChange}
-                          required
-                          className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                        >
-                          <option value="private">Private Pay</option>
-                          <option value="medicare">Medicare</option>
-                          <option value="medicaid">Medicaid</option>
-                          <option value="insurance">Private Insurance</option>
-                          <option value="va">VA Benefits</option>
-                          <option value="mixed">Mixed/Multiple Sources</option>
-                        </select>
-                      </div>
-
-                      {/* Additional Notes */}
                       <div>
                         <label htmlFor="additionalNotes" className="block text-sm font-semibold text-neutral-700 mb-2">
                           Additional Notes (Optional)
                         </label>
                         <textarea
-                          id="additionalNotes"
-                          name="additionalNotes"
-                          value={formData.additionalNotes}
-                          onChange={handleChange}
-                          rows={3}
+                          id="additionalNotes" name="additionalNotes"
+                          value={formData.additionalNotes} onChange={handleChange} rows={3}
                           className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
-                          placeholder="Any special requirements or preferences..."
+                          placeholder="Location preferences, room type, special requirements..."
                         />
                       </div>
 
-                      {/* Error Display */}
                       {error && (
                         <div className="p-4 bg-error-50 border border-error-200 rounded-lg flex items-start gap-2">
                           <AlertCircle className="h-5 w-5 text-error-600 flex-shrink-0 mt-0.5" />
@@ -269,30 +262,26 @@ export default function PlacementRequestModal({ isOpen, onClose, home, searchId 
                         </div>
                       )}
 
-                      {/* Actions */}
-                      <div className="flex items-center gap-3 pt-4">
+                      <div className="flex items-center gap-3 pt-2">
                         <button
-                          type="button"
-                          onClick={onClose}
+                          type="button" onClick={onClose} disabled={isSending}
                           className="flex-1 px-6 py-3 border border-neutral-300 text-neutral-700 rounded-lg font-semibold hover:bg-neutral-50 transition-colors"
-                          disabled={isSending}
                         >
                           Cancel
                         </button>
                         <button
-                          type="submit"
-                          disabled={isSending}
+                          type="submit" disabled={isSending}
                           className="flex-1 bg-gradient-to-r from-primary-600 to-purple-600 text-white py-3 px-6 rounded-lg font-semibold hover:from-primary-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2"
                         >
                           {isSending ? (
                             <>
                               <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
-                              <span>Sending...</span>
+                              <span>Submitting...</span>
                             </>
                           ) : (
                             <>
                               <Send className="h-4 w-4" />
-                              <span>Send Request</span>
+                              <span>{concierge ? 'Submit to CareLinkAI' : 'Send Request'}</span>
                             </>
                           )}
                         </button>
