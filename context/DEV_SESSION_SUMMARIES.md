@@ -2,6 +2,19 @@
 
 ---
 
+### 2026-06-28 — Concierge e2e tests + OL-105 schema-drift fix + DP-free marketing + DP card/verify polish (#673–#675)
+- **Objective:** Prove the DP concierge flow end-to-end in CI, fix the schema drift it surfaced, make discharge planners consistently free + discoverable, and polish DP-facing UX gaps found in live testing.
+- **Work completed:**
+  - **Concierge tests + OL-105 (#673):** new `e2e/concierge-flow.spec.ts` (full flow, isolated browser context per role) under a new `e2e-concierge` CI job; `__tests__/concierge.routing.test.ts` + `concierge.email.test.ts` (routing + PHI). Running it surfaced that `PlacementSearch`/`PlacementRequest` and the `DISCHARGE_PLANNER` `UserRole` value had **no creating migration** (db-push drift) → fresh `migrate deploy` was incomplete. Fixed with baseline migrations `20260628000002` (tables + enums) and `20260628000003` (`ADD VALUE … DISCHARGE_PLANNER`), both idempotent (no-op in prod). Closes **OL-105**. New dev endpoints `/api/dev/upsert-discharge-planner` + `/api/dev/placement-search`.
+  - **DP-free marketing + signup (#674):** removed DP pricing/trials from the homepage "Who It Serves" panel + "How It Works" card (FREE badges + "Get Free Access"/"Always free — no card required"); FAQ no longer implies DPs pay; operator pricing untouched (incl. GROWTH "Discharge planner integration"). Signup role relabeled "Healthcare Professional" → "Discharge Planner / Case Manager" (id still DISCHARGE_PLANNER). Demo form gained a DP option.
+  - **DP card + verify polish (#675):** DP search cards no longer leak the sentinel address (`directory-unclaimed@…`) or show "$0/mo"/"0 beds" — route sends null + isUnclaimed; card shows "Unclaimed — request via CareLinkAI" / "Pricing not verified" / "Availability on request". Post-signup now routes to `/auth/login?verify=1&email=…` with a clear "verify your email" state + resend button (verification email IS sent + login IS gated — the old "please sign in" message was the gap).
+- **Tests/build status:** `tsc`/`lint`/`prisma validate` clean; jest 6/6; e2e (incl. new e2e-concierge) green. Merged #673, #674, #675.
+- **Deployment impact:** Additive migrations only (no-op in prod). Render auto-deploys from main.
+- **New risks/blockers:** None. Known follow-up (next): DP isn't notified when a concierge shortlist is sent (bell + email + dashboard surfacing) — being addressed separately.
+- **Recommended next step:** notify the DP on shortlist-send + surface concierge on the main DP dashboard; founder Render runbook (OL-103) still pending.
+
+---
+
 ### 2026-06-28 — In-app DP concierge placement flow + claim-notify routing (#670–#671)
 - **Objective:** Build the in-app DP "concierge" placement flow (Wizard of Oz) and route claim-admin notifications/replies to the business inbox. Investigated DP-facing surface + the "46 nudged" funnel question first.
 - **Work completed:**
