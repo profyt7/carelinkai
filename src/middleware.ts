@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { withAuth } from 'next-auth/middleware';
+import { middlewareRateLimitFor, rateLimitExceeded } from '@/lib/edge-rate-limit';
 
 /* ============================================================================
  * CRITICAL FIX FOR IMAGE OPTIMIZATION 400 ERRORS
@@ -52,6 +53,35 @@ function shouldBypassAuth(pathname: string): boolean {
  */
 export default function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+
+  /* ------------------------------------------------------------------
+   * RATE LIMITING (consolidated from the former root middleware.ts, which
+   * never executed — Next.js runs only this src/middleware.ts).
+   *
+   * Applies to /api/webhooks + /api/password (added to the matcher below).
+   * /api/auth keeps its stronger, Redis-capable limiter at its own route
+   * handler (Node runtime). Bypassed in CI/e2e/dev via ALLOW_DEV_ENDPOINTS.
+   * Edge-safe (no Node APIs). Returns BEFORE any auth processing.
+   * ---------------------------------------------------------------- */
+  const rlLimit = middlewareRateLimitFor(pathname);
+  if (rlLimit !== null) {
+    if (process.env['ALLOW_DEV_ENDPOINTS'] !== '1') {
+      const ip = (req.headers.get('x-forwarded-for') || 'unknown').split(',')[0].trim();
+      if (rateLimitExceeded(`${pathname}:${ip}`, rlLimit)) {
+        return new NextResponse(JSON.stringify({ error: 'Too Many Requests' }), {
+          status: 429,
+          headers: { 'content-type': 'application/json', 'retry-after': '60' },
+        });
+      }
+    }
+    const res = NextResponse.next();
+    const reqId =
+      req.headers.get('x-request-id') ||
+      (globalThis as any).crypto?.randomUUID?.() ||
+      Math.random().toString(36).slice(2);
+    if (reqId) res.headers.set('x-request-id', reqId);
+    return res;
+  }
 
   /* ------------------------------------------------------------------
    * FIRST LINE OF DEFENSE: Bypass auth entirely for public paths
@@ -241,6 +271,10 @@ export const config = {
      * 5. Common assets (favicon, manifest, etc.)
      */
     '/((?!_next/|api/|static/|public/|images/|uploads/|favicon\\.ico|robots\\.txt|sitemap.*\\.xml|auth/|sw\\.js|manifest\\.json|offline\\.html).*)',
+    // Rate-limited API surfaces (handled by the rate-limit branch above, not auth).
+    // /api/auth is deliberately NOT here — it is rate-limited at its own route handler.
+    '/api/webhooks/:path*',
+    '/api/password/:path*',
   ],
 };
 
