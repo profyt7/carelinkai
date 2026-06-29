@@ -19,6 +19,19 @@ test.describe('@critical Signup → verify-email state', () => {
   }) => {
     const email = `signup-verify-${Date.now()}@test.carelinkai.com`;
 
+    // Pre-seed cookie consent so the consent banner (a fixed bottom overlay) never
+    // renders — otherwise it intercepts the click on the "Create Account" button.
+    await page.addInitScript(() => {
+      try {
+        localStorage.setItem(
+          'carelinkai_cookie_consent',
+          JSON.stringify({ necessary: true, analytics: false, marketing: false }),
+        );
+      } catch {
+        /* ignore */
+      }
+    });
+
     await page.goto('/auth/register', { waitUntil: 'domcontentloaded' });
 
     // Step 1 — credentials
