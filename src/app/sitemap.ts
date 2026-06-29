@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next';
+import { GUIDES } from '@/app/learn/guides/content';
 
 const SITE_URL = 'https://getcarelinkai.com';
 
@@ -48,7 +49,22 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'daily',
       priority: 0.7,
     },
+    // Education Hub landing — the SEO entry point for the Senior Care Guides.
+    {
+      url: `${SITE_URL}/learn`,
+      lastModified,
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    },
   ];
 
-  return staticPages;
+  // The 15 Senior Care Guides — the bulk of the organic-search surface.
+  const guidePages: MetadataRoute.Sitemap = GUIDES.map((g) => ({
+    url: `${SITE_URL}/learn/guides/${g.slug}`,
+    lastModified,
+    changeFrequency: 'monthly',
+    priority: 0.7,
+  }));
+
+  return [...staticPages, ...guidePages];
 }

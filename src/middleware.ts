@@ -28,12 +28,17 @@ const PUBLIC_PATHS = [
   '/sw.js',            // Service worker
   '/manifest.json',    // PWA manifest
   '/offline.html',     // PWA offline page
+  '/robots.txt',       // Crawler directives — MUST be publicly readable by search engines
+  '/sitemap.xml',      // Sitemap — MUST be publicly readable by search engines
 ];
 
 /**
  * Check if a path should bypass all authentication
  */
 function shouldBypassAuth(pathname: string): boolean {
+  // Search-engine crawler files must never redirect to login. Cover split
+  // sitemaps (/sitemap-0.xml, /sitemap/0.xml) too.
+  if (pathname === '/robots.txt' || /^\/sitemap.*\.xml$/.test(pathname)) return true;
   return PUBLIC_PATHS.some(path => {
     if (path.endsWith('/')) {
       return pathname.startsWith(path);
@@ -235,7 +240,7 @@ export const config = {
      * 4. /auth/ (auth pages)
      * 5. Common assets (favicon, manifest, etc.)
      */
-    '/((?!_next/|api/|static/|public/|images/|uploads/|favicon\\.ico|auth/|sw\\.js|manifest\\.json|offline\\.html).*)',
+    '/((?!_next/|api/|static/|public/|images/|uploads/|favicon\\.ico|robots\\.txt|sitemap.*\\.xml|auth/|sw\\.js|manifest\\.json|offline\\.html).*)',
   ],
 };
 
