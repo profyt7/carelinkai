@@ -26,12 +26,16 @@ test.describe('@critical Signup → verify-email state', () => {
     await page.fill('#email', email);
     await page.fill('#password', PASSWORD);
     await page.fill('#confirmPassword', PASSWORD);
-    await page.getByRole('button', { name: /next/i }).click();
+    // Exact 'Next' so we don't also match the Next.js dev-tools button
+    // ("Open Next.js Dev Tools"), which is present when the webServer runs `npm run dev`.
+    await page.getByRole('button', { name: 'Next', exact: true }).click();
 
     // Step 2 — pick Family (any role lands on the same verify state; Family is canonical)
     await expect(page.getByText(/select how you'll be using/i)).toBeVisible({ timeout: 8000 });
     await page.getByRole('radio', { name: /family member/i }).check();
-    await page.getByRole('button', { name: /next/i }).click();
+    // Exact 'Next' so we don't also match the Next.js dev-tools button
+    // ("Open Next.js Dev Tools"), which is present when the webServer runs `npm run dev`.
+    await page.getByRole('button', { name: 'Next', exact: true }).click();
 
     // Step 3 — minimal profile + submit
     await expect(page.getByText(/tell us about yourself/i)).toBeVisible({ timeout: 8000 });
