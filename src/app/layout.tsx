@@ -74,6 +74,13 @@ export const metadata: Metadata = {
   metadataBase: new URL(
     process.env["NEXT_PUBLIC_APP_URL"] || "http://localhost:5000"
   ),
+  // Google Search Console domain verification. Renders
+  // <meta name="google-site-verification" content="..."> into <head> on every
+  // page for anonymous crawlers. KEEP PERMANENTLY — removing it un-verifies the
+  // property in GSC.
+  verification: {
+    google: "9TWGIJuY4DL4n9q2pL__KZGEO-aBxevmDY209yV_o3E",
+  },
   alternates: {
     canonical: "/",
   },
