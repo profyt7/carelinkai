@@ -7,7 +7,6 @@ import { useForm } from "react-hook-form";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import axios from "axios";
-import { signIn } from "next-auth/react";
 import { prefersReducedMotion } from "@/lib/animations";
 
 import {
@@ -174,6 +173,7 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState("");
   const [step, setStep] = useState(1);
   const [reducedMotion, setReducedMotion] = useState(false);
 
@@ -283,35 +283,17 @@ export default function RegisterPage() {
       };
 
       await axios.post("/api/auth/register", cleanedData);
+      setRegisteredEmail(data.email);
       setSuccess(true);
 
-      setTimeout(async () => {
-        try {
-          const signInResult = await signIn("credentials", {
-            email: data.email,
-            password: data.password,
-            redirect: false,
-          });
-
-          if (signInResult?.ok) {
-            // Role-specific redirect (claim token was already redeemed by the API)
-            if (data.role === "OPERATOR") {
-              router.push("/operator/onboarding/1");
-            } else if (data.role === "FAMILY") {
-              router.push("/settings/family?onboarding=true");
-            } else if (data.role === "DISCHARGE_PLANNER") {
-              router.push("/discharge-planner");
-            } else {
-              router.push("/dashboard");
-            }
-          } else {
-            router.push(`/auth/login?verify=1&email=${encodeURIComponent(data.email)}`);
-          }
-        } catch (signInError) {
-          console.error("Auto sign-in error:", signInError);
-          router.push("/auth/login?registered=true");
-        }
-      }, 2000);
+      // A new account is created as PENDING and CANNOT sign in until the emailed
+      // verification link is clicked (enforced in auth.ts). So we do NOT attempt an
+      // auto sign-in (it always fails) and never drop the user on a bare login page.
+      // Send them to the login page's verify state, carrying their email so it shows
+      // "we've sent a verification link to <email>" + a resend control.
+      setTimeout(() => {
+        router.push(`/auth/login?verify=1&email=${encodeURIComponent(data.email)}`);
+      }, 2200);
     } catch (err: any) {
       console.error("Registration error:", err);
       setApiError(
@@ -385,12 +367,12 @@ export default function RegisterPage() {
               </div>
             </div>
             <h1 className="text-2xl font-bold text-neutral-800">
-              Registration Successful!
+              Check your email
             </h1>
             <p className="mt-2 text-neutral-600">
-              {currentRole === "FAMILY"
-                ? "Welcome! Let's set up your care profile..."
-                : "Your account has been created. Redirecting you..."}
+              Your account is created. We&apos;ve sent a verification link to{" "}
+              <strong className="text-neutral-800">{registeredEmail || "your email"}</strong> — please
+              verify your email, then sign in. Taking you to sign-in…
             </p>
           </div>
         </div>
