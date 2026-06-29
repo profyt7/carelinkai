@@ -54,6 +54,8 @@ test.describe('@critical Signup → verify-email state', () => {
     await expect(page.getByText(/tell us about yourself/i)).toBeVisible({ timeout: 8000 });
     await page.fill('#firstName', 'Vera');
     await page.fill('#lastName', 'Ifyer');
+    // Pick a relationship — the API rejects an empty value (z.enum, no coercion of "").
+    await page.selectOption('#relationshipToRecipient', 'PARENT');
     await page.getByRole('checkbox', { name: /terms/i }).check();
     await page.getByRole('button', { name: /create account/i }).click();
 
