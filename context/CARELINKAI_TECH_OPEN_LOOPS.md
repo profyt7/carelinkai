@@ -12,12 +12,17 @@ Each loop: what it is, why it matters, what done looks like.
   - Pleasant Pointe Assisted Living — Barberton OH — Teresa Morris — `teresa@pleasantviewhealthcare.com`
   - Eliza Jennings — Cleveland OH (main campus) — Lisa Fluhart — `lfluhart@elizajen.org`
 - **Tool (no-fake, mint-only):** `scripts/mint-claim-link.ts --email <op> --name "<home>" [--city <city>] | --home-id <id>` — dedups against the directory (reuses `homeId`, never creates a dup), signs the same `{operatorEmail,homeId,clevelandFounder,iat,exp}` 45-day token as `claim-drip.ts`, prints both the `…/auth/register?role=OPERATOR&claimToken=` and `…/claim?token=` links + ISO expiry; **does not seed, does not write, does not send.** If a home isn't found it lists near-matches and exits non-zero (seed via `seed-cleveland-*.ts` first, then re-run).
-- **Founder runbook (Render):**
+- **Founder runbook (Render) — the 2 primary leads:**
   1. `npx tsx scripts/mint-claim-link.ts --email teresa@pleasantviewhealthcare.com --name "Pleasant Pointe" --city Barberton`
   2. `npx tsx scripts/mint-claim-link.ts --email lfluhart@elizajen.org --name "Eliza Jennings" --city Cleveland`
-  3. For any **NOT FOUND**, seed via the directory pipeline, then re-run step 1/2. (Eliza at Chagrin Falls likely already exists — batch-2 #613 "Eliza at Chagrin Falls, fka Weils of Bainbridge".)
-  4. Paste each printed link into a personal email from chris@. Don't push to Resend.
-- **Done when:** both links minted (reusing existing `homeId`s where present) and emailed by the founder; optionally stage Eliza's Chagrin Falls + Devon Oaks (Westlake) so Lisa can claim across the network.
+- **Eliza Jennings network (optional — Lisa @elizajen.org manages multiple facilities Anita also called):**
+  3. `npx tsx scripts/mint-claim-link.ts --email lfluhart@elizajen.org --name "Eliza" --city "Chagrin Falls"`  *(likely already exists — batch-2 #613 "Eliza at Chagrin Falls, fka Weils of Bainbridge" → expect FOUND/reuse, not a seed)*
+  4. `npx tsx scripts/mint-claim-link.ts --email lfluhart@elizajen.org --name "Devon Oaks" --city Westlake`
+  - Each facility gets its own `homeId`/token/link. Decide on the call with Lisa whether she wants one signup that claims across all three (the `…/claim?token=` links work for an already-signed-in operator, so she can claim each in turn) or separate emails per facility. Same operator email on every token is fine.
+- **Then:**
+  5. For any **NOT FOUND**, seed via the directory pipeline (`seed-cleveland-*.ts`), then re-run that command. `--name "Eliza"` is intentionally loose for #3 to match whatever the stored brand is; narrow it (or pass `--home-id`) if it returns the wrong/multiple rows.
+  6. Paste each printed link into a personal email from chris@. Don't push to Resend.
+- **Done when:** the 2 primary links minted + emailed (reusing existing `homeId`s where present); optionally the 2 Eliza-network links (Chagrin Falls + Devon Oaks) for Lisa.
 
 ---
 
