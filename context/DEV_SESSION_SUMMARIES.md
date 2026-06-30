@@ -2,6 +2,21 @@
 
 ---
 
+### 2026-06-30 — Mint-claim-link tool for VA warm leads + OL-103 read-only verification
+- **Objective:** (1) Read-only verify the OL-103 DP-billing teardown. (2) Produce two 45-day operator claim links for two warm VA leads (Pleasant Pointe / Barberton; Eliza Jennings / Cleveland) for self-serve claiming.
+- **Work completed:**
+  - **OL-103 verification (read-only, reported only):** Item 4 PASS (DP subscribe → 410, `/discharge-planner/billing` redirects, no Stripe charge path anywhere under `src/app/api/discharge-planner/`). Founder then ran the Render scripts: `report-dp-subscriptions.ts` → 1 DP profile, **0 chargeable** (item 3 PASS); `archive-dp-stripe-prices.ts --force` → "no DP price IDs (env vars unset)" → **item 2 PASS** (env vars removed from Render). Item 1 (the two DP Stripe prices' `active:false` flag) remains **unconfirmed** but zero charge-risk (env vars gone, no code refs, subscribe 410, 0 subs) — only a dashboard-archive hygiene step remains.
+  - **`scripts/mint-claim-link.ts` (NEW):** reusable, **mint-only / read-only / never-send** tool. Finds a listing by `--home-id` or `--name [+--city]` (dedups — reuses `homeId`, never creates a dup; lists near-matches + exits non-zero if not found), then signs the same `{operatorEmail,homeId,clevelandFounder,iat,exp}` 45-day token as `claim-drip.ts` (`signClaimToken` + `NEXTAUTH_SECRET`) and prints both the `…/auth/register?role=OPERATOR&claimToken=` and `…/claim?token=` links + ISO expiry. Seeding deliberately excluded (AssistedLivingHome requires `operatorId`/`description` → must use the existing `seed-cleveland-*.ts` pipeline).
+  - **Could NOT mint the links in-session (reported, did not fake):** the Claude Code agent env has no prod `DATABASE_URL`/`NEXTAUTH_SECRET` (both unset, confirmed). A token signed with any non-prod secret is **rejected** by getcarelinkai.com (`verifyClaimToken` round-trip: same-secret ACCEPTED, wrong-secret REJECTED — verified). So minting valid links is a founder Render-shell run (see OL-108 runbook).
+- **Files changed:** `scripts/mint-claim-link.ts` (new); `context/CARELINKAI_TECH_OPEN_LOOPS.md` (OL-108 opened); this file.
+- **Commands run:** stood up a local Postgres + seeded one matching DRAFT home to exercise the script end-to-end (FOUND → 45-day link both formats; NOT-FOUND → refuses to mint); `signClaimToken`/`verifyClaimToken` round-trip (same-secret ACCEPTED, wrong-secret REJECTED, TTL=45d).
+- **Tests/build status:** Script validated against a real (local) Postgres + the real claim-token lib. Note: `scripts/` is tsc-excluded (run via `tsx`), so validation was runtime, not `tsc`.
+- **Deployment impact:** None yet — new script reaches the Render shell via main auto-deploy after the PR merges (Render can't `git pull` a branch). No schema/migration. No emails sent.
+- **New risks/blockers:** Founder must run `mint-claim-link.ts` on Render to produce the two real links (OL-108). Anita's VA follow-up is 2026-07-01, so this is time-sensitive.
+- **Recommended next step:** Merge the `chore/mint-claim-link` PR → after deploy, run the two OL-108 commands in the Render shell, paste links into 1:1 emails from chris@. Optionally stage Eliza's Chagrin Falls + Devon Oaks so Lisa can claim across the network.
+
+---
+
 ### 2026-06-29 — Concierge end-to-end + SEO un-gate + single auth middleware (#671, #673, #674, #677–#682)
 - **Objective:** Ship the in-app DP "concierge" placement flow end-to-end (intake → admin curate → DP shortlist → tour, never black-holing a request), make discharge planners free/discoverable, refresh the DP Education Hub to the concierge model, un-gate the SEO surface from the auth middleware, and collapse the dual middleware into one auditable auth gate. (Several of these — #671/#673/#674 — also have their own detailed entries below; this entry is the consolidated session view.)
 - **Work completed:**
