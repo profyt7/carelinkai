@@ -95,6 +95,7 @@ type DripHome = {
   outreachEmail: string | null;
   claimDripStep: number;
   claimDripStartedAt: Date | null;
+  address?: { city: string | null } | null;
 };
 
 /** Send one drip touch. Returns true if the email was accepted. Refuses without postal (CAN-SPAM). */
@@ -113,6 +114,7 @@ async function sendTouch(home: DripHome, touch: number, trigger: 'inquiry' | 'to
     touch,
     waitingCount: count,
     trigger,
+    city: home.address?.city ?? null,
   });
 }
 
@@ -130,6 +132,7 @@ export async function startClaimDripOnLead(params: { homeId: string; trigger?: '
       select: {
         id: true, name: true, outreachEmail: true, claimDripStep: true,
         claimDripStartedAt: true, claimDripStoppedReason: true,
+        address: { select: { city: true } },
         operator: { select: { user: { select: { email: true } } } },
       },
     });
@@ -189,6 +192,7 @@ export async function advanceClaimDrips(limit = 300): Promise<{ due: number; sen
     },
     select: {
       id: true, name: true, outreachEmail: true, claimDripStep: true, claimDripStartedAt: true,
+      address: { select: { city: true } },
       operator: { select: { user: { select: { email: true } } } },
     },
     take: limit,
