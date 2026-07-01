@@ -1,10 +1,18 @@
 name: Claim Drip
 
 on:
-  # Once daily — advance due claim-drip touches (email-only). ~14:00 UTC ≈ 9-10am ET.
-  schedule:
-    - cron: '0 14 * * *'
-  # Allow manual trigger
+  # ⏸️ PAUSED 2026-07-01 (OL-109) — the autonomous daily drip was colliding with
+  # human outreach (VA calls + personal 1:1 emails) and hitting a ~40% bounce rate,
+  # burning sender reputation. The scheduled trigger is intentionally disabled.
+  # Code is preserved; DO NOT delete. Re-enable ONLY after the recipient-narrowing +
+  # bounce-cleanup + copy-rewrite fixes land — see OL-109.
+  #
+  # TO RE-ENABLE: uncomment the two `schedule` lines below, PR to main.
+  # schedule:
+  #   - cron: '0 14 * * *'   # daily ~14:00 UTC ≈ 9-10am ET
+  #
+  # Manual trigger stays available (e.g. a controlled, narrowed re-run) but never
+  # fires on its own.
   workflow_dispatch:
 
 jobs:
