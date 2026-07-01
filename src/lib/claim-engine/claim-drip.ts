@@ -36,6 +36,15 @@ export const DRIP_OFFSETS_DAYS = [0, 3, 7, 14];
 export const MAX_DRIP_TOUCHES = DRIP_OFFSETS_DAYS.length;
 const DAY_MS = 86_400_000;
 
+/** Master kill switch — the ENTIRE drip (event-driven touch-1 AND the cron's
+ *  touches 2-4) is OFF unless CLAIM_DRIP_ENABLED is explicitly truthy. Paused by
+ *  DEFAULT so a redeploy can never silently resume autonomous outreach (OL-109).
+ *  Re-enable is a single Render env flip: CLAIM_DRIP_ENABLED=1. */
+export function claimDripEnabled(): boolean {
+  const v = (process.env['CLAIM_DRIP_ENABLED'] || '').trim().toLowerCase();
+  return v === '1' || v === 'true' || v === 'yes' || v === 'on';
+}
+
 function appUrl(): string {
   return (process.env['NEXT_PUBLIC_APP_URL'] || process.env['NEXTAUTH_URL'] || 'https://getcarelinkai.com').replace(/\/$/, '');
 }
@@ -99,6 +108,7 @@ async function sendTouch(home: DripHome, touch: number, trigger: 'inquiry' | 'to
 export async function startClaimDripOnLead(params: { homeId: string; trigger?: 'inquiry' | 'tour' }): Promise<void> {
   const { homeId, trigger = 'inquiry' } = params;
   try {
+    if (!claimDripEnabled()) return; // drip PAUSED (OL-109) — no autonomous touch-1
     const home = await prisma.assistedLivingHome.findUnique({
       where: { id: homeId },
       select: {
@@ -146,7 +156,8 @@ export async function startClaimDripOnLead(params: { homeId: string; trigger?: '
  * (claimed / suppressed / no email), sends the next escalating touch otherwise,
  * and marks 'exhausted' after the final touch.
  */
-export async function advanceClaimDrips(limit = 300): Promise<{ due: number; sent: number; stopped: number }> {
+export async function advanceClaimDrips(limit = 300): Promise<{ due: number; sent: number; stopped: number; disabled?: boolean }> {
+  if (!claimDripEnabled()) return { due: 0, sent: 0, stopped: 0, disabled: true }; // PAUSED (OL-109)
   const now = new Date();
   const due = await prisma.assistedLivingHome.findMany({
     where: {
