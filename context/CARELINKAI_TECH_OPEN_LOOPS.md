@@ -1,8 +1,28 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-06-29 — OL-106 CLOSED (#680): robots.txt + sitemap.xml un-gated from the auth middleware; sitemap enumerates /learn + 15 guides (23 URLs). OL-107 CLOSED (#682): dual middleware consolidated to one auth gate; revived Edge-safe rate-limiter (webhooks 60/min, password 8/min). In-app DP concierge now end-to-end: notify-DP-on-shortlist + dashboard (#677), tour-request routing that never black-holes (#679), DP Education Hub rewritten to concierge (#678). Prior (2026-06-28): OL-105 CLOSED (#673) schema-drift baseline migrations + e2e-concierge; OL-104 DELIVERED in-app DP concierge (#671); DP-free marketing/signup (#674); DP card polish + post-signup verify UX (#675); claim-admin alert → chris@ + Reply-To (#670). OL-103: money-path hardening (#667, closes OL-055), DP-billing safety report (#666), DP price decommission (#668). OL-102 PARKED: facility placement-fee (attorney-gated). Founder TODO (Render): report-dp-subscriptions → cancel any DP sub; archive-dp-stripe-prices --force; remove the 2 DP price env vars; confirm STRIPE_PRICE_AGENCY value; submit sitemap to Google Search Console; build VA CSV → load-va-pricing-amenities --force; dispatch claim-drip once; rotate demo.* passwords._
+_Last updated: 2026-06-30 — OL-108 OPENED: `scripts/mint-claim-link.ts` shipped to mint 45-day operator claim links for 2 VA warm leads (Pleasant Pointe Barberton; Eliza Jennings Cleveland) — mint-only/no-send/no-seed; the actual mint is a founder Render-shell run (agent env lacks prod NEXTAUTH_SECRET/DATABASE_URL). Prior 2026-06-29 — OL-106 CLOSED (#680): robots.txt + sitemap.xml un-gated from the auth middleware; sitemap enumerates /learn + 15 guides (23 URLs). OL-107 CLOSED (#682): dual middleware consolidated to one auth gate; revived Edge-safe rate-limiter (webhooks 60/min, password 8/min). In-app DP concierge now end-to-end: notify-DP-on-shortlist + dashboard (#677), tour-request routing that never black-holes (#679), DP Education Hub rewritten to concierge (#678). Prior (2026-06-28): OL-105 CLOSED (#673) schema-drift baseline migrations + e2e-concierge; OL-104 DELIVERED in-app DP concierge (#671); DP-free marketing/signup (#674); DP card polish + post-signup verify UX (#675); claim-admin alert → chris@ + Reply-To (#670). OL-103: money-path hardening (#667, closes OL-055), DP-billing safety report (#666), DP price decommission (#668). OL-102 PARKED: facility placement-fee (attorney-gated). Founder TODO (Render): report-dp-subscriptions → cancel any DP sub; archive-dp-stripe-prices --force; remove the 2 DP price env vars; confirm STRIPE_PRICE_AGENCY value; submit sitemap to Google Search Console; build VA CSV → load-va-pricing-amenities --force; dispatch claim-drip once; rotate demo.* passwords._
 
 ## Format
 Each loop: what it is, why it matters, what done looks like.
+
+---
+
+### OL-108: Mint + send 2 VA warm-lead operator claim links (Pleasant Pointe, Eliza Jennings)
+- **Status:** 🟡 OPEN — tooling shipped (`scripts/mint-claim-link.ts`, this session); the actual mint is a **founder Render-shell run** (needs prod `DATABASE_URL` + `NEXTAUTH_SECRET`, which the Claude Code agent env does NOT have — a token signed with any other secret is rejected by getcarelinkai.com, verified).
+- **Why:** Two warm leads from Anita's VA outreach want to self-serve claim (Anita follows up 2026-07-01). Need ready-to-send 45-day claim links — personal 1:1 emails from chris@, **not** a Resend broadcast.
+  - Pleasant Pointe Assisted Living — Barberton OH — Teresa Morris — `teresa@pleasantviewhealthcare.com`
+  - Eliza Jennings — Cleveland OH (main campus) — Lisa Fluhart — `lfluhart@elizajen.org`
+- **Tool (no-fake, mint-only):** `scripts/mint-claim-link.ts --email <op> --name "<home>" [--city <city>] | --home-id <id>` — dedups against the directory (reuses `homeId`, never creates a dup), signs the same `{operatorEmail,homeId,clevelandFounder,iat,exp}` 45-day token as `claim-drip.ts`, prints both the `…/auth/register?role=OPERATOR&claimToken=` and `…/claim?token=` links + ISO expiry; **does not seed, does not write, does not send.** If a home isn't found it lists near-matches and exits non-zero (seed via `seed-cleveland-*.ts` first, then re-run).
+- **Founder runbook (Render) — the 2 primary leads:**
+  1. `npx tsx scripts/mint-claim-link.ts --email teresa@pleasantviewhealthcare.com --name "Pleasant Pointe" --city Barberton`
+  2. `npx tsx scripts/mint-claim-link.ts --email lfluhart@elizajen.org --name "Eliza Jennings" --city Cleveland`
+- **Eliza Jennings network (optional — Lisa @elizajen.org manages multiple facilities Anita also called):**
+  3. `npx tsx scripts/mint-claim-link.ts --email lfluhart@elizajen.org --name "Eliza" --city "Chagrin Falls"`  *(likely already exists — batch-2 #613 "Eliza at Chagrin Falls, fka Weils of Bainbridge" → expect FOUND/reuse, not a seed)*
+  4. `npx tsx scripts/mint-claim-link.ts --email lfluhart@elizajen.org --name "Devon Oaks" --city Westlake`
+  - Each facility gets its own `homeId`/token/link. Decide on the call with Lisa whether she wants one signup that claims across all three (the `…/claim?token=` links work for an already-signed-in operator, so she can claim each in turn) or separate emails per facility. Same operator email on every token is fine.
+- **Then:**
+  5. For any **NOT FOUND**, seed via the directory pipeline (`seed-cleveland-*.ts`), then re-run that command. `--name "Eliza"` is intentionally loose for #3 to match whatever the stored brand is; narrow it (or pass `--home-id`) if it returns the wrong/multiple rows.
+  6. Paste each printed link into a personal email from chris@. Don't push to Resend.
+- **Done when:** the 2 primary links minted + emailed (reusing existing `homeId`s where present); optionally the 2 Eliza-network links (Chagrin Falls + Devon Oaks) for Lisa.
 
 ---
 
