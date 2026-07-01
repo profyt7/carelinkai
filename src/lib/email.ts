@@ -503,10 +503,14 @@ export async function sendNewLeadOperatorEmail(args: {
 }
 
 /**
- * One touch of the per-facility CLAIM DRIP (email-only). Escalating copy by touch
- * (1 = lead nudge, 2 = growing demand, 3 = missing-leads/loss, 4 = final notice)
- * that always surfaces the live waiting count. CAN-SPAM compliant: one-click
- * unsubscribe link + company postal address + List-Unsubscribe / RFC 8058 headers.
+ * One touch of the per-facility CLAIM DRIP (email-only). Two touches, signed by a
+ * named human (Chris, chris@ via OUTREACH_REPLY_TO). PROACTIVE, honest demand
+ * framing — NEVER fabricates a specific family inquiry: touch 1 = "families are
+ * searching {City}" (A/B subject), touch 2 = soft "still taking residents?" nudge.
+ * A RESERVED real-inquiry variant (subject "A family asked about {Facility}") is
+ * gated behind args.realInquiry and only truthful because a pending inquiry surfaces
+ * to the operator on claim (verified YES 2026-07-01, OL-109) — the engine does NOT
+ * set it yet. CAN-SPAM compliant: one-click unsubscribe + postal + List-Unsubscribe.
  * Generic copy only — never PHI. Returns false on failure.
  */
 export async function sendClaimDripEmail(args: {
@@ -515,70 +519,105 @@ export async function sendClaimDripEmail(args: {
   claimUrl: string;
   unsubscribeUrl: string;
   postalAddress: string;
-  touch: number; // 1..4
-  waitingCount: number;
+  touch: number; // 1..2
+  waitingCount?: number; // retained for the reserved real-inquiry variant; unused by the proactive copy
   trigger?: 'inquiry' | 'tour';
+  city?: string | null;
+  firstName?: string | null;
+  // RESERVED — set true ONLY when a real family inquiry exists on THIS home AND the
+  // product surfaces it to the operator on claim (verified YES 2026-07-01, OL-109).
+  // The engine never sets this yet — founder opt-in required.
+  realInquiry?: boolean;
 }): Promise<boolean> {
   try {
     if (!process.env.RESEND_API_KEY) return false;
     const facility = args.facilityName?.trim() || 'your community';
-    const n = Math.max(1, args.waitingCount || 1);
-    const fam = n === 1 ? 'family' : 'families';
-    const isTour = args.trigger === 'tour';
+    const first = (args.firstName || '').trim() || 'there';
+    const city = (args.city || '').trim() || 'your area';
+    const PHONE = '(216) 245-9482';
+    const SIGN_FULL = `Chris Tolliver · CareLinkAI · ${PHONE}`;
+    const SIGN_SHORT = `Chris · CareLinkAI · ${PHONE}`;
+    const ctaLabel = args.realInquiry ? `Claim ${facility} & see their message` : `Claim ${facility}`;
 
     let subject: string;
-    let lead: string;
-    switch (args.touch) {
-      case 1:
-        subject = isTour
-          ? `A family wants to tour ${facility} — claim to confirm the visit`
-          : `A family is trying to reach ${facility} on CareLinkAI`;
-        lead = isTour
-          ? `A family wants to tour ${facility} on CareLinkAI.`
-          : `A family is trying to reach ${facility} on CareLinkAI.`;
-        break;
-      case 2:
-        subject = `${n} ${fam} waiting to hear from ${facility}`;
-        lead = `${n} ${fam} ${n === 1 ? 'is' : 'are'} now waiting to hear from ${facility} on CareLinkAI. Your free listing is unclaimed, so no one can respond yet.`;
-        break;
-      case 3:
-        subject = `You're missing leads at ${facility} (${n} waiting)`;
-        lead = `${facility} is missing leads. ${n} ${fam} ${n === 1 ? 'has' : 'have'} reached out on CareLinkAI and ${n === 1 ? 'is' : 'are'} still waiting because the listing is unclaimed.`;
-        break;
-      default: // 4 — final
-        subject = `Final notice: ${n} ${fam} waiting at ${facility}`;
-        lead = `Final notice — ${n} ${fam} ${n === 1 ? 'is' : 'are'} waiting to connect with ${facility} on CareLinkAI. This is the last email we'll send about these leads. Claim your free listing to respond before they choose another community.`;
-        break;
+    let bodyLines: string[]; // paragraphs before the CAN-SPAM footer; '__CTA__' → the claim button/link
+
+    if (args.realInquiry) {
+      // RESERVED: real-inquiry variant. Only reached when a caller explicitly opts in
+      // (a genuine inquiry on THIS home). Never fabricates — see OL-109.
+      subject = `A family asked about ${facility}`;
+      bodyLines = [
+        `Hi ${first}, a family just used CareLinkAI to ask about care at ${facility} — but because your profile isn't claimed, I have no way to pass their message to you. Claiming is free, ~2 minutes, no credit card — then you'll see their inquiry (and any future ones) and can respond directly.`,
+        `__CTA__`,
+        `I'm Chris, founder of CareLinkAI. Wrong person? Reply. Rather not hear from me? Unsubscribe below.`,
+        SIGN_FULL,
+        `P.S. The message is waiting in your unclaimed profile now — two minutes and it's yours to answer.`,
+      ];
+    } else if (args.touch <= 1) {
+      // TOUCH 1 — proactive, honest demand framing (NO fabricated inquiry). A/B subject,
+      // split deterministically by recipient so the test is stable per address.
+      const variant = [...args.toEmail].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % 2;
+      subject = variant === 0
+        ? (first === 'there'
+            ? `Families are searching ${city} for care like ${facility}`
+            : `${first}, families are searching ${city} for care like ${facility}`)
+        : `Is ${facility} taking new residents?`;
+      bodyLines = [
+        `Hi ${first},`,
+        `Families across ${city} use CareLinkAI to find assisted living — and ${facility} is listed, but because your profile isn't claimed, you can't see or respond when someone's interested in your community.`,
+        `I didn't want you missing potential residents over that. Claiming is free, takes about two minutes, and needs no credit card — you just confirm you're with ${facility}. Then inquiries come straight to you, and you control how ${facility} appears.`,
+        `__CTA__`,
+        `I'm Chris, founder of CareLinkAI — the Cleveland directory families use to find local assisted living. We already built ${facility}'s profile; claiming just puts you in control.`,
+        `Wrong person? Reply and I'll find the right one. Rather not hear from me? Unsubscribe below.`,
+        SIGN_FULL,
+        `P.S. Genuinely free — we only earn later from operators who choose to upgrade, never from claiming.`,
+      ];
+    } else {
+      // TOUCH 2 — scheduled follow-up, honest (NO fabricated inquiry).
+      subject = `Is ${facility} still taking new residents?`;
+      bodyLines = [
+        `Hi ${first},`,
+        `Circling back once. ${facility}'s CareLinkAI profile is live but still unclaimed — so when a local family is interested, we can't connect them to you.`,
+        `Claiming fixes that in about two minutes (free, no card): inquiries come directly and you control how your community appears.`,
+        `__CTA__`,
+        `Wrong contact? Reply. Rather I stop? Unsubscribe below.`,
+        SIGN_SHORT,
+        `P.S. No catch — claiming's free; we only make money if you later choose a paid upgrade.`,
+      ];
     }
-    const cta = args.touch >= 3 ? 'Claim now &amp; respond' : `Claim ${escapeHtml(facility)}`;
+
     const text =
-      `${lead}\n\n` +
-      `Claim your free listing in about 2 minutes to view and respond securely:\n${args.claimUrl}\n\n` +
-      `Details are kept private until you claim. There is no cost to claim or respond.\n\n` +
-      `${APP_NAME} · ${args.postalAddress}\n` +
-      `Unsubscribe (you won't be emailed about these leads again): ${args.unsubscribeUrl}`;
+      bodyLines.map((l) => (l === '__CTA__' ? `${ctaLabel} → ${args.claimUrl}` : l)).join('\n\n') +
+      `\n\n${APP_NAME} · ${args.postalAddress}\n` +
+      `Unsubscribe (you won't be emailed about ${facility} again): ${args.unsubscribeUrl}`;
+
+    const htmlBody = bodyLines
+      .map((l) =>
+        l === '__CTA__'
+          ? `<p><a href="${escapeHtml(args.claimUrl)}" style="display:inline-block;background:#0d9488;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600">${escapeHtml(ctaLabel)} →</a></p>`
+          : `<p>${escapeHtml(l)}</p>`,
+      )
+      .join('\n  ');
     const html = `
 <!DOCTYPE html>
-<html><body style="font-family:Arial,sans-serif;color:#1f2937;line-height:1.5">
-  <p>${escapeHtml(lead)}</p>
-  <p><a href="${escapeHtml(args.claimUrl)}" style="display:inline-block;background:#0d9488;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600">${cta}</a></p>
-  <p style="color:#6b7280;font-size:13px">Details are kept private until you claim. There is no cost to claim or respond.</p>
+<html><body style="font-family:Arial,sans-serif;color:#1f2937;line-height:1.6">
+  ${htmlBody}
   <hr style="border:none;border-top:1px solid #e5e7eb;margin:16px 0"/>
   <p style="color:#9ca3af;font-size:12px">
     ${APP_NAME} · ${escapeHtml(args.postalAddress)}<br/>
-    <a href="${escapeHtml(args.unsubscribeUrl)}" style="color:#9ca3af">Unsubscribe</a> — you won't be emailed about these leads again.
+    <a href="${escapeHtml(args.unsubscribeUrl)}" style="color:#9ca3af">Unsubscribe</a> — you won't be emailed about ${escapeHtml(facility)} again.
   </p>
 </body></html>`;
 
     const { error } = await resend.emails.send({
-      from: `${APP_NAME} <${FROM_EMAIL}>`,
+      from: `Chris Tolliver, CareLinkAI <${OUTREACH_REPLY_TO}>`,
       to: [args.toEmail],
       replyTo: OUTREACH_REPLY_TO,
       subject,
       text,
       html,
       headers: {
-        'List-Unsubscribe': `<${args.unsubscribeUrl}>, <mailto:${FROM_EMAIL}?subject=unsubscribe>`,
+        'List-Unsubscribe': `<${args.unsubscribeUrl}>, <mailto:${OUTREACH_REPLY_TO}?subject=unsubscribe>`,
         'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
       },
     });

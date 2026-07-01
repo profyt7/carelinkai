@@ -2,6 +2,20 @@
 
 ---
 
+### 2026-07-01 — URGENT: pause the autonomous claim drip + safeguards (OL-109)
+- **Objective:** Stop the claim-drip/nudge system autonomously emailing the directory (~40% bounce, colliding with VA calls + personal 1:1s, burning sender reputation); build the fixes to make a future re-enable safe. **Paused stays paused until founder review.**
+- **Work completed:**
+  - **Pause — LIVE, 3 layers:** founder disabled the Actions workflow (UI, instant); **#687** removed the `schedule:` trigger from `claim-drip.yml`; **#689** added the master `CLAIM_DRIP_ENABLED` flag (default OFF) gating BOTH `advanceClaimDrips` (cron) and `startClaimDripOnLead` (event-driven touch-1 — the gap the cron pause missed). Timing confirmed: last run 2026-06-30 14:51 UTC; cadence was 0/3/7/14d.
+  - **Safeguards — PR #688 (NOT merged, for review):** `scripts/stop-drip.ts` (recipient exclusion via `claimDripStoppedReason='manual'`; `--file` supports `Name | City`); `POST /api/webhooks/resend` (Svix-verified, fail-closed → `EmailSuppression`); `emailLooksSendable()` pre-send validation; **C copy rewrite** — cadence cut to 2 touches, named-human sender (Chris/chris@), touch-1 references the real family event (+count when >1), touch-2 neutral soft nudge (no false "family asked").
+  - **Exclusion resolver:** validated a name+city resolver against a local DB for the founder's 23-facility list (excludes matches → 'manual'; reports NOT FOUND + AMBIGUOUS); handed over as a ready-to-run Render snippet (agent env has no prod DB).
+- **Files changed:** `.github/workflows/claim-drip.yml` (#687); `src/lib/claim-engine/claim-drip.ts` + `.env.example` + `__tests__/claim-drip-killswitch.test.ts` (#689); `src/lib/claim-engine/claim-drip.ts` (validation + cadence), `src/lib/email.ts` (C copy), `src/app/api/webhooks/resend/route.ts` (new), `scripts/stop-drip.ts` (new), `.env.example`, `__tests__/claim-drip-validation.test.ts` (new), `context/*` (#688).
+- **Validation:** `tsc`/`next lint` clean; jest killswitch 3/3 + validation 3/3 + concierge.tour 8/8. Local Postgres: `stop-drip.ts` + exclusion resolver + Resend webhook (signed bounce→200+suppression, bad sig→401) all end-to-end.
+- **Deployment impact:** Pause (#687 + #689) is LIVE on main (default OFF sends nothing). #688 intentionally UNMERGED pending review.
+- **New risks/blockers:** None new — drip fully off. Re-enable requires the deliberate OL-109 checklist.
+- **Recommended next step:** Founder runs the exclusion snippet in Render (dry-run → apply), reviews #688 + the 2-touch copy, then follows the OL-109 re-enable checklist when ready.
+
+---
+
 ### 2026-06-30 — Mint-claim-link tool for VA warm leads + OL-103 read-only verification
 - **Objective:** (1) Read-only verify the OL-103 DP-billing teardown. (2) Produce two 45-day operator claim links for two warm VA leads (Pleasant Pointe / Barberton; Eliza Jennings / Cleveland) for self-serve claiming.
 - **Work completed:**
