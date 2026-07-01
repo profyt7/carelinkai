@@ -503,11 +503,11 @@ export async function sendNewLeadOperatorEmail(args: {
 }
 
 /**
- * One touch of the per-facility CLAIM DRIP (email-only). Escalating copy by touch
- * (1 = lead nudge, 2 = growing demand, 3 = missing-leads/loss, 4 = final notice)
- * that always surfaces the live waiting count. CAN-SPAM compliant: one-click
- * unsubscribe link + company postal address + List-Unsubscribe / RFC 8058 headers.
- * Generic copy only — never PHI. Returns false on failure.
+ * One touch of the per-facility CLAIM DRIP (email-only). Two touches, signed by a
+ * named human: touch 1 = real event nudge (a family asked/toured; + live waiting
+ * count when >1), touch 2 = neutral soft follow-up (no implied demand). CAN-SPAM
+ * compliant: one-click unsubscribe + company postal address + List-Unsubscribe /
+ * RFC 8058 headers. Generic copy only — never PHI. Returns false on failure.
  */
 export async function sendClaimDripEmail(args: {
   facilityName: string;
@@ -515,7 +515,7 @@ export async function sendClaimDripEmail(args: {
   claimUrl: string;
   unsubscribeUrl: string;
   postalAddress: string;
-  touch: number; // 1..4
+  touch: number; // 1..2
   waitingCount: number;
   trigger?: 'inquiry' | 'tour';
 }): Promise<boolean> {
@@ -526,52 +526,50 @@ export async function sendClaimDripEmail(args: {
     const fam = n === 1 ? 'family' : 'families';
     const isTour = args.trigger === 'tour';
 
+    // Signed by a named human (Chris). Touch 1 is EVENT-DRIVEN, so it can truthfully
+    // reference the family/tour that just came in (+ a real waiting count when >1).
+    // Touch 2 (scheduled follow-up) is a NEUTRAL soft nudge — no "a family asked",
+    // no count — so we never imply demand that isn't there (OL-109 copy rewrite).
     let subject: string;
     let lead: string;
-    switch (args.touch) {
-      case 1:
-        subject = isTour
-          ? `A family wants to tour ${facility} — claim to confirm the visit`
-          : `A family is trying to reach ${facility} on CareLinkAI`;
-        lead = isTour
-          ? `A family wants to tour ${facility} on CareLinkAI.`
-          : `A family is trying to reach ${facility} on CareLinkAI.`;
-        break;
-      case 2:
-        subject = `${n} ${fam} waiting to hear from ${facility}`;
-        lead = `${n} ${fam} ${n === 1 ? 'is' : 'are'} now waiting to hear from ${facility} on CareLinkAI. Your free listing is unclaimed, so no one can respond yet.`;
-        break;
-      case 3:
-        subject = `You're missing leads at ${facility} (${n} waiting)`;
-        lead = `${facility} is missing leads. ${n} ${fam} ${n === 1 ? 'has' : 'have'} reached out on CareLinkAI and ${n === 1 ? 'is' : 'are'} still waiting because the listing is unclaimed.`;
-        break;
-      default: // 4 — final
-        subject = `Final notice: ${n} ${fam} waiting at ${facility}`;
-        lead = `Final notice — ${n} ${fam} ${n === 1 ? 'is' : 'are'} waiting to connect with ${facility} on CareLinkAI. This is the last email we'll send about these leads. Claim your free listing to respond before they choose another community.`;
-        break;
+    if (args.touch <= 1) {
+      const waiting = n > 1 ? ` ${n} ${fam} are waiting to hear back.` : '';
+      subject = isTour
+        ? `A family asked to tour ${facility} on CareLinkAI`
+        : `A family asked about ${facility} on CareLinkAI`;
+      lead = isTour
+        ? `Hi — I'm Chris, founder of CareLinkAI, a Cleveland-area assisted-living directory. A family just used our site to ask about touring ${facility}.${waiting}`
+        : `Hi — I'm Chris, founder of CareLinkAI, a Cleveland-area assisted-living directory. A family just used our site to ask about ${facility}.${waiting}`;
+    } else {
+      subject = `Your ${facility} listing on CareLinkAI`;
+      lead = `Hi — following up from Chris at CareLinkAI. Your community, ${facility}, is listed on our Cleveland-area directory but isn't claimed yet, so I can't route family inquiries to you.`;
     }
-    const cta = args.touch >= 3 ? 'Claim now &amp; respond' : `Claim ${escapeHtml(facility)}`;
+    const ask = `If you'd like to see and respond to family inquiries — it's free — you can claim ${facility} in about 2 minutes:`;
+    const cta = `Claim ${escapeHtml(facility)}`;
     const text =
       `${lead}\n\n` +
-      `Claim your free listing in about 2 minutes to view and respond securely:\n${args.claimUrl}\n\n` +
-      `Details are kept private until you claim. There is no cost to claim or respond.\n\n` +
+      `${ask}\n${args.claimUrl}\n\n` +
+      `Your details stay private until you claim. There's no cost to claim or respond.\n\n` +
+      `If I've got the wrong contact, just reply and point me to the right person. Not interested? Unsubscribe below and I won't email again.\n— Chris\n\n` +
       `${APP_NAME} · ${args.postalAddress}\n` +
-      `Unsubscribe (you won't be emailed about these leads again): ${args.unsubscribeUrl}`;
+      `Unsubscribe (you won't be emailed about ${facility} again): ${args.unsubscribeUrl}`;
     const html = `
 <!DOCTYPE html>
-<html><body style="font-family:Arial,sans-serif;color:#1f2937;line-height:1.5">
+<html><body style="font-family:Arial,sans-serif;color:#1f2937;line-height:1.6">
   <p>${escapeHtml(lead)}</p>
+  <p>${escapeHtml(ask)}</p>
   <p><a href="${escapeHtml(args.claimUrl)}" style="display:inline-block;background:#0d9488;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600">${cta}</a></p>
-  <p style="color:#6b7280;font-size:13px">Details are kept private until you claim. There is no cost to claim or respond.</p>
+  <p style="color:#6b7280;font-size:13px">Your details stay private until you claim. There's no cost to claim or respond.</p>
+  <p style="color:#374151;font-size:14px">If I've got the wrong contact, just reply and point me to the right person.<br/>— Chris</p>
   <hr style="border:none;border-top:1px solid #e5e7eb;margin:16px 0"/>
   <p style="color:#9ca3af;font-size:12px">
     ${APP_NAME} · ${escapeHtml(args.postalAddress)}<br/>
-    <a href="${escapeHtml(args.unsubscribeUrl)}" style="color:#9ca3af">Unsubscribe</a> — you won't be emailed about these leads again.
+    <a href="${escapeHtml(args.unsubscribeUrl)}" style="color:#9ca3af">Unsubscribe</a> — you won't be emailed about ${escapeHtml(facility)} again.
   </p>
 </body></html>`;
 
     const { error } = await resend.emails.send({
-      from: `${APP_NAME} <${FROM_EMAIL}>`,
+      from: `Chris Tolliver, CareLinkAI <${OUTREACH_REPLY_TO}>`,
       to: [args.toEmail],
       replyTo: OUTREACH_REPLY_TO,
       subject,

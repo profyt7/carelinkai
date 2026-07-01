@@ -31,8 +31,10 @@ function isUnclaimedHome(operatorUserEmail: string | null | undefined): boolean 
   return (operatorUserEmail ?? '').toLowerCase() === DIRECTORY_UNCLAIMED_EMAIL;
 }
 
-/** Day offsets from drip start for touch 1..4. Length = max touches. */
-export const DRIP_OFFSETS_DAYS = [0, 3, 7, 14];
+/** Day offsets from drip start for each touch. Length = max touches.
+ *  Reduced to 2 (was 4) — a real event nudge + ONE soft follow-up (OL-109 copy
+ *  rewrite). Fewer, gentler touches read less like spam. */
+export const DRIP_OFFSETS_DAYS = [0, 3];
 export const MAX_DRIP_TOUCHES = DRIP_OFFSETS_DAYS.length;
 const DAY_MS = 86_400_000;
 
@@ -43,6 +45,20 @@ const DAY_MS = 86_400_000;
 export function claimDripEnabled(): boolean {
   const v = (process.env['CLAIM_DRIP_ENABLED'] || '').trim().toLowerCase();
   return v === '1' || v === 'true' || v === 'yes' || v === 'on';
+}
+
+/** Cheap pre-send guard: reject syntactically-invalid / placeholder outreach
+ *  emails so the drip never burns sender reputation on obviously-dead addresses.
+ *  Real hard bounces are caught separately via the Resend webhook →
+ *  EmailSuppression. Format-only + a small placeholder blocklist (no DNS). */
+export function emailLooksSendable(email: string | null | undefined): boolean {
+  const e = (email || '').trim().toLowerCase();
+  if (!e || e.length > 254) return false;
+  if (!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/.test(e)) return false;
+  if (e.includes('carelinkai.system')) return false;
+  if (/^(no-?reply|noreply|postmaster|mailer-daemon)@/.test(e)) return false;
+  if (/(^|@)(example|test|localhost|invalid|sentinel)\b/.test(e)) return false;
+  return true;
 }
 
 function appUrl(): string {
@@ -122,6 +138,11 @@ export async function startClaimDripOnLead(params: { homeId: string; trigger?: '
     if (home.claimDripStartedAt || home.claimDripStoppedReason) return; // already started/stopped — count just grows
     const email = home.outreachEmail?.trim();
     if (!email) return; // no contact → public waiting counter drives the claim
+    if (!emailLooksSendable(email)) {
+      // Bad/placeholder directory address → never start; mark so we don't retry.
+      await prisma.assistedLivingHome.update({ where: { id: home.id }, data: { claimDripStoppedReason: 'invalid_email' } });
+      return;
+    }
 
     // Don't start into a suppressed address.
     const supp = await suppressionReason(email);
@@ -181,6 +202,7 @@ export async function advanceClaimDrips(limit = 300): Promise<{ due: number; sen
       let stopReason: string | null = null;
       if (!isUnclaimedHome(home.operator?.user?.email)) stopReason = 'claimed';
       else if (!email) stopReason = 'no_email';
+      else if (!emailLooksSendable(email)) stopReason = 'invalid_email';
       else stopReason = await suppressionReason(email);
 
       if (stopReason) {
