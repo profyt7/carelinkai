@@ -44,6 +44,7 @@ import TourRequestModal from "@/components/tours/TourRequestModal";
 import PhotoGallery from "@/components/homes/PhotoGallery";
 import { placeholderImageFor } from "@/lib/placeholder-images";
 import GoogleRatingBadge from "@/components/homes/GoogleRatingBadge";
+import AvailabilityBadge from "@/components/availability/AvailabilityBadge";
 import HomeReviews from "@/components/homes/HomeReviews";
 import PricingCalculator from "@/components/homes/PricingCalculator";
 import type { PricingEstimate } from "@/components/homes/PricingCalculator";
@@ -956,7 +957,24 @@ export default function HomeDetailPage() {
                         <FiHome className="mr-2 h-5 w-5 flex-shrink-0" />
                         <div>
                           <p className="text-xs text-neutral-500">Availability</p>
-                          <p className="font-medium">{realHome.availability > 0 ? `${realHome.availability} Spots` : 'Waitlist'}</p>
+                          {realHome.availabilityFreshness?.fresh ? (
+                            <>
+                              <p className="font-medium">
+                                {realHome.availabilityFreshness.count != null
+                                  ? `${realHome.availabilityFreshness.count} open`
+                                  : 'Confirmed'}
+                              </p>
+                              <div className="mt-1.5">
+                                <AvailabilityBadge availability={realHome.availabilityFreshness} />
+                                <p className="mt-1 text-xs text-neutral-500">{realHome.availabilityFreshness.label}</p>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <p className="font-medium">Contact to confirm</p>
+                              <p className="mt-1 text-xs text-neutral-400">Availability changes often — we verify on request.</p>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>

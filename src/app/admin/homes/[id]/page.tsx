@@ -22,6 +22,7 @@ import {
 } from 'react-icons/fi';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import AvailabilityPanel from '@/components/availability/AvailabilityPanel';
 
 // Safely unwrap params — handles both Promise and plain object
 function useUnwrapParams<T>(params: T | Promise<T>): T {
@@ -559,6 +560,8 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
           <div className="p-6">
             {activeTab === 'overview' && (
               <div className="space-y-6">
+                {/* Availability freshness — Anita's concierge-logging + consent UI (OL-110) */}
+                <AvailabilityPanel homeId={resolvedParams.id} />
                 {/* Basic Info */}
                 <div>
                   <h3 className="text-lg font-semibold text-neutral-900 mb-4">Basic Information</h3>

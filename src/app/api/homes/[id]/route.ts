@@ -8,6 +8,7 @@ import { prisma } from '@/lib/prisma';
 import { formatCurrency } from '@/lib/utils';
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { isUnclaimedHome } from '@/lib/claim-engine/inquiry-claim-notification';
+import { availabilityView } from '@/lib/availability/availability';
 
 /**
  * City coordinates lookup for homes without geo data
@@ -248,6 +249,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       },
       capacity: home.capacity,
       availability: home.capacity - home.currentOccupancy,
+      // Live-ish verified availability (OL-110) — honest freshness, never fake "live".
+      // Prefer this over the static capacity math when fresh; else "contact to confirm".
+      availabilityFreshness: availabilityView(home),
       gender: home.genderRestriction || 'ALL',
       amenities: home.amenities,
       // VA-collected (phone) price/amenities are approximate until the operator
