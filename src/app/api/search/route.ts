@@ -34,6 +34,7 @@ import { calculateAIMatchScore, calculateAIMatchBreakdown } from '@/lib/ai-match
 import { isUnclaimedHome } from '@/lib/claim-engine/inquiry-claim-notification';
 import { prisma } from '@/lib/prisma';
 import { placeholderImageFor } from '@/lib/placeholder-images';
+import { availabilityView } from '@/lib/availability/availability';
 
 // Constants
 const DEFAULT_PAGE_SIZE = 10;
@@ -476,6 +477,7 @@ export function generateMockHomes(count: number = 12) {
       },
       capacity: 20 + (i % 10),
       availability: 5 + (i % 4),
+      availabilityFreshness: availabilityView({ availabilityCount: null, availabilityVerifiedAt: null, availabilitySource: null }),
       gender: 'ALL',
       amenities: amenitiesSamples[i % amenitiesSamples.length],
       // Deterministic placeholder so each mock home gets a stable image
@@ -793,6 +795,8 @@ export async function GET(request: NextRequest) {
         name: home.name,
         description: home.description,
         tagline: home.tagline,
+        // Live-ish verified availability (OL-110) — honest freshness for the card + badge.
+        availabilityFreshness: availabilityView(home),
         // Direct phone gated to CLAIMED listings (OL-083 lead-capture): unclaimed
         // directory homes keep the inquiry / claim-nudge flow primary, so the
         // facility's line isn't surfaced or scrapable until an operator claims.
@@ -853,9 +857,15 @@ export async function GET(request: NextRequest) {
         );
         break;
       // distance & rating require data not yet calculated – fallthrough
-      default:
-        // relevance – keep AI match score
-        results.sort((a, b) => b.aiMatchScore - a.aiMatchScore);
+      default: {
+        // relevance – AI match score, with a boost for recently-VERIFIED availability
+        // (OL-110): keeping availability current earns priority placement, so updating
+        // becomes a reward. A fresh verification is worth a small, bounded nudge.
+        const FRESH_AVAILABILITY_BOOST = 8;
+        const score = (r: { aiMatchScore: number; availabilityFreshness?: { fresh?: boolean } }) =>
+          r.aiMatchScore + (r.availabilityFreshness?.fresh ? FRESH_AVAILABILITY_BOOST : 0);
+        results.sort((a, b) => score(b) - score(a));
+      }
     }
 
     // Post-filter for availability (since Prisma doesn't support field-to-field comparisons)

@@ -557,6 +557,14 @@ model AssistedLivingHome {
   claimDripStep           Int       @default(0)
   claimDripNextAt         DateTime?
   claimDripStoppedReason  String?
+  // Live-ish AVAILABILITY freshness (verify-on-request; never store stale "live").
+  // Populated by the freshness cascade (SMS poll / email magic-link / AI voice /
+  // concierge confirm) — see src/lib/availability/. Business data only, never PHI.
+  availabilityCount       Int?
+  availabilityVerifiedAt  DateTime?
+  availabilitySource      AvailabilitySource?
+  contactMobile           String?   // best mobile for the SMS poll (collected with consent)
+  availabilityOptIn       Boolean   @default(false) // TCPA consent to availability-update texts/calls
   address                Address?
   operator               Operator         @relation(fields: [operatorId], references: [id], onDelete: Cascade)
   bookings               Booking[]
@@ -583,6 +591,7 @@ model AssistedLivingHome {
   @@index([claimDripNextAt])
   @@index([lastProfileGenerated])
   @@index([isFeatured])
+  @@index([availabilityVerifiedAt])
 }
 
 model HomePhoto {
@@ -2353,6 +2362,15 @@ enum HomeStatus {
   ACTIVE
   SUSPENDED
   INACTIVE
+}
+
+/// How a home's availabilityCount was last verified (freshness cascade).
+enum AvailabilitySource {
+  OPERATOR  // operator self-serve edit
+  SMS       // weekly SMS poll reply
+  EMAIL     // email magic-link +/- counter
+  VOICE     // AI-voice fallback call result
+  CONCIERGE // Anita / care-team confirmed on demand
 }
 
 enum CareLevel {

@@ -2,6 +2,21 @@
 
 ---
 
+### 2026-07-01 — Live-ish availability freshness system (OL-110)
+- **Objective:** Build the facility availability-freshness system — verify-on-request + honest stamp instead of storing decaying "live" data; a DP differentiator. Safe-by-default (TCPA-sensitive channels OFF pending attorney sign-off).
+- **Work completed (PR `feat/availability-freshness`):**
+  - **Schema:** `AssistedLivingHome` + `availabilityCount/verifiedAt/source(enum)/contactMobile/optIn` + index (additive idempotent migration `20260701000001`).
+  - **Core lib:** `availability.ts` (`FRESH_DAYS=10`, `availabilityView` that never fakes live — hides a stale count, single `updateAvailability` writer) + `availability-token.ts` (HMAC magic-link).
+  - **Channels:** email magic-link (`/availability/update` page + `POST /api/availability/update` + `AvailabilityCounter`), AI-voice webhook (`/api/availability/voice-result`, shared-secret fail-closed), SMS poll cron (`/api/cron/availability-sms`, `AVAILABILITY_SMS_ENABLED` flag OFF + workflow schedule commented = double-safe), dedicated Twilio inbound (`/api/webhooks/twilio/availability`, signature-validated, number→update + STOP suppression; kept separate from the oncall handler), admin/concierge log (`POST /api/admin/homes/[id]/availability`).
+  - **UI + search:** home-detail exposes `availabilityFreshness` → "Verified Availability" badge / "Contact to confirm"; family search returns it + **sort boost** for <10-day-verified. `AvailabilityBadge`. Added `/availability` to middleware public paths.
+- **Compliance:** consent-gated (`availabilityOptIn`), instant STOP, disclosed voice to landlines, no PHI. Requires attorney (Haran) sign-off + consent capture before enabling SMS/voice.
+- **Validation:** `tsc` clean; `next lint` clean; `jest __tests__/availability.test.ts` 9/9 (token round-trip, freshness window, honest view hides stale count, count/phone normalize).
+- **Deployment impact:** additive migration (no-op where present). Email/voice/admin/UI ship live but inert without config; SMS/voice OFF by default. No autonomous messaging.
+- **New risks/blockers:** none new. Go-live is a deliberate checklist (attorney + env flags + Twilio inbound routing) — see OL-110.
+- **Recommended next step:** attorney sign-off → capture mobile+consent on Anita's intro calls → wire voice platform + set secrets → enable SMS per the OL-110 checklist.
+
+---
+
 ### 2026-06-30 — Mint-claim-link tool for VA warm leads + OL-103 read-only verification
 - **Objective:** (1) Read-only verify the OL-103 DP-billing teardown. (2) Produce two 45-day operator claim links for two warm VA leads (Pleasant Pointe / Barberton; Eliza Jennings / Cleveland) for self-serve claiming.
 - **Work completed:**
