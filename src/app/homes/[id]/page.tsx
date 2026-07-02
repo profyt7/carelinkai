@@ -983,7 +983,16 @@ export default function HomeDetailPage() {
                         <FiDollarSign className="mr-2 h-5 w-5 flex-shrink-0" />
                         <div>
                           <p className="text-xs text-neutral-500">Monthly Cost</p>
-                          {realHome.priceRange?.min && realHome.priceRange?.max ? (
+                          {realHome.pricing?.hasPrice ? (
+                            <>
+                              {/* OL-111: honest, source-labeled — always paired with "contact for exact quote". */}
+                              <p className="font-medium text-sm">{realHome.pricing.display}</p>
+                              <p className="text-[11px] text-neutral-400">Contact for exact quote</p>
+                              {realHome.pricing.transparent && (
+                                <span className="mt-1 inline-block rounded-full bg-success-50 px-2 py-0.5 text-[10px] font-medium text-success-700 ring-1 ring-inset ring-success-200">Transparent Pricing</span>
+                              )}
+                            </>
+                          ) : realHome.priceRange?.min && realHome.priceRange?.max ? (
                             <p className="font-medium text-sm">{formatCurrency(realHome.priceRange.min)}–{formatCurrency(realHome.priceRange.max)}</p>
                           ) : realHome.priceRange?.min ? (
                             <p className="font-medium">From {formatCurrency(realHome.priceRange.min)}</p>

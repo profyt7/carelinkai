@@ -21,6 +21,8 @@ const updateSchema = z.object({
   amenities: z.array(z.string()).optional(),
   priceMin: z.number().optional(),
   priceMax: z.number().optional(),
+  // OL-111: OPTIONAL operator "starting at $/mo" — never required to claim/save.
+  startingPriceMonthly: z.number().int().min(0).nullable().optional(),
   status: z.string().optional(),
   address: z.object({
     street: z.string().optional(),
@@ -84,6 +86,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if ((data.priceMin !== undefined || data.priceMax !== undefined) && pff.priceRange === 'VA_UNVERIFIED') { delete pff.priceRange; pffChanged = true; }
     if (data.amenities !== undefined && pff.amenities === 'VA_UNVERIFIED') { delete pff.amenities; pffChanged = true; }
     if (pffChanged) data.preFilledFields = pff;
+
+    // OL-111: an operator-provided starting price is authoritative + earns the
+    // Transparent Pricing badge — stamp source + timestamp when it's set/cleared.
+    if (parsed.data.startingPriceMonthly !== undefined) {
+      data.priceSource = 'OPERATOR';
+      data.priceUpdatedAt = new Date();
+    }
 
     const updated = await prisma.assistedLivingHome.update({ where: { id: home.id }, data });
     return NextResponse.json({ id: updated.id });

@@ -1116,8 +1116,18 @@ function SearchPageContent() {
                           </div>
                           
                           <div className="mt-auto flex items-center justify-between">
-                            <span className="text-sm font-semibold text-neutral-900" title={home.pricePending ? 'Approximate — pending operator confirmation' : undefined}>
-                              {home.pricePending && home.priceRange.formattedMin ? '~' : ''}{home.priceRange.formattedMin}<span className="text-xs font-normal text-neutral-500">/mo+</span>
+                            <span className="text-sm font-semibold text-neutral-900" title={home.pricing?.hasPrice ? `${home.pricing.display} — contact for exact quote` : (home.pricePending ? 'Approximate — pending operator confirmation' : undefined)}>
+                              {home.pricing?.hasPrice ? (
+                                <>
+                                  {home.pricing.amount ? `$${home.pricing.amount.toLocaleString()}` : home.priceRange.formattedMin}
+                                  <span className="text-xs font-normal text-neutral-500">/mo</span>
+                                  {home.pricing.transparent && (
+                                    <span className="ml-1.5 align-middle rounded bg-success-50 px-1.5 py-0.5 text-[10px] font-medium text-success-700">Transparent</span>
+                                  )}
+                                </>
+                              ) : (
+                                <>{home.pricePending && home.priceRange.formattedMin ? '~' : ''}{home.priceRange.formattedMin}<span className="text-xs font-normal text-neutral-500">/mo+</span></>
+                              )}
                             </span>
                             <div className="flex items-center gap-2">
                               <button

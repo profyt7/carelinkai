@@ -2,6 +2,24 @@
 
 ---
 
+### 2026-07-02 — Pricing data strategy & capture (OL-111)
+- **Objective:** Build source-labeled pricing capture + honest display, mirroring the OL-110 availability-freshness system. Capture "starting around $X" from operator/DP/public/family sources, ALWAYS source-label + pair with "Contact for exact quote", and stand up a family-reported quote moat — never a guaranteed quote, no PHI, no scraping of APFM/Caring/Seniorly.
+- **Work completed:**
+  - **Schema + migration (`20260702000001_pricing_capture`, additive/idempotent):** `AssistedLivingHome` + `startingPriceMonthly/priceRangeLow/priceRangeHigh Int?`, `priceSource enum(OPERATOR|DP_ESTIMATE|PUBLIC|FAMILY_AVG)`, `priceUpdatedAt DateTime?` + `@@index([priceSource])`; new `FacilityQuoteReport` model (homeId→Home cascade, careLevel, quotedMonthlyBase, careAddOn?, communityFee?, moveInMonth?, reportedByUserId?, verified=false, createdAt) — **NO PHI**. Guarded `CREATE TYPE` / `ADD COLUMN IF NOT EXISTS` / guarded FK.
+  - **Core lib:** `src/lib/pricing/pricing.ts` — `pricingView` (FAMILY_AVG≥threshold > operator starting > estimated range, every branch source-labeled, Transparent = OPERATOR + fresh ≤180d), `bestPriceMonthly`, `computeFamilyAvg` (verified only), `setHomePricing` (single source-tagged writer), `familyAvgMinReports()`. `quote-token.ts` = HMAC-SHA256 magic-link (homeId + optional inquiryId, 60d).
+  - **Operator self-serve:** OPTIONAL "Starting at $/mo" input on `/operator/homes/[id]/edit` (never required); PATCH stamps `priceSource=OPERATOR` + `priceUpdatedAt` → Transparent Pricing badge.
+  - **Admin:** `PricingPanel` + `/api/admin/homes/[id]/pricing` (ADMIN-gated) to log DP-estimate/public ranges source-tagged + verify family reports + copy survey link.
+  - **Family survey (flag OFF):** inquiry PATCH `TOUR_COMPLETED` → `maybeSendQuoteSurvey` (gated on `FAMILY_QUOTE_SURVEY_ENABLED`, default OFF) → PHI-safe email → `/quote/report?token=` → `POST /api/pricing/quote-report` creates UNVERIFIED report. FAMILY_AVG surfaces only at ≥ `FAMILY_QUOTE_MIN_REPORTS` (default 3) verified.
+  - **Search + display:** budget filter uses best-available price; default sort adds transparent-pricing boost (+6); cards + home-detail show source-labeled price + "Contact for exact quote".
+- **Files changed:** `prisma/schema.prisma`; `prisma/migrations/20260702000001_pricing_capture/migration.sql` (new); `src/lib/pricing/{pricing,quote-token,quote-survey}.ts` (new); `src/app/api/pricing/quote-report/route.ts` (new); `src/app/quote/report/page.tsx` (new); `src/components/pricing/{QuoteReportForm,PricingPanel}.tsx` (new); `src/app/api/admin/homes/[id]/pricing/route.ts` (new); `src/app/admin/homes/[id]/page.tsx`, `src/app/operator/homes/[id]/edit/page.tsx`, `src/app/api/operator/homes/[id]/route.ts`, `src/app/api/operator/inquiries/[id]/route.ts`, `src/lib/email.ts`, `src/middleware.ts`, `src/app/api/search/route.ts`, `src/lib/searchService.ts`, `src/app/search/page.tsx`, `src/app/api/homes/[id]/route.ts`, `src/app/homes/[id]/page.tsx`; `.env.example`; `__tests__/pricing.test.ts` (new); context docs.
+- **Commands run:** `npx prisma validate` + `generate`; `npx tsc --noEmit` (clean); `npx jest pricing.test.ts` (12/12 pass); `npx next lint` on new files (clean after PricingPanel useEffect disable).
+- **Tests/build status:** `tsc` clean; 12 new unit tests pass (token round-trip/expiry, normalizePriceInt clamp, bestPriceMonthly fallback chain, freshness window, pricingView source labels + FAMILY_AVG threshold gate); lint clean.
+- **Deployment impact:** Additive migration (safe on redeploy). Two new optional env vars — `FAMILY_QUOTE_SURVEY_ENABLED` (default OFF), `FAMILY_QUOTE_MIN_REPORTS` (default 3). No autonomous emails until the flag is turned on. `/quote` added to middleware public paths.
+- **New risks/blockers:** none new. Family-survey emailing + FAMILY_AVG surfacing are both gated so nothing goes out or shows prematurely. Founder decides when to flip `FAMILY_QUOTE_SURVEY_ENABLED=1`.
+- **Recommended next step:** hold PR `feat/pricing-capture` for Chris's review (do not merge). After merge: seed operator/DP prices via the admin panel; when ready to collect family quotes, set `FAMILY_QUOTE_SURVEY_ENABLED=1` and have admins verify incoming reports so FAMILY_AVG can surface.
+
+---
+
 ### 2026-07-01 — Live-ish availability freshness system (OL-110)
 - **Objective:** Build the facility availability-freshness system — verify-on-request + honest stamp instead of storing decaying "live" data; a DP differentiator. Safe-by-default (TCPA-sensitive channels OFF pending attorney sign-off).
 - **Work completed (PR `feat/availability-freshness`):**
