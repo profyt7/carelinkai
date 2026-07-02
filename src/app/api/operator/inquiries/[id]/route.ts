@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { PrismaClient, UserRole, InquiryStatus } from '@prisma/client';
 import { z } from 'zod';
 import { captureError } from '@/lib/sentry';
+import { maybeSendQuoteSurvey } from '@/lib/pricing/quote-survey';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -127,6 +128,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
 
     const updated = await prisma.inquiry.update({ where: { id: inquiry.id }, data });
+
+    // Post-tour family quote survey (OL-111) — fire-and-forget, flag-gated OFF by
+    // default, PHI-safe. Only when this transition marks the tour complete.
+    if (parsed.data.status === 'TOUR_COMPLETED') {
+      void maybeSendQuoteSurvey(inquiry.id);
+    }
+
     return NextResponse.json({ inquiry: updated });
   } catch (e) {
     captureError(e instanceof Error ? e : new Error(String(e)), {

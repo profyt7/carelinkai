@@ -73,6 +73,7 @@ export default function EditHomePage() {
     amenities: [] as string[],
     priceMin: '',
     priceMax: '',
+    startingPriceMonthly: '',
     street: '',
     street2: '',
     city: '',
@@ -99,6 +100,7 @@ export default function EditHomePage() {
             amenities: Array.isArray(data.amenities) ? data.amenities : [],
             priceMin: data.priceMin ?? '',
             priceMax: data.priceMax ?? '',
+            startingPriceMonthly: data.startingPriceMonthly ?? '',
             street: data.address?.street || '',
             street2: data.address?.street2 || '',
             city: data.address?.city || '',
@@ -239,6 +241,7 @@ export default function EditHomePage() {
         amenities: form.amenities || undefined,
         priceMin: form.priceMin ? Number(form.priceMin) : undefined,
         priceMax: form.priceMax ? Number(form.priceMax) : undefined,
+        startingPriceMonthly: form.startingPriceMonthly ? Number(form.startingPriceMonthly) : undefined,
       };
 
       // Include address if any address field is present
@@ -608,6 +611,28 @@ export default function EditHomePage() {
                   />
                   {errors.priceMax && <p className="mt-1 text-sm text-error-600">{errors.priceMax}</p>}
                 </div>
+              </div>
+
+              {/* OL-111: optional operator "starting at" price — earns a Transparent Pricing badge. Never required. */}
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-1">
+                  Starting at ($/mo){' '}
+                  <span className="text-neutral-400 font-normal">
+                    — optional; publishing it shows a &ldquo;Transparent Pricing&rdquo; badge on your listing
+                  </span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="e.g. 4500"
+                  className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  value={form.startingPriceMonthly}
+                  onChange={(e) => handleInputChange('startingPriceMonthly', e.target.value)}
+                />
+                <p className="mt-1 text-xs text-neutral-500">
+                  Whole dollars, per month. This is a &ldquo;starting at&rdquo; figure shown to families alongside &ldquo;Contact for exact quote&rdquo; — not a guaranteed price.
+                </p>
               </div>
             </div>
 

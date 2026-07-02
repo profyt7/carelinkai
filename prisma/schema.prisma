@@ -565,6 +565,16 @@ model AssistedLivingHome {
   availabilitySource      AvailabilitySource?
   contactMobile           String?   // best mobile for the SMS poll (collected with consent)
   availabilityOptIn       Boolean   @default(false) // TCPA consent to availability-update texts/calls
+  // PRICING capture (OL-111): honest "starting around $X" ranges from multiple
+  // sources, always source-labeled + "contact for exact quote". Slow-changing +
+  // commercially sensitive — NOT API-synced, never presented as an official quote.
+  // Monthly dollars (whole). Distinct from priceMin/priceMax (legacy Decimal range).
+  startingPriceMonthly    Int?
+  priceRangeLow           Int?
+  priceRangeHigh          Int?
+  priceSource             PriceSource?
+  priceUpdatedAt          DateTime?
+  quoteReports            FacilityQuoteReport[]
   address                Address?
   operator               Operator         @relation(fields: [operatorId], references: [id], onDelete: Cascade)
   bookings               Booking[]
@@ -587,6 +597,7 @@ model AssistedLivingHome {
   @@index([operatorId])
   @@index([status])
   @@index([priceMin, priceMax])
+  @@index([priceSource])
   @@index([careLevel])
   @@index([claimDripNextAt])
   @@index([lastProfileGenerated])
@@ -2371,6 +2382,33 @@ enum AvailabilitySource {
   EMAIL     // email magic-link +/- counter
   VOICE     // AI-voice fallback call result
   CONCIERGE // Anita / care-team confirmed on demand
+}
+
+/// Where a home's "starting around $X" price came from (best-to-supplementary).
+enum PriceSource {
+  OPERATOR    // operator-provided at claim/verify → earns the Transparent Pricing badge
+  DP_ESTIMATE // discharge-planner network ballpark (labeled "estimated")
+  PUBLIC      // public benchmark / facility's own "starting at" marketing page
+  FAMILY_AVG  // avg of verified family-reported quotes (only when N >= threshold)
+}
+
+/// Family-reported actual quote after a tour/move-in (the "Glassdoor" moat, Phase 2).
+/// NO PHI — quote + care level only; the survey never captures medical detail.
+model FacilityQuoteReport {
+  id                String             @id @default(cuid())
+  homeId            String
+  home              AssistedLivingHome @relation(fields: [homeId], references: [id], onDelete: Cascade)
+  careLevel         CareLevel
+  quotedMonthlyBase Int
+  careAddOn         Int?
+  communityFee      Int?
+  moveInMonth       String? // e.g. "2026-07" — coarse, no exact dates
+  reportedByUserId  String? // optional; null for anonymous no-login reports
+  verified          Boolean            @default(false)
+  createdAt         DateTime           @default(now())
+
+  @@index([homeId])
+  @@index([homeId, verified])
 }
 
 enum CareLevel {

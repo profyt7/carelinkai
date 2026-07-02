@@ -9,6 +9,7 @@ import { formatCurrency } from '@/lib/utils';
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { isUnclaimedHome } from '@/lib/claim-engine/inquiry-claim-notification';
 import { availabilityView } from '@/lib/availability/availability';
+import { pricingView, computeFamilyAvg } from '@/lib/pricing/pricing';
 
 /**
  * City coordinates lookup for homes without geo data
@@ -252,6 +253,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       // Live-ish verified availability (OL-110) — honest freshness, never fake "live".
       // Prefer this over the static capacity math when fresh; else "contact to confirm".
       availabilityFreshness: availabilityView(home),
+      // Honest source-labeled pricing (OL-111) incl. FAMILY_AVG when past threshold.
+      pricing: pricingView(home, await computeFamilyAvg(home.id)),
       gender: home.genderRestriction || 'ALL',
       amenities: home.amenities,
       // VA-collected (phone) price/amenities are approximate until the operator

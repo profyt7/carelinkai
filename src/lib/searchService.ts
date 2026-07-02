@@ -91,6 +91,15 @@ export interface SearchResultItem {
     label: string;
     badge: boolean;
   };
+  // Honest source-labeled pricing (OL-111).
+  pricing?: {
+    hasPrice: boolean;
+    amount: number | null;
+    source: string | null;
+    sourceLabel: string;
+    display: string;
+    transparent: boolean;
+  };
   gender: string;
   amenities: string[];
   imageUrl: string | null;

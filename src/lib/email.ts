@@ -932,3 +932,50 @@ export async function sendPasswordResetEmail(
     return false;
   }
 }
+
+/**
+ * Post-tour family QUOTE survey invite (OL-111). PHI-SAFE: facility name + tokenized
+ * survey link only — never patient/medical detail. Sent only when the survey trigger
+ * is enabled (see src/lib/pricing/quote-survey.ts). Returns false on failure.
+ */
+export async function sendQuoteSurveyEmail(args: {
+  toEmail: string;
+  facilityName: string;
+  surveyUrl: string;
+}): Promise<boolean> {
+  try {
+    if (!process.env.RESEND_API_KEY) return false;
+    const facility = args.facilityName?.trim() || 'the community';
+    const text =
+      `Hi — thanks for touring ${facility} through CareLinkAI.\n\n` +
+      `Would you share the pricing they quoted you? It takes ~1 minute and helps other ` +
+      `families budget. We only ever show an average across several families — never your ` +
+      `name and never any medical details.\n\n` +
+      `Share the quote: ${args.surveyUrl}\n\n` +
+      `${APP_NAME}`;
+    const html =
+      `<p>Hi — thanks for touring <strong>${escapeHtml(facility)}</strong> through CareLinkAI.</p>` +
+      `<p>Would you share the pricing they quoted you? It takes about a minute and helps other ` +
+      `families budget. We only ever show an <em>average</em> across several families — never your ` +
+      `name and never any medical details.</p>` +
+      `<p><a href="${escapeHtml(args.surveyUrl)}" style="display:inline-block;background:#0d9488;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600">Share the quote</a></p>` +
+      `<p style="color:#9ca3af;font-size:12px">${APP_NAME}</p>`;
+    const { error } = await resend.emails.send({
+      from: `${APP_NAME} <${FROM_EMAIL}>`,
+      to: [args.toEmail],
+      replyTo: OUTREACH_REPLY_TO,
+      subject: `Quick favor — what did ${facility} quote you?`,
+      text,
+      html,
+    });
+    if (error) {
+      captureError(error instanceof Error ? error : new Error(String((error as { message?: string })?.message ?? error)),
+        { tags: { feature: 'quote-survey' }, extra: { facilityName: facility } });
+      return false;
+    }
+    return true;
+  } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), { tags: { feature: 'quote-survey' } });
+    return false;
+  }
+}
