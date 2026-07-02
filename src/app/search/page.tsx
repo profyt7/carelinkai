@@ -1072,8 +1072,13 @@ function SearchPageContent() {
                             </div>
                           )}
                           
-                          {/* Availability badge */}
-                          {home.availability > 0 ? (
+                          {/* Availability badge — prefer VERIFIED freshness (OL-110) over the
+                              static capacity number; only show a count we actually verified. */}
+                          {home.availabilityFreshness?.fresh ? (
+                            <div className="absolute right-2 top-2 rounded-full bg-success-600 px-2 py-1 text-xs font-semibold text-white shadow-md">
+                              ✓ Verified{home.availabilityFreshness.count != null ? ` · ${home.availabilityFreshness.count} open` : ''}
+                            </div>
+                          ) : home.availability > 0 ? (
                             <div className="absolute right-2 top-2 rounded-full bg-success-500 px-2 py-1 text-xs font-medium text-white shadow-md">
                               {home.availability} Available
                             </div>
@@ -1235,8 +1240,13 @@ function SearchPageContent() {
                             </div>
                           )}
                           
-                          {/* Availability badge */}
-                          {home.availability > 0 ? (
+                          {/* Availability badge — prefer VERIFIED freshness (OL-110) over the
+                              static capacity number; only show a count we actually verified. */}
+                          {home.availabilityFreshness?.fresh ? (
+                            <div className="absolute right-2 top-2 rounded-full bg-success-600 px-2 py-1 text-xs font-semibold text-white shadow-md">
+                              ✓ Verified{home.availabilityFreshness.count != null ? ` · ${home.availabilityFreshness.count} open` : ''}
+                            </div>
+                          ) : home.availability > 0 ? (
                             <div className="absolute right-2 top-2 rounded-full bg-success-500 px-2 py-1 text-xs font-medium text-white shadow-md">
                               {home.availability} Available
                             </div>

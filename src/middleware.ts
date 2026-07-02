@@ -168,7 +168,7 @@ export default function middleware(req: NextRequest) {
         }
 
         // Always-public paths (must match the authorized callback list above)
-        const publicPaths = ['/', '/help', '/search', '/homes', '/privacy', '/terms', '/learn'];
+        const publicPaths = ['/', '/help', '/search', '/homes', '/privacy', '/terms', '/learn', '/availability'];
         const mockPublicPrefixes = ['/marketplace'];
 
         if (publicPaths.some(p => pathname === p || pathname.startsWith(p + '/')) || (showMocks && mockPublicPrefixes.some(p => pathname === p || pathname.startsWith(p + '/')))) {
@@ -206,7 +206,7 @@ export default function middleware(req: NextRequest) {
             }
 
             // Always-public paths — no auth required regardless of mock mode
-            const alwaysPublic = ['/', '/help', '/search', '/homes', '/privacy', '/terms', '/learn'];
+            const alwaysPublic = ['/', '/help', '/search', '/homes', '/privacy', '/terms', '/learn', '/availability'];
             if (alwaysPublic.some(p => pathname === p || pathname.startsWith(p + '/'))) {
               return true;
             }
