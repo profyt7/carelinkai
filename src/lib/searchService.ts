@@ -82,6 +82,15 @@ export interface SearchResultItem {
   priceRange: PriceRange;
   capacity: number;
   availability: number;
+  // Live-ish verified availability (OL-110) — honest freshness for the card badge.
+  availabilityFreshness?: {
+    fresh: boolean;
+    count: number | null;
+    source: string | null;
+    verifiedAt: string | null;
+    label: string;
+    badge: boolean;
+  };
   gender: string;
   amenities: string[];
   imageUrl: string | null;
