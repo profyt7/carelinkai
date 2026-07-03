@@ -575,6 +575,11 @@ model AssistedLivingHome {
   priceSource             PriceSource?
   priceUpdatedAt          DateTime?
   quoteReports            FacilityQuoteReport[]
+  // ODH RCF license number (format NNNNR, e.g. "2318R") — the stable key for
+  // matching state inspection records to this listing (OL-113). Backfilled from
+  // seed data / ODH directory; set by the ingest pipeline on a confirmed match.
+  odhLicenseNumber        String?
+  facilityInspections     FacilityInspection[]
   address                Address?
   operator               Operator         @relation(fields: [operatorId], references: [id], onDelete: Cascade)
   bookings               Booking[]
@@ -1377,6 +1382,33 @@ model License {
   @@index([homeId])
   @@index([expirationDate])
   @@index([status])
+}
+
+// PUBLIC state inspection history (OL-113): ODH RCF survey/citation records
+// matched to a directory listing. Factual public-records data only — dates,
+// counts, rules cited, source link. Distinct from the operator-facing internal
+// `Inspection` model below. Populated by scripts/ingest-odh-inspections.ts;
+// never written from user input.
+model FacilityInspection {
+  id               String             @id @default(cuid())
+  facilityId       String
+  odhLicenseNumber String?
+  surveyDate       DateTime
+  surveyType       String? // Standard | Complaint | Follow-up | ... (as published)
+  citationCount    Int                @default(0)
+  // Array of { rule, scopeSeverity, summary } — plain-language, no grading.
+  citations        Json?
+  sourceUrl        String?
+  fetchedAt        DateTime           @default(now())
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  facility         AssistedLivingHome @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+
+  // One record per facility+survey occurrence — the ingest upsert key.
+  @@unique([facilityId, surveyDate, surveyType])
+  @@index([facilityId])
+  @@index([surveyDate])
+  @@index([odhLicenseNumber])
 }
 
 model Inspection {

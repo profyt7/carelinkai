@@ -1,0 +1,39 @@
+name: ODH Inspection Refresh
+
+on:
+  # ⏸️ OFF BY DEFAULT (OL-113, following the claim-drip OL-109 lesson): the
+  # schedule stays commented out until the ODH source URL is verified end-to-end
+  # (ohio.gov WAF may block datacenter egress — see
+  # docs/ODH_INSPECTION_DATA_SOURCE.md). The endpoint is additionally gated by
+  # ODH_INGEST_ENABLED (default off) on Render, so even a manual dispatch is a
+  # safe no-op until the founder flips the flag. No email sends involved.
+  #
+  # TO ENABLE: (1) verify the source + set ODH_INSPECTIONS_SOURCE_URL and
+  # ODH_INGEST_ENABLED=1 in Render, (2) uncomment the two schedule lines, PR to main.
+  # schedule:
+  #   - cron: '0 13 3 * *'   # monthly, 3rd @ ~13:00 UTC ≈ 8-9am ET
+  workflow_dispatch:
+
+jobs:
+  odh-inspections:
+    name: Refresh ODH inspection records
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call ODH-Inspections Cron Endpoint
+        run: |
+          response=$(curl -s -w "\n%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            https://carelinkai.onrender.com/api/cron/odh-inspections)
+
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | head -n-1)
+
+          echo "HTTP Status: $http_code"
+          echo "Response: $body"
+
+          if [ "$http_code" -ne 200 ]; then
+            echo "::error::ODH inspection refresh failed with status $http_code"
+            exit 1
+          fi
+
+          echo "ODH inspection refresh completed"

@@ -46,6 +46,7 @@ import { placeholderImageFor } from "@/lib/placeholder-images";
 import GoogleRatingBadge from "@/components/homes/GoogleRatingBadge";
 import AvailabilityBadge from "@/components/availability/AvailabilityBadge";
 import HomeReviews from "@/components/homes/HomeReviews";
+import InspectionHistory from "@/components/homes/InspectionHistory";
 import PricingCalculator from "@/components/homes/PricingCalculator";
 import type { PricingEstimate } from "@/components/homes/PricingCalculator";
 import { getCloudinaryAvatar, isCloudinaryUrl } from "@/lib/cloudinaryUrl";
@@ -1213,6 +1214,12 @@ export default function HomeDetailPage() {
                 {/* Reviews (first-party, real data) */}
                 <div ref={reviewsRef} className="mb-8 scroll-mt-20">
                   <HomeReviews homeId={realHome.id} homeName={realHome.name} canRespond={Boolean(realHome.viewerIsOwner)} />
+                </div>
+
+                {/* State Inspection History (OL-113) — factual ODH public-records
+                    data, async-loaded so it never blocks the page. */}
+                <div className="mb-8 scroll-mt-20">
+                  <InspectionHistory homeId={realHome.id} />
                 </div>
 
                 {/* Location */}
