@@ -185,6 +185,16 @@
   },
   "jest": {
     "preset": "ts-jest",
+    "transform": {
+      "^.+\\.tsx?$": [
+        "ts-jest",
+        {
+          "tsconfig": {
+            "jsx": "react-jsx"
+          }
+        }
+      ]
+    },
     "testEnvironment": "node",
     "globalTeardown": "<rootDir>/jest.teardown.js",
     "testPathIgnorePatterns": [
