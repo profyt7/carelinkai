@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import EmailService from '@/lib/email-service';
+import { recordLeadConsent } from '@/lib/consent/lead-consent';
+import { LEAD_CONSENT_FORMS } from '@/lib/consent/lead-consent-text';
 
 const schema = z.object({
   name: z.string().min(1).max(100),
@@ -10,6 +12,9 @@ const schema = z.object({
   phone: z.string().max(30).optional(),
   role: z.string().max(50).optional(),
   message: z.string().max(1000).optional(),
+  // TCPA/marketing consent from LeadConsentCheckbox — z.unknown so a missing/
+  // malformed payload can never fail validation; server normalizes to false.
+  consent: z.unknown().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -21,9 +26,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
     }
 
-    const data = parsed.data;
+    const { consent, ...data } = parsed.data;
 
     const record = await prisma.demoRequest.create({ data });
+
+    // Immutable TCPA/marketing consent evidence (both states). Never blocks
+    // the demo request (recorder swallows its own errors).
+    await recordLeadConsent({
+      consent,
+      sourceForm: LEAD_CONSENT_FORMS.DEMO_REQUEST,
+      req,
+      contactName: data.name,
+      contactEmail: data.email,
+      contactPhone: data.phone ?? null,
+      demoRequestId: record.id,
+    });
 
     // Notify Chris — non-blocking
     notifyAdmin(record).catch((err) =>

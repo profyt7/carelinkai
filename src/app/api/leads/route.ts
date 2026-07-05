@@ -12,6 +12,8 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { createAuditLog } from "@/lib/audit";
+import { recordLeadConsent } from "@/lib/consent/lead-consent";
+import { LEAD_CONSENT_FORMS } from "@/lib/consent/lead-consent-text";
 
 // Validation schema
 const createLeadSchema = z.object({
@@ -40,6 +42,9 @@ const createLeadSchema = z.object({
     pickupAddress: z.string().optional(),
     dropoffAddress: z.string().optional(),
   }).optional(),
+  // TCPA/marketing consent from LeadConsentCheckbox — z.unknown so a missing/
+  // malformed payload can never fail validation; server normalizes to false.
+  consent: z.unknown().optional(),
 });
 
 type CreateLeadInput = z.infer<typeof createLeadSchema>;
@@ -80,9 +85,12 @@ export async function POST(req: NextRequest) {
 
     const data: CreateLeadInput = validationResult.data;
 
-    // 4. Get Family record
+    // 4. Get Family record (user contact included for the consent snapshot)
     const family = await prisma.family.findUnique({
       where: { userId: session.user.id },
+      include: {
+        user: { select: { firstName: true, lastName: true, email: true, phone: true } },
+      },
     });
 
     if (!family) {
@@ -156,6 +164,19 @@ export async function POST(req: NextRequest) {
         transportDetails: (data.transportDetails ?? null) as any,
         status: "NEW",
       },
+    });
+
+    // Immutable TCPA/marketing consent evidence (both states). Contact is the
+    // account snapshot — this form types no contact fields. Never blocks the
+    // lead (recorder swallows its own errors).
+    await recordLeadConsent({
+      consent: data.consent,
+      sourceForm: LEAD_CONSENT_FORMS.MARKETPLACE_LEAD,
+      req,
+      contactName: `${family.user.firstName ?? ''} ${family.user.lastName ?? ''}`.trim() || null,
+      contactEmail: family.user.email,
+      contactPhone: family.user.phone ?? null,
+      leadId: lead.id,
     });
 
     // 7. Audit log

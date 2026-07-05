@@ -9,6 +9,8 @@
  * keeps the API contract canonical and adapts the client to it.
  */
 
+import type { LeadConsentPayload } from "@/lib/consent/lead-consent-text";
+
 export interface InquiryFormState {
   name: string;
   email: string;
@@ -30,12 +32,14 @@ export interface InquiryApiPayload {
   additionalInfo?: string;
   tourDate?: string;
   source: "WEBSITE";
+  consent?: LeadConsentPayload;
 }
 
 export function buildInquiryPayload(
   homeId: string,
   form: InquiryFormState,
-  tourDateIso?: string
+  tourDateIso?: string,
+  consent?: LeadConsentPayload
 ): InquiryApiPayload {
   const residentName = form.residentName?.trim();
   const moveInTimeframe = form.moveInTimeframe?.trim();
@@ -52,5 +56,8 @@ export function buildInquiryPayload(
     additionalInfo: moveInTimeframe ? `Move-in timeframe: ${moveInTimeframe}` : undefined,
     tourDate: tourDateIso,
     source: "WEBSITE",
+    // TCPA/marketing consent (both states recorded server-side; absence is
+    // normalized to consentGiven=false — never blocks the inquiry).
+    consent,
   };
 }

@@ -17,6 +17,8 @@ import {
 import { MessageSquare } from "lucide-react";
 import { addDays, format, startOfDay } from "date-fns";
 import TimeSlotSelector from "./TimeSlotSelector";
+import LeadConsentCheckbox, { emptyLeadConsent } from "@/components/consent/LeadConsentCheckbox";
+import type { LeadConsentPayload } from "@/lib/consent/lead-consent-text";
 
 interface TourRequestModalProps {
   isOpen: boolean;
@@ -51,6 +53,8 @@ export default function TourRequestModal({
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<string>("");
   const [familyNotes, setFamilyNotes] = useState("");
+  // TCPA/marketing consent — UNCHECKED by default; declining never blocks the request.
+  const [leadConsent, setLeadConsent] = useState<LeadConsentPayload>(emptyLeadConsent());
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -137,6 +141,7 @@ export default function TourRequestModal({
         homeId,
         requestedTimes: [isoDateTime],
         familyNotes: familyNotes || undefined,
+        consent: leadConsent,
       };
 
       let response;
@@ -454,6 +459,8 @@ export default function TourRequestModal({
                           disabled={isLoading}
                         />
                       </div>
+
+                      <LeadConsentCheckbox checked={leadConsent.given} onChange={setLeadConsent} idPrefix="tour-request" />
 
                       {/* Tour Summary */}
                       <div className="rounded-md bg-neutral-50 p-4">

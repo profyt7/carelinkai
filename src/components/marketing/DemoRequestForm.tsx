@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { FiCheck, FiAlertCircle, FiArrowRight, FiLoader } from "react-icons/fi";
+import LeadConsentCheckbox, { emptyLeadConsent } from "@/components/consent/LeadConsentCheckbox";
+import type { LeadConsentPayload } from "@/lib/consent/lead-consent-text";
 
 const ROLE_OPTIONS = [
   { value: "operator", label: "Assisted Living Operator / Administrator" },
@@ -24,6 +26,8 @@ export default function DemoRequestForm() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // TCPA/marketing consent — UNCHECKED by default; declining never blocks submit.
+  const [leadConsent, setLeadConsent] = useState<LeadConsentPayload>(emptyLeadConsent());
 
   const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
@@ -46,6 +50,7 @@ export default function DemoRequestForm() {
           phone: form.phone.trim() || undefined,
           role: form.role || undefined,
           message: form.message.trim() || undefined,
+          consent: leadConsent,
         }),
       });
 
@@ -158,6 +163,8 @@ export default function DemoRequestForm() {
           className="w-full px-3.5 py-2.5 border border-neutral-200 rounded-lg text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400 resize-none"
         />
       </div>
+
+      <LeadConsentCheckbox checked={leadConsent.given} onChange={setLeadConsent} idPrefix="demo-request" className="mt-1" />
 
       {error && (
         <div className="flex items-start gap-2 p-3 bg-error-50 border border-error-200 rounded-lg text-sm text-error-700">

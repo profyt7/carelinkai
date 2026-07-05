@@ -17,12 +17,17 @@ import { smsService } from "@/lib/sms/sms-service";
 import { sendTourConfirmationEmail } from "@/lib/notifications/tour-notifications";
 import { captureError } from '@/lib/sentry';
 import { notifyUnclaimedHomeInquiry, isUnclaimedHome } from "@/lib/claim-engine/inquiry-claim-notification";
+import { recordLeadConsent } from "@/lib/consent/lead-consent";
+import { LEAD_CONSENT_FORMS } from "@/lib/consent/lead-consent-text";
 import { sendNewLeadOperatorEmail } from "@/lib/email";
 
 const tourRequestSchema = z.object({
   homeId: z.string(),
   requestedTimes: z.array(z.string().datetime()), // ISO 8601 datetime strings
   familyNotes: z.string().optional(),
+  // TCPA/marketing consent from LeadConsentCheckbox — z.unknown so a missing/
+  // malformed payload can never fail validation; server normalizes to false.
+  consent: z.unknown().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -441,6 +446,19 @@ export async function POST(request: NextRequest) {
       
       throw new Error("Failed to create tour request in database");
     }
+
+    // Immutable TCPA/marketing consent evidence (both states). Contact is the
+    // account snapshot — this form types no contact fields. Never blocks the
+    // tour request (recorder swallows its own errors).
+    await recordLeadConsent({
+      consent: validatedData.consent,
+      sourceForm: LEAD_CONSENT_FORMS.TOUR_REQUEST,
+      req: request,
+      contactName: `${family.user.firstName ?? ''} ${family.user.lastName ?? ''}`.trim() || null,
+      contactEmail: family.user.email,
+      contactPhone: family.user.phone ?? null,
+      tourRequestId: tourRequest.id,
+    });
 
     // === STEP 9: Send Notification ===
     console.log('🟢 [TOUR API] Step 9: Notification');
