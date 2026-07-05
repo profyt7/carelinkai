@@ -21,6 +21,7 @@ import { requireRole } from '@/lib/auth-utils';
 import { UserRole } from '@prisma/client';
 import { sendConciergeRequestNotification } from '@/lib/email';
 import { captureError } from '@/lib/sentry';
+import { isPayerSource } from '@/lib/payer/payer-source';
 
 // Minimum-necessary intake. Kept in-app; never emailed out.
 const patientInfoSchema = z.object({
@@ -37,13 +38,16 @@ const patientInfoSchema = z.object({
 const submitSchema = z.object({
   searchId: z.string().min(1),
   patientInfo: patientInfoSchema,
+  // Payer-source screener (OL-114) — optional tag, z.unknown so a blank/legacy
+  // client can never 400; validated via isPayerSource before persisting.
+  payerSource: z.unknown().optional(),
 });
 
 export async function POST(request: NextRequest) {
   try {
     const user = await requireRole([UserRole.DISCHARGE_PLANNER, UserRole.ADMIN]);
     const body = await request.json().catch(() => ({}));
-    const { searchId, patientInfo } = submitSchema.parse(body);
+    const { searchId, patientInfo, payerSource } = submitSchema.parse(body);
 
     // The search must exist and belong to this DP (admins may act on any).
     const search = await prisma.placementSearch.findUnique({
@@ -63,6 +67,8 @@ export async function POST(request: NextRequest) {
         isConcierge: true,
         conciergeStatus: 'SUBMITTED',
         patientInfo,
+        // Payer-source tag (OL-114) — invalid/blank normalizes to null. TAGS ONLY.
+        payerSource: isPayerSource(payerSource) ? payerSource : null,
         conciergeSubmittedAt: new Date(),
       },
     });

@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
       select: {
         id: true,
         queryText: true,
+        payerSource: true,
         conciergeStatus: true,
         conciergeSubmittedAt: true,
         conciergeRespondedAt: true,

@@ -49,6 +49,7 @@ import HomeReviews from "@/components/homes/HomeReviews";
 import InspectionHistory from "@/components/homes/InspectionHistory";
 import LeadConsentCheckbox, { emptyLeadConsent } from "@/components/consent/LeadConsentCheckbox";
 import type { LeadConsentPayload } from "@/lib/consent/lead-consent-text";
+import { PAYER_SOURCE_OPTIONS } from "@/lib/payer/payer-source";
 import PricingCalculator from "@/components/homes/PricingCalculator";
 import type { PricingEstimate } from "@/components/homes/PricingCalculator";
 import { getCloudinaryAvatar, isCloudinaryUrl } from "@/lib/cloudinaryUrl";
@@ -311,6 +312,8 @@ export default function HomeDetailPage() {
     // Explicitly assert string[] to avoid `never[]` inference issues
     careNeeded: [] as string[],
     message: "",
+    // Payer-source screener (OL-114) — optional, "" = unanswered. Tags only.
+    payerSource: "",
     tourDate: "",
     tourTime: ""
   });
@@ -1395,6 +1398,18 @@ export default function HomeDetailPage() {
                               <option value="Just researching">Just researching</option>
                             </select>
                           </div>
+                          {/* Payer-source screener (OL-114) — optional, friendly, no wrong answers. Tags only. */}
+                          <div className="mb-3">
+                            <label htmlFor="payerSource" className="mb-1 block text-sm font-medium text-neutral-700">How will care most likely be paid for? <span className="font-normal text-neutral-400">(optional)</span></label>
+                            <select id="payerSource" name="payerSource" value={inquiryForm.payerSource} onChange={handleInquiryChange}
+                              className="form-select w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                              <option value="">Select if you'd like to share</option>
+                              {PAYER_SOURCE_OPTIONS.map((opt) => (
+                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                              ))}
+                            </select>
+                            <p className="mt-1 text-xs text-neutral-500">There's no wrong answer — this just helps us point you to the right resources. "Not sure yet" is completely fine.</p>
+                          </div>
                           <div className="mb-3">
                             <label className={`mb-1 block text-sm font-medium ${formErrors['careNeeded'] ? 'text-error-700' : 'text-neutral-700'}`}>Care Services Needed*</label>
                             <div className={`space-y-2 rounded-md p-3 ${formErrors['careNeeded'] ? 'border-2 border-error-400 bg-error-50' : 'border border-neutral-200'}`}>
@@ -2220,7 +2235,27 @@ export default function HomeDetailPage() {
                           <option value="Just researching">Just researching</option>
                         </select>
                       </div>
-                      
+
+                      {/* Payer-source screener (OL-114) — optional, friendly, no wrong answers. Tags only. */}
+                      <div className="mb-3">
+                        <label htmlFor="payerSourceAlt" className="mb-1 block text-sm font-medium text-neutral-700">
+                          How will care most likely be paid for? <span className="font-normal text-neutral-400">(optional)</span>
+                        </label>
+                        <select
+                          id="payerSourceAlt"
+                          name="payerSource"
+                          value={inquiryForm.payerSource}
+                          onChange={handleInquiryChange}
+                          className="form-select w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                        >
+                          <option value="">Select if you'd like to share</option>
+                          {PAYER_SOURCE_OPTIONS.map((opt) => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </select>
+                        <p className="mt-1 text-xs text-neutral-500">There's no wrong answer — this just helps us point you to the right resources. "Not sure yet" is completely fine.</p>
+                      </div>
+
                       <div className="mb-3">
                         <label className={`mb-1 block text-sm font-medium ${formErrors['careNeeded'] ? 'text-error-700' : 'text-neutral-700'}`}>
                           Care Services Needed*

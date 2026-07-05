@@ -11,6 +11,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth, requireRole } from "@/lib/auth-utils";
 import { UserRole } from "@prisma/client";
 import { Resend } from "resend";
+import { isPayerSource } from "@/lib/payer/payer-source";
 
 const placementRequestSchema = z.object({
   searchId: z.string(),
@@ -24,6 +25,9 @@ const placementRequestSchema = z.object({
     paymentType: z.string(),
     additionalNotes: z.string().optional(),
   }),
+  // Payer-source screener (OL-114) — optional tag; z.unknown so legacy clients
+  // never 400; validated via isPayerSource before persisting.
+  payerSource: z.unknown().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -48,6 +52,14 @@ export async function POST(request: NextRequest) {
         { error: "Search not found" },
         { status: 404 }
       );
+    }
+
+    // Payer-source tag (OL-114) on the parent search — TAGS ONLY, optional.
+    if (isPayerSource(validatedData?.payerSource)) {
+      await prisma.placementSearch.update({
+        where: { id: searchId },
+        data: { payerSource: validatedData.payerSource },
+      });
     }
 
     // Get home details

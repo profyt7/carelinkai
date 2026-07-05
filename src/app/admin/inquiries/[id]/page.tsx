@@ -9,6 +9,7 @@ import {
   FiAlertTriangle, FiCheckCircle, FiUserPlus, FiPlus
 } from 'react-icons/fi';
 import { format } from 'date-fns';
+import { PayerLaneRow } from '@/components/admin/PayerLaneBadge';
 
 interface InquiryDetail {
   id: string;
@@ -22,6 +23,7 @@ interface InquiryDetail {
   careRecipientAge: number | null;
   careNeeds: string[];
   additionalInfo: string | null;
+  payerSource?: string | null;
   message: string | null;
   internalNotes: string | null;
   tourDate: string | null;
@@ -383,6 +385,12 @@ export default function AdminInquiryDetailPage() {
                         <label className="text-sm text-neutral-500">Source</label>
                         <p className="font-medium">{inquiry.source || 'WEBSITE'}</p>
                       </div>
+                    </div>
+
+                    {/* Payer-source screener (OL-114) — read-only tag + derived fee lane.
+                        Display only: never gates or changes any behavior. */}
+                    <div className="border-t border-neutral-200 pt-4 text-sm text-neutral-700">
+                      <PayerLaneRow payerSource={inquiry.payerSource} />
                     </div>
 
                     {/* Care Recipient */}

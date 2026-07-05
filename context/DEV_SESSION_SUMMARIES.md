@@ -2,7 +2,22 @@
 
 ---
 
-### 2026-07-04 — TCPA/marketing lead-consent capture (OL-114)
+### 2026-07-05 — Payer-source screener (OL-114) + consent merge + renumber
+- **Objective:** Build the payer-source screener — the Anti-Kickback Statute firewall for the ratified $2,500 placement fee and the "CareLink Assessment" discovery step — BEFORE the fee goes live, so tagged data exists from day one. Tags only: families are never gated or treated differently. Also: merged yesterday's consent-capture PR (#694) on green CI per founder green-light.
+- **Work completed:**
+  - **Lib** (`src/lib/payer/payer-source.ts`): PayerSource values + friendly labels ("Not sure yet" first-class), `deriveFeeLane` (FEE_ELIGIBLE = private/LTC-ins; FREE_LANE = Medicaid/ALW, Medicare/MA, VA; UNKNOWN = not-sure/blank/garbage) — ⚖️ legal-sensitive, attorney review pending, flagged in code. feeLane deliberately NOT persisted anywhere (derive-at-read → mapping changes need no backfill).
+  - **Schema:** `PayerSource` enum + `Inquiry.payerSource?` + `PlacementSearch.payerSource?` (migration `20260705000001`, additive/idempotent).
+  - **Forms:** optional "How will care most likely be paid for?" on the family inquiry (both `/homes/[id]` variants, friendly helper copy) and the DP `PlacementRequestModal` (concierge + direct modes) — replacing the old Payment Type select that silently defaulted everyone to 'private'; patientInfo keeps a readable paymentType label for existing admin/email displays. APIs (`/api/inquiries`, `/api/discharge-planner/concierge`, `/api/discharge-planner/placement-request`) take `payerSource: z.unknown().optional()` → `isPayerSource` validation → null on blank/garbage, never a 400.
+  - **Admin read-only:** shared `PayerLaneBadge`/`PayerLaneRow` on `/admin/inquiries` (list badge + detail row) and `/admin/concierge` (list badge + detail row); honest "Not captured / Unknown" when blank. No matching/search/gating behavior reads payer source anywhere.
+  - **Renumber (per vault):** yesterday's consent capture was mislabeled OL-114 in the repo copy → now **OL-115** (✅ merged #694); **OL-114 = this payer screener**. OL-112 remains vault-only — full repo↔vault re-sync still pending a vault-connected session.
+- **Files changed:** `prisma/schema.prisma` + migration, `src/lib/payer/payer-source.ts`, `src/components/admin/PayerLaneBadge.tsx`, `src/app/homes/[id]/page.tsx`, `src/app/discharge-planner/search/_components/PlacementRequestModal.tsx`, `src/lib/inquiries/{payload,schema}.ts`, API routes (inquiries, dp/concierge, dp/placement-request, admin/concierge ×2), admin pages (inquiries ×2, concierge ×2), 3 new test files, context docs.
+- **Commands run:** prisma validate/generate, `npx jest` (68/68 suites, 642 pass), `npx tsc --noEmit` clean, lint (only a pre-existing exhaustive-deps warning), `npm run build` passes.
+- **Tests/build status:** 26 new tests green (full derivation matrix + AKS never-FEE_ELIGIBLE guard, API persistence incl. blank/garbage, admin render incl. blank states); suite 68/68; build clean.
+- **Deployment impact:** additive migration; no env vars; behavior-neutral for families (optional field, no gating). **PR open, NOT merged — Chris reviews Monday.**
+- **New risks/blockers:** deriveFeeLane mapping + placement-fee legality pending attorney opinion (bundle with Haran packet: BAA/DPA OL-052 + consent copy OL-115). Financing Navigator (NOT_SURE follow-up) deliberately not built.
+- **Recommended next step:** Chris reviews + merges Monday; add deriveFeeLane mapping to the attorney packet; when the fee goes live, the fee flow must read `deriveFeeLane` (never a persisted lane).
+
+### 2026-07-04 — TCPA/marketing lead-consent capture (OL-115 — renumbered; was logged as OL-114)
 - **Objective:** Capture provable TCPA/marketing consent on every family-facing form that collects contact info — day-one infrastructure for future lead-sale/financing revenue (retroactive capture is impossible). Capture only; nothing sold or sent.
 - **Work completed:**
   - **Form inventory (Explore agent, full sweep):** exactly one public typed-contact lead form (listing "Send Inquiry" → `/api/inquiries`); demo-request (public); tour-request + marketplace lead (family-auth, contact from account); verified NO contact collection in Care Concierge/CareBot chats, `/get-started`, `/quote/report`; CareCredit is an outbound link; waitlist POST has no UI caller; DP concierge intake is professional-facing. Inventory recorded in OL-114 + the PR description.

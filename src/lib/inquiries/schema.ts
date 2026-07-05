@@ -29,6 +29,9 @@ export const createInquirySchema = z.object({
   // permissive (z.unknown) — a missing/malformed payload must NEVER 400 the
   // inquiry; the server normalizes anything unexpected to consentGiven=false.
   consent: z.unknown().optional(),
+  // Payer-source screener (OL-114) — optional tag, z.unknown so a blank/legacy/
+  // malformed value can never 400 the inquiry; server validates via isPayerSource.
+  payerSource: z.unknown().optional(),
 });
 
 export type CreateInquiryInput = z.infer<typeof createInquirySchema>;

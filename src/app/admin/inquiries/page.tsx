@@ -10,6 +10,7 @@ import {
 } from 'react-icons/fi';
 import { format } from 'date-fns';
 import { BulkActionsBar, BulkAction } from '@/components/admin/BulkActionsBar';
+import { PayerLaneBadge } from '@/components/admin/PayerLaneBadge';
 import toast from 'react-hot-toast';
 
 interface Inquiry {
@@ -21,6 +22,7 @@ interface Inquiry {
   contactEmail: string | null;
   contactPhone: string | null;
   careRecipientName: string | null;
+  payerSource?: string | null;
   message: string | null;
   tourDate: string | null;
   createdAt: string;
@@ -518,6 +520,10 @@ export default function AdminInquiriesPage() {
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getUrgencyColor(inquiry.urgency || 'MEDIUM')}`}>
                           {inquiry.urgency || 'MEDIUM'}
                         </span>
+                        {/* Payer-source tag (OL-114) — read-only, at-a-glance for concierge. */}
+                        <div className="mt-1">
+                          <PayerLaneBadge payerSource={inquiry.payerSource} />
+                        </div>
                       </td>
                       <td className="px-6 py-4">
                         {inquiry.assignedTo ? (

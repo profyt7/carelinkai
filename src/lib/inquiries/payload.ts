@@ -19,6 +19,8 @@ export interface InquiryFormState {
   moveInTimeframe: string;
   careNeeded: string[];
   message: string;
+  /** Payer-source screener (OL-114) — "" when unanswered (optional, tags only). */
+  payerSource?: string;
 }
 
 export interface InquiryApiPayload {
@@ -33,6 +35,7 @@ export interface InquiryApiPayload {
   tourDate?: string;
   source: "WEBSITE";
   consent?: LeadConsentPayload;
+  payerSource?: string;
 }
 
 export function buildInquiryPayload(
@@ -59,5 +62,7 @@ export function buildInquiryPayload(
     // TCPA/marketing consent (both states recorded server-side; absence is
     // normalized to consentGiven=false — never blocks the inquiry).
     consent,
+    // Payer-source tag (OL-114) — omitted entirely when unanswered.
+    payerSource: form.payerSource || undefined,
   };
 }
