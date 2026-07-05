@@ -906,6 +906,11 @@ model Inquiry {
   additionalInfo         String?
   urgency                InquiryUrgency?    @default(MEDIUM)
   source                 InquirySource?     @default(WEBSITE)
+  /// Payer-source screener (OL-114): how the family expects to pay. TAGS ONLY —
+  /// never gates/filters/ranks anything. feeLane is deliberately NOT persisted;
+  /// derive it via src/lib/payer/payer-source.ts deriveFeeLane (AKS-sensitive
+  /// mapping, attorney review pending — derive-at-read means no backfill).
+  payerSource            PayerSource?
   preferredContactMethod ContactMethod?     @default(EMAIL)
   assignedToId           String?
   affiliateCode          String?            // referral code of the affiliate who referred this inquiry
@@ -1382,6 +1387,19 @@ model License {
   @@index([homeId])
   @@index([expirationDate])
   @@index([status])
+}
+
+/// Payer-source screener (OL-114): how a family expects to pay for care.
+/// TAGS ONLY — never gates, filters, or ranks anything. The fee lane
+/// (FEE_ELIGIBLE / FREE_LANE / UNKNOWN) is NOT a column: it is derived at read
+/// time by src/lib/payer/payer-source.ts (AKS-sensitive, attorney-reviewed).
+enum PayerSource {
+  PRIVATE_FUNDS
+  LTC_INSURANCE
+  MEDICAID_WAIVER
+  MEDICARE_ADVANTAGE
+  VA_BENEFITS
+  NOT_SURE
 }
 
 // TCPA/marketing lead-consent evidence (feat/lead-consent-capture). One row per
@@ -2225,6 +2243,9 @@ model PlacementSearch {
   isConcierge          Boolean          @default(false)
   conciergeStatus      String?          // SUBMITTED | MATCHING | SHORTLIST_READY
   patientInfo          Json?            // minimum-necessary intake; in-app storage only
+  /// Payer-source screener (OL-114): structured payer tag from the concierge/DP
+  /// intake (patientInfo.paymentType stays as legacy free text). TAGS ONLY.
+  payerSource          PayerSource?
   curatedHomes         Json?            // [{ homeId, name, address, note, confirmedAvailability }]
   conciergeNote        String?          // overall care-team message to the DP
   conciergeSubmittedAt DateTime?

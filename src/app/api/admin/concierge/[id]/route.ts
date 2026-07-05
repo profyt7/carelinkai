@@ -38,6 +38,7 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
         parsedCriteria: true,
         searchResults: true,
         patientInfo: true,
+        payerSource: true,
         isConcierge: true,
         conciergeStatus: true,
         curatedHomes: true,

@@ -11,6 +11,7 @@ import { smsService } from '@/lib/sms/sms-service';
 import { createInquirySchema } from '@/lib/inquiries/schema';
 import { recordLeadConsent } from '@/lib/consent/lead-consent';
 import { LEAD_CONSENT_FORMS } from '@/lib/consent/lead-consent-text';
+import { isPayerSource } from '@/lib/payer/payer-source';
 import { notifyUnclaimedHomeInquiry, isUnclaimedHome } from '@/lib/claim-engine/inquiry-claim-notification';
 import { sendNewLeadOperatorEmail } from '@/lib/email';
 import { coordinateConciergeInquiry } from '@/lib/concierge/tour-coordination';
@@ -73,6 +74,9 @@ export async function POST(request: NextRequest) {
         source: data.source,
         preferredContactMethod: data.preferredContactMethod,
         affiliateCode: resolvedAffiliateCode,
+        // Payer-source tag (OL-114) — optional; invalid/blank normalizes to null.
+        // TAGS ONLY: nothing downstream may gate on this.
+        payerSource: isPayerSource(data.payerSource) ? data.payerSource : null,
         status: 'NEW',
       },
       include: {

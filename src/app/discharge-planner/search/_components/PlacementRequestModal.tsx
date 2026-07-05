@@ -4,6 +4,7 @@ import { useState, Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { X, Send, CheckCircle, AlertCircle, ShieldCheck } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { PAYER_SOURCE_OPTIONS, PAYER_SOURCE_LABELS, isPayerSource } from '@/lib/payer/payer-source';
 
 interface PlacementRequestModalProps {
   isOpen: boolean;
@@ -30,12 +31,14 @@ export default function PlacementRequestModal({
 }: PlacementRequestModalProps) {
   const concierge = mode !== 'direct';
 
+  // Payer-source screener (OL-114): structured + OPTIONAL ('' = unanswered) —
+  // replaces the old paymentType select that silently defaulted to 'private'.
   const emptyForm = {
     patientName: '',
     patientAge: '',
     medicalNeeds: '',
     timeline: 'immediate',
-    paymentType: 'private',
+    payerSource: '',
     additionalNotes: '',
   };
   const [formData, setFormData] = useState(emptyForm);
@@ -67,15 +70,26 @@ export default function PlacementRequestModal({
       const url = concierge
         ? '/api/discharge-planner/concierge'
         : '/api/discharge-planner/placement-request';
+      // Structured payerSource travels top-level (OL-114); patientInfo keeps a
+      // human-readable paymentType label for the existing admin/email displays.
+      const { payerSource, ...patientFields } = formData;
+      const payerLabel = isPayerSource(payerSource) ? PAYER_SOURCE_LABELS[payerSource] : '';
       const body = concierge
         ? {
             searchId,
+            payerSource: payerSource || undefined,
             patientInfo: {
-              ...formData,
+              ...patientFields,
+              ...(payerLabel ? { paymentType: payerLabel } : {}),
               ...(home?.homeId ? { preferredHomeId: home.homeId, preferredHomeName: home.homeName } : {}),
             },
           }
-        : { searchId, homeId: home?.homeId, patientInfo: formData };
+        : {
+            searchId,
+            homeId: home?.homeId,
+            payerSource: payerSource || undefined,
+            patientInfo: { ...patientFields, paymentType: payerLabel || 'Not specified' },
+          };
 
       const response = await fetch(url, {
         method: 'POST',
@@ -226,20 +240,19 @@ export default function PlacementRequestModal({
                           </select>
                         </div>
                         <div>
-                          <label htmlFor="paymentType" className="block text-sm font-semibold text-neutral-700 mb-2">
-                            Payment Type
+                          <label htmlFor="payerSource" className="block text-sm font-semibold text-neutral-700 mb-2">
+                            How will care most likely be paid for? <span className="font-normal text-neutral-400">(optional)</span>
                           </label>
                           <select
-                            id="paymentType" name="paymentType" value={formData.paymentType} onChange={handleChange}
+                            id="payerSource" name="payerSource" value={formData.payerSource} onChange={handleChange}
                             className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                           >
-                            <option value="private">Private Pay</option>
-                            <option value="medicare">Medicare</option>
-                            <option value="medicaid">Medicaid</option>
-                            <option value="insurance">Private Insurance</option>
-                            <option value="va">VA Benefits</option>
-                            <option value="mixed">Mixed/Multiple Sources</option>
+                            <option value="">Select if known</option>
+                            {PAYER_SOURCE_OPTIONS.map((opt) => (
+                              <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
                           </select>
+                          <p className="mt-1 text-xs text-neutral-500">No wrong answers — "Not sure yet" is fine.</p>
                         </div>
                       </div>
 

@@ -3,10 +3,12 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { Inbox, Clock, CheckCircle, Loader2, ArrowRight, Stethoscope } from 'lucide-react';
+import { PayerLaneBadge } from '@/components/admin/PayerLaneBadge';
 
 type Row = {
   id: string;
   queryText: string;
+  payerSource?: string | null;
   conciergeStatus: 'SUBMITTED' | 'MATCHING' | 'SHORTLIST_READY' | null;
   conciergeSubmittedAt: string | null;
   conciergeRespondedAt: string | null;
@@ -124,6 +126,8 @@ export default function AdminConciergeQueuePage() {
                 </p>
               </div>
               <div className="flex items-center gap-3 shrink-0">
+                {/* Payer-source tag (OL-114) — read-only, at-a-glance. */}
+                <PayerLaneBadge payerSource={r.payerSource} />
                 <StatusBadge status={r.conciergeStatus} />
                 <ArrowRight className="h-4 w-4 text-neutral-400" />
               </div>

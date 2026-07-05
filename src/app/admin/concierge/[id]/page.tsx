@@ -7,6 +7,7 @@ import { toast } from 'react-hot-toast';
 import {
   ArrowLeft, Loader2, Send, CheckCircle, Star, MapPin, Bed, User, ClipboardList, Clock,
 } from 'lucide-react';
+import { PayerLaneRow } from '@/components/admin/PayerLaneBadge';
 
 type Match = {
   homeId: string;
@@ -38,6 +39,7 @@ type Detail = {
   parsedCriteria: any;
   searchResults: { matches?: Match[] } | null;
   patientInfo: PatientInfo | null;
+  payerSource?: string | null;
   conciergeStatus: string | null;
   curatedHomes: { homeId: string; note?: string; confirmedAvailability?: string; tourStatus?: 'REQUESTED'; tourRequestedAt?: string }[] | null;
   conciergeNote: string | null;
@@ -182,6 +184,8 @@ export default function AdminConciergeCuratePage() {
             {(p.patientName || p.patientAge) && <div><span className="font-medium">Patient:</span> {p.patientName || '—'}{p.patientAge ? `, age ${p.patientAge}` : ''}</div>}
             {p.timeline && <div><span className="font-medium">Timeline:</span> {p.timeline}</div>}
             {p.paymentType && <div><span className="font-medium">Payment:</span> {p.paymentType}</div>}
+            {/* Payer-source screener (OL-114) — read-only tag + derived fee lane. */}
+            <PayerLaneRow payerSource={detail.payerSource} />
             {p.preferredHomeName && <div><span className="font-medium">DP preferred:</span> {p.preferredHomeName}</div>}
             {p.medicalNeeds && <div className="pt-1"><span className="font-medium">Care needs:</span> {p.medicalNeeds}</div>}
             {p.additionalNotes && <div className="pt-1"><span className="font-medium">Notes:</span> {p.additionalNotes}</div>}
