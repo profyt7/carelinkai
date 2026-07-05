@@ -565,6 +565,10 @@ export async function GET(request: NextRequest) {
     // Build database query
     const whereClause: any = {
       status: 'ACTIVE', // Only active homes
+      // OL-112: demo/tutorial fixtures never surface in the public directory —
+      // structural guard on top of the DRAFT-status convention (the markers
+      // path shares this whereClause, so the map view is covered too).
+      isDemo: false,
     };
     
     // Filter by care level if specified
