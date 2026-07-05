@@ -25,6 +25,10 @@ export const createInquirySchema = z.object({
     .default('WEBSITE'),
   preferredContactMethod: z.enum(['EMAIL', 'PHONE', 'SMS', 'ANY']).optional().default('EMAIL'),
   affiliateCode: z.string().optional(), // referral code from ?ref= URL param
+  // TCPA/marketing consent from the form's LeadConsentCheckbox. Deliberately
+  // permissive (z.unknown) — a missing/malformed payload must NEVER 400 the
+  // inquiry; the server normalizes anything unexpected to consentGiven=false.
+  consent: z.unknown().optional(),
 });
 
 export type CreateInquiryInput = z.infer<typeof createInquirySchema>;

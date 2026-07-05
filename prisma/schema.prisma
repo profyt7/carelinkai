@@ -1384,6 +1384,38 @@ model License {
   @@index([status])
 }
 
+// TCPA/marketing lead-consent evidence (feat/lead-consent-capture). One row per
+// family-facing form submission that collects/shares contact info, BOTH consent
+// states recorded. IMMUTABLE by design: created once at submit, no update path
+// exists anywhere in application code, and deliberately NO foreign keys — a
+// consent record must survive edits/deletion of the inquiry/tour/lead it
+// evidences. Contact fields are a point-in-time snapshot for provability.
+model LeadConsent {
+  id                 String   @id @default(cuid())
+  consentGiven       Boolean
+  consentTextVersion String // key into LEAD_CONSENT_VERSIONS (src/lib/consent/lead-consent.ts)
+  consentAt          DateTime @default(now())
+  sourceForm         String // stable form id, e.g. "home_inquiry" | "tour_request"
+  sourceUrl          String?
+  ip                 String?
+  userAgent          String?
+  contactName        String?
+  contactEmail       String?
+  contactPhone       String?
+  // Plain-string references (NOT relations) to the lead artifact evidenced.
+  inquiryId          String?
+  tourRequestId      String?
+  leadId             String?
+  demoRequestId      String?
+  createdAt          DateTime @default(now())
+
+  @@index([sourceForm])
+  @@index([consentGiven])
+  @@index([contactEmail])
+  @@index([inquiryId])
+  @@index([consentAt])
+}
+
 // PUBLIC state inspection history (OL-113): ODH RCF survey/citation records
 // matched to a directory listing. Factual public-records data only — dates,
 // counts, rules cited, source link. Distinct from the operator-facing internal

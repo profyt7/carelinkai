@@ -2,6 +2,21 @@
 
 ---
 
+### 2026-07-04 — TCPA/marketing lead-consent capture (OL-114)
+- **Objective:** Capture provable TCPA/marketing consent on every family-facing form that collects contact info — day-one infrastructure for future lead-sale/financing revenue (retroactive capture is impossible). Capture only; nothing sold or sent.
+- **Work completed:**
+  - **Form inventory (Explore agent, full sweep):** exactly one public typed-contact lead form (listing "Send Inquiry" → `/api/inquiries`); demo-request (public); tour-request + marketplace lead (family-auth, contact from account); verified NO contact collection in Care Concierge/CareBot chats, `/get-started`, `/quote/report`; CareCredit is an outbound link; waitlist POST has no UI caller; DP concierge intake is professional-facing. Inventory recorded in OL-114 + the PR description.
+  - **Schema:** immutable `LeadConsent` model (migration `20260704000001`) — consentGiven, consentTextVersion, consentAt, sourceForm, sourceUrl, ip, userAgent, contact snapshot, plain-string artifact refs (no FKs so evidence survives deletion). No update path anywhere.
+  - **Versioned copy:** `src/lib/consent/lead-consent-text.ts` (v1-2026-07-04, ⚠️ pending attorney review — Haran; never edit published versions, add v2 + move pointer).
+  - **Recorder:** `recordLeadConsent` — malformed/missing payload → consentGiven=false; never blocks submission; PII-scrubbed Sentry on failure.
+  - **UI:** shared `LeadConsentCheckbox` (unchecked by default, Privacy Policy phrase linked) wired into the listing inquiry form (both variants), TourRequestModal, marketplace InquiryForm, DemoRequestForm; consent payload added to each POST (z.unknown in every schema so it can never 400).
+- **Files changed:** `prisma/schema.prisma` + migration, `src/lib/consent/{lead-consent,lead-consent-text}.ts`, `src/components/consent/LeadConsentCheckbox.tsx`, `src/app/homes/[id]/page.tsx`, `src/components/tours/TourRequestModal.tsx`, `src/components/marketplace/InquiryForm.tsx`, `src/components/marketing/DemoRequestForm.tsx`, `src/lib/inquiries/{payload,schema}.ts`, API routes `inquiries`/`family/tours/request`/`leads`/`demo-request`, 2 new test files, context docs.
+- **Commands run:** prisma validate/generate, `npx jest` (65/65 suites, 616 pass), `npx tsc --noEmit` clean, lint clean, `npm run build` passes.
+- **Tests/build status:** 17 new tests green; full suite 65/65; tsc/lint/build clean.
+- **Deployment impact:** additive migration auto-applies. No env vars. No behavior change for users who ignore the checkbox — submissions work identically, consent just gets recorded (false).
+- **New risks/blockers:** v1 consent copy NOT yet attorney-approved — don't rely on it for actual lead sales until Haran signs off (v2 + version-pointer bump). Repo/vault OL numbering still out of sync (OL-112 vault-only).
+- **Recommended next step:** bundle the consent copy into the Haran review packet alongside the BAA/DPA drafts (OL-052); future lead-sale flows must filter on `consentGiven=true`.
+
 ### 2026-07-03 — ODH State Inspection History (OL-113)
 - **Objective:** Build the "State Inspection History" feature — every ACTIVE listing shows the facility's ODH survey/citation history, factual + neutral + source-linked (our answer to APFM hiding violations and CarePatrol's FTC consent order). Phase 1: research the authoritative data source; Phase 2: schema, matcher, ingest, monthly refresh (OFF), listing UI, tests.
 - **Work completed:**

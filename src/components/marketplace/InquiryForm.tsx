@@ -7,6 +7,8 @@
 
 import { useState, FormEvent } from "react";
 import { FiX, FiSend, FiCheckCircle, FiAlertCircle } from "react-icons/fi";
+import LeadConsentCheckbox, { emptyLeadConsent } from "@/components/consent/LeadConsentCheckbox";
+import type { LeadConsentPayload } from "@/lib/consent/lead-consent-text";
 
 type InquiryFormProps = {
   targetType: "AIDE" | "PROVIDER";
@@ -69,6 +71,8 @@ export default function InquiryForm({
   });
 
   const [errors, setErrors] = useState<ValidationErrors>({});
+  // TCPA/marketing consent — UNCHECKED by default; declining never blocks submit.
+  const [leadConsent, setLeadConsent] = useState<LeadConsentPayload>(emptyLeadConsent());
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
@@ -112,6 +116,7 @@ export default function InquiryForm({
         targetType,
         targetId,
         message: formData.message,
+        consent: leadConsent,
       };
 
       // Add optional fields if provided
@@ -463,6 +468,8 @@ export default function InquiryForm({
                   )}
                 </div>
               )}
+
+              <LeadConsentCheckbox checked={leadConsent.given} onChange={setLeadConsent} idPrefix="marketplace-lead" />
 
               {/* Submit Button */}
               <div className="flex justify-end space-x-3 pt-4 border-t border-neutral-200">

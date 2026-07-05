@@ -9,6 +9,8 @@ import { authOptions } from '@/lib/auth';
 import { afterInquiryCreated } from '@/lib/hooks/inquiry-hooks';
 import { smsService } from '@/lib/sms/sms-service';
 import { createInquirySchema } from '@/lib/inquiries/schema';
+import { recordLeadConsent } from '@/lib/consent/lead-consent';
+import { LEAD_CONSENT_FORMS } from '@/lib/consent/lead-consent-text';
 import { notifyUnclaimedHomeInquiry, isUnclaimedHome } from '@/lib/claim-engine/inquiry-claim-notification';
 import { sendNewLeadOperatorEmail } from '@/lib/email';
 import { coordinateConciergeInquiry } from '@/lib/concierge/tour-coordination';
@@ -102,6 +104,18 @@ export async function POST(request: NextRequest) {
       },
     });
     
+    // Immutable TCPA/marketing consent evidence — recorded for BOTH consent
+    // states; never blocks the inquiry (recorder swallows its own errors).
+    await recordLeadConsent({
+      consent: data.consent,
+      sourceForm: LEAD_CONSENT_FORMS.HOME_INQUIRY,
+      req: request,
+      contactName: data.contactName,
+      contactEmail: data.contactEmail,
+      contactPhone: data.contactPhone ?? null,
+      inquiryId: inquiry.id,
+    });
+
     // Trigger follow-up scheduling hook (non-blocking)
     afterInquiryCreated(inquiry.id).catch(err => {
       console.error('Failed to schedule follow-ups:', err);

@@ -47,6 +47,8 @@ import GoogleRatingBadge from "@/components/homes/GoogleRatingBadge";
 import AvailabilityBadge from "@/components/availability/AvailabilityBadge";
 import HomeReviews from "@/components/homes/HomeReviews";
 import InspectionHistory from "@/components/homes/InspectionHistory";
+import LeadConsentCheckbox, { emptyLeadConsent } from "@/components/consent/LeadConsentCheckbox";
+import type { LeadConsentPayload } from "@/lib/consent/lead-consent-text";
 import PricingCalculator from "@/components/homes/PricingCalculator";
 import type { PricingEstimate } from "@/components/homes/PricingCalculator";
 import { getCloudinaryAvatar, isCloudinaryUrl } from "@/lib/cloudinaryUrl";
@@ -315,6 +317,8 @@ export default function HomeDetailPage() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  // TCPA/marketing consent — UNCHECKED by default; declining never blocks submit.
+  const [leadConsent, setLeadConsent] = useState<LeadConsentPayload>(emptyLeadConsent());
   
   // State for booking step
   const [bookingStep, setBookingStep] = useState(0); // 0: not started, 1: inquiry form, 2: tour scheduling, 3: submitted
@@ -598,7 +602,7 @@ export default function HomeDetailPage() {
     // submission failed Zod validation with 400. moveInTimeframe has no column
     // on Inquiry, so fold it into additionalInfo rather than drop it.
     const payload = {
-      ...buildInquiryPayload(String(id), inquiryForm, tourDateIso),
+      ...buildInquiryPayload(String(id), inquiryForm, tourDateIso, leadConsent),
       // Concierge-aware: loops in the care team + marks the DP's shortlist so a
       // generic-page inquiry from a concierge shortlist never black-holes either.
       ...(conciergeSearchId ? { conciergeSearchId } : {}),
@@ -1415,6 +1419,7 @@ export default function HomeDetailPage() {
                               className="form-textarea w-full rounded-md border-neutral-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
                               placeholder="Tell us about your specific needs..." />
                           </div>
+                          <LeadConsentCheckbox checked={leadConsent.given} onChange={setLeadConsent} idPrefix="inquiry-main" className="mb-4" />
                           {submitError && <div className="mb-3 rounded-md bg-error-50 border border-error-200 p-3 text-sm text-error-700">{submitError}</div>}
                           <div className="flex gap-2">
                             <button type="button" onClick={() => setBookingStep(0)} className="flex-1 rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50">
@@ -2280,7 +2285,9 @@ export default function HomeDetailPage() {
                           placeholder="Any specific questions or concerns?"
                         ></textarea>
                       </div>
-                      
+
+                      <LeadConsentCheckbox checked={leadConsent.given} onChange={setLeadConsent} idPrefix="inquiry-alt" className="mb-4" />
+
                       <div className="mb-4">
                         <button
                           type="submit"
