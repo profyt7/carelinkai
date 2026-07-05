@@ -18,10 +18,19 @@
  *   npx tsx scripts/ingest-odh-inspections.ts --input odh-surveys.json --force   # write
  *   npx tsx scripts/ingest-odh-inspections.ts --fetch-url https://... --force
  *   npx tsx scripts/ingest-odh-inspections.ts --backfill-licenses [--force]
+ *   npx tsx scripts/ingest-odh-inspections.ts --roster odh_rcf_roster.csv [--force]
  *
  * --backfill-licenses extracts the "ODH license NNNNR" tokens the metro seed
  * embedded in listing descriptions into the structured odhLicenseNumber column
  * (~70 homes), so license-based matching works before the first ODH file load.
+ *
+ * --roster <csv> backfills odhLicenseNumber from an ODH facility roster CSV
+ * (columns: provider_name, address, city, county, phone, license_status,
+ * odh_license — e.g. the Cowork Cleveland-metro roster). Identity backfill
+ * only, same matcher policy: unique exact name+city → set the license;
+ * anything ambiguous or CONFLICTING with a stored license → reported for
+ * manual review, never written. Run --backfill-licenses first so the ~70
+ * description-embedded licenses anchor the license-match path.
  *
  * Idempotent: upserts keyed on (facilityId, surveyDate, surveyType); re-running
  * the same input is a no-op apart from fetchedAt. Dry-run by default.
@@ -29,7 +38,12 @@
 
 import { readFileSync } from 'fs';
 import { PrismaClient } from '@prisma/client';
-import { parseOdhInput, ingestOdhRecords } from '../src/lib/inspections/ingest';
+import {
+  parseOdhInput,
+  ingestOdhRecords,
+  parseRosterCsv,
+  backfillLicensesFromRoster,
+} from '../src/lib/inspections/ingest';
 import { isExcludedDemoHome } from '../src/lib/inspections/matcher';
 
 const prisma = new PrismaClient();
@@ -37,6 +51,7 @@ const prisma = new PrismaClient();
 interface Args {
   input?: string;
   fetchUrl?: string;
+  roster?: string;
   force: boolean;
   backfillLicenses: boolean;
 }
@@ -47,10 +62,11 @@ function parseArgs(argv: string[]): Args {
     const a = argv[i];
     if (a === '--input') args.input = argv[++i];
     else if (a === '--fetch-url') args.fetchUrl = argv[++i];
+    else if (a === '--roster') args.roster = argv[++i];
     else if (a === '--force') args.force = true;
     else if (a === '--backfill-licenses') args.backfillLicenses = true;
     else if (a === '--help' || a === '-h') {
-      console.log('Usage: ingest-odh-inspections.ts (--input <file> | --fetch-url <url> | --backfill-licenses) [--force]');
+      console.log('Usage: ingest-odh-inspections.ts (--input <file> | --fetch-url <url> | --roster <csv> | --backfill-licenses) [--force]');
       process.exit(0);
     } else {
       console.error(`Unknown argument: ${a}`);
@@ -58,6 +74,35 @@ function parseArgs(argv: string[]): Args {
     }
   }
   return args;
+}
+
+async function runRosterBackfill(rosterPath: string, force: boolean): Promise<void> {
+  const rows = parseRosterCsv(readFileSync(rosterPath, 'utf8'));
+  console.log(`Parsed ${rows.length} roster row(s) from ${rosterPath}.`);
+  if (rows.length === 0) return;
+
+  const summary = await backfillLicensesFromRoster(prisma, rows, { force });
+
+  console.log('\n--- Roster license backfill ---');
+  console.log(`Rows:                    ${summary.totalRows}`);
+  console.log(`Invalid (no name/lic):   ${summary.invalidRows}`);
+  console.log(`${summary.dryRun ? 'Would backfill' : 'Backfilled'}:          ${summary.backfilled}`);
+  console.log(`Already tagged:          ${summary.alreadyTagged}`);
+  console.log(`Not in our directory:    ${summary.notInDirectory} (expected — roster covers the whole metro)`);
+  console.log(`Demo homes excluded:     ${summary.demoHomesExcluded}`);
+
+  if (summary.conflicts.length > 0) {
+    console.log(`\n🛑 LICENSE CONFLICTS (${summary.conflicts.length} — NEVER overwritten):`);
+    for (const c of summary.conflicts) console.log(`  - ${c.facilityName} (${c.city ?? 'no city'}): ${c.reason}`);
+  }
+  if (summary.review.length > 0) {
+    console.log(`\n⚠️  MANUAL REVIEW (${summary.review.length} — NOT written):`);
+    for (const r of summary.review) {
+      console.log(`  - ${r.facilityName} (${r.city ?? 'no city'}, lic ${r.licenseNumber ?? 'n/a'})`);
+      console.log(`      ${r.reason}; candidates: ${r.candidateIds.join(', ')}`);
+    }
+  }
+  if (summary.dryRun && summary.backfilled > 0) console.log('\nDry-run complete. Re-run with --force to write.');
 }
 
 // The metro seed wrote "(ODH license 2318R — verify against ltc.ohio.gov.)" into
@@ -119,8 +164,13 @@ async function main() {
     return;
   }
 
+  if (args.roster) {
+    await runRosterBackfill(args.roster, args.force);
+    return;
+  }
+
   if (!args.input && !args.fetchUrl) {
-    console.error('Provide --input <file>, --fetch-url <url>, or --backfill-licenses. See --help.');
+    console.error('Provide --input <file>, --fetch-url <url>, --roster <csv>, or --backfill-licenses. See --help.');
     process.exit(1);
   }
 

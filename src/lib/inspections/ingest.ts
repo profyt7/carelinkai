@@ -139,6 +139,172 @@ function splitCsv(text: string): string[][] {
   return rows;
 }
 
+// ---------------------------------------------------------------------------
+// ODH facility ROSTER support (S2-3): backfill odhLicenseNumber from a
+// directory roster CSV (e.g. the Cowork-produced Cleveland-metro file:
+// provider_name, address, city, county, phone, license_status, odh_license).
+// Identity backfill only — no inspection records are written from a roster.
+// ---------------------------------------------------------------------------
+
+export interface RosterRow {
+  providerName: string;
+  address: string | null;
+  city: string | null;
+  county: string | null;
+  phone: string | null;
+  licenseStatus: string | null;
+  odhLicense: string | null;
+}
+
+/**
+ * Parse a facility roster CSV. Required columns: provider_name, odh_license
+ * (others optional). Header names are matched case-insensitively.
+ */
+export function parseRosterCsv(raw: string): RosterRow[] {
+  const rows = splitCsv(raw.trim());
+  if (rows.length < 2) return [];
+  const header = rows[0].map((h) => h.trim().toLowerCase());
+  const idx = (name: string) => header.indexOf(name);
+  const iName = idx('provider_name');
+  const iLic = idx('odh_license');
+  if (iName < 0 || iLic < 0) {
+    throw new Error('Roster CSV must have provider_name and odh_license columns');
+  }
+  const iAddr = idx('address');
+  const iCity = idx('city');
+  const iCounty = idx('county');
+  const iPhone = idx('phone');
+  const iStatus = idx('license_status');
+  const cell = (row: string[], i: number) => (i >= 0 ? (row[i] ?? '').trim() : '');
+  return rows
+    .slice(1)
+    .filter((r) => r.some((c) => c.trim() !== ''))
+    .map((row) => ({
+      providerName: cell(row, iName),
+      address: cell(row, iAddr) || null,
+      city: cell(row, iCity) || null,
+      county: cell(row, iCounty) || null,
+      phone: cell(row, iPhone) || null,
+      licenseStatus: cell(row, iStatus) || null,
+      odhLicense: cell(row, iLic) || null,
+    }));
+}
+
+export interface RosterBackfillSummary {
+  totalRows: number;
+  invalidRows: number; // no provider name or no parseable license
+  backfilled: number; // license written onto a confirmed name+city match
+  alreadyTagged: number; // home already carries this license
+  conflicts: ReviewRow[]; // home carries a DIFFERENT license — never overwritten
+  review: ReviewRow[]; // ambiguous matches — reported, never written
+  notInDirectory: number; // roster facility we simply don't list (expected)
+  demoHomesExcluded: number;
+  dryRun: boolean;
+}
+
+/**
+ * Backfill AssistedLivingHome.odhLicenseNumber from a roster. Matching uses
+ * the same policy as survey ingestion (license first, exact name+city with a
+ * single candidate, everything ambiguous → review). A home that already has a
+ * DIFFERENT license than the roster claims is a CONFLICT — reported, never
+ * overwritten. Idempotent; dry-run unless force.
+ */
+export async function backfillLicensesFromRoster(
+  prisma: PrismaClient,
+  rows: RosterRow[],
+  opts: IngestOptions = {},
+): Promise<RosterBackfillSummary> {
+  const force = Boolean(opts.force);
+  const { candidates, demoExcluded } = await loadCandidateHomes(prisma);
+
+  const summary: RosterBackfillSummary = {
+    totalRows: rows.length,
+    invalidRows: 0,
+    backfilled: 0,
+    alreadyTagged: 0,
+    conflicts: [],
+    review: [],
+    notInDirectory: 0,
+    demoHomesExcluded: demoExcluded,
+    dryRun: !force,
+  };
+
+  // Licenses assigned during this run — keeps a duplicated roster row (or two
+  // facilities sharing a stale license) from double-assigning.
+  const assigned = new Map<string, string>(); // homeId -> normalized license
+
+  for (const row of rows) {
+    const lic = normalizeLicense(row.odhLicense);
+    if (!row.providerName?.trim() || !lic) {
+      summary.invalidRows++;
+      continue;
+    }
+
+    const effectiveCandidates = candidates.map((c) =>
+      assigned.has(c.id) && !c.odhLicenseNumber
+        ? { ...c, odhLicenseNumber: assigned.get(c.id)! }
+        : c,
+    );
+    const outcome = matchOdhRecord(
+      { licenseNumber: row.odhLicense, facilityName: row.providerName, city: row.city, surveyDate: '' },
+      effectiveCandidates,
+    );
+
+    if (outcome.status === 'NO_MATCH') {
+      summary.notInDirectory++;
+      continue;
+    }
+    if (outcome.status === 'REVIEW') {
+      summary.review.push({
+        facilityName: row.providerName,
+        city: row.city,
+        licenseNumber: row.odhLicense,
+        surveyDate: '',
+        reason: outcome.reason,
+        candidateIds: outcome.candidateIds,
+      });
+      continue;
+    }
+
+    if (outcome.via === 'LICENSE') {
+      // Home already carries this license (possibly assigned earlier this run).
+      summary.alreadyTagged++;
+      continue;
+    }
+
+    // Confirmed unique name+city match.
+    const existing = normalizeLicense(outcome.home.odhLicenseNumber);
+    if (existing && existing !== lic) {
+      // Roster disagrees with what we already store — a human decides.
+      summary.conflicts.push({
+        facilityName: row.providerName,
+        city: row.city,
+        licenseNumber: row.odhLicense,
+        surveyDate: '',
+        reason: `home ${outcome.home.id} already has license ${outcome.home.odhLicenseNumber} (roster says ${row.odhLicense})`,
+        candidateIds: [outcome.home.id],
+      });
+      continue;
+    }
+    if (existing === lic) {
+      summary.alreadyTagged++;
+      continue;
+    }
+
+    assigned.set(outcome.home.id, lic);
+    summary.backfilled++;
+    if (force) {
+      await prisma.assistedLivingHome.update({
+        where: { id: outcome.home.id },
+        // Store the roster's original (trimmed) form, not the normalized one.
+        data: { odhLicenseNumber: String(row.odhLicense).trim() },
+      });
+    }
+  }
+
+  return summary;
+}
+
 /** Validate + normalize one record; returns null if unusable. */
 export function sanitizeRecord(rec: OdhSurveyRecord): (OdhSurveyRecord & { surveyDateParsed: Date }) | null {
   if (!rec || typeof rec.facilityName !== 'string' || !rec.facilityName.trim()) return null;
