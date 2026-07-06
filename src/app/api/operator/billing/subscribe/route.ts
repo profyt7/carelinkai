@@ -7,12 +7,17 @@ import { prisma } from '@/lib/prisma';
 import { stripe } from '@/lib/stripe';
 import { UserRole } from '@prisma/client';
 import { priceIdForPlan, planLabel } from '@/lib/operator-plans';
+import { FOUNDER_TRIAL_DAYS, resolveFounderPromo } from '@/lib/billing/founder-code';
 
 const SUPPORT_EMAIL = 'hello@getcarelinkai.com';
 
 /**
  * POST /api/operator/billing/subscribe
- * Body: { plan: 'STARTER' | 'PROFESSIONAL' | 'GROWTH' }
+ * Body: { plan: 'STARTER' | 'PROFESSIONAL' | 'GROWTH' | 'AGENCY', founderCode?: string }
+ *
+ * founderCode (FOUNDER_20 framework): a valid, active founder promotion code
+ * applies 6 months free (180-day trial) + 20% off forever. Invalid codes get a
+ * clean 400 BEFORE checkout is created — never a silently full-price session.
  *
  * Creates (or reuses) a Stripe Customer for the operator, then creates a
  * Stripe Checkout Session in subscription mode and returns the session URL.
@@ -82,18 +87,36 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // FOUNDER_20 flow: validate the founder code up front so a typo'd code
+    // fails loudly here instead of producing a full-price checkout session.
+    let founderPromo = null;
+    if (body.founderCode !== undefined && body.founderCode !== null && body.founderCode !== '') {
+      founderPromo = await resolveFounderPromo(stripe, body.founderCode);
+      if (!founderPromo) {
+        return NextResponse.json(
+          { error: `That founder code isn't valid or has been fully redeemed. Double-check the code, or email ${SUPPORT_EMAIL}.` },
+          { status: 400 }
+        );
+      }
+    }
+
     const checkoutSession = await stripe.checkout.sessions.create({
       customer: stripeCustomerId,
       mode: 'subscription',
       line_items: [{ price: priceId, quantity: 1 }],
       subscription_data: {
-        trial_period_days: 14,
-        metadata: { operatorId: operator.id, plan },
+        // Founder cohort: 6 months free; standard self-serve: 14-day trial.
+        trial_period_days: founderPromo ? FOUNDER_TRIAL_DAYS : 14,
+        metadata: { operatorId: operator.id, plan, ...(founderPromo ? { founderCode: founderPromo.code } : {}) },
       },
+      // `discounts` and `allow_promotion_codes` are mutually exclusive in
+      // Stripe Checkout — the founder code is the single controlled promo path.
+      ...(founderPromo
+        ? { discounts: [{ promotion_code: founderPromo.promotionCodeId }] }
+        : { allow_promotion_codes: false }),
       success_url: `${appUrl}/operator/billing?subscription=success`,
       cancel_url: `${appUrl}/operator/billing?subscription=canceled`,
       metadata: { operatorId: operator.id, plan },
-      allow_promotion_codes: false,
     });
 
     if (!checkoutSession.url) {

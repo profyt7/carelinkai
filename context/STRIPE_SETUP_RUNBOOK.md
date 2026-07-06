@@ -2,6 +2,16 @@
 _Run this any time a new Stripe account is connected to CareLinkAI._
 _Designed for CoWork browser automation + Render env var updates._
 
+> ⚠️ **SUPERSEDED for setup + go-live (2026-07-05, feat/stripe-golive-prep):**
+> use `npx tsx scripts/stripe-golive-setup.ts` (idempotent, dry-run default,
+> adds the AGENCY tier + the missing `checkout.session.completed` webhook
+> event) and follow `docs/STRIPE_GOLIVE_CHECKLIST.md` for the test→live flip.
+> **FOUNDERS49 is DEPRECATED** — replaced by the ratified FOUNDER_20 framework
+> (6 months free + 20% off forever; single coupon `carelinkai_founder_20`;
+> phase-1 code `FOUNDER20`, Cleveland Ops-50, max 50). Existing FOUNDERS49
+> redemptions are grandfathered. The manual dashboard steps below remain as
+> reference only.
+
 ---
 
 ## Overview

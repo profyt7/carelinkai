@@ -82,6 +82,8 @@ export default function SubscriptionManager() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [showPlanChange, setShowPlanChange] = useState(false);
+  // FOUNDER_20 founder-cohort code — optional; validated server-side before checkout.
+  const [founderCode, setFounderCode] = useState('');
   // Tiers with a configured Stripe price. null = not loaded; until then we hide
   // AGENCY so a tier that would dead-end at checkout never appears as buyable.
   const [availablePlans, setAvailablePlans] = useState<string[] | null>(null);
@@ -111,7 +113,7 @@ export default function SubscriptionManager() {
       const res = await fetch('/api/operator/billing/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan }),
+        body: JSON.stringify({ plan, ...(founderCode.trim() ? { founderCode: founderCode.trim() } : {}) }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Failed to start checkout.'); return; }
@@ -365,6 +367,24 @@ export default function SubscriptionManager() {
           <div className="text-sm font-medium text-neutral-700 mb-3 flex items-center gap-2">
             <Zap className="w-4 h-4 text-amber-500" />
             Choose a plan — 14-day free trial, no credit card required at signup
+          </div>
+          {/* FOUNDER_20 cohort code: 6 months free + 20% off forever. Validated
+              server-side; an invalid code fails before checkout, never silently. */}
+          <div className="mb-4 max-w-sm">
+            <label htmlFor="founder-code" className="block text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-1">
+              Founder code (optional)
+            </label>
+            <input
+              id="founder-code"
+              type="text"
+              value={founderCode}
+              onChange={(e) => setFounderCode(e.target.value)}
+              placeholder="e.g. FOUNDER20"
+              className="form-input w-full rounded-md border-neutral-300 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500"
+            />
+            <p className="mt-1 text-xs text-neutral-500">
+              Founding-cohort operators: enter your code for 6 months free + 20% off forever.
+            </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {visiblePlans.map((plan) => {
