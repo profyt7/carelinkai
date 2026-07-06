@@ -30,27 +30,12 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    console.log('[Admin Home Detail API] GET request for id:', id);
-    
-    // Debug: Check cookies being received
-    const cookies = request.cookies.getAll();
-    console.log('[Admin Home Detail API] Cookies received:', cookies.map(c => `${c.name}=${c.value.substring(0, 20)}...`));
-    
-    // Try getServerSession first
+
+    // OL-118: NEVER log cookie/header values here (this route used to dump
+    // every cookie incl. the NextAuth session token prefix into Render logs).
+    // Auth material and PII stay out of log output; log role/booleans only.
     const session = await getServerSession(authOptions);
-    console.log('[Admin Home Detail API] Session from getServerSession:', session ? {
-      email: session.user?.email,
-      role: session.user?.role,
-      id: session.user?.id
-    } : 'No session');
-    
-    // Also try getToken as fallback/debug
     const token = await getToken({ req: request });
-    console.log('[Admin Home Detail API] Token from getToken:', token ? {
-      email: token.email,
-      role: token.role,
-      id: token.id
-    } : 'No token');
 
     // Use session if available, otherwise try token
     const userRole = session?.user?.role || (token?.role as string);
@@ -60,17 +45,8 @@ export async function GET(
     // Check if user is admin
     if (!userRole || userRole !== 'ADMIN') {
       console.log('[Admin Home Detail API] Unauthorized - session:', !!session, 'token:', !!token, 'role:', userRole);
-      return NextResponse.json({ 
-        error: 'Unauthorized',
-        debug: {
-          hasSession: !!session,
-          hasToken: !!token,
-          role: userRole || null,
-          expectedRole: 'ADMIN',
-          cookieCount: cookies.length,
-          cookieNames: cookies.map(c => c.name)
-        }
-      }, { status: 403 });
+      // No cookie names/values in the response body either (OL-118).
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
     const home = await prisma.assistedLivingHome.findUnique({
