@@ -44,7 +44,7 @@ import {
   parseRosterCsv,
   backfillLicensesFromRoster,
 } from '../src/lib/inspections/ingest';
-import { isExcludedDemoHome } from '../src/lib/inspections/matcher';
+import { isExcludedDemoHome, isValidRcfLicense } from '../src/lib/inspections/matcher';
 
 const prisma = new PrismaClient();
 
@@ -106,21 +106,29 @@ async function runRosterBackfill(rosterPath: string, force: boolean): Promise<vo
 }
 
 // The metro seed wrote "(ODH license 2318R — verify against ltc.ohio.gov.)" into
-// descriptions; lift those into the structured column.
+// descriptions; lift those into the structured column. Tokens are captured
+// loosely, then FORMAT-GATED to ^\d{4}R$ before any write (Park East lesson:
+// its description carried "365810" — a 6-digit nursing-home CCN, NOT an RCF
+// license — and the pre-gate parser wrote it; founder nulled it in prod
+// 2026-07-06). Non-RCF tokens are now reported as SKIPPED, never written.
 const DESC_LICENSE_RE = /ODH license\s+([0-9]{3,6}R?)\b/i;
 
 async function backfillLicensesFromDescriptions(force: boolean): Promise<void> {
   const homes = await prisma.assistedLivingHome.findMany({
-    where: { odhLicenseNumber: null, description: { contains: 'ODH license' } },
+    // INACTIVE homes excluded — mirrors the matcher's candidate policy (the
+    // pre-gate run wrote to at least one archived row).
+    where: { odhLicenseNumber: null, description: { contains: 'ODH license' }, status: { not: 'INACTIVE' } },
     select: {
       id: true,
       name: true,
+      status: true,
       description: true,
       operator: { select: { user: { select: { email: true } } } },
     },
   });
   let set = 0;
   let skippedDemo = 0;
+  let skippedInvalid = 0;
   for (const h of homes) {
     if (isExcludedDemoHome({ name: h.name, description: h.description, operatorEmail: h.operator?.user?.email ?? null })) {
       skippedDemo++;
@@ -129,13 +137,18 @@ async function backfillLicensesFromDescriptions(force: boolean): Promise<void> {
     const m = h.description?.match(DESC_LICENSE_RE);
     if (!m) continue;
     const lic = m[1].toUpperCase();
+    if (!isValidRcfLicense(lic)) {
+      skippedInvalid++;
+      console.log(`  ⚠️  SKIPPED (not an RCF license — likely a NH CCN): ${h.name} → "${lic}" NOT written. Verify the facility's license class (see OL-113/Park East).`);
+      continue;
+    }
     console.log(`  ${force ? 'SET' : 'WOULD SET'} ${h.name} → odhLicenseNumber=${lic}`);
     if (force) {
       await prisma.assistedLivingHome.update({ where: { id: h.id }, data: { odhLicenseNumber: lic } });
     }
     set++;
   }
-  console.log(`\nLicense backfill: ${set} home(s) ${force ? 'updated' : 'would be updated'}; ${skippedDemo} demo/test skipped; ${homes.length - set - skippedDemo} had no parseable token.`);
+  console.log(`\nLicense backfill: ${set} home(s) ${force ? 'updated' : 'would be updated'}; ${skippedDemo} demo/test skipped; ${skippedInvalid} non-RCF token(s) skipped; ${homes.length - set - skippedDemo - skippedInvalid} had no parseable token.`);
   if (!force && set > 0) console.log('Re-run with --force to write.');
 }
 

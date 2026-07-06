@@ -13,6 +13,7 @@ import {
   OdhCitation,
   OdhSurveyRecord,
   isExcludedDemoHome,
+  isValidRcfLicense,
   matchOdhRecord,
   normalizeLicense,
 } from './matcher';
@@ -234,7 +235,9 @@ export async function backfillLicensesFromRoster(
   const assigned = new Map<string, string>(); // homeId -> normalized license
 
   for (const row of rows) {
-    const lic = normalizeLicense(row.odhLicense);
+    // Format gate (Park East lesson): only ^\d{4}R$ RCF licenses are ever
+    // written — 6-digit NH CCNs and other identifiers count as invalid rows.
+    const lic = isValidRcfLicense(row.odhLicense) ? normalizeLicense(row.odhLicense) : null;
     if (!row.providerName?.trim() || !lic) {
       summary.invalidRows++;
       continue;
@@ -436,8 +439,9 @@ export async function ingestOdhRecords(
     if (outcome.via === 'LICENSE') summary.matchedByLicense++;
     else summary.matchedByNameCity++;
 
-    // Learn the license on a confirmed name+city match.
-    const recLic = normalizeLicense(rec.licenseNumber);
+    // Learn the license on a confirmed name+city match — but only ever WRITE
+    // well-formed RCF licenses (^\d{4}R$); NH CCNs etc. are never persisted.
+    const recLic = isValidRcfLicense(rec.licenseNumber) ? normalizeLicense(rec.licenseNumber) : null;
     const needsLicenseBackfill =
       outcome.via === 'NAME_CITY' && recLic && !normalizeLicense(outcome.home.odhLicenseNumber);
     if (needsLicenseBackfill) {

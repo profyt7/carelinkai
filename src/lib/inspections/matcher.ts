@@ -61,6 +61,18 @@ export function normalizeLicense(lic: string | null | undefined): string | null 
   return cleaned.length >= 2 ? cleaned : null;
 }
 
+/**
+ * True iff the token is a well-formed Ohio RCF license: exactly four digits +
+ * "R" (e.g. "2318R", "0592R"). Six-digit numerics like "365810" are nursing-
+ * home CCNs, NOT RCF licenses — writing one poisons matching AND signals the
+ * facility may be NH-licensed rather than an RCF (see the Park East incident,
+ * 2026-07-06). Every code path that WRITES odhLicenseNumber must gate on this;
+ * matching/comparison still uses normalizeLicense on whatever is stored.
+ */
+export function isValidRcfLicense(lic: string | null | undefined): boolean {
+  return typeof lic === 'string' && /^\d{4}R$/i.test(lic.trim());
+}
+
 // Generic corporate/legal noise that differs between ODH's licensee name and our
 // display name without changing facility identity. Deliberately does NOT include
 // care-type words ("assisted living", "memory care") — stripping those would
