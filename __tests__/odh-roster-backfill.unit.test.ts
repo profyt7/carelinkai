@@ -138,7 +138,7 @@ describe('backfillLicensesFromRoster', () => {
       prisma,
       [
         row({ odhLicense: '' }) as any,
-        row({ providerName: 'Demo Home Cleveland', odhLicense: '777R' }) as any,
+        row({ providerName: 'Demo Home Cleveland', odhLicense: '0777R' }) as any,
       ],
       { force: true },
     );
