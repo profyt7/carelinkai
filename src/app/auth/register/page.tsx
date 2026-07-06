@@ -170,6 +170,17 @@ export default function RegisterPage() {
     rawRoleParam && VALID_ROLES.includes(rawRoleParam) ? rawRoleParam : null;
   const claimTokenFromUrl = searchParams?.get("claimToken") ?? null;
 
+  // OL-117: record that the claim link was opened (durable visit evidence for
+  // outreach follow-ups). Token is verified server-side; fire-and-forget.
+  useEffect(() => {
+    if (!claimTokenFromUrl) return;
+    fetch("/api/claim-link/visit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: claimTokenFromUrl, source: "register_page" }),
+    }).catch(() => {});
+  }, [claimTokenFromUrl]);
+
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);

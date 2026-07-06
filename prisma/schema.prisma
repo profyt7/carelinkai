@@ -1412,6 +1412,24 @@ enum PayerSource {
   NOT_SURE
 }
 
+/// OL-117: claim-link VISIT evidence — one row each time /claim or the
+/// register page is opened with a VALID signed claim token, so outreach
+/// follow-ups can answer "was the link opened, and when?" without log
+/// forensics (minting is stateless — this is the only durable trace).
+/// Minimal by design: timestamp + homeId + token email + which surface.
+/// No FKs (evidence survives home churn); append-only, no update path.
+model ClaimLinkVisit {
+  id            String   @id @default(cuid())
+  homeId        String
+  operatorEmail String
+  source        String // 'claim_page' | 'register_page'
+  visitedAt     DateTime @default(now())
+
+  @@index([homeId])
+  @@index([operatorEmail])
+  @@index([visitedAt])
+}
+
 // TCPA/marketing lead-consent evidence (feat/lead-consent-capture). One row per
 // family-facing form submission that collects/shares contact info, BOTH consent
 // states recorded. IMMUTABLE by design: created once at submit, no update path

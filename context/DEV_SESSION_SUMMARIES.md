@@ -2,6 +2,19 @@
 
 ---
 
+### 2026-07-06 (Session #3) — security log fix + license gate + roster CSV + OL-117 + Park East report (4 PRs, held)
+- **Objective:** Founder follow-ups from the production runs: (1) scrub auth material from logs [security]; (1a) format-gate license writes after the Park East CCN write; (2) land the Cowork roster CSV + Render commands; (4) build OL-117 ClaimLinkVisit; (1b) investigate Park East; (5) housekeeping (OL-076 addition, OL-108 correction confirm).
+- **Work completed (4 PRs, all held for review):**
+  - **#699 `fix/log-scrub-auth` (OL-118):** removed the admin home-detail route's cookie dump (`name=value[0..20]...` incl. the session-token prefix — the exact 7/2 Render log lines) + email-bearing debug logs + cookie-name enumeration in the 403 body. Exposure LOW (20 chars = constant JWE header, not a credential); sweep found no other cookie/header loggers.
+  - **#700 `fix/rcf-license-format`:** `isValidRcfLicense` (^\d{4}R$) gates every odhLicenseNumber write site (description backfill, roster backfill, survey-ingest learned-license); description backfill also now excludes INACTIVE homes and loudly SKIPs non-RCF tokens (Park East's 365810 pinned in tests at all three sites). 5 new tests.
+  - **#701 `chore/odh-roster-csv`:** Cowork roster from `dropoff/odh-roster` → `scripts/data/` (must ride a main deploy — Render shell can't git pull). Validated with the shipped parser: 208 rows, 208/208 well-formed licenses, 0 dupes, all ACTIVE, 7 metro counties. Render runbook in the PR (backfill-licenses --force → roster dry-run → --force).
+  - **#702 `feat/claim-link-visits` (OL-117, founder-approved):** ClaimLinkVisit model (migration 20260706000001) + server-side recording on /claim valid-token renders + token-verified `POST /api/claim-link/visit` for the register page (no validity oracle, can't be spammed, always {ok:true}). 7 tests incl. forged-token and never-throw paths.
+  - **Park East report (1b, NO listing change):** seed carried `lic '365810'` (Wiggins/Montefiore campus, from continuingcarecommunities.org) — a 6-digit SNF CCN. Park East was ALREADY identified as "SNF/rehab, no public AL" and archived INACTIVE by #622 (id `cmqqrkmww0020rlmbthcvype7`); outreach data holds it (`op: hold`); it is absent from the ODH RCF roster (consistent with NH licensure). So there is NO public wrong-care-level exposure — today's backfill wrote to the INACTIVE row (the missing status filter, fixed in #700). Residuals: stale `careLevel [ASSISTED, MEMORY_CARE]` on the INACTIVE row (invisible, optional tidy-up) + METRO_RCF_MASTER_LIST row 50 still says "AL, MC (lic 365810)" — correct on the next Cowork master-list sync.
+  - **Housekeeping:** OL-076 gains `/api/admin/concierge/[id]` (sync-params, from the flake diagnosis); OL-108's Maplewood correction confirmed present on main (merged via #698).
+- **Tests/build status:** 12 new tests this session; full suite green on every branch; tsc/lint clean per branch.
+- **Deployment impact:** nothing until Chris merges. #702 carries additive migration `20260706000001`. Suggested merge order: #699 (security) → #700 → #701 (after #700 so the roster run has the gate) → #702.
+- **Recommended next step:** merge train, then Render: re-run `--backfill-licenses --force` (Park East now SKIPs), roster dry-run → `--force`, and the founder ClaimLinkVisit query is ready for the next warm-lead call.
+
 ### 2026-07-05 (Session #2) — Stripe go-live prep + OL-112 demo filter + OL-113 roster mode (3 PRs, held for review)
 - **Objective:** After Chris reviewed + merged #695 (payer screener), run the staged Session #2: (1) Stripe go-live prep, (2) OL-112 demo-metrics filter, (3) OL-113 data prep (roster CSV mode). All PRs opened but HELD for Chris's review.
 - **Work completed:**
