@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { verifyClaimToken } from '@/lib/claim-token';
+import { recordClaimLinkVisit } from '@/lib/claim-engine/claim-link-visit';
 import ClaimConfirm from './ClaimConfirm';
 
 /**
@@ -52,6 +53,14 @@ export default async function ClaimPage({ searchParams }: { searchParams: { toke
   if (!token || !payload || !payload.homeId) {
     return <Notice title="This link is invalid" body="The claim link is invalid or has expired. Please use the most recent email we sent, or reply to it and we’ll help." />;
   }
+
+  // OL-117: durable "the link was opened" evidence for outreach follow-ups.
+  // Fire-and-forget — recording never blocks or breaks the render.
+  void recordClaimLinkVisit({
+    homeId: payload.homeId,
+    operatorEmail: payload.operatorEmail,
+    source: 'claim_page',
+  });
 
   const session = await getServerSession(authOptions);
 
