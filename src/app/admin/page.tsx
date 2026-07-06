@@ -3,86 +3,26 @@ import { getServerSession } from 'next-auth';
 import authOptions from '@/lib/auth';
 import { FiUsers, FiHome, FiActivity, FiTrendingUp, FiMessageSquare, FiFileText, FiAlertCircle, FiDollarSign, FiCreditCard, FiTruck, FiShield } from 'react-icons/fi';
 import Link from 'next/link';
-import { prisma } from '@/lib/prisma';
+import { getAdminStats } from '@/lib/admin/stats';
 
 export const dynamic = 'force-dynamic';
 
-async function getAdminStats() {
-  const [
-    userCount,
-    homeCount,
-    caregiverCount,
-    inquiryCount,
-    placementCount,
-    activeUsers,
-    activeOperators,
-    proCaregiversCount,
-    activeProvidersCount,
-    familyPlusCount,
-  ] = await Promise.all([
-    prisma.user.count(),
-    prisma.assistedLivingHome.count(),
-    prisma.user.count({ where: { role: 'CAREGIVER' } }),
-    prisma.inquiry.count(),
-    prisma.placementSearch.count(),
-    prisma.user.count({
-      where: { lastLoginAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
-    }),
-    prisma.operator.findMany({
-      where: { subscriptionStatus: { in: ['ACTIVE', 'TRIALING'] } },
-      select: { subscriptionPlan: true },
-    }),
-    (prisma as any).caregiver.count({ where: { proStatus: { in: ['ACTIVE', 'TRIALING'] } } }),
-    (prisma as any).provider.count({ where: { listingStatus: { in: ['ACTIVE', 'TRIALING'] } } }),
-    prisma.family.count({ where: { plusStatus: { in: ['ACTIVE', 'TRIALING'] } } }),
-  ]);
-
-  // Transport commissions: sum platformFee on COMPLETED rides this calendar month
-  const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-  const transportCommissions = await prisma.ride.aggregate({
-    where: { status: 'COMPLETED', createdAt: { gte: monthStart } },
-    _sum: { platformFee: true },
-  });
-  const transportCommissionMTD = Number(transportCommissions._sum?.platformFee ?? 0);
-
-  const operatorMRR = (activeOperators as any[]).reduce((sum: number, op: any) => {
-    const price = op.subscriptionPlan === 'STARTER' ? 99
-      : op.subscriptionPlan === 'PROFESSIONAL' ? 249
-      : op.subscriptionPlan === 'GROWTH' ? 499 : 0;
-    return sum + price;
-  }, 0);
-  const providerMRR = (activeProvidersCount as number) * 99;
-  const caregiverProMRR = (proCaregiversCount as number) * 19;
-  const dpMRR = 0; // Discharge planners are FREE (ratified 2026-06-27) — not a revenue line.
-  const familyPlusMRR = (familyPlusCount as number) * 19;
-  const totalMRR = operatorMRR + providerMRR + caregiverProMRR + dpMRR + familyPlusMRR;
-
-  return {
-    userCount,
-    homeCount,
-    caregiverCount,
-    inquiryCount,
-    placementCount,
-    activeUsers,
-    transportCommissionMTD,
-    mrr: { operator: operatorMRR, provider: providerMRR, caregiver: caregiverProMRR, dp: dpMRR, familyPlus: familyPlusMRR, total: totalMRR },
-    mrrCounts: {
-      operators: (activeOperators as any[]).length,
-      providers: activeProvidersCount as number,
-      proCaregiversCount: proCaregiversCount as number,
-      familyPlus: familyPlusCount as number,
-    },
-  };
-}
-
-export default async function AdminDashboard() {
+export default async function AdminDashboard({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[]>>;
+}) {
   const session = await getServerSession(authOptions);
 
   if (!session || session.user?.role !== 'ADMIN') {
     redirect('/auth/login');
   }
 
-  const stats = await getAdminStats();
+  // OL-112: metrics exclude demo/tutorial fixtures unless the admin flips the
+  // "Show demo data" toggle (?showDemo=1). Next 15: searchParams is async.
+  const sp = (await searchParams) ?? {};
+  const showDemo = sp['showDemo'] === '1';
+  const stats = await getAdminStats(showDemo);
 
   const quickActions = [
     {
@@ -167,12 +107,26 @@ export default async function AdminDashboard() {
               <h1 className="text-3xl font-bold text-neutral-900">Admin Dashboard</h1>
               <p className="mt-1 text-neutral-600">Welcome back, {session.user?.name || session.user?.email}</p>
             </div>
-            <Link
-              href="/"
-              className="text-[#3978FC] hover:text-[#3167d4] font-medium transition-colors"
-            >
-              ← Back to App
-            </Link>
+            <div className="flex items-center gap-4">
+              {/* OL-112: demo rows are retained for tutorials but filtered from
+                  metrics; this toggle restores them for tutorial recording. */}
+              <Link
+                href={showDemo ? '/admin' : '/admin?showDemo=1'}
+                className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                  showDemo
+                    ? 'border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100'
+                    : 'border-neutral-300 bg-white text-neutral-600 hover:bg-neutral-50'
+                }`}
+              >
+                {showDemo ? 'Showing demo data — click to hide' : 'Show demo data'}
+              </Link>
+              <Link
+                href="/"
+                className="text-[#3978FC] hover:text-[#3167d4] font-medium transition-colors"
+              >
+                ← Back to App
+              </Link>
+            </div>
           </div>
         </div>
       </header>
