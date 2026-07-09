@@ -2,6 +2,21 @@
 
 ---
 
+### 2026-07-09 — Symphony at Mentor warm-lead prep (seed + verified address; mint-only, OL-108 continuation)
+- **Objective:** Prep Symphony at Mentor (Elegance Living / Symphony brand, Mentor OH — Lake County) as a claimable DRAFT so Chris can hand-send a branded claim email to the operator (claim contact: Jeanne Onuska, Sales & Marketing — jeanne.onuska@symphonyatmentor.com). Same warm-lead flow as the VA leads / Vitalia Strongsville.
+- **Work completed:**
+  - **`scripts/seed-symphony-at-mentor.ts` (NEW):** ensures the DRAFT listing exists under the shared `directory-unclaimed@carelinkai.system` placeholder operator (Symphony at Mentor is already staged in `seed-cleveland-batch2.ts`, so it normally already exists — this creates it only if batch 2 was never run) and backfills its **human-verified address**, ODH license number (`2346R`), and public phone (`(440) 256-8320`). Guarded like `backfill-verified-addresses.ts`: only ever touches a DRAFT listing under the directory operator, marks address fields VERIFIED in `preFilledFields`, dry-run by default, `--force` to write, idempotent.
+  - **Address provenance (two independent sources):** (1) ODH RCF roster `scripts/data/odh_rcf_cleveland_metro_2026_07_04.csv` — "SYMPHONY AT MENTOR, 8155 MENTOR HILLS DRIVE, MENTOR, LAKE, (440)256-8320, ACTIVE, 2346R" (street/city/county/phone/license, no ZIP); (2) seniorhousingnet.com / assistedlivingnearme.net — 8155 Mentor Hills Dr, **Mentor, OH 44060** (supplies the ZIP the roster omits). Phone matches the founder brief exactly. Not fabricated.
+  - **Minting is unchanged / reused:** no new mint code — the existing `scripts/mint-claim-link.ts` (mint-only, read-only, resolves by name+city) mints the 45-day token bound to the operator email. Automated claim-drip/email cron stays OFF — Chris sends the branded email by hand.
+- **Files changed:** `scripts/seed-symphony-at-mentor.ts` (NEW), `context/DEV_SESSION_SUMMARIES.md` (this entry).
+- **Commands run (founder, Render shell — agent env lacks prod DATABASE_URL/NEXTAUTH_SECRET):**
+  1. `npx tsx scripts/seed-symphony-at-mentor.ts` (dry-run, review) → `--force`
+  2. `npx tsx scripts/mint-claim-link.ts --email jeanne.onuska@symphonyatmentor.com --name "Symphony at Mentor" --city Mentor` → prints the claim URL + 45-day expiry.
+- **Tests/build status:** no test change; script mirrors the vetted seed/backfill idioms. No local toolchain in this env (node_modules not installed) — validated by field-by-field review against `prisma/schema.prisma`.
+- **Deployment impact:** none until the founder runs the two scripts on Render; touches exactly one DRAFT listing + its address. No production data touched from the agent env.
+- **New risks/blockers:** the actual claim URL + exact expiry date are produced by the founder's Render run (tokens are signed with the prod `NEXTAUTH_SECRET`, which is not in the agent env). Expiry = run date + 45 days.
+- **Recommended next step:** merge → founder runs the two commands on Render → paste the printed URL into the branded email button.
+
 ### 2026-07-06 (Session #3) — security log fix + license gate + roster CSV + OL-117 + Park East report (4 PRs, held)
 - **Objective:** Founder follow-ups from the production runs: (1) scrub auth material from logs [security]; (1a) format-gate license writes after the Park East CCN write; (2) land the Cowork roster CSV + Render commands; (4) build OL-117 ClaimLinkVisit; (1b) investigate Park East; (5) housekeeping (OL-076 addition, OL-108 correction confirm).
 - **Work completed (4 PRs, all held for review):**
