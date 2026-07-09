@@ -27,7 +27,12 @@
  *
  * SAFETY (mirrors backfill-verified-addresses.ts):
  *   - Only ever touches a listing owned by the directory-unclaimed placeholder
- *     operator AND with status=DRAFT — never a claimed/ACTIVE listing.
+ *     operator — the query is scoped to that operator, so a listing a REAL operator
+ *     has claimed can never be resolved here. Status is NOT restricted: a published
+ *     unclaimed directory listing is ACTIVE (publish-directory-homes.ts takes complete
+ *     unclaimed homes live so families can discover + claim them — the two-sided
+ *     cold-start model), and its address is exactly what we want correct. An explicit
+ *     assert re-checks the owner is the placeholder sentinel before any write.
  *   - Marks the written address fields VERIFIED in preFilledFields (honest provenance:
  *     human-verified against the ODH RCF roster + the community's own listing, not
  *     machine-scraped).
@@ -131,6 +136,7 @@ async function main() {
         select: {
           id: true, name: true, status: true, preFilledFields: true, phone: true,
           odhLicenseNumber: true,
+          operator: { select: { user: { select: { email: true } } } },
           address: { select: { id: true, street: true, city: true, state: true, zipCode: true } },
         },
       })
@@ -153,6 +159,7 @@ async function main() {
         select: {
           id: true, name: true, status: true, preFilledFields: true, phone: true,
           odhLicenseNumber: true,
+          operator: { select: { user: { select: { email: true } } } },
           address: { select: { id: true, street: true, city: true, state: true, zipCode: true } },
         },
       });
@@ -169,11 +176,16 @@ async function main() {
     return;
   }
 
-  // 3. Guard: only DRAFT listings under the directory operator are eligible.
-  if (home.status !== 'DRAFT') {
-    console.log(`\n⚠ SKIP — status=${home.status} (only DRAFT). Not touching a claimed/live listing.`);
+  // 3. Guard: never touch a listing a REAL operator has claimed. The findFirst above
+  //    is already scoped to the directory placeholder operator, so this is an explicit
+  //    belt-and-suspenders assert — not a status check (a published unclaimed listing
+  //    is ACTIVE, and that's fine to enrich).
+  const ownerEmail = (home.operator?.user?.email || '').toLowerCase();
+  if (ownerEmail !== SEED_USER_EMAIL) {
+    console.log(`\n⚠ SKIP — owned by ${ownerEmail || '(unknown)'}, not the directory placeholder. This listing looks CLAIMED; not touching it.`);
     return;
   }
+  console.log(`  (unclaimed directory listing, status=${home.status} — safe to enrich)`);
 
   // 4. Verified address.
   const a = home.address;
