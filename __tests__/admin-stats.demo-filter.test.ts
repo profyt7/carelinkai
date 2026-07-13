@@ -17,6 +17,7 @@ jest.mock('@/lib/prisma', () => ({
     provider: { count: jest.fn() },
     family: { count: jest.fn() },
     ride: { aggregate: jest.fn() },
+    leadDelivery: { findMany: jest.fn() },
   },
 }));
 
@@ -36,6 +37,7 @@ beforeEach(() => {
   p.provider.count.mockResolvedValue(0);
   p.family.count.mockResolvedValue(0);
   p.ride.aggregate.mockResolvedValue({ _sum: { platformFee: 0 } });
+  p.leadDelivery.findMany.mockResolvedValue([]);
 });
 afterEach(() => jest.clearAllMocks());
 

@@ -21,6 +21,7 @@ import { UserRole } from '@prisma/client';
 import { sendConciergeTourNotification, sendNewLeadOperatorEmail } from '@/lib/email';
 import { startClaimDripOnLead } from '@/lib/claim-engine/claim-drip';
 import { markConciergeTourRequested, homeIsUnclaimed, CuratedHome } from '@/lib/concierge/tour-coordination';
+import { recordLeadDelivery, qualificationFromConcierge, leadKeyFor } from '@/lib/leads/lead-delivery';
 import { captureError } from '@/lib/sentry';
 
 const bodySchema = z.object({ homeId: z.string().min(1) });
@@ -34,7 +35,8 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       where: { id: params.id },
       select: {
         id: true, userId: true, isConcierge: true, conciergeStatus: true, curatedHomes: true,
-        user: { select: { firstName: true, lastName: true, dischargePlannerProfile: { select: { organization: true } } } },
+        payerSource: true, patientInfo: true,
+        user: { select: { firstName: true, lastName: true, email: true, dischargePlannerProfile: { select: { organization: true } } } },
       },
     });
     if (!search || !search.isConcierge) {
@@ -53,7 +55,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
     const home = await prisma.assistedLivingHome.findUnique({
       where: { id: homeId },
-      select: { id: true, name: true, operator: { select: { user: { select: { email: true, firstName: true } } } } },
+      select: { id: true, name: true, operator: { select: { id: true, user: { select: { email: true, firstName: true } } } } },
     });
     if (!home) {
       return NextResponse.json({ error: 'Home not found' }, { status: 404 });
@@ -87,6 +89,26 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
         leadType: 'tour',
         ctaUrl: `${appUrl}/operator/tours`,
       });
+      // Demand-first North Star: a concierge tour on a CLAIMED home is a lead
+      // delivered automatically. Unclaimed goes through the manual concierge
+      // deliver action below (the claim-drip branch is not a delivery).
+      const pin = (search.patientInfo ?? {}) as Record<string, unknown>;
+      void recordLeadDelivery({
+        facilityId: homeId,
+        operatorId: home.operator?.id ?? null,
+        source: 'CONCIERGE',
+        sourceId: search.id,
+        channel: 'AUTOMATED',
+        claimed: true,
+        qualification: qualificationFromConcierge({
+          payerSource: search.payerSource,
+          dpEmail: search.user?.email,
+          dpName,
+          timeline: typeof pin.timeline === 'string' ? pin.timeline : null,
+          careNeeds: typeof pin.medicalNeeds === 'string' ? pin.medicalNeeds : null,
+        }),
+        leadKey: leadKeyFor({ source: 'CONCIERGE', placementSearchId: search.id }),
+      }).catch(() => {});
     } else if (!claimed) {
       // Unclaimed: fire the claim-conversion signal (operator nudge + call-list).
       void startClaimDripOnLead({ homeId, trigger: 'tour' });

@@ -64,6 +64,8 @@ export default function AdminConciergeCuratePage() {
   const [sel, setSel] = useState<Record<string, Selection>>({});
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState<string | null>(null);
+  const [delivering, setDelivering] = useState<string | null>(null);
+  const [delivered, setDelivered] = useState<Record<string, boolean>>({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -112,6 +114,27 @@ export default function AdminConciergeCuratePage() {
       toast.error(e?.message || 'Failed');
     } finally {
       setSaving(null);
+    }
+  };
+
+  // Demand-first North Star: log that this lead was hand-delivered to a specific
+  // facility (claimed or unclaimed public contact). This is what feeds the admin
+  // "Qualified leads delivered" headline — the pivot's gate metric.
+  const recordDelivery = async (homeId: string, homeName: string) => {
+    setDelivering(homeId);
+    try {
+      const res = await fetch(`/api/admin/concierge/${id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'deliver', homeId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Failed');
+      setDelivered((prev) => ({ ...prev, [homeId]: true }));
+      toast.success(`Delivery to ${homeName} recorded${data?.claimed ? '' : ' (unclaimed — public contact)'}`);
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to record delivery');
+    } finally {
+      setDelivering(null);
     }
   };
 
@@ -229,6 +252,26 @@ export default function AdminConciergeCuratePage() {
                           <span className="inline-flex items-center gap-1 bg-success-100 text-success-800 px-2 py-0.5 rounded-full text-xs font-medium">🗓️ Tour requested</span>
                         )}
                         <Link href={`/homes/${m.homeId}`} target="_blank" className="text-xs text-primary-600 underline">view</Link>
+                        <button
+                          type="button"
+                          onClick={() => recordDelivery(m.homeId, m.homeName)}
+                          disabled={delivering === m.homeId}
+                          title="Log that this lead was delivered to this facility (feeds the demand-first metric)"
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border transition-colors disabled:opacity-50 ${
+                            delivered[m.homeId]
+                              ? 'border-success-300 bg-success-50 text-success-800'
+                              : 'border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50'
+                          }`}
+                        >
+                          {delivering === m.homeId ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : delivered[m.homeId] ? (
+                            <CheckCircle className="h-3 w-3" />
+                          ) : (
+                            <Send className="h-3 w-3" />
+                          )}
+                          {delivered[m.homeId] ? 'Delivered' : 'Record delivery'}
+                        </button>
                       </div>
                       <div className="text-xs text-neutral-500 flex items-center gap-3 mt-0.5 flex-wrap">
                         {m.address && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" /> {m.address}</span>}

@@ -15,6 +15,12 @@ import { isPayerSource } from '@/lib/payer/payer-source';
 import { notifyUnclaimedHomeInquiry, isUnclaimedHome } from '@/lib/claim-engine/inquiry-claim-notification';
 import { sendNewLeadOperatorEmail } from '@/lib/email';
 import { coordinateConciergeInquiry } from '@/lib/concierge/tour-coordination';
+import {
+  recordLeadDelivery,
+  qualificationFromInquiry,
+  hasConsumerConsent,
+  leadKeyFor,
+} from '@/lib/leads/lead-delivery';
 
 /**
  * POST /api/inquiries - Create a new inquiry
@@ -151,6 +157,45 @@ export async function POST(request: NextRequest) {
         leadType: 'inquiry',
         ctaUrl: `${appUrl.replace(/\/$/, '')}/operator/inquiries`,
       }).catch(() => {});
+    }
+
+    // Demand-first North Star: an inquiry on a CLAIMED home is a lead delivered
+    // to the operator automatically. UNCLAIMED homes only start a claim drip
+    // (nobody has delivered the lead to the facility yet) — those are counted
+    // when the concierge hand-delivers to the facility's public contact. Never
+    // blocks the response; the recorder swallows its own errors.
+    if (operatorEmail && !isUnclaimedHome(operatorEmail) && inquiry.home?.operator?.id) {
+      const operatorId = inquiry.home.operator.id;
+      void (async () => {
+        const consent = await hasConsumerConsent(inquiry.id, inquiry.contactEmail);
+        await recordLeadDelivery({
+          facilityId: inquiry.homeId,
+          operatorId,
+          source: 'INQUIRY',
+          sourceId: inquiry.id,
+          channel: 'AUTOMATED',
+          claimed: true,
+          qualification: qualificationFromInquiry(
+            {
+              contactName: inquiry.contactName,
+              contactEmail: inquiry.contactEmail,
+              contactPhone: inquiry.contactPhone,
+              careNeeds: inquiry.careNeeds,
+              urgency: inquiry.urgency,
+              message: inquiry.message,
+              additionalInfo: inquiry.additionalInfo,
+              payerSource: inquiry.payerSource,
+            },
+            consent,
+          ),
+          leadKey: leadKeyFor({
+            source: 'INQUIRY',
+            familyId: inquiry.familyId,
+            contactEmail: inquiry.contactEmail,
+            contactPhone: inquiry.contactPhone,
+          }),
+        });
+      })().catch(() => {});
     }
 
     // Inquiry→claim "pull" engine (OL-083): if the home is UNCLAIMED, best-effort

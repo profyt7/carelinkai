@@ -20,6 +20,8 @@ import { requireRole } from '@/lib/auth-utils';
 import { UserRole } from '@prisma/client';
 import { createInAppNotification } from '@/lib/services/notifications';
 import { sendConciergeShortlistReadyEmail } from '@/lib/email';
+import { homeIsUnclaimed } from '@/lib/concierge/tour-coordination';
+import { recordLeadDelivery, qualificationFromConcierge, leadKeyFor } from '@/lib/leads/lead-delivery';
 
 function authErr(error: any): NextResponse | null {
   if (error?.name === 'UnauthenticatedError') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -78,6 +80,10 @@ const patchSchema = z.discriminatedUnion('action', [
     curatedHomes: z.array(curatedSchema).min(1, 'Add at least one home to the shortlist'),
     conciergeNote: z.string().optional(),
   }),
+  // Demand-first North Star: the admin hand-delivered this lead to a specific
+  // facility (Wizard-of-Oz) — records a MANUAL_CONCIERGE delivery whether the
+  // facility is operator-claimed or reached via its public phone/email.
+  z.object({ action: z.literal('deliver'), homeId: z.string().min(1) }),
 ]);
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
@@ -100,6 +106,50 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
         data: { conciergeStatus: 'MATCHING' },
       });
       return NextResponse.json({ ok: true, status: 'MATCHING' });
+    }
+
+    if (parsed.action === 'deliver') {
+      const [search, home] = await Promise.all([
+        prisma.placementSearch.findUnique({
+          where: { id: params.id },
+          select: {
+            id: true, payerSource: true, patientInfo: true,
+            user: { select: { firstName: true, lastName: true, email: true } },
+          },
+        }),
+        prisma.assistedLivingHome.findUnique({
+          where: { id: parsed.homeId },
+          select: {
+            id: true, name: true,
+            operator: { select: { id: true, user: { select: { email: true } } } },
+          },
+        }),
+      ]);
+      if (!home) {
+        return NextResponse.json({ error: 'Facility not found' }, { status: 404 });
+      }
+      const claimed = !homeIsUnclaimed(home.operator?.user?.email);
+      const dpName = [search?.user?.firstName, search?.user?.lastName].filter(Boolean).join(' ') || undefined;
+      const pin = (search?.patientInfo ?? {}) as Record<string, unknown>;
+      const id = await recordLeadDelivery({
+        facilityId: home.id,
+        // Store the operator only when the facility is actually claimed; an
+        // unclaimed public-contact delivery has no operator account.
+        operatorId: claimed ? home.operator?.id ?? null : null,
+        source: 'CONCIERGE',
+        sourceId: params.id,
+        channel: 'MANUAL_CONCIERGE',
+        claimed,
+        qualification: qualificationFromConcierge({
+          payerSource: search?.payerSource ?? null,
+          dpEmail: search?.user?.email,
+          dpName,
+          timeline: typeof pin.timeline === 'string' ? pin.timeline : null,
+          careNeeds: typeof pin.medicalNeeds === 'string' ? pin.medicalNeeds : null,
+        }),
+        leadKey: leadKeyFor({ source: 'CONCIERGE', placementSearchId: params.id }),
+      });
+      return NextResponse.json({ ok: true, delivered: true, facility: home.name, claimed, recordId: id });
     }
 
     // action === 'respond' — enrich curated homes with current name/address.

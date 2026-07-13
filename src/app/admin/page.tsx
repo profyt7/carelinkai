@@ -132,6 +132,39 @@ export default async function AdminDashboard({
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Demand-first North Star (7/9 pivot): qualified leads delivered to a
+            facility — the headline gate metric, above supply/vanity counts. */}
+        {(() => {
+          const { thisWeek, lastWeek, mtd } = stats.leadsDelivered;
+          const delta = thisWeek - lastWeek;
+          const pct = lastWeek > 0 ? Math.round((delta / lastWeek) * 100) : null;
+          const trendUp = delta >= 0;
+          return (
+            <div className="mb-8 bg-gradient-to-br from-success-500 to-success-600 rounded-xl p-6 text-white shadow-sm">
+              <div className="flex items-start justify-between gap-4 flex-wrap">
+                <div>
+                  <p className="text-sm font-medium text-success-100 flex items-center gap-2">
+                    <FiTrendingUp className="text-lg" /> Qualified Leads Delivered · this week
+                  </p>
+                  <p className="text-5xl font-bold mt-2">{thisWeek}</p>
+                  <p className="text-sm text-success-100 mt-2">
+                    <span className="font-semibold text-white">
+                      {trendUp ? '▲' : '▼'} {Math.abs(delta)}
+                      {pct !== null ? ` (${pct >= 0 ? '+' : ''}${pct}%)` : ''}
+                    </span>{' '}
+                    vs last week ({lastWeek})
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-success-100">Month to date</p>
+                  <p className="text-3xl font-bold mt-1">{mtd}</p>
+                  <p className="text-xs text-success-200 mt-1">claimed + concierge · deduped</p>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow-sm p-6 border border-neutral-200">
@@ -203,10 +236,10 @@ export default async function AdminDashboard({
             <h2 className="text-xl font-bold text-neutral-900">Revenue Overview (Est. MRR)</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
-            <div className="lg:col-span-1 bg-gradient-to-br from-success-500 to-success-600 rounded-lg p-5 text-white">
-              <p className="text-sm font-medium text-success-100">Total MRR</p>
-              <p className="text-3xl font-bold mt-1">${stats.mrr.total.toLocaleString()}</p>
-              <p className="text-xs text-success-200 mt-1">Active + trialing</p>
+            <div className="lg:col-span-1 bg-white rounded-lg border-2 border-success-200 p-5">
+              <p className="text-xs font-semibold text-success-700 uppercase tracking-wide">Total MRR</p>
+              <p className="text-2xl font-bold text-neutral-900 mt-1">${stats.mrr.total.toLocaleString()}</p>
+              <p className="text-xs text-neutral-500 mt-1">Active + trialing</p>
             </div>
             <div className="bg-white rounded-lg border border-neutral-200 p-5">
               <div className="flex items-center justify-between mb-2">

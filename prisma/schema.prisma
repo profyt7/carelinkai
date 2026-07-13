@@ -607,6 +607,7 @@ model AssistedLivingHome {
   placementRequests      PlacementRequest[]
   waitlistEntries        WaitlistEntry[]
   shiftNeeds             ShiftNeed[]
+  leadDeliveries         LeadDelivery[]
 
   @@index([operatorId])
   @@index([status])
@@ -3328,4 +3329,60 @@ model EmailSuppression {
   suppressedAt DateTime @default(now())
 
   @@index([email])
+}
+
+/// Demand-first North Star (feat/demand-first-admin-metric, 2026-07-13).
+///
+/// A LeadDelivery row is an append-only, point-in-time record that ONE lead was
+/// routed to ONE specific facility. Deliberately decoupled from claims (the 7/9
+/// demand-first pivot): a facility can be operator-claimed (operatorId set,
+/// claimed=true) OR unclaimed and reached by hand via its public phone/email
+/// (operatorId=null, claimed=false). The unclaimed/manual-concierge path is the
+/// important half early on — a metric that only counted claimed inquiries would
+/// read ~zero during the Wizard-of-Oz motion, so it is a first-class case here.
+///
+/// facilityId is ALWAYS set (that is "the specific facility"); operatorId is the
+/// snapshot of the owning operator account when one exists. The qualification
+/// snapshot mirrors the 5-part "Qualified Delivered Lead" bar so the headline can
+/// count QUALIFIED leads and the mapping can be tuned in one place (see
+/// src/lib/leads/lead-delivery.ts) without a backfill. leadKey lets the aggregate
+/// count a lead ONCE no matter how many facilities it reached.
+///
+/// No update/delete path exists in app code — like LeadConsent, this is evidence.
+model LeadDelivery {
+  id                 String              @id @default(cuid())
+  deliveredAt        DateTime            @default(now())
+  facilityId         String
+  operatorId         String? // null for unclaimed public-contact deliveries
+  source             LeadDeliverySource
+  sourceId           String // inquiryId | tourRequestId | placementSearchId
+  channel            LeadDeliveryChannel
+  claimed            Boolean // facility was operator-claimed at delivery time (snapshot)
+  // 5-part Qualified Delivered Lead bar, snapshotted at delivery time.
+  qualified          Boolean
+  hasContact         Boolean // reachable family/DP (name + phone/email)
+  hasCareNeed        Boolean // genuine care need + timeline
+  hasQualifyingFacts Boolean // care level / area / payer source captured
+  hasConsent         Boolean // consumer consented to be connected (OL-115)
+  // One lead counts once regardless of how many facilities it reached.
+  leadKey            String
+  createdAt          DateTime            @default(now())
+  facility           AssistedLivingHome  @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+
+  @@unique([source, sourceId, facilityId]) // idempotent per (lead, facility)
+  @@index([deliveredAt])
+  @@index([facilityId])
+  @@index([leadKey])
+  @@index([qualified])
+}
+
+enum LeadDeliverySource {
+  INQUIRY
+  TOUR_REQUEST
+  CONCIERGE
+}
+
+enum LeadDeliveryChannel {
+  AUTOMATED // system routed the lead to a claimed operator (email/SMS/in-app)
+  MANUAL_CONCIERGE // admin hand-delivered to a facility (Wizard-of-Oz), claimed or not
 }

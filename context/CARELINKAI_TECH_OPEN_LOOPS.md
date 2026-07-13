@@ -6,6 +6,21 @@ Each loop: what it is, why it matters, what done looks like.
 
 ---
 
+### OL-119: Demand-first admin North Star — "Qualified leads delivered to a facility"
+- **Status:** 🟢 BUILT 2026-07-13 (branch `feat/demand-first-admin-metric`, open pending Chris review). Implements the 7/9 demand-first pivot on the admin dashboard.
+- **Why:** the admin dashboard headlined supply/vanity counts (users/homes/inquiries) + Total MRR — NOT the pivot's gate metric. Claims were only ever tracked in CLI scripts (`report-claim-funnel.ts`), never on the dashboard. This makes "qualified leads delivered to a facility" the hero metric, **decoupled from claims**.
+- **Key correction honored:** the metric counts a lead delivered to a **specific facility regardless of claim status** — including a manual concierge (Wizard-of-Oz) delivery to an **unclaimed** facility's public phone/email (the important half early on). A claim-coupled metric would read ~zero during the manual motion.
+- **Storage decision (⚠️ deviates from the literal handoff):** a dedicated append-only **`LeadDelivery`** model, NOT a `deliveredToOperatorAt` column on `Inquiry`. Reason: concierge deliveries never create an `Inquiry` row and `TourRequest` requires a claimed operator, so a column could only ever count claimed inquiries — the exact failure the pivot corrected. `facilityId` always set; `operatorId` nullable (null = unclaimed public-contact). Migration `20260713000001_lead_delivery` (additive, idempotent).
+- **Definition in ONE place** (`src/lib/leads/lead-delivery.ts`, tunable, unit-pinned): 5-part Qualified Delivered Lead bar (contact · care need+timeline · qualifying facts [payerSource, OL-114] · consent [OL-115] · routed). `leadKey` dedupes one lead across facilities. `countQualifiedLeadsDelivered` = distinct qualified, this-week / last-week / MTD, same `isDemo` filter as the rest of /admin.
+- **Write sites:** (1) `/api/inquiries` claimed-home → AUTOMATED; (2) DP concierge tour on a claimed home → AUTOMATED; (3) **new admin "Record delivery" button** per facility on `/admin/concierge/[id]` (`PATCH … {action:'deliver'}`) → MANUAL_CONCIERGE, claimed OR unclaimed — the important early half.
+- **UI:** hero tile at the top of `/admin` (this-week count + WoW trend + MTD); Total MRR demoted from the green-gradient hero to a plain card.
+- **Judgment calls flagged for Chris:** (a) `hasQualifyingFacts` keys on `payerSource` as the one structured cross-source fact; (b) DP concierge leads treated as `hasConsent=true` (professional-authorization regime — OL-115 excludes DP intake from consumer consent). Both flip in one place.
+- **Tests:** `__tests__/lead-delivery.unit.test.ts` (25 assertions: bar matrix, leadKey dedupe, source mappings, consent lookup, windows, distinct count) + `admin-stats.demo-filter.test.ts` extended. tsc/lint clean.
+- **Done when:** Chris reviews the storage decision + the two judgment calls, merges, deploys (migration runs), and the hero tile shows real delivered-lead counts (starting from the manual concierge deliveries).
+- **Follow-ups (not built):** wire `TourRequest`/`/api/family/tours/request` (claimed-only, same helper, one call site); optional per-criterion checkboxes on the manual deliver action if Chris wants to assert the bar by hand rather than infer it.
+
+---
+
 ### OL-118: Auth cookie values were logged to Render stdout (security hygiene)
 - **Status:** 🟢 FIXED-PENDING-MERGE 2026-07-06 (PR **#699** `fix/log-scrub-auth`). Founder-reported: `__Secure-next-auth.session-token=...` lines visible in Render logs since at least 7/2.
 - **Root cause:** a leftover debug block in `GET /api/admin/homes/[id]` logged every request cookie as `name=value.substring(0,20)...` plus session/token debug objects carrying the admin's email; the 403 body also enumerated cookie names.

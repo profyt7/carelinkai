@@ -2,6 +2,21 @@
 
 ---
 
+### 2026-07-13 — Demand-first admin North Star (OL-119, `feat/demand-first-admin-metric`, held for review)
+- **Objective:** Make "qualified leads delivered to a facility" the admin dashboard headline (7/9 demand-first pivot), decoupled from claims — answering the audit that found the dashboard still headlined supply/vanity counts + Total MRR, with claims tracked only in CLI scripts.
+- **Work completed:**
+  - Discovered a spec/data-model mismatch: the handoff said "add `deliveredToOperatorAt` to `Inquiry`," but concierge deliveries never create an `Inquiry` row and `TourRequest` requires a claimed operator — so a column could only ever count claimed inquiries, the exact claim-coupling the pivot corrected. (Tried to confirm via AskUserQuestion; the tool's permission stream closed, so proceeded on the unambiguous intent and flagged the deviation loudly.)
+  - Built a dedicated append-only **`LeadDelivery`** model (`facilityId` always set, `operatorId` nullable = unclaimed public-contact) + migration `20260713000001_lead_delivery` (additive/idempotent, FK to home, unique on source+sourceId+facilityId).
+  - Centralized the definition in `src/lib/leads/lead-delivery.ts`: 5-part Qualified Delivered Lead bar (contact · care need+timeline · qualifying facts [payerSource] · consent [OL-115] · routed), `leadKey` dedupe, source→bar mappings, `countQualifiedLeadsDelivered` (this-week/last-week/MTD, isDemo-filtered).
+  - Wired 3 write sites: `/api/inquiries` claimed → AUTOMATED; DP concierge tour claimed → AUTOMATED; new admin "Record delivery" button on `/admin/concierge/[id]` → MANUAL_CONCIERGE (claimed OR unclaimed — the important early half of the Wizard-of-Oz motion).
+  - `/admin` UI: hero tile (this-week + WoW trend + MTD) promoted above the fold; Total MRR demoted from green-gradient hero to a plain card.
+- **Files changed:** `prisma/schema.prisma` (+`LeadDelivery`, 2 enums, home relation), `prisma/migrations/20260713000001_lead_delivery/migration.sql` (new), `src/lib/leads/lead-delivery.ts` (new), `src/lib/admin/stats.ts`, `src/app/admin/page.tsx`, `src/app/admin/concierge/[id]/page.tsx`, `src/app/api/inquiries/route.ts`, `src/app/api/discharge-planner/concierge/[id]/tour/route.ts`, `src/app/api/admin/concierge/[id]/route.ts`, `__tests__/lead-delivery.unit.test.ts` (new), `__tests__/admin-stats.demo-filter.test.ts`.
+- **Commands run:** `npm install --ignore-scripts` (canvas native build fails in this env — unrelated), `prisma generate` (v6.19.1), `prisma validate` (valid), `tsc --noEmit` (0 errors), `eslint` (clean, touched files), `jest`.
+- **Tests/build status:** 25 new/updated tests pass; full suite 687 passed / 10 skipped / **2 pre-existing `.render.tsx` suites fail ONLY in this env** because `--ignore-scripts` left `canvas` unbuilt (they pass in CI). tsc + lint clean.
+- **Deployment impact:** none until merged. Carries additive migration `20260713000001` (runs on deploy). No behavior change to existing flows — the recorder is fire-and-forget and never blocks a lead.
+- **New risks/blockers:** two judgment calls need Chris's sign-off (both flip in one place): (a) `hasQualifyingFacts` keys on `payerSource` as the single cross-source structured fact; (b) DP concierge leads treated as `hasConsent=true` (professional-authorization regime; OL-115 excludes DP intake from consumer consent). Also: the storage deviation (dedicated model vs `Inquiry` column) should be explicitly ratified.
+- **Recommended next step:** Chris reviews the storage decision + the two judgment calls; on merge + deploy the hero tile populates from the manual concierge "Record delivery" clicks first. Fast follow: wire `TourRequest`/`/api/family/tours/request` (claimed-only, same helper, one call site).
+
 ### 2026-07-06 (Session #3) — security log fix + license gate + roster CSV + OL-117 + Park East report (4 PRs, held)
 - **Objective:** Founder follow-ups from the production runs: (1) scrub auth material from logs [security]; (1a) format-gate license writes after the Park East CCN write; (2) land the Cowork roster CSV + Render commands; (4) build OL-117 ClaimLinkVisit; (1b) investigate Park East; (5) housekeeping (OL-076 addition, OL-108 correction confirm).
 - **Work completed (4 PRs, all held for review):**

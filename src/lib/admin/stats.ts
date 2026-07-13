@@ -13,8 +13,16 @@
  */
 
 import { prisma } from '@/lib/prisma';
+import { countQualifiedLeadsDelivered, type LeadsDeliveredCounts } from '@/lib/leads/lead-delivery';
 
 export interface AdminStats {
+  /**
+   * Demand-first North Star (7/9 pivot): distinct QUALIFIED leads actually
+   * delivered to a facility — claimed OR unclaimed/manual-concierge. This is the
+   * headline gate metric, not claims or raw inquiry volume. Flow metric, so it's
+   * windowed (this week / last week for the trend / month-to-date).
+   */
+  leadsDelivered: LeadsDeliveredCounts;
   userCount: number;
   homeCount: number;
   caregiverCount: number;
@@ -86,7 +94,12 @@ export async function getAdminStats(showDemo = false): Promise<AdminStats> {
   const familyPlusMRR = (familyPlusCount as number) * 19;
   const totalMRR = operatorMRR + providerMRR + caregiverProMRR + dpMRR + familyPlusMRR;
 
+  // Demand-first headline: distinct qualified leads delivered to a facility,
+  // same demo filter as everything else here.
+  const leadsDelivered = await countQualifiedLeadsDelivered({ showDemo });
+
   return {
+    leadsDelivered,
     userCount,
     homeCount,
     caregiverCount,
