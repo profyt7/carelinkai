@@ -1430,6 +1430,41 @@ model ClaimLinkVisit {
   @@index([visitedAt])
 }
 
+/// DP lead-capture + automated follow-up (feat/dp-lead-capture).
+/// A discharge planner Anita spoke with who verbally agreed to be contacted.
+/// This is planner CONTACT + INTEREST only — NO PHI, no patient details ever
+/// live on this record (patient details flow through the separate concierge
+/// intake). The branded follow-up sequence (Touch 0/+3d/+7d/+14d) is driven off
+/// `nextTouchAt`/`touchStep`; it is idempotent (one touch per due run) and halts
+/// the moment `status` leaves 'active'. `consent` = Anita's attestation that the
+/// planner verbally agreed to be contacted (stored as evidence).
+model DPLead {
+  id            String  @id @default(cuid())
+  name          String
+  email         String
+  hospital      String
+  department    String? // 'Case Management' | 'Social Work' | 'Discharge Planning'
+  interestLevel String  @default("WARM") // 'HOT' | 'WARM'
+  consent       Boolean @default(false) // planner verbally agreed to be contacted
+  notes         String?
+  source        String  @default("anita_form")
+
+  // active | replied | booked | patient_sent | stopped
+  status        String  @default("active")
+  stoppedReason String? // replied | booked | patient_sent | unsubscribe | bounce | exhausted | manual
+
+  // Sequence state (mirrors the claim-drip cadence model). touchStep = number of
+  // touches sent so far (0 before Touch 0). nextTouchAt drives the cron.
+  touchStep   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  lastTouchAt DateTime?
+  nextTouchAt DateTime?
+
+  @@index([status])
+  @@index([nextTouchAt])
+  @@index([email])
+}
+
 // TCPA/marketing lead-consent evidence (feat/lead-consent-capture). One row per
 // family-facing form submission that collects/shares contact info, BOTH consent
 // states recorded. IMMUTABLE by design: created once at submit, no update path

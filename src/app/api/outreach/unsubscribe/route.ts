@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyUnsubscribeToken } from '@/lib/unsubscribe-token';
+import { stopDpLeadsForEmail } from '@/lib/dp-outreach/dp-followup';
 
 /**
  * One-click unsubscribe for cold-outreach (claim-nudge) email — CAN-SPAM / RFC 8058.
@@ -28,6 +29,14 @@ async function suppress(token: string | null): Promise<string | null> {
     update: { reason: 'unsubscribe' },
     create: { email, reason: 'unsubscribe', source: 'claim-nudge' },
   });
+  // Also halt any active DP follow-up sequence for this address immediately
+  // (feat/dp-lead-capture) — the suppression list gates future sends, but this
+  // flips the lead's own status to 'stopped' so admin reflects it at once.
+  try {
+    await stopDpLeadsForEmail(email, 'unsubscribe');
+  } catch {
+    // Non-fatal — suppression already recorded, which is enough to stop sends.
+  }
   return email;
 }
 
