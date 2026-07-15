@@ -6,6 +6,16 @@ Each loop: what it is, why it matters, what done looks like.
 
 ---
 
+### OL-119: DP lead-capture form + automated follow-up sequence (feat/dp-lead-capture)
+- **Status:** 🟢 BUILT 2026-07-15 (branch `claude/dp-lead-capture-36gh8o`) — schema + form + sequence engine + admin + cron + docs + 33 tests. Ships **OFF**: nothing sends until the founder flips the flag (below).
+- **Why:** Anita (Fiverr contractor, NO app account) is live on discharge-planner calls now. She captures interest on one scoped form → the app emails the planner from our domain (From `chris@`, Reply-To `placements@`) and nurtures automatically (Touch 1 immediate, +3/+7/+14d). Demand-first, founder-out — Chris is never the manual sender.
+- **Build:** `DPLead` model (migration `20260715000001`, additive; NO PHI). Form `/lead/new?k=<LEAD_CAPTURE_TOKEN>` (shared-secret gate, constant-time, fails closed; honeypot + rate limit; required "planner verbally agreed" checkbox). `POST /api/lead/dp` → create + Touch 1. Engine `src/lib/dp-outreach/dp-followup.ts` + pure copy `copy.ts` + `sendDpFollowupEmail` (light-branded, CAN-SPAM: one-click unsubscribe + postal, refuses without `COMPANY_POSTAL_ADDRESS`; founder video on Touch 1 & 3). Idempotent daily cron `/api/cron/dp-followups` + GHA (self-gated). Stop conditions: admin **Mark replied/patient sent/booked/Stop** + hard unsubscribe (extends `/api/outreach/unsubscribe` to flip active `DPLead`s to `stopped`). Admin console `/admin/dp-leads`.
+- **Founder go-live runbook (Render env):** (1) `LEAD_CAPTURE_TOKEN`=long random string; (2) confirm `COMPANY_POSTAL_ADDRESS` set; (3) `DP_FOLLOWUP_ENABLED=1`; (4) turn ON Resend open/click tracking (dashboard, not code); (5) confirm `placements@` provider BAA; (6) send Anita `https://getcarelinkai.com/lead/new?k=<token>`. Full detail in `docs/DP_LEAD_CAPTURE_AND_FOLLOWUP.md`.
+- **Out of scope (phase 2):** SMS touches (TCPA-gated); inbound reply auto-detect (manual "Mark replied" for now); feeding the concierge/patient flow; monthly stay-in-touch touch (1.5).
+- **Done when:** merged + deployed, founder flips the flags, a test-planner submit produces Touch 1 within a minute + the +3d touch scheduled + "Mark replied" cancels the rest.
+
+---
+
 ### OL-118: Auth cookie values were logged to Render stdout (security hygiene)
 - **Status:** 🟢 FIXED-PENDING-MERGE 2026-07-06 (PR **#699** `fix/log-scrub-auth`). Founder-reported: `__Secure-next-auth.session-token=...` lines visible in Render logs since at least 7/2.
 - **Root cause:** a leftover debug block in `GET /api/admin/homes/[id]` logged every request cookie as `name=value.substring(0,20)...` plus session/token debug objects carrying the admin's email; the 403 body also enumerated cookie names.

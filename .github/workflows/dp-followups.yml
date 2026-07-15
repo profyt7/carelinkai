@@ -1,0 +1,40 @@
+name: DP Follow-ups
+
+# Advances the discharge-planner nurture sequence (Touch 2/3/4) once a day.
+#
+# SAFE-BY-DESIGN: the endpoint self-gates on DP_FOLLOWUP_ENABLED, so this
+# workflow is a daily no-op until Chris sets that flag in Render. Unlike the cold
+# claim drip (paused under OL-109 for bounce reasons), this lane is 1:1 warm
+# outreach to planners who verbally agreed to be contacted — low bounce risk — so
+# the schedule stays ACTIVE and just does nothing until the flag flips.
+#
+# Touch 1 (the immediate one) is sent inline on form submit, NOT here.
+
+on:
+  schedule:
+    - cron: '0 14 * * *' # daily ~14:00 UTC ≈ 9-10am ET
+  workflow_dispatch:
+
+jobs:
+  dp-followups:
+    name: Advance due DP follow-ups
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call DP-Followups Cron Endpoint
+        run: |
+          response=$(curl -s -w "\n%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            https://carelinkai.onrender.com/api/cron/dp-followups)
+
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | head -n-1)
+
+          echo "HTTP Status: $http_code"
+          echo "Response: $body"
+
+          if [ "$http_code" -ne 200 ]; then
+            echo "::error::DP-followups cron failed with status $http_code"
+            exit 1
+          fi
+
+          echo "DP follow-ups advanced successfully"

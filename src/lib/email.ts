@@ -29,6 +29,18 @@ const TOKEN_EXPIRY_HOURS = 24;
 const OUTREACH_REPLY_TO =
   process.env.OUTREACH_REPLY_TO || process.env.ADMIN_NOTIFY_EMAIL || 'chris@getcarelinkai.com';
 
+// DP follow-up lane (feat/dp-lead-capture). Sent FROM a real-person address
+// (chris@, already verified in Resend — reads more personal to hospital staff)
+// with a display name, and Reply-To the delegable placements@ alias so replies
+// collect in one inbox for future handoff. All overridable via env.
+const DP_LEAD_FROM_EMAIL = process.env.DP_LEAD_FROM_EMAIL || 'chris@getcarelinkai.com';
+const DP_LEAD_FROM_NAME = process.env.DP_LEAD_FROM_NAME || 'Chris Tolliver — CareLinkAI';
+const DP_LEAD_REPLY_TO = process.env.DP_LEAD_REPLY_TO || 'placements@getcarelinkai.com';
+const DP_PLACEMENTS_PHONE = (process.env.DP_PLACEMENTS_PHONE || '').trim();
+// Brand-blue accent (matches the landing brand literal) — kept light so the
+// 1:1 emails still read personal, not like an operator marketing blast.
+const BRAND_BLUE = '#3978FC';
+
 /**
  * Send a verification email to a new user
  * 
@@ -88,6 +100,11 @@ function escapeHtml(s: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+/** Turn bare http(s) URLs in ALREADY-ESCAPED text into clickable anchors. */
+function linkify(escaped: string): string {
+  return escaped.replace(/(https?:\/\/[^\s<]+)/g, (url) => `<a href="${url}" style="color:#3978FC">${url}</a>`);
 }
 
 /**
@@ -591,6 +608,107 @@ export async function sendClaimDripEmail(args: {
   } catch (error) {
     captureError(error instanceof Error ? error : new Error(String(error)), {
       tags: { feature: 'claim-drip' }, extra: { facilityName: args.facilityName },
+    });
+    return false;
+  }
+}
+
+/**
+ * DP FOLLOW-UP touch (feat/dp-lead-capture).
+ *
+ * A single 1:1, personal-style email in the discharge-planner nurture sequence.
+ * Sent From: chris@ (real person, verified) with a display name; Reply-To the
+ * delegable placements@ alias. Light-branded (near plain-text + a small signature
+ * block with the brand-blue accent) — deliberately NOT the heavy operator HTML
+ * template, because these go to busy hospital staff and deliverability/reply-rate
+ * come first.
+ *
+ * CAN-SPAM: every send carries a one-click unsubscribe link (honored → the lead's
+ * status is set to 'stopped') AND a valid physical mailing address. This function
+ * REFUSES to send without a configured postal address, exactly like the claim drip.
+ *
+ * Body copy comes from the pure `dpFollowupCopy` module (unit-testable). Returns
+ * false on any failure so the sequence engine can retry without advancing.
+ */
+export async function sendDpFollowupEmail(args: {
+  toEmail: string;
+  plannerFirstName: string;
+  touch: number; // 1..4
+  videoUrl: string;
+  unsubscribeUrl: string;
+  postalAddress: string;
+}): Promise<boolean> {
+  try {
+    if (!process.env.RESEND_API_KEY) return false;
+    const { dpFollowupCopy } = await import('@/lib/dp-outreach/copy');
+    const copy = dpFollowupCopy(args.touch, {
+      plannerFirstName: args.plannerFirstName,
+      videoUrl: args.videoUrl,
+    });
+
+    // Signature block — name, "CareLinkAI Placements," optional phone, site.
+    const sigLinesText = [
+      'Chris Tolliver',
+      'CareLinkAI Placements',
+      DP_PLACEMENTS_PHONE || null,
+      'getcarelinkai.com',
+    ].filter(Boolean) as string[];
+
+    const text =
+      copy.paragraphs.join('\n\n') +
+      '\n\n' +
+      sigLinesText.join('\n') +
+      '\n\n' +
+      `${APP_NAME} · ${args.postalAddress}\n` +
+      `Prefer not to receive these? Unsubscribe: ${args.unsubscribeUrl}`;
+
+    const bodyHtml = copy.paragraphs
+      .map((p) => `<p style="margin:0 0 14px">${linkify(escapeHtml(p))}</p>`)
+      .join('\n');
+    const sigHtml = `
+  <table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:8px">
+    <tr><td style="border-left:3px solid ${BRAND_BLUE};padding:2px 0 2px 10px;color:#374151;font-size:14px;line-height:1.5">
+      <strong style="color:#111827">Chris Tolliver</strong><br/>
+      <span style="color:${BRAND_BLUE};font-weight:600">CareLinkAI Placements</span><br/>
+      ${DP_PLACEMENTS_PHONE ? `${escapeHtml(DP_PLACEMENTS_PHONE)}<br/>` : ''}
+      <a href="https://getcarelinkai.com" style="color:#6b7280;text-decoration:none">getcarelinkai.com</a>
+    </td></tr>
+  </table>`;
+    const html = `
+<!DOCTYPE html>
+<html><body style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;line-height:1.55;font-size:15px">
+  ${bodyHtml}
+  ${sigHtml}
+  <hr style="border:none;border-top:1px solid #e5e7eb;margin:18px 0"/>
+  <p style="color:#9ca3af;font-size:12px;line-height:1.5">
+    ${APP_NAME} · ${escapeHtml(args.postalAddress)}<br/>
+    <a href="${escapeHtml(args.unsubscribeUrl)}" style="color:#9ca3af">Unsubscribe</a> — you won't receive these emails again.
+  </p>
+</body></html>`;
+
+    const { error } = await resend.emails.send({
+      from: `${DP_LEAD_FROM_NAME} <${DP_LEAD_FROM_EMAIL}>`,
+      to: [args.toEmail],
+      replyTo: DP_LEAD_REPLY_TO,
+      subject: copy.subject,
+      text,
+      html,
+      headers: {
+        'List-Unsubscribe': `<${args.unsubscribeUrl}>, <mailto:${DP_LEAD_REPLY_TO}?subject=unsubscribe>`,
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+      },
+    });
+    if (error) {
+      captureError(
+        error instanceof Error ? error : new Error(String((error as { message?: string })?.message ?? error)),
+        { tags: { feature: 'dp-followup' }, extra: { touch: args.touch } },
+      );
+      return false;
+    }
+    return true;
+  } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      tags: { feature: 'dp-followup' }, extra: { touch: args.touch },
     });
     return false;
   }

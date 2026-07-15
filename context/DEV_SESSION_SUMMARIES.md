@@ -2,6 +2,24 @@
 
 ---
 
+### 2026-07-15 — DP lead-capture form + automated follow-up sequence (feat/dp-lead-capture, OL-119)
+- **Objective:** Let Anita (Fiverr contractor, no app account) trigger a branded, automated email follow-up to a discharge planner by submitting one scoped web form. Chris never the manual sender; replies go to `placements@`. Ship before her first interested lead so nobody follows up by hand.
+- **Work completed (branch `claude/dp-lead-capture-36gh8o`):**
+  - **Data model `DPLead`** (migration `20260715000001_dp_leads`, additive/idempotent): planner contact + interest + consent + sequence state (`status`, `stoppedReason`, `touchStep`, `nextTouchAt`). **NO PHI** — patient details never touch this record.
+  - **Scoped no-auth form** `/lead/new?k=<token>` (`src/app/lead/new/page.tsx` + `src/components/lead/DPLeadForm.tsx`): shared-secret token gate (`LEAD_CAPTURE_TOKEN`, constant-time, validated on render AND submit; fails closed), fields per spec + required "planner verbally agreed" checkbox, honeypot + per-IP rate limit. Submit → `POST /api/lead/dp` → create + fire Touch 1 → "Logged ✓". Added `/lead` to middleware public paths.
+  - **Sequence engine** `src/lib/dp-outreach/dp-followup.ts` (mirrors claim-drip): Touch 1 immediate on submit, Touches 2/3/4 at +3/+7/+14d via daily cron reading `nextTouchAt`; idempotent (≤1 touch/lead/run, active-only); master flag `DP_FOLLOWUP_ENABLED` (OFF by default, OL-109 discipline). Copy in pure `src/lib/dp-outreach/copy.ts` (founder video on Touch 1 & 3).
+  - **Email** `sendDpFollowupEmail` in `src/lib/email.ts`: From `chris@` (verified, personal) / display "Chris Tolliver — CareLinkAI" / **Reply-To `placements@`**; light-branded near-plain-text + signature block; CAN-SPAM (one-click unsubscribe + postal, refuses to send without `COMPANY_POSTAL_ADDRESS`) + List-Unsubscribe headers.
+  - **Stop conditions:** admin **Mark replied / patient sent / booked / Stop** all halt the sequence; hard unsubscribe (`/api/outreach/unsubscribe`, extended) flips active `DPLead`s to `stopped` + suppression; cron re-checks suppression before every send.
+  - **Admin console** `/admin/dp-leads` + `GET`/`PATCH /api/admin/dp-leads` + nav link near Concierge Queue.
+  - **Cron** `GET /api/cron/dp-followups` + `.github/workflows/dp-followups.yml` (schedule ACTIVE but endpoint self-gates on the flag → no-op until Chris flips it).
+  - **Docs** `docs/DP_LEAD_CAPTURE_AND_FOLLOWUP.md` + `.env.example` block.
+- **Files changed:** `prisma/schema.prisma` (+`DPLead`) + new migration; `src/lib/dp-outreach/{copy,dp-followup,lead-capture-token}.ts`; `src/lib/email.ts` (+`sendDpFollowupEmail`, `linkify`, DP config); `src/app/lead/new/page.tsx`; `src/components/lead/DPLeadForm.tsx`; `src/app/api/lead/dp/route.ts`; `src/app/api/cron/dp-followups/route.ts`; `src/app/api/admin/dp-leads/route.ts` + `[id]/route.ts`; `src/app/admin/dp-leads/page.tsx`; `src/app/api/outreach/unsubscribe/route.ts`; `src/components/layout/DashboardLayout.tsx`; `src/middleware.ts`; `.env.example`; `__tests__/dp-followup.test.ts` + `dp-lead-api.test.ts`; docs.
+- **Commands run:** `prisma generate` (v6), `tsc --noEmit` (0 errors), `jest` (new 33/33; full 700 pass / 10 skip; 2 pre-existing `canvas`-native render suites fail only in this sandbox — missing pangocairo, unrelated), `eslint` (clean).
+- **Tests/build status:** 33 new tests green; tsc + lint clean.
+- **Deployment impact:** Additive migration `20260715000001`. NOTHING sends until Chris sets `DP_FOLLOWUP_ENABLED=1` + `LEAD_CAPTURE_TOKEN` (+ confirms `COMPANY_POSTAL_ADDRESS`). Go-live runbook in the doc + OL-119.
+- **New risks/blockers:** confirm `placements@` provider BAA before routing real planner replies; turn on Resend open/click tracking (dashboard, not code); DP consent copy is Anita's attestation (professional), distinct from the family TCPA `LeadConsent` lane.
+- **Recommended next step:** review + merge; then Render env: `LEAD_CAPTURE_TOKEN`, `DP_FOLLOWUP_ENABLED=1`, verify postal; enable Resend tracking; send Anita her `/lead/new?k=…` link.
+
 ### 2026-07-06 (Session #3) — security log fix + license gate + roster CSV + OL-117 + Park East report (4 PRs, held)
 - **Objective:** Founder follow-ups from the production runs: (1) scrub auth material from logs [security]; (1a) format-gate license writes after the Park East CCN write; (2) land the Cowork roster CSV + Render commands; (4) build OL-117 ClaimLinkVisit; (1b) investigate Park East; (5) housekeeping (OL-076 addition, OL-108 correction confirm).
 - **Work completed (4 PRs, all held for review):**
