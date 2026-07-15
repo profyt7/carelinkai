@@ -18,7 +18,9 @@ import { advanceDpSequences } from '@/lib/dp-outreach/dp-followup';
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  // Fail CLOSED: an unset CRON_SECRET must NOT leave this endpoint open. Same
+  // "inert until the secret is set" discipline as the lead-capture token gate.
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {
