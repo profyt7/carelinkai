@@ -40,6 +40,10 @@ const DP_PLACEMENTS_PHONE = (process.env.DP_PLACEMENTS_PHONE || '').trim();
 // Brand-blue accent (matches the landing brand literal) — kept light so the
 // 1:1 emails still read personal, not like an operator marketing blast.
 const BRAND_BLUE = '#3978FC';
+// Publicly reachable absolute logo URL for the email header. Must be an https
+// URL an email client can fetch (Gmail strips SVG, so use the PNG). Overridable
+// via EMAIL_LOGO_URL; defaults to the public asset served at getcarelinkai.com.
+const EMAIL_LOGO_URL = (process.env.EMAIL_LOGO_URL || 'https://getcarelinkai.com/logo.png').trim();
 
 /**
  * Send a verification email to a new user
@@ -105,6 +109,23 @@ function escapeHtml(s: string): string {
 /** Turn bare http(s) URLs in ALREADY-ESCAPED text into clickable anchors. */
 function linkify(escaped: string): string {
   return escaped.replace(/(https?:\/\/[^\s<]+)/g, (url) => `<a href="${url}" style="color:#3978FC">${url}</a>`);
+}
+
+/**
+ * Replace every non-ASCII character with a numeric HTML entity (e.g. em-dash →
+ * `&#8212;`, curly quote → `&#8217;`, middot → `&#183;`). Applied to the FULL
+ * assembled HTML so the payload is pure 7-bit ASCII and renders identically no
+ * matter how the receiving client guesses the charset — the belt to the meta
+ * charset's suspenders. Safe to run over markup: all tags/attributes/URLs are
+ * already ASCII, so only human-readable text is affected. Astral-plane chars
+ * (emoji, surrogate pairs) are encoded per code point. */
+function encodeNonAscii(html: string): string {
+  let out = '';
+  for (const ch of html) {
+    const cp = ch.codePointAt(0)!;
+    out += cp > 127 ? `&#${cp};` : ch;
+  }
+  return out;
 }
 
 /**
@@ -614,6 +635,54 @@ export async function sendClaimDripEmail(args: {
 }
 
 /**
+ * Build the full HTML for a DP follow-up email — exported so the raw source is
+ * unit-testable (acceptance test checks the meta charset, entity-encoded
+ * em-dashes, and the logo). Emits a real `<head>` with `<meta charset="utf-8">`
+ * so clients render UTF-8, prepends the CareLinkAI logo header, then runs the
+ * whole document through `encodeNonAscii` so every em-dash / curly quote / middot
+ * ships as a numeric HTML entity (charset-independent, no mojibake).
+ */
+export function renderDpFollowupHtml(
+  copy: { subject: string; paragraphs: string[] },
+  opts: { unsubscribeUrl: string; postalAddress: string; logoUrl?: string },
+): string {
+  const logoUrl = (opts.logoUrl || EMAIL_LOGO_URL);
+  const bodyHtml = copy.paragraphs
+    .map((p) => `<p style="margin:0 0 14px">${linkify(escapeHtml(p))}</p>`)
+    .join('\n');
+  const sigHtml = `
+  <table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:8px">
+    <tr><td style="border-left:3px solid ${BRAND_BLUE};padding:2px 0 2px 10px;color:#374151;font-size:14px;line-height:1.5">
+      <strong style="color:#111827">Chris Tolliver</strong><br/>
+      <span style="color:${BRAND_BLUE};font-weight:600">CareLinkAI Placements</span><br/>
+      ${DP_PLACEMENTS_PHONE ? `${escapeHtml(DP_PLACEMENTS_PHONE)}<br/>` : ''}
+      <a href="https://getcarelinkai.com" style="color:#6b7280;text-decoration:none">getcarelinkai.com</a>
+    </td></tr>
+  </table>`;
+  const rawHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;color:#1f2937;line-height:1.55;font-size:15px">
+  <div style="margin:0 0 20px">
+    <img src="${escapeHtml(logoUrl)}" alt="CareLinkAI" width="170" style="display:block;border:0;outline:none;text-decoration:none;height:auto;width:170px;max-width:170px"/>
+  </div>
+  ${bodyHtml}
+  ${sigHtml}
+  <hr style="border:none;border-top:1px solid #e5e7eb;margin:18px 0"/>
+  <p style="color:#9ca3af;font-size:12px;line-height:1.5">
+    ${APP_NAME} · ${escapeHtml(opts.postalAddress)}<br/>
+    <a href="${escapeHtml(opts.unsubscribeUrl)}" style="color:#9ca3af">Unsubscribe</a> — you won't receive these emails again.
+  </p>
+</body></html>`;
+  // Pure-ASCII payload: renders identically regardless of the client's charset guess.
+  return encodeNonAscii(rawHtml);
+}
+
+/**
  * DP FOLLOW-UP touch (feat/dp-lead-capture).
  *
  * A single 1:1, personal-style email in the discharge-planner nurture sequence.
@@ -654,6 +723,9 @@ export async function sendDpFollowupEmail(args: {
       'getcarelinkai.com',
     ].filter(Boolean) as string[];
 
+    // Plain-text alternative keeps literal Unicode punctuation (correct for
+    // text/plain, which Resend sends as UTF-8). Only the HTML part needs the
+    // charset/entity treatment (that's where the mojibake showed up).
     const text =
       copy.paragraphs.join('\n\n') +
       '\n\n' +
@@ -662,29 +734,10 @@ export async function sendDpFollowupEmail(args: {
       `${APP_NAME} · ${args.postalAddress}\n` +
       `Prefer not to receive these? Unsubscribe: ${args.unsubscribeUrl}`;
 
-    const bodyHtml = copy.paragraphs
-      .map((p) => `<p style="margin:0 0 14px">${linkify(escapeHtml(p))}</p>`)
-      .join('\n');
-    const sigHtml = `
-  <table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:8px">
-    <tr><td style="border-left:3px solid ${BRAND_BLUE};padding:2px 0 2px 10px;color:#374151;font-size:14px;line-height:1.5">
-      <strong style="color:#111827">Chris Tolliver</strong><br/>
-      <span style="color:${BRAND_BLUE};font-weight:600">CareLinkAI Placements</span><br/>
-      ${DP_PLACEMENTS_PHONE ? `${escapeHtml(DP_PLACEMENTS_PHONE)}<br/>` : ''}
-      <a href="https://getcarelinkai.com" style="color:#6b7280;text-decoration:none">getcarelinkai.com</a>
-    </td></tr>
-  </table>`;
-    const html = `
-<!DOCTYPE html>
-<html><body style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;line-height:1.55;font-size:15px">
-  ${bodyHtml}
-  ${sigHtml}
-  <hr style="border:none;border-top:1px solid #e5e7eb;margin:18px 0"/>
-  <p style="color:#9ca3af;font-size:12px;line-height:1.5">
-    ${APP_NAME} · ${escapeHtml(args.postalAddress)}<br/>
-    <a href="${escapeHtml(args.unsubscribeUrl)}" style="color:#9ca3af">Unsubscribe</a> — you won't receive these emails again.
-  </p>
-</body></html>`;
+    const html = renderDpFollowupHtml(copy, {
+      unsubscribeUrl: args.unsubscribeUrl,
+      postalAddress: args.postalAddress,
+    });
 
     const { error } = await resend.emails.send({
       from: `${DP_LEAD_FROM_NAME} <${DP_LEAD_FROM_EMAIL}>`,
