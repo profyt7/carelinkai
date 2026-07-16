@@ -75,8 +75,12 @@ describe('DP email — logo header', () => {
 });
 
 describe('DP email — content preserved', () => {
-  it('still linkifies the founder video URL', () => {
+  it('renders the founder video as a friendly-text anchor, href unchanged', () => {
+    // href still points at the same video URL...
     expect(html).toContain('<a href="https://app.heygen.com/videos/founder-x"');
+    // ...but the visible anchor text is friendly, not the raw URL
+    expect(html).toContain('>Watch the 90-second intro</a>');
+    expect(html).not.toContain('>https://app.heygen.com/videos/founder-x</a>');
   });
   it('keeps the unsubscribe link (CAN-SPAM)', () => {
     expect(html).toContain(opts.unsubscribeUrl.replace(/&/g, '&amp;'));

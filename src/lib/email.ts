@@ -13,6 +13,7 @@
 
 import { Resend } from 'resend';
 import { captureError } from '@/lib/sentry';
+import { VIDEO_LINK_TEXT, VIDEO_LINK_TOKEN } from '@/lib/dp-outreach/copy';
 
 // Initialize Resend with API key from environment
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -643,12 +644,15 @@ export async function sendClaimDripEmail(args: {
  * ships as a numeric HTML entity (charset-independent, no mojibake).
  */
 export function renderDpFollowupHtml(
-  copy: { subject: string; paragraphs: string[] },
+  copy: { subject: string; paragraphs: string[]; videoUrl: string },
   opts: { unsubscribeUrl: string; postalAddress: string; logoUrl?: string },
 ): string {
   const logoUrl = (opts.logoUrl || EMAIL_LOGO_URL);
+  // Friendly-text anchor for the founder video (href unchanged; only the visible
+  // link text is friendly instead of the raw URL).
+  const videoAnchor = `<a href="${escapeHtml(copy.videoUrl)}" style="color:#3978FC">${VIDEO_LINK_TEXT}</a>`;
   const bodyHtml = copy.paragraphs
-    .map((p) => `<p style="margin:0 0 14px">${linkify(escapeHtml(p))}</p>`)
+    .map((p) => `<p style="margin:0 0 14px">${linkify(escapeHtml(p)).split(VIDEO_LINK_TOKEN).join(videoAnchor)}</p>`)
     .join('\n');
   const sigHtml = `
   <table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:8px">
@@ -724,10 +728,11 @@ export async function sendDpFollowupEmail(args: {
     ].filter(Boolean) as string[];
 
     // Plain-text alternative keeps literal Unicode punctuation (correct for
-    // text/plain, which Resend sends as UTF-8). Only the HTML part needs the
-    // charset/entity treatment (that's where the mojibake showed up).
+    // text/plain, which Resend sends as UTF-8). The founder-video token becomes
+    // the raw URL here so it stays visible/clickable in a text client. Only the
+    // HTML part needs the charset/entity treatment (that's where mojibake showed).
     const text =
-      copy.paragraphs.join('\n\n') +
+      copy.paragraphs.map((p) => p.split(VIDEO_LINK_TOKEN).join(copy.videoUrl)).join('\n\n') +
       '\n\n' +
       sigLinesText.join('\n') +
       '\n\n' +

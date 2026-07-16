@@ -23,7 +23,7 @@ jest.mock('@/lib/prisma', () => ({
 jest.mock('@/lib/email', () => ({ sendDpFollowupEmail: jest.fn() }));
 jest.mock('@/lib/sentry', () => ({ captureError: jest.fn() }));
 
-import { dpFollowupCopy, DP_FOLLOWUP_OFFSETS_DAYS, MAX_DP_TOUCHES } from '@/lib/dp-outreach/copy';
+import { dpFollowupCopy, DP_FOLLOWUP_OFFSETS_DAYS, MAX_DP_TOUCHES, VIDEO_LINK_TOKEN } from '@/lib/dp-outreach/copy';
 import { leadCaptureTokenValid } from '@/lib/dp-outreach/lead-capture-token';
 import {
   dpFollowupEnabled,
@@ -71,9 +71,13 @@ describe('dpFollowupCopy', () => {
     }
   });
 
-  it('surfaces the founder video on Touch 1 and Touch 3', () => {
-    expect(dpFollowupCopy(1, input).paragraphs.join(' ')).toContain(VIDEO);
-    expect(dpFollowupCopy(3, input).paragraphs.join(' ')).toContain(VIDEO);
+  it('surfaces the founder video (as a link token) on Touch 1 and Touch 3', () => {
+    for (const t of [1, 3]) {
+      const c = dpFollowupCopy(t, input);
+      expect(c.videoUrl).toBe(VIDEO); // resolved URL exposed for the renderers
+      expect(c.paragraphs.join(' ')).toContain(VIDEO_LINK_TOKEN); // link placeholder, not the raw URL
+      expect(c.paragraphs.join(' ')).not.toContain(VIDEO); // raw URL never embedded in the copy text
+    }
   });
 
   it('falls back to a neutral greeting when the name is blank', () => {
