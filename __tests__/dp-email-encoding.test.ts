@@ -33,6 +33,16 @@ describe('DP email — UTF-8 charset', () => {
   it('is pure 7-bit ASCII — no raw non-ASCII bytes that can mojibake', () => {
     expect(/[^\x00-\x7F]/.test(html)).toBe(false);
   });
+
+  it('emits an exact, clean viewport meta (no corrupted bytes)', () => {
+    expect(html).toContain('<meta name="viewport" content="width=device-width, initial-scale=1">');
+  });
+
+  it('the rendered <head> contains no U+FFFD replacement character', () => {
+    const head = html.split('</head>')[0];
+    expect(head).not.toContain('�'); // raw replacement char
+    expect(head).not.toContain('&#65533;'); // ...nor its entity form
+  });
 });
 
 describe('DP email — punctuation renders as HTML entities', () => {
@@ -65,8 +75,12 @@ describe('DP email — logo header', () => {
 });
 
 describe('DP email — content preserved', () => {
-  it('still linkifies the founder video URL', () => {
+  it('renders the founder video as a friendly-text anchor, href unchanged', () => {
+    // href still points at the same video URL...
     expect(html).toContain('<a href="https://app.heygen.com/videos/founder-x"');
+    // ...but the visible anchor text is friendly, not the raw URL
+    expect(html).toContain('>Watch the 90-second intro</a>');
+    expect(html).not.toContain('>https://app.heygen.com/videos/founder-x</a>');
   });
   it('keeps the unsubscribe link (CAN-SPAM)', () => {
     expect(html).toContain(opts.unsubscribeUrl.replace(/&/g, '&amp;'));
