@@ -41,10 +41,6 @@ const DP_PLACEMENTS_PHONE = (process.env.DP_PLACEMENTS_PHONE || '').trim();
 // Brand-blue accent (matches the landing brand literal) — kept light so the
 // 1:1 emails still read personal, not like an operator marketing blast.
 const BRAND_BLUE = '#3978FC';
-// Publicly reachable absolute logo URL for the email header. Must be an https
-// URL an email client can fetch (Gmail strips SVG, so use the PNG). Overridable
-// via EMAIL_LOGO_URL; defaults to the public asset served at getcarelinkai.com.
-const EMAIL_LOGO_URL = (process.env.EMAIL_LOGO_URL || 'https://getcarelinkai.com/logo.png').trim();
 
 /**
  * Send a verification email to a new user
@@ -637,17 +633,20 @@ export async function sendClaimDripEmail(args: {
 
 /**
  * Build the full HTML for a DP follow-up email — exported so the raw source is
- * unit-testable (acceptance test checks the meta charset, entity-encoded
- * em-dashes, and the logo). Emits a real `<head>` with `<meta charset="utf-8">`
- * so clients render UTF-8, prepends the CareLinkAI logo header, then runs the
- * whole document through `encodeNonAscii` so every em-dash / curly quote / middot
- * ships as a numeric HTML entity (charset-independent, no mojibake).
+ * unit-testable (acceptance test checks the meta charset + entity-encoded
+ * punctuation). Emits a real `<head>` with `<meta charset="utf-8">` so clients
+ * render UTF-8, then runs the whole document through `encodeNonAscii` so every
+ * em-dash / curly quote / middot ships as a numeric HTML entity
+ * (charset-independent, no mojibake).
+ *
+ * IMAGE-FREE by design: no logo `<img>` in the header. These are 1:1 emails to
+ * hospital inboxes where image-heavy mail hurts deliverability; the brand is
+ * carried by the text-only "CareLinkAI Placements" signature block instead.
  */
 export function renderDpFollowupHtml(
   copy: { subject: string; paragraphs: string[]; videoUrl: string },
-  opts: { unsubscribeUrl: string; postalAddress: string; logoUrl?: string },
+  opts: { unsubscribeUrl: string; postalAddress: string },
 ): string {
-  const logoUrl = (opts.logoUrl || EMAIL_LOGO_URL);
   // Friendly-text anchor for the founder video (href unchanged; only the visible
   // link text is friendly instead of the raw URL).
   const videoAnchor = `<a href="${escapeHtml(copy.videoUrl)}" style="color:#3978FC">${VIDEO_LINK_TEXT}</a>`;
@@ -671,9 +670,6 @@ export function renderDpFollowupHtml(
 <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;color:#1f2937;line-height:1.55;font-size:15px">
-  <div style="margin:0 0 20px">
-    <img src="${escapeHtml(logoUrl)}" alt="CareLinkAI" width="170" style="display:block;border:0;outline:none;text-decoration:none;height:auto;width:170px;max-width:170px"/>
-  </div>
   ${bodyHtml}
   ${sigHtml}
   <hr style="border:none;border-top:1px solid #e5e7eb;margin:18px 0"/>

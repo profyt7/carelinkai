@@ -1,9 +1,9 @@
 /**
- * fix/dp-email-encoding — acceptance test for the DP follow-up email's UTF-8
- * handling + logo header. Drives the real render path (renderDpFollowupHtml) and
- * inspects the raw HTML source, the runnable form of the handoff's acceptance
- * test ("check the raw source for <meta charset>, confirm em-dashes render, and
- * the logo loads") — a live send needs prod env (RESEND_API_KEY + flags).
+ * Acceptance test for the DP follow-up email's UTF-8 handling + image-free
+ * header. Drives the real render path (renderDpFollowupHtml) and inspects the raw
+ * HTML source: meta charset present, punctuation entity-encoded, and NO logo
+ * <img> (image-free for hospital-inbox deliverability; brand carried by the
+ * text-only "CareLinkAI Placements" signature). A live send needs prod env.
  */
 
 // renderDpFollowupHtml is a pure function, but importing @/lib/email constructs a
@@ -62,15 +62,13 @@ describe('DP email — punctuation renders as HTML entities', () => {
   });
 });
 
-describe('DP email — logo header', () => {
-  it('includes the CareLinkAI logo image with an absolute https src', () => {
-    expect(html).toMatch(/<img[^>]+src="https:\/\/getcarelinkai\.com\/logo\.png"/);
-    expect(html).toMatch(/<img[^>]+alt="CareLinkAI"/);
+describe('DP email — image-free header', () => {
+  it('contains no logo <img> (image-free for deliverability)', () => {
+    expect(html).not.toContain('<img');
   });
 
-  it('honors EMAIL_LOGO_URL override via the opts logoUrl', () => {
-    const custom = renderDpFollowupHtml(copy, { ...opts, logoUrl: 'https://cdn.example.com/logo.png' });
-    expect(custom).toContain('src="https://cdn.example.com/logo.png"');
+  it('keeps the text-only "CareLinkAI Placements" signature branding', () => {
+    expect(html).toContain('CareLinkAI Placements');
   });
 });
 
