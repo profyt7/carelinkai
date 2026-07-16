@@ -1,0 +1,74 @@
+/**
+ * fix/dp-email-encoding — acceptance test for the DP follow-up email's UTF-8
+ * handling + logo header. Drives the real render path (renderDpFollowupHtml) and
+ * inspects the raw HTML source, the runnable form of the handoff's acceptance
+ * test ("check the raw source for <meta charset>, confirm em-dashes render, and
+ * the logo loads") — a live send needs prod env (RESEND_API_KEY + flags).
+ */
+
+// renderDpFollowupHtml is a pure function, but importing @/lib/email constructs a
+// Resend client at module load (throws without a key) — mock the SDK so the import
+// is side-effect-free.
+jest.mock('resend', () => ({ Resend: jest.fn().mockImplementation(() => ({ emails: { send: jest.fn() } })) }));
+
+import { renderDpFollowupHtml } from '@/lib/email';
+import { dpFollowupCopy } from '@/lib/dp-outreach/copy';
+
+const opts = {
+  unsubscribeUrl: 'https://getcarelinkai.com/api/outreach/unsubscribe?token=abc.def',
+  postalAddress: '1234 Main St, Cleveland, OH 44114',
+};
+// Touch 1 copy is the richest in non-ASCII punctuation (em-dashes + curly quotes).
+const copy = dpFollowupCopy(1, { plannerFirstName: 'Maria', videoUrl: 'https://app.heygen.com/videos/founder-x' });
+const html = renderDpFollowupHtml(copy, opts);
+
+describe('DP email — UTF-8 charset', () => {
+  it('declares <meta charset="utf-8"> inside a real <head>', () => {
+    expect(html).toContain('<meta charset="utf-8">');
+    expect(html.toLowerCase()).toContain('<head>');
+    // http-equiv belt for older clients
+    expect(html).toContain('content="text/html; charset=UTF-8"');
+  });
+
+  it('is pure 7-bit ASCII — no raw non-ASCII bytes that can mojibake', () => {
+    expect(/[^\x00-\x7F]/.test(html)).toBe(false);
+  });
+});
+
+describe('DP email — punctuation renders as HTML entities', () => {
+  it('em-dashes ship as &#8212; and never as raw —', () => {
+    expect(html).toContain('&#8212;'); // em-dash present, encoded
+    expect(html).not.toContain('—'); // no raw em-dash byte
+  });
+
+  it('curly apostrophes ship as &#8217; (e.g. "patient’s")', () => {
+    expect(html).toContain('&#8217;');
+    expect(html).not.toContain('’');
+  });
+
+  it('the footer middot ships as &#183; (not a raw ·)', () => {
+    expect(html).toContain('&#183;');
+    expect(html).not.toContain('·');
+  });
+});
+
+describe('DP email — logo header', () => {
+  it('includes the CareLinkAI logo image with an absolute https src', () => {
+    expect(html).toMatch(/<img[^>]+src="https:\/\/getcarelinkai\.com\/logo\.png"/);
+    expect(html).toMatch(/<img[^>]+alt="CareLinkAI"/);
+  });
+
+  it('honors EMAIL_LOGO_URL override via the opts logoUrl', () => {
+    const custom = renderDpFollowupHtml(copy, { ...opts, logoUrl: 'https://cdn.example.com/logo.png' });
+    expect(custom).toContain('src="https://cdn.example.com/logo.png"');
+  });
+});
+
+describe('DP email — content preserved', () => {
+  it('still linkifies the founder video URL', () => {
+    expect(html).toContain('<a href="https://app.heygen.com/videos/founder-x"');
+  });
+  it('keeps the unsubscribe link (CAN-SPAM)', () => {
+    expect(html).toContain(opts.unsubscribeUrl.replace(/&/g, '&amp;'));
+  });
+});
