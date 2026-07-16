@@ -664,7 +664,7 @@ export function renderDpFollowupHtml(
 <head>
 <meta charset="utf-8">
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;color:#1f2937;line-height:1.55;font-size:15px">
   <div style="margin:0 0 20px">

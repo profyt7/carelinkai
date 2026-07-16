@@ -33,6 +33,16 @@ describe('DP email — UTF-8 charset', () => {
   it('is pure 7-bit ASCII — no raw non-ASCII bytes that can mojibake', () => {
     expect(/[^\x00-\x7F]/.test(html)).toBe(false);
   });
+
+  it('emits an exact, clean viewport meta (no corrupted bytes)', () => {
+    expect(html).toContain('<meta name="viewport" content="width=device-width, initial-scale=1">');
+  });
+
+  it('the rendered <head> contains no U+FFFD replacement character', () => {
+    const head = html.split('</head>')[0];
+    expect(head).not.toContain('�'); // raw replacement char
+    expect(head).not.toContain('&#65533;'); // ...nor its entity form
+  });
 });
 
 describe('DP email — punctuation renders as HTML entities', () => {
