@@ -14,9 +14,44 @@
 import { Resend } from 'resend';
 import { captureError } from '@/lib/sentry';
 import { VIDEO_LINK_TEXT, VIDEO_LINK_TOKEN } from '@/lib/dp-outreach/copy';
+import { filterSuppressed } from '@/lib/email/suppression';
 
 // Initialize Resend with API key from environment
 const resend = new Resend(process.env.RESEND_API_KEY);
+
+/**
+ * SINGLE suppression-enforcing choke point for every Resend send in this module
+ * (fix/resend-bounce-suppression). Filters recipients through the EmailSuppression
+ * list so a hard-bounced or complained address is NEVER re-sent — the top driver
+ * of the ~27% outreach bounce rate was re-sending to known-bad addresses.
+ *
+ * - Drops suppressed addresses from `to` (and cc/bcc); if EVERY recipient is
+ *   suppressed, it skips the send entirely and returns a benign no-op result
+ *   (callers only inspect `error`, so a skip reads as success — correct: there
+ *   was nothing deliverable to send).
+ * - Fails OPEN: if the suppression lookup itself errors, the send still goes out
+ *   (a DB hiccup must not silently kill all outbound mail).
+ *
+ * All send helpers below call this instead of `resend.emails.send` directly.
+ */
+type ResendSendArgs = Parameters<typeof resend.emails.send>[0];
+async function guardedResendSend(
+  args: ResendSendArgs,
+): Promise<{ data: { id: string } | null; error: { message?: string; name?: string } | null }> {
+  const toList = Array.isArray(args.to) ? args.to : args.to ? [args.to] : [];
+  const { allowed, suppressed } = await filterSuppressed(toList);
+  if (suppressed.length > 0) {
+    console.warn(`[Resend] suppression: dropped ${suppressed.length} recipient(s) from "${String(args.subject ?? '')}"`);
+  }
+  if (allowed.length === 0) {
+    // Nothing deliverable — skip the send (no bounce, no reputation hit).
+    return { data: null, error: null };
+  }
+  return resend.emails.send({ ...args, to: allowed }) as Promise<{
+    data: { id: string } | null;
+    error: { message?: string; name?: string } | null;
+  }>;
+}
 
 // Constants
 const FROM_EMAIL = process.env.EMAIL_FROM || 'noreply@getcarelinkai.com';
@@ -70,7 +105,7 @@ export async function sendVerificationEmail(
     const verificationLink = `${APP_URL}/auth/verify?token=${verificationToken}`;
     
     // Send email using Resend
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await guardedResendSend({
       from: `${APP_NAME} <${FROM_EMAIL}>`,
       to: [email],
       subject: `Verify Your ${APP_NAME} Account`,
@@ -177,7 +212,7 @@ export async function sendOperatorClaimNotification(args: {
       ? `${operatorName} <${operatorEmail}>`
       : operatorEmail;
 
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await guardedResendSend({
       from: `${APP_NAME} <${FROM_EMAIL}>`,
       to: [to],
       ...(cc ? { cc } : {}),
@@ -252,7 +287,7 @@ export async function sendConciergeRequestNotification(args: {
     const who = [args.dpName?.trim(), args.dpOrganization?.trim()].filter(Boolean).join(' · ') || 'A discharge planner';
     const appUrl = (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'https://getcarelinkai.com').replace(/\/$/, '');
     const adminLink = `${appUrl}/admin/concierge/${args.requestId}`;
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await guardedResendSend({
       from: `${APP_NAME} <${FROM_EMAIL}>`,
       to: [to],
       replyTo: OUTREACH_REPLY_TO,
@@ -305,7 +340,7 @@ export async function sendConciergeShortlistReadyEmail(args: {
     const optionWord = n === 1 ? 'option' : 'options';
     const appUrl = (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'https://getcarelinkai.com').replace(/\/$/, '');
     const link = `${appUrl}/discharge-planner/concierge`;
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await guardedResendSend({
       from: `${APP_NAME} <${FROM_EMAIL}>`,
       to: [toEmail],
       replyTo: OUTREACH_REPLY_TO,
@@ -370,7 +405,7 @@ export async function sendConciergeTourNotification(args: {
       : 'This home is UNCLAIMED — please coordinate the tour on the family’s behalf (the operator was also nudged to claim).';
     const appUrl = (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'https://getcarelinkai.com').replace(/\/$/, '');
     const adminLink = `${appUrl}/admin/concierge/${args.requestId}`;
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await guardedResendSend({
       from: `${APP_NAME} <${FROM_EMAIL}>`,
       to: [to],
       replyTo: OUTREACH_REPLY_TO,
@@ -453,7 +488,7 @@ export async function sendInquiryClaimNudgeEmail(args: {
   <p style="color:#6b7280;font-size:13px">Details are kept private until you claim. There is no cost to claim or respond.</p>
 </body></html>`;
 
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await guardedResendSend({
       from: `${APP_NAME} <${FROM_EMAIL}>`,
       to: [args.toEmail],
       replyTo: OUTREACH_REPLY_TO,
@@ -515,7 +550,7 @@ export async function sendNewLeadOperatorEmail(args: {
   <p style="color:#6b7280;font-size:13px">Details are kept private and secure on CareLinkAI.</p>
 </body></html>`;
 
-    const { error } = await resend.emails.send({
+    const { error } = await guardedResendSend({
       from: `${APP_NAME} <${FROM_EMAIL}>`,
       to: [args.toEmail],
       replyTo: OUTREACH_REPLY_TO,
@@ -605,7 +640,7 @@ export async function sendClaimDripEmail(args: {
   </p>
 </body></html>`;
 
-    const { error } = await resend.emails.send({
+    const { error } = await guardedResendSend({
       from: `${APP_NAME} <${FROM_EMAIL}>`,
       to: [args.toEmail],
       replyTo: OUTREACH_REPLY_TO,
@@ -740,7 +775,7 @@ export async function sendDpFollowupEmail(args: {
       postalAddress: args.postalAddress,
     });
 
-    const { error } = await resend.emails.send({
+    const { error } = await guardedResendSend({
       from: `${DP_LEAD_FROM_NAME} <${DP_LEAD_FROM_EMAIL}>`,
       to: [args.toEmail],
       replyTo: DP_LEAD_REPLY_TO,
@@ -840,7 +875,7 @@ export async function sendDirectoryClaimInviteEmail(args: {
   </p>
 </body></html>`;
 
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await guardedResendSend({
       from: `${APP_NAME} <${FROM_EMAIL}>`,
       to: [args.toEmail],
       replyTo: OUTREACH_REPLY_TO,
@@ -1077,7 +1112,7 @@ export async function sendPasswordResetEmail(
     const APP_URL = process.env.NEXTAUTH_URL || 'https://getcarelinkai.com';
     const resetLink = `${APP_URL}/auth/reset-password?token=${resetToken}`;
     
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await guardedResendSend({
       from: `${APP_NAME} <${FROM_EMAIL}>`,
       to: [email],
       subject: `Reset Your ${APP_NAME} Password`,
@@ -1132,7 +1167,7 @@ export async function sendQuoteSurveyEmail(args: {
       `name and never any medical details.</p>` +
       `<p><a href="${escapeHtml(args.surveyUrl)}" style="display:inline-block;background:#0d9488;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600">Share the quote</a></p>` +
       `<p style="color:#9ca3af;font-size:12px">${APP_NAME}</p>`;
-    const { error } = await resend.emails.send({
+    const { error } = await guardedResendSend({
       from: `${APP_NAME} <${FROM_EMAIL}>`,
       to: [args.toEmail],
       replyTo: OUTREACH_REPLY_TO,
