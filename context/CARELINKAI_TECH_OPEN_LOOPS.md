@@ -6,6 +6,20 @@ Each loop: what it is, why it matters, what done looks like.
 
 ---
 
+### OL-120: Route the transactional (non-`email.ts`) Resend sends through suppression too
+- **Status:** 🟡 OPEN — logged 2026-07-17 as the deliberate follow-up scope-out of PR **#708** (`fix/resend-bounce-suppression`). Founder decision (Chris, 2026-07-17): keep #708 focused on the `email.ts` outreach lanes; do NOT expand it. Not urgent.
+- **What:** #708 added `guardedResendSend` — a single suppression-enforcing choke point that every send helper in `src/lib/email.ts` now routes through, so a hard-bounced/complained address is never re-sent. But a handful of transactional sends live OUTSIDE that module and still call `resend.emails.send(...)` directly, bypassing the suppression list:
+  - `src/lib/email/inquiry-email-service.ts` (`sendInquiryResponse`, its own Resend instance)
+  - `src/app/api/webhooks/stripe/route.ts` (`notifyProviderRidePaid`)
+  - `src/app/api/rides/[id]/complete/route.ts`, `.../confirm/route.ts`, `.../[id]/route.ts`, `src/app/api/rides/route.ts` (ride lifecycle notifications)
+  - `src/app/api/cron/ride-reminders/route.ts`, `src/app/api/cron/credential-expiry/route.ts`
+  - `src/app/api/auth/register/route.ts` (verification path)
+  - `src/app/api/discharge-planner/placement-request/route.ts`
+- **Why it's low-priority:** these all go to **user-typed** addresses (a family/operator/caregiver who just entered their own email), not scraped lists — so their bounce risk is low and they are not the ~27% outreach-bounce driver #708 targets. Still, for a clean "suppression on EVERY send" guarantee and to stop re-mailing an address that legitimately hard-bounced, they should check the list too.
+- **Done when:** either (a) `guardedResendSend` (or an equivalent `filterSuppressed`-backed wrapper) is extracted to a shared module (e.g. `src/lib/email/suppression.ts` already exports `filterSuppressed`) and every direct `resend.emails.send` call site above routes through it; or (b) those sends are consolidated back into `email.ts`. Add a test per site that a suppressed recipient is dropped.
+
+---
+
 ### OL-119: DP lead-capture form + automated follow-up sequence (feat/dp-lead-capture)
 - **Status:** 🟢 BUILT 2026-07-15 (branch `claude/dp-lead-capture-36gh8o`) — schema + form + sequence engine + admin + cron + docs + 33 tests. Ships **OFF**: nothing sends until the founder flips the flag (below).
 - **Why:** Anita (Fiverr contractor, NO app account) is live on discharge-planner calls now. She captures interest on one scoped form → the app emails the planner from our domain (From `chris@`, Reply-To `placements@`) and nurtures automatically (Touch 1 immediate, +3/+7/+14d). Demand-first, founder-out — Chris is never the manual sender.
