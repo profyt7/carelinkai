@@ -8,7 +8,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { Loader2, CheckCircle, MessageSquare, Send, Ban, Stethoscope } from 'lucide-react';
+import { Loader2, CheckCircle, MessageSquare, Send, Ban, Stethoscope, Trash2 } from 'lucide-react';
 
 type Lead = {
   id: string;
@@ -104,6 +104,24 @@ export default function AdminDpLeadsPage() {
       await load();
     } catch (e: any) {
       setError(e?.message || 'Action failed');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function del(lead: Lead) {
+    if (!window.confirm(`Permanently delete this lead?\n\n${lead.name} — ${lead.hospital}\n${lead.email}\n\nThis cannot be undone.`)) return;
+    setBusyId(lead.id);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/dp-leads/${lead.id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d?.error || 'Delete failed');
+      }
+      await load();
+    } catch (e: any) {
+      setError(e?.message || 'Delete failed');
     } finally {
       setBusyId(null);
     }
@@ -206,6 +224,10 @@ export default function AdminDpLeadsPage() {
                           <CheckCircle className="h-3 w-3" /> Reactivate
                         </button>
                       )}
+                      <button onClick={() => del(lead)} disabled={busyId === lead.id} title="Delete this lead permanently"
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-red-50 text-red-700 hover:bg-red-100 disabled:opacity-50">
+                        <Trash2 className="h-3 w-3" /> Delete
+                      </button>
                       {busyId === lead.id && <Loader2 className="h-3 w-3 animate-spin text-neutral-400" />}
                     </div>
                   </td>

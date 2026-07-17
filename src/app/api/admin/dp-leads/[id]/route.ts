@@ -72,3 +72,23 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     return NextResponse.json({ error: 'Failed to update' }, { status: 500 });
   }
 }
+
+/**
+ * DELETE /api/admin/dp-leads/[id] — permanently remove a single DP lead.
+ * Admin-only, one row by id (so cleanup can't over-delete). Idempotent-ish:
+ * a missing id returns 404. DPLead has NO PHI and no FKs, so a hard delete is safe.
+ */
+export async function DELETE(_request: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    await requireRole([UserRole.ADMIN]);
+    const lead = await prisma.dPLead.findUnique({ where: { id: params.id }, select: { id: true } });
+    if (!lead) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    await prisma.dPLead.delete({ where: { id: lead.id } });
+    return NextResponse.json({ ok: true, deleted: lead.id });
+  } catch (error: any) {
+    if (error?.name === 'UnauthenticatedError') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (error?.name === 'UnauthorizedError') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    console.error('[admin/dp-leads] delete error:', error);
+    return NextResponse.json({ error: 'Failed to delete' }, { status: 500 });
+  }
+}
