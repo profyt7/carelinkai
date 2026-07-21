@@ -18,6 +18,17 @@ concurrency:
   group: e2e-${{ github.ref }}
   cancel-in-progress: true
 
+# Sentry is production-only. Blank BOTH DSNs for every job (build + runtime) so
+# CI e2e never initializes Sentry and never reports handled errors — e.g. Resend
+# 401s from the committed placeholder key — as dev-tagged noise
+# (CARELINK-AI-16/-17). An empty value stays set, so Next.js will NOT override it
+# with the committed .env value. Backstop to the enabled:production gate in the
+# sentry.*.config.ts files. Both are blanked because the config falls back to
+# NEXT_PUBLIC_SENTRY_DSN when SENTRY_DSN is empty.
+env:
+  SENTRY_DSN: ""
+  NEXT_PUBLIC_SENTRY_DSN: ""
+
 jobs:
   e2e-residents:
     runs-on: ubuntu-latest

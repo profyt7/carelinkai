@@ -53,6 +53,38 @@ async function guardedResendSend(
   }>;
 }
 
+/**
+ * Guard every send helper consults before touching Resend. Returns true when
+ * outbound email must be short-circuited (skip the send, return false, NEVER
+ * captureError). Two cases:
+ *
+ *  - RESEND_API_KEY is missing — no way to send in any environment.
+ *  - NON-PRODUCTION with a placeholder key. The committed `.env` ships
+ *    `RESEND_API_KEY=re_placeholder_key_set_on_render`, so CI e2e (and local
+ *    dev) would otherwise attempt a send, get a 401 from Resend, and report
+ *    that HANDLED error to Sentry from CI — the source of ~637 dev-tagged
+ *    issues (CARELINK-AI-16/-17). Skipping the send there means no network
+ *    call and no captureError.
+ *
+ * Production is unaffected: a real key is always present, so this returns false
+ * and sends proceed normally. Logs the disabled state ONCE per process to avoid
+ * per-send log spam.
+ */
+let warnedEmailUnavailable = false;
+function emailSendingUnavailable(): boolean {
+  const key = process.env.RESEND_API_KEY;
+  const missing = !key;
+  const placeholder = process.env.NODE_ENV !== 'production' && !!key && key.includes('placeholder');
+  const unavailable = missing || placeholder;
+  if (unavailable && !warnedEmailUnavailable) {
+    warnedEmailUnavailable = true;
+    console.warn(
+      `[Resend] Email sending unavailable (${missing ? 'RESEND_API_KEY not configured' : 'placeholder key in non-production'}) — skipping outbound sends.`,
+    );
+  }
+  return unavailable;
+}
+
 // Constants
 const FROM_EMAIL = process.env.EMAIL_FROM || 'noreply@getcarelinkai.com';
 const APP_NAME = 'CareLinkAI';
@@ -93,12 +125,8 @@ export async function sendVerificationEmail(
   try {
     console.log(`[Resend] Sending verification email to ${email}`);
     
-    // Check if Resend API key is configured
-    if (!process.env.RESEND_API_KEY) {
-      console.error('[Resend] RESEND_API_KEY is not configured in environment variables');
-      console.error('[Resend] Please set RESEND_API_KEY on Render dashboard');
-      return false;
-    }
+    // Check if Resend API key is configured (and real — see emailSendingUnavailable)
+    if (emailSendingUnavailable()) return false;
     
     // Generate verification link
     const APP_URL = process.env.NEXTAUTH_URL || 'https://getcarelinkai.com';
@@ -189,10 +217,7 @@ export async function sendOperatorClaimNotification(args: {
   const ccRaw = (process.env.CLAIM_NOTIFY_CC ?? '').trim();
   const cc = ccRaw && ccRaw.toLowerCase() !== to.toLowerCase() ? [ccRaw] : undefined;
   try {
-    if (!process.env.RESEND_API_KEY) {
-      console.error('[Resend] RESEND_API_KEY not configured — skipping operator claim notification');
-      return false;
-    }
+    if (emailSendingUnavailable()) return false;
     const facilityName = args.facilityName || '(unnamed facility)';
     const operatorEmail = args.operatorEmail || '(unknown operator)';
     const operatorName = args.operatorName?.trim();
@@ -280,10 +305,7 @@ export async function sendConciergeRequestNotification(args: {
 }): Promise<boolean> {
   const to = process.env.ADMIN_NOTIFY_EMAIL || process.env.CLAIM_NOTIFY_EMAIL || 'chris@getcarelinkai.com';
   try {
-    if (!process.env.RESEND_API_KEY) {
-      console.error('[Resend] RESEND_API_KEY not configured — skipping concierge request notification');
-      return false;
-    }
+    if (emailSendingUnavailable()) return false;
     const who = [args.dpName?.trim(), args.dpOrganization?.trim()].filter(Boolean).join(' · ') || 'A discharge planner';
     const appUrl = (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'https://getcarelinkai.com').replace(/\/$/, '');
     const adminLink = `${appUrl}/admin/concierge/${args.requestId}`;
@@ -332,10 +354,7 @@ export async function sendConciergeShortlistReadyEmail(args: {
   const toEmail = args.toEmail?.trim();
   if (!toEmail) return false;
   try {
-    if (!process.env.RESEND_API_KEY) {
-      console.error('[Resend] RESEND_API_KEY not configured — skipping concierge shortlist-ready email');
-      return false;
-    }
+    if (emailSendingUnavailable()) return false;
     const n = args.count > 0 ? args.count : 1;
     const optionWord = n === 1 ? 'option' : 'options';
     const appUrl = (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'https://getcarelinkai.com').replace(/\/$/, '');
@@ -394,10 +413,7 @@ export async function sendConciergeTourNotification(args: {
 }): Promise<boolean> {
   const to = process.env.ADMIN_NOTIFY_EMAIL || process.env.CLAIM_NOTIFY_EMAIL || 'chris@getcarelinkai.com';
   try {
-    if (!process.env.RESEND_API_KEY) {
-      console.error('[Resend] RESEND_API_KEY not configured — skipping concierge tour notification');
-      return false;
-    }
+    if (emailSendingUnavailable()) return false;
     const who = [args.dpName?.trim(), args.dpOrganization?.trim()].filter(Boolean).join(' · ') || 'A discharge planner';
     const facility = args.facilityName?.trim() || 'a facility';
     const claimLine = args.claimed
@@ -464,10 +480,7 @@ export async function sendInquiryClaimNudgeEmail(args: {
     ? `${count} families are trying to reach`
     : `A family is trying to reach`;
   try {
-    if (!process.env.RESEND_API_KEY) {
-      console.error('[Resend] RESEND_API_KEY not configured — skipping inquiry claim nudge');
-      return false;
-    }
+    if (emailSendingUnavailable()) return false;
     const safeFacility = escapeHtml(facilityName);
     const subject = isTour
       ? `A family wants to tour ${facilityName} — claim to confirm the visit`
@@ -531,7 +544,7 @@ export async function sendNewLeadOperatorEmail(args: {
   ctaUrl: string;
 }): Promise<boolean> {
   try {
-    if (!process.env.RESEND_API_KEY) return false;
+    if (emailSendingUnavailable()) return false;
     const facility = escapeHtml(args.facilityName?.trim() || 'your community');
     const hi = args.operatorFirstName ? `Hi ${escapeHtml(args.operatorFirstName)}, ` : '';
     const lead = args.leadType === 'tour' ? 'tour request' : 'inquiry';
@@ -590,7 +603,7 @@ export async function sendClaimDripEmail(args: {
   trigger?: 'inquiry' | 'tour';
 }): Promise<boolean> {
   try {
-    if (!process.env.RESEND_API_KEY) return false;
+    if (emailSendingUnavailable()) return false;
     const facility = args.facilityName?.trim() || 'your community';
     const n = Math.max(1, args.waitingCount || 1);
     const fam = n === 1 ? 'family' : 'families';
@@ -743,7 +756,7 @@ export async function sendDpFollowupEmail(args: {
   postalAddress: string;
 }): Promise<boolean> {
   try {
-    if (!process.env.RESEND_API_KEY) return false;
+    if (emailSendingUnavailable()) return false;
     const { dpFollowupCopy } = await import('@/lib/dp-outreach/copy');
     const copy = dpFollowupCopy(args.touch, {
       plannerFirstName: args.plannerFirstName,
@@ -829,10 +842,7 @@ export async function sendDirectoryClaimInviteEmail(args: {
   if (communities.length === 0) return false;
   const multi = communities.length > 1;
   try {
-    if (!process.env.RESEND_API_KEY) {
-      console.error('[Resend] RESEND_API_KEY not configured — skipping directory claim invite');
-      return false;
-    }
+    if (emailSendingUnavailable()) return false;
     const subject = multi
       ? `Claim your ${communities.length} free ${APP_NAME} listings`
       : `Claim your free ${APP_NAME} listing for ${communities[0].name}`;
@@ -1104,10 +1114,7 @@ export async function sendPasswordResetEmail(
   try {
     console.log(`[Resend] Sending password reset email to ${email}`);
     
-    if (!process.env.RESEND_API_KEY) {
-      console.error('[Resend] RESEND_API_KEY is not configured');
-      return false;
-    }
+    if (emailSendingUnavailable()) return false;
     
     const APP_URL = process.env.NEXTAUTH_URL || 'https://getcarelinkai.com';
     const resetLink = `${APP_URL}/auth/reset-password?token=${resetToken}`;
@@ -1151,7 +1158,7 @@ export async function sendQuoteSurveyEmail(args: {
   surveyUrl: string;
 }): Promise<boolean> {
   try {
-    if (!process.env.RESEND_API_KEY) return false;
+    if (emailSendingUnavailable()) return false;
     const facility = args.facilityName?.trim() || 'the community';
     const text =
       `Hi — thanks for touring ${facility} through CareLinkAI.\n\n` +
