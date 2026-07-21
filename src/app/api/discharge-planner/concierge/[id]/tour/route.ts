@@ -25,13 +25,14 @@ import { captureError } from '@/lib/sentry';
 
 const bodySchema = z.object({ homeId: z.string().min(1) });
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const user = await requireRole([UserRole.DISCHARGE_PLANNER, UserRole.ADMIN]);
     const { homeId } = bodySchema.parse(await request.json().catch(() => ({})));
 
     const search = await prisma.placementSearch.findUnique({
-      where: { id: params.id },
+      where: { id },
       select: {
         id: true, userId: true, isConcierge: true, conciergeStatus: true, curatedHomes: true,
         user: { select: { firstName: true, lastName: true, dischargePlannerProfile: { select: { organization: true } } } },
@@ -61,7 +62,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
     // Persist the DP-visible status first (idempotent). If it was already
     // requested, return success without re-sending notifications.
-    const mark = await markConciergeTourRequested(params.id, homeId, new Date().toISOString());
+    const mark = await markConciergeTourRequested(id, homeId, new Date().toISOString());
     if (mark === 'not_found') {
       return NextResponse.json({ error: 'That home is not on this shortlist.' }, { status: 400 });
     }
@@ -75,7 +76,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     const dpOrganization = search.user?.dischargePlannerProfile?.organization || undefined;
 
     // Always loop in the care team (Chris) so the tour gets coordinated.
-    void sendConciergeTourNotification({ requestId: params.id, facilityName: home.name, claimed, dpName, dpOrganization });
+    void sendConciergeTourNotification({ requestId: id, facilityName: home.name, claimed, dpName, dpOrganization });
 
     if (claimed && operatorEmail) {
       // Operator gets the lead directly (generic copy, no PHI).

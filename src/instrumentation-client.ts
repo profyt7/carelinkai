@@ -16,6 +16,11 @@ if (SENTRY_DSN) {
   Sentry.init({
     dsn: SENTRY_DSN,
 
+    // Report ONLY from production. CI/e2e runs (NODE_ENV=development on
+    // localhost) were the source of dev-tagged noise (CARELINK-AI-16/-17). The
+    // beforeSend guard below is the backstop to this flag.
+    enabled: process.env.NODE_ENV === 'production',
+
     // Performance Monitoring - capture 10% of transactions in production
     tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
 
@@ -61,6 +66,11 @@ if (SENTRY_DSN) {
     ],
 
     beforeSend(event) {
+      // Backstop to `enabled` above: drop every non-production event so CI/e2e
+      // noise never reaches Sentry, even if a DSN leaks into a dev environment.
+      if (process.env.NODE_ENV !== 'production') {
+        return null;
+      }
       // Filter noisy ResizeObserver errors
       if (event.exception?.values?.[0]?.value?.includes('ResizeObserver')) {
         return null;
