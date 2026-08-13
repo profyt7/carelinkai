@@ -58,6 +58,13 @@ jobs:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/carelinkai_marketplace?schema=public
       # S3 disabled in CI by default (mock URLs)
       S3_DISABLE: "1"
+      # Disable Sentry in e2e — the app must not phone home from CI. The
+      # committed .env carries a live SENTRY_DSN, so without these overrides the
+      # build bakes it in and the runtime makes outbound calls that
+      # ETIMEDOUT/ECONNRESET in CI's locked-down network, destabilizing the
+      # server mid-test and flaking the longer flows (OL-121).
+      SENTRY_DSN: ""
+      NEXT_PUBLIC_SENTRY_DSN: ""
 
     steps:
       - name: Checkout
@@ -191,6 +198,13 @@ jobs:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/carelinkai_marketplace?schema=public
       # S3 disabled in CI by default (mock URLs)
       S3_DISABLE: "1"
+      # Disable Sentry in e2e — the app must not phone home from CI. The
+      # committed .env carries a live SENTRY_DSN, so without these overrides the
+      # build bakes it in and the runtime makes outbound calls that
+      # ETIMEDOUT/ECONNRESET in CI's locked-down network, destabilizing the
+      # server mid-test and flaking the longer flows (OL-121).
+      SENTRY_DSN: ""
+      NEXT_PUBLIC_SENTRY_DSN: ""
 
     steps:
       - name: Checkout
@@ -296,6 +310,9 @@ jobs:
       # e2e jobs). ALLOW_DEV_ENDPOINTS seeding must not reach a real database.
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/carelinkai_marketplace?schema=public
       S3_DISABLE: "1"
+      # Disable Sentry in e2e — see note in the residents/family jobs (OL-121).
+      SENTRY_DSN: ""
+      NEXT_PUBLIC_SENTRY_DSN: ""
 
     steps:
       - name: Checkout
@@ -389,6 +406,9 @@ jobs:
       # e2e jobs). ALLOW_DEV_ENDPOINTS seeding must not reach a real database.
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/carelinkai_marketplace?schema=public
       S3_DISABLE: "1"
+      # Disable Sentry in e2e — see note in the residents/family jobs (OL-121).
+      SENTRY_DSN: ""
+      NEXT_PUBLIC_SENTRY_DSN: ""
 
     steps:
       - name: Checkout
@@ -482,6 +502,9 @@ jobs:
       # e2e jobs). ALLOW_DEV_ENDPOINTS seeding must not reach a real database.
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/carelinkai_marketplace?schema=public
       S3_DISABLE: "1"
+      # Disable Sentry in e2e — see note in the residents/family jobs (OL-121).
+      SENTRY_DSN: ""
+      NEXT_PUBLIC_SENTRY_DSN: ""
 
     steps:
       - name: Checkout
