@@ -15,6 +15,12 @@ if (SENTRY_DSN) {
   Sentry.init({
     dsn: SENTRY_DSN,
 
+    // Report ONLY from production. CI/e2e runs execute on localhost with
+    // NODE_ENV=development and were the source of ~637 dev-tagged handled errors
+    // (CARELINK-AI-16/-17, Resend 401s on the placeholder key). The beforeSend
+    // guard below is the backstop to this flag.
+    enabled: process.env.NODE_ENV === 'production',
+
     // Enable Logs feature
     enableLogs: true,
 
@@ -40,6 +46,11 @@ if (SENTRY_DSN) {
     sendDefaultPii: false,
 
     beforeSend(event) {
+      // Backstop to `enabled` above: drop every non-production event so CI/e2e
+      // noise never reaches Sentry, even if a DSN leaks into a dev environment.
+      if (process.env.NODE_ENV !== 'production') {
+        return null;
+      }
       if (event.request?.data) {
         event.request.data = scrubPhi(event.request.data);
       }

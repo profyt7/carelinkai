@@ -27,11 +27,12 @@ function authErr(error: any): NextResponse | null {
   return null;
 }
 
-export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     await requireRole([UserRole.ADMIN]);
     const row = await prisma.placementSearch.findUnique({
-      where: { id: params.id },
+      where: { id },
       select: {
         id: true,
         queryText: true,
@@ -80,14 +81,15 @@ const patchSchema = z.discriminatedUnion('action', [
   }),
 ]);
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     await requireRole([UserRole.ADMIN]);
     const body = await request.json().catch(() => ({}));
     const parsed = patchSchema.parse(body);
 
     const existing = await prisma.placementSearch.findUnique({
-      where: { id: params.id },
+      where: { id },
       select: { id: true, isConcierge: true, userId: true, user: { select: { email: true } } },
     });
     if (!existing || !existing.isConcierge) {
@@ -96,7 +98,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 
     if (parsed.action === 'matching') {
       await prisma.placementSearch.update({
-        where: { id: params.id },
+        where: { id },
         data: { conciergeStatus: 'MATCHING' },
       });
       return NextResponse.json({ ok: true, status: 'MATCHING' });
@@ -130,7 +132,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     }
 
     await prisma.placementSearch.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         curatedHomes: curated,
         conciergeNote: parsed.conciergeNote?.trim() || null,
@@ -148,7 +150,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       title: 'Your shortlist is ready',
       message: `Your CareLinkAI care team curated ${curated.length} ${optionWord} for your placement request.`,
       link: '/discharge-planner/concierge',
-      data: { kind: 'concierge_shortlist_ready', searchId: params.id, count: curated.length },
+      data: { kind: 'concierge_shortlist_ready', searchId: id, count: curated.length },
     });
     if (existing.user?.email) {
       void sendConciergeShortlistReadyEmail({ toEmail: existing.user.email, count: curated.length });
