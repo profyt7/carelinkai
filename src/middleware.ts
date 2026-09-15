@@ -31,6 +31,8 @@ const PUBLIC_PATHS = [
   '/offline.html',     // PWA offline page
   '/robots.txt',       // Crawler directives — MUST be publicly readable by search engines
   '/sitemap.xml',      // Sitemap — MUST be publicly readable by search engines
+  '/founder-intro.mp4',        // Self-hosted founder intro video (linked from DP emails)
+  '/founder-intro-poster.jpg', // Poster frame for the above
 ];
 
 /**
@@ -168,7 +170,7 @@ export default function middleware(req: NextRequest) {
         }
 
         // Always-public paths (must match the authorized callback list above)
-        const publicPaths = ['/', '/help', '/search', '/homes', '/privacy', '/terms', '/learn', '/availability', '/quote', '/lead'];
+        const publicPaths = ['/', '/help', '/search', '/homes', '/privacy', '/terms', '/learn', '/availability', '/quote', '/lead', '/founder'];
         const mockPublicPrefixes = ['/marketplace'];
 
         if (publicPaths.some(p => pathname === p || pathname.startsWith(p + '/')) || (showMocks && mockPublicPrefixes.some(p => pathname === p || pathname.startsWith(p + '/')))) {
@@ -206,7 +208,7 @@ export default function middleware(req: NextRequest) {
             }
 
             // Always-public paths — no auth required regardless of mock mode
-            const alwaysPublic = ['/', '/help', '/search', '/homes', '/privacy', '/terms', '/learn', '/availability', '/quote', '/lead'];
+            const alwaysPublic = ['/', '/help', '/search', '/homes', '/privacy', '/terms', '/learn', '/availability', '/quote', '/lead', '/founder'];
             if (alwaysPublic.some(p => pathname === p || pathname.startsWith(p + '/'))) {
               return true;
             }
@@ -270,7 +272,7 @@ export const config = {
      * 4. /auth/ (auth pages)
      * 5. Common assets (favicon, manifest, etc.)
      */
-    '/((?!_next/|api/|static/|public/|images/|uploads/|favicon\\.ico|robots\\.txt|sitemap.*\\.xml|auth/|sw\\.js|manifest\\.json|offline\\.html).*)',
+    '/((?!_next/|api/|static/|public/|images/|uploads/|favicon\\.ico|robots\\.txt|sitemap.*\\.xml|auth/|sw\\.js|manifest\\.json|offline\\.html|founder-intro\\.mp4|founder-intro-poster\\.jpg).*)',
     // Rate-limited API surfaces (handled by the rate-limit branch above, not auth).
     // /api/auth is deliberately NOT here — it is rate-limited at its own route handler.
     '/api/webhooks/:path*',

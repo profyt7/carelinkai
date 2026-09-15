@@ -41,12 +41,14 @@ export function dpFollowupEnabled(): boolean {
 function appUrl(): string {
   return (process.env['NEXT_PUBLIC_APP_URL'] || process.env['NEXTAUTH_URL'] || 'https://getcarelinkai.com').replace(/\/$/, '');
 }
-/** Founder intro video, surfaced in the copy. Config so it can change without a deploy-only edit. */
+/**
+ * Founder intro video, surfaced in the copy. Self-hosted at /founder (the MP4
+ * lives in public/), so it no longer depends on a third-party subscription.
+ * Config so it can change without a deploy-only edit.
+ */
+export const DEFAULT_FOUNDER_VIDEO_URL = 'https://getcarelinkai.com/founder';
 export function founderVideoUrl(): string {
-  return (
-    process.env['FOUNDER_VIDEO_URL'] ||
-    'https://app.heygen.com/videos/founder-04841e9bef8f49cdac30a1b2d9934f9e'
-  ).trim();
+  return (process.env['FOUNDER_VIDEO_URL'] || DEFAULT_FOUNDER_VIDEO_URL).trim();
 }
 function postalAddress(): string | null {
   const v = (process.env['COMPANY_POSTAL_ADDRESS'] || '').trim();

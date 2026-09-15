@@ -54,7 +54,9 @@ attestation that the planner verbally agreed to be contacted (stored as evidence
 - **Cadence (from lead creation):** Touch 1 = immediate (inline on submit),
   Touch 2 = +3d, Touch 3 = +7d, Touch 4 = +14d, then exhausted.
 - **Founder video** (`FOUNDER_VIDEO_URL`) surfaced on Touch 1 and Touch 3.
-  Default is the verified public HeyGen link.
+  Default is the self-hosted `/founder` page (`src/app/founder/page.tsx`), which
+  plays `public/founder-intro.mp4` (39s, poster `public/founder-intro-poster.jpg`).
+  No third-party video host is involved.
 - **Idempotent:** the cron advances a lead by at most one touch per run, and only
   touches `active` leads whose `nextTouchAt` is due. Never double-sends.
 - **Email only.** No SMS anywhere in this lane (TCPA — out of scope until Haran's

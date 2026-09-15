@@ -28,7 +28,7 @@ export const MAX_DP_TOUCHES = DP_FOLLOWUP_OFFSETS_DAYS.length;
  */
 export const VIDEO_LINK_TOKEN = '{{VIDEO_LINK}}';
 /** Friendly anchor text for the founder-video link in the HTML email. */
-export const VIDEO_LINK_TEXT = 'Watch the 90-second intro';
+export const VIDEO_LINK_TEXT = 'Watch the 40-second intro';
 
 export interface DpCopyInput {
   /** Planner first name; '' is fine — copy falls back to a neutral greeting. */
@@ -70,7 +70,7 @@ export function dpFollowupCopy(touch: number, input: DpCopyInput): DpCopy {
           hi,
           "Thanks for taking my colleague's call. I'm Chris Tolliver, the founder of CareLinkAI — a free tool built to make discharge placement less of a phone-tag marathon.",
           'The short version: you tell us the patient’s needs, and we come back with a matched, availability-checked shortlist of assisted living and residential care options — so you spend minutes, not an afternoon, finding a bed that fits.',
-          `I recorded a quick 90-second intro so you can see exactly how it works — no login needed: ${L}`,
+          `I recorded a quick 40-second intro so you can see exactly how it works — no login needed: ${L}`,
           "There’s never a cost to you or your hospital. If it’s useful, just reply to this email and I’ll get you set up. If the timing’s wrong, no worries at all.",
         ],
       };
@@ -81,7 +81,7 @@ export function dpFollowupCopy(touch: number, input: DpCopyInput): DpCopy {
         paragraphs: [
           hi,
           'Just floating this back to the top of your inbox in case it got buried — I know your days are full.',
-          `If it’s easier to watch than read, the 90-second walkthrough is here: ${L}`,
+          `If it’s easier to watch than read, the 40-second walkthrough is here: ${L}`,
           "Happy to answer anything, or to just leave a shortlist waiting for your next hard-to-place discharge. Whatever’s useful — a reply is all it takes.",
         ],
       };

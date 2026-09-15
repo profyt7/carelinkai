@@ -23,7 +23,7 @@ jest.mock('@/lib/prisma', () => ({
 jest.mock('@/lib/email', () => ({ sendDpFollowupEmail: jest.fn() }));
 jest.mock('@/lib/sentry', () => ({ captureError: jest.fn() }));
 
-import { dpFollowupCopy, DP_FOLLOWUP_OFFSETS_DAYS, MAX_DP_TOUCHES, VIDEO_LINK_TOKEN } from '@/lib/dp-outreach/copy';
+import { dpFollowupCopy, DP_FOLLOWUP_OFFSETS_DAYS, MAX_DP_TOUCHES, VIDEO_LINK_TOKEN, VIDEO_LINK_TEXT } from '@/lib/dp-outreach/copy';
 import { leadCaptureTokenValid } from '@/lib/dp-outreach/lead-capture-token';
 import {
   dpFollowupEnabled,
@@ -43,7 +43,7 @@ const findMany = prisma.dPLead.findMany as jest.Mock;
 const suppFind = prisma.emailSuppression.findUnique as jest.Mock;
 const sendMock = sendDpFollowupEmail as jest.Mock;
 
-const VIDEO = 'https://app.heygen.com/videos/founder-04841e9bef8f49cdac30a1b2d9934f9e';
+const VIDEO = 'https://getcarelinkai.com/founder';
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -78,6 +78,16 @@ describe('dpFollowupCopy', () => {
       expect(c.paragraphs.join(' ')).toContain(VIDEO_LINK_TOKEN); // link placeholder, not the raw URL
       expect(c.paragraphs.join(' ')).not.toContain(VIDEO); // raw URL never embedded in the copy text
     }
+  });
+
+  it('says "40-second" (video is 39s) and never mentions the retired HeyGen host', () => {
+    for (let t = 1; t <= MAX_DP_TOUCHES; t++) {
+      const text = dpFollowupCopy(t, input).paragraphs.join(' ');
+      expect(text).not.toContain('90-second');
+      expect(text).not.toMatch(/heygen/i);
+    }
+    expect(dpFollowupCopy(1, input).paragraphs.join(' ')).toContain('40-second');
+    expect(VIDEO_LINK_TEXT).toBe('Watch the 40-second intro');
   });
 
   it('falls back to a neutral greeting when the name is blank', () => {
@@ -121,7 +131,8 @@ describe('helpers', () => {
     expect(firstNameOf('')).toBe('');
     expect(firstNameOf(null)).toBe('');
   });
-  it('founderVideoUrl defaults to the verified HeyGen link', () => {
+  it('founderVideoUrl defaults to the self-hosted /founder page (no HeyGen)', () => {
+    expect(VIDEO).not.toMatch(/heygen/i);
     expect(founderVideoUrl()).toBe(VIDEO);
     process.env.FOUNDER_VIDEO_URL = 'https://example.com/v';
     expect(founderVideoUrl()).toBe('https://example.com/v');
