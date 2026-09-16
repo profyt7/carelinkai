@@ -19,7 +19,7 @@ const opts = {
   postalAddress: '1234 Main St, Cleveland, OH 44114',
 };
 // Touch 1 copy is the richest in non-ASCII punctuation (em-dashes + curly quotes).
-const copy = dpFollowupCopy(1, { plannerFirstName: 'Maria', videoUrl: 'https://app.heygen.com/videos/founder-x' });
+const copy = dpFollowupCopy(1, { plannerFirstName: 'Maria', videoUrl: 'https://getcarelinkai.com/founder' });
 const html = renderDpFollowupHtml(copy, opts);
 
 describe('DP email — UTF-8 charset', () => {
@@ -75,10 +75,13 @@ describe('DP email — image-free header', () => {
 describe('DP email — content preserved', () => {
   it('renders the founder video as a friendly-text anchor, href unchanged', () => {
     // href still points at the same video URL...
-    expect(html).toContain('<a href="https://app.heygen.com/videos/founder-x"');
+    expect(html).toContain('<a href="https://getcarelinkai.com/founder"');
     // ...but the visible anchor text is friendly, not the raw URL
-    expect(html).toContain('>Watch the 90-second intro</a>');
-    expect(html).not.toContain('>https://app.heygen.com/videos/founder-x</a>');
+    expect(html).toContain('>Watch the 40-second intro</a>');
+    expect(html).not.toContain('>https://getcarelinkai.com/founder</a>');
+    // The video is 39s — the old "90-second" wording must not resurface anywhere.
+    expect(html).not.toContain('90-second');
+    expect(html).not.toMatch(/heygen/i);
   });
   it('keeps the unsubscribe link (CAN-SPAM)', () => {
     expect(html).toContain(opts.unsubscribeUrl.replace(/&/g, '&amp;'));

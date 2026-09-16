@@ -376,8 +376,9 @@ jobs:
           retention-days: 7
 
   e2e-concierge:
-    # Discharge-planner concierge placement flow regression guard (PR #671).
-    # Scoped to the single spec; self-seeds via /api/dev/* (ALLOW_DEV_ENDPOINTS=1).
+    # Discharge-planner concierge placement flow regression guard (PR #671) +
+    # the /founder self-hosted intro page (DP-lane, no auth, no DB).
+    # Self-seeds via /api/dev/* (ALLOW_DEV_ENDPOINTS=1).
     runs-on: ubuntu-latest
     timeout-minutes: 30
     services:
@@ -453,9 +454,11 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
-      - name: Run Playwright (DP concierge flow)
+      - name: Run Playwright (DP concierge flow + /founder intro page)
         run: |
-          npx playwright test --config=playwright.e2e.config.ts e2e/concierge-flow.spec.ts --workers=1 --reporter=line
+          # founder-page.spec.ts: the self-hosted founder intro linked from the DP
+          # follow-up emails must serve 200 unauthenticated with the local <video>.
+          npx playwright test --config=playwright.e2e.config.ts e2e/concierge-flow.spec.ts e2e/founder-page.spec.ts --workers=1 --reporter=line
 
       - name: Upload Playwright test artifacts (Concierge flow) (always)
         if: always()
