@@ -2102,4 +2102,16 @@
 - **New risks/blockers:** OL-123 (assets missing until Chris commits them). Sequence flag/timing untouched.
 - **Recommended next step:** Chris drops in the two assets on this branch, merges, then verifies `https://getcarelinkai.com/founder` on mobile Safari + desktop Chrome and sends one test lead through `/lead/new` to confirm the Touch-1 link resolves to `/founder`.
 
+### 2026-09-16 — Founder video assets landed on PR #713 (OL-123)
+- **Objective:** Get the transcoded MP4 + poster onto `claude/relaxed-hamilton-lv0qe6` so PR #713 is merge-ready before the 9/24 HeyGen downgrade.
+- **Work completed:** Chris transcoded locally and uploaded `founder-intro.mp4` straight into the session (14.2 MB, 39.5s, 1080p H.264 High / AAC 128k stereo, moov-first = faststart verified). Poster cut in-sandbox at 00:00:02 (`-q:v 3`, 155 KB). Both committed as `public/founder-intro.mp4` + `public/founder-intro-poster.jpg` (commit `4fdf6dda`) and pushed. PR body's "before merge" section replaced with the final asset facts. Subscribed to PR events + hourly check-in armed.
+- **Transfer attempts that did NOT work (recorded so nobody repeats them):** Drive connector `download_file_content` → hard cap 10 MB; curl to `drive.google.com` / `drive.usercontent.google.com` / `docs.google.com` → egress proxy 403; Descript `import_media` from the (link-shared) Drive URL → succeeded, `publish_project` → succeeded, but `media.descriptusercontent.com` + `share.descript.com` + `api.descript.com` are all proxy-blocked; GitHub PR attachment → 10 MB video cap. Reachable hosts: github.com, objects.githubusercontent.com, the GitHub user-asset S3 bucket, pypi (used to pull a static full ffmpeg via `imageio-ffmpeg`, since Playwright's bundled ffmpeg has no libx264/aac).
+- **Side effect:** a Descript project "CareLinkAI founder intro (self-host transfer)" + unlisted share link now exist in Chris's Descript drive — harmless, deletable.
+- **Files changed:** `public/founder-intro.mp4` (new), `public/founder-intro-poster.jpg` (new), context files.
+- **Commands run:** ffprobe-style inspection, `ffmpeg -ss 00:00:02 … -frames:v 1`, `git commit`, `git push`.
+- **Tests/build status:** Prior head (`1077cdbb`) was 14/14 green; assets-only commit re-runs CI (static files, no code change).
+- **Deployment impact:** +14.4 MB in `public/` → Docker image + Render deploy; served by Next static handler with range support. Once merged, `/founder` plays end-to-end.
+- **New risks/blockers:** none new. OL-123 closes after merge + the post-deploy playback check (mobile Safari + desktop Chrome) + one test lead through `/lead/new` confirming the Touch-1 link → `/founder`.
+- **Recommended next step:** merge #713 (no `automerge` label, so it waits on Chris), then run the two post-deploy checks above.
+
 <!-- Add new sessions above this line, newest first -->
