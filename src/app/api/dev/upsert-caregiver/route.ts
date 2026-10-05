@@ -3,7 +3,8 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient, UserRole, UserStatus } from '@prisma/client';
+import { UserRole, UserStatus } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 
 export async function POST(request: NextRequest) {
@@ -12,7 +13,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: false, message: 'Only available in development mode' }, { status: 403 });
   }
 
-  const prisma = new PrismaClient();
   try {
     const body = await request.json().catch(() => ({} as any));
     const email = (body.email as string) || 'caregiver+e2e@carelinkai.com';
@@ -62,7 +62,5 @@ export async function POST(request: NextRequest) {
   } catch (e) {
     console.error('upsert-caregiver failed', e);
     return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }

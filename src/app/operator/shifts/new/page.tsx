@@ -1,10 +1,10 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient, UserRole } from '@prisma/client';
+import { UserRole } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
 import NewShiftForm from '@/components/operator/NewShiftForm';
 
-const prisma = new PrismaClient();
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;

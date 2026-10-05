@@ -5,11 +5,11 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient, UserRole } from '@prisma/client';
+import { UserRole } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { captureError } from '@/lib/sentry';
 
-const prisma = new PrismaClient();
 
 const updateSchema = z.object({
   name: z.string().min(2).optional(),
@@ -102,8 +102,6 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     });
     console.error('Update home failed', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -153,8 +151,6 @@ export async function POST(req: Request, ctx: { params: { id: string } }) {
     });
     console.error('Quick update home failed', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -185,7 +181,5 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     });
     console.error('Get home failed', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }

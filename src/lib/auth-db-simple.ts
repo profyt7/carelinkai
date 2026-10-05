@@ -10,12 +10,10 @@ import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import AppleProvider from "next-auth/providers/apple";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import type { UserRole, UserStatus } from "@prisma/client";
 import { compare } from "bcryptjs";
 
-// Initialize Prisma client
-const prisma = new PrismaClient();
 
 // Constants for security settings
 const JWT_MAX_AGE = parseInt(process.env["JWT_EXPIRATION"] || "86400"); // 24 hours in seconds

@@ -3,7 +3,8 @@ export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient, ComplianceStatus, ResidentStatus } from '@prisma/client';
+import { ComplianceStatus, ResidentStatus } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
   // Allow when explicitly enabled via ALLOW_DEV_ENDPOINTS, regardless of NODE_ENV
@@ -11,7 +12,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Not Found' }, { status: 404 });
   }
 
-  const prisma = new PrismaClient();
   try {
     const body = await request.json().catch(() => ({} as any));
     const familyId: string = body.familyId;
@@ -78,7 +78,5 @@ export async function POST(request: NextRequest) {
   } catch (e) {
     console.error('seed-family-resident failed', e);
     return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }

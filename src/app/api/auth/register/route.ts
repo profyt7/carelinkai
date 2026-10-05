@@ -14,7 +14,8 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient, UserRole, UserStatus, AuditAction } from "@prisma/client";
+import { UserRole, UserStatus, AuditAction } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { hash } from "bcryptjs";
 import { z } from "zod";
 import { v4 as uuidv4 } from "uuid";
@@ -23,8 +24,6 @@ import { sendVerificationEmail } from "@/lib/email";
 import { captureError } from '@/lib/sentry';
 import { verifyClaimToken } from '@/lib/claim-token';
 
-// Initialize Prisma client
-const prisma = new PrismaClient();
 
 // Constants
 const SALT_ROUNDS = 12;
@@ -65,24 +64,15 @@ async function createVerificationToken(userId: string): Promise<string> {
   const expires = new Date();
   expires.setHours(expires.getHours() + TOKEN_EXPIRY_HOURS);
 
-  /* ------------------------------------------------------------------
-   * Use a short-lived Prisma instance so this logic is independent from
-   * the request-scope `prisma` that is disconnected in the handler’s
-   * finally-block. This prevents “PrismaClient is already disconnected”
-   * errors and ensures the token is actually written.
-   * ---------------------------------------------------------------- */
-  const localPrisma = new PrismaClient();
-  try {
-    await localPrisma.user.update({
-      where: { id: userId },
-      data: {
-        verificationToken: token,
-        verificationTokenExpiry: expires,
-      },
-    });
-  } finally {
-    await localPrisma.$disconnect();
-  }
+  // Shared singleton (src/lib/prisma.ts) — nothing disconnects it per request
+  // any more, so the old "short-lived local client" workaround is gone.
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      verificationToken: token,
+      verificationTokenExpiry: expires,
+    },
+  });
 
   console.log(
     `[createVerificationToken] Token persisted for userId=${userId} ` +
@@ -99,11 +89,8 @@ async function sendVerificationEmailToUser(userId: string): Promise<boolean> {
   try {
     console.log(`[sendVerificationEmail] Attempting to send email for userId=${userId}`);
 
-    /* Use a dedicated Prisma client to avoid disconnection issues */
-    const localPrisma = new PrismaClient();
-
-    // Get user information
-    const user = await localPrisma.user.findUnique({
+    // Get user information (shared singleton — see src/lib/prisma.ts)
+    const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
         email: true,
@@ -111,9 +98,7 @@ async function sendVerificationEmailToUser(userId: string): Promise<boolean> {
         verificationToken: true,
       },
     });
-    
-    await localPrisma.$disconnect();
-    
+
     if (!user || !user.verificationToken) {
       console.error('[sendVerificationEmail] User not found or missing verification token');
       return false;
@@ -491,7 +476,6 @@ export async function POST(request: NextRequest) {
     }
     
     // Return success response (excluding sensitive data)
-    await prisma.$disconnect(); // disconnect after all async work is done
     return NextResponse.json({
       success: true,
       message:

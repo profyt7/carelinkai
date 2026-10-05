@@ -3,7 +3,8 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient, UserStatus } from "@prisma/client";
+import { UserStatus } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(request: NextRequest) {
   // Only allow in development
@@ -28,8 +29,6 @@ export async function POST(request: NextRequest) {
 
     const email = body.email.toLowerCase();
     
-    // Initialize Prisma
-    const prisma = new PrismaClient();
     
     // Update user status
     const updatedUser = await prisma.user.update({
@@ -41,7 +40,6 @@ export async function POST(request: NextRequest) {
     }).catch(() => null);
     
     // Disconnect Prisma
-    await prisma.$disconnect();
     
     // Handle user not found
     if (!updatedUser) {

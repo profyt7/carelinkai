@@ -3,6 +3,7 @@
 
 import * as Sentry from '@sentry/nextjs';
 import { scrubPhi } from './src/lib/phi-scrubber';
+import { makeTracesSampler } from './src/lib/sentry/trace-sampling';
 
 const SENTRY_DSN = process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN;
 
@@ -21,8 +22,10 @@ if (SENTRY_DSN) {
     // Enable Metrics (automatically enabled in v10.25.0+, but explicit for clarity)
     enableMetrics: true,
 
-    // Performance Monitoring - capture 10% of transactions in production
-    tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+    // Performance Monitoring - capture 10% of transactions in production, but
+    // NEVER trace health-check / uptime-poller / bot traffic or /api/ping +
+    // /api/health (the "GET /" flood — see src/lib/sentry/trace-sampling.ts).
+    tracesSampler: makeTracesSampler(process.env.NODE_ENV === 'production' ? 0.1 : 1.0),
 
     // Profiling disabled - nodeProfilingIntegration was causing deployment errors
     // profilesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
