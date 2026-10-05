@@ -1,951 +1,234 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-09-16 — **OL-123 BUILT** (founder intro video self-hosted at `/founder`, HeyGen link removed from the DP sequence copy; MP4 + poster committed on PR #713 — pending merge + post-deploy playback check before 9/24 when the HeyGen plan downgrades). Prior **OL-121 logged + FIXED-pending-merge** (e2e merge gate was flaky-red from the committed-`.env` Sentry DSN making CI phone home → ETIMEDOUT/ECONNRESET/memory-restart in the concierge job; disabled Sentry in all e2e jobs; residents/family specs were never the failure). **OL-122 logged** (committed `.env` holds live secrets — founder rotation needed). Prior 2026-07-06 (Session #3) — Session #2's three PRs ✅ ALL MERGED (#696 e6d2182, #697 b203fa1, #698 3abbf5f) + Session #3 shipped FOUR PRs, all OPEN pending Chris review: **#699 OL-118 security fix** (`fix/log-scrub-auth`: admin home-detail route dumped every request cookie incl. the NextAuth session-token prefix into Render logs — removed; exposure assessed LOW, the logged 20 chars are the constant JWE header, not a usable credential; repo-wide sweep found no other cookie/header loggers). **#700 license format gate** (`fix/rcf-license-format`: Park East's description token "365810" is a 6-digit NH CCN, not an RCF license — founder nulled it in prod; new `isValidRcfLicense` ^\d{4}R$ gates ALL odhLicenseNumber write sites + description backfill now excludes INACTIVE homes). **#701 roster CSV landed** (`chore/odh-roster-csv`: Cowork metro roster → scripts/data/, validated 208/208 well-formed licenses, 0 dupes, all ACTIVE, 7 counties; Render runbook in the PR). **#702 OL-117 BUILT** (`feat/claim-link-visits`: ClaimLinkVisit model [migration 20260706000001] — append-only row per valid-token render of /claim (server-side) or register page (via token-verified POST /api/claim-link/visit, no validity oracle); timestamp + homeId + token email + surface, nothing more). Park East investigation (report-only): already INACTIVE via #622 ("SNF/rehab, no public AL") — no public wrong-care-level exposure; see OL-113 note. OL-076 gains the admin-concierge sync-params route. Prior: OL-114 ✅ MERGED #695 (Chris reviewed + merged same day). Session #2 shipped THREE PRs, all OPEN pending Chris review: **#696 Stripe go-live prep** (`feat/stripe-golive-prep`: FOUNDER_20 framework — single coupon 20%-forever + 180-day trial via validated founder code, FOUNDERS49 deprecated/grandfathered, AGENCY tier + missing checkout.session.completed webhook event added by new idempotent `scripts/stripe-golive-setup.ts` [dry-run default, refuses live keys without --live], full test→live flip in `docs/STRIPE_GOLIVE_CHECKLIST.md` — NO live switch, Chris flips keys); **#697 OL-112 demo-metrics filter** (`feat/demo-metrics-filter`: `isDemo` on User+Home [migration 20260705000002], every /admin metric card filtered, "Show demo data" toggle, `scripts/backfill-demo-flags.ts` [dry-run, flag-only], public search gets structural isDemo:false guard); **#698 OL-113 roster backfill** (`feat/odh-roster-backfill`: `--roster` mode on ingest-odh-inspections.ts for the Cowork Cleveland-metro CSV [provider_name…odh_license, ~192 rows], same matcher policy, conflicts/ambiguous → review never written; founder runbook: `--backfill-licenses --force` then `--roster <csv>` dry-run→`--force`, Render shell only, never CI). NEW LOOP OL-116 logged (DP direct-mode homeId/homeIds bug, not fixed this session). Prior: OL-114 BUILT (`feat/payer-source-screener`): payer-source screener — the Anti-Kickback (AKS) firewall for the ratified $2,500 placement fee, built BEFORE the fee goes live so the data exists. Optional "How will care most likely be paid for?" on the family inquiry (both listing-form variants) + DP concierge/placement intake (replaces the old select that silently defaulted everyone to 'private'). `PayerSource` enum persisted on `Inquiry` + `PlacementSearch` (migration 20260705000001); `feeLane` (FEE_ELIGIBLE private/LTC-ins · FREE_LANE Medicaid/ALW+Medicare/MA+VA · UNKNOWN not-sure/blank) deliberately NOT persisted — derived at read time by ONE shared function (`src/lib/payer/payer-source.ts`, legal-sensitive, attorney review pending) so a mapping change needs no backfill. Read-only admin surfacing: badge on /admin/inquiries + /admin/concierge lists, row on both detail views. TAGS ONLY — no matching/search/gating reads it; "Not sure yet" is first-class (future Financing Navigator trigger, NOT built). 26 tests incl. full derivation matrix + AKS never-FEE_ELIGIBLE guard; suite 68/68. ⚠️ RENUMBER: yesterday's consent-capture work was mislabeled OL-114 in this repo copy — it is now **OL-115** (vault numbering wins: OL-114 = payer screener); OL-112 still vault-only, re-sync pending. Prior 2026-07-04 — OL-115 (formerly mislabeled OL-114) BUILT + MERGED #694 (`feat/lead-consent-capture`): TCPA/marketing consent capture on ALL family-facing lead forms — capture infrastructure only, nothing sold/sent. New IMMUTABLE `LeadConsent` model (migration 20260704000001; both consent states recorded; deliberately NO FKs so evidence survives artifact deletion; no update path anywhere). Versioned copy `src/lib/consent/lead-consent-text.ts` (v1 **pending attorney review** — Haran, same gate as OL-052) + `recordLeadConsent` server recorder (never blocks/degrades submission; PII-scrubbed Sentry on failure) + shared `LeadConsentCheckbox` (UNCHECKED by default). Wired: listing "Send Inquiry" (public, both form variants) → `/api/inquiries`; TourRequestModal → `/api/family/tours/request`; marketplace InquiryForm → `/api/leads`; DemoRequestForm → `/api/demo-request` (each with account/typed contact snapshot). Excluded with reasons: DP concierge intake (professional-facing, no family contact), waitlist POST (no UI caller), CareCredit (outbound link only), no contact page exists. 17 new tests; suite 65/65; tsc/build clean. Prior 2026-07-03 — OL-113 BUILT (`claude/odh-inspection-history-vopor6`): State Inspection History — ODH RCF survey/citation records on public listings, factual + source-linked, NO grades/endorsements (the anti-APFM/anti-CarePatrol answer). New `FacilityInspection` model + `AssistedLivingHome.odhLicenseNumber` (migration 20260703000001, additive/idempotent). Matcher license-first with exact name+city fallback; ambiguous → manual-review report ONLY (never written); demo/test listings excluded. `scripts/ingest-odh-inspections.ts` (dry-run default; `--input` file-first because *.ohio.gov WAF-blocks datacenter fetchers; `--backfill-licenses` lifts the ~70 seeded "ODH license NNNNR" description tokens into the column). Monthly GHA cron + `/api/cron/odh-inspections` BOTH off by default (`ODH_INGEST_ENABLED` unset + schedule commented — claim-drip lesson). Listing page: async "State Inspection History" section (`/api/homes/[id]/inspections`) with honest empty state + ODH disclaimer. Phase-1 research: `docs/ODH_INSPECTION_DATA_SOURCE.md` (authoritative surface = ODA LTC Quality Navigator per ORC 173.47/OAC 173-45-08, weekly refresh; founder must verify a bulk endpoint from a browser — agent env cannot reach ohio.gov). ⚠️ NUMBERING: this repo copy has no OL-112 entry (vault copy only, vault unreachable from this env) — re-sync repo↔vault numbering next vault-connected session. Prior 2026-07-02 — OL-111 BUILT (feat/pricing-capture): pricing data strategy & capture — source-labeled, honest, never a guaranteed quote. `AssistedLivingHome` + `startingPriceMonthly/priceRangeLow/priceRangeHigh Int?`, `priceSource enum(OPERATOR|DP_ESTIMATE|PUBLIC|FAMILY_AVG)`, `priceUpdatedAt` + new `FacilityQuoteReport` model (NO PHI) (migration 20260702000001). Core `src/lib/pricing/pricing.ts` (`pricingView` source labels + `bestPriceMonthly` budget filter + FAMILY_AVG threshold gate + `setHomePricing` writer), HMAC `quote-token.ts`. Operator edit gets an OPTIONAL "Starting at $/mo" input (never required) → OPERATOR source + Transparent Pricing badge. Admin `PricingPanel` logs DP-estimate/public-benchmark ranges source-tagged + verifies family reports. Post-tour family quote survey (tokenized no-login `/quote/report`, FAMILY_QUOTE_SURVEY_ENABLED OFF by default) → UNVERIFIED reports; FAMILY_AVG surfaces only at >= FAMILY_QUOTE_MIN_REPORTS (default 3) verified. Search uses best-price for budget filter + boosts transparent listings; every price is source-labeled + paired with "Contact for exact quote". Prior 2026-07-01 — OL-110 BUILT (feat/availability-freshness): live-ish availability freshness — verify-on-request + honest stamp, never store stale "live". Schema fields + AvailabilitySource enum (migration 20260701000001), core lib + magic-link token, all channels (email magic-link, AI-voice webhook, SMS poll cron [flag OFF + schedule commented], dedicated Twilio inbound with STOP/suppression, admin/concierge log), home-detail + search "Verified Availability" badge + search sort boost. SMS/voice OFF by default pending attorney (Haran) sign-off + consent capture. Prior 2026-06-30 — OL-108 OPENED: `scripts/mint-claim-link.ts` shipped to mint 45-day operator claim links for 2 VA warm leads (Pleasant Pointe Barberton; Eliza Jennings Cleveland) — mint-only/no-send/no-seed; the actual mint is a founder Render-shell run (agent env lacks prod NEXTAUTH_SECRET/DATABASE_URL). Prior 2026-06-29 — OL-106 CLOSED (#680): robots.txt + sitemap.xml un-gated from the auth middleware; sitemap enumerates /learn + 15 guides (23 URLs). OL-107 CLOSED (#682): dual middleware consolidated to one auth gate; revived Edge-safe rate-limiter (webhooks 60/min, password 8/min). In-app DP concierge now end-to-end: notify-DP-on-shortlist + dashboard (#677), tour-request routing that never black-holes (#679), DP Education Hub rewritten to concierge (#678). Prior (2026-06-28): OL-105 CLOSED (#673) schema-drift baseline migrations + e2e-concierge; OL-104 DELIVERED in-app DP concierge (#671); DP-free marketing/signup (#674); DP card polish + post-signup verify UX (#675); claim-admin alert → chris@ + Reply-To (#670). OL-103: money-path hardening (#667, closes OL-055), DP-billing safety report (#666), DP price decommission (#668). OL-102 PARKED: facility placement-fee (attorney-gated). Founder TODO (Render): report-dp-subscriptions → cancel any DP sub; archive-dp-stripe-prices --force; remove the 2 DP price env vars; confirm STRIPE_PRICE_AGENCY value; submit sitemap to Google Search Console; build VA CSV → load-va-pricing-amenities --force; dispatch claim-drip once; rotate demo.* passwords._
+_Last updated: 2026-10-05 — **rebuilt from the repo** (sprint W2 item 7). Sources: the 56 open PRs on GitHub, `grep TODO|FIXME` over `src/`, every `test.skip`/`fixme` in `__tests__/`, `tests/`, `e2e/`, the CI workflows, and the previous version of this file (all 115 prior OL ids carried forward below with their last known status). Each entry: **OL id · one-line status · file path**. Triage: **SHIP NOW** = this week, **LATER** = backlog, **FOUNDER** = needs Chris (settings, money, legal), **CLOSED** = verified done (kept for id continuity)._
 
-## Format
-Each loop: what it is, why it matters, what done looks like.
-
----
-
-### OL-123: Founder intro video self-hosted — MP4 + poster must be committed before 9/24 (HeyGen downgrade)
-- **Status:** 🟢 BUILT — PR #713 (`claude/relaxed-hamilton-lv0qe6`), assets committed 2026-09-16 (`public/founder-intro.mp4` 14.2 MB 1080p H.264/AAC faststart + `public/founder-intro-poster.jpg` @2s). Closes on merge + the post-deploy checks below. HeyGen subscription canceled 9/15; the public link (`app.heygen.com/videos/founder-…`) the DP Touch 1/3 emails pointed at may go dead or paywalled on 9/24.
-- **What shipped:** unauthenticated `/founder` page (`src/app/founder/page.tsx`) playing `public/founder-intro.mp4` with poster `public/founder-intro-poster.jpg`; middleware un-gates the page + both assets; `founderVideoUrl()` default → `https://getcarelinkai.com/founder`; copy says "40-second" (video is 39s); zero `heygen` references left in the repo; jest render test + e2e spec (in the `e2e-concierge` CI job).
-- **Transfer note (for next time a binary needs to reach the agent env):** the sandbox egress blocks every Google + Descript download host and the Drive connector caps downloads at 10 MB; GitHub video attachments cap at 10 MB. What worked: Chris transcoded locally and uploaded the finished MP4 directly into the session. The agent's fallback path (push raw file to a throwaway branch, transcode in-sandbox with the `imageio-ffmpeg` static binary via pip, delete the branch) was not needed.
-- **Done when:** both assets on `main`, `https://getcarelinkai.com/founder` plays on mobile Safari + desktop Chrome, and one test lead through `/lead/new` shows the Touch-1 link resolving to `/founder`. `DP_FOLLOWUP_ENABLED` and sequence timing deliberately untouched.
+_Sprint W2 batch (2026-10-05) PRs — all open for review, none merged: **#714** public routes · **#715** memory restarts · **#716** payer-source audit · **#717** isDemo filter · **#718** Sentry 401 noise · **#719** Prisma cold start · **#720** this file._
 
 ---
 
-### OL-121: Disable Sentry in the e2e CI jobs (committed `.env` DSN was flaking the merge gate)
-- **Status:** 🟢 FIXED-PENDING-MERGE 2026-08-13 (branch `claude/e2e-residents-family-split-f5tc2u`, PR "fix(e2e): restore green main after residents/family split"). The required **E2E (Residents + Family split)** workflow (`.github/workflows/e2e-family.yml`) was intermittently red on `main` (nightly failures 08-01, 08-02, 08-04 — all on the SAME head `e981d43`, so a flake, not a code regression).
-- **Root cause (from the failing-run logs, not the residents/family specs — those pass):**
-  - **08-01 / 08-02 — `e2e-concierge` job.** The tracked, committed **`.env`** (NOT gitignored) carries a **live `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN`** (`…@o4510740433076224.ingest.us.sentry.io/…`). `npm run build` in CI picks it up → Sentry initializes on both server and client. In CI's locked-down network the outbound event/tunnel calls hang: logs show `Failed to proxy https://…o4510740433076224.ingest.us.sentry.io/… ETIMEDOUT`, an `uncaughtException [Error: aborted] { code: 'ECONNRESET' }`, then Next's `⚠ Server is approaching the used memory threshold, restarting…` mid-test → the next `page.evaluate` fetch returns `TypeError: Failed to fetch` → the `@critical` concierge flow times out. The residents/family specs were never the failure.
-  - **08-04 — `e2e-auth-signup-verify` job.** Pure infra: `docker pull postgres:15` for the service container hit a Docker Hub `context deadline exceeded` after 3 retries. Not code; transient.
-- **Fix (harness only — NO spec/product change; Risk-7 gate NOT weakened):** added `SENTRY_DSN: ""` + `NEXT_PUBLIC_SENTRY_DSN: ""` to the `env:` of all five e2e jobs. An empty (defined) process-env value overrides the committed `.env` (Next's `@next/env` only fills a key when it is `undefined`), so the build inlines an empty client DSN and `sentry.server/edge.config.ts` see a falsy DSN → **Sentry disabled** (verified locally: `[Sentry Server] ⚠️ No DSN provided, Sentry disabled`). No more outbound hangs / ECONNRESET / memory-restart. Considered and **rejected** switching the client-heavy jobs to `npm run start` (the standalone server does not serve `.next/static`, so the `'use client'` concierge/admin pages would never hydrate → would convert flaky-red to solid-red).
-- **Validation:** built with Sentry disabled (Compiled successfully); ran the full CI-active gate locally (`CI=true`, Sentry empty, `npm run dev`): **5 passed, 3 skipped** (the OL-076-quarantined residents specs), concierge **flaky→green on retry** (cold `npm run dev` route-compile timeout on attempt 1 — a local dev artifact absorbed by CI `retries: 2`, not the Sentry failure), exit 0.
-- **Done when:** PR merged + the next `e2e-family.yml` run on `main` is green.
-- **⚠️ Spun-off risk (NOT fixed here — founder action): `.env` is committed to the repo with LIVE secrets** — Sentry DSN, `CLOUDINARY_API_SECRET`, `RESEND_API_KEY`, `ABACUSAI_API_KEY`, `NEXTAUTH_SECRET`, Bugsnag key. It is not in `.gitignore` and CI relies on it at build time. This is a credential-exposure issue that wants its own remediation (rotate the exposed keys, move real values to Render/CI secrets, gitignore `.env`, scrub history). Logged as **OL-122**. Deliberately out of scope for this PR (rotation + history rewrite is a founder decision and untracking `.env` could change the CI build).
+## 🔴 SHIP NOW (this week)
+
+### OL-122: Committed `.env` contains live secrets (credential exposure) — **founder, first**
+- **Status:** 🔴 OPEN — rotation + history scrub is Chris's (explicitly reserved). Nothing in sprint W2 touched `.env` or history.
+- **Path:** `.env` (tracked), `.gitignore`, `.github/workflows/*.yml` (`SENTRY_DSN: ""` overrides depend on this staying as-is until rotated)
+
+### OL-124: Placement-fee invoice path is LIVE on inquiry→resident conversion and ignores the payer lane (AKS)
+- **Status:** 🔴 OPEN — **decision needed.** `triggerPlacementFee()` runs after every conversion: creates a `PLACEMENT_FEE` Payment (`PLACEMENT_FEE_CENTS`, **$1,500 in Render per OL-030**, $500 default) and queues a Stripe invoice item when the operator has a `stripeCustomerId`; never reads `payerSource`/`deriveFeeLane()`. Built as OL-014 (April) before the AKS firewall (OL-114) and the OL-102 "do NOT build" parking existed — the two decisions contradict and this is the live one. Audit + tripwire test on PR #716. Proposed fix: `PLACEMENT_FEE_ENABLED` flag (default off) + `FEE_ELIGIBLE`-only gate.
+- **Path:** `src/lib/services/inquiry-conversion.ts` (`triggerPlacementFee`), `src/app/api/operator/inquiries/[id]/convert/route.ts`, `docs/audits/OL-114_PAYER_SOURCE_AUDIT_2026-10-05.md`, `__tests__/payer-lane.audit.test.ts`
+
+### OL-125: `/cleveland/*` landing pages were auth-gated; unknown paths bounced to login
+- **Status:** 🟢 FIXED-PENDING-MERGE — PR **#714**. `/cleveland` added to the public list; first-segment-unknown paths now 404 via `/_not-found` before `withAuth`; `/monitoring` (Sentry tunnel) un-gated. Unit + e2e (`e2e/public-routes.spec.ts`, in the `e2e-concierge` job).
+- **Path:** `src/middleware.ts`, `src/lib/routing/public-routes.ts`
+
+### OL-126: Render memory restarts (10/5 04:05 UTC, 9/13 15:40 UTC)
+- **Status:** 🟢 FIXED-PENDING-MERGE — PR **#715** + two founder settings (OL-138). Finding: 71 `PrismaClient` instances with per-request `$disconnect()`, a 4 GB heap cap on a smaller instance (922 MB RSS observed), and the health check rendering `/` (~40K traced `GET /` a day). Fix: one client per process, `NODE_HEAP_MB` heap cap (default 1024), `GET/HEAD /api/ping`, `tracesSampler` dropping pollers/bots.
+- **Path:** `src/lib/prisma.ts`, `src/lib/sentry/trace-sampling.ts`, `src/app/api/ping/route.ts`, `package.json` (`start`), `docs/MEMORY_RESTARTS_2026-10-05.md`
+
+### OL-127: Sentry CARELINK-AI-19 — 401s reported as errors
+- **Status:** 🟢 FIXED-PENDING-MERGE — PR **#718**. `captureError()` drops `UnauthenticatedError`/`UnauthorizedError`; pipeline/convert/status routes short-circuit to `handleAuthError()`; client fetchers redirect to login on 401 (the stale-tab SWR poll was the logged-out caller).
+- **Path:** `src/lib/sentry.ts`, `src/app/api/operator/inquiries/pipeline/route.ts`, `src/hooks/useInquiries.ts`, `__tests__/pipeline.auth-401.api.test.ts`
+
+### OL-128: Prisma cold start — `prisma:client:detect_platform` p95 8.9 s
+- **Status:** 🟢 FIXED-PENDING-MERGE — PR **#719** (most effective after #715). `binaryTargets` was already pinned; Prisma always runs the probe once per client, so the fix is one client + a boot-time `warmPrisma()` from `instrumentation.ts`. Confirm in Sentry after deploy: span gone from request traces.
+- **Path:** `src/lib/prisma-warmup.ts`, `src/instrumentation.ts`, `docs/PRISMA_COLD_START_2026-10-05.md`
+
+### OL-129: `isDemo` gaps in the public directory APIs (OL-112 follow-through)
+- **Status:** 🟢 FIXED-PENDING-MERGE — PR **#717**. `/api/search` already filtered; `/api/homes/search` did not; `/api/homes/[id]` served demo homes logged-out. Jest + e2e (`e2e/search-demo-filter.spec.ts`). **Residual:** live Cleveland listing count still to be read by Chris (`curl 'https://getcarelinkai.com/api/search?location=Cleveland&limit=1' | jq .pagination.totalResults`) — agent env cannot reach prod.
+- **Path:** `src/app/api/homes/search/route.ts`, `src/app/api/homes/[id]/route.ts`, `src/app/api/dev/upsert-operator/route.ts`
+
+### OL-138: Render health-check path + heap env (founder settings for #715)
+- **Status:** 🔴 FOUNDER — Render → Settings → Health Check Path: **`/api/ping`** (any uptime monitor too); set **`NODE_HEAP_MB`** per plan (Starter 256 · Standard 1024 default · Pro 2560). `render.yaml` still says `healthCheckPath: /` — update it in the same move (left untouched per "no Render settings changes").
+- **Path:** `render.yaml`, Render dashboard
+
+### OL-076: Next 15 async `params`/`searchParams` migration — 9 residents e2e specs still CI-skipped
+- **Status:** 🔴 OPEN — `test.skip(!!process.env.CI, 'OL-076 …')` in 7 residents specs + 2 "run locally only"; `/learn` logs `searchParams.tab should be awaited` on every request (dev log 2026-10-05). The residents+family CI jobs are green only because the specs skip themselves.
+- **Path:** `src/app/operator/residents/**`, `src/app/api/residents/**`, `src/app/learn/page.tsx`, `e2e/residents-*.spec.ts`
+
+### OL-052: Attorney review of BAA/DPA draft templates (HIPAA)
+- **Status:** 🔴 FOUNDER — still blocking the first operator with real PHI. Unchanged since June.
+- **Path:** `docs/legal/*` (templates), `src/app/operator/onboarding/**` (BAA/DPA gate)
+
+### OL-053: HIPAA breach-response runbook
+- **Status:** 🔴 OPEN — was due 2026-06-30; no file in repo.
+- **Path:** `docs/` (to create)
 
 ---
 
-### OL-122: Committed `.env` contains live secrets (credential exposure)
-- **Status:** 🔴 OPEN — flagged 2026-08-13 while root-causing OL-121. Founder action required (not an autonomous fix).
-- **What:** `.env` is tracked in git (not gitignored) and contains live values: `SENTRY_DSN`/`NEXT_PUBLIC_SENTRY_DSN`, `CLOUDINARY_API_SECRET` + `CLOUDINARY_URL`, `RESEND_API_KEY`, `ABACUSAI_API_KEY`, `NEXT_PUBLIC_BUGSNAG_API_KEY`, `NEXTAUTH_SECRET`. Anyone with repo (or git-history) access has these.
-- **Why it matters:** these are real credentials to prod-adjacent services (image store, email sender, LLM, auth signing). The NextAuth secret signing session tokens is the most sensitive. CI currently depends on the committed `.env` for build-time config, which is why it can't simply be deleted without a migration to CI/Render env vars.
-- **Done when:** exposed keys rotated; real values moved to Render + GitHub Actions secrets; `.env` removed from tracking and gitignored (keep a scrubbed `.env.example`); history scrubbed (e.g. `git filter-repo`) or a conscious risk-accept recorded. Until then, OL-121's CI Sentry-disable is the interim containment for the e2e-specific symptom only.
+## 🟡 LATER (backlog, ordered roughly by leverage)
 
----
+### OL-120: Route the transactional (non-`email.ts`) Resend sends through suppression
+- **Status:** 🟡 OPEN — deliberate scope-out of #708 (founder decision 7/17).
+- **Path:** `src/lib/email-service.ts`, `src/lib/notifications/*`, `src/lib/email/suppression.ts`
 
-### OL-120: Route the transactional (non-`email.ts`) Resend sends through suppression too
-- **Status:** 🟡 OPEN — logged 2026-07-17 as the deliberate follow-up scope-out of PR **#708** (`fix/resend-bounce-suppression`). Founder decision (Chris, 2026-07-17): keep #708 focused on the `email.ts` outreach lanes; do NOT expand it. Not urgent.
-- **What:** #708 added `guardedResendSend` — a single suppression-enforcing choke point that every send helper in `src/lib/email.ts` now routes through, so a hard-bounced/complained address is never re-sent. But a handful of transactional sends live OUTSIDE that module and still call `resend.emails.send(...)` directly, bypassing the suppression list:
-  - `src/lib/email/inquiry-email-service.ts` (`sendInquiryResponse`, its own Resend instance)
-  - `src/app/api/webhooks/stripe/route.ts` (`notifyProviderRidePaid`)
-  - `src/app/api/rides/[id]/complete/route.ts`, `.../confirm/route.ts`, `.../[id]/route.ts`, `src/app/api/rides/route.ts` (ride lifecycle notifications)
-  - `src/app/api/cron/ride-reminders/route.ts`, `src/app/api/cron/credential-expiry/route.ts`
-  - `src/app/api/auth/register/route.ts` (verification path)
-  - `src/app/api/discharge-planner/placement-request/route.ts`
-- **Why it's low-priority:** these all go to **user-typed** addresses (a family/operator/caregiver who just entered their own email), not scraped lists — so their bounce risk is low and they are not the ~27% outreach-bounce driver #708 targets. Still, for a clean "suppression on EVERY send" guarantee and to stop re-mailing an address that legitimately hard-bounced, they should check the list too.
-- **Done when:** either (a) `guardedResendSend` (or an equivalent `filterSuppressed`-backed wrapper) is extracted to a shared module (e.g. `src/lib/email/suppression.ts` already exports `filterSuppressed`) and every direct `resend.emails.send` call site above routes through it; or (b) those sends are consolidated back into `email.ts`. Add a test per site that a suppressed recipient is dropped.
+### OL-116: DP direct-mode placement request sends `homeId` but the API expects `homeIds`
+- **Status:** 🔴 OPEN — logged 7/5, founder said log-don't-fix; still unfixed.
+- **Path:** `src/app/discharge-planner/search/_components/PlacementRequestModal.tsx`, `src/app/api/discharge-planner/placement-request/route.ts`
 
----
+### OL-130: `docker/Dockerfile` is a stale, non-deployed artifact
+- **Status:** 🟡 OPEN — Render runs `runtime: node` (stack traces show `/opt/render/project/src/.next/standalone`); the Dockerfile is `node:18-alpine` (musl) vs the pinned `debian-openssl-3.0.x` engine and its `HEALTHCHECK` needs `pg`/`ioredis`. Either delete it (+ `release-docker.yml`) or fix the base image + `binaryTargets` before anyone relies on it. CLAUDE.md "Hosting: Docker" line is wrong.
+- **Path:** `docker/Dockerfile`, `docker/healthcheck.js`, `.github/workflows/release-docker.yml`, `CLAUDE.md`
 
-### OL-119: DP lead-capture form + automated follow-up sequence (feat/dp-lead-capture)
-- **Status:** 🟢 BUILT 2026-07-15 (branch `claude/dp-lead-capture-36gh8o`) — schema + form + sequence engine + admin + cron + docs + 33 tests. Ships **OFF**: nothing sends until the founder flips the flag (below).
-- **Why:** Anita (Fiverr contractor, NO app account) is live on discharge-planner calls now. She captures interest on one scoped form → the app emails the planner from our domain (From `chris@`, Reply-To `placements@`) and nurtures automatically (Touch 1 immediate, +3/+7/+14d). Demand-first, founder-out — Chris is never the manual sender.
-- **Build:** `DPLead` model (migration `20260715000001`, additive; NO PHI). Form `/lead/new?k=<LEAD_CAPTURE_TOKEN>` (shared-secret gate, constant-time, fails closed; honeypot + rate limit; required "planner verbally agreed" checkbox). `POST /api/lead/dp` → create + Touch 1. Engine `src/lib/dp-outreach/dp-followup.ts` + pure copy `copy.ts` + `sendDpFollowupEmail` (light-branded, CAN-SPAM: one-click unsubscribe + postal, refuses without `COMPANY_POSTAL_ADDRESS`; founder video on Touch 1 & 3). Idempotent daily cron `/api/cron/dp-followups` + GHA (self-gated). Stop conditions: admin **Mark replied/patient sent/booked/Stop** + hard unsubscribe (extends `/api/outreach/unsubscribe` to flip active `DPLead`s to `stopped`). Admin console `/admin/dp-leads`.
-- **Founder go-live runbook (Render env):** (1) `LEAD_CAPTURE_TOKEN`=long random string; (2) confirm `COMPANY_POSTAL_ADDRESS` set; (3) `DP_FOLLOWUP_ENABLED=1`; (4) turn ON Resend open/click tracking (dashboard, not code); (5) confirm `placements@` provider BAA; (6) send Anita `https://getcarelinkai.com/lead/new?k=<token>`. Full detail in `docs/DP_LEAD_CAPTURE_AND_FOLLOWUP.md`.
-- **Out of scope (phase 2):** SMS touches (TCPA-gated); inbound reply auto-detect (manual "Mark replied" for now); feeding the concierge/patient flow; monthly stay-in-touch touch (1.5).
-- **Done when:** merged + deployed, founder flips the flags, a test-planner submit produces Touch 1 within a minute + the +3d touch scheduled + "Mark replied" cancels the rest.
+### OL-131: Register route logs the email-verification token in plaintext to stdout
+- **Status:** 🟡 OPEN — `token=${token}` in `[createVerificationToken]` log line reaches Render logs (same class as OL-118). Found during the #715 codemod; not changed there.
+- **Path:** `src/app/api/auth/register/route.ts` (`createVerificationToken`)
 
----
+### OL-132: 44 stale open PRs from the Dec-2025 "Droid" era + 6 from Nov-2025
+- **Status:** 🟡 OPEN — #304, #326, #327, #348, #349, #412, #432–#476 (provider/aides/availability/docs matrices). Most are superseded by what shipped on `main` since; several conflict. Recommend: close in bulk with a comment, keep anything with a unique migration (#469 provider model?) only after a diff check.
+- **Path:** GitHub PR list
 
-### OL-118: Auth cookie values were logged to Render stdout (security hygiene)
-- **Status:** 🟢 FIXED-PENDING-MERGE 2026-07-06 (PR **#699** `fix/log-scrub-auth`). Founder-reported: `__Secure-next-auth.session-token=...` lines visible in Render logs since at least 7/2.
-- **Root cause:** a leftover debug block in `GET /api/admin/homes/[id]` logged every request cookie as `name=value.substring(0,20)...` plus session/token debug objects carrying the admin's email; the 403 body also enumerated cookie names.
-- **Exposure assessment:** LOW — the 20 logged characters of the session token are the constant JWE header (identical on every token), not a usable credential; no session hijack possible from those lines. `NEXTAUTH_SECRET` rotation optional (cheap reassurance, not indicated). Render log retention ages the 7/2 lines out on its own.
-- **Fix:** cookie dump + email-bearing debug logs removed (role/boolean logging kept); 403 body reduced to `{error}`. Repo-wide sweep confirmed this was the only cookie/header-value logger (residents pages forward cookies internally, never log; NextAuth debug is dev-only; cron routes compare auth headers, never log them).
-- **Done when:** #699 merged. Follow-on hygiene (separate, non-blocking): the console-heavy tour/diagnostic routes log user emails — fold into a future logging-standards pass.
+### OL-137: Merge-order note — PR #711 (Sentry CI noise) and #715 both edit the Sentry configs
+- **Status:** 🟡 OPEN — #711 adds `enabled: NODE_ENV==='production'`; #715 swaps `tracesSampleRate` → `tracesSampler`. Different lines, but whichever merges second needs a trivial rebase. #711 also blanks DSNs in `e2e-family.yml`, which #712 already did (now redundant).
+- **Path:** `sentry.server.config.ts`, `sentry.edge.config.ts`, `src/instrumentation-client.ts`
 
----
+### OL-133: Notification sends that are still `TODO` stubs
+- **Status:** 🟡 OPEN — 11 `TODO: send/integrate email` markers: family member invites (`members/invite`, `invitations/[id]/resend`), bug-report admin email, inquiry response send (`inquiries/[id]/responses`, `responses/[id]/send`), tour notifications (5 stubs + "use a job scheduler"), document generation (Cloudinary upload, template render). Families/operators see "sent" states that send nothing.
+- **Path:** `src/app/api/family/members/invite/route.ts`, `src/app/api/family/members/invitations/[invitationId]/resend/route.ts`, `src/app/api/bug-reports/route.ts`, `src/app/api/inquiries/[id]/responses/route.ts`, `src/app/api/inquiries/responses/[responseId]/send/route.ts`, `src/lib/notifications/tour-notifications.ts`, `src/lib/documents/generation.ts`
 
-### OL-117: ClaimLinkVisit tracking — "was the link opened?" as a query, not forensics
-- **Status:** 🟢 BUILT 2026-07-06 (PR **#702** `feat/claim-link-visits`, open pending Chris review). Approved by founder 2026-07-06 after the Maplewood audit-trail drift (stateless mints leave no trace).
-- **Build:** `ClaimLinkVisit` model (migration `20260706000001`, additive/idempotent): homeId + operatorEmail (lowercased) + source (`claim_page`|`register_page`) + visitedAt. Append-only, no FKs, no update path. Write sites: `/claim` records server-side on any VALID token render (fire-and-forget, never blocks the page); the client-rendered register page fires `POST /api/claim-link/visit` — the endpoint verifies the signed token server-side (only valid tokens create rows, so it can't be spammed) and always returns `{ok:true}` (deliberately not a token-validity oracle).
-- **Founder query (Render), e.g. Maplewood/Rebecca before a follow-up call:**
-  `npx tsx -e "const {PrismaClient}=require('@prisma/client');const p=new PrismaClient();p.claimLinkVisit.findMany({where:{homeId:'cmqqrkze8003irlmbe65ithsz'},orderBy:{visitedAt:'desc'}}).then(v=>console.log(JSON.stringify(v,null,2))).finally(()=>p.\$disconnect())"`
-- **Done when:** #702 merged + deployed; visits accrue from the next link-open onward (historical opens remain unknowable — that's the class of gap this closes going forward).
+### OL-134: `tests/` Playwright suite (default config) is not run in CI and carries 5 `test.skip`
+- **Status:** 🟡 OPEN — `playwright.config.ts` → `testDir: ./tests` (RBAC suite); no workflow runs it; `tests/operator-onboarding.spec.ts` skips 4 tests, `tests/bug-verification.spec.ts` 1. Also `e2e/marketplace-applications.spec.ts` is `test.skip(true)` and `e2e/operator-claim-flow.spec.ts` post-redemption block is `describe.fixme` (OL-064). Decide: wire into CI or delete.
+- **Path:** `playwright.config.ts`, `tests/*.spec.ts`, `e2e/marketplace-applications.spec.ts`, `e2e/operator-claim-flow.spec.ts`
 
----
+### OL-135: `ConversionPipelineDashboard` is dead code; `/operator/inquiries/pipeline` is a Kanban, not the conversion dashboard
+- **Status:** 🟡 OPEN — nothing renders the component (only caller of `GET /api/operator/inquiries/pipeline`). Either mount it on the pipeline page's Analytics toggle or delete component + route.
+- **Path:** `src/components/operator/inquiries/ConversionPipelineDashboard.tsx`, `src/app/operator/inquiries/pipeline/page.tsx`, `src/app/api/operator/inquiries/pipeline/route.ts`
 
-### OL-116: DP direct-mode placement request sends homeId but the API expects homeIds
-- **Status:** 🔴 OPEN — logged 2026-07-05 during the #695 review (founder decision: log, don't fix that session). Pre-existing; NOT introduced by the payer screener.
-- **What:** `PlacementRequestModal` in `direct` mode posts `{ searchId, homeId, patientInfo }` to `/api/discharge-planner/placement-request`, but the route's Zod schema requires `homeIds: z.array(z.string()).min(1)` (and a differently-shaped patientInfo: name/age/gender vs patientName/patientAge). Every direct-mode submit should 400. Concierge mode (the pilot default since #671) uses `/api/discharge-planner/concierge` and is unaffected — which is why nobody has hit this.
-- **Done when:** either the modal sends `homeIds: [home.homeId]` + the route's patientInfo shape is reconciled with the modal's, and a direct-mode submit succeeds end-to-end — or the legacy direct mode is formally retired and the code path removed. Decide direction with Chris (concierge-only may be the roadmap answer).
+### OL-136: Other `TODO`s worth a ticket each
+- **Status:** 🟡 OPEN — residents list delete action (`ResidentsListActions.tsx:92`), inquiry `followupDate` field (`operator/inquiries/route.ts:160`), caregiver document file deletion from storage (`caregivers/[id]/documents/[docId]/route.ts:65`), provider `ratingAverage`/`reviewCount` placeholders (`marketplace/providers/route.ts:166`), family note editor (`family/page.tsx:249`), `src/lib/sse.ts:24` publisher stub.
+- **Path:** as listed
 
----
+### OL-108: Mint + send 2 VA warm-lead claim links (Pleasant Pointe, Eliza Jennings)
+- **Status:** 🟡 FOUNDER — tooling shipped; the mint is a Render-shell run with prod secrets.
+- **Path:** `scripts/mint-claim-link.ts`
 
-### OL-112: Exclude demo data from admin dashboard metrics (FILTER, don't purge)
-- **Status:** 🟢 BUILT 2026-07-05 (PR **#697** `feat/demo-metrics-filter`, open pending Chris review). Decision (Chris, 2026-07-02): FILTER, don't purge — demo homes/accounts stay for tutorials (OL-068), they just stop inflating /admin ($386 fake MRR, 109 users → real numbers).
-- **Build:** `isDemo Boolean @default(false)` on `User` + `AssistedLivingHome` only (migration `20260705000002`; everything else filters relationally via user/home so there's no per-table flag drift). `getAdminStats` extracted to `src/lib/admin/stats.ts` — users, homes, caregivers, inquiries, placements, active users, transport commissions, and ALL MRR tiles exclude isDemo by default. Admin "Show demo data" toggle (`/admin?showDemo=1`, amber pill while active) restores the unfiltered view for tutorial recording. Public `/api/search` (incl. markers/map) gets a structural `isDemo:false` guard on top of the DRAFT-status convention.
-- **Backfill (founder, Render, post-merge):** `npx tsx scripts/backfill-demo-flags.ts` (dry-run — review the list) → `--force`. Flags by the demo-account conventions (`demo.*@carelinkai.test`, `@test.carelinkai.com`, `+seed@carelinkai.com`, `family.seed*`) + demo-operator homes + the pre-publish name/desc signature. Flag-only, reversible, never deletes.
-- **Done when:** PR merged + backfill run; /admin shows real business numbers by default and the toggle works for tutorials.
+### OL-119: DP lead-capture + follow-up sequence — ships OFF
+- **Status:** 🟢 BUILT, 🔴 FOUNDER FLIP — `DP_FOLLOWUP_ENABLED` still off; Touch-1/3 links now point at `/founder` (#713 merged). Flip when ready; send one test lead first.
+- **Path:** `src/lib/dp-outreach/*`, `src/components/lead/DPLeadForm.tsx`, `.github/workflows/dp-followups.yml`
 
----
+### OL-113: ODH inspection history — ships empty until the first data file is ingested
+- **Status:** 🟢 BUILT, 🟡 FOUNDER — cron OFF (`odh-inspections.yml`); needs the first ODH export run through `scripts/ingest-odh-inspections.ts` on Render.
+- **Path:** `src/lib/inspections/*`, `scripts/ingest-odh-inspections.ts`, `.github/workflows/odh-inspections.yml`
 
-### OL-114: Payer-source screener (AKS firewall for the placement fee + CareLink Assessment discovery)
-- **Status:** ✅ MERGED 2026-07-05 (#695, squash `f95a0b4`) after founder review briefing — deployed with the additive migration. Tags only; families are never gated or treated differently. **Residual:** bundle the `deriveFeeLane` mapping into the Haran attorney packet (with OL-052 BAA/DPA + OL-115 consent copy); Financing Navigator (NOT_SURE follow-up) is a separate future loop.
-- **Why:** the ratified $2,500 placement fee (post-attorney-opinion) must never attach to a placement paid by a federal health care program (Anti-Kickback Statute). Data has to exist BEFORE the fee goes live — retroactive tagging is impossible. Also the discovery step for the branded "CareLink Assessment".
-- **Question (optional, friendly, no wrong answers):** "How will care most likely be paid for?" — Private funds/savings · LTC insurance · Medicaid/Medicaid waiver (ALW) · Medicare/Medicare Advantage · VA benefits · **Not sure yet** (first-class; later triggers the Financing Navigator — NOT built yet).
-- **Schema (migration `20260705000001`, additive/idempotent):** enum `PayerSource(PRIVATE_FUNDS|LTC_INSURANCE|MEDICAID_WAIVER|MEDICARE_ADVANTAGE|VA_BENEFITS|NOT_SURE)`; `Inquiry.payerSource?` + `PlacementSearch.payerSource?`. **feeLane is NOT a column** — derived at read time by `deriveFeeLane` in `src/lib/payer/payer-source.ts` (FEE_ELIGIBLE = private/LTC-ins; FREE_LANE = Medicaid/ALW, Medicare/MA, VA; UNKNOWN = not-sure/blank/anything-else). One shared, ⚖️ legal-sensitive function, attorney review pending — derive-at-read means a reviewed mapping change applies to all historical records with zero backfill.
-- **Forms:** family inquiry on `/homes/[id]` (both variants) + DP `PlacementRequestModal` (concierge AND legacy direct mode — replaces the old Payment Type select that silently defaulted to 'private'; patientInfo keeps a human-readable `paymentType` label for existing displays/emails). Every API takes `payerSource: z.unknown().optional()` and validates via `isPayerSource` — blank/legacy/garbage → null, never a 400.
-- **Admin (read-only):** `PayerLaneBadge`/`PayerLaneRow` (`src/components/admin/`) on `/admin/inquiries` list + detail and `/admin/concierge` list + detail. Untagged shows "Not captured / Unknown" honestly.
-- **Guardrail (in code comments + tests):** payer source NEVER gates, filters, or ranks anything — no matching/search behavior reads it. A unit test pins that no federal-program payer can ever derive FEE_ELIGIBLE.
-- **Tests (26):** full derivation matrix (incl. null/undefined/garbage → UNKNOWN), isPayerSource, option/label completeness + prominent "Not sure yet", API persistence on inquiry + concierge (valid → stored; blank/garbage → null, still 200/201), admin badge/row render incl. blank states.
-- **Done when:** Chris merges (Monday review), and — post-attorney-opinion — the fee flow reads `deriveFeeLane` with the reviewed mapping. Financing Navigator (NOT_SURE follow-up) is a separate future loop.
+### OL-111 / OL-110: Pricing capture + availability freshness — flag-gated OFF
+- **Status:** 🟢 BUILT — family-survey trigger and SMS/voice availability channels off pending attorney sign-off + go-live config.
+- **Path:** `src/lib/pricing/pricing.ts`, `src/lib/availability/availability.ts`, `.github/workflows/availability-sms.yml`
 
----
+### OL-115: TCPA lead-consent — attorney review of v1 copy
+- **Status:** 🟢 MERGED (#694), 🔴 FOUNDER residual — copy review.
+- **Path:** `src/lib/lead-consent/*`, `src/components/forms/LeadConsent*`
 
-### OL-115: TCPA/marketing lead-consent capture on family-facing forms *(renumbered from OL-114 — vault numbering wins)*
-- **Status:** ✅ BUILT + MERGED 2026-07-05 (#694, `feat/lead-consent-capture`) — capture infrastructure ONLY; nothing is sold or sent today. **Residual: attorney review of the v1 copy** (below).
-- **Why:** future revenue (private-duty lead sales, financing referrals — vault REVENUE_EXPANSION_ROADMAP) is worthless without logged, provable consent, and consent can't be captured retroactively. Day-one infrastructure.
-- **Schema (migration `20260704000001`, additive/idempotent):** `LeadConsent { consentGiven, consentTextVersion, consentAt, sourceForm, sourceUrl, ip, userAgent, contactName/Email/Phone snapshot, inquiryId/tourRequestId/leadId/demoRequestId (plain strings, NO FKs — evidence must survive artifact deletion), createdAt }`. **IMMUTABLE:** created once at submit, no update/delete path exists in app code, both consent states recorded (declines are evidence too).
-- **Copy versioning:** `src/lib/consent/lead-consent-text.ts` — `LEAD_CONSENT_VERSIONS` map + `CURRENT_LEAD_CONSENT_VERSION='v1-2026-07-04'`; forms render `leadConsentText()`, payload carries the version key, the row stamps what was displayed. Rule: NEVER edit a published version — add v2 and move the pointer. ⚠️ **v1 wording pending attorney review (Haran)** — flagged in code, same engagement as OL-052.
-- **Recorder:** `src/lib/consent/lead-consent.ts` `recordLeadConsent` — normalizes any malformed/missing client payload to consentGiven=false, captures ip (first x-forwarded-for hop) + user-agent + referer server-side, and NEVER blocks the submission (own errors → PII-scrubbed Sentry, returns null).
-- **UI:** shared `LeadConsentCheckbox` (`src/components/consent/`) — **unchecked by default**, copy from the versioned lib with the Privacy Policy phrase linked; declining never disables submit.
-- **Wired forms (the full inventory):**
-  1. Listing **"Send Inquiry"** (public, typed contact; BOTH form variants on `/homes/[id]`) → `POST /api/inquiries` (`sourceForm=home_inquiry`)
-  2. **TourRequestModal** (family-auth; contact = account snapshot) → `POST /api/family/tours/request` (`tour_request`)
-  3. Marketplace **InquiryForm** (family→aide/provider; account snapshot) → `POST /api/leads` (`marketplace_lead`)
-  4. **DemoRequestForm** (public landing page) → `POST /api/demo-request` (`demo_request`)
-- **Excluded, with reasons:** DP concierge/placement intake (professional-facing, collects patient not family-consumer contact — consent must come from the consumer); `/api/family/waitlist` POST (no UI caller exists; add consent when a UI ships); Care Concierge + CareBot chats, `/get-started`, `/quote/report` (verified: collect no contact info); CareCredit (outbound link, no form); no public contact page exists.
-- **Tests (17):** normalize/record unit tests (both states, version stamp, unknown-version fallback, no-PII-in-Sentry, failure-swallowing) + API tests (`/api/inquiries` × granted/declined/absent/malformed/consent-write-failure — all 201; `/api/demo-request` × both states, consent never leaks into the DemoRequest row).
-- **Done when:** attorney approves the copy → publish it as v2 in `LEAD_CONSENT_VERSIONS`, move `CURRENT_LEAD_CONSENT_VERSION`, redeploy. (Lead-sale/financing flows themselves are separate future loops and must check `consentGiven=true` at the version in force.)
-- **Numbering note:** OL-112 still lives only in the vault copy; this repo copy needs the re-sync flagged under OL-113.
+### OL-114: Payer-source screener — residuals
+- **Status:** ✅ MERGED (#695). Residuals: (a) screener missing from `/lead/new`, carebot and the operator `NewInquiryModal` (audit on #716); (b) attorney review of the `deriveFeeLane` mapping; (c) **OL-124 above is the live contradiction**.
+- **Path:** `src/lib/payer/payer-source.ts`, `src/components/inquiries/NewInquiryModal.tsx`, `src/components/lead/DPLeadForm.tsx`
 
----
+### OL-102: Facility placement-fee revenue stream — PARKED (attorney-gated)
+- **Status:** 🅿️ PARKED — scoping only. **But see OL-124:** the April OL-014 implementation is already live code; parking the idea did not disable the code.
+- **Path:** `src/lib/services/inquiry-conversion.ts`
 
-### OL-113: ODH State Inspection History on public listings (facts, no grades)
-- **Status:** 🟢 BUILT 2026-07-03 (branch `claude/odh-inspection-history-vopor6`) — schema + matcher + ingest + cron (OFF) + UI + 40 tests. **Residual founder steps below** — the feature ships empty until the first data file is ingested.
-- **Principle:** A Place for Mom hides violations; CarePatrol took an FTC consent order for fake "grading". We publish the state's own inspection record — dates, survey types, citation counts, rules cited, plain-language summaries, link to the state source. NO letter grades, NO "CareLinkAI verified", NO editorializing; honest empty state; one-line "confirm with the facility" disclaimer. $0 budget — public data only.
-- **Phase-1 source research (`docs/ODH_INSPECTION_DATA_SOURCE.md`):** ODH Bureau of Survey & Certification surveys RCFs; ORC 173.47 + OAC 173-45-08 make the ODA **Long-Term Care Quality Navigator** (aging.ohio.gov/navigator, ~800 ALFs since v2.0 Feb-2025) the statutorily designated, weekly-updated public copy, incl. licensure inspection report links. Bulk candidates: DataOhio (data.ohio.gov) or a public-records extract (LICCERT@odh.ohio.gov). ⚠️ *.ohio.gov is unreachable from the agent env (proxy policy + WAF), so endpoint verification is a founder-browser/GHA task — the pipeline is deliberately **file-first**.
-- **Schema (migration `20260703000001`, additive/idempotent):** `FacilityInspection { facilityId→Home cascade, odhLicenseNumber, surveyDate, surveyType, citationCount, citations Json[{rule,scopeSeverity,summary}], sourceUrl, fetchedAt }` unique on (facilityId, surveyDate, surveyType); `AssistedLivingHome.odhLicenseNumber String?` (RCF format `NNNNR`, e.g. `2318R`).
-- **Matcher (`src/lib/inspections/matcher.ts`):** license-number match (normalized) → attach; fallback exact-normalized-name + same-city with EXACTLY one candidate → attach + learn the license; everything else → manual-review report row, **never written**. Name normalization strips corporate noise but deliberately NOT care-type words (sister facilities stay distinct). Demo/test homes (pre-publish-sweep signature + `@carelinkai.test`/`@test.carelinkai.com` operators) excluded as candidates entirely — there is no `isDemo` column.
-- **Ingest (`scripts/ingest-odh-inspections.ts` + `src/lib/inspections/ingest.ts`):** normalized JSON/CSV contract (see doc); dry-run by default, `--force` to write; idempotent upsert on the unique key; `--fetch-url` optional with graceful WAF failure; `--backfill-licenses` extracts the "ODH license NNNNR" tokens the metro seed embedded in ~70 descriptions into the structured column (run this FIRST so license matching works).
-- **Refresh (OFF by default, double-safe):** `.github/workflows/odh-inspections.yml` monthly schedule **commented out** + `/api/cron/odh-inspections` requires `CRON_SECRET` AND `ODH_INGEST_ENABLED=1` AND `ODH_INSPECTIONS_SOURCE_URL` (all unset today). No email sends anywhere in this feature.
-- **UI:** `InspectionHistory` component on `/homes/[id]` (async self-fetch from public `GET /api/homes/[id]/inspections` — never blocks page load): survey list newest-first, citation counts, expandable rule/summary detail, "View state record" links, Navigator link, disclaimer with data-as-of date. Empty states: with-snapshot ("No inspection records were found … as of <date>") vs pre-ingest ("records haven't been loaded yet") — never implies a clean record.
-- **Tests (40):** matcher false-positive prevention (same-brand-other-city → REVIEW, no fuzzy, demo exclusion even on exact license), ingest dry-run/review/learned-license behavior, API shape, component render with/without records + an explicit no-grading-language guard. Full suite 63/63, `tsc` clean, build passes.
-- **Founder runbook to go live:** (1) verify a bulk source per the doc checklist (browser); (2) on Render: `npx tsx scripts/ingest-odh-inspections.ts --backfill-licenses --force`; (3) produce the first normalized file → `--input file --force`; (4) resolve any manual-review rows by setting `odhLicenseNumber` on the right home; (5) only then consider `ODH_INGEST_ENABLED=1` + uncommenting the GHA schedule.
-- **Done when:** ACTIVE Cleveland listings show real ODH survey history with working state-source links, and the monthly refresh is verified + enabled.
+### OL-092: Claim-nudge waves sent — measurement
+- **Status:** 🟡 OPEN — pilot + scale wave sent 6/25–6/26; `report-claim-funnel.ts` / `report-claim-drip.ts` are the measurement tools; no numbers logged here since. **Do NOT re-enable `claim-drip.yml`** (sprint rule; PR #688 still open for review).
+- **Path:** `scripts/report-claim-funnel.ts`, `scripts/report-claim-drip.ts`, `.github/workflows/claim-drip.yml` (disabled), PR #688
 
----
+### OL-082: Batch-2 founder outreach — broadcast not yet sent
+- **Status:** 🟡 FOUNDER — audience loaded (`batch2-send-prep.ts --push`), send pending.
+- **Path:** `scripts/batch2-send-prep.ts`, `scripts/load-outreach-send-ready.ts`
 
-### OL-111: Pricing data strategy & capture (source-labeled, honest, never a guaranteed quote)
-- **Status:** 🟢 BUILT 2026-07-02 (PR `feat/pricing-capture`) — backend + UI + family survey. Family-survey trigger is **flag-gated OFF** by default; all pieces are additive/idempotent + authz-gated. No PHI.
-- **Principle:** pricing opacity in senior care is deliberate; we don't fake precision. Capture "starting around $X" from multiple **source-tagged** origins, ALWAYS source-label the number, ALWAYS pair with "Contact for exact quote", and build a family-reported quote moat over time. Never API-synced, never presented as an official/guaranteed quote. Do NOT scrape APFM/Caring.com/Seniorly.
-- **Schema (migration `20260702000001`, additive/idempotent):** `AssistedLivingHome` + `startingPriceMonthly Int?`, `priceRangeLow Int?`, `priceRangeHigh Int?`, `priceSource enum(OPERATOR|DP_ESTIMATE|PUBLIC|FAMILY_AVG)`, `priceUpdatedAt DateTime?` + index on `priceSource`. New `FacilityQuoteReport { homeId→Home, careLevel, quotedMonthlyBase Int, careAddOn Int?, communityFee Int?, moveInMonth String?, reportedByUserId String?, verified Boolean=false, createdAt }` — **NO PHI fields** (quote + care level only). New Int fields are whole monthly dollars, distinct from the legacy `priceMin/priceMax Decimal`.
-- **Core:** `src/lib/pricing/pricing.ts` — `pricingView(home, family?, now?)` (priority: strong FAMILY_AVG ≥ threshold > operator starting > estimated range; every branch source-labeled; "Transparent Pricing" = OPERATOR + fresh ≤180d), `bestPriceMonthly` (budget-filter input: starting ?? rangeLow ?? legacy priceMin), `computeFamilyAvg` (verified reports only), `setHomePricing` (single source-tagged write path), `familyAvgMinReports()` (env). `quote-token.ts` = HMAC-SHA256 magic-link (mirrors availability-token), homeId + optional inquiryId, 60-day expiry.
-- **Operator self-serve:** `/operator/homes/[id]/edit` gets an OPTIONAL "Starting at $/mo" input — **never required to claim/save**. Setting it stamps `priceSource=OPERATOR` + `priceUpdatedAt` (via `/api/operator/homes/[id]` PATCH) → earns the **Transparent Pricing** badge.
-- **Admin `PricingPanel`** (`/api/admin/homes/[id]/pricing`, ADMIN-gated): log DP-estimate / public-benchmark ranges **source-tagged** (mirrors AvailabilityPanel), verify pending family reports, copy the family survey link.
-- **Post-tour family survey (the moat):** inquiry PATCH → when status flips to `TOUR_COMPLETED` and `FAMILY_QUOTE_SURVEY_ENABLED` is truthy (**default OFF**), `maybeSendQuoteSurvey` fires a tokenized, no-login email (`sendQuoteSurveyEmail`, PHI-safe: facility + link only). `/quote/report?token=` (public path) → `POST /api/pricing/quote-report` creates an **UNVERIFIED** `FacilityQuoteReport`. Admin verifies; the family-reported average surfaces as `priceSource=FAMILY_AVG` **only** once verified count ≥ `FAMILY_QUOTE_MIN_REPORTS` (default 3).
-- **Search + display:** `/api/search` budget filter uses best-available price; default sort adds a **transparent-pricing boost** (+6) alongside the fresh-availability boost. Result cards + home-detail show the price with its source label ("operator-provided" / "estimated" / "families report ~$Y avg of N") + a Transparent mini-badge, always paired with "Contact for exact quote".
-- **Guardrails (in code + docs):** all writes authz-gated (operator/admin own the home; survey POST is token-only, one home, no account); survey is opt-in + stores no medical info; a number is never shown as official/guaranteed; family-survey trigger + FAMILY_AVG both gated so nothing surfaces prematurely.
-- **Go-live checklist:** (1) seed operator/DP-estimate prices via the admin panel or operator edit; (2) when ready to collect family quotes, set `FAMILY_QUOTE_SURVEY_ENABLED=1`; (3) tune `FAMILY_QUOTE_MIN_REPORTS` if 3 is too low/high; (4) admins verify incoming reports so FAMILY_AVG can surface.
-- **Done when:** listings carry source-labeled prices, transparent-priced homes are boosted in search, and (post flag-on) verified family quotes drive a FAMILY_AVG moat.
+### OL-099: Unclaimed-listing enrichment — residual
+- **Status:** 🟡 MOSTLY DONE (#642–#648); remaining: Google rating coverage gaps (`report-google-rating-coverage.ts`).
+- **Path:** `scripts/report-google-rating-coverage.ts`, `scripts/backfill-google-ratings.ts`
 
----
+### OL-093 / OL-094: Directory data quality residuals + Hudson Elms ops call
+- **Status:** 🟡 OPEN — 2 data items + 1 phone call (non-engineering).
+- **Path:** `scripts/report-directory-homes.ts`, `scripts/verify-home-status.ts`
 
-### OL-110: Live-ish availability freshness (verify-on-request, never store stale "live")
-- **Status:** 🟢 BUILT 2026-07-01 (PR `feat/availability-freshness`) — backend + UI + all channels. SMS/voice channels are OFF/unwired by default pending attorney sign-off + go-live config. DB-facing pieces are safe/additive.
-- **Principle:** don't store "live" availability (it decays instantly + depends on operator app-adoption we don't have). Store a count + honest freshness stamp; anything older than 10 days reads "Contact to confirm". Availability becomes a *service* (verify-on-request), a differentiator DPs feel.
-- **Schema (migration `20260701000001`, additive/idempotent):** `AssistedLivingHome` + `availabilityCount Int?`, `availabilityVerifiedAt DateTime?`, `availabilitySource enum(OPERATOR|SMS|EMAIL|VOICE|CONCIERGE)`, `contactMobile String?`, `availabilityOptIn Boolean=false` + index on verifiedAt.
-- **Core:** `src/lib/availability/availability.ts` (`AVAILABILITY_FRESH_DAYS=10`, `availabilityView` — never fakes live; stale count is hidden; single `updateAvailability` writer for every channel) + `availability-token.ts` (HMAC magic-link, mirrors unsubscribe-token, 30-day expiry).
-- **Channels (the freshness cascade):**
-  - **Email magic-link** (always-on): `/availability/update?token=` (no-login +/- counter page) → `POST /api/availability/update` (token-verified) → source=EMAIL. Page path added to middleware public list.
-  - **AI voice** fallback: `POST /api/availability/voice-result` (shared `AVAILABILITY_VOICE_SECRET` bearer, fail-closed) → source=VOICE. Wire Synthflow/Retell here.
-  - **SMS poll**: `/api/cron/availability-sms` (weekly) — **feature-flagged OFF** (`AVAILABILITY_SMS_ENABLED`, default off) AND the GHA workflow schedule is commented out (double-safe; TCPA). Inbound: dedicated `/api/webhooks/twilio/availability` (Twilio-signature-validated) parses a number → source=SMS; `STOP` → optIn=false suppression. Kept separate from the oncall `/twilio/sms` handler.
-  - **Concierge/operator/admin**: `POST /api/admin/homes/[id]/availability` (ADMIN) sets mobile/opt-in + logs CONCIERGE/VOICE/OPERATOR confirmations; also returns the email magic-link for Anita to send.
-- **UI:** home-detail (`/api/homes/[id]` → `availabilityFreshness`) shows "Availability verified {relative} · N openings" + **Verified Availability** badge when fresh, else "Contact to confirm"; family search (`/api/search`) returns `availabilityFreshness` and **boosts sort** for <10-day-verified (updating = reward). `AvailabilityBadge` + `AvailabilityCounter` components.
-- **Compliance guardrails (in code + docs):** SMS/voice only to consented (`availabilityOptIn`) contacts; STOP honored instantly; voice = business landlines, disclosed, informational; **no PHI**. Attorney (Haran) sign-off + consent capture required before enabling SMS/voice.
-- **Go-live checklist:** (1) attorney sign-off; (2) capture mobile+consent on Anita's intro calls (admin route); (3) set `AVAILABILITY_VOICE_SECRET` + wire the voice platform; (4) uncomment the availability-sms schedule (PR) + set `AVAILABILITY_SMS_ENABLED=1` + point a Twilio Messaging Service inbound to `/api/webhooks/twilio/availability`.
-- **Done when:** the cascade is enabled post-sign-off and "Verified Availability" listings are live-boosted in search.
-
----
-
-### OL-108: Mint + send 2 VA warm-lead operator claim links (Pleasant Pointe, Eliza Jennings)
-- **Status:** 🟡 OPEN — tooling shipped (`scripts/mint-claim-link.ts`, this session); the actual mint is a **founder Render-shell run** (needs prod `DATABASE_URL` + `NEXTAUTH_SECRET`, which the Claude Code agent env does NOT have — a token signed with any other secret is rejected by getcarelinkai.com, verified).
-- **📌 AUDIT-TRAIL CORRECTION (2026-07-06, founder-confirmed):** a THIRD link was minted in the Jul-1 Render run that this record originally omitted — **Maplewood at Twinsburg** (contact: Rebecca): token embedded in `email_maplewood_rebecca.html` (vault); decoded payload `operatorEmail=twinsburged@maplewoodsl.com`, `homeId=cmqqrkze8003irlmbe65ithsz`, iat 2026-07-01, exp ~2026-08-15. Minting is **stateless by design** (the tool prints links, writes nothing — no repo/DB trace exists), which is exactly why this record drifted; OL-117 (ClaimLinkVisit tracking, approved 2026-07-06) fixes this class of question permanently. Note: Maplewood also received the earlier June-25 pilot nudge link (exp ~Aug 9) at the same inbox — both tokens are independently valid until their expiries.
-- **Why:** Two warm leads from Anita's VA outreach want to self-serve claim (Anita follows up 2026-07-01). Need ready-to-send 45-day claim links — personal 1:1 emails from chris@, **not** a Resend broadcast.
-  - Pleasant Pointe Assisted Living — Barberton OH — Teresa Morris — `teresa@pleasantviewhealthcare.com`
-  - Eliza Jennings — Cleveland OH (main campus) — Lisa Fluhart — `lfluhart@elizajen.org`
-- **Tool (no-fake, mint-only):** `scripts/mint-claim-link.ts --email <op> --name "<home>" [--city <city>] | --home-id <id>` — dedups against the directory (reuses `homeId`, never creates a dup), signs the same `{operatorEmail,homeId,clevelandFounder,iat,exp}` 45-day token as `claim-drip.ts`, prints both the `…/auth/register?role=OPERATOR&claimToken=` and `…/claim?token=` links + ISO expiry; **does not seed, does not write, does not send.** If a home isn't found it lists near-matches and exits non-zero (seed via `seed-cleveland-*.ts` first, then re-run).
-- **Founder runbook (Render) — the 2 primary leads:**
-  1. `npx tsx scripts/mint-claim-link.ts --email teresa@pleasantviewhealthcare.com --name "Pleasant Pointe" --city Barberton`
-  2. `npx tsx scripts/mint-claim-link.ts --email lfluhart@elizajen.org --name "Eliza Jennings" --city Cleveland`
-- **Eliza Jennings network (optional — Lisa @elizajen.org manages multiple facilities Anita also called):**
-  3. `npx tsx scripts/mint-claim-link.ts --email lfluhart@elizajen.org --name "Eliza" --city "Chagrin Falls"`  *(likely already exists — batch-2 #613 "Eliza at Chagrin Falls, fka Weils of Bainbridge" → expect FOUND/reuse, not a seed)*
-  4. `npx tsx scripts/mint-claim-link.ts --email lfluhart@elizajen.org --name "Devon Oaks" --city Westlake`
-  - Each facility gets its own `homeId`/token/link. Decide on the call with Lisa whether she wants one signup that claims across all three (the `…/claim?token=` links work for an already-signed-in operator, so she can claim each in turn) or separate emails per facility. Same operator email on every token is fine.
-- **Then:**
-  5. For any **NOT FOUND**, seed via the directory pipeline (`seed-cleveland-*.ts`), then re-run that command. `--name "Eliza"` is intentionally loose for #3 to match whatever the stored brand is; narrow it (or pass `--home-id`) if it returns the wrong/multiple rows.
-  6. Paste each printed link into a personal email from chris@. Don't push to Resend.
-- **Done when:** the 2 primary links minted + emailed (reusing existing `homeId`s where present); optionally the 2 Eliza-network links (Chagrin Falls + Devon Oaks) for Lisa.
-
----
-
-## 🔴 HIPAA Critical (Blocking First Operator with Real PHI)
-
-### OL-051: Merge HIPAA Phase 3 PRs #536 → #537 → #538
-- **Status:** ✅ CLOSED (verified 2026-06-16) — all three merged to main.
-- **Evidence:** commits `0f06d6d` (PR A #536), `61e4803` (PR B #537), `a605a57` (PR C #538) are on `main`; the PR B schema migration `prisma/migrations/20260516000001_add_operator_baa_dpa_acceptance/` is in the tree. Follow-up fix `ec6c12e` (#539) also landed.
-- **Note:** Merging the code ≠ legal sign-off — the BAA/DPA templates are still DRAFTs (see OL-052). The signup gate is live; existing operators get redirected to `/operator/acceptance` as designed.
-
-### OL-052: Attorney review of BAA/DPA draft templates (HIPAA Punch List F1 / A2)
-- **Status:** 🔴 OPEN — **blocked on FOUNDER action (attorney outreach), not engineering.** Still BLOCKING first operator with real PHI.
-- **What:** `src/content/legal/baa/v-draft-2026-05-15.md` and `src/content/legal/dpa/v-draft-2026-05-15.md` have mandatory DRAFT banners. Must NOT be presented to operators as binding agreements until reviewed and approved by qualified legal counsel. Engineering is done — `src/lib/legal.ts` still pins `BAA_CURRENT_VERSION = DPA_CURRENT_VERSION = 'draft-2026-05-15'` (verified 2026-06-16); the only remaining step is the legal review + a version bump.
-- **Done when:** Attorney reviews + approves both templates → update `BAA_CURRENT_VERSION` / `DPA_CURRENT_VERSION` in `src/lib/legal.ts` off `draft-2026-05-15` to the approved version → redeploy → existing operators re-accept.
-
-### OL-053: HIPAA breach response runbook (Risk Register Risk 1 Action 6)
-- **Status:** ❌ OPEN — due 2026-06-30
-- **What:** Written runbook for breach detection, notification within 60 days (HIPAA Breach Notification Rule), affected individuals list, HHS reporting.
-- **Done when:** Document created in vault, reviewed, and linked from admin HIPAA dashboard.
-
----
-
-## 🔴 Critical (Blocking Revenue / Demos)
-
-### OL-055: STRIPE_PRICE_AGENCY env var not set in Render
-- **Status:** ✅ CLOSED 2026-06-27 — founder confirmed `STRIPE_PRICE_AGENCY` IS set in Render. Also hardened in code so this class of bug can't recur (#667).
-- **What was:** AGENCY tier ($799/mo) was visible in wizard Step 4 / billing manager but Stripe Checkout 400'd without the env var.
-- **Hardening (#667):** `src/lib/operator-plans.ts` is now the single source of truth for which tiers are purchasable (have a configured Stripe price); `GET /api/operator/billing/plans` exposes that set; the wizard + SubscriptionManager **hide any tier whose price isn't configured** (empty string counts as unset → tier auto-hides instead of dead-ending). The subscribe route also wraps Stripe in try/catch (clean 502 instead of bodyless 500) and no longer leaks env-var names to operators.
-- **Founder reminder:** confirm the `STRIPE_PRICE_AGENCY` value is a real `price_…` ID (not blank); with the hardening, a blank value safely hides Agency rather than breaking checkout.
-
-### OL-056: Cleveland founder end-to-end production smoke test needed
-- **Status:** 🔴 OPEN — code shipped in PR #542, not yet verified on production
-- **What:** Full path: seed a home via `/api/dev/upsert-operator`, generate claim link via admin UI, register new operator with `?claimToken=`, complete all 4 wizard steps, verify free access granted and no Stripe flow triggered.
-- **Done when:** Founder lands on Step 4 free card, clicks "Complete Setup", reaches `/operator` dashboard with no Stripe redirect.
-
-### OL-057: Non-Cleveland demo homes cleanup
-- **Status:** ✅ EFFECTIVELY DONE (verified 2026-06-16) — residual is a live-DB confirm only.
-- **What:** `scripts/cleanup-non-cleveland-demo-homes.ts` deletes DRAFT homes where `address.state != 'OH'`. **Merged via #551** (the doc's old "no PR yet" was stale). The 2026-06-10 Render cleanup **dry-run found zero non-OH DRAFT homes** (no-op — the earlier non-Cleveland demos were already gone), and **43 leaked e2e test homes were purged via #558 on 2026-06-11**.
-- **Residual:** next time in the Render shell, re-confirm against the live DB that no non-OH DRAFT homes exist. No code work remains.
-
-### OL-058: Second batch Cleveland facilities auto-population
-- **Status:** 🟡 OPEN — **batch-2 seeded + partially cleaned (2026-06-19/21).** Supply staged via #579; cleanup script #580 applied 2026-06-21 (rename Anthology→Ashton, retire Villa Serena, purge 2 test homes); 3 fixable homes got Places address backfill, then manual send-ready content via #582. Remaining: photo uploads for the 3 held homes (see **OL-081** residual).
-- **What:** Identify next set of Cleveland-area AssistedLivingHome records with `websiteUrl` available, create CSV, run `autopopulate-cohort.ts --dry-run` then `--force`.
-- **Note:** The Elms (mapped to "Hudson Elms Skilled Nursing & Rehabilitation Center"), Concordia at Sumner (city/address unresolved), Ohman + O'Neill North Ridgeville (capacity discrepancies) should be manually reviewed before operator outreach.
-- **Done when:** All Cleveland directory homes have `autoPopulatedAt` set or are marked as JS_ONLY/BLOCKED with a note.
-
-### OL-059: AI-populated home data quality review — first-batch flags
-- **Status:** 🟡 OPEN — the 2026-06-10 backfill improved address/photo data, but the 4 flagged homes below still need a **manual** verification pass before operator outreach; confirm each against the live DB.
-- **What:** Manual verification needed before operator outreach for:
-  1. **The Elms** — site says "Hudson Elms Skilled Nursing & Rehabilitation Center"; confirm this is the intended facility
-  2. **Ohman Family Living at Holly** — capacity: DOH 58 vs site 92 SN + 26 AL + 24 MC
-  3. **O'Neill Healthcare North Ridgeville** — capacity: DOH 44 vs site 190 total
-  4. **Concordia at Sumner** — city/street address not resolved; MEDIUM confidence
-- **Done when:** Each record manually verified and corrected in admin panel before the facility receives a claim link.
-
-### OL-060: First-batch photo backfill (text-only June-5 run had no photos)
-- **Status:** ✅ LIKELY CLOSED (pending live-DB confirm) — the 2026-06-10 Render session ran the photo backfill: **~70 photos backfilled** across the first-batch homes. Re-confirm `HomePhoto` counts against the live DB before fully closing.
-- **What:** The June-5 pipeline run predated the photo feature (#549), so the 15 first-batch Cleveland homes have `autoPopulatedAt` set but **no photos**. `--photos-only` mode (skips text re-extraction + text writes; scrapes images → AI-classify → Cloudinary re-host → append `HomePhoto` rows; idempotent — clears prior auto-populated photos first). `--from-db` targets the auto-populated cohort without a CSV.
-- **Done when:** On Render: `tsx scripts/autopopulate-cohort.ts --from-db --photos-only --dry-run` reviewed, then `--force`. 15 homes have auto-populated photos. (Anthropic spend small — image-classify only; Cloudinary within free tier.)
-
-### OL-061: AI address extraction weak — Google Places fallback
-- **Status:** ✅ LIKELY CLOSED (pending live-DB confirm) — code merged (#554, 2026-06-09); the 2026-06-10 Render session ran the address backfill: **12 addresses verified/backfilled** via Google Places. Re-confirm the cohort's `Address` rows against the live DB before fully closing.
-- **What:** HTML extraction often misses the street (Canterbury Commons showed the `1234 Oak Lane` form placeholder). `findAddressViaPlaces()` in `src/lib/place-lookup.ts` + wired into the populator: when neither DB nor AI yields a street, look the facility up by name + city and fill street/zip from a HIGH/MEDIUM-confidence Google Places match (fill-only, never overwrite). `GOOGLE_PLACES_API_KEY` is set in Render.
-- **Done when (remaining):** Backfill the existing 15 homes' addresses via the `--addresses-only` mode (no text re-extraction) on Render.
-
-### OL-062: "Full address is required" validation doesn't name the empty sub-field
-- **Status:** ✅ CLOSED (#554, 2026-06-09) — `src/app/operator/onboarding/[step]/page.tsx` now names the missing sub-field(s), e.g. "State is required."
-
-### OL-063: e2e suite runs ZERO tests in CI (false-green)
-- **Status:** 🟡 OPEN — **fix in flight: PR #572** (`fix/e2e-false-green-family-residents`). Awaiting that PR's CI to surface real failures.
-- **What:** The `e2e-residents` and `e2e-family` jobs ran specs from `./e2e/` against the **default** config (`testDir: './tests'`), so a bare `playwright test e2e/<spec>` matched nothing — and `--shard` makes an empty match exit 0. Verified locally 2026-06-16: `playwright test e2e/family-notifications.spec.ts --shard=1/2 --list` → `Total: 0 tests in 0 files`, exit 0 (vs exit 1 without `--shard`). Net effect: those suites passed without executing a single test. (The `e2e-operator-claim` job was already fixed to use `playwright.e2e.config.ts`.)
-- **Fix (PR #572):** point both jobs at `--config=playwright.e2e.config.ts` (`testDir: './e2e'`) so specs are discovered, and add a pre-run `--list` discovery guard (exits 1 on empty match) so a zero-discovery run fails loudly instead of an empty shard silently passing.
-- **Done when:** PR #572's e2e jobs execute non-zero tests, the genuinely-failing specs are either fixed or explicitly quarantined under their own OL, and the workflow is green for real (not vacuously).
-- **Note:** local execution of the suite was blocked by the sandbox network (Playwright browser download fails); PR #572's CI is the first real run.
-
-### OL-064: dev-login sessions are not authorized by operator POST routes in CI (claim-flow e2e guard parked)
-- **Status:** 🟡 OPEN — claim-flow guard parked (`test.describe.fixme`) 2026-06-09
-- **What:** In the CI e2e dev-server harness, operator-authenticated POST routes (`/api/operator/claim`, `POST /api/operator/homes/[id]/claim`, acceptance POST) return **403 "Forbidden"** for a `/api/dev/login` session, even though GET routes (`/api/dev/whoami`, `/api/operator/onboarding/status`) resolve the *same* session as role `OPERATOR`. Captured: `operator/claim 403: {"error":"Forbidden"} | whoami={… "role":"OPERATOR" …}`. The claim flow itself works in production (verified by the manual prod smoke test), so this is a harness/auth quirk, not a product bug.
-- **Impact:** `e2e/operator-claim-flow.spec.ts` is parked via `test.describe.fixme`; all supporting infra (`playwright.e2e.config.ts`, the `e2e-operator-claim` CI job, the testDir discovery fix) is retained so it can be re-enabled with a one-line change.
-- **Done when:** Root-caused (Playwright trace / local-DB repro of why operator POST `getServerSession`+DB role check fails while GET succeeds), fixed, and the 3 parked tests re-enabled and green.
-
-### OL-067: Discharge-planner search PrismaClientValidationError + raw-error leak
-- **Status:** ✅ CLOSED (2026-06-15) — Sentry `2f642d88976448d394ec4d7d9fc10ca0`
-- **What:** `POST /api/discharge-planner/search` threw `PrismaClientValidationError: Expected CareLevel` and rendered the raw Prisma message into the UI. Real cause: the AI parser emitted `careLevel "ASSISTED_LIVING"`, not a member of the `CareLevel` enum (`INDEPENDENT/ASSISTED/MEMORY_CARE/SKILLED_NURSING`). `careLevel` is a `CareLevel[]` list so `hasSome` was correct — the values were invalid. Added `sanitizeCareLevels()` (synonym map + drop-invalid) in `src/lib/discharge-planner/criteria.ts`, fixed the parser prompt, fixed the city/state location filter (was matching the full "City, ST" string against both fields), and hardened the catch block to return a generic 500 + Sentry-only logging. Unit tests in `__tests__/discharge-planner.criteria.unit.test.ts`.
-- **Note:** Committed to `claude/inspiring-mayer-rvgyys`; not yet PR'd/merged to main.
-
-### OL-068: Inquiry form 400 — field-name mismatch with /api/inquiries
-- **Status:** ✅ CLOSED (2026-06-15)
-- **What:** The `/homes/[id]` "Send Inquiry" form posted `name/email/phone/residentName/careNeeded` + `source:'home_detail'`, none matching the API Zod schema → every submit `400 Validation failed`. Added `buildInquiryPayload()` (`src/lib/inquiries/payload.ts`) mapping to the canonical contract, extracted the schema to `src/lib/inquiries/schema.ts`, relaxed `careRecipientName` to optional (nullable column, backward compatible). Tests in `__tests__/inquiries.payload.unit.test.ts`.
-- **Note:** Committed to `claude/inspiring-mayer-rvgyys`; not yet PR'd/merged to main.
-
-### OL-069: Port the full How-To guide set from the ChrisOS vault into the Education Hub
-- **Status:** ✅ CLOSED (2026-06-16, PR feat/howto-hub-full-content) — full content now version-controlled in-repo
-- **What:** The starter set has been replaced with all **29 cleaned, role-facing guides** (shared 3, family 6, operator 9, caregiver 6, provider 3, discharge-planner 2). Chris delivered them as an app-ready bundle (`_app_content_bundle`, via a zip dropped on `chore/howto-bundle-dropoff` since the vault isn't reachable from dev/CI). A codegen script `scripts/generate-howto-content.ts` transforms the bundle (`manifest.json` + `content/<role>/*.md`) into `src/app/learn/howto/content.ts` (role→audience mapping, `### ` step sections, Tips/FAQ, internal cross-refs stripped). Admin-internal + Affiliate guides are deliberately excluded. The raw bundle + zip were removed so nothing extra ships; the dropoff branch was deleted.
-- **Role-gating:** unchanged from #566/#567 — families see shared + family only; each role sees its own; verified by `__tests__/howto.access.unit.test.ts` (per-role counts + no cross-role leak).
-- **Image tail → see OL-071.**
-
-### OL-071: Capture the 71 How-To screenshots into the repo
-- **Status:** 🟡 OPEN — text-first guides are live; screenshots pending
-- **What:** Each guide's frontmatter lists screenshot filenames (71 total) that live in Chris's Downloads, not the repo. The hub renders **text-first**: it shows only images present under `public/howto/` (build-time `AVAILABLE_HOWTO_IMAGES` set), so missing captures render nothing — no 404s, no broken layout. The full per-guide checklist is generated at `public/howto/README.md`.
-- **Done when:** Optimized PNGs are dropped into `public/howto/` by the filenames in that README, `npx tsx scripts/generate-howto-content.ts` is re-run (rescans available images), and the guides show their screenshots. (Optional later: namespace filenames by slug, or host on Cloudinary.)
-
-### OL-070: /help "Getting Started" links broken/role-gated for all roles
-- **Status:** ✅ CLOSED (2026-06-15, PR #567, merged) — backfilled here
-- **What:** The role checklists on `/help` pointed at dead or role-gated routes (FAMILY "Browse assisted living homes" → `/discharge-planner`; `/marketplace/aides` 404; CAREGIVER `/settings/aide` 404; OPERATOR `/marketplace/listings` 404), and DISCHARGE_PLANNER/AFFILIATE had no guide. Repointed every step to a verified, role-accessible route and added the two missing guides. Extracted to `src/lib/help/getting-started.ts` + `__tests__/help.getting-started.unit.test.ts` (33 cases) that fails if any href doesn't resolve to a real `src/app/**/page.tsx` route or a FAMILY step targets a gated portal.
-
-### OL-072: /family/emergency crashed on load (error boundary)
-- **Status:** ✅ CLOSED (2026-06-16, PR #569)
-- **What:** `/family/emergency` tripped the global "Something went wrong" error boundary for FAMILY users. Cause: a client/API contract mismatch — `GET /api/family/emergency` returns `{ preferences }` (plural; `null` when none exist), but the page read `data.preference` (singular → `undefined`) and set state to it, so render dereferenced `undefined.notifyMethods`. Fix: read `data.preferences` and `normalizePreference()` any input (null/partial/free-form JSON `escalationChain`) into the strict UI shape. Extracted to `src/lib/family/emergency.ts` + `__tests__/family.emergency.normalize.unit.test.ts` (6 cases). The `/help` "Set up emergency contacts" link stays enabled (fix ships with it).
-
-### OL-073: Education Hub information architecture — tab split
-- **Status:** ✅ CLOSED (2026-06-16, PR feat/education-hub-tabs)
-- **What:** The How-To tutorials sat below the senior-care articles, so as articles grow How-To would get buried. Added two tabs at the top of `/learn` — **How-To & Tutorials** (default) and **Senior Care Guides** — driven by the `?tab=` query param (URL-stable, refresh-safe, server-rendered, no client JS). Role-gating from #566 preserved under the How-To tab. The `/help` "Education Hub" card still deep-links to `/learn` (defaults to How-To).
-
-### OL-074: `/family/residents` renders without app chrome (backlog)
-- **Status:** 🟡 OPEN — captured during 2026-06-16 live inspection
-- **(a)** `/family/residents` renders **without the app sidebar/chrome** — confirm whether intended (other `/family/*` pages use `DashboardLayout`). Low priority, cosmetic.
-- **Done when:** decision recorded + layout aligned if needed.
-
-### OL-075: Marketplace mock data could leak to real users in prod
-- **Status:** ✅ CLOSED (2026-06-16, PR `fix/mock-mode-prod-admin-only`)
-- **What:** The `/marketplace` Providers (and Caregivers) surfaces showed sample data ("Golden Years Home Care, San Francisco") because admin **mock mode** was on (a `carelink_mock_mode` cookie or `SHOW_SITE_MOCKS=1` env). The `_marketplace_mock` default-on path in `providers/[id]` and the on-empty/on-error mock fallbacks in the caregivers route could also surface mocks to real visitors. Founder chose a code hardening over an ops toggle.
-- **Fix:** added `isMockViewerAllowed()` (`src/lib/mockMode.server.ts`) — non-prod: always; **production: ADMIN only** — and gated every mock-serving point in the providers/caregivers + `providers/[id]` routes on it. So a stray cookie/env can no longer leak demo data to families on prod; admins keep the preview in dev/staging. Test: `__tests__/mock-mode.viewer.unit.test.ts` (5 cases).
-- **Note:** This is the durable fix for the OL-074(b) observation. If `SHOW_SITE_MOCKS=1` is *also* set in Render, it's now harmless for end users but can be unset for tidiness.
-
-### OL-076: Complete the Next 15 async params/searchParams migration (operator/residents + api/residents)
-- **Status:** 🔴 OPEN — surfaced 2026-06-16 when the e2e suite first ran for real (OL-063 fix, PR #572).
-- **What:** The app is on Next 15.5.10, where `params`/`searchParams` are async and must be awaited; several server components + route handlers still read them synchronously, which throws (`sync-dynamic-apis`) → broken/slow renders. PR #572 fixed the family-residents pages, but the **operator/residents** surface is still synchronous: `src/app/operator/residents/page.tsx` (searchParams ×7), `src/app/operator/residents/[id]/page.tsx` (params + searchParams), and `src/app/api/residents/[id]/{route,assessments,contacts,notes,incidents,…}/route.ts` (params.id in every handler). This breaks the operator residents e2e specs (page-load timeouts + missing sections).
-- **Quarantine:** 6 residents e2e specs (`residents-transfer`, `-lifecycle`, `-documents`, `-assessments-incidents-edit`, `-assessments-incidents-update`, `-csv-export`) are explicitly `test.skip(!!process.env.CI, …)` in CI pending this work (they were previously false-green / never executed, so no real coverage was lost). `residents-contacts`/`-compliance` were already CI-skipped; `residents-summary` passes.
-- **Also worth checking:** the CI residents specs navigate via `npm run dev` (the e2e config webServer), so first-hit on-demand compilation may contribute to the 60s `page.goto` timeouts — consider building + `npm run start` for the e2e config, or raising timeouts.
-- **Added 2026-07-06 (from the #695-merge e2e flake diagnosis):** `src/app/api/admin/concierge/[id]/route.ts` also reads `params.id` synchronously — it spams the `sync-dynamic-apis` error on every request in the e2e-concierge webserver logs (non-fatal today, but the same class). Fold it into this migration pass.
-- **Broader:** audit the rest of `src/app/**` for the same sync `params`/`searchParams` pattern (this was a partial Next 14→15 migration).
-- **Done when:** operator/residents pages + api/residents routes await their dynamic APIs, the 6 quarantined specs are un-skipped, and the residents e2e job runs them green.
-
-### OL-077: Reconcile family compliance-summary counts (seed vs page vs test)
-- **Status:** ✅ CLOSED (2026-06-16, PR `fix/family-compliance-summary-semantics`).
-- **What it was:** `family/residents/[id]` Compliance Summary (Open / Completed / Due Soon (14d) / Overdue). The page-crash bug was fixed in #572 (await params + valid `ComplianceStatus` enum), but `family-resident-readonly.spec.ts` (Open=2/Completed=1/Due Soon=1/Overdue=1) was stale vs the dev seed and had been CI-quarantined.
-- **Resolution:** Kept the page's principled buckets (Completed=`CURRENT/COMPLIANT`; Open=`EXPIRING_SOON/EXPIRED/PENDING/MISSING`; Due Soon=expiry within 14d; Overdue=expiry past) and made `api/dev/seed-family-resident` produce a deterministic scenario that exercises all four: Flu Shot=`CURRENT` (completed), TB Test=`EXPIRING_SOON` expiry +10d (open + due-soon), Care Plan Review=`EXPIRED` expiry −5d (open + overdue) → Open=2 / Completed=1 / Due Soon=1 / Overdue=1, matching the spec. `family-resident-readonly` **un-quarantined**; `family-notifications` only asserts the cards render, so it's unaffected.
-- **Note:** the separate operator-facing `/api/.../compliance/summary` route uses a different (looser) bucketing and is out of scope here; revisit if that surface needs exact parity.
-
-### OL-078: Third-party trackers loaded with no cookie-consent gate (privacy/HIPAA exposure)
-- **Status:** ✅ CLOSED (2026-06-16, PR `feat/cookie-consent-tracker-gating`).
-- **What it was:** `layout.tsx` injected Meta Pixel, Microsoft Clarity, GA4, and GTM unconditionally (gated only by env-var presence, fired `afterInteractive`). The existing `CookieConsent` banner was cosmetic — it only flipped `ga-disable`/`fbq consent` *after* the scripts had already loaded and sent the initial PageView/session. On a HIPAA-positioned site, behavioral trackers fired before consent.
-- **Fix:**
-  - `src/lib/consent.ts` — shared consent state + `CONSENT_EVENT`. `AnalyticsScripts` (`src/components/analytics/AnalyticsScripts.tsx`, client) injects trackers **only after explicit consent** and reacts to the event (loads on opt-in, no reload). **Nothing fires pre-consent.** Removed the unconditional `<Script>` blocks from `layout.tsx`.
-  - **GA4 + GTM:** gated behind `analytics` consent (all pages). Dropped the GTM `<noscript>` (would bypass the JS consent gate).
-  - **Microsoft Clarity:** `analytics` consent only; site-wide masking via `data-clarity-mask="true"` on `<body>` (masks all text/inputs); not initially loaded on sensitive routes (auth + resident/care + logged-in app areas). **Founder action:** also set the Clarity dashboard masking to Strict for belt-and-suspenders.
-  - **Meta Pixel:** `marketing` consent only; **PageView only** (no custom events in the loader); excluded from logged-in operator/family + health/care routes via `SENSITIVE_PREFIXES`.
-  - `CookieConsent` refactored to use the shared helper (Accept All / Necessary Only / Customize) and dispatch the consent event.
-- **Verify:** with no stored consent, the network tab shows no requests to googletagmanager.com / connect.facebook.net / clarity.ms until the user opts in. `tsc` clean, build passes, lint clean.
-
-### OL-079: Operator-claim → instant email notification
-- **Status:** ✅ CLOSED (2026-06-18, PR `feat/claim-notification`).
-- **What it was:** When a home was claimed (operator self-claim onboarding → `ACTIVE`, or admin claim → `PENDING_REVIEW`), the founder had no real-time signal — claims had to be discovered by checking the backend. #576 had added a basic `sendOperatorClaimNotification`, but it sent to `chris@getcarelinkai.com` only, used a plain subject, omitted operator name / timestamp / deep link, had no idempotency on the admin path, and failures were only `console.error`'d (no Sentry).
-- **Fix:**
-  - `src/lib/email.ts` — `sendOperatorClaimNotification` now: **To** `profyt7@gmail.com` (override `CLAIM_NOTIFY_EMAIL`), **cc** `chris@getcarelinkai.com` (override/disable via `CLAIM_NOTIFY_CC=''`); subject `🎉 New CareLinkAI claim — <facility>`; body includes facility, operator name + email, **America/New_York** timestamp (`Intl.DateTimeFormat` ET), and a deep link to the admin home view (`${NEXT_PUBLIC_APP_URL||NEXTAUTH_URL}/admin/homes/<id>`). Non-blocking + `RESEND_API_KEY` guard preserved; failures now also `captureError` to **Sentry** (`feature: claim-notification`).
-  - `src/app/api/operator/homes/[id]/claim/route.ts` — passes `operatorName` + `homeId`. Idempotent by construction (the `seededHomeId` guard means a seeded home can only be claimed once; it's nulled in the same transaction).
-  - `src/app/api/admin/homes/[id]/claim/route.ts` — captures `wasAlreadyPendingReview = home.status === 'PENDING_REVIEW'` before the update and only fires the notification on a real transition INTO `PENDING_REVIEW`, so re-claiming/reassigning an already-pending home never double-sends. Passes `operatorName` + `homeId`.
-- **No schema migration** (idempotency via state-transition guards, not a dedicated sent-flag column).
-- **Residual edge:** two truly-concurrent admin claims on the same home could both observe the pre-update status and double-send; acceptable for a low-volume founder alert (no DB-level dedupe added).
-- **Verify:** `tsc --noEmit` clean, `npm run build` passes.
-
-### OL-080: Phone (and capacity) not persisted on AssistedLivingHome by the enrich pipeline
-- **Status:** ✅ **CLOSED 2026-06-24 — PR #607 (`5092c85`).** Backfilled on Render: **82 homes now have a phone, 74 a tagline, 8 a contactEmail** (low email count expected — most facility sites Cloudflare-obfuscate or omit it).
-- **What:** `AssistedLivingHome` had **no `phone`/`contactEmail`/`tagline` columns**, and the auto-populator (`scripts/autopopulate-cohort.ts`) extracted all three (`extracted.phone` etc.) but **never wrote them** — only counted toward `fieldsExtracted`. So every enriched listing was missing public phone/email/tagline.
-- **Fix shipped (#607):** migration `20260624000001_home_public_contact_fields` adds `phone`/`contactEmail`/`tagline` (`String?`); `autopopulate-cohort.ts` persists them with `AI` provenance; `/api/homes/[id]` exposes phone + tagline (contactEmail kept DB-only — operator/admin handoff, not public, to avoid spam-scraping); the public listing renders the tagline + a clickable `tel:` phone; `report-directory-homes.ts` emits the phone column. **`capacity` intentionally NOT auto-written** — site values conflict with DOH (Ohman 58-vs-92, Regina 54-vs-99); reconciliation is OL-059's manual-verify job.
-- **Done when:** ✅ enrich stores phone/tagline on the listing, they render publicly, and `report-directory-homes.ts` emits phone. (Capacity reconciliation tracked separately under OL-059.)
-
-### OL-081: Batch-2 cohort punch list (post-cleanup, 2026-06-21)
-- **Status:** 🟢 MOSTLY DONE — structural cleanup + name/URL reconciliation + send-ready content all **CLOSED**; only a photo-upload residual remains. The structural cleanup (PR #580, applied on Render `--force`, Applied: 4) — Anthology→**The Ashton at Mayfield Heights**, Villa Serena→**INACTIVE**, "Test Senior Living Cleveland" + "Chris Senior Care Home" **purged**. The 3 held homes' content was landed manually (PR #582, `scripts/enrich-batch2-held-homes.ts --force` on Render 2026-06-21, Applied: 3).
-- **Resolved:**
-  1. ✅ **Windsor Heights `websiteUrl`** (`cmql0xbos…`) — investigation showed the seeded Sunshine/Beachwood URL was **actually correct** (Sunshine Retirement Living operates Windsor Heights at that page; the "wrong URL" was a misread). UTM params stripped. Address verified 23311 Harvard Rd, Beachwood 44122.
-  2. ✅ **Rebrand name reconciliation** — Bickford of Rocky River (`cmql0xbp9…`) → **"Bloom at Rocky River"** (`bloomseniorliving.com/bloom-at-rocky-river/`); Rocky River Village (`cmql0xbpc…`) → **"Meadow Falls of Rocky River"** (`meadowfallsseniorliving.com/rocky-river/`). Names + URLs set in DB.
-  3. ✅ **Send-ready content for all 3** — name + official URL + description + care levels + amenities + highlights set via PR #582 (manual copy from official + public listings). All kept DRAFT. **Note on the report:** these show `enriched=no` **by design** — the script sets `aiPopulationConfidence='MANUAL'` but deliberately leaves `autoPopulatedAt` null (manual, not machine-scraped), so the report flag is NOT the right "done" signal here; the populated `description`/`careLevel`/`amenities` are.
-     - **Why manual, not the scrape pipeline:** all 3 official sites sit behind WAF bot-protection that 403s datacenter IPs (verified browser-UA); our scraper (`operator-profile-scraper.ts:198`) treats 403 as `BLOCKED` and writes no text, so `autopopulate --with-photos` cannot reach them.
-- **Residual (still 🟡 OPEN):**
-  1. **No photos** on the 3 held homes — the same WAF block prevents image scraping. They stay photo-less until a **manual Cloudinary upload pass** (or a future scrape via a non-blocked path). Low priority; does not block DRAFT outreach prep.
-  2. **The Ashton shows `city=(pending)`** despite `enriched=yes` — one `--addresses-only` pass would backfill its address.
-- **Done when:** the 3 held homes have at least a hero photo (manual upload) and The Ashton's address is backfilled. (Name/URL/content reconciliation is complete; Cowork has the final values for `batch2_email_research`.)
-
-### OL-082: Batch-2 founder outreach — send + residuals (2026-06-22)
-- **Status:** 🟡 OPEN — **audience loaded, broadcast NOT yet sent.** Send prep ran on Render via `scripts/batch2-send-prep.ts --push` (PR #584, `90950a2`): generated 11 per-home founder claim links (`clevelandFounder:true`, 45-day expiry — links **exp 2026-08-06**, `NEXTAUTH_SECRET`-signed) and loaded the Resend audience **"Batch 2"** (`4a80d88c-97cb-4241-984f-764b69273b89`) with **11 contacts** (all HTTP 201, properties `facility_name` + `claim_link` + `first_name`/`email`). All 11 homes stay **DRAFT**; no email/broadcast sent — **Chris sends from Resend.**
-  - The 11: Rose Senior Living Beachwood, Windsor Heights, Beachwood Commons, Solon Pointe, Vitalia Solon, Fairmont of Westlake, Bloom at Rocky River, Vitalia Strongsville, Symphony at Mentor, Vista Springs Ravinia Estate, Jennings at Brecksville.
-- **Residuals (still OPEN):**
-  1. **HOLD trio needs emails** — Meadow Falls of Rocky River (`cmql0xbpc…`), Embassy of Rockport (`cmql0xbpf…`), The Ashton at Mayfield Heights (`cmql0xbpm…`) are phone-call rows with no email yet. When contacts are found, extend the `HOMES` array in `scripts/batch2-send-prep.ts` and re-run `--push` to add them to "Batch 2". (Villa Serena is out of scope — INACTIVE.)
-  2. **Photos for the 3 WAF-blocked homes** — Windsor Heights / Bloom / Meadow Falls still have no photos (WAF blocks image scraping). Cross-ref **OL-081** residual; manual Cloudinary upload.
-  3. **Beachwood Commons email unverified** — `asarota@npseniorliving.com` flagged LOW (bounce risk). Verify or replace before relying on the send; it's loaded into "Batch 2" but may bounce.
-- **Done when:** the broadcast is sent from Resend, the HOLD trio is emailed (or explicitly dropped), and the Beachwood Commons email is verified/replaced.
-
-### OL-083: Inquiry → Claim "pull" engine + publish-wide directory (2026-06-22)
-- **Status:** ✅ **CLOSED 2026-06-23 — Greater-Cleveland directory is LIVE (128 public listings across 6 counties).** The publish-wide rollout + Part B metro seed shipped and the founder ran the full seed→anchor→enrich→publish→cleanup sequence on Render. Sibling of OL-079. *(Note: the founder's ticket called this "OL-082", but that number was already taken by the batch-2 outreach loop above, so it's filed as OL-083.)*
-- **Launch result (2026-06-23, Render prod):** 118 metro homes seeded + 138 city/OH address anchors → Places address backfill (117 filled, all in-state) → `publish-directory-homes.ts --force` published **133**, then `hold-crossmatch-homes.ts --force` reverted **5** same-city cross-matches → **128 live ACTIVE listings**. $0 Anthropic spend (Places-only).
-- **What it does:** when a family inquires on an **unclaimed/directory-owned** home, the inquiry is **always captured** (existing `Inquiry` row; `/api/inquiries` has no status guard) and surfaces on the operator dashboard the moment they claim (inquiries key off `homeId`, which reassigns on claim — no extra wiring). On top of that capture: a **best-effort notify** nudges the operator to claim.
-- **Build:**
-  - **Schema (migration `20260622000001_inquiry_claim_outreach_fields`, additive):** `AssistedLivingHome.outreachEmail`, `outreachPhone`, `claimNudgeLastSentAt`.
-  - **`src/lib/claim-engine/inquiry-claim-notification.ts`** — `notifyUnclaimedHomeInquiry({homeId, inquiryId})`: self-filters to unclaimed homes (directory sentinel operator `directory-unclaimed@carelinkai.system`); if `outreachEmail` known + not nudged in last 24h, mints a 45-day founder claim link (`signClaimToken`, `clevelandFounder:true`) and sends a **Resend email + Twilio SMS** (reusing existing infra), then stamps `claimNudgeLastSentAt`. Non-blocking, Sentry-tagged `feature: 'inquiry-claim-notification'`, idempotent (24h throttle).
-  - **`src/lib/email.ts` `sendInquiryClaimNudgeEmail` + `sms-service.ts` `sendInquiryClaimNudge`** — generic copy ("a family is trying to reach <Facility>… claim to respond securely"); the link IS the CTA.
-  - **Public counter:** `/api/homes/[id]` returns `unclaimed` + `pendingInquiryCount` (count of NEW inquiries); `src/app/homes/[id]/page.tsx` shows "N families have inquired — claim to view & respond securely" (or a soft "claim this listing" when 0).
-  - **Wire:** one non-blocking call in `/api/inquiries` POST. Unit test for the unclaimed gate.
-- **HIPAA:** inquiries may carry PHI (care needs). The email/SMS body and the public counter are **generic only** — facility name + a generic "a family is trying to reach you" / a bare count. Actual inquiry content stays behind auth, revealed only after claim.
-- **Publish-wide rollout (2026-06-23): ✅ SHIPPED — 6 PRs merged to main.** The "listings PUBLIC + anonymous capture" ticket that this loop depended on is done:
-  - **#588 (C9)** soften compliance claims → "HIPAA-aligned safeguards".
-  - **#589 (A2) anonymous capture — `Inquiry.familyId` now nullable** (migration `20260623000001_inquiry_nullable_family`). Public anonymous inquiries no longer 400; entire inquiry surface guarded for null-family; conversion blocked until linked.
-  - **#590 (A1)** search badges unclaimed/directory listings (`isUnclaimed` via `isUnclaimedHome()`).
-  - **#591 (C8)** `scripts/pre-publish-test-demo-sweep.ts` (dry-run default).
-  - **#592 (C7)** `scripts/publish-directory-homes.ts` — quality-gated DRAFT→ACTIVE publisher (dry-run default).
-  - **#593** branded `HomeImagePlaceholder` + photo-aware "Claim & add photos" nudge.
-- **Follow-ups (non-blocking, post-launch):**
-  1. **~24 directory homes held without addresses** — ✅ **largely resolved 2026-06-24 (night).** Two verified-address batches shipped + published: **Batch A** (#611, `backfill-verified-addresses.ts`) wrote addresses to 11 OPEN current-name homes; **Batch B** (#612, `rebrand-and-address-batch-b.ts`) renamed + addressed 11 rebranded homes; **#613** cleaned the one stale description (Eliza). `publish-directory-homes.ts --force` then took **22 DRAFT→ACTIVE**. Remaining held: **Altercare St Joseph** (CLOSED 2019 → see OL-088), **Brookdale Medina North** (address medium-confidence → see OL-089), **Princeton Place** (no confident OH match), **Montefiore** (now SNF, out of AL/RCF scope per OL-090 policy). _Original detail:_ two groups — (a) ~9 *correct* homes held on a city-label technicality where Google's municipality ≠ the seeded city; (b) un-anchored older Tier-A names not in the metro list hitting the "no seeded state" guard.
-  2. **5 same-city cross-matches held** via `hold-crossmatch-homes.ts` (reverted to DRAFT, street/zip cleared): Brookdale Gardens at Westlake, Homestead I, StoryPoint Medina West, Elmcroft of Medina, Gardens of Western Reserve. Need a correct address (or operator claim) before re-publish.
-  3. **20 SNF-primary rows** held out of the seed pending `ltc.ohio.gov` verification — re-run `seed-cleveland-metro.ts --include-unverified` for any that carry a real AL/RCF wing.
-  4. **Text-enrich — ✅ DONE 2026-06-23 (evening).** URLs cleaned via `verify-directory-websites.ts` (#601: 12 nulled rebrands, 11 refreshed, 95 kept) + 2 manual name-collision nulls (Princeton Place→LA, Vista Springs Macedonia→Ravinia), then `autopopulate-cohort.ts --from-db --include-unpopulated --include-active --force` enriched 90/105 (HIGH/MEDIUM), $8.47, **text only**. See OL-084 (13 JS-rendered homes still un-enriched) and OL-085 (photos never imported).
-  5. **Populate `outreachEmail`/`outreachPhone`** so the claim-nudge email/SMS fires (currently only the public counter path is active).
-  6. **Anonymous-inquiry → family link-by-email** and **AI triage auto-ack** — deferred to a later phase.
-- **Done when:** ✅ DONE — directory live with 128 listings. Remaining items above are incremental polish, not blockers.
-
-### OL-084: Headless-browser scrape for JS-rendered directory homes
-- **Status:** 🟡 OPEN — **deferred 2026-06-23 (founder decision)** as a larger infra task; not a same-night change.
-- **What:** 13 directory homes returned **empty `<html></html>`** to the current scraper (`operator-profile-scraper`) because their sites are JS-rendered or bot-blocking, so the AI enrich produced LOW/`"<UNKNOWN>"` output. After cleanup they carry **seed-based fallback descriptions** (name + city + care levels), not real content. The homes: **Meadow Falls of Rocky River, Windsor Heights, Homestead I, Homestead II, Oaks of Brecksville, Brookdale Bath, Mulberry Gardens, St. Luke Lutheran (Portage Lakes), Marymount Place** (the 9 repaired `<UNKNOWN>`), plus **Grande Village Suites, Grande Village Villas, East Park Retirement Community** (LOW but real-ish corporate/hero text, left as-is) and **Brookdale Willoughby** (cleaned — wrong-page generic content + 20 bogus amenities removed; its URL is a Wickliffe mismatch needing a correct community page). Also re-check the 2 **blocked** homes: Legacy Place-Parma (404 — dead URL) and Ivy House (403 — bot block).
-- **Why it matters:** these listings are public (ACTIVE) with thin fallback text; richer content improves SEO + claim conversion.
-- **2026-06-23 investigation (where a browser can run):** `@playwright/test` is a **devDependency only** and the production Docker image (`docker/Dockerfile`) has **no Chromium**, so the **Render container cannot run a headless browser**, and the Render shell can't `git pull` to add one ad-hoc. CI *does* have Playwright (the e2e jobs run `npx playwright install --with-deps`) and a `secrets.DATABASE_URL`, **but** the e2e workflows carry an explicit warning — *"NEVER point at prod … this is how 43 test homes leaked into production"* — so a CI-writes-to-prod scraper cuts against a known scar. Three viable paths weighed: **(A)** a gated `workflow_dispatch` Action (Playwright render → extract → write to prod, dry-run default + explicit apply input, scoped to the directory operator + #602's LOW-skip guard; the dry-run doubles as a test of which sites a browser actually recovers); **(B)** add Chromium to the prod Docker image (`playwright-core` + `@sparticuz/chromium`) + a `--render` flag in the scraper, run from the Render shell — heavier image/build/memory; **(C)** defer. **Founder chose C.** When picked up, **A is the recommended path** — least infra bloat, and the dry-run de-risks the unknown (some of these sites may be Cloudflare-hard-blocked, not just JS-rendered).
-- **Note:** #602 (`50c720d`, merged) **skips DB writes for LOW-confidence extractions**, so a future enrich won't re-clobber these — but it also won't improve them until the scraper can render JS. These homes are **un-stamped** (`autoPopulatedAt` null) so they're cleanly retryable.
-- **Done when:** the JS-rendered homes return real HTML and re-enrich to HIGH/MEDIUM, or are explicitly marked JS_ONLY/BLOCKED with a note.
-
-### OL-085: Photo import for the Greater-Cleveland directory cohort
-- **Status:** ✅ **DONE 2026-06-23 (evening).** `autopopulate-cohort.ts --from-db --include-active --photos-only --force` run twice on Render (initial 398 photos, then **417** after OL-086 landed). 93 homes processed; ~74 have ≥1 Cloudinary photo, the rest are logo-only sites (classifier kept 0). $1.43 Anthropic per run. The 12 un-stamped JS-rendered homes were excluded from selection (no scrapable images — see OL-084).
-- **What:** Run the photo pipeline over the enriched directory homes: `autopopulate-cohort.ts --from-db --include-active --photos-only --force` (classifies candidate images, downloads + re-hosts to **Cloudinary**, idempotent — clears prior `autoPopulated` photos first).
-- **Cost/infra note:** image classification adds ~$1.43 Anthropic per full run on top of Cloudinary storage (within free tier). **Render shell can't `git pull`** — the script is already on deployed main, so it runs as-is; do ad-hoc tweaks via inline `npx tsx -e`.
-- **Done when:** ✅ directory homes with scrapable galleries have ≥1 Cloudinary-hosted `autoPopulated` photo.
-
-### OL-086: AVIF/HEIF support in the photo-rehost pipeline
-- **Status:** ✅ **DONE 2026-06-23 (evening) — PR #604 (`8c6088f`).**
-- **What:** The first photo run left **East Park** and **Merriman** (Webflow sites serving **AVIF**) with 0 photos — `photo-rehost.ts`'s `sniffImageType` only accepted JPEG/PNG/GIF/WEBP, so every AVIF was rejected as "not a decodable image". A few 5–8MB facility JPEGs (Rockynol, Nason) were also skipped by the old 4MB cap.
-- **Fix:** `sniffImageType` now detects ISO-BMFF (`ftyp` brand → `avif`/`heic`) and the download loop transcodes those to JPEG via **sharp** (already a prod dep; libheif present) before upload; size cap raised 4MB → 12MB (Cloudinary's incoming transform still bounds the stored asset to 1600px).
-- **Verified:** after deploy, the photo re-run uploaded **East Park 8/8, Merriman 8/8, Rockynol 8, Nason 8** — total directory photos 398 → **417**.
-- **Done when:** ✅ AVIF-serving homes upload photos.
+### OL-103: Money-path hardening — founder Render runbook pending
+- **Status:** ✅ code delivered (#665–#668); 🟡 runbook steps on Render still pending.
+- **Path:** `docs/` runbook in PR #665 description
 
 ### OL-087: Directory claim-flow hardening (defense-in-depth)
-- **Status:** 🟡 OPEN — logged 2026-06-23. Not urgent; current guardrails already block the "random competitor grabs a listing" scenario.
-- **Current guardrails (verified 2026-06-23, already solid):** Claims require an **HMAC-signed token** (`src/lib/claim-token.ts`, signed with `NEXTAUTH_SECRET` — unforgeable). `/api/operator/claim` enforces **token.operatorEmail === logged-in user's email** (can't use someone else's link). `/api/operator/homes/[id]/claim` transfers ownership only if **`operator.clevelandFounder === true` AND `operator.seededHomeId === homeId`** — so you can only claim the *one* home your token was minted for; there is **no "claim arbitrary listing by ID" path**. Minting is admin-only (`/api/admin/homes/[id]/claim-link`) or via the nudge engine (emails the link to the facility's researched `outreachEmail`). Image-rights ack required if the listing has scraped photos; every claim fires a real-time admin notification; 50-founder-per-metro cap.
-- **Residual risk this loop addresses:** the model **trusts whoever controls the minted email**. (1) If a link is minted to a wrong/generic email (bad research data) or a bad actor controls the facility's listed email, they could claim. (2) Claims take effect **immediately** (detection-after via the admin notification, not approval-before). (3) There is **no listing content-version history** — a bad post-claim edit can't be one-click reverted (we have `autoPopulatedVersion` but not full content snapshots).
-- **Proposed hardening (pick per appetite):**
-  1. **Domain-match guard** — at mint and/or claim, warn/block when the claim email's domain doesn't match the facility's `websiteUrl` domain (skip for generic mailbox providers).
-  2. **PENDING-review gate for directory claims** — directory-sentinel claims land in a `PENDING` state requiring a quick admin OK before the listing flips to the new owner (approval-before instead of detection-after).
-  3. **Listing edit-history / snapshots** — capture description/amenities/careLevel/photos versions so a defaced listing can be rolled back; pairs with an admin "revert to version N" action.
-- **Done when:** at least the domain-match guard + a rollback path exist, or the founder explicitly accepts the current email-trust model as sufficient and closes this.
+- **Status:** 🟡 OPEN — not urgent.
+- **Path:** `src/app/claim/**`, `src/lib/claim-engine/*`
 
-### OL-088: Archive closed facility — Altercare at Saint Joseph Center
-- **Status:** ✅ CLOSED 2026-06-25 — `archive-stale-directory-homes.ts` (#615) set it INACTIVE on Render (founder ran `--force`); permanently non-publishable now.
-- **What:** "Altercare at Saint Joseph Center" (id `cmqqrk7gu0006rlmb2nfqnrvn`) is **CLOSED since Nov 2019** (Crain's + Cleveland Jewish News). It was deliberately excluded from the Batch B rebrand PR (#612). Right now it stays out of the public directory **only because it has no street/zip** — the publish gate holds it. That's incidental, not intentional: if anyone later backfills an address, it would publish a defunct facility.
-- **Done when:** the home is given an explicit non-publishable status (archived/closed flag, or hard-deleted) so it can never flip to ACTIVE, independent of whether it has an address.
+### OL-084: Headless-browser scrape for JS-rendered directory homes
+- **Status:** 🟡 DEFERRED (founder, 6/23).
+- **Path:** `scripts/autopopulate-cohort.ts`
 
-### OL-089: Re-verify Brookdale Medina North → Medina Pointe address, then publish
-- **Status:** ✅ CLOSED 2026-06-25 — address re-verified to two sources (49-A Leisure Ln, Medina 44256; Sinceri's Medina Pointe Senior Living), added as Batch B's 12th target (#615), renamed + addressed + published on Render → directory reached 168.
-- **What:** "Brookdale Medina North" (id `cmqqrlg91005krlmbyqjdxy5t`) is a real OPEN home that has rebranded to **Medina Pointe Senior Living**, but the address found during Batch B was only **medium-confidence**, so it was intentionally held out of #612. Held today by missing street/zip.
-- **Done when:** address re-verified against the operator site + a 2nd source, applied (extend the Batch B script's TARGETS or a one-off), and `publish-directory-homes.ts --force` takes it ACTIVE (→ +1 listing).
+### OL-071: Capture the 71 How-To screenshots
+- **Status:** 🟡 OPEN — text-first guides live.
+- **Path:** `src/app/learn/howto/content.ts`, `public/howto/`
 
-### OL-090: AL/RCF-only publish policy (codified) + verified-address batches
-- **Status:** ✅ CLOSED 2026-06-24 (night).
-- **What shipped:** **#609** gates public phone to operator-claimed homes only (unclaimed listings show the inquiry path, protecting the claim-nudge funnel). **#610** codifies an AL/RCF-only publish policy directly in `publish-directory-homes.ts` — homes with no ASSISTED/MEMORY_CARE careLevel (SNF-primary) are skipped and stay DRAFT (Cedarwood Plaza, Gardens of Western Reserve held on the go-live run). **#611/#612/#613** delivered the verified-address + rebrand + stale-description batches that unblocked the publish (see OL-083 follow-up #1). Net go-live: **22 DRAFT→ACTIVE**.
-- **Note:** rename safety confirmed — home detail routes are id-based, `name` is non-unique, directory homes have no slug, so renaming a published listing is non-breaking.
+### OL-074: `/family/residents` renders without app chrome
+- **Status:** 🟡 OPEN (6/16).
+- **Path:** `src/app/family/residents/page.tsx`
 
-### OL-091: Duplicate directory listings (same facility seeded twice)
-- **Status:** ✅ CLOSED 2026-06-25 — the DRAFT-pending Ohman-at-Briar twin was archived via #615; then Cowork's research surfaced 5 more ACTIVE duplicate pairs, all resolved by `dedupe-directory-homes.ts` (#617, founder ran `--force`): Briarcliff Manor=Ohman at Briar, Harbor Court=Meadow Falls of Rocky River, Cuyahoga Falls Danbury Woods=Danbury Woods, Solon Pointe=Solon Pointe at Emerald Ridge, Sunrise at Shaker Heights=The Woodlands of Shaker Heights, Ohman at Holly=Holly Hill. Directory 168→**163**. Keeper-must-be-ACTIVE guard ensured no facility was orphaned.
-- **Residual:** Nason Center of Breckenridge Village vs Ohio Living Breckenridge Village left for manual review (possible-only; Nason is the SNF health center, likely a distinct unit) — see OL-093.
+### OL-064: dev-login sessions not authorized by operator POST routes in CI
+- **Status:** 🟡 OPEN — claim-flow guard parked (`describe.fixme`).
+- **Path:** `e2e/operator-claim-flow.spec.ts`, `src/app/api/dev/login/route.ts`
 
-### OL-092: Claim-nudge — pilot + scale wave SENT; now measuring
-- **Status:** 🟢 SENT — measurement pending. **Pilot** SENT 2026-06-25 (13 HIGH). **Scale wave SENT 2026-06-26** via `send-claim-nudges.ts --tier medium --force`: **28 collapsed emails → 46 homes, 0 failed** (all Resend-accepted), after `COMPANY_POSTAL_ADDRESS` was set in Render (6545 Market Ave N, Ste 100, Canton OH 44721). **Total: ~59 unclaimed homes contacted across ~41 operators.** Outreach data finalized via the SEND_READY backfill (`load-outreach-send-ready.ts`, #621): 59 verified emails; 5 hard-bounced → CALL-ONLY; 4 dup + 10 hold suppressed.
-- **Sender hardened for scale (2026-06-26):**
-  - ✅ **Collapse by unique email** (#624) — `send-claim-nudges.ts` now sends ONE email per address; a shared inbox gets a single email listing every community with its own claim link. Preview: 59 homes → **41 unique sends** (csig→6, oneillhc→5, meadowfalls→4, judson→3…). 24h throttle is now per-address; INACTIVE excluded.
-  - ✅ **CAN-SPAM** (#624) — `EmailSuppression` model + migration `20260626000001_email_suppression`; one-click unsubscribe route `/api/outreach/unsubscribe` (signed token, `List-Unsubscribe` + RFC 8058 headers); sender skips suppressed addresses every run. Email footer carries the unsubscribe link + company physical address + clear sender identity.
-  - ✅ **Multi-home claim** (#625, OL-095) — new `/claim?token=` landing lets one operator claim ALL their listings from the collapsed email.
-- ✅ `COMPANY_POSTAL_ADDRESS` set in Render; sender hardened (#624 collapse + CAN-SPAM) and multi-home claim shipped (#625) before the send.
-- **Gap-fill (2026-06-26, #640):** 5 VA-sourced (Anita), phone-verified operator emails backfilled via `scripts/backfill-va-operator-emails.ts` (founder ran `--force`: 5 applied) — Arden Courts Parma (`ncosta@arden-courts.com`, replaced dead promedica.org), Village of the Falls (`hcorwin@sprengerhealthcare.com`, replaced bounced hjohnson@), The Residence of Chardon (`cagardner@sonidaliving.com`), Danbury Woods (`mcollage@danburyseniorliving.com`, kept-dup), O'Neill Lakewood (`administrator.lw@oneillhc.com`, upgraded from Dir.sales@). All tagged `preFilledFields.outreachEmail='MEDIUM'` + status ACTIVE → queued for the **next** `--tier medium` send (24h per-address throttle protects re-sends). Excluded CALL-ONLY: Arden Courts Bath (HR inbox), Concordia at Sumner (no email). CAN-SPAM re-verified end-to-end (unsubscribe→`EmailSuppression` upsert + postal hard-gate) — no code change needed.
-- **What's next:**
-  1. **Measure (~3–5 business days):** `npx tsx scripts/report-claim-funnel.ts` (#619) — now covers all ~59 (pilot + scale wave). Opens/clicks live in the Resend dashboard.
-  2. **Watch for bounces:** a few generic `info@` inboxes may hard-bounce; Resend auto-suppresses them. (Optional follow-up: sync Resend bounces into our `EmailSuppression` table so our own re-runs also skip them.)
-  3. **Then the long tail:** the ~78 phone-only homes become a VA call list (`report-directory-homes.ts --csv`).
-- **Done when:** claim conversion measured; healthy operators onboarded. (Pilot + scale wave both SENT — the build/send arc is complete.)
+### OL-063: e2e false-green
+- **Status:** ✅ EFFECTIVELY CLOSED — `--list` discovery guards are in every e2e job; the remaining "green" risk is OL-076's self-skips, not discovery.
+- **Path:** `.github/workflows/e2e-family.yml`
 
-### OL-095: Multi-home claim from one collapsed email
-- **Status:** ✅ CLOSED 2026-06-26 (#625). The collapse (#624) sends a shared-inbox operator one email with N claim links; the single-use `seededHomeId` guard previously let them claim only the first. New `/claim?token=` landing page verifies the signed token and, for the already-signed-in addressed operator, re-arms `seededHomeId` (existing `/api/operator/claim`) → onboarding step 2 claims it (image-rights ack + transfer). First-timers fall through to the unchanged register/redeem flow. Sentinel-owned safety check; transfer endpoint + its e2e untouched.
+### OL-058 / OL-059: Batch-2 cohort + first-batch data-quality manual passes
+- **Status:** 🟡 OPEN — manual verification against the live DB; no engineering.
+- **Path:** `scripts/report-directory-homes.ts`
 
-### OL-096: INCIDENT — demo/test homes leaked into prod directory (resolved)
-- **Status:** ✅ CLOSED 2026-06-26 (#629 + #630). **11 demo/test homes were ACTIVE in the production directory, ranking on family `/search`.** Archived (status → INACTIVE, NOT deleted — kept for the OL-068 How-To recordings) via `scripts/archive-demo-test-homes.ts --force`: directory dropped from 155 → **144 real OH "Unclaimed Listings" homes**; re-run dry-run confirmed 0 junk remaining.
-- **The 11:** E2E Test Home, DeepAgent Test Home, Sunshine Care Home (CA), and 8 out-of-state city homes (Sunny Meadows/MA, Harbor View/FL, Peaceful Pines/CO, Rose Garden/OR, Golden Years/IL, Veterans Care/CA, Lakeside Rehab/WA, Comfort Care/AZ) — operators "Sunshine Valley Care" / "CareLink Services Inc."
-- **Root cause:** the CLI seed scripts had **no production guard**, so running a demo/test seed against the prod `DATABASE_URL` (e.g. on the Render shell) injected test data. CI e2e was already safe (seeds a localhost Postgres — the June "43 test homes" fix holds).
-- **Guard shipped (#629):** `prisma/seed-guard.ts` `assertSeedAllowed()` refuses to run unless the target DB host is local, unless `ALLOW_PROD_SEED=1`; wired into seed-e2e / seed-simple / seed-demo. Plus a data-layer guard inside `runDemoSeed()` (blocked in prod unless `ALLOW_DEMO_SEED_IN_PROD=1`). **Rule going forward: demo/test seeds only run with a local DATABASE_URL** (or an explicit allow-flag for a known non-prod remote).
-- **Also fixed (#629):** `/search` `useSearchParams()` wrapped in `<Suspense>` — a cold first load was intermittently hitting the global "Something went wrong" error boundary and only working on retry.
-- **Reversal:** to restore a demo home for recording, flip its status back to ACTIVE (the rows are intact).
+### OL-056: Cleveland founder end-to-end production smoke test
+- **Status:** 🔴 OPEN — never recorded as verified on production.
+- **Path:** `tests/smoke.spec.ts`, `playwright.production.config.ts` (`npm run test:e2e:prod`)
 
-### OL-097: Family-facing production fixes — public browse + map coords + price markers (resolved)
-- **Status:** ✅ CLOSED 2026-06-26 (#633 C, #634 B, #635 A). Three getcarelinkai.com family-facing issues.
-- **A — anonymous public browse (#635):** logged-out families hitting `/search` or `/homes/[id]` were redirected to `/auth/login` (member `DashboardLayout` client-redirect; `/homes/[id]` also edge-blocked) — a login wall on what should be public. Fix: new `PublicShell` (minimal anon chrome) + `BrowseShell` (session-aware: authenticated → DashboardLayout, anon/loading → PublicShell); `/search` + `/homes/[id]` wrap in BrowseShell; `/homes` added to middleware public lists; anon Save → signup toast (signup only at save/inquiry, never a browse wall); server-side auth-gate layouts added for `/background-checks` + `/messages`. **A#1 verified: production does NOT leak sessions** — anon gets no session (mockSession null in prod, mocks ADMIN-only); the observed "demo.family on /search" was a sticky browser cookie, not a leak. **A#4 (founder TODO): rotate the demo.\* prod passwords** (low urgency; no auto-login / no data exposure).
-- **B — wrong map coordinates (#634):** ALL 144 ACTIVE homes had NULL `Address.latitude/longitude` (seed never geocoded), so `/api/search` fell back to a city table / centroid → everything clustered in central Ohio (East Park showed 40.42,-82.84). Fix: `scripts/audit-home-coordinates.ts` flagged all 144 (out of metro box) and `--force` re-geocoded each via Google Places, writing only in-box results: **144 fixed, 0 skipped** (~$5 one-time). Map now shows real NE-Ohio locations live (no deploy needed — `dbCoords` wins). Fallback default also repointed central-OH → Cleveland-metro (future coord-less homes stay local).
-- **C — price markers (#633):** unclaimed (no-price) listings showed a confusing `$?` map bubble and `$0 - $0/mo` card. Fix: map marker shows the facility initial when no price; popup + card show "Price on request".
-- **Known follow-up (out of scope today):** the `/homes/[id]` favorite button is a local no-op stub (doesn't persist) — separate pre-existing bug if detail-page saves are wanted.
-
-### OL-098: Family `/search` polish — distinct placeholders + full-result map (resolved)
-- **Status:** ✅ CLOSED 2026-06-26 (#637 map markers, #638 placeholders). Two `/search` UX issues.
-- **Placeholders (#638):** 73 of 144 listings had `primaryPhoto=null` and all rendered the SAME generic kitchen. Root cause (confirmed via Cloudinary search): the 12 `carelinkai/homes/home-1..12` assets were **11 byte-identical copies** of one image (97,608 B each except home-2). Fix: uploaded **12 distinct senior-living images** to `carelinkai/placeholders/placeholder-1..12` (Pexels, commercial-free, no attribution — 6 founder-vetted exteriors/gardens + 6 curated interiors) and replaced the page-position `HOME_IMAGES[i % len]` with `placeholderImageFor(home.id)` (djb2 hash → stable per home, varied grid). Real `home.photos[0]` still preferred. **Sourcing note:** the agent can't render images in-sandbox; Cloudinary fetched the URLs server-side, and the 6 swapped images were founder-eyeballed before merge. Old `home-*` assets left in place (reversible).
-- **Map all markers (#637):** Map view only plotted the current page (10 of 144). Fix: `/api/search?markers=1` returns an unpaginated lightweight marker set (capped 1000); `search/page.tsx` fetches it in map mode while grid/list stay paginated.
-- **Preceding enrichment (founder Render run):** `autopopulate-cohort.ts --photos-only --force` added **418 real Google Places photos across 93 homes ($1.42)**; ~18 of those still have 0 photos (Canterbury Commons, Embassy of Rockport, Fairmont of Westlake, Rose Senior Living Beachwood, both Solon Pointes, Briarcliff Manor, Heritage of Hudson, NCR Portage Trail, Plum Creek, Sanctuary Wadsworth, Gardens of Western Reserve, Bloom at Rocky River, Cedarwood Plaza, both Kemper Houses, Avenue at Macedonia, Wesleyan Village) → now covered by placeholders.
-- **Follow-ups (optional):** residual ~18 photo-less homes could get a 2nd Places pass or manual photos; prune superseded old-version placeholder assets + original `home-*` set from Cloudinary if desired.
-
-### OL-099: Unclaimed-listing enrichment — images, descriptions, empty states, Google rating badge
-- **Status:** 🟡 MOSTLY DONE 2026-06-27 (#642–#648). Honest enrichment of sparse unclaimed directory listings (overarching rule: never fabricate facility specifics; general info clearly labeled; real data overrides).
-- **Done:**
-  - #642 — /search badge overlap fixed (% Match only with real personalization; badges stack).
-  - #643 — detail hero placeholder + "Representative photo" caption (shared `src/lib/placeholder-images.ts`).
-  - #644 — rating coverage: **90%** of homes have a Google rating (avg 4.24★, median 43).
-  - #645/#647 — facts-only description generator + script; founder ran `--force`: **25 sparse homes written**, tagged `preFilledFields.description='AI_PUBLIC_DATA'` (clean overwrite on claim).
-  - #646 — warmer/honest amenities + pricing empty states (general "typical for [care level]", no invented numbers) + claim CTA.
-  - #648 — Google rating badge: migration `20260626000002` (`googleRating/googleRatingCount/googlePlaceId/googleRatingUpdatedAt`) + `backfill-google-ratings.ts` + `GoogleRatingBadge` on cards (attribution-only) + detail ("See reviews on Google" link). Rating + count + place id only — **no review text** (Maps ToS).
-- **Google ratings — DONE 2026-06-27:** founder ran `backfill-google-ratings.ts --force` → **133/144 rated** (8 weak skipped, 3 cleared); badge live. ⚠ Brookdale Gardens at Westlake / Brookdale Westlake Village share one Google place id (possible duplicate) → flagged for OL-093 dedup review.
-- **DONE — #5 first-party reviews (#650/#651/#652):** **5a** (#650) — `HomeReview.operatorResponse` + migration `20260627000001`; POST eligibility broadened booking-only → **inquiry/tour/booking** (booking → `isVerified`); operator-reply endpoint `POST/DELETE /api/reviews/homes/[id]/response`; unit tests updated (20/20). **5b** (#651) — real `HomeReviews` section on the listing ("No reviews yet — be the first" empty state, eligible-family submit form, inline operator replies, privacy-safe identities), replacing the legacy mock block. **5c** (#652) — `/api/homes/[id]` returns `viewerIsOwner`; owning operator gets an inline "Respond as the operator" reply form; claim pitch advertises "showcase & respond to reviews". No third-party review text stored/shown (Maps/APFM/Caring ToS). First-party → every listing starts empty and accrues from real CareLinkAI families.
-- **OL-099 fully delivered** (#642–#648 + #650–#652); all founder Render runs done.
-
-### OL-100: Lead-funnel — inquiry/tour → operator-acquisition (tour nudge, family fallback, claimed-op email, claim drip)
-- **Status:** ✅ DELIVERED 2026-06-27 (#654–#657). Closes the inquiry/tour → claim loop.
-- **Audit (the "what happens on a lead?" question):** inquiry on CLAIMED home → operator SMS (now + email backup); inquiry on UNCLAIMED home → claim drip (below); tour requests previously nudged NO unclaimed facility (gap, fixed).
-- **#655 (a/b):** tour→claim nudge with urgent copy (`trigger` param); claimed-operator EMAIL backup on inquiry + tour (`sendNewLeadOperatorEmail`).
-- **#656 (2):** honest unclaimed inquiry/tour family fallback (no false 24h promise + "browse similar communities ready to respond").
-- **#657 (3):** per-facility, EMAIL-ONLY multi-touch claim drip. Migration `20260627000002` (`claimDripStartedAt/Step/NextAt/StoppedReason` + index). Cadence 0/3/7/14 → exhausted; escalating copy w/ live N-waiting; CAN-SPAM; hard stops claimed/unsubscribe/bounce/no_email/exhausted. `notifyUnclaimedHomeInquiry` delegates to `startClaimDripOnLead`. Cron: `/api/cron/claim-drip` + `.github/workflows/claim-drip.yml` (daily, free GHA — Render cron needs Standard plan). `report-claim-drip.ts` = claims-by-touch.
-- **Policy:** cold pre-claim outreach is EMAIL-ONLY forever (TCPA/A2P); SMS reserved for CLAIMED operators (implied consent).
-- **Founder follow-up:** confirm `CRON_SECRET` GitHub Actions secret exists (powers process-followups already); manually `workflow_dispatch` the claim-drip workflow once to confirm green; review `report-claim-drip.ts` in ~a week to tune cadence.
-
-### OL-101: DP-free + VA price/amenities + UX loose ends + Westlake Pointe rebrand (#659–#663)
-- **Status:** ✅ DELIVERED 2026-06-27.
-- **DP FREE (#659):** Discharge Planners are free, not a paid cohort. Removed homepage DP pricing (framing kept), DP billing nav/page/subscribe + DP MRR; confirmed DP feature routes have no paywall. `subscription.ts DISCHARGE_PLANNER='GROWTH'` is operator-side (operator revenue), left. Revenue = operator subscriptions only.
-- **VA price/amenities (#660):** `load-va-pricing-amenities.ts` loads Anita's phone-collected starting prices + amenities onto UNCLAIMED listings, flagged `VA_UNVERIFIED` → shown "approximate · pending operator confirmation" (cards: `~` price), cleared when the operator edits the field. **PENDING founder Render run** with the CSV.
-- **UX (#661):** `/homes/[id]` Save persists (favorites API, anon→signup); `/auth/logout` page added (was 404).
-- **Westlake Pointe rebrand (#654/#662/#663):** "Brookdale Gardens at Westlake" was a STALE BRAND at the WRONG (Westlake Village) address. Web-confirmed rebrand → **Westlake Pointe Senior Living** @ 27569 Detroit Rd. Founder ran `fix-westlake-pointe-rebrand.ts --force`: renamed + address (re-geocoded) + own 4.4★(35) rating + de-staled description. **NOT a dedup** — two distinct buildings. **This closes the Brookdale-Westlake item flagged in OL-099/OL-093.**
-- **Reusable:** `fix-conflated-google-ratings.ts` (#654) remains for any future same-brand co-located rating conflation (`--name` filter).
-
-### OL-102: Facility placement-fee revenue stream (parked; attorney-gated — SCOPING ONLY, do NOT build)
-- **Status:** 🅿️ PARKED — **scoping only. NO code until a healthcare attorney blesses the structure.** Business/revenue idea, not an engineering task.
-- **Plan (ONENOTE §2.2):** flat $250–500 charged to the **FACILITY** per successful placement (tour → move-in), separate from operator subscriptions; can apply even during a founder facility's free-subscription window.
-- **HARD AKS guardrails:**
-  - (a) Fee is on the **FACILITY only** — NEVER paid to or shared with a referral source (discharge planner, nurse, social worker, affiliate). Paying a referral source per placement is an Anti-Kickback violation, already prohibited per the risk register.
-  - (b) Cleanest for **PRIVATE-PAY AL placements**. Medicaid-waiver placements sourced via a discharge planner need a specifically-structured flat **FMV "marketing fee"** — not a % and not tied to federal-program patients.
-- **DEPENDENCY:** do NOT build placement-tracking or per-placement billing until a healthcare attorney blesses the structure. Parking-lot only — no code yet.
-- **When greenlit (post-attorney):** needs placement-event tracking (tour → move-in confirmation) + Stripe invoicing, separate from subscription billing.
-
-### OL-103: Money-path hardening + DP-billing teardown (#665–#668)
-- **Status:** ✅ DELIVERED 2026-06-27 (code). 🟡 Founder Render runbook below still pending.
-- **Money path (#667):** hardened operator conversion → subscription (the real bottleneck). Hides any subscription tier whose Stripe price isn't configured (no dead-end checkout clicks — see OL-055), wraps Stripe in try/catch (clean 502, not a bodyless 500), stops leaking env-var names to operators. New `src/lib/operator-plans.ts` + `GET /api/operator/billing/plans`.
-- **DP-billing safety (#666):** `scripts/report-dp-subscriptions.ts` — read-only; flags any discharge planner still on a billing Stripe subscription from before DP went free (#659). Prints the `stripeCustomerId`/`stripeSubscriptionId` to cancel.
-- **DP price decommission (#668):** old paid-DP Stripe prices wired via `STRIPE_PRICE_DISCHARGE_PLANNER` + `_DEPT` (founder confirmed both still in Render env, so a DP could be on one). Removed from `.env.example` (DECOMMISSIONED note); added `scripts/archive-dp-stripe-prices.ts` (dry-run default) to set `active:false` on both. No live code referenced these vars.
-- **Founder runbook (Render, in order):**
-  1. `npx tsx scripts/report-dp-subscriptions.ts` → cancel any flagged DP sub in the Stripe dashboard.
-  2. `npx tsx scripts/archive-dp-stripe-prices.ts --force` → archive the two DP prices.
-  3. Remove `STRIPE_PRICE_DISCHARGE_PLANNER` + `STRIPE_PRICE_DISCHARGE_PLANNER_DEPT` from Render env.
-  4. Confirm `STRIPE_PRICE_AGENCY` is a real `price_…` value (Agency shows as buyable only when set).
-
-### OL-104: In-app DP concierge placement flow (#671)
-- **Status:** ✅ DELIVERED 2026-06-28. Replaces the manual email concierge.
-- **What:** A discharge planner submits a patient's needs IN THE APP and gets a CareLinkAI-curated shortlist back IN THE APP. Wizard-of-Oz: real AI search + human (Chris) curation; framed honestly as "AI-matched, care-team-verified" (never "fully automated").
-- **Routing:** `POST /api/discharge-planner/concierge` flags the `PlacementSearch` (`isConcierge`, status SUBMITTED), stores minimum-necessary `patientInfo` IN-APP, notifies chris@ via a **PHI-free** email (`sendConciergeRequestNotification` — DP identity + admin link only; never patient data or the free-text query). Concierge is the pilot DEFAULT; the old direct-to-operator email path (black-holed on unclaimed/sentinel homes) is no longer invoked from the UI.
-- **Admin curate:** `/admin/concierge` (queue) + `/admin/concierge/[id]` (curate). Chris sees the patient intake + AI candidate matches pre-loaded, includes/excludes homes, adds per-home note + confirmed availability + overall message, then "Send to DP" (or "Mark Matching"). APIs: `GET /api/admin/concierge`, `GET`/`PATCH /api/admin/concierge/[id]`.
-- **DP-facing:** `/discharge-planner/concierge` shows status (Submitted → Matching → Shortlist ready) + curated shortlist (home + confirmed availability + care-team note) + "View & request a tour" (reuses existing home/tour flow).
-- **PHI:** patient data stays in `PlacementSearch.patientInfo` (minimum-necessary), never emailed. Migration `20260628000001` (additive, guarded — see OL-105).
-
-### OL-105: PlacementSearch/PlacementRequest schema drift (no creating migration)
-- **Status:** ✅ CLOSED 2026-06-28 (#673). Fresh `migrate deploy` now yields a complete DB.
-- **What it was:** `PlacementSearch` + `PlacementRequest` (and the `DISCHARGE_PLANNER` `UserRole` value) existed in `schema.prisma` but were created via `prisma db push` historically — no migration `CREATE TABLE`d them or `ADD VALUE`d the enum. A fresh `prisma migrate deploy` (e2e CI DB, disaster recovery, any new env) produced a DB **without** the tables and without the enum value, silently breaking DP search + concierge there. (Surfaced by the #673 e2e: `invalid input value for enum "UserRole": "DISCHARGE_PLANNER"`.)
-- **Fix (#673):** baseline migration `20260628000002` (`CREATE TABLE/TYPE IF NOT EXISTS` for both tables + `PlacementStatus`/`RequestStatus` enums + FKs/indexes) and `20260628000003` (`ALTER TYPE "UserRole" ADD VALUE IF NOT EXISTS 'DISCHARGE_PLANNER'`). Both idempotent — no-ops in prod (tables/value already present via db push), and they complete a fresh DB. The earlier `to_regclass`-guarded `20260628000001` (#671) remains correct. Verified: the new `e2e-concierge` job is green on a from-scratch `migrate deploy` DB.
-
-### OL-106: robots.txt + sitemap.xml were auth-gated (302→/auth/login) — SEO surface uncrawlable
-- **Status:** ✅ CLOSED 2026-06-29 (#680). Crawler files now served publicly; sitemap enumerates the real SEO surface.
-- **What it was:** `https://getcarelinkai.com/robots.txt` and `/sitemap.xml` (and any split `/sitemap-*.xml`) 302-redirected to `/auth/login` because the auth middleware matcher caught them — so Google/Bing couldn't read either, and the indexable surface was invisible to crawlers.
-- **Fix (#680):** excluded `robots\.txt` + `sitemap.*\.xml` from the `src/middleware.ts` matcher negative-lookahead AND short-circuited them in `shouldBypassAuth` (`pathname === '/robots.txt' || /^\/sitemap.*\.xml$/`), so they bypass auth regardless of matcher edge cases. Rebuilt `app/sitemap.ts` to enumerate `/` + Cleveland pages + `/search` + `/learn` + all 15 Senior Care Guides (`/learn/guides/<slug>` from `GUIDES`) = 23 URLs; `app/robots.ts` allows crawling and points `sitemap:` at the prod URL. Verified locally: `/robots.txt` 200 `text/plain`, `/sitemap.xml` 200 `application/xml`.
-- **Founder follow-up:** after the deploy lands, confirm both URLs return 200 in prod and **submit the sitemap to Google Search Console** (see FIX 3 — the GSC verification meta tag — shipped separately).
-
-### OL-107: Dual middleware files — root middleware.ts (rate-limit) was dead; consolidate to one
-- **Status:** ✅ CLOSED 2026-06-29 (#682). One middleware, one auth gate; rate-limiting revived Edge-safe.
-- **What it was:** the repo had two middleware files — root `middleware.ts` (rate-limit only) and `src/middleware.ts` (auth). With a `src/` layout **Next.js runs only `src/middleware.ts`**, so the root file never executed: its rate-limiting was dead, and the ambiguity made the #680 auth-gate bug harder to diagnose. The root limiter couldn't simply be moved either — `src/lib/rate-limit.ts` is Node-only (`require('ioredis')`, `setInterval().unref()`) and can't run in the Edge-runtime middleware.
-- **Fix (#682):** deleted the dead root `middleware.ts`; `src/middleware.ts` is now the only middleware (all auth + public-path behavior, incl. the #680 fix, preserved exactly). Revived rate-limiting in-Edge via a new dependency-free limiter `src/lib/edge-rate-limit.ts` (per-isolate Map + lazy expiry): `/api/webhooks` 60/min (signature-verified — generous flood guard), `/api/password` 8/min; both added to the matcher; bypassed when `ALLOW_DEV_ENDPOINTS=1`. `/api/auth` deliberately stays on its stronger, Redis-capable route-handler limiter (10/min) — double-limiting in Edge would be weaker (per-isolate state). `__tests__/edge-rate-limit.test.ts` (5 tests) proves the limiter fires on webhooks/password, leaves `/api/auth`+pages alone, isolates by IP/endpoint, and resets after the window. Full e2e (incl. `e2e-concierge`) green.
-- **Note:** webhook limit is one constant in `edge-rate-limit.ts` if it ever needs tuning.
-
-### OL-093: Remaining directory data-quality (rebrands, SNF/category, stale URLs)
-- **Status:** 🟡 OPEN — mostly resolved 2026-06-25; 2 items remain.
-- **Done this session:**
-  1. ✅ **Rebrand renames** — `rename-rebranded-homes.ts` (#619, founder ran `--force`) renamed the 12 ACTIVE listings to current brands (Eden Vista Stow, Saint Therese of Westlake, StoryPoint Shaker Heights, Lorain Estates, Maple Ridge, Middleburg Heights Assisted Living, etc.). **Held:** Brookdale Richmond Heights→Richmond Heights Place (confirm operator).
-  2. ✅ **SNF/category + HOLD review** — `archive-hold-resolved-homes.ts` (#622, founder ran `--force`) archived **6 pure-SNF** (Park East, Oaks of Brecksville, Heritage of Hudson, Avenue at Macedonia, Landerbrook, Heather Knoll) + **3 dups** (Legacy Place-Twinsburg→keep Canterbury Commons; Nason→keep Ohio Living Breckenridge Village; Sunrise already INACTIVE) → INACTIVE. **Nason/Breckenridge resolved** (Nason archived). Directory settled to **~155 ACTIVE**.
-- **Remaining:**
-  1. **Stale/wrong website URLs (3)** — Ivy House (magnoliaresidence URL wrong → ivyhouseassistedliving.com), Brookdale Willoughby/Maple Ridge (points to brookdale-wickliffe), Homestead I (Saber URL is the wrong record).
-  2. **Brookdale Richmond Heights → Richmond Heights Place** — held rename pending operator confirmation.
-- **Done when:** the 3 URLs corrected; Richmond Heights rename confirmed + applied.
-
-### OL-094: The Elms / Hudson Elms — confirm AL wing still admitting (ops call)
-- **Status:** 🟡 OPEN — non-engineering. Kept ACTIVE as CALL-ONLY in the 2026-06-25 HOLD review.
-- **What:** "The Elms Assisted Living" (id `cmp71kmty002mlpion9nyi9d2`, Hudson) has a real 25-suite AL wing (+50 SNF), but the brand now markets as "Hudson Elms Skilled Nursing & Rehab." Before actively promoting it (or building outreach), one phone call to confirm the AL wing is still admitting.
-- **Done when:** founder/VA confirms AL availability by phone; promote or retire accordingly.
-
-### OL-027: Provider listing fee ($99/mo)
-- **Status:** ✅ CLOSED (2026-05-02)
-- Schema fields + migration, Stripe Checkout + Customer Portal APIs, webhook handler, visibility gate in marketplace API, billing UI at `/settings/provider/billing`. Requires `STRIPE_PRICE_PROVIDER_LISTING` env var in Render.
-
-### OL-028: Pro Caregiver tier ($19/mo)
-- **Status:** ✅ CLOSED (2026-05-02)
-- Schema fields + migration, Stripe Checkout + Customer Portal APIs, webhook handler, `isPro: desc` search boost in all sort orders, ★ Pro badge on CaregiverCard, billing UI at `/settings/billing`. `applicationCount` tracked — enforcement (block/reset cron) still pending. Requires `STRIPE_PRICE_PRO_CAREGIVER` env var in Render.
-
-### OL-029: Background check markup
-- **Status:** ✅ CLOSED (2026-05-02)
-- BackgroundCheckOrderPanel: ENHANCED $34.99, MVR $19.99, PREMIUM $59.99. Basic remains $0 (lead magnet).
-
-### OL-030: Raise placement fee — update PLACEMENT_FEE_CENTS to $1,500 in Render
-- **Status:** ✅ CLOSED (2026-05-02) — Chris updated `PLACEMENT_FEE_CENTS` to `150000` in Render dashboard. Placement fee is now $1,500.
-
-### OL-031: Application cap enforcement for basic caregivers
-- **Status:** ✅ CLOSED (2026-05-03)
-- POST route blocks at 10 apps with 403 + `upgradeRequired: true`; `applicationCount` incremented on every submit; monthly reset cron at `/api/cron/reset-application-counts` (Render cron `0 0 1 * *` created); `ListingActions.tsx` shows Pro upsell banner with CTA to `/settings/billing`.
+### OL-048: Prisma migrations 20260505000001/2/3 + 20260506000001 "pending on Render DB"
+- **Status:** 🟡 VERIFY-THEN-CLOSE — `start` runs `migrate deploy` on every boot, so these have almost certainly applied; confirm with `prisma migrate status` on Render and close.
+- **Path:** `prisma/migrations/2026050500000*`, `package.json` (`migrate:deploy`)
 
 ### OL-036: Marketplace filter slug alignment for existing providers
-- **Status:** 🟡 OPEN — requires production action
-- **What:** Provider settings service type slugs changed from underscore to hyphen format (2026-05-04). Existing providers in production DB have old `personal_care`, `home_care` etc. stored. They need to re-save their settings page to update. Also: run `npx prisma db seed` in Render shell to populate new marketplace categories.
-- **Done when:** Demo provider re-saves settings, all new categories appear in marketplace filter.
+- **Status:** 🟡 OPEN — production data action.
+- **Path:** `scripts/` (no script yet)
 
-### OL-032: Family subscription tier ($19/mo "CareLinkAI Plus")
-- **Status:** ✅ CLOSED (prior session — exact date unknown)
-- `plusStatus` + `isPlus` on Family model; `POST /api/family/billing/subscribe` (Stripe Checkout); `POST /api/family/billing/portal`; webhook syncs `plusStatus` on subscription events; billing UI at `/settings/family/billing` with feature list ($19/mo, 14-day trial); Plus nav item in sidebar with amber highlight; admin MRR tile shows `familyPlusMRR`. Requires `STRIPE_PRICE_FAMILY_PLUS` env var.
+### OL-023: Checkr API not configured
+- **Status:** 🟡 OPEN — mock fallback until keys are set.
+- **Path:** `src/lib/background-checks/*`
 
-### OL-042: Operator transport bundle / subscription pricing
-- **Status:** 🟡 ROADMAP — build after 2-3 operators are running 15+ rides/month
-- **What:** Optional "Transport Pass" add-on to operator SaaS subscription. Facility pays $X/month for Y rides; CareLinkAI fulfills at provider rates and pockets the margin. Requires knowing real usage patterns before pricing correctly.
-- **Why not now:** Need provider supply depth to guarantee fulfillment before selling bundles. Current transactional model is correct for families and early-stage operators.
-- **Done when:** 2-3 operators actively using transport → price a pilot bundle → build billing UI + ride quota tracking.
-
-### OL-043: Provider compliance-as-a-service
-- **Status:** ✅ CLOSED (2026-05-05)
-- Provider credentials UI at `/settings/provider/credentials` (8 types, status lifecycle). Admin credentials queue at `/admin/credentials` (Verify/Reject with reason). Expiry cron `GET /api/cron/credential-expiry` marks EXPIRED + deactivates critical-type providers + sends 30-day warning emails. CareLinkAI Certified badge (3+ VERIFIED) on ProviderCard + provider detail page. Render cron registered `0 6 * * *`. PR #515.
-
-### OL-044: Guaranteed Ride SLA
-- **Status:** 🟡 ROADMAP — positioning differentiator, needs supply depth first
-- **What:** "If we miss a ride, it's free + $50 credit." Requires: fallback provider network, SLA breach detection (cron checks rides 30 min before scheduled time with no driver confirmed), automatic credit issuance.
-- **Why it matters:** Nobody in NEMT confidently offers this. Becomes a no-brainer for facilities choosing between CareLinkAI and legacy brokers.
-- **Done when:** Fallback network exists (3+ providers in market) + SLA breach cron + credit logic built.
-
-### OL-045: SMS text-to-book dispatch
-- **Status:** 🟡 ROADMAP — requires Twilio + NLP integration
-- **What:** Staff texts "Ride for Margaret tomorrow 2pm to Cleveland Clinic dialysis" → system parses and books. No app required. Removes last barrier for non-tech staff at facilities.
-- **Done when:** Twilio webhook parses inbound SMS → confirms booking → replies with confirmation text.
-
-### OL-046: Medicaid / payer billing architecture
-- **Status:** 🟡 ROADMAP — design now, build when first payer contract is in hand
-- **What:** Trip verification data (actualPickupAt, actualDropoffAt, GPS) formatted for Medicaid claim submission. Prior authorization workflow. Eligibility verification before booking. EDI 837 claim format or broker API (Modivcare, MTM).
-- **Why:** This is where the real scale is — $16B NEMT market runs through payer contracts, not consumer credit cards. Current schema (trip verification, ride classification, no-show cause) is designed to support this.
-- **Done when:** First payer/broker contract signed → build claims pipeline.
-
-### OL-047: Health outcomes data layer
-- **Status:** 🟡 ROADMAP — long-term strategic asset
-- **What:** Aggregate: missed appointment rate, ride frequency, no-show patterns. Generate report: "CareLinkAI reduced missed appointments by 18% for [Facility]." Sell this story to Medicare Advantage plans as a readmission-reduction tool.
-- **Done when:** 6+ months of ride data + reporting dashboard built for facility admins.
-
-### OL-033: Corporate elder care B2B (employee benefit)
-- **Status:** 🟡 ROADMAP — requires sales conversations before build
-- Pitch HR departments: $X/employee/month. One mid-size company = $5K-20K/year MRR spike.
-
-### OL-034: Caregiver CE training / certification courses
-- **Status:** 🟡 ROADMAP — partnership-dependent
-- $15-30/course for CE credits. Partner with accredited CE provider.
-
-### OL-035: Insurance/benefits navigation service
-- **Status:** 🟡 ROADMAP — needs human process designed first
-- Flat-fee ($99-199) for Medicaid waiver, VA Aid & Attendance, LTC insurance claims navigation.
-
-### OL-039: Add Render cron for recurring rides
-- **Status:** ✅ CLOSED (2026-05-04) — Chris registered cron in Render dashboard: `0 7 * * *` → `/api/cron/recurring-rides`. Endpoint live.
-
-### OL-040: Transport migration 20260504000006 deploy
-- **Status:** ✅ CLOSED (2026-05-04) — PR #512 squash-merged to main. Migration auto-runs via `start` script (`npm run migrate:deploy && node .next/standalone/server.js`). No manual Render shell step needed.
-
-### OL-041: Provider reliability score dashboard
-- **Status:** ✅ CLOSED (2026-05-04) — Built in full: `src/lib/rideStats.ts` (transport-only gate, weighted score 60% completion + 40% on-time), provider dashboard 4th tile + Ride Dispatch quick action, marketplace provider detail reliability section with progress bars, API route returns `rideStats`. PR #512 merged.
-
-### OL-038: Transport migration 20260504000005 deploy
-- **Status:** ✅ CLOSED (2026-05-04) — PR #512 squash-merged to main. Migration auto-runs via `start` script. `vehicleCapacity` and shared ride fields live in production.
-
-### OL-037: Provider real-time new booking notification
-- **Status:** ✅ CLOSED (2026-05-05)
-- 30-second interval on `/rides` page (PROVIDER role only). `knownRequestedIds` ref seeded on initial load to prevent false alarms. `pollRides` callback diffs new REQUESTED ids → shows toast for genuinely new arrivals. PR #513.
-
-### OL-026: Transport Phase 2 — ride booking + dispatch
-- **Status:** ✅ CLOSED (2026-05-04)
-- Full end-to-end ride booking live: REQUESTED→CONFIRMED→PAID→IN_PROGRESS→COMPLETED→CANCELED lifecycle. Stripe Checkout payment, 12% platform commission, Stripe refund on PAID cancellation, 5 email triggers, day-of reminder cron, operator resident booking, admin MRR tile, landing page updated. Ride model with 2 migrations deployed.
-
-### OL-048: Prisma migrations 20260505000001/2/3 + 20260506000001 pending on Render DB
-- **Status:** 🔴 OPEN — four schema changes not yet deployed to production
-- **What:** `aiReviewStatus/Notes` on `ProviderCredential`, `OPERATOR` in `BackgroundCheckOrderer` enum, new `BackgroundCheckInvitation` model, `checkrCandidateId` on `Provider`, new `ProviderBackgroundCheckOrder` model. Will auto-apply via `npm run start` → `prisma migrate deploy` on next Render deploy (triggered by our main push 2026-05-07).
-- **Risk:** If any of these migrations partially ran before and are stuck in "failed" state in `_prisma_migrations`, Render deploy will fail at start. Monitor deploy logs. If stuck: use Render Shell `npx prisma migrate resolve --rolled-back 20260505000001` (etc.) then `npx prisma migrate deploy`, then manually apply the SQL.
-- **Done when:** Render deploy logs show all four migrations applied with no errors.
-
-### OL-049: CaregiverCard + ProviderCard "Run Check" quick-action
-- **Status:** ✅ CLOSED (already built)
-- **CaregiverCard** (`src/components/marketplace/CaregiverCard.tsx` ~line 190): "Run Background Check" button shown when `backgroundCheckStatus !== 'CLEAR'`, links to caregiver profile.
-- **ProviderCard** (`src/components/marketplace/ProviderCard.tsx` ~line 247): "Run Background Check" button always visible, links to provider profile.
-
-### OL-050: Private household flow — Option B for direct-hire families
-- **Status:** ✅ CLOSED (2026-05-07) — MVP shipped
-- **What was built:** `HouseholdShift` model, migration, GET/POST `/api/family/household`, PATCH/DELETE `/api/family/household/shifts/[id]`, `/dashboard/household` full UI (care team grid + schedule form + shift history), DashboardLayout "My Household" nav, landing page feature card.
-- **Future expansion:** Timesheet approval, Stripe Connect direct payment to caregivers ($49–99/mo family tier). Build when 3+ families are actively using the schedule flow.
-
-### OL-023: Checkr API not yet configured
-- **Status:** 🟡 OPEN — system uses mock fallback until keys are set
-- **What:** Set `CHECKR_API_KEY` and `CHECKR_WEBHOOK_SECRET` in Render env vars; register webhook at `https://getcarelinkai.com/api/webhooks/checkr`
-- **Done when:** Real background checks process end-to-end in production.
-
-### OL-022: STRIPE_PRICE_AGENCY and STRIPE_PRICE_DISCHARGE_PLANNER_DEPT not set
-- **Status:** ✅ FIXED (2026-04-27) — Chris confirmed both env vars already set in Render dashboard.
-
-### OL-001: Demo accounts not seeded in production
-- **Status:** ✅ FIXED (2026-04-22)
-- **All 7 accounts active in production (Password: DemoUser123!):**
-  - demo.family@carelinkai.test (FAMILY)
-  - demo.operator@carelinkai.test (OPERATOR)
-  - demo.aide@carelinkai.test (CAREGIVER)
-  - demo.provider@carelinkai.test (PROVIDER)
-  - demo.admin@carelinkai.test (ADMIN)
-  - demo.healthcare@carelinkai.test (DISCHARGE_PLANNER)
-  - demo.affiliate@carelinkai.test (AFFILIATE)
-
-### OL-002: ANTHROPIC_API_KEY not set in Render
-- **Status:** ✅ FIXED (2026-04-22) — Chris confirmed key is set in Render dashboard
-- **Done:** CareBot, inquiry AI, document classification, discharge planner, match explainer all live
-
-### OL-004: Revenue model not finalized / Stripe billing not wired
-- **Status:** ✅ FULLY VERIFIED END-TO-END (2026-04-25)
-- Operator checkout → trial → portal → plan switching → webhook → DB all confirmed working in test mode
-- In-app plan switching built (upgrade/downgrade without Stripe portal redirect)
-- Admin revenue dashboard live: MRR, placement fees, affiliate commissions, recent payments, subscription breakdown
-- **Remaining before live revenue:** Switch to live Stripe account (runbook: `context/STRIPE_SETUP_RUNBOOK.md`)
-
-### OL-007: Full end-to-end operator onboarding never verified
-- **Status:** ✅ CLOSED (2026-04-23) — all 10 steps verified in production
-- All steps passing in production on getcarelinkai.com
-
-### OL-008: Stripe subscription billing not wired (operators)
-- **Status:** ✅ CODE COMPLETE (2026-04-24) — merged into OL-004 above
-- See OL-004 for remaining deployment steps
+### Roadmap (no engineering until the trigger condition is met)
+- **OL-042** transport bundle pricing · **OL-044** guaranteed-ride SLA · **OL-045** SMS text-to-book · **OL-046** Medicaid/payer billing architecture · **OL-047** health-outcomes data layer · **OL-033** corporate B2B · **OL-034** caregiver CE courses · **OL-035** insurance navigation. Status: 🟡 ROADMAP, unchanged.
 
 ---
 
-### OL-016: Aide reliability migration not yet deployed to production
-- **Status:** ✅ CLOSED (2026-04-26) — Chris confirmed migration deployed to production
+## ✅ CLOSED (carried forward for id continuity — do not reuse ids)
 
-### OL-017: Twilio webhook URLs not registered for On-Call AI
-- **Status:** ✅ CLOSED (2026-04-26) — Twilio webhooks registered in console
+Verified done; see git history / the PR number for detail.
 
-### OL-018: Render cron not set up for On-Call AI wave dispatch
-- **Status:** ✅ CLOSED (2026-04-26) — Render cron job created
-
-### OL-019: Demo caregiver employment not linked in production DB
-- **Status:** ✅ CLOSED (2026-04-26) — Admin clicked fix in /admin/tools
-
-### OL-020: Landing page (src/app/page.tsx) still has legacy color tokens
-- **Status:** ✅ CLOSED (2026-04-26) — All raw hex Tailwind classes replaced with design tokens. TypeScript 0 errors confirmed.
+- **OL-123** founder intro self-hosted (#713 merged) · **OL-121** Sentry off in e2e CI (#712 merged) · **OL-118** auth-cookie log scrub (#699) · **OL-117** ClaimLinkVisit (#702) · **OL-112** admin demo-metrics filter (#697)
+- **OL-107** single middleware (#682) · **OL-106** robots/sitemap public (#680) · **OL-105** PlacementSearch schema drift (#673) · **OL-104** in-app DP concierge (#671) · **OL-101** DP-free + VA pricing (#659–#663) · **OL-100** lead funnel (#654–#657) · **OL-098** / **OL-097** family `/search` polish + prod fixes · **OL-096** demo-homes-in-prod incident (#629/#630) · **OL-095** multi-home claim (#625) · **OL-091** duplicate listings (#617) · **OL-090** AL/RCF publish policy · **OL-089** Medina Pointe · **OL-088** Altercare archive (#615) · **OL-086** AVIF/HEIF (#604) · **OL-085** cohort photos · **OL-083** directory live (128 listings, 6/23) · **OL-081** batch-2 punch list · **OL-080** phone/capacity persist (#607) · **OL-079** claim email (`feat/claim-notification`) · **OL-078** cookie-consent gating · **OL-077** compliance-summary counts · **OL-075** mock-mode prod guard · **OL-073** / **OL-069** / **OL-070** / **OL-072** education hub + /help + emergency page · **OL-068** / **OL-067** inquiry 400 + DP search error · **OL-062** / **OL-061** / **OL-060** / **OL-057** / **OL-055** / **OL-051** June data + HIPAA merges
+- **OL-050** private-household flow · **OL-049** run-check action · **OL-043** / **OL-041** / **OL-040** / **OL-039** / **OL-038** / **OL-037** / **OL-032** / **OL-031** / **OL-030** / **OL-029** / **OL-028** / **OL-027** / **OL-026** transport + pricing tiers (May) · **OL-022** / **OL-020** / **OL-019** / **OL-018** / **OL-017** / **OL-016** / **OL-015** / **OL-014** / **OL-013** / **OL-012** / **OL-011** / **OL-010** / **OL-009** / **OL-008** / **OL-007** / **OL-006** / **OL-005** / **OL-004** / **OL-002** / **OL-001** April foundation work. (**OL-014** "placement fee auto-triggered on Convert" is the code behind OL-124 — closed as built, reopened as a policy problem.)
+- Ids never used: OL-003, OL-021, OL-024, OL-025, OL-054, OL-065, OL-066, OL-109 (OL-109 is PR #688's claim-drip safeguards — unmerged, tracked under OL-092).
 
 ---
 
-## 🟡 Important (Week 1-4 launch requirements)
+## Appendix A — Open PR inventory (56 at 2026-10-05, newest first)
 
-- [x] **Home photo upload broken — missing S3 credentials** ✅ RESOLVED 2026-05-13
-  - Fixed by HIPAA Phase 1 PR 2: `storage.ts` rewritten, AWS_S3_* env vars set in Render, `canUseS3()` simplified (no NODE_ENV restriction). HIPAA comment added to `homes/photos/route.ts`.
+| PR | Branch | Triage |
+|---|---|---|
+| #714–#720 | `claude/carelink-sprint-w2-batch-xe1mt9-0*` | **This sprint — review in order 1→7.** |
+| #711 | `claude/sentry-ci-noise-c0jl1t` | Review; overlaps #715 (OL-137). Its CI-env half is already on main via #712. |
+| #710 | `feat/dp-leads-admin-delete` | Review — admin delete + test-lead cleanup; unrelated to sprint. |
+| #703 | `claude/seed-symphony-at-mentor-hpdw44` | Seed data for one warm lead; merge or drop with OL-082. |
+| #688 | `feat/claim-drip-safeguards` | **Do not merge / do not re-enable** (sprint rule). Keep open until the claim-drip decision. |
+| #563, #562, #561 | docs/feature-inventory, feat/gate-cnos-frozen-lanes, docs/shift-fill-engine-audit | June docs + flag-gated CNOS lanes — low risk, review when convenient. |
+| #412, #349, #348, #327, #326, #304 | Nov-2025 ops/e2e/droid | Stale; #326 (Prisma singleton in one route) is fully superseded by #715 → close. |
+| #432–#476 (38 PRs) | Dec-2025 Droid provider/aides/availability/docs | **Stale — close in bulk** after a 10-minute diff check for any unique migration. See OL-132. |
 
-- [x] **S3 env var naming inconsistency** ✅ RESOLVED 2026-05-13
-  - Fixed by HIPAA Phase 1 PR 2: ALL upload routes now use `AWS_S3_*` exclusively. No more S3_BUCKET, AWS_ACCESS_KEY_ID, AWS_REGION in S3 code paths. Render env vars match. SES in email-service.ts exempted per design spec.
+## Appendix B — Skipped / parked tests (verbatim markers)
 
-- [x] **Fragmented image storage architecture (Cloudinary vs S3)** ✅ PARTIALLY RESOLVED 2026-05-13
-  - HIPAA Phase 1 PR 2 establishes `getUploadDestination(classification)` as single source of truth. PHI tables → S3. PUBLIC/PII → Cloudinary. Every route annotated with HIPAA classification comment. Remaining: `documents/upload/route.ts`, `upload/route.ts`, `residents/[id]/photo/route.ts` — flagged HIPAA-TODO Phase 2.
+| File | Marker | Loop |
+|---|---|---|
+| `e2e/residents-{transfer,lifecycle,documents,csv-export,assessments-incidents-edit,assessments-incidents-update}.spec.ts` | `test.skip(!!process.env.CI, 'OL-076 …')` | OL-076 |
+| `e2e/residents-compliance.spec.ts`, `e2e/residents-contacts.spec.ts`, `e2e/operator-compliance.spec.ts`, `e2e/credentials-upload.spec.ts`, `e2e/auth-credentials.spec.ts` | `test.skip(!!process.env.CI, 'Run locally only')` | OL-076 / OL-134 |
+| `e2e/marketplace-applications.spec.ts` | `test.skip(true, 'UI no longer exposes apply/withdraw …')` | OL-134 |
+| `e2e/operator-claim-flow.spec.ts:134` | `test.describe.fixme('@critical Cleveland founder claim flow (post-redemption)')` | OL-064 |
+| `tests/operator-onboarding.spec.ts` (×4), `tests/bug-verification.spec.ts` (×1) | `test.skip()` | OL-134 |
 
-- [ ] **OL-051: HIPAA Phase 1 PRs — merge in order**
-  - **Status:** 🔴 OPEN — 3 PRs pushed 2026-05-13, awaiting merge
-  - **Branches:** `claude/hipaa-phase1-schema-2026-05-13` (PR 1) → `claude/hipaa-phase1-routing-2026-05-13` (PR 2) → `claude/hipaa-phase1-purge-2026-05-13` (PR 3)
-  - **CRITICAL:** Must merge in order. PR 2 imports DataClassification from @prisma/client generated by PR 1.
-  - **After PR 2 merge:** Run `npx ts-node --transpile-only scripts/phase1-purge-cloudinary-seeds.ts --dry-run` then the real purge.
-  - **Done when:** All 3 PRs merged, migration applied on Render, purge script confirms 0 Cloudinary rows.
+Jest: 85 suites / 0 skipped suites on this branch set (10 individually skipped cases are pre-existing `it.skip`s in HIPAA probes).
 
-- [x] **OL-052: HIPAA Phase 2 — 3 remaining PHI upload routes** ✅ RESOLVED 2026-05-14
-  - PR A `claude/hipaa-phase2-uploads-2026-05-14` fixes all three; zero HIPAA-TODO Phase 2 comments remain.
-  - Awaiting merge (after Phase 1 PRs merge first).
-
-- [ ] **OL-053: HIPAA Phase 2 PRs — merge in order A→B→C** (after Phase 1 PRs)
-  - **PR A** `claude/hipaa-phase2-uploads-2026-05-14` — upload routes + schema migration
-  - **PR B** `claude/hipaa-phase2-download-2026-05-14` — pre-signed URLs on all PHI reads
-  - **PR C** `claude/hipaa-phase2-logs-2026-05-14` — Sentry scrubbing + log redaction
-  - Design spec: `chrisos-vault/03_Execution/HIPAA_PHASE_2_DESIGN.md`
-  - **CRITICAL:** Phase 1 PRs must merge first (Phase 2 imports DataClassification from Phase 1 migration)
-  - **Done when:** All 3 PRs merged, migrations applied on Render, real-S3 integration tests run clean.
-
-- [ ] **OL-054: HIPAA external consultant gap assessment** — $500-1500, target 2026-05-27 (Risk 1)
-
-- [ ] **Test suite rot — 2 broken suites on main**
-  - `__tests__/emergency.api.test.ts` — failing on main
-  - `__tests__/background_checks.api.test.ts` — failing on main
-  - 10 total test failures across both suites
-  - Has been failing since at least PR #517; PR #518 and PR #519 both
-    merged via admin override past these
-  - CI/build-and-test runs Jest which catches these; Quality job depends
-    on Jest pass for green status
-  - Fix options: (a) repair the tests, (b) temporarily skip the suites
-    until repaired, (c) keep admin-overriding (status quo, not great)
-  - Recommended: option (b) until someone has time for (a)
-  - Cross-ref: Risk #7 (no staging / no tests)
-
-- [ ] **Main branch is not protected**
-  - GitHub Branches page reports "Your main branch isn't protected"
-  - Allows force-push and deletion of main; allows merges past failing
-    required checks (currently the only thing letting our merges through)
-  - Once test suite rot is fixed, enable branch protection: require PR
-    review (or at least up-to-date branch), require status checks to
-    pass, prevent force-push, prevent deletion
-  - DO NOT enable protection BEFORE fixing the test suite rot — it
-    would block all merges
-  - Cross-ref: Risk #7 (HIPAA/compliance — branch protection is a basic
-    security control)
-
-- [x] **Stale sentry-wrapper-rollout branch deleted (informational)**
-  - `claude/sentry-wrapper-rollout-2026-05-13` deleted from GitHub
-    2026-05-13 (the messy-history first attempt at the Sentry rollout)
-  - Kept here as a record of what was cleaned up; loop is closed.
-
----
-
-## 🟡 Important (Quality / Stability)
-
-### OL-005: TypeScript strict mode errors
-- **Status:** ✅ CLOSED (2026-04-24) — 0 errors, `npm run type-check` passes clean
-
-### OL-006: CI quality workflow type-check step disabled
-- **Status:** ✅ CLOSED (2026-04-24) — type-check step re-enabled in `.github/workflows/quality.yml`
-
----
-
-## 🟢 Low Priority / Future
-
-### OL-013: CareBot outputs raw markdown in chat
-- **Status:** ✅ CLOSED (2026-04-24) — added plain text instruction to SYSTEM_PROMPT in `src/app/api/carebot/chat/route.ts`
-
-### OL-009: SMS (Twilio) not implemented
-- **Status:** ✅ CLOSED (2026-04-24; extended 2026-05-01) — 7 triggers live via SMSService
-- Operator: new inquiry, tour booked, payment failed
-- Family: inquiry response received, tour reminder 24hr (Render cron daily 9am)
-- Marketplace: listing owner on new application, caregiver on status change (invite/interview/offer/hire/reject)
-- All calls non-blocking; gracefully no-ops if Twilio not configured
-
-### OL-010: Invoice model missing from schema
-- **Status:** ✅ CLOSED (2026-04-25) — `Invoice` model added; webhook upserts on payment_succeeded/failed; `GET /api/operator/billing/invoices` live; invoice history table in SubscriptionManager UI
-
-### OL-011: Playwright tests configured for localhost only
-- **Status:** ✅ CLOSED (2026-04-25) — `playwright.production.config.ts` + `tests/smoke.spec.ts` added; run with `npm run test:e2e:prod`
-
-### OL-012: context/ files were not in repo
-- **Status:** ✅ FIXED (2026-04-21)
-
-### OL-014: Placement fee not auto-triggered on Convert to Resident
-- **Status:** ✅ CLOSED + IMPROVED (2026-04-24) — switched from PaymentIntent (blocks if card fails) to Stripe invoice item (collected on next billing cycle); never blocks conversion
-- Payment status: PENDING → PROCESSING (invoice queued) → COMPLETED (invoice paid via webhook)
-- Defaults to $500 (`PLACEMENT_FEE_CENTS=50000`); configurable per Render env var
-
-### OL-015: Landing page does not showcase all products by user type
-- **Status:** ✅ CLOSED (2026-04-24) — full landing page revamp with 6-tab user-type sections, pricing cards, roadmap
-
----
-
-## ✅ Closed Loops
-
-| Loop | Description | Closed |
-|------|-------------|--------|
-| Operator Caregiver Reviews page | `/operator/reviews` built — hire list, star ratings, breakdown, Leave Review modal | 2026-04-26 |
-| Caregiver rating dashboard tile | Avg star + review count tile + My Reviews section on `/caregiver` | 2026-04-26 |
-| App status notifications missing link | Notification now includes `link: /caregiver/applications` + email sent | 2026-04-26 |
-| Caregiver sidebar nav missing My Applications | Added to DashboardLayout Listings section (CAREGIVER only) | 2026-04-26 |
-| Caregiver My Applications | `GET /api/caregiver/applications` + `/caregiver/applications` page built | 2026-04-26 |
-| Wallet deposit gap (false alarm) | `/api/billing/wallet` + `DepositModal.tsx` already exist | 2026-04-26 |
-| On-Call AI gap (false alarm) | `/api/scheduling/needs/{id}/start` and `cancel` routes already exist | 2026-04-26 |
-| Email FROM domain | Was `noreply@applyedge.co` | 2026-04-21 |
-| .env.example missing 12 vars | Added all required vars | 2026-04-21 |
-| context/ directory missing | Created all state files | 2026-04-21 |
-| /api/dev/ security | Confirmed gated behind ALLOW_DEV_ENDPOINTS | 2026-04-21 |
-| OpenAI build failure | Fixed Dec 19 — dummy key pattern | 2025-12-19 |
-| Migration failure (20251218) | Resolved with resolve script | 2025-12-19 |
-| CareBot implementation | Built and deployed | 2025-12-30 |
-| AI provider consolidation | Migrated all AI from OpenAI+AbacusAI → Anthropic Claude API | 2026-04-21 |
-| OL-002: ANTHROPIC_API_KEY | Set in Render dashboard by Chris | 2026-04-22 |
-| OL-001: Demo accounts | All 7 accounts seeded in production | 2026-04-22 |
-| Profile picture upload (Bug 1) | Fixed CLOUDINARY_URL missing @dygtsnu8z in Render | 2026-04-22 |
-| AI matching error (Bug 2) | Was missing OpenAI key — resolved with Anthropic migration | 2026-04-22 |
-| Settings routing (Bug 3) | Not a bug — /settings index page works correctly | 2026-04-22 |
-| OL-007: Full operator onboarding | All 10 steps verified in production | 2026-04-23 |
-| AI Response Generator blank preview | Fixed response wrapper unwrapping in hook | 2026-04-23 |
-| Convert to Resident button missing | Wired ConvertInquiryModal into InquiryDetailModal | 2026-04-23 |
-| Resident INQUIRY status after convert | Removed spurious status overwrite in conversion service | 2026-04-23 |
-| Archive button placeholder text | Wired real ArchiveButton component | 2026-04-23 |
-| OL-008: Stripe subscription billing | Code complete — checkout, portal, webhooks, feature gating built | 2026-04-24 |
-| OL-009: SMS / Twilio | 5 triggers wired: new inquiry, tour booked, payment failed, response received, 24h tour reminder cron | 2026-04-24 |
-| Care Wallet spending | Families pay care costs from wallet; 2.5% fee; atomic deduction; payment trail | 2026-04-24 |
-| Affiliate commission auto-trigger | affiliateCode on Inquiry; commission recorded on conversion; affiliate dashboard built | 2026-04-24 |
-| FOUNDERS49 promo | Stripe coupon $50/mo off forever (max 50); banner in billing UI | 2026-04-24 |
-| Placement fee billing switch | Switched from PaymentIntent → invoice item; collected on next billing cycle | 2026-04-24 |
-| OL-005: TypeScript strict mode errors | 147 errors fixed across 73 files; `npm run type-check` passes 0 errors | 2026-04-24 |
-| OL-006: CI type-check step disabled | Re-enabled in `.github/workflows/quality.yml` | 2026-04-24 |
-| OL-010: Invoice model missing | Invoice model + migration + webhook upsert + billing API + UI table | 2026-04-25 |
-| OL-011: Playwright localhost-only | playwright.production.config.ts + tests/smoke.spec.ts; `npm run test:e2e:prod` | 2026-04-25 |
-| Caregiver hire fee not charging | triggerMarketplaceHireFee() on shift claim; MARKETPLACE_HIRE_FEE PaymentType | 2026-04-25 |
-| Featured listings not built | isFeatured/featuredUntil on schema; search boost; operator toggle UI; $79/mo billing | 2026-04-25 |
-| Discharge planner not monetized | DischargePlannerProfile model; Stripe checkout; billing UI; webhook handler | 2026-04-25 |
-| AI Shift Auto-fill missing | Claude Haiku matches available caregivers to shift descriptions; /api/operator/shifts/autofill | 2026-04-25 |
-| Caregiver reliability score missing | reliabilityScore field; computed on review + timesheet approval; 0-100 scale | 2026-04-25 |
-| Aide ghosting/no-show problem | Call-off tracking + gamification points + shift bidding + On-Call AI outreach all built | 2026-04-25 |
-| Waitlist management missing | WaitlistEntry model; operator + family API routes | 2026-04-25 |
-| Education hub missing | 7 long-form guides at /learn and /learn/guides/[slug] | 2026-04-25 |
-| Education hub at 7 articles | Expanded to 15 articles in content.ts; learn/page.tsx now imports from content.ts | 2026-04-25 |
-| Family-facing chat widget | Care Concierge replaces CareBot globally; public /api/care-concierge + home search tools | 2026-04-25 |
-| Family onboarding missing | /get-started 3-step wizard routes by role + need + timeline | 2026-04-25 |
-| Financing CTA missing | CareCredit affiliate banners on /learn and home listing pricing tab | 2026-04-25 |
-| Compliance document kits not built | ComplianceKitPurchase model; 3 Ohio kits at $149-$199; Stripe one-time checkout | 2026-04-25 |
-| Build failure (content.ts premature array close) | Premature `];` at line 259 removed; all 15 guides now inside GUIDES array | 2026-04-25 |
-| Map tile error (OSM Referer policy) | Switched SimpleMap.tsx to CARTO voyager tiles — no Referer restriction | 2026-04-25 |
-| Admin portal gaps (affiliates/operators/discharge-planners) | Three new admin pages built with full data tables and stat cards | 2026-04-25 |
-| Sidebar nav cutoff (can't scroll to Admin Tools/Help) | Sidebar refactored to flex column; nav section independently scrolls | 2026-04-25 |
-| UI/UX brand token fragmentation | Unified: Inter + DM Serif Display fonts; primary-*/neutral-*/error-*/success-* tokens throughout button.tsx, card.tsx, login page; CSS vars fixed to match Tailwind config | 2026-04-25 |
-| Login page using wrong brand colors | Complete redesign: gradient panel primary-600→secondary-600, DM Serif hero headline, all tokens corrected | 2026-04-25 |
-| Bulk token unification across codebase | 259 files bulk-updated via sed: red→error, green→success, blue→primary, gray→neutral, yellow/orange→warning, purple→secondary. TypeScript 0 errors. 0 old tokens remain (except src/app/page.tsx deferred). | 2026-04-25 |
-| Component design polish pass | StatCard left-border accent + trend prop; skeleton shimmer animation + HomeCardSkeleton; search card hover lift; tabs fixed; error/not-found redesigned; operator dashboard token fixes | 2026-04-25 |
-| OL-016: Aide reliability migration | `npx prisma migrate deploy` run in Render shell — confirmed deployed | 2026-04-26 |
-| OL-017: Twilio webhooks for On-Call AI | Webhooks registered in Twilio console | 2026-04-26 |
-| OL-018: Render cron for On-Call AI | Cron job created in Render dashboard | 2026-04-26 |
-| OL-019: Demo caregiver employment | Admin clicked fix in /admin/tools | 2026-04-26 |
-| OL-020: Landing page legacy tokens | All raw hex Tailwind classes in page.tsx replaced with design tokens | 2026-04-26 |
-| Direction B design system applied | Dark sidebar (neutral-950), border-t-4 stat cards, shimmer skeletons, design preview page | 2026-04-26 |
-| OL-022: Stripe price env vars | STRIPE_PRICE_AGENCY + STRIPE_PRICE_DISCHARGE_PLANNER_DEPT confirmed set in Render | 2026-04-27 |
-| Landing page benefits/FAQ overhaul | Operators/Caregivers/Healthcare/Affiliates tabs updated; On-Call AI, Direct Hire, Points, tiered commissions, licensing tiers added; FAQ 5/6 updated, 2 new FAQs added | 2026-04-27 |
-| Playwright demo verification suite | 13 tests across 3 roles; DISCHARGE_PLANNER added to TEST_USERS; replaces manual post-deploy checklist | 2026-04-27 |
-| Marketplace Create Listing form | /marketplace/listings/new with full form + pill toggles for care types/services/specialties | 2026-04-26 |
-| Hire fee confirmation UI | HIRE action in ApplicationActions shows $250 fee modal before submitting; API queues Stripe invoice item | 2026-04-26 |
-| Message Caregiver on application page | "Message Caregiver" button links to /messages?with={userId} on application detail page | 2026-04-26 |
-| Revenue model expansion (5 streams) | On-Call/Autofill gates, DP dept license, family referral track, tiered commissions, AGENCY plan | 2026-04-27 |
-| Operator direct hire from caregiver profile | DirectHireButton + /api/operator/caregivers/[id]/hire; plan-aware modal; replaces family-only CTA for operators | 2026-04-27 |
-| Caregiver dashboard showing wrong page | /dashboard now redirects CAREGIVER → /caregiver, DISCHARGE_PLANNER → /discharge-planner | 2026-04-27 |
-| Discharge planner double nav | Removed erroneous layout.tsx; billing page now has its own DashboardLayout wrapper | 2026-04-27 |
-| Demo operator on Starter plan | seed-demo.ts forces PROFESSIONAL plan on upsert + explicit update; re-seeded on Render | 2026-04-27 |
-| OL-021: Prisma migrations | All migrations deployed — confirmed "No pending migrations" in Render shell 2026-05-02 | 2026-05-02 |
-| OL-024: BackgroundCheckOrderPanel Stripe Elements | Real Stripe Elements wired — Elements/PaymentForm inline; POST→clientSecret→confirmPayment→PUT confirm | 2026-05-02 |
-| OL-025: HomeCompareModal wired | compareIds state + toggleCompare + compare bar + modal render in search/page.tsx | 2026-05-02 |
-| ProviderReview migration | migration.sql created and auto-deployed on build | 2026-05-02 |
-| Residents page server-to-self HTTP fetch | Replaced with direct Prisma via requirePermission + getUserScope | 2026-05-02 |
-| /help double nav | Removed duplicate DashboardLayout wrapper from help/page.tsx | 2026-05-02 |
-| Landing page auth wall | Added alwaysPublic paths in middleware authorized callback | 2026-05-02 |
-| PDFKit Helvetica.afm ENOENT in standalone | Added serverExternalPackages: ['pdfkit'] to next.config.js | 2026-05-02 |
-| ReportGenerator homes 404 | Changed /api/homes to /api/operator/homes in fetchHomes() | 2026-05-02 |
-| Provider dashboard routing | /dashboard switch missing PROVIDER case — fell through to family UI; fixed | 2026-05-03 |
-| Billing nav missing for PROVIDER + CAREGIVER | Added "Listing & Billing" + "Pro Membership" nav entries to DashboardLayout | 2026-05-03 |
-| Provider dashboard design | Full rewrite with stat tiles, smart banners, quick actions, inquiries table | 2026-05-03 |
-| Landing page freemium inaccuracy | Updated 5 "always free" references to reflect free-to-join + Pro $19/mo optional model | 2026-05-03 |
-| Admin MRR visibility | Admin dashboard now shows 5-tile MRR breakdown across all 4 revenue streams | 2026-05-03 |
-| OL-031: Application cap enforcement | Full enforcement built: block at 10, increment on submit, reset cron, upsell banner | 2026-05-03 |
-| OL-038: Transport migration 20260504000005 | Auto-deployed via PR #512 merge → Render start script | 2026-05-04 |
-| OL-039: Recurring rides cron | Chris registered Render cron `0 7 * * *` → `/api/cron/recurring-rides` | 2026-05-04 |
-| OL-040: Transport migration 20260504000006 | Auto-deployed via PR #512 merge → Render start script | 2026-05-04 |
-| OL-041: Provider reliability score | `rideStats.ts` + dashboard tile + marketplace section + API; transport-only gate | 2026-05-04 |
+## Appendix C — Repo hygiene noticed, no loop opened
+- ~450 `*_SUMMARY.pdf` / `*_FIX.pdf` files and ~60 ad-hoc `*.js` scripts at the repo root (`check-*.js`, `test-*.js`, `*.cookies.txt`, `*.token.txt`). `operator.token.txt` / `*.cookies.txt` should be checked for live credentials as part of OL-122.
+- `nextjs_space/package.json` collides with the root package name in jest-haste (warning on every test run).
+- `package.json` still pins CI to Node 18 in `ci.yml` while `quality.yml`/e2e use Node 20 and Render runs 20.11.
