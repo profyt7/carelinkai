@@ -458,7 +458,9 @@ jobs:
         run: |
           # founder-page.spec.ts: the self-hosted founder intro linked from the DP
           # follow-up emails must serve 200 unauthenticated with the local <video>.
-          npx playwright test --config=playwright.e2e.config.ts e2e/concierge-flow.spec.ts e2e/founder-page.spec.ts --workers=1 --reporter=line
+          # search-demo-filter.spec.ts: demo/tutorial homes never surface in the
+          # public directory APIs / page for a logged-out visitor (OL-112).
+          npx playwright test --config=playwright.e2e.config.ts e2e/concierge-flow.spec.ts e2e/founder-page.spec.ts e2e/search-demo-filter.spec.ts --workers=1 --reporter=line
 
       - name: Upload Playwright test artifacts (Concierge flow) (always)
         if: always()

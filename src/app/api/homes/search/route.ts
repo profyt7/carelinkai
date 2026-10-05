@@ -112,6 +112,9 @@ export async function GET(req: NextRequest) {
     // Build base query
     const where: any = {
       status: "ACTIVE", // Only return active listings
+      // OL-112: demo/tutorial fixtures never surface in a public listing —
+      // same structural guard as /api/search (this route had been missed).
+      isDemo: false,
     };
     
     // Apply care level filter
