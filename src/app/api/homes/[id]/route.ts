@@ -171,6 +171,17 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       );
     }
 
+    // OL-112: demo/tutorial fixtures are not part of the public directory.
+    // A logged-out viewer (crawler, shared link) gets the same 404 the
+    // listing APIs imply; signed-in users (tutorial demo accounts, admins)
+    // are unaffected.
+    if (home.isDemo && !session?.user) {
+      return NextResponse.json(
+        { success: false, error: 'Home not found' },
+        { status: 404 }
+      );
+    }
+
     // Favorite homes for current family user
     let isFavorited = false;
     if (session?.user?.email) {

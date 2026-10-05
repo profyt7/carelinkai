@@ -23,7 +23,9 @@ export async function POST(req: NextRequest) {
       email?: string;
       password?: string;
       companyName?: string;
-      homes?: Array<{ name: string; capacity?: number }>;
+      // isDemo lets e2e specs seed a tutorial/demo fixture to prove the
+      // public directory filters it (OL-112).
+      homes?: Array<{ name: string; capacity?: number; isDemo?: boolean }>;
     };
     if (!email || !companyName) {
       return NextResponse.json({ error: 'email and companyName required' }, { status: 400 });
@@ -53,7 +55,7 @@ export async function POST(req: NextRequest) {
     });
 
     // Ensure homes for operator. If homes array provided, ensure each; else ensure a default one.
-    const desiredHomes: Array<{ name: string; capacity?: number }> = Array.isArray(homes) && homes.length > 0
+    const desiredHomes: Array<{ name: string; capacity?: number; isDemo?: boolean }> = Array.isArray(homes) && homes.length > 0
       ? homes
       : [{ name: `${companyName} Home`, capacity: 100 }];
 
@@ -61,10 +63,13 @@ export async function POST(req: NextRequest) {
     for (const h of desiredHomes) {
       const existing = await prisma.assistedLivingHome.findFirst({
         where: { operatorId: op.id, name: h.name },
-        select: { id: true, name: true },
+        select: { id: true, name: true, isDemo: true },
       });
       if (existing) {
-        ensured.push(existing);
+        if (typeof h.isDemo === 'boolean' && existing.isDemo !== h.isDemo) {
+          await prisma.assistedLivingHome.update({ where: { id: existing.id }, data: { isDemo: h.isDemo } });
+        }
+        ensured.push({ id: existing.id, name: existing.name });
         continue;
       }
       const created = await prisma.assistedLivingHome.create({
@@ -76,6 +81,7 @@ export async function POST(req: NextRequest) {
           careLevel: ['ASSISTED'],
           capacity: typeof h.capacity === 'number' ? h.capacity : 100,
           amenities: ['wifi'],
+          isDemo: h.isDemo === true,
         },
         select: { id: true, name: true },
       });
