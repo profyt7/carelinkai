@@ -14,6 +14,24 @@ export function isSentryInitialized(): boolean {
 }
 
 /**
+ * Expected authorization outcomes — a 401/403 is a normal response to a
+ * logged-out or under-privileged caller, not an application error. Routes
+ * answer these via handleAuthError(); they must never reach Sentry
+ * (CARELINK-AI-19 was an UnauthenticatedError on GET /api/operator/inquiries/pipeline).
+ * Matched by name so it also covers instances from a different bundle copy of
+ * auth-utils (instanceof is not reliable across Next server chunks).
+ */
+const EXPECTED_AUTH_ERROR_NAMES = new Set(['UnauthenticatedError', 'UnauthorizedError']);
+
+export function isExpectedAuthError(error: unknown): boolean {
+  return (
+    !!error &&
+    typeof error === 'object' &&
+    EXPECTED_AUTH_ERROR_NAMES.has(String((error as { name?: unknown }).name ?? ''))
+  );
+}
+
+/**
  * Manually capture an error with optional context
  */
 export function captureError(
@@ -26,7 +44,12 @@ export function captureError(
   }
 ) {
   const errorObj = typeof error === 'string' ? new Error(error) : error;
-  
+
+  // 401/403 are responses, not errors — never send them to Sentry.
+  if (isExpectedAuthError(errorObj)) {
+    return;
+  }
+
   Sentry.withScope((scope) => {
     if (context?.tags) {
       Object.entries(context.tags).forEach(([key, value]) => {

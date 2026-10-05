@@ -13,7 +13,7 @@ import { prisma } from '@/lib/prisma';
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { AuditAction, InquiryStatus } from '@prisma/client';
 import { z } from 'zod';
-import { captureError } from '@/lib/sentry';
+import { captureError, isExpectedAuthError } from '@/lib/sentry';
 
 const StatusUpdateSchema = z.object({
   status: z.nativeEnum(InquiryStatus),
@@ -104,6 +104,9 @@ export async function PATCH(
       message: `Status updated to ${status}`,
     });
   } catch (error) {
+    if (isExpectedAuthError(error)) {
+      return handleAuthError(error); // 401/403: a response, not a Sentry error
+    }
     captureError(error instanceof Error ? error : new Error(String(error)), {
       tags: { route: 'operator:inquiries:{id}:status' },
     });
