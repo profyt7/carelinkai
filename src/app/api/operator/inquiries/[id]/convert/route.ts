@@ -18,7 +18,7 @@ import {
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { AuditAction } from '@prisma/client';
 import { z } from 'zod';
-import { captureError } from '@/lib/sentry';
+import { captureError, isExpectedAuthError } from '@/lib/sentry';
 
 export async function POST(
   request: NextRequest,
@@ -85,6 +85,9 @@ export async function POST(
       message: 'Inquiry successfully converted to resident',
     });
   } catch (error) {
+    if (isExpectedAuthError(error)) {
+      return handleAuthError(error); // 401/403: a response, not a Sentry error
+    }
     captureError(error instanceof Error ? error : new Error(String(error)), {
       tags: { route: 'operator:inquiries:{id}:convert' },
     });
@@ -138,6 +141,9 @@ export async function GET(
       reason,
     });
   } catch (error) {
+    if (isExpectedAuthError(error)) {
+      return handleAuthError(error); // 401/403: a response, not a Sentry error
+    }
     captureError(error instanceof Error ? error : new Error(String(error)), {
       tags: { route: 'operator:inquiries:{id}:convert' },
     });

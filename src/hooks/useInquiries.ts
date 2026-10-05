@@ -13,9 +13,15 @@ import type {
 
 // Fetcher function for SWR
 const fetcher = async (url: string) => {
-  const res = await fetch(url);
+  const res = await fetch(url, { credentials: 'include' });
+  if (res.status === 401 && typeof window !== 'undefined') {
+    // Session expired while the pipeline page kept polling (30 s SWR refresh):
+    // stop hammering the API with logged-out calls and send the tab to login.
+    window.location.assign(`/auth/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`);
+    throw new Error('Session expired');
+  }
   if (!res.ok) {
-    const error = await res.json();
+    const error = await res.json().catch(() => ({}));
     throw new Error(error.error || 'An error occurred while fetching data');
   }
   return res.json();
