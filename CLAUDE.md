@@ -82,7 +82,7 @@ Canonical-source rules:
 | Styling | Tailwind CSS |
 | Real-time | SSE (Server-Sent Events) |
 | Payments | Stripe (configured, not yet live) |
-| Hosting | Render.com (Docker, auto-deploy from main) |
+| Hosting | Render.com native Node runtime (`render.yaml` → `runtime: node`, `npm start` → `.next/standalone/server.js`), auto-deploy from main. `docker/Dockerfile` is NOT the deploy path (stale, OL-130) |
 
 ---
 
