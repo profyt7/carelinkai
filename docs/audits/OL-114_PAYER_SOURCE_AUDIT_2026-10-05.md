@@ -97,22 +97,25 @@ revenue stream — PARKED, scoping only, do NOT build"). Parking the idea never
 disabled the April code; the two decisions contradict each other and the live
 one is the billing path. Tracked as **OL-124** in the rebuilt open-loops file.
 
-**Not changed in this PR** (the brief said audit, and "do not add or enable"
-— disabling is still a billing-behavior change that is the founder's call).
-Proposed fix, ready to implement on request:
+**Fixed (founder decision 2026-10-05, branch `fix/ol-124-placement-fee-gate`):**
 
-1. Gate `triggerPlacementFee` behind `PLACEMENT_FEE_ENABLED=1` (default off) —
-   one `if` at the top of the function.
-2. Inside it, return early unless `deriveFeeLane(inquiry.payerSource) === 'FEE_ELIGIBLE'`
-   (so `FREE_LANE` **and** `UNKNOWN` never bill; unknowns go to the Financing
-   Navigator flow, not an invoice).
-3. Decide what to do with existing `Payment` rows of type `PLACEMENT_FEE`
-   (a `scripts/report-placement-fee-payments.ts` can list them first).
+1. `triggerPlacementFee` is gated behind `PLACEMENT_FEE_ENABLED` (unset / `0` =
+   OFF). `isPlacementFeeEnabled()` + `placementFeeBlockReason()` in
+   `src/lib/services/inquiry-conversion.ts` hold the whole decision.
+2. Even when enabled, it fires only when `deriveFeeLane(inquiry.payerSource) === 'FEE_ELIGIBLE'`
+   (private funds / LTC insurance). `FREE_LANE` (Medicaid/waiver, Medicare
+   Advantage, VA) **and** `UNKNOWN` (not sure / missing) never bill.
+3. When skipped it writes **no** Payment row and queues **no** Stripe invoice
+   item; it logs one structured JSON line
+   (`{"event":"placement_fee_skipped", inquiryId, operatorId, residentId, payerSource, lane, reason, ref:"OL-124"}`)
+   so each decision is visible in Render logs.
+4. `PLACEMENT_FEE_CENTS`, Stripe and Render settings untouched. Still open:
+   what to do with `Payment` rows of type `PLACEMENT_FEE` already written by the
+   old path (list them first before deciding).
 
-`__tests__/payer-lane.audit.test.ts` contains a **tripwire** test that pins
-today's behavior (a FREE_LANE conversion still queues the invoice item). When
-the fix lands, that test must be flipped — it is named so nobody misreads it
-as desired behavior.
+`__tests__/payer-lane.audit.test.ts` Part B now asserts the **gated**
+behavior: enabled + FEE_ELIGIBLE fires; enabled + Medicaid waiver does not;
+disabled + FEE_ELIGIBLE does not; enabled + unknown lane does not.
 
 ## 5. Other things noticed while auditing (no action taken)
 
