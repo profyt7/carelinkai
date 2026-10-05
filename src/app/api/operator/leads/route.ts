@@ -22,11 +22,11 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient, LeadStatus, LeadTargetType } from "@prisma/client";
+import { LeadStatus, LeadTargetType } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { requireAnyRole } from "@/lib/rbac";
 import { captureError } from '@/lib/sentry';
 
-const prisma = new PrismaClient();
 
 /**
  * GET handler to retrieve paginated lead list with filters
@@ -213,7 +213,5 @@ export async function GET(request: NextRequest) {
       },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

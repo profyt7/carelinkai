@@ -1,13 +1,13 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient, UserRole } from '@prisma/client';
+import { UserRole } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import InquiriesListClient from '@/components/operator/inquiries/InquiriesListClient';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-const prisma = new PrismaClient();
 
 export default async function OperatorInquiriesPage() {
   const session = await getServerSession(authOptions);

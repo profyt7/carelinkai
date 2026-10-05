@@ -12,12 +12,12 @@ export const dynamic = 'force-dynamic';
 import { NextResponse, NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient, UserRole, AuditAction } from '@prisma/client';
+import { UserRole, AuditAction } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { generateHomeProfile, validateHomeData, type HomeData } from '@/lib/profile-generator/home-profile-generator';
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { captureError } from '@/lib/sentry';
 
-const prisma = new PrismaClient();
 
 export async function POST(
   req: NextRequest,
@@ -158,7 +158,5 @@ export async function POST(
       { error: 'Internal server error' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

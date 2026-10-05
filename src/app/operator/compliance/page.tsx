@@ -3,12 +3,12 @@ import { authOptions } from "@/lib/auth";
 import Breadcrumbs from "@/components/ui/breadcrumbs";
 import ComplianceQuickActions from "@/components/operator/ComplianceQuickActions";
 import ComplianceScanWidget from "@/components/operator/compliance/ComplianceScanWidget";
-import { PrismaClient, UserRole } from "@prisma/client";
+import { UserRole } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const prisma = new PrismaClient();
 
 export default async function OperatorCompliancePage({ searchParams }: { searchParams?: { operatorId?: string } }) {
   const session = await getServerSession(authOptions);

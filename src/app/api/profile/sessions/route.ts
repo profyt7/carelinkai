@@ -5,10 +5,9 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { PrismaClient, AuditAction } from "@prisma/client";
+import { AuditAction } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 
-// Initialise local Prisma client (consistent with other API routes)
-const prisma = new PrismaClient();
 
 /**
  * DELETE /api/profile/sessions

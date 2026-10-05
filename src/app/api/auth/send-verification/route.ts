@@ -18,7 +18,8 @@ export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
-import { PrismaClient, AuditAction, UserStatus } from "@prisma/client";
+import { AuditAction, UserStatus } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
@@ -26,8 +27,6 @@ import { randomBytes } from "crypto";
 import { z } from "zod";
 import { captureError } from '@/lib/sentry';
 
-// Initialize Prisma client
-const prisma = new PrismaClient();
 
 // Constants
 const TOKEN_EXPIRY_HOURS = 24; // Verification tokens expire after 24 hours
@@ -242,9 +241,6 @@ export async function POST(request: NextRequest) {
       }, 
       { status: 500 }
     );
-  } finally {
-    // Always disconnect from the database
-    await prisma.$disconnect();
   }
 }
 
@@ -309,9 +305,6 @@ export async function GET(request: NextRequest) {
       }, 
       { status: 500 }
     );
-  } finally {
-    // Always disconnect from the database
-    await prisma.$disconnect();
   }
 }
 

@@ -12,11 +12,10 @@
  * - Placement statistics
  */
 
-import { PrismaClient, UserRole, UserStatus, HomeStatus } from "@prisma/client";
+import { UserRole, UserStatus, HomeStatus } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { formatCurrency } from "@/lib/utils";
 
-// Initialize Prisma client
-const prisma = new PrismaClient();
 
 /**
  * Dashboard data service

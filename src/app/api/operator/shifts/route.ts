@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient, UserRole } from '@prisma/client';
+import { UserRole } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-const prisma = new PrismaClient();
 
 export async function GET() {
   try {
@@ -51,7 +51,5 @@ export async function GET() {
     }
     
     return NextResponse.json({ error: errorMessage }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }
