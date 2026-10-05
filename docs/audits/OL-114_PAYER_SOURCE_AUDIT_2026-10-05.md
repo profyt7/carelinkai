@@ -11,7 +11,7 @@ placement-fee invoice?
 | Screener code + schema | **Live on `main`** (merged in #695; migration `20260705000001_payer_source_screener`). |
 | Lane mapping | **Correct and pinned by tests**: private funds + LTC insurance → `FEE_ELIGIBLE`; Medicaid/waiver, Medicare Advantage, VA → `FREE_LANE`; not-sure/blank → `UNKNOWN`. |
 | Live in intake | **Partially.** Wired into 2 of the 4 intake surfaces (home-page inquiry form, DP placement-request modal). Missing from `/lead/new` (DP quick lead) and the carebot. |
-| "No code path can issue a facility fee invoice" | **Cannot confirm — the opposite is true.** `convertInquiryToResident` queues a **$500 placement-fee Stripe invoice item** on every inquiry→resident conversion and never reads the payer source / fee lane. See §4. |
+| "No code path can issue a facility fee invoice" | **Cannot confirm — the opposite is true.** `convertInquiryToResident` queues a **placement-fee Stripe invoice item ($1,500 in production per OL-030; $500 code default)** on every inquiry→resident conversion and never reads the payer source / fee lane. See §4. |
 
 ---
 
@@ -69,7 +69,7 @@ the inquiry detail modal).
 
 On **every** successful conversion it:
 
-1. creates a `Payment` row `{ type: 'PLACEMENT_FEE', status: 'PENDING', amount: PLACEMENT_FEE_CENTS/100 }` — default **$500** (`PLACEMENT_FEE_CENTS` defaults to `50000`; `.env.example` ships that value);
+1. creates a `Payment` row `{ type: 'PLACEMENT_FEE', status: 'PENDING', amount: PLACEMENT_FEE_CENTS/100 }` — **$1,500 in production** (OL-030: Chris set `PLACEMENT_FEE_CENTS=150000` in Render in May; the code default and `.env.example` are `50000` = $500);
 2. if the operator has a `stripeCustomerId`, calls `stripe.invoiceItems.create(...)` so the fee is **collected on the operator's next Stripe invoice**, and marks the payment `PROCESSING`; otherwise leaves it `PENDING` "for manual collection".
 
 It never reads `inquiry.payerSource`, never calls `deriveFeeLane()`, and has
@@ -86,9 +86,16 @@ operator would be invoiced exactly like a private-pay one.
   is marked `FAILED`.
 
 So in practice the exposure right now is **PENDING ledger rows that claim a
-$500 fee on conversions**, plus a live Stripe path the moment any operator has
+$1,500 fee on conversions**, plus a live Stripe path the moment any operator has
 a customer id. This contradicts both the AKS firewall comment in
 `payer-source.ts` and the sprint rule "no facility placement-fee invoicing".
+
+**How it got here:** this is **OL-014** (April 2026, "placement fee auto-triggered
+on Convert to Resident", closed as built + improved to an invoice item). It
+predates the AKS firewall (OL-114, July) and **OL-102** ("facility placement-fee
+revenue stream — PARKED, scoping only, do NOT build"). Parking the idea never
+disabled the April code; the two decisions contradict each other and the live
+one is the billing path. Tracked as **OL-124** in the rebuilt open-loops file.
 
 **Not changed in this PR** (the brief said audit, and "do not add or enable"
 — disabling is still a billing-behavior change that is the founder's call).
