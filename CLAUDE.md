@@ -133,7 +133,7 @@ documentation."
 
 ## Deployment
 - GitHub (`profyt7/carelinkai`) is source of truth.
-- Render.com is current hosting (Docker, PostgreSQL, auto-deploy from main).
+- Render.com is current hosting — native Node runtime via `render.yaml` (`runtime: node`), PostgreSQL, auto-deploy from main. `docker/Dockerfile` is not what runs in production (OL-130).
 - Validate in preview/staging before production when possible.
 
 ---
