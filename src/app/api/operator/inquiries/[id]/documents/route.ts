@@ -3,7 +3,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient, UserRole, AuditAction, DataClassification } from '@prisma/client';
+import { UserRole, AuditAction, DataClassification } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { captureError } from '@/lib/sentry';
@@ -12,7 +13,6 @@ import { getDownloadUrl } from '@/lib/storage/download';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-const prisma = new PrismaClient();
 
 /**
  * GET /api/operator/inquiries/[id]/documents
@@ -79,8 +79,6 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     });
     console.error('Failed to fetch inquiry documents:', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -185,7 +183,5 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     });
     console.error('Failed to create inquiry document:', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }

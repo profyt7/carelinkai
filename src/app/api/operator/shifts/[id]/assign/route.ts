@@ -4,9 +4,9 @@ export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import { requireOperatorOrAdmin } from '@/lib/rbac';
-import { PrismaClient, ShiftStatus, UserRole } from '@prisma/client';
+import { ShiftStatus, UserRole } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 
-const prisma = new PrismaClient();
 
 export async function PATCH(
   _req: Request,
@@ -77,7 +77,5 @@ export async function PATCH(
   } catch (e) {
     console.error('Assign shift failed', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }

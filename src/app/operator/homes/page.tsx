@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { PrismaClient, UserRole } from "@prisma/client";
+import { UserRole } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { MOCK_HOMES } from "@/lib/mock/homes";
 import Link from "next/link";
@@ -11,7 +12,6 @@ import { FiHome } from "react-icons/fi";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const prisma = new PrismaClient();
 
 export default async function OperatorHomesPage({ searchParams }: { searchParams?: { operatorId?: string } }) {
   const session = await getServerSession(authOptions);

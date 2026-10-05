@@ -1,13 +1,13 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import Breadcrumbs from "@/components/ui/breadcrumbs";
-import { PrismaClient, UserRole } from "@prisma/client";
+import { UserRole } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import AnalyticsCharts from "./AnalyticsCharts";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const prisma = new PrismaClient();
 
 const FUNNEL_STATUSES = [
   'NEW', 'CONTACTED', 'TOUR_SCHEDULED', 'TOUR_COMPLETED',

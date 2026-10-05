@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient, UserRole, AuditAction } from '@prisma/client';
+import { UserRole, AuditAction } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { captureError } from '@/lib/sentry';
@@ -9,7 +10,6 @@ import { captureError } from '@/lib/sentry';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-const prisma = new PrismaClient();
 
 const AssignSchema = z.object({
   assignedTo: z.string(),
@@ -77,7 +77,5 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     });
     console.error('Assign staff failed', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }

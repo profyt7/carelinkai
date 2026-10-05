@@ -20,7 +20,8 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient, AuditAction, Prisma } from "@prisma/client";
+import { AuditAction, Prisma } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { authenticator } from "otplib";
@@ -28,8 +29,6 @@ import { z } from "zod";
 import { compare } from "bcryptjs";
 import { captureError } from '@/lib/sentry';
 
-// Initialize Prisma client
-const prisma = new PrismaClient();
 
 // Rate limiting implementation
 interface RateLimitEntry {
@@ -286,8 +285,5 @@ export async function POST(request: NextRequest) {
       }, 
       { status: 500 }
     );
-  } finally {
-    // Always disconnect from the database
-    await prisma.$disconnect();
   }
 }

@@ -3,6 +3,7 @@
 
 import * as Sentry from '@sentry/nextjs';
 import { scrubPhi } from './src/lib/phi-scrubber';
+import { makeTracesSampler } from './src/lib/sentry/trace-sampling';
 
 const SENTRY_DSN = process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN;
 
@@ -13,14 +14,21 @@ if (SENTRY_DSN) {
   Sentry.init({
     dsn: SENTRY_DSN,
 
+    // Report ONLY from production. CI/e2e runs (NODE_ENV=development on
+    // localhost) were the source of dev-tagged noise (CARELINK-AI-16/-17). The
+    // beforeSend guard below is the backstop to this flag.
+    enabled: process.env.NODE_ENV === 'production',
+
     // Enable Logs feature
     enableLogs: true,
 
     // Enable Metrics (automatically enabled in v10.25.0+, but explicit for clarity)
     enableMetrics: true,
 
-    // Performance Monitoring
-    tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+    // Performance Monitoring - 10% in production, but never for health-check /
+    // uptime-poller / bot traffic ("middleware GET" flood — see
+    // src/lib/sentry/trace-sampling.ts).
+    tracesSampler: makeTracesSampler(process.env.NODE_ENV === 'production' ? 0.1 : 1.0),
 
     // Environment tracking
     environment: process.env.NODE_ENV || 'development',
@@ -32,6 +40,11 @@ if (SENTRY_DSN) {
     sendDefaultPii: false,
 
     beforeSend(event) {
+      // Backstop to `enabled` above: drop every non-production event so CI/e2e
+      // noise never reaches Sentry, even if a DSN leaks into a dev environment.
+      if (process.env.NODE_ENV !== 'production') {
+        return null;
+      }
       if (event.request?.data) {
         event.request.data = scrubPhi(event.request.data);
       }

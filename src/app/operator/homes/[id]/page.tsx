@@ -1,7 +1,8 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import Breadcrumbs from '@/components/ui/breadcrumbs';
-import { PrismaClient, UserRole } from '@prisma/client';
+import { UserRole } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { parseS3Url, createSignedGetUrl } from '@/lib/storage';
 import React from 'react';
@@ -11,7 +12,6 @@ import HomeAlerts from '@/components/operator/HomeAlerts';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-const prisma = new PrismaClient();
 
 export default async function OperatorHomeManagePage({ params, searchParams }: { params: { id: string }, searchParams?: { operatorId?: string } }) {
   const session = await getServerSession(authOptions);

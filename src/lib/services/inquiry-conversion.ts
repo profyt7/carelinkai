@@ -5,11 +5,11 @@
  * and validation.
  */
 
-import { PrismaClient, ResidentStatus } from '@prisma/client';
+import { ResidentStatus } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { stripe } from '@/lib/stripe';
 
-const prisma = new PrismaClient();
 
 /**
  * Validation schema for conversion data
