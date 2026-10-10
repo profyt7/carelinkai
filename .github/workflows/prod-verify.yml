@@ -54,7 +54,11 @@ jobs:
           CHECK_PUBLIC: ${{ inputs.check_public_routes }}
           CHECK_PING: ${{ inputs.check_ping }}
         run: |
-          set -uo pipefail
+          # GitHub's default shell is `bash -e -o pipefail`; this script collects
+          # failures itself, so turn errexit/pipefail OFF (a grep with no match
+          # must not abort the run).
+          set +e +o pipefail
+          set -u
           FAIL=0
           fail() { echo "::error::$1"; echo "- ❌ $1" >> "$GITHUB_STEP_SUMMARY"; FAIL=1; }
           pass() { echo "OK: $1"; echo "- ✅ $1" >> "$GITHUB_STEP_SUMMARY"; }
@@ -65,8 +69,8 @@ jobs:
             : > headers.txt; : > body.txt
             CODE=$(curl -s -m 40 -X "$method" -o body.txt -D headers.txt -w '%{http_code}' \
                      -A 'CareLinkAI-ProdVerify/1.0 (+github-actions)' "$BASE$path" || echo 000)
-            LOC=$(grep -i '^location:' headers.txt | head -n1 | sed -E 's/^[Ll]ocation:[[:space:]]*//; s/\r$//')
-            ROBOTS=$(grep -i '^x-robots-tag:' headers.txt | head -n1 | sed -E 's/^[Xx]-[Rr]obots-[Tt]ag:[[:space:]]*//; s/\r$//')
+            LOC=$( { grep -i '^location:' headers.txt || true; } | head -n1 | sed -E 's/^[Ll]ocation:[[:space:]]*//; s/\r$//')
+            ROBOTS=$( { grep -i '^x-robots-tag:' headers.txt || true; } | head -n1 | sed -E 's/^[Xx]-[Rr]obots-[Tt]ag:[[:space:]]*//; s/\r$//')
           }
 
           echo "## Prod verify — $BASE" >> "$GITHUB_STEP_SUMMARY"
@@ -76,7 +80,7 @@ jobs:
             deadline=$(( $(date +%s) + WAIT_MINUTES*60 ))
             while :; do
               fetch GET /api/version
-              live=$(grep -o '"commitSha":"[0-9a-f]*"' body.txt | cut -d'"' -f4)
+              live=$( { grep -o '"commitSha":"[0-9a-f]*"' body.txt || true; } | cut -d'"' -f4)
               echo "$(date -u +%H:%M:%S) /api/version HTTP $CODE commitSha=${live:-?}"
               case "${live:-}" in
                 "$EXPECT_SHA"*) pass "live commit ${live} matches expected ${EXPECT_SHA}"; break ;;
@@ -94,8 +98,8 @@ jobs:
           [ "$CODE" = "200" ] && pass "GET / → 200" || fail "GET / → $CODE (loc=$LOC)"
 
           fetch GET /api/health
-          hok=$(grep -o '"ok":[a-z]*' body.txt | cut -d: -f2)
-          hdb=$(grep -o '"db":"[a-z]*"' body.txt | cut -d'"' -f4)
+          hok=$( { grep -o '"ok":[a-z]*' body.txt || true; } | cut -d: -f2)
+          hdb=$( { grep -o '"db":"[a-z]*"' body.txt || true; } | cut -d'"' -f4)
           if [ "$CODE" = "200" ] && [ "$hok" = "true" ] && [ "$hdb" = "ok" ]; then
             pass "GET /api/health → 200 ok=true db=ok"
           else
