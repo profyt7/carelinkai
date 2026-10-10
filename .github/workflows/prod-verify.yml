@@ -1,0 +1,142 @@
+name: Prod Verify
+
+# On-demand, read-only production verification run from a GitHub runner.
+# Used to gate the one-at-a-time sprint merges (10/10): optionally waits for a
+# specific commit to be live (via /api/version), then checks the homepage, the
+# health endpoints, the public SEO routes and the 404 behaviour. Never writes
+# anything; fails loudly with ::error annotations.
+
+on:
+  workflow_dispatch:
+    inputs:
+      base:
+        description: 'Base URL to verify'
+        required: false
+        default: 'https://getcarelinkai.com'
+      expect_sha:
+        description: 'Wait until /api/version commitSha starts with this (empty = do not wait)'
+        required: false
+        default: ''
+      wait_minutes:
+        description: 'Max minutes to wait for expect_sha'
+        required: false
+        default: '20'
+      check_public_routes:
+        description: '/cleveland/* → 200 indexable, /zzz-nope + /.env → 404 (post-#714)'
+        type: boolean
+        required: false
+        default: true
+      check_ping:
+        description: '/api/ping → 200 (post-#715)'
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prod-verify
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify production
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Verify
+        shell: bash
+        env:
+          BASE: ${{ inputs.base }}
+          EXPECT_SHA: ${{ inputs.expect_sha }}
+          WAIT_MINUTES: ${{ inputs.wait_minutes }}
+          CHECK_PUBLIC: ${{ inputs.check_public_routes }}
+          CHECK_PING: ${{ inputs.check_ping }}
+        run: |
+          set -uo pipefail
+          FAIL=0
+          fail() { echo "::error::$1"; echo "- ❌ $1" >> "$GITHUB_STEP_SUMMARY"; FAIL=1; }
+          pass() { echo "OK: $1"; echo "- ✅ $1" >> "$GITHUB_STEP_SUMMARY"; }
+
+          # fetch PATH -> sets CODE, LOC (redirect target), ROBOTS (x-robots-tag), BODY file
+          fetch() {
+            local method="$1" path="$2"
+            : > headers.txt; : > body.txt
+            CODE=$(curl -s -m 40 -X "$method" -o body.txt -D headers.txt -w '%{http_code}' \
+                     -A 'CareLinkAI-ProdVerify/1.0 (+github-actions)' "$BASE$path" || echo 000)
+            LOC=$(grep -i '^location:' headers.txt | head -n1 | sed -E 's/^[Ll]ocation:[[:space:]]*//; s/\r$//')
+            ROBOTS=$(grep -i '^x-robots-tag:' headers.txt | head -n1 | sed -E 's/^[Xx]-[Rr]obots-[Tt]ag:[[:space:]]*//; s/\r$//')
+          }
+
+          echo "## Prod verify — $BASE" >> "$GITHUB_STEP_SUMMARY"
+
+          # ---- 0. wait for the expected commit ---------------------------------
+          if [ -n "$EXPECT_SHA" ]; then
+            deadline=$(( $(date +%s) + WAIT_MINUTES*60 ))
+            while :; do
+              fetch GET /api/version
+              live=$(grep -o '"commitSha":"[0-9a-f]*"' body.txt | cut -d'"' -f4)
+              echo "$(date -u +%H:%M:%S) /api/version HTTP $CODE commitSha=${live:-?}"
+              case "${live:-}" in
+                "$EXPECT_SHA"*) pass "live commit ${live} matches expected ${EXPECT_SHA}"; break ;;
+              esac
+              if [ "$(date +%s)" -ge "$deadline" ]; then
+                fail "expected commit $EXPECT_SHA not live after $WAIT_MINUTES min (live=${live:-?})"
+                break
+              fi
+              sleep 30
+            done
+          fi
+
+          # ---- 1. homepage + health ---------------------------------------------
+          fetch GET /
+          [ "$CODE" = "200" ] && pass "GET / → 200" || fail "GET / → $CODE (loc=$LOC)"
+
+          fetch GET /api/health
+          hok=$(grep -o '"ok":[a-z]*' body.txt | cut -d: -f2)
+          hdb=$(grep -o '"db":"[a-z]*"' body.txt | cut -d'"' -f4)
+          if [ "$CODE" = "200" ] && [ "$hok" = "true" ] && [ "$hdb" = "ok" ]; then
+            pass "GET /api/health → 200 ok=true db=ok"
+          else
+            fail "GET /api/health → $CODE ok=$hok db=$hdb body=$(head -c 300 body.txt)"
+          fi
+
+          fetch GET /api/version
+          echo "/api/version: $(head -c 400 body.txt)"
+          echo "- ℹ️ /api/version: \`$(head -c 300 body.txt)\`" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$CHECK_PING" = "true" ]; then
+            fetch GET /api/ping
+            [ "$CODE" = "200" ] && pass "GET /api/ping → 200 ($(head -c 120 body.txt))" || fail "GET /api/ping → $CODE"
+            fetch HEAD /api/ping
+            [ "$CODE" = "200" ] && pass "HEAD /api/ping → 200" || fail "HEAD /api/ping → $CODE"
+          fi
+
+          # ---- 2. public SEO routes + 404s --------------------------------------
+          if [ "$CHECK_PUBLIC" = "true" ]; then
+            for p in /cleveland /cleveland/assisted-living /cleveland/memory-care /cleveland/independent-living /cleveland/nursing-homes; do
+              fetch GET "$p"
+              problems=""
+              [ "$CODE" = "200" ] || problems="$problems status=$CODE"
+              [ -z "$LOC" ] || problems="$problems redirect=$LOC"
+              echo "$ROBOTS" | grep -qi noindex && problems="$problems x-robots-tag=$ROBOTS"
+              grep -qiE '<meta[^>]+name="robots"[^>]+content="[^"]*noindex' body.txt && problems="$problems meta-noindex"
+              [ -z "$problems" ] && pass "GET $p → 200, no redirect, indexable" || fail "GET $p →$problems"
+            done
+            for p in /zzz-nope /.env; do
+              fetch GET "$p"
+              [ "$CODE" = "404" ] && pass "GET $p → 404" || fail "GET $p → $CODE (loc=$LOC)"
+            done
+            fetch GET /operator
+            case "$CODE" in
+              302|307) echo "$LOC" | grep -q '/auth/login' && pass "GET /operator (logged-out) → $CODE to login" || fail "GET /operator → $CODE to $LOC" ;;
+              *) fail "GET /operator (logged-out) → $CODE, expected redirect to login" ;;
+            esac
+          fi
+
+          if [ "$FAIL" -ne 0 ]; then
+            echo "::error::Production verification FAILED"
+            exit 1
+          fi
+          echo "All production checks passed."
