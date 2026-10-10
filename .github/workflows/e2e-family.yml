@@ -454,13 +454,15 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
-      - name: Run Playwright (DP concierge flow + /founder intro page)
+      - name: Run Playwright (DP concierge flow + /founder intro page + public routes)
         run: |
           # founder-page.spec.ts: the self-hosted founder intro linked from the DP
           # follow-up emails must serve 200 unauthenticated with the local <video>.
+          # public-routes.spec.ts: the five sitemap landing pages (/cleveland/*) must
+          # answer 200 logged-out with no noindex; unknown paths 404, not login.
           # search-demo-filter.spec.ts: demo/tutorial homes never surface in the
           # public directory APIs / page for a logged-out visitor (OL-112).
-          npx playwright test --config=playwright.e2e.config.ts e2e/concierge-flow.spec.ts e2e/founder-page.spec.ts e2e/search-demo-filter.spec.ts --workers=1 --reporter=line
+          npx playwright test --config=playwright.e2e.config.ts e2e/concierge-flow.spec.ts e2e/founder-page.spec.ts e2e/public-routes.spec.ts e2e/search-demo-filter.spec.ts --workers=1 --reporter=line
 
       - name: Upload Playwright test artifacts (Concierge flow) (always)
         if: always()
