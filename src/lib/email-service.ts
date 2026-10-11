@@ -36,11 +36,10 @@
  * ```
  */
 
-import { PrismaClient, AuditAction } from '@prisma/client';
+import { AuditAction } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { v4 as uuidv4 } from 'uuid';
 
-// Initialize Prisma client for logging
-const prisma = new PrismaClient();
 
 // Email configuration from environment variables
 const EMAIL_PROVIDER = process.env["EMAIL_PROVIDER"] || 'mock';

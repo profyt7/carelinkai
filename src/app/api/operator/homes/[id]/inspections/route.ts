@@ -6,11 +6,11 @@ export const dynamic = 'force-dynamic';
 // See HIPAA_PHASE_1_DESIGN.md §2.3 (Inspection rationale)
 import { NextRequest, NextResponse } from 'next/server';
 import { requireOperatorOrAdmin } from '@/lib/rbac';
-import { PrismaClient, UserRole } from '@prisma/client';
+import { UserRole } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { uploadBuffer, toS3Url, canUseS3 } from '@/lib/storage';
 import { captureError } from '@/lib/sentry';
 
-const prisma = new PrismaClient();
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -77,7 +77,5 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     });
     console.error('Create inspection failed', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }

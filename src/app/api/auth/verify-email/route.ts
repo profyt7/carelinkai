@@ -15,12 +15,11 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient, AuditAction, UserStatus } from "@prisma/client";
+import { AuditAction, UserStatus } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { captureError } from '@/lib/sentry';
 
-// Initialize Prisma client
-const prisma = new PrismaClient();
 
 // Constants
 const MAX_VERIFICATION_ATTEMPTS = 5; // Maximum verification attempts per time window
@@ -274,9 +273,6 @@ export async function GET(request: NextRequest) {
       }, 
       { status: 500 }
     );
-  } finally {
-    // Always disconnect from the database
-    await prisma.$disconnect();
   }
 }
 
@@ -476,8 +472,5 @@ export async function POST(request: NextRequest) {
       }, 
       { status: 500 }
     );
-  } finally {
-    // Always disconnect from the database
-    await prisma.$disconnect();
   }
 }

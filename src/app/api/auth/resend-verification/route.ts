@@ -16,14 +16,13 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient, UserStatus } from "@prisma/client";
+import { UserStatus } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { randomBytes } from "crypto";
 import { sendVerificationEmail } from "@/lib/email";
 import { captureError } from '@/lib/sentry';
 
-// Initialize Prisma client
-const prisma = new PrismaClient();
 
 // Constants
 const TOKEN_EXPIRY_HOURS = 24;
@@ -210,7 +209,5 @@ export async function POST(request: NextRequest) {
       }, 
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

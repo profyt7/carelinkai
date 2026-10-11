@@ -14,11 +14,9 @@
  * extended to integrate with OpenAI or other ML services in the future.
  */
 
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import type { AssistedLivingHome } from "@prisma/client";
 
-// Initialize Prisma client for database access
-const prisma = new PrismaClient();
 
 // Types for resident profile used in matching
 export interface ResidentProfile {

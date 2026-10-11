@@ -5,11 +5,11 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient, UserRole } from '@prisma/client';
+import { UserRole } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { parseS3Url, deleteObject } from '@/lib/storage';
 import { captureError } from '@/lib/sentry';
 
-const prisma = new PrismaClient();
 
 async function ensureOperatorAccess(userEmail: string | null, homeId: string) {
   if (!userEmail) return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
@@ -48,8 +48,6 @@ export async function DELETE(_req: Request, { params }: { params: { id: string; 
     });
     console.error('Delete home photo failed', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -71,7 +69,5 @@ export async function PATCH(_req: Request, { params }: { params: { id: string; p
     });
     console.error('Set primary home photo failed', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }

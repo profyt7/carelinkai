@@ -17,7 +17,8 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient, AuditAction, Prisma } from "@prisma/client";
+import { AuditAction, Prisma } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { mkdir, writeFile, unlink } from "fs/promises";
@@ -26,8 +27,6 @@ import { join, dirname } from "path";
 import sharp from "sharp";
 import { v4 as uuidv4 } from "uuid";
 
-// Initialize Prisma client
-const prisma = new PrismaClient();
 
 // Configuration
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -254,8 +253,6 @@ export async function POST(request: NextRequest) {
       }, 
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -319,7 +316,5 @@ export async function DELETE(request: NextRequest) {
       }, 
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

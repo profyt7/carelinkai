@@ -17,12 +17,11 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient, AuditAction } from "@prisma/client";
+import { AuditAction } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { captureError } from '@/lib/sentry';
 
-// Initialize Prisma client
-const prisma = new PrismaClient();
 
 // Input validation schema
 const tokenSchema = z.object({
@@ -119,9 +118,6 @@ export async function POST(request: NextRequest) {
       }, 
       { status: 500 }
     );
-  } finally {
-    // Always disconnect from the database
-    await prisma.$disconnect();
   }
 }
 
@@ -190,8 +186,5 @@ export async function GET(request: NextRequest) {
       }, 
       { status: 500 }
     );
-  } finally {
-    // Always disconnect from the database
-    await prisma.$disconnect();
   }
 }

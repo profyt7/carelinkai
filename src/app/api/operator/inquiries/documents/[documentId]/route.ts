@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient, UserRole, AuditAction } from '@prisma/client';
+import { UserRole, AuditAction } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { createAuditLogFromRequest } from '@/lib/audit';
 import { captureError } from '@/lib/sentry';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-const prisma = new PrismaClient();
 
 /**
  * DELETE /api/operator/inquiries/documents/[documentId]
@@ -74,7 +74,5 @@ export async function DELETE(req: NextRequest, { params }: { params: { documentI
     });
     console.error('Failed to delete inquiry document:', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }

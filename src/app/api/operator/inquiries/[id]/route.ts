@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient, UserRole, InquiryStatus } from '@prisma/client';
+import { UserRole, InquiryStatus } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { captureError } from '@/lib/sentry';
 import { maybeSendQuoteSurvey } from '@/lib/pricing/quote-survey';
@@ -9,7 +10,6 @@ import { maybeSendQuoteSurvey } from '@/lib/pricing/quote-survey';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-const prisma = new PrismaClient();
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -78,8 +78,6 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     });
     console.error('Get inquiry failed', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -142,7 +140,5 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     });
     console.error('Update inquiry failed', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }

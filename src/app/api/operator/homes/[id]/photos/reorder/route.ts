@@ -4,10 +4,10 @@ export const dynamic = 'force-dynamic';
 
 ﻿import { NextResponse } from 'next/server';
 import { requireOperatorOrAdmin } from '@/lib/rbac';
-import { PrismaClient, UserRole } from '@prisma/client';
+import { UserRole } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { captureError } from '@/lib/sentry';
 
-const prisma = new PrismaClient();
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   try {
@@ -42,7 +42,5 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     });
     console.error('Reorder home photos failed', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }

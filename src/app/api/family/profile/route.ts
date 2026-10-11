@@ -21,13 +21,12 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient, AuditAction } from "@prisma/client";
+import { AuditAction } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { requireAnyRole } from "@/lib/rbac";
 import { z } from "zod";
 import { captureError } from '@/lib/sentry';
 
-// Initialize Prisma client
-const prisma = new PrismaClient();
 
 // Family profile validation schema
 const familyProfileUpdateSchema = z.object({
@@ -163,8 +162,6 @@ export async function GET(request: NextRequest) {
       },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -287,7 +284,5 @@ export async function PATCH(request: NextRequest) {
       },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

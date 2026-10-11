@@ -5,10 +5,10 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient, UserRole } from '@prisma/client';
+import { UserRole } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { captureError } from '@/lib/sentry';
 
-const prisma = new PrismaClient();
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   try {
@@ -389,7 +389,5 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     });
     console.error('Analytics API error:', error);
     return NextResponse.json({ error: 'Failed to fetch analytics' }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }

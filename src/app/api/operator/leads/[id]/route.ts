@@ -23,12 +23,12 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient, LeadStatus, AuditAction } from "@prisma/client";
+import { LeadStatus, AuditAction } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { requireAnyRole } from "@/lib/rbac";
 import { z } from "zod";
 import { captureError } from '@/lib/sentry';
 
-const prisma = new PrismaClient();
 
 // Lead update validation schema
 const leadUpdateSchema = z.object({
@@ -161,8 +161,6 @@ export async function GET(
       },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -351,7 +349,5 @@ export async function PATCH(
       },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }
