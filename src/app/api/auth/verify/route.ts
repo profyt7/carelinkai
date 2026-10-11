@@ -11,11 +11,10 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient, AuditAction, UserStatus } from "@prisma/client";
+import { AuditAction, UserStatus } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { captureError } from '@/lib/sentry';
 
-// Initialize Prisma client
-const prisma = new PrismaClient();
 
 /**
  * POST handler for email verification
@@ -109,8 +108,5 @@ export async function POST(request: NextRequest) {
       }, 
       { status: 500 }
     );
-  } finally {
-    // Always disconnect from the database
-    await prisma.$disconnect();
   }
 }

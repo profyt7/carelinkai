@@ -5,10 +5,10 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient, UserRole } from '@prisma/client';
+import { UserRole } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { captureError } from '@/lib/sentry';
 
-const prisma = new PrismaClient();
 
 type Alert = {
   id: string;
@@ -330,7 +330,5 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     });
     console.error('Alerts API error:', error);
     return NextResponse.json({ error: 'Failed to fetch alerts' }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }

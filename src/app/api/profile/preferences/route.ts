@@ -20,13 +20,12 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient, UserRole, AuditAction } from "@prisma/client";
+import { UserRole, AuditAction } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { z } from "zod";
 
-// Initialize Prisma client
-const prisma = new PrismaClient();
 
 // Base notification preferences schema
 const notificationPrefsSchema = z.object({
@@ -206,8 +205,6 @@ export async function GET(request: NextRequest) {
       }, 
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -331,8 +328,6 @@ export async function PUT(request: NextRequest) {
       }, 
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }
 

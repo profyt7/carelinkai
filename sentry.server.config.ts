@@ -3,6 +3,7 @@
 
 import * as Sentry from '@sentry/nextjs';
 import { scrubPhi } from './src/lib/phi-scrubber';
+import { makeTracesSampler } from './src/lib/sentry/trace-sampling';
 
 const SENTRY_DSN = process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN;
 
@@ -15,14 +16,22 @@ if (SENTRY_DSN) {
   Sentry.init({
     dsn: SENTRY_DSN,
 
+    // Report ONLY from production. CI/e2e runs execute on localhost with
+    // NODE_ENV=development and were the source of ~637 dev-tagged handled errors
+    // (CARELINK-AI-16/-17, Resend 401s on the placeholder key). The beforeSend
+    // guard below is the backstop to this flag.
+    enabled: process.env.NODE_ENV === 'production',
+
     // Enable Logs feature
     enableLogs: true,
 
     // Enable Metrics (automatically enabled in v10.25.0+, but explicit for clarity)
     enableMetrics: true,
 
-    // Performance Monitoring - capture 10% of transactions in production
-    tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+    // Performance Monitoring - capture 10% of transactions in production, but
+    // NEVER trace health-check / uptime-poller / bot traffic or /api/ping +
+    // /api/health (the "GET /" flood — see src/lib/sentry/trace-sampling.ts).
+    tracesSampler: makeTracesSampler(process.env.NODE_ENV === 'production' ? 0.1 : 1.0),
 
     // Profiling disabled - nodeProfilingIntegration was causing deployment errors
     // profilesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
@@ -40,6 +49,11 @@ if (SENTRY_DSN) {
     sendDefaultPii: false,
 
     beforeSend(event) {
+      // Backstop to `enabled` above: drop every non-production event so CI/e2e
+      // noise never reaches Sentry, even if a DSN leaks into a dev environment.
+      if (process.env.NODE_ENV !== 'production') {
+        return null;
+      }
       if (event.request?.data) {
         event.request.data = scrubPhi(event.request.data);
       }

@@ -5,10 +5,9 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import webpush from 'web-push';
 
-const prisma = new PrismaClient();
 
 /**
  * POST handler for storing push notification subscriptions

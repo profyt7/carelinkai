@@ -82,7 +82,7 @@ Canonical-source rules:
 | Styling | Tailwind CSS |
 | Real-time | SSE (Server-Sent Events) |
 | Payments | Stripe (configured, not yet live) |
-| Hosting | Render.com (Docker, auto-deploy from main) |
+| Hosting | Render.com native Node runtime (`render.yaml` → `runtime: node`, `npm start` → `.next/standalone/server.js`), auto-deploy from main. `docker/Dockerfile` is NOT the deploy path (stale, OL-130) |
 
 ---
 
@@ -133,7 +133,7 @@ documentation."
 
 ## Deployment
 - GitHub (`profyt7/carelinkai`) is source of truth.
-- Render.com is current hosting (Docker, PostgreSQL, auto-deploy from main).
+- Render.com is current hosting — native Node runtime via `render.yaml` (`runtime: node`), PostgreSQL, auto-deploy from main. `docker/Dockerfile` is not what runs in production (OL-130).
 - Validate in preview/staging before production when possible.
 
 ---

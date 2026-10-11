@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -10,8 +10,6 @@ import { calculateAIMatchScore } from "@/lib/ai-matching";
 import { createAuditLog } from "@/lib/audit";
 import { captureError } from "@/lib/sentry";
 
-// Initialize Prisma client
-const prisma = new PrismaClient();
 
 // Define the search query schema with Zod for validation
 const searchQuerySchema = z.object({
@@ -112,6 +110,9 @@ export async function GET(req: NextRequest) {
     // Build base query
     const where: any = {
       status: "ACTIVE", // Only return active listings
+      // OL-112: demo/tutorial fixtures never surface in a public listing —
+      // same structural guard as /api/search (this route had been missed).
+      isDemo: false,
     };
     
     // Apply care level filter

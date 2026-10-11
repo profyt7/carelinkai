@@ -18,14 +18,13 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient, AuditAction } from "@prisma/client";
+import { AuditAction } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { randomBytes } from "crypto";
 import { captureError } from '@/lib/sentry';
 
-// Initialize Prisma client
-const prisma = new PrismaClient();
 
 // Constants
 const BACKUP_CODE_COUNT = 10;
@@ -149,9 +148,6 @@ export async function GET(request: NextRequest) {
       }, 
       { status: 500 }
     );
-  } finally {
-    // Always disconnect from the database
-    await prisma.$disconnect();
   }
 }
 
@@ -258,8 +254,5 @@ export async function POST(request: NextRequest) {
       }, 
       { status: 500 }
     );
-  } finally {
-    // Always disconnect from the database
-    await prisma.$disconnect();
   }
 }

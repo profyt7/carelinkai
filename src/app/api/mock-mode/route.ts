@@ -5,9 +5,9 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
-import { PrismaClient, UserRole } from "@prisma/client";
+import { UserRole } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 
-const prisma = new PrismaClient();
 
 function parseOnParam(v: string | null): boolean | null {
   if (!v) return null;
@@ -100,7 +100,5 @@ export async function GET(req: NextRequest) {
       { success: false, message: "Failed to toggle mock mode" },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

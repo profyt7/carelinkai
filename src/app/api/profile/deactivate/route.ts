@@ -5,10 +5,9 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { PrismaClient, AuditAction, UserStatus } from "@prisma/client";
+import { AuditAction, UserStatus } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 
-// Local Prisma client (consistent pattern across routes)
-const prisma = new PrismaClient();
 
 /**
  * Minimal in-memory rate limiter (token bucket per identifier).

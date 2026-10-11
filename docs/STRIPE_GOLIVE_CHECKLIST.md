@@ -62,6 +62,12 @@ Unchanged: `PLACEMENT_FEE_CENTS`, `WALLET_FEE_PCT`, and the
 provider/caregiver/family price vars until those streams go live (their tiers
 auto-hide while unset in live mode).
 
+`PLACEMENT_FEE_ENABLED` — **leave unset** (OL-124). Unset/`0` means no
+placement fee is recorded or invoiced on conversion. When `1`, the fee fires
+only for FEE_ELIGIBLE payer lanes (private funds / LTC insurance); Medicaid,
+Medicare Advantage, VA and unknown lanes never bill — the Anti-Kickback hard
+line from the Haran opinion. Do not flip until that opinion clears OL-102.
+
 ### 4. Clear test-mode Stripe customer IDs (Known Issue #1)
 Demo/test operators carry `stripeCustomerId` values from the TEST account;
 live-mode API calls with them would 404. In the Render shell:
