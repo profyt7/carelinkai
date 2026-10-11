@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { withAuth } from 'next-auth/middleware';
 import { middlewareRateLimitFor, rateLimitExceeded } from '@/lib/edge-rate-limit';
+import { isKnownAppPath, isPublicPage } from '@/lib/routing/public-routes';
 
 /* ============================================================================
  * CRITICAL FIX FOR IMAGE OPTIMIZATION 400 ERRORS
@@ -33,6 +34,7 @@ const PUBLIC_PATHS = [
   '/sitemap.xml',      // Sitemap — MUST be publicly readable by search engines
   '/founder-intro.mp4',        // Self-hosted founder intro video (linked from DP emails)
   '/founder-intro-poster.jpg', // Poster frame for the above
+  '/monitoring',       // Sentry browser tunnel (next.config.js tunnelRoute) — POSTed from logged-out pages too
 ];
 
 /**
@@ -91,6 +93,23 @@ export default function middleware(req: NextRequest) {
    * ---------------------------------------------------------------- */
   if (shouldBypassAuth(pathname)) {
     const res = NextResponse.next();
+    return applySecurityHeaders(req, res);
+  }
+
+  /* ------------------------------------------------------------------
+   * UNKNOWN PATHS → 404, never the login page.
+   * withAuth redirects every non-public path without a session to
+   * /auth/login, so /zzz-nope, /.env, /wp-admin … all used to answer 307.
+   * If the first segment is not a real src/app route there is no page to
+   * protect: rewrite to Next's internal not-found route (404 status).
+   * Fail-closed: a stale KNOWN_APP_SEGMENTS list 404s a new route rather
+   * than exposing it (see __tests__/public-routes.unit.test.ts).
+   * ---------------------------------------------------------------- */
+  if (!isKnownAppPath(pathname)) {
+    const notFound = req.nextUrl.clone();
+    notFound.pathname = '/_not-found';
+    notFound.search = '';
+    const res = NextResponse.rewrite(notFound, { status: 404 });
     return applySecurityHeaders(req, res);
   }
 
@@ -169,11 +188,10 @@ export default function middleware(req: NextRequest) {
           return applySecurityHeaders(req, res);
         }
 
-        // Always-public paths (must match the authorized callback list above)
-        const publicPaths = ['/', '/help', '/search', '/homes', '/privacy', '/terms', '/learn', '/availability', '/quote', '/lead', '/founder'];
+        // Always-public paths — single source of truth: src/lib/routing/public-routes.ts
         const mockPublicPrefixes = ['/marketplace'];
 
-        if (publicPaths.some(p => pathname === p || pathname.startsWith(p + '/')) || (showMocks && mockPublicPrefixes.some(p => pathname === p || pathname.startsWith(p + '/')))) {
+        if (isPublicPage(pathname) || (showMocks && mockPublicPrefixes.some(p => pathname === p || pathname.startsWith(p + '/')))) {
           const res = NextResponse.next();
           return applySecurityHeaders(req, res);
         }
@@ -208,8 +226,8 @@ export default function middleware(req: NextRequest) {
             }
 
             // Always-public paths — no auth required regardless of mock mode
-            const alwaysPublic = ['/', '/help', '/search', '/homes', '/privacy', '/terms', '/learn', '/availability', '/quote', '/lead', '/founder'];
-            if (alwaysPublic.some(p => pathname === p || pathname.startsWith(p + '/'))) {
+            // (single source of truth: src/lib/routing/public-routes.ts)
+            if (isPublicPage(pathname)) {
               return true;
             }
 
