@@ -13,6 +13,15 @@ export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
     console.log('[Instrumentation] Loading server config...');
     await import('../sentry.server.config');
+
+    // Warm the shared Prisma client at boot (platform detection + engine load
+    // + first connection) so no request pays the multi-second cold-start span
+    // (prisma:client:detect_platform p95 8.9 s). Never throws; skipped in
+    // builds/tests where no DATABASE_URL is configured.
+    if (process.env.DATABASE_URL && process.env.PRISMA_WARMUP !== '0') {
+      const { warmPrisma } = await import('@/lib/prisma-warmup');
+      await warmPrisma();
+    }
   }
 
   if (process.env.NEXT_RUNTIME === 'edge') {
