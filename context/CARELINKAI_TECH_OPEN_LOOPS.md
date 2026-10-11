@@ -1,7 +1,7 @@
 # CareLinkAI — Tech Open Loops
 _Last updated: 2026-10-05 — **rebuilt from the repo** (sprint W2 item 7). Sources: the 56 open PRs on GitHub, `grep TODO|FIXME` over `src/`, every `test.skip`/`fixme` in `__tests__/`, `tests/`, `e2e/`, the CI workflows, and the previous version of this file (all 115 prior OL ids carried forward below with their last known status). Each entry: **OL id · one-line status · file path**. Triage: **SHIP NOW** = this week, **LATER** = backlog, **FOUNDER** = needs Chris (settings, money, legal), **CLOSED** = verified done (kept for id continuity)._
 
-_Sprint W2 batch (2026-10-05) PRs — all open for review, none merged: **#714** public routes · **#715** memory restarts · **#716** payer-source audit · **#717** isDemo filter · **#718** Sentry 401 noise · **#719** Prisma cold start · **#720** this file._
+_Sprint W2 batch — merge day 2026-10-10/11 (one at a time, production verified after each via the new `prod-verify.yml` workflow): **#723** ops tooling `870a65f` · **#721** OL-124 gate `0df4b18` · **#714** public routes `4f95aec` · **#718** Sentry 401 noise `b402dd5` · **#717** isDemo filter `189dd8d` · **#716** closed as superseded by #721 · **#720** this file · **#715** memory restarts and **#719** Prisma warm-up follow in that order._
 
 ---
 
@@ -12,27 +12,27 @@ _Sprint W2 batch (2026-10-05) PRs — all open for review, none merged: **#714**
 - **Path:** `.env` (tracked), `.gitignore`, `.github/workflows/*.yml` (`SENTRY_DSN: ""` overrides depend on this staying as-is until rotated)
 
 ### OL-124: Placement-fee invoice path is LIVE on inquiry→resident conversion and ignores the payer lane (AKS)
-- **Status:** 🔴 OPEN — **decision needed.** `triggerPlacementFee()` runs after every conversion: creates a `PLACEMENT_FEE` Payment (`PLACEMENT_FEE_CENTS`, **$1,500 in Render per OL-030**, $500 default) and queues a Stripe invoice item when the operator has a `stripeCustomerId`; never reads `payerSource`/`deriveFeeLane()`. Built as OL-014 (April) before the AKS firewall (OL-114) and the OL-102 "do NOT build" parking existed — the two decisions contradict and this is the live one. Audit + tripwire test on PR #716. Proposed fix: `PLACEMENT_FEE_ENABLED` flag (default off) + `FEE_ELIGIBLE`-only gate.
+- **Status:** 🟢 GATED — merged 2026-10-10 as `0df4b18` (#721): `PLACEMENT_FEE_ENABLED` unset = OFF, and even when on only `FEE_ELIGIBLE` lanes bill; skipped decisions log `placement_fee_skipped`. **Residual:** review the legacy `PLACEMENT_FEE` Payment rows the old path wrote (`scripts/report-placement-fee-payments.ts`, read-only). History: `triggerPlacementFee()` used to run after every conversion: creates a `PLACEMENT_FEE` Payment (`PLACEMENT_FEE_CENTS`, **$1,500 in Render per OL-030**, $500 default) and queues a Stripe invoice item when the operator has a `stripeCustomerId`; never reads `payerSource`/`deriveFeeLane()`. Built as OL-014 (April) before the AKS firewall (OL-114) and the OL-102 "do NOT build" parking existed — the two decisions contradict and this is the live one. Audit + tripwire test on PR #716. Proposed fix: `PLACEMENT_FEE_ENABLED` flag (default off) + `FEE_ELIGIBLE`-only gate.
 - **Path:** `src/lib/services/inquiry-conversion.ts` (`triggerPlacementFee`), `src/app/api/operator/inquiries/[id]/convert/route.ts`, `docs/audits/OL-114_PAYER_SOURCE_AUDIT_2026-10-05.md`, `__tests__/payer-lane.audit.test.ts`
 
 ### OL-125: `/cleveland/*` landing pages were auth-gated; unknown paths bounced to login
-- **Status:** 🟢 FIXED-PENDING-MERGE — PR **#714**. `/cleveland` added to the public list; first-segment-unknown paths now 404 via `/_not-found` before `withAuth`; `/monitoring` (Sentry tunnel) un-gated. Unit + e2e (`e2e/public-routes.spec.ts`, in the `e2e-concierge` job).
+- **Status:** ✅ MERGED 2026-10-10 `4f95aec` (#714), verified live: five /cleveland* pages 200 + indexable, /zzz-nope + /.env 404. `/cleveland` added to the public list; first-segment-unknown paths now 404 via `/_not-found` before `withAuth`; `/monitoring` (Sentry tunnel) un-gated. Unit + e2e (`e2e/public-routes.spec.ts`, in the `e2e-concierge` job).
 - **Path:** `src/middleware.ts`, `src/lib/routing/public-routes.ts`
 
 ### OL-126: Render memory restarts (10/5 04:05 UTC, 9/13 15:40 UTC)
-- **Status:** 🟢 FIXED-PENDING-MERGE — PR **#715** + two founder settings (OL-138). Finding: 71 `PrismaClient` instances with per-request `$disconnect()`, a 4 GB heap cap on a smaller instance (922 MB RSS observed), and the health check rendering `/` (~40K traced `GET /` a day). Fix: one client per process, `NODE_HEAP_MB` heap cap (default 1024), `GET/HEAD /api/ping`, `tracesSampler` dropping pollers/bots.
+- **Status:** 🟢 FIXED-PENDING-MERGE — PR **#715** (merge-day item 7) + two founder settings (OL-138). Finding: 71 `PrismaClient` instances with per-request `$disconnect()`, a 4 GB heap cap on a smaller instance (922 MB RSS observed), and the health check rendering `/` (~40K traced `GET /` a day). Fix: one client per process, `NODE_HEAP_MB` heap cap (default 1024), `GET/HEAD /api/ping`, `tracesSampler` dropping pollers/bots.
 - **Path:** `src/lib/prisma.ts`, `src/lib/sentry/trace-sampling.ts`, `src/app/api/ping/route.ts`, `package.json` (`start`), `docs/MEMORY_RESTARTS_2026-10-05.md`
 
 ### OL-127: Sentry CARELINK-AI-19 — 401s reported as errors
-- **Status:** 🟢 FIXED-PENDING-MERGE — PR **#718**. `captureError()` drops `UnauthenticatedError`/`UnauthorizedError`; pipeline/convert/status routes short-circuit to `handleAuthError()`; client fetchers redirect to login on 401 (the stale-tab SWR poll was the logged-out caller).
+- **Status:** ✅ MERGED 2026-10-11 `b402dd5` (#718), verified live. `captureError()` drops `UnauthenticatedError`/`UnauthorizedError`; pipeline/convert/status routes short-circuit to `handleAuthError()`; client fetchers redirect to login on 401 (the stale-tab SWR poll was the logged-out caller).
 - **Path:** `src/lib/sentry.ts`, `src/app/api/operator/inquiries/pipeline/route.ts`, `src/hooks/useInquiries.ts`, `__tests__/pipeline.auth-401.api.test.ts`
 
 ### OL-128: Prisma cold start — `prisma:client:detect_platform` p95 8.9 s
-- **Status:** 🟢 FIXED-PENDING-MERGE — PR **#719** (most effective after #715). `binaryTargets` was already pinned; Prisma always runs the probe once per client, so the fix is one client + a boot-time `warmPrisma()` from `instrumentation.ts`. Confirm in Sentry after deploy: span gone from request traces.
+- **Status:** 🟢 FIXED-PENDING-MERGE — PR **#719** (merge-day item 8, after #715). `binaryTargets` was already pinned; Prisma always runs the probe once per client, so the fix is one client + a boot-time `warmPrisma()` from `instrumentation.ts`. Confirm in Sentry after deploy: span gone from request traces.
 - **Path:** `src/lib/prisma-warmup.ts`, `src/instrumentation.ts`, `docs/PRISMA_COLD_START_2026-10-05.md`
 
 ### OL-129: `isDemo` gaps in the public directory APIs (OL-112 follow-through)
-- **Status:** 🟢 FIXED-PENDING-MERGE — PR **#717**. `/api/search` already filtered; `/api/homes/search` did not; `/api/homes/[id]` served demo homes logged-out. Jest + e2e (`e2e/search-demo-filter.spec.ts`). **Residual:** live Cleveland listing count still to be read by Chris (`curl 'https://getcarelinkai.com/api/search?location=Cleveland&limit=1' | jq .pagination.totalResults`) — agent env cannot reach prod.
+- **Status:** ✅ MERGED 2026-10-11 `189dd8d` (#717), verified live. `/api/search` already filtered; `/api/homes/search` did not; `/api/homes/[id]` served demo homes logged-out. Jest + e2e (`e2e/search-demo-filter.spec.ts`). **Residual:** live Cleveland listing count still to be read by Chris (`curl 'https://getcarelinkai.com/api/search?location=Cleveland&limit=1' | jq .pagination.totalResults`) — agent env cannot reach prod.
 - **Path:** `src/app/api/homes/search/route.ts`, `src/app/api/homes/[id]/route.ts`, `src/app/api/dev/upsert-operator/route.ts`
 
 ### OL-138: Render health-check path + heap env (founder settings for #715)
@@ -76,7 +76,7 @@ _Sprint W2 batch (2026-10-05) PRs — all open for review, none merged: **#714**
 - **Path:** GitHub PR list
 
 ### OL-137: Merge-order note — PR #711 (Sentry CI noise) and #715 both edit the Sentry configs
-- **Status:** 🟡 OPEN — #711 adds `enabled: NODE_ENV==='production'`; #715 swaps `tracesSampleRate` → `tracesSampler`. Different lines, but whichever merges second needs a trivial rebase. #711 also blanks DSNs in `e2e-family.yml`, which #712 already did (now redundant).
+- **Status:** ✅ RESOLVED 2026-10-05 — #715 now carries #711's Sentry hunks verbatim; both merge orders verified clean. #711 also blanks DSNs in `e2e-family.yml`, which #712 already did (now redundant).
 - **Path:** `sentry.server.config.ts`, `sentry.edge.config.ts`, `src/instrumentation-client.ts`
 
 ### OL-133: Notification sends that are still `TODO` stubs
