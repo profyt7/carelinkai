@@ -2,6 +2,17 @@
 
 ---
 
+### 2026-10-10/11 — Sprint W2 merge day (8 PRs merged one at a time, production verified after each)
+- **Objective:** Merge #714–#721 in Chris's order with a production check between merges; close #716 if superseded; legacy PLACEMENT_FEE report; tracker update.
+- **Work completed:** Added `.github/workflows/prod-verify.yml` (#723 `870a65f`, fixed in #724 `87df579`) because the agent sandbox has no egress to production — it waits for `/api/version` to report the expected commit, then checks /, /api/health, /api/ping, the five /cleveland* pages, the 404s and the /operator redirect. Then merged, in order: #721 `0df4b18` → #714 `4f95aec` → #718 `b402dd5` → #717 `189dd8d` → #716 closed as superseded (its two commits are inside #721; merging it would have rolled the gated test back) → #720 `b81fc9f` → #715 `b0b4078` → #719 `97e6583`. Every branch had main merged in first (one conflict, the e2e-concierge spec list in `e2e-family.yml`, resolved to run all four specs); tsc/eslint/jest run locally before each push; all required checks green before each squash. Two CI re-runs, each once: #718 e2e-concierge (Next dev server memory-restart mid-test, same spec green on neighbouring runs) and #719 e2e-residents shard 2 (`next/font` Google fetch returned garbage on a cache-miss runner before any test ran). Sentry CARELINK-AI-19 is now resolved.
+- **Files changed:** `.github/workflows/prod-verify.yml`, `scripts/report-placement-fee-payments.ts` (new, read-only), context files; everything else is the already-reviewed sprint PRs.
+- **Commands run:** per PR: `git merge origin/main`, `tsc --noEmit`, `eslint`, `jest --ci`, push; GitHub squash-merge; `prod-verify.yml` dispatch with `expect_sha`.
+- **Tests/build status:** ✅ all 8 PRs green on CI at merge; 9 production verification runs passed; live build `97e6583` (then `87df579`, workflow-only).
+- **Deployment impact:** All sprint W2 behavior is live. `PLACEMENT_FEE_ENABLED` is not set → placement fee OFF. Nothing changed in Render/Stripe/Sentry settings.
+- **New risks/blockers:** OL-138 (Render health-check path + `NODE_HEAP_MB`) is now the gating founder action for the memory fix to fully land. Legacy PLACEMENT_FEE rows not yet reviewed (needs prod DB → Render shell).
+- **Recommended next step:** Render: Health Check Path `/api/ping`, `NODE_HEAP_MB` per plan; run the placement-fee report; watch Render memory + Sentry `GET /` volume and `detect_platform` over the week.
+
+
 ### 2026-10-05 — Sprint W2 batch (7 items, 7 PRs, nothing merged)
 - **Objective:** Mon 10/5 sprint batch from Chris — one PR per item, in order: (1) `/cleveland/*` reachable logged-out + unknown paths 404; (2) Render memory restarts; (3) OL-114 payer-source audit; (4) OL-112 isDemo audit; (5) Sentry CARELINK-AI-19 401 noise; (6) Prisma cold start; (7) rebuild `CARELINKAI_TECH_OPEN_LOOPS.md` from the repo. Rules honored: no claim-drip re-enable, no placement-fee invoicing added/enabled, no Stripe/Sentry/Render settings changed, no history rewrite, `.env` untouched (OL-122 is Chris's).
 - **Work completed:**

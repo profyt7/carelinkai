@@ -1,7 +1,7 @@
 # CareLinkAI — Tech Open Loops
 _Last updated: 2026-10-05 — **rebuilt from the repo** (sprint W2 item 7). Sources: the 56 open PRs on GitHub, `grep TODO|FIXME` over `src/`, every `test.skip`/`fixme` in `__tests__/`, `tests/`, `e2e/`, the CI workflows, and the previous version of this file (all 115 prior OL ids carried forward below with their last known status). Each entry: **OL id · one-line status · file path**. Triage: **SHIP NOW** = this week, **LATER** = backlog, **FOUNDER** = needs Chris (settings, money, legal), **CLOSED** = verified done (kept for id continuity)._
 
-_Sprint W2 batch — merge day 2026-10-10/11 (one at a time, production verified after each via the new `prod-verify.yml` workflow): **#723** ops tooling `870a65f` · **#721** OL-124 gate `0df4b18` · **#714** public routes `4f95aec` · **#718** Sentry 401 noise `b402dd5` · **#717** isDemo filter `189dd8d` · **#716** closed as superseded by #721 · **#720** this file · **#715** memory restarts and **#719** Prisma warm-up follow in that order._
+_Sprint W2 batch — merge day 2026-10-10/11 (one at a time, production verified after each via the new `prod-verify.yml` workflow): **#723** ops tooling `870a65f` · **#721** OL-124 gate `0df4b18` · **#714** public routes `4f95aec` · **#718** Sentry 401 noise `b402dd5` · **#717** isDemo filter `189dd8d` · **#716** closed as superseded by #721 · **#720** this file `b81fc9f` · **#715** memory restarts `b0b4078` · **#719** Prisma warm-up `97e6583` · **#724** workflow fix `87df579`. All eight sprint PRs are on main and verified live._
 
 ---
 
@@ -20,7 +20,7 @@ _Sprint W2 batch — merge day 2026-10-10/11 (one at a time, production verified
 - **Path:** `src/middleware.ts`, `src/lib/routing/public-routes.ts`
 
 ### OL-126: Render memory restarts (10/5 04:05 UTC, 9/13 15:40 UTC)
-- **Status:** 🟢 FIXED-PENDING-MERGE — PR **#715** (merge-day item 7) + two founder settings (OL-138). Finding: 71 `PrismaClient` instances with per-request `$disconnect()`, a 4 GB heap cap on a smaller instance (922 MB RSS observed), and the health check rendering `/` (~40K traced `GET /` a day). Fix: one client per process, `NODE_HEAP_MB` heap cap (default 1024), `GET/HEAD /api/ping`, `tracesSampler` dropping pollers/bots.
+- **Status:** ✅ MERGED 2026-10-11 `b0b4078` (#715), verified live (/api/ping 200). Two founder settings still open (OL-138). Finding: 71 `PrismaClient` instances with per-request `$disconnect()`, a 4 GB heap cap on a smaller instance (922 MB RSS observed), and the health check rendering `/` (~40K traced `GET /` a day). Fix: one client per process, `NODE_HEAP_MB` heap cap (default 1024), `GET/HEAD /api/ping`, `tracesSampler` dropping pollers/bots.
 - **Path:** `src/lib/prisma.ts`, `src/lib/sentry/trace-sampling.ts`, `src/app/api/ping/route.ts`, `package.json` (`start`), `docs/MEMORY_RESTARTS_2026-10-05.md`
 
 ### OL-127: Sentry CARELINK-AI-19 — 401s reported as errors
@@ -28,7 +28,7 @@ _Sprint W2 batch — merge day 2026-10-10/11 (one at a time, production verified
 - **Path:** `src/lib/sentry.ts`, `src/app/api/operator/inquiries/pipeline/route.ts`, `src/hooks/useInquiries.ts`, `__tests__/pipeline.auth-401.api.test.ts`
 
 ### OL-128: Prisma cold start — `prisma:client:detect_platform` p95 8.9 s
-- **Status:** 🟢 FIXED-PENDING-MERGE — PR **#719** (merge-day item 8, after #715). `binaryTargets` was already pinned; Prisma always runs the probe once per client, so the fix is one client + a boot-time `warmPrisma()` from `instrumentation.ts`. Confirm in Sentry after deploy: span gone from request traces.
+- **Status:** ✅ MERGED 2026-10-11 `97e6583` (#719), verified live. Confirm in Sentry over the next week that `prisma:client:detect_platform` is gone from request traces. `binaryTargets` was already pinned; Prisma always runs the probe once per client, so the fix is one client + a boot-time `warmPrisma()` from `instrumentation.ts`. Confirm in Sentry after deploy: span gone from request traces.
 - **Path:** `src/lib/prisma-warmup.ts`, `src/instrumentation.ts`, `docs/PRISMA_COLD_START_2026-10-05.md`
 
 ### OL-129: `isDemo` gaps in the public directory APIs (OL-112 follow-through)
@@ -36,7 +36,7 @@ _Sprint W2 batch — merge day 2026-10-10/11 (one at a time, production verified
 - **Path:** `src/app/api/homes/search/route.ts`, `src/app/api/homes/[id]/route.ts`, `src/app/api/dev/upsert-operator/route.ts`
 
 ### OL-138: Render health-check path + heap env (founder settings for #715)
-- **Status:** 🔴 FOUNDER — Render → Settings → Health Check Path: **`/api/ping`** (any uptime monitor too); set **`NODE_HEAP_MB`** per plan (Starter 256 · Standard 1024 default · Pro 2560). `render.yaml` still says `healthCheckPath: /` — update it in the same move (left untouched per "no Render settings changes").
+- **Status:** 🔴 FOUNDER — #715 is live, so this is now actionable: Render → Settings → Health Check Path: **`/api/ping`** (any uptime monitor too); set **`NODE_HEAP_MB`** per plan (Starter 256 · Standard 1024 default · Pro 2560). `render.yaml` still says `healthCheckPath: /` — update it in the same move (left untouched per "no Render settings changes").
 - **Path:** `render.yaml`, Render dashboard
 
 ### OL-076: Next 15 async `params`/`searchParams` migration — 9 residents e2e specs still CI-skipped
