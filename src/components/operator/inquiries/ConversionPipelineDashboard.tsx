@@ -59,7 +59,13 @@ export default function ConversionPipelineDashboard() {
 
   const fetchPipelineData = async () => {
     try {
-      const response = await fetch('/api/operator/inquiries/pipeline');
+      const response = await fetch('/api/operator/inquiries/pipeline', { credentials: 'include' });
+      if (response.status === 401) {
+        // Session expired / stale tab: go to login instead of showing a dead
+        // error state (and instead of letting the 401 look like an app error).
+        window.location.assign(`/auth/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`);
+        return;
+      }
       if (!response.ok) throw new Error('Failed to fetch pipeline data');
       const result = await response.json();
       setData(result);

@@ -12,7 +12,7 @@ import { PERMISSIONS } from '@/lib/permissions';
 import { getConversionStats } from '@/lib/services/inquiry-conversion';
 import { prisma } from '@/lib/prisma';
 import { UserRole } from '@prisma/client';
-import { captureError } from '@/lib/sentry';
+import { captureError, isExpectedAuthError } from '@/lib/sentry';
 
 export async function GET(request: NextRequest) {
   try {
@@ -163,6 +163,11 @@ export async function GET(request: NextRequest) {
       recentConversions,
     });
   } catch (error) {
+    // 401/403 are expected responses (logged-out caller, stale tab) — answer
+    // them without touching Sentry (CARELINK-AI-19).
+    if (isExpectedAuthError(error)) {
+      return handleAuthError(error);
+    }
     captureError(error instanceof Error ? error : new Error(String(error)), {
       tags: { route: 'operator:inquiries:pipeline' },
     });
