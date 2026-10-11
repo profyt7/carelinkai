@@ -9,6 +9,7 @@ import { ResidentStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { stripe } from '@/lib/stripe';
+import { deriveFeeLane, type FeeLane, type PayerSource } from '@/lib/payer/payer-source';
 
 
 /**
@@ -171,11 +172,13 @@ export async function convertInquiryToResident(
       return resident;
     });
 
-    // Fire placement fee charge — non-blocking
+    // Fire placement fee charge — non-blocking. Gated (OL-124): only when
+    // PLACEMENT_FEE_ENABLED is on AND the inquiry's payer lane is FEE_ELIGIBLE.
     triggerPlacementFee(
       inquiry.home.operator,
       { id: result.id, firstName: validated.firstName, lastName: validated.lastName },
-      validated.inquiryId
+      validated.inquiryId,
+      (inquiry as { payerSource?: PayerSource | null }).payerSource ?? null
     ).catch((err) => console.error('[PLACEMENT_FEE] Unexpected error:', err));
 
     // Fire affiliate commission — non-blocking
@@ -218,15 +221,63 @@ export async function convertInquiryToResident(
   }
 }
 
+/** PLACEMENT_FEE_ENABLED: unset / anything but 1|true|yes|on = OFF (OL-124). */
+export function isPlacementFeeEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
+  const raw = (env.PLACEMENT_FEE_ENABLED ?? '').toString().trim().toLowerCase();
+  return ['1', 'true', 'yes', 'on'].includes(raw);
+}
+
+/**
+ * The OL-124 gate, in one place so it can be unit-tested without Prisma/Stripe.
+ * Returns null when the fee may fire, otherwise the reason it must not.
+ *
+ * ⚖️ Anti-Kickback hard line (attorney engagement, Haran): a placement fee may
+ * only attach to a placement paid with private funds or LTC insurance
+ * (FEE_ELIGIBLE). Medicaid/waiver, Medicare/MA, VA (FREE_LANE) and any
+ * unknown/missing lane (UNKNOWN) never bill — "not sure" is not consent.
+ */
+export function placementFeeBlockReason(
+  payerSource: PayerSource | null | undefined,
+  env: NodeJS.ProcessEnv = process.env
+): { lane: FeeLane; reason: 'disabled' | 'free_lane' | 'unknown_lane' } | null {
+  const lane = deriveFeeLane(payerSource);
+  if (!isPlacementFeeEnabled(env)) return { lane, reason: 'disabled' };
+  if (lane === 'FREE_LANE') return { lane, reason: 'free_lane' };
+  if (lane !== 'FEE_ELIGIBLE') return { lane, reason: 'unknown_lane' };
+  return null;
+}
+
 /**
  * Attempt to charge the operator a placement fee after a successful conversion.
  * Never throws — conversion must always succeed regardless of billing outcome.
+ *
+ * Gated (OL-124): writes NOTHING (no Payment row, no Stripe invoice item) unless
+ * PLACEMENT_FEE_ENABLED is on AND the inquiry's payer lane is FEE_ELIGIBLE. When
+ * skipped it logs one structured line so the decision is visible in Render logs.
  */
 async function triggerPlacementFee(
   operator: { id: string; userId: string; stripeCustomerId: string | null } | null,
   resident: { id: string; firstName: string; lastName: string },
-  inquiryId: string
+  inquiryId: string,
+  payerSource: PayerSource | null | undefined
 ): Promise<void> {
+  const blocked = placementFeeBlockReason(payerSource);
+  if (blocked) {
+    console.info(
+      JSON.stringify({
+        event: 'placement_fee_skipped',
+        inquiryId,
+        operatorId: operator?.id ?? null,
+        residentId: resident.id,
+        payerSource: payerSource ?? null,
+        lane: blocked.lane,
+        reason: blocked.reason,
+        ref: 'OL-124',
+      })
+    );
+    return;
+  }
+
   const placementFeeCents = parseInt(process.env.PLACEMENT_FEE_CENTS ?? '50000', 10);
   const residentName = `${resident.firstName} ${resident.lastName}`;
 
