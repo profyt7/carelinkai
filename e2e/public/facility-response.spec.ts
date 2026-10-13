@@ -15,7 +15,7 @@
  * Runs with the ./e2e config:
  *   npx playwright test --config=playwright.e2e.config.ts e2e/public/facility-response.spec.ts
  */
-import { test, expect, type Browser, type Page } from '@playwright/test';
+import { test, expect, type APIRequestContext, type Browser, type Page } from '@playwright/test';
 
 const ts = Date.now();
 const uniq = (p: string) => `${p}-${ts}@test.carelinkai.com`;
@@ -44,6 +44,26 @@ async function api(page: Page, method: string, path: string, body?: unknown) {
     try { json = await r.json(); } catch { /* none */ }
     return { status: r.status, json };
   }, { method, path, body });
+}
+
+/**
+ * The shared e2e-concierge dev server can restart on its memory watchdog
+ * mid-run (OL-146) → a single ECONNRESET. Retry dev-endpoint reads a few times
+ * so one restart does not fail the whole serial group.
+ */
+async function devState(request: APIRequestContext, id: string): Promise<any> {
+  let lastErr: unknown;
+  for (let i = 0; i < 6; i++) {
+    try {
+      const r = await request.get(`/api/dev/placement-search?id=${id}`, { timeout: 30000 });
+      if (r.ok()) return await r.json();
+      lastErr = new Error(`dev state ${r.status()}`);
+    } catch (e) {
+      lastErr = e;
+    }
+    await new Promise((res) => setTimeout(res, 3000));
+  }
+  throw lastErr;
 }
 
 test.describe.configure({ mode: 'serial' });
@@ -95,7 +115,7 @@ test.describe('@critical facility accept / decline in the concierge flow', () =>
     expect(respond.json.facilityResponses).toHaveLength(2);
     await admin.context().close();
 
-    const st = await (await request.get(`/api/dev/placement-search?id=${searchId}`)).json();
+    const st = await devState(request, searchId);
     expect(st.placementRequestCount, 'concierge still creates no operator-bound PlacementRequest rows').toBe(0);
     expect(st.facilityResponses).toHaveLength(2);
     for (const fr of st.facilityResponses as any[]) {
@@ -121,13 +141,16 @@ test.describe('@critical facility accept / decline in the concierge flow', () =>
     for (const phi of ['Jane', 'Doe', 'Mary', 'insulin', 'dementia']) expect(html, `page must not carry ${phi}`).not.toContain(phi);
 
     await page.getByTestId('facility-decline').click();
-    await page.getByTestId('facility-decline-reason').selectOption('ACUITY_WANDERING');
+    const reason = page.getByTestId('facility-decline-reason');
+    await expect(reason).toBeVisible();
+    await reason.selectOption('ACUITY_WANDERING');
+    await expect(reason).toHaveValue('ACUITY_WANDERING');
     await page.getByTestId('facility-decline-text').fill('Our memory care unit is not secured.');
     await page.getByTestId('facility-decline-submit').click();
     await expect(page.getByTestId('facility-result')).toHaveAttribute('data-status', 'DECLINED', { timeout: 30000 });
 
     // Opened + responded + declined timestamps, reason + text stored; link now closed.
-    const st = await (await request.get(`/api/dev/placement-search?id=${searchId}`)).json();
+    const st = await devState(request, searchId);
     const a = (st.facilityResponses as any[]).find((f) => f.homeId === homes[0].id);
     expect(a).toMatchObject({ status: 'DECLINED', declineReason: 'ACUITY_WANDERING', declineText: 'Our memory care unit is not secured.' });
     expect(a.openedAt && a.respondedAt && a.declinedAt).toBeTruthy();
@@ -175,7 +198,7 @@ test.describe('@critical facility accept / decline in the concierge flow', () =>
     await page.getByTestId('facility-accept').click();
     await expect(page.getByTestId('facility-result')).toHaveAttribute('data-status', 'ACCEPTED', { timeout: 30000 });
 
-    let st = await (await request.get(`/api/dev/placement-search?id=${searchId}`)).json();
+    let st = await devState(request, searchId);
     let b = (st.facilityResponses as any[]).find((f) => f.homeId === homes[1].id);
     expect(b.status).toBe('ACCEPTED');
     expect(b.acceptedAt && b.respondedAt).toBeTruthy();
@@ -186,10 +209,10 @@ test.describe('@critical facility accept / decline in the concierge flow', () =>
     await expect(rowB).toHaveAttribute('data-status', 'ACCEPTED', { timeout: 30000 });
     await rowB.getByTestId('mark-admitted').dispatchEvent('click');
     await expect.poll(async () => {
-      const s = await (await request.get(`/api/dev/placement-search?id=${searchId}`)).json();
+      const s = await devState(request, searchId);
       return (s.facilityResponses as any[]).find((f) => f.homeId === homes[1].id)?.status;
     }, { timeout: 20000 }).toBe('ADMITTED');
-    st = await (await request.get(`/api/dev/placement-search?id=${searchId}`)).json();
+    st = await devState(request, searchId);
     b = (st.facilityResponses as any[]).find((f) => f.homeId === homes[1].id);
     expect(b.admittedAt).toBeTruthy();
     await admin.context().close();

@@ -20,13 +20,16 @@ export default function FacilityRespondClient({ token, facilityName, summary }: 
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => setHydrated(true), []);
 
-  async function submit(action: 'accept' | 'decline') {
+  const [formError, setFormError] = useState<string | null>(null);
+
+  async function submit(action: 'accept' | 'decline', declineReason?: string, declineText?: string) {
     setBusy(true);
+    setFormError(null);
     try {
       const r = await fetch('/api/facility/respond', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, action, reason: action === 'decline' ? reason : undefined, text: action === 'decline' ? text : undefined }),
+        body: JSON.stringify({ token, action, reason: action === 'decline' ? declineReason : undefined, text: action === 'decline' ? declineText : undefined }),
       });
       const j = (await r.json().catch(() => ({ ok: false, error: 'network' }))) as Result;
       setResult(j);
@@ -82,23 +85,31 @@ export default function FacilityRespondClient({ token, facilityName, summary }: 
           className="mt-6 space-y-3"
           onSubmit={(e) => {
             e.preventDefault();
-            if (reason) void submit('decline');
+            // Read from the DOM, not only from state: a controlled-select change
+            // event can be missed by a fast automation click right after render.
+            const fd = new FormData(e.currentTarget);
+            const r = String(fd.get('reason') ?? reason ?? '');
+            const t = String(fd.get('text') ?? text ?? '');
+            if (!r) { setFormError('Pick a reason first.'); return; }
+            if (r === 'OTHER' && t.trim().length < 3) { setFormError('Please say why (a few words is fine).'); return; }
+            void submit('decline', r, t);
           }}
         >
           <label className="block text-sm font-medium text-neutral-800">Why not? (helps us stop sending placements that do not fit)</label>
-          <select value={reason} onChange={(e) => setReason(e.target.value)} required className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm" data-testid="facility-decline-reason">
+          <select name="reason" value={reason} onChange={(e) => setReason(e.target.value)} onInput={(e) => setReason((e.target as HTMLSelectElement).value)} required className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm" data-testid="facility-decline-reason">
             <option value="">Pick a reason…</option>
             {DECLINE_REASONS.map((r) => (
               <option key={r.value} value={r.value}>{r.label}</option>
             ))}
           </select>
-          <textarea value={text} onChange={(e) => setText(e.target.value)} rows={2} placeholder={reason === 'OTHER' ? 'Please say why (required)' : 'Anything else? (optional)'} className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm" data-testid="facility-decline-text" />
+          <textarea name="text" value={text} onChange={(e) => setText(e.target.value)} rows={2} placeholder={reason === 'OTHER' ? 'Please say why (required)' : 'Anything else? (optional)'} className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm" data-testid="facility-decline-text" />
           <div className="flex gap-2">
             <button type="button" onClick={() => setMode('choose')} className="rounded-lg border border-neutral-300 px-4 py-2 text-sm">Back</button>
-            <button type="submit" disabled={busy || !reason || (reason === 'OTHER' && text.trim().length < 3)} className="flex-1 rounded-lg bg-neutral-900 py-2 text-sm font-semibold text-white disabled:opacity-50" data-testid="facility-decline-submit">
+            <button type="submit" disabled={busy} className="flex-1 rounded-lg bg-neutral-900 py-2 text-sm font-semibold text-white disabled:opacity-50" data-testid="facility-decline-submit">
               Send decline
             </button>
           </div>
+          {formError && <p className="text-sm text-error-700" data-testid="facility-form-error">{formError}</p>}
         </form>
       )}
     </div>
