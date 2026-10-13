@@ -32,6 +32,8 @@ export const PUBLIC_PAGE_PREFIXES: readonly string[] = [
   '/quote',
   '/lead',
   '/founder',
+  // Facility accept / decline link (sprint W4-2): no-login, token-gated page.
+  '/facility',
   // SEO landing pages (sitemap.ts) — the Cleveland directory and its care-type children.
   '/cleveland',
 ];
@@ -56,6 +58,7 @@ export const KNOWN_APP_SEGMENTS: readonly string[] = [
   'demo',
   'design-preview',
   'discharge-planner',
+  'facility',
   'family',
   'favorites',
   'founder',
