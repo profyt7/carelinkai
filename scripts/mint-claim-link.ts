@@ -28,6 +28,7 @@
 
 import { PrismaClient } from '@prisma/client';
 import { signClaimToken, DEFAULT_CLAIM_TOKEN_TTL_HOURS } from '../src/lib/claim-token';
+import { CLAIM_COHORTS, COHORT_LANDING_PATH, isClaimCohort } from '../src/lib/claim-engine/cohorts';
 import { readFileSync } from 'node:fs';
 
 const prisma = new PrismaClient();
@@ -119,6 +120,24 @@ async function main() {
   const exp = now + DEFAULT_CLAIM_TOKEN_TTL_HOURS * 3600;
   const expDate = new Date(exp * 1000).toISOString().slice(0, 10);
   const file = arg('--file');
+
+  // ---- COHORT MODE (sprint W3 item 2) ----
+  // A cohort link has no home: it carries `cohort` and lands on the cohort
+  // landing page (/claim?token=… → /cleveland/home-care-agencies?token=…),
+  // where the "Claim your agency listing" submit is tagged with the cohort.
+  //   npx tsx scripts/mint-claim-link.ts --cohort CLEVELAND_AGENCIES --email owner@agency.com
+  const cohort = arg('--cohort');
+  if (cohort) {
+    if (!isClaimCohort(cohort)) { console.error(`✗ Unknown cohort "${cohort}". Known: ${CLAIM_COHORTS.join(', ')}`); process.exit(1); }
+    const email = arg('--email');
+    if (!email) { console.error('✗ --email <contact email> is required with --cohort.'); process.exit(1); }
+    const token = signClaimToken({ operatorEmail: email.toLowerCase(), clevelandFounder: false, cohort, iat: now, exp }, secret);
+    console.log(`\n=== COHORT CLAIM LINK — ${cohort} — ${email} ===`);
+    console.log(`lands on: ${COHORT_LANDING_PATH[cohort]}`);
+    console.log(`expires:  ${expDate}  (~45 days)`);
+    console.log(`\n${appUrl()}/claim?token=${encodeURIComponent(token)}`);
+    return;
+  }
 
   // ---- BATCH MODE ----
   if (file) {
