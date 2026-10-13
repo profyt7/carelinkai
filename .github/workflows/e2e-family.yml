@@ -397,7 +397,10 @@ jobs:
           --health-retries 5
 
     env:
-      NODE_OPTIONS: --max-old-space-size=4096
+      # 6 GB heap for THIS job only: it runs every e2e/public/ landing spec on
+      # one dev server, and Next's dev memory watchdog restarts the server near
+      # the heap limit mid-test (OL-146 — "approaching the used memory threshold").
+      NODE_OPTIONS: --max-old-space-size=6144
       NEXTAUTH_URL: http://localhost:3000
       NEXTAUTH_SECRET: ${{ secrets.E2E_NEXTAUTH_SECRET }}
       ALLOW_DEV_ENDPOINTS: "1"
