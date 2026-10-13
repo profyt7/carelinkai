@@ -49,6 +49,12 @@ test.describe('@critical /cleveland/assisted-living server-rendered listings', (
     expect(res.status(), 'dev seed').toBe(200);
   });
 
+  // Remove what we seeded so later specs in the same job (e.g. the /search
+  // demo-filter spec, 10 results per page) never lose their own home off page 1.
+  test.afterAll(async ({ request }) => {
+    await request.delete('/api/dev/upsert-operator', { data: { email: OP_EMAIL } }).catch(() => undefined);
+  });
+
   test('logged-out fetch has listing cards in the HTML (not client-only)', async ({ request }) => {
     const res = await request.get('/cleveland/assisted-living', { maxRedirects: 0 });
     expect(res.status()).toBe(200);
