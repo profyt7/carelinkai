@@ -4,6 +4,7 @@ import { FiArrowRight, FiCheck } from 'react-icons/fi';
 import ListingCard from '@/components/directory/ListingCard';
 import { fetchPublicListings } from '@/lib/directory/public-listings';
 import { AVAILABILITY_FRESH_DAYS } from '@/lib/availability/availability';
+import { buildListingsItemListJsonLd } from '@/lib/seo/jsonld';
 
 // Server-rendered listings (sprint W3 item 4): the top verified, non-demo
 // assisted-living homes are queried per request and emitted as plain HTML so a
@@ -52,6 +53,11 @@ const structuredData = {
 
 export default async function ClevelandAssistedLivingPage() {
   const listings = await fetchPublicListings({ careLevel: 'ASSISTED', take: LISTINGS_LIMIT });
+  const itemList = buildListingsItemListJsonLd({
+    url: 'https://getcarelinkai.com/cleveland/assisted-living',
+    name: 'Assisted living homes in Greater Cleveland, OH',
+    listings,
+  });
 
   return (
     <main className="min-h-screen bg-neutral-50">
@@ -59,6 +65,9 @@ export default async function ClevelandAssistedLivingPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
+      {listings.length > 0 && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemList) }} />
+      )}
 
       {/* Hero */}
       <section className="bg-white border-b border-neutral-200">

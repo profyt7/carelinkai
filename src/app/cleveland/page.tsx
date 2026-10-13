@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { FiArrowRight, FiCheck } from 'react-icons/fi';
+import { SUBURBS, suburbPath } from '@/lib/directory/suburbs';
+import { buildPagesItemListJsonLd } from '@/lib/seo/jsonld';
 
 export const metadata: Metadata = {
   title: 'Senior Care in Cleveland, OH — Assisted Living, Memory Care, & More | CareLinkAI',
@@ -83,6 +85,16 @@ const structuredData = {
   about: careTypes.map((c) => ({ '@type': 'Thing', name: c.title })),
 };
 
+// ItemList of the directory pages under this hub (sprint W3 item 6b).
+const directoryItemList = buildPagesItemListJsonLd({
+  url: 'https://getcarelinkai.com/cleveland',
+  name: 'Senior care directory pages — Greater Cleveland, OH',
+  pages: [
+    ...careTypes.map((c) => ({ url: `https://getcarelinkai.com${c.href}`, name: `${c.title} in Cleveland, OH` })),
+    ...SUBURBS.map((s) => ({ url: `https://getcarelinkai.com${suburbPath(s)}`, name: s.h1 })),
+  ],
+});
+
 export default function ClevelandLandingPage() {
   return (
     <main className="min-h-screen bg-neutral-50">
@@ -90,6 +102,7 @@ export default function ClevelandLandingPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(directoryItemList) }} />
 
       {/* Hero */}
       <section className="bg-white border-b border-neutral-200">
