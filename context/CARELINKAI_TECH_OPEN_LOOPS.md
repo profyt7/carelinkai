@@ -1,11 +1,27 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-10-05 — **rebuilt from the repo** (sprint W2 item 7). Sources: the 56 open PRs on GitHub, `grep TODO|FIXME` over `src/`, every `test.skip`/`fixme` in `__tests__/`, `tests/`, `e2e/`, the CI workflows, and the previous version of this file (all 115 prior OL ids carried forward below with their last known status). Each entry: **OL id · one-line status · file path**. Triage: **SHIP NOW** = this week, **LATER** = backlog, **FOUNDER** = needs Chris (settings, money, legal), **CLOSED** = verified done (kept for id continuity)._
+_Last updated: 2026-10-13 — sprint W3 batch: six PRs open (#726–#731), OL-140…OL-147 added; OL-125/OL-129 residuals carried. Previous rebuild 2026-10-05 — **rebuilt from the repo** (sprint W2 item 7). Sources: the 56 open PRs on GitHub, `grep TODO|FIXME` over `src/`, every `test.skip`/`fixme` in `__tests__/`, `tests/`, `e2e/`, the CI workflows, and the previous version of this file (all 115 prior OL ids carried forward below with their last known status). Each entry: **OL id · one-line status · file path**. Triage: **SHIP NOW** = this week, **LATER** = backlog, **FOUNDER** = needs Chris (settings, money, legal), **CLOSED** = verified done (kept for id continuity)._
 
 _Sprint W2 batch — merge day 2026-10-10/11 (one at a time, production verified after each via the new `prod-verify.yml` workflow): **#723** ops tooling `870a65f` · **#721** OL-124 gate `0df4b18` · **#714** public routes `4f95aec` · **#718** Sentry 401 noise `b402dd5` · **#717** isDemo filter `189dd8d` · **#716** closed as superseded by #721 · **#720** this file `b81fc9f` · **#715** memory restarts `b0b4078` · **#719** Prisma warm-up `97e6583` · **#724** workflow fix `87df579`. All eight sprint PRs are on main and verified live._
 
 ---
 
 ## 🔴 SHIP NOW (this week)
+
+### OL-140: Sprint W3 batch — six PRs open, merge in order 726 → 727 → 728 → 729 → 730 → 731
+- **Status:** 🔴 OPEN (2026-10-13) — #726 Sentry trace volume · #727 agency cohort landing + `ClaimRequest` + cohort claim links (+ `/claim` made public) · #728 listings on `/cleveland/assisted-living` · #729 suburb pages (base = #728's branch) · #730 `/concierge` · #731 JSON-LD + `/llms.txt` (base = #729's branch). #729/#731 retarget to `main` when their base branch is deleted on merge. Verify after #726: Sentry Explore `transaction:"middleware GET" is_transaction:true` over 1h is empty. After #727: `select count(*) from "ClaimRequest"` works on Render (migration applied).
+- **Path:** the six branches; `context/DEV_SESSION_SUMMARIES.md` 2026-10-13 entry
+
+### OL-141: Google Rich Results test for #731 (founder paste, post-deploy)
+- **Status:** 🔴 FOUNDER — the sandbox has no egress, so the test was not run pre-merge. After #731 deploys: https://search.google.com/test/rich-results on one claimed ACTIVE listing (`/homes/<id>` → expect "Local Business", no errors) and on `/cleveland/assisted-living` (expect no errors; ItemList has no rich-result card). Paste into #731.
+- **Path:** `src/lib/seo/jsonld.ts`, `src/app/homes/[id]/layout.tsx`
+
+### OL-142: Concierge price + real intake (decisions for #730)
+- **Status:** 🔴 FOUNDER — `/concierge` ships with no price and a placeholder CTA into `/get-started`. Decide (a) the flat fee and where it renders (the `concierge-fee-model` block is ready; keep the screener gate), (b) the real intake: a dedicated concierge request form (new table, like `ClaimRequest`) or the DP concierge queue reused for families. No Stripe product/price exists; do not create one until (a).
+- **Path:** `src/app/concierge/ConciergeScreener.tsx`, `src/lib/concierge/screener.ts` (`CONCIERGE_REQUEST_PATH`)
+
+### OL-143: Claim-nudge links were dead for new operators until #727 (`/claim` behind the login wall)
+- **Status:** 🔴 FOUNDER — `/claim?token=` (used by `scripts/send-claim-nudges.ts`) redirected logged-out visitors to `/auth/login`; only operators who already had an account could use the link. Fixed in #727 (`/claim` in `PUBLIC_PAGE_PREFIXES`). Decide whether to re-send to nudge recipients who never registered (`ClaimLinkVisit` has no rows for them). claim-drip.yml stays disabled regardless.
+- **Path:** `src/lib/routing/public-routes.ts`, `scripts/send-claim-nudges.ts`
 
 ### OL-122: Committed `.env` contains live secrets (credential exposure) — **founder, first**
 - **Status:** 🔴 OPEN — rotation + history scrub is Chris's (explicitly reserved). Nothing in sprint W2 touched `.env` or history.
@@ -54,6 +70,22 @@ _Sprint W2 batch — merge day 2026-10-10/11 (one at a time, production verified
 ---
 
 ## 🟡 LATER (backlog, ordered roughly by leverage)
+
+### OL-144: Next suburb pages + listings/ItemList on the other care-type pages
+- **Status:** 🟡 OPEN — Beachwood (6 roster homes) and Lakewood are one registry row each in `src/lib/directory/suburbs.ts` (page, metadata, sitemap, tests follow). `/cleveland/memory-care`, `/independent-living`, `/nursing-homes` still only link to search (no server-rendered listings, no ItemList JSON-LD) — same pattern as #728 with `careLevel` MEMORY_CARE / INDEPENDENT / SKILLED_NURSING. If a live suburb page shows the empty state, the roster seed lacks `careLevel: ASSISTED` or the `address.city` spelling differs (`cities` tweak).
+- **Path:** `src/lib/directory/suburbs.ts`, `src/app/cleveland/{memory-care,independent-living,nursing-homes}/page.tsx`
+
+### OL-145: Public read API + MCP endpoint for listings (spec only — in #731's description)
+- **Status:** 🟡 OPEN — `GET /api/public/v1/listings` (+ `/{id}`), same fields as the JSON-LD (`PublicListing` view), ACTIVE + non-demo only, API key header, 60/min per key (10/min anonymous single-read), 5-min cache + ETag; MCP = two tools over the same endpoint. Not built per the brief.
+- **Path:** `src/lib/directory/public-listings.ts` (the view to expose)
+
+### OL-146: CI flakes to fix at the root — `next/font` Google fetch + dev-server memory restart
+- **Status:** 🟡 OPEN — seen 2026-10-10/11 and twice on 2026-10-13 (#726 `e2e-operator-claim`, #729 `e2e-auth-signup-verify`): `npm run build` dies in `@next/font/google/loader.js` (`Cannot read properties of null (reading '1')`) on a cache-miss runner before any test runs. Options: self-host the two Google fonts (`next/font/local`) or set `NEXT_FONT_GOOGLE_MOCKED_RESPONSES` in CI. Separately the `e2e-concierge` dev server still restarts on memory mid-run (socket hang up / timeouts on `/search`) — raise `NODE_OPTIONS` for the webServer or run that job against `next start` once OL-121's static-asset caveat is solved. The third 10/13 failure (seeded homes crowding `search-demo-filter` off page 1) is fixed by the dev `DELETE` cleanup + `afterAll` in every `e2e/public/` spec.
+- **Path:** `src/app/layout.tsx` (fonts), `.github/workflows/e2e-family.yml`, `src/app/api/dev/upsert-operator/route.ts`
+
+### OL-147: `ClaimRequest` has no admin view
+- **Status:** 🟡 OPEN — cohort claim requests land in the table with `status NEW`; read them on the Render shell (`select * from "ClaimRequest" where cohort='CLEVELAND_AGENCIES' order by "createdAt" desc;`) until an `/admin/claim-requests` list + status change exists.
+- **Path:** `prisma/schema.prisma` (`ClaimRequest`), `src/app/admin/`
 
 ### OL-120: Route the transactional (non-`email.ts`) Resend sends through suppression
 - **Status:** 🟡 OPEN — deliberate scope-out of #708 (founder decision 7/17).
