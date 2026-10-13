@@ -246,20 +246,34 @@ export const PUBLIC_LISTING_SELECT = {
 } satisfies Prisma.AssistedLivingHomeSelect;
 
 /**
+ * The ONE filter every public listings page uses (and the one the suburb
+ * empty-state guard reports): ACTIVE, non-demo, optional care level, optional
+ * case-insensitive city allow-list.
+ */
+export function publicListingsWhere(q: PublicListingsQuery = {}): Prisma.AssistedLivingHomeWhereInput {
+  return {
+    status: 'ACTIVE',
+    isDemo: false,
+    ...(q.careLevel ? { careLevel: { has: q.careLevel } } : {}),
+    ...(q.cities && q.cities.length
+      ? { address: { is: { OR: q.cities.map((c) => ({ city: { equals: c, mode: 'insensitive' as const } })) } } }
+      : {}),
+  };
+}
+
+/** Live count for the same filter. Throws on a DB error (callers decide). */
+export async function countPublicListings(q: PublicListingsQuery = {}): Promise<number> {
+  return prisma.assistedLivingHome.count({ where: publicListingsWhere(q) });
+}
+
+/**
  * Top verified, non-demo, ACTIVE homes for a public page. Never throws.
  */
 export async function fetchPublicListings(q: PublicListingsQuery = {}): Promise<PublicListing[]> {
   const take = Math.min(Math.max(q.take ?? 12, 1), 48);
   try {
     const rows = await prisma.assistedLivingHome.findMany({
-      where: {
-        status: 'ACTIVE',
-        isDemo: false,
-        ...(q.careLevel ? { careLevel: { has: q.careLevel } } : {}),
-        ...(q.cities && q.cities.length
-          ? { address: { is: { OR: q.cities.map((c) => ({ city: { equals: c, mode: 'insensitive' as const } })) } } }
-          : {}),
-      },
+      where: publicListingsWhere(q),
       select: PUBLIC_LISTING_SELECT,
       orderBy: [
         { availabilityVerifiedAt: { sort: 'desc', nulls: 'last' } },

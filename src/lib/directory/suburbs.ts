@@ -2,16 +2,22 @@
  * Suburb SEO pages under /cleveland/assisted-living/<slug> (sprint W3 item 3 /
  * sprint 2.3). An allow-list, not a free-form route: an unknown slug 404s.
  *
- * Why these three first: the ODH residential-care-facility roster the
- * directory is seeded from (scripts/data/odh_rcf_cleveland_metro_2026_07_04.csv)
- * has the most licensed homes, outside Cleveland proper, in Westlake (11),
- * Strongsville (8) and Parma (7) among Cuyahoga County suburbs. Mentor (8) is
- * Lake County; Beachwood (6) and Lakewood are the next two to add — one entry
- * here, nothing else.
+ * Why these five: the ODH residential-care-facility roster the directory is
+ * seeded from (scripts/data/odh_rcf_cleveland_metro_2026_07_04.csv) has the
+ * most licensed homes, outside Cleveland proper, in Westlake (11),
+ * Strongsville (8), Parma (7), Beachwood (6) and Lakewood (2) among Cuyahoga
+ * County suburbs. Mentor (8) is Lake County. Adding a suburb = one entry here;
+ * the sitemap, /llms.txt, the "other suburbs" grid and the empty-state guard
+ * (src/lib/directory/suburb-guard.ts) all read this list.
  *
  * `cities` lists the address.city spellings a page should match (case-
  * insensitive) — some roster rows carry the post-office name of a
  * neighbouring village.
+ *
+ * A page whose filter matches no live, non-demo ASSISTED home renders the
+ * empty state and logs a warning (count + filter) — run
+ * `npx tsx scripts/check-suburb-listings.ts` against the target DB before
+ * adding a suburb, or after a data sweep, to see the counts.
  */
 
 export type Suburb = {
@@ -82,6 +88,40 @@ export const SUBURBS: readonly Suburb[] = [
       'University Hospitals Parma Medical Center',
       'Cleveland Clinic Parma Family Health Center',
       'Cleveland Metroparks Big Creek Reservation',
+    ],
+  },
+  {
+    slug: 'beachwood',
+    name: 'Beachwood',
+    county: 'Cuyahoga',
+    cities: ['Beachwood'],
+    title: 'Assisted Living in Beachwood, OH — Licensed Homes, Inspections & Availability | CareLinkAI',
+    description:
+      'Licensed assisted living and memory care homes in Beachwood, OH with ODH inspection facts, verified availability and published pricing. Compare directly.',
+    h1: 'Assisted Living in Beachwood, OH',
+    intro:
+      'Beachwood, on Cleveland’s east side at I-271 and Chagrin Boulevard, has one of the densest groupings of licensed assisted living and memory care homes in Cuyahoga County, several of them on the Cedar Road corridor. Families from Shaker Heights, Pepper Pike, Lyndhurst and Orange tour here, and UH Ahuja Medical Center is inside the city limits.',
+    nearby: [
+      'University Hospitals Ahuja Medical Center (Beachwood)',
+      'Cleveland Clinic Beachwood Family Health and Surgery Center',
+      'Beachwood Place and Legacy Village (Lyndhurst)',
+    ],
+  },
+  {
+    slug: 'lakewood',
+    name: 'Lakewood',
+    county: 'Cuyahoga',
+    cities: ['Lakewood'],
+    title: 'Assisted Living in Lakewood, OH — Licensed Homes, Inspections & Availability | CareLinkAI',
+    description:
+      'Licensed assisted living homes in Lakewood, OH with Ohio Department of Health inspection facts, verified availability and published pricing. No placement fees.',
+    h1: 'Assisted Living in Lakewood, OH',
+    intro:
+      'Lakewood is the dense, walkable inner-ring suburb directly west of Cleveland along Lake Erie, and many of its residents have lived there for decades. Its licensed assisted living homes sit on the Detroit Avenue corridor within a short drive of Cleveland Clinic Lakewood Family Health Center and Fairview Hospital, which is where most local admissions and follow-up care happen.',
+    nearby: [
+      'Cleveland Clinic Lakewood Family Health Center',
+      'Cleveland Clinic Fairview Hospital (Cleveland, west side)',
+      'Lakewood Park and the Gold Coast lakefront',
     ],
   },
 ];

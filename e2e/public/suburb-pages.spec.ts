@@ -1,6 +1,6 @@
 /**
- * Suburb SEO pages /cleveland/assisted-living/{westlake,strongsville,parma}
- * (sprint W3 item 3 / sprint 2.3).
+ * Suburb SEO pages /cleveland/assisted-living/{westlake,strongsville,parma,
+ * beachwood,lakewood} (sprint W3 item 3 / sprint 2.3; W4 0c added the last two).
  *
  *  - each page: 200 logged-out, no redirect, no noindex, canonical, in the
  *    sitemap, unique <title> / H1 / meta description;
@@ -18,6 +18,8 @@ const SUBURBS = [
   { slug: 'westlake', name: 'Westlake', city: 'Westlake' },
   { slug: 'strongsville', name: 'Strongsville', city: 'Strongsville' },
   { slug: 'parma', name: 'Parma', city: 'Parma' },
+  { slug: 'beachwood', name: 'Beachwood', city: 'Beachwood' },
+  { slug: 'lakewood', name: 'Lakewood', city: 'Lakewood' },
 ] as const;
 
 const ts = Date.now();
@@ -93,7 +95,7 @@ test.describe('@critical suburb assisted-living pages', () => {
     });
   }
 
-  test('all three are in sitemap.xml', async ({ request }) => {
+  test('all five are in sitemap.xml', async ({ request }) => {
     const xml = await (await request.get('/sitemap.xml')).text();
     for (const s of SUBURBS) expect(xml).toContain(`https://getcarelinkai.com/cleveland/assisted-living/${s.slug}`);
   });
