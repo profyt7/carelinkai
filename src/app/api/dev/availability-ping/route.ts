@@ -42,6 +42,26 @@ export async function POST(req: NextRequest) {
       });
       return NextResponse.json({ ok: true, ping });
     }
+    if (body?.action === 'cleanup') {
+      // Remove what a spec seeded so later specs in the same job never lose
+      // their own home off page 1 of /search (10 per page). Cascades delete
+      // the contacts + pings. Only rows the spec names are touched.
+      const homeIds: string[] = Array.isArray(body.homeIds) ? body.homeIds.filter((x: unknown) => typeof x === 'string') : [];
+      const emails: string[] = Array.isArray(body.emails) ? body.emails.filter((x: unknown) => typeof x === 'string') : [];
+      const homes = homeIds.length ? await prisma.assistedLivingHome.deleteMany({ where: { id: { in: homeIds } } }) : { count: 0 };
+      let users = 0;
+      for (const email of emails) {
+        const u = await prisma.user.findUnique({ where: { email }, select: { id: true, operator: { select: { id: true } } } });
+        if (!u) continue;
+        if (u.operator) {
+          await prisma.assistedLivingHome.deleteMany({ where: { operatorId: u.operator.id } });
+          await prisma.operator.delete({ where: { id: u.operator.id } }).catch(() => undefined);
+        }
+        await prisma.user.delete({ where: { id: u.id } }).catch(() => undefined);
+        users++;
+      }
+      return NextResponse.json({ ok: true, homes: homes.count, users });
+    }
     return NextResponse.json({ error: 'unknown action' }, { status: 400 });
   } catch (e) {
     console.error('dev availability-ping error', e);

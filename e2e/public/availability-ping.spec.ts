@@ -86,6 +86,14 @@ test.describe('@critical one-tap availability ping', () => {
     }
   });
 
+  // Remove what we seeded so later specs in the same job (search-demo-filter
+  // expects its own home on page 1 of /search) are never crowded out.
+  test.afterAll(async ({ request }) => {
+    await request
+      .post('/api/dev/availability-ping', { data: { action: 'cleanup', homeIds: Object.values(ids), emails: [OP] } })
+      .catch(() => undefined);
+  });
+
   test('cron: 401 without the secret; with it pings only opted-in contacts of claimed non-demo homes', async ({ request }) => {
     expect((await request.get('/api/cron/availability-ping')).status()).toBe(401);
     expect((await request.get('/api/cron/availability-ping', { headers: { authorization: 'Bearer wrong' } })).status()).toBe(401);
