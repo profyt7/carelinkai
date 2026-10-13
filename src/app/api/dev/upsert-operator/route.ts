@@ -83,6 +83,40 @@ async function applyDirectorySeed(homeId: string, h: HomeSeed) {
   }
 }
 
+/**
+ * DELETE /api/dev/upsert-operator  { email }
+ * Removes every home this dev operator owns (inspections, photos, address
+ * first), so an e2e spec can clean up what it seeded and never crowd the
+ * public directory for the specs that run after it (the /search page shows
+ * 10 per page). Dev-only, same ALLOW_DEV_ENDPOINTS gate. Best effort: a
+ * cleanup failure must never fail the caller.
+ */
+export async function DELETE(req: NextRequest) {
+  if (process.env['ALLOW_DEV_ENDPOINTS'] !== '1') {
+    return NextResponse.json({ error: 'Not Found' }, { status: 404 });
+  }
+  try {
+    const body = await req.json().catch(() => ({}));
+    const email = typeof body?.email === 'string' ? body.email : '';
+    if (!email) return NextResponse.json({ error: 'email required' }, { status: 400 });
+    const user = await prisma.user.findUnique({ where: { email }, select: { id: true } });
+    const op = user ? await prisma.operator.findUnique({ where: { userId: user.id }, select: { id: true } }) : null;
+    if (!op) return NextResponse.json({ ok: true, deleted: 0 });
+    const homes = await prisma.assistedLivingHome.findMany({ where: { operatorId: op.id }, select: { id: true } });
+    const ids = homes.map((h) => h.id);
+    if (ids.length) {
+      await prisma.facilityInspection.deleteMany({ where: { facilityId: { in: ids } } });
+      await prisma.homePhoto.deleteMany({ where: { homeId: { in: ids } } });
+      await prisma.address.deleteMany({ where: { homeId: { in: ids } } });
+      await prisma.assistedLivingHome.deleteMany({ where: { id: { in: ids } } });
+    }
+    return NextResponse.json({ ok: true, deleted: ids.length });
+  } catch (e) {
+    console.error('dev upsert-operator DELETE error', e);
+    return NextResponse.json({ ok: false, error: 'cleanup failed' }, { status: 200 });
+  }
+}
+
 export async function POST(req: NextRequest) {
   // Allow when explicitly enabled via ALLOW_DEV_ENDPOINTS, regardless of NODE_ENV
   if (process.env['ALLOW_DEV_ENDPOINTS'] !== '1') {
