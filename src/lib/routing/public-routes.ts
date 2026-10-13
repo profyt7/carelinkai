@@ -34,6 +34,8 @@ export const PUBLIC_PAGE_PREFIXES: readonly string[] = [
   '/founder',
   // SEO landing pages (sitemap.ts) — the Cleveland directory and its care-type children.
   '/cleveland',
+  // Family concierge offer page (sprint W3 item 5) — public, screener in front.
+  '/concierge',
 ];
 
 /**
@@ -52,6 +54,7 @@ export const KNOWN_APP_SEGMENTS: readonly string[] = [
   'caregiver',
   'claim',
   'cleveland',
+  'concierge',
   'dashboard',
   'demo',
   'design-preview',
