@@ -62,6 +62,12 @@ test.describe('@critical structured data for AI agents', () => {
     demoId = json.homes.find((h: any) => h.name === DEMO).id;
   });
 
+  // Remove what we seeded so later specs in the same job never lose their own
+  // home off page 1 of /search (10 per page).
+  test.afterAll(async ({ request }) => {
+    await request.delete('/api/dev/upsert-operator', { data: { email: OP_EMAIL } }).catch(() => undefined);
+  });
+
   test('listing page: LocalBusiness JSON-LD with verified facts, no email, no empty fields', async ({ request }) => {
     const { res, html } = await fetchHtml(request, `/homes/${realId}`);
     expect(res.status()).toBe(200);
