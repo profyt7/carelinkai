@@ -11,6 +11,77 @@ import bcrypt from 'bcryptjs';
 // - Enabled only when ALLOW_DEV_ENDPOINTS=1
 // - Creates/updates user with OPERATOR role and ACTIVE status
 // - Ensures at least one AssistedLivingHome for the operator and returns its ID
+//
+// Directory fields (sprint W3 items 3/4 e2e): a seed may carry an address city,
+// care levels, availability freshness, pricing, an ODH license and inspection
+// records so the public SEO pages can be exercised against a real DB. Applied
+// on create AND on an existing home (so re-runs converge on the seed).
+
+type HomeSeed = {
+  name: string;
+  capacity?: number;
+  isDemo?: boolean;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  careLevel?: Array<'INDEPENDENT' | 'ASSISTED' | 'MEMORY_CARE' | 'SKILLED_NURSING'>;
+  /** Days ago the availability was verified (0 = today). Omit → never verified. */
+  availabilityVerifiedDaysAgo?: number;
+  availabilityCount?: number;
+  startingPriceMonthly?: number;
+  googleRating?: number;
+  googleRatingCount?: number;
+  odhLicenseNumber?: string;
+  inspections?: Array<{ surveyDate: string; surveyType?: string; citationCount?: number }>;
+};
+
+async function applyDirectorySeed(homeId: string, h: HomeSeed) {
+  const data: Record<string, unknown> = {};
+  if (Array.isArray(h.careLevel) && h.careLevel.length) data['careLevel'] = h.careLevel;
+  if (typeof h.availabilityVerifiedDaysAgo === 'number') {
+    data['availabilityVerifiedAt'] = new Date(Date.now() - h.availabilityVerifiedDaysAgo * 86_400_000);
+    data['availabilityCount'] = typeof h.availabilityCount === 'number' ? h.availabilityCount : 1;
+    data['availabilitySource'] = 'OPERATOR';
+  }
+  if (typeof h.startingPriceMonthly === 'number') {
+    data['startingPriceMonthly'] = h.startingPriceMonthly;
+    data['priceSource'] = 'OPERATOR';
+    data['priceUpdatedAt'] = new Date();
+  }
+  if (typeof h.googleRating === 'number') data['googleRating'] = h.googleRating;
+  if (typeof h.googleRatingCount === 'number') data['googleRatingCount'] = h.googleRatingCount;
+  if (typeof h.odhLicenseNumber === 'string') data['odhLicenseNumber'] = h.odhLicenseNumber;
+  if (Object.keys(data).length) {
+    await prisma.assistedLivingHome.update({ where: { id: homeId }, data: data as any });
+  }
+  if (h.city) {
+    const addr = { street: '1 Dev St', city: h.city, state: h.state ?? 'OH', zipCode: h.zipCode ?? '44101' };
+    await prisma.address.upsert({
+      where: { homeId },
+      update: addr,
+      create: { ...addr, homeId },
+    });
+  }
+  if (Array.isArray(h.inspections)) {
+    for (const r of h.inspections) {
+      const surveyDate = new Date(r.surveyDate);
+      if (Number.isNaN(surveyDate.getTime())) continue;
+      const surveyType = r.surveyType ?? 'Standard';
+      await prisma.facilityInspection.upsert({
+        where: { facilityId_surveyDate_surveyType: { facilityId: homeId, surveyDate, surveyType } },
+        update: { citationCount: r.citationCount ?? 0, odhLicenseNumber: h.odhLicenseNumber ?? null },
+        create: {
+          facilityId: homeId,
+          surveyDate,
+          surveyType,
+          citationCount: r.citationCount ?? 0,
+          odhLicenseNumber: h.odhLicenseNumber ?? null,
+          citations: [],
+        },
+      });
+    }
+  }
+}
 
 export async function POST(req: NextRequest) {
   // Allow when explicitly enabled via ALLOW_DEV_ENDPOINTS, regardless of NODE_ENV
@@ -25,7 +96,7 @@ export async function POST(req: NextRequest) {
       companyName?: string;
       // isDemo lets e2e specs seed a tutorial/demo fixture to prove the
       // public directory filters it (OL-112).
-      homes?: Array<{ name: string; capacity?: number; isDemo?: boolean }>;
+      homes?: HomeSeed[];
     };
     if (!email || !companyName) {
       return NextResponse.json({ error: 'email and companyName required' }, { status: 400 });
@@ -55,7 +126,7 @@ export async function POST(req: NextRequest) {
     });
 
     // Ensure homes for operator. If homes array provided, ensure each; else ensure a default one.
-    const desiredHomes: Array<{ name: string; capacity?: number; isDemo?: boolean }> = Array.isArray(homes) && homes.length > 0
+    const desiredHomes: HomeSeed[] = Array.isArray(homes) && homes.length > 0
       ? homes
       : [{ name: `${companyName} Home`, capacity: 100 }];
 
@@ -69,6 +140,7 @@ export async function POST(req: NextRequest) {
         if (typeof h.isDemo === 'boolean' && existing.isDemo !== h.isDemo) {
           await prisma.assistedLivingHome.update({ where: { id: existing.id }, data: { isDemo: h.isDemo } });
         }
+        await applyDirectorySeed(existing.id, h);
         ensured.push({ id: existing.id, name: existing.name });
         continue;
       }
@@ -85,6 +157,7 @@ export async function POST(req: NextRequest) {
         },
         select: { id: true, name: true },
       });
+      await applyDirectorySeed(created.id, h);
       ensured.push(created);
     }
 
