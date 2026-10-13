@@ -68,6 +68,14 @@ test.describe('@critical claim re-send list (list only, nothing sent)', () => {
     await request.post('/api/dev/upsert-admin', { data: { email: ADMIN } });
   });
 
+  // Remove what we seeded so later specs in the same job never lose their own
+  // home off page 1 of /search (10 per page).
+  test.afterAll(async ({ request }) => {
+    await request
+      .delete('/api/dev/nudge-seed', { data: { homeIds: Object.values(ids), emails: [REGISTERED] } })
+      .catch(() => undefined);
+  });
+
   test('admin: JSON list has the never-registered homes with fresh links, excludes registered', async ({ browser }) => {
     const admin = await login(browser, ADMIN);
     const res = await get(admin, '/api/admin/claim-resend');
