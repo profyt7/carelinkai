@@ -21,6 +21,7 @@ const SUBURBS = [
 ] as const;
 
 const ts = Date.now();
+const OP_EMAIL = `suburb-op-${ts}@test.carelinkai.com`;
 const homeName = (city: string, kind: string) => `E2E ${city} ${kind} ${ts}`;
 
 test.describe('@critical suburb assisted-living pages', () => {
@@ -40,9 +41,15 @@ test.describe('@critical suburb assisted-living pages', () => {
       { name: homeName(s.city, 'Demo'), capacity: 8, city: s.city, careLevel: ['ASSISTED'], isDemo: true },
     ]);
     const res = await request.post('/api/dev/upsert-operator', {
-      data: { email: `suburb-op-${ts}@test.carelinkai.com`, companyName: `Suburb Ops ${ts}`, homes },
+      data: { email: OP_EMAIL, companyName: `Suburb Ops ${ts}`, homes },
     });
     expect(res.status(), 'dev seed').toBe(200);
+  });
+
+  // Remove what we seeded so later specs in the same job never lose their own
+  // home off page 1 of /search (10 per page).
+  test.afterAll(async ({ request }) => {
+    await request.delete('/api/dev/upsert-operator', { data: { email: OP_EMAIL } }).catch(() => undefined);
   });
 
   const seen = { titles: new Set<string>(), h1s: new Set<string>(), descs: new Set<string>() };
