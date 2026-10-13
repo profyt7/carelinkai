@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { FiArrowRight, FiCheck } from 'react-icons/fi';
 import { PAYER_SOURCE_OPTIONS, isPayerSource, type PayerSource } from '@/lib/payer/payer-source';
-import { conciergeRequestHref, routeForPayerSource, type ConciergeRoute } from '@/lib/concierge/screener';
+import { CONCIERGE_FEE_MODEL, routeForPayerSource, type ConciergeRoute } from '@/lib/concierge/screener';
+import ConciergeRequestForm from './ConciergeRequestForm';
 
 /**
  * Payer-source screener in front of the private-pay concierge offer
@@ -106,20 +107,11 @@ export default function ConciergeScreener() {
           ))}
         </ul>
         <div className="mt-6 rounded-lg bg-neutral-50 p-4 text-sm text-neutral-700" data-testid="concierge-fee-model">
-          <strong className="text-neutral-900">How it’s priced:</strong> one flat fee, private-pay families only. There is
-          never a fee when care is paid through Medicaid, Medicare or the VA, and homes never pay us to be recommended.
-          Pricing is being finalised — request help below and we will confirm the flat fee with you before any work
-          starts.
+          <strong className="text-neutral-900">How it’s priced:</strong> {CONCIERGE_FEE_MODEL.headline}{' '}
+          {CONCIERGE_FEE_MODEL.detail}
         </div>
-        <div className="mt-6 flex flex-wrap items-center gap-3">
-          <a
-            href={conciergeRequestHref(answered)}
-            data-testid="concierge-request-cta"
-            className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-6 py-3 font-semibold text-white hover:bg-primary-700"
-          >
-            Request concierge help
-            <FiArrowRight />
-          </a>
+        <ConciergeRequestForm payerSource={answered} />
+        <div className="mt-4">
           <button type="button" onClick={reset} className="text-sm font-medium text-neutral-600 hover:text-neutral-900">
             Change my answer
           </button>
