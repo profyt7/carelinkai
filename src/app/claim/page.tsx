@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { verifyClaimToken } from '@/lib/claim-token';
 import { recordClaimLinkVisit } from '@/lib/claim-engine/claim-link-visit';
+import { COHORT_LANDING_PATH, isClaimCohort } from '@/lib/claim-engine/cohorts';
 import ClaimConfirm from './ClaimConfirm';
 
 /**
@@ -13,6 +14,9 @@ import ClaimConfirm from './ClaimConfirm';
  *
  * Routing:
  *   - invalid/expired token        → friendly notice
+ *   - cohort token (no homeId)     → the cohort landing page with the token, where the
+ *                                    "claim your listing" submit is tagged with the cohort
+ *                                    (sprint W3 item 2 — src/lib/claim-engine/cohorts.ts)
  *   - not signed in                → fall through to the existing register/redeem flow
  *                                    (/auth/register?claimToken=…) — unchanged for new operators
  *   - signed in as a DIFFERENT user → notice (use the link from the addressed inbox)
@@ -49,6 +53,13 @@ export default async function ClaimPage({ searchParams }: { searchParams: { toke
   const token = searchParams?.token;
   const secret = process.env['NEXTAUTH_SECRET'] || '';
   const payload = token ? verifyClaimToken(token, secret) : null;
+
+  // Cohort claim link (no home to claim): hand off to the cohort landing page,
+  // which carries the claim form. The token travels along so the submit is
+  // recorded as a claim-link claim (source 'claim_link', tokenEmail set).
+  if (token && payload && !payload.homeId && isClaimCohort(payload.cohort)) {
+    redirect(`${COHORT_LANDING_PATH[payload.cohort]}?token=${encodeURIComponent(token)}#claim`);
+  }
 
   if (!token || !payload || !payload.homeId) {
     return <Notice title="This link is invalid" body="The claim link is invalid or has expired. Please use the most recent email we sent, or reply to it and we’ll help." />;

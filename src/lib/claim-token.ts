@@ -17,6 +17,13 @@ export interface ClaimTokenPayload {
   operatorEmail: string;
   homeId?: string;
   clevelandFounder: boolean;
+  /**
+   * Outreach cohort (src/lib/claim-engine/cohorts.ts), e.g. 'CLEVELAND_AGENCIES'.
+   * A cohort link has NO homeId: /claim routes it to the cohort landing page
+   * and the claim submit there is tagged with this value. Absent on the
+   * original operator founder links — fully backwards compatible.
+   */
+  cohort?: string;
   iat: number;
   exp: number;
 }
