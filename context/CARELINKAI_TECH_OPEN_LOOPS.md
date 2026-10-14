@@ -1,11 +1,23 @@
 # CareLinkAI — Tech Open Loops
-_Last updated: 2026-10-13 — sprint W3 batch: six PRs open (#726–#731), OL-140…OL-147 added; OL-125/OL-129 residuals carried. Previous rebuild 2026-10-05 — **rebuilt from the repo** (sprint W2 item 7). Sources: the 56 open PRs on GitHub, `grep TODO|FIXME` over `src/`, every `test.skip`/`fixme` in `__tests__/`, `tests/`, `e2e/`, the CI workflows, and the previous version of this file (all 115 prior OL ids carried forward below with their last known status). Each entry: **OL id · one-line status · file path**. Triage: **SHIP NOW** = this week, **LATER** = backlog, **FOUNDER** = needs Chris (settings, money, legal), **CLOSED** = verified done (kept for id continuity)._
+_Last updated: 2026-10-13 (evening) — sprint W4 batch: six more PRs open (#733–#738), OL-148…OL-153 added; OL-142 and OL-143 built (decision residuals only), OL-144 half-closed (Beachwood/Lakewood shipped). Earlier same day — sprint W3 batch: six PRs open (#726–#731), OL-140…OL-147 added; OL-125/OL-129 residuals carried. Previous rebuild 2026-10-05 — **rebuilt from the repo** (sprint W2 item 7). Sources: the 56 open PRs on GitHub, `grep TODO|FIXME` over `src/`, every `test.skip`/`fixme` in `__tests__/`, `tests/`, `e2e/`, the CI workflows, and the previous version of this file (all 115 prior OL ids carried forward below with their last known status). Each entry: **OL id · one-line status · file path**. Triage: **SHIP NOW** = this week, **LATER** = backlog, **FOUNDER** = needs Chris (settings, money, legal), **CLOSED** = verified done (kept for id continuity)._
 
 _Sprint W2 batch — merge day 2026-10-10/11 (one at a time, production verified after each via the new `prod-verify.yml` workflow): **#723** ops tooling `870a65f` · **#721** OL-124 gate `0df4b18` · **#714** public routes `4f95aec` · **#718** Sentry 401 noise `b402dd5` · **#717** isDemo filter `189dd8d` · **#716** closed as superseded by #721 · **#720** this file `b81fc9f` · **#715** memory restarts `b0b4078` · **#719** Prisma warm-up `97e6583` · **#724** workflow fix `87df579`. All eight sprint PRs are on main and verified live._
 
 ---
 
 ## 🔴 SHIP NOW (this week)
+
+### OL-148: Sprint W4 batch — six PRs open (#733–#738), stacked on W3; merge W3 first
+- **Status:** 🔴 OPEN (2026-10-13 evening) — #733 concierge intake (base #730) · #734 claim re-send list (base #727) · #735 suburb guard + Beachwood/Lakewood (base #731) · #736 availability ping (main) · #737 facility accept/decline (main) · #738 concierge metrics (base #737). The brief assumed W3 was merged; it is not — stacked PRs retarget to `main` automatically when their base branch is deleted on merge. Nothing to set in Render. Post-merge checks: #735 `npx tsx scripts/check-suburb-listings.ts` on Render; #734 read the `listed` count on `/admin/claim-resend`; #736 `select count(*) from "AvailabilityContact"` = 0 until someone opts in.
+- **Path:** the six branches; `context/DEV_SESSION_SUMMARIES.md` 2026-10-13 (evening) entry
+
+### OL-149: Tracked `.env.local` carries a real-looking Resend key — **founder, with OL-122**
+- **Status:** 🔴 FOUNDER — `git ls-files` shows `.env.local` is committed (last touched in #660) with `RESEND_API_KEY=re_Z…` (not the `re_placeholder…` the committed `.env` has). `next dev` loads `.env.local` over `.env`, so any local e2e run (CI is safe — no key) can deliver real mail: the 0a local run on 2026-10-13 likely sent a "new concierge request" notification to the admin notify inbox. Rotate the key in Resend, untrack the file, scrub history together with OL-122. Until then run local dev with `RESEND_API_KEY=re_placeholder_key_set_on_render` (never empty — `email.ts` constructs `new Resend()` at import and throws on an empty key).
+- **Path:** `.env.local` (tracked), `.env`, `src/lib/email.ts:20`
+
+### OL-150: One-tap availability ping — go-live checklist (ships OFF in #736)
+- **Status:** 🔴 FOUNDER — to turn on: (1) `COMPANY_POSTAL_ADDRESS` set (already the claim-drip gate); (2) `CRON_SECRET` set on Render (fail-closed); (3) `PING_ENABLED=1`; (4) uncomment the schedule in `.github/workflows/availability-ping.yml` (Mondays 14:00 UTC) or `workflow_dispatch` once; (5) enter the 15 Tier-A warm opt-ins via `/admin/availability-pings` → "Add a contact (opt-in captured on a call)" (source `admin_call` — the only way an unclaimed listing is pinged); (6) optional: wire an inbound-email provider to `POST /api/availability/ping/inbound` with `PING_INBOUND_SECRET` so plain replies parse too. SMS stays a stub (`SMS_PING_ENABLED` + no provider) until the TCPA review (Haran). Operator-portal UI for the contact is API-only (`PUT /api/operator/availability-contact`) — decide whether a card on the operator home page is wanted.
+- **Path:** `src/lib/availability/ping-engine.ts`, `src/app/api/cron/availability-ping/route.ts`, `.github/workflows/availability-ping.yml`
 
 ### OL-140: Sprint W3 batch — six PRs open, merge in order 726 → 727 → 728 → 729 → 730 → 731
 - **Status:** 🔴 OPEN (2026-10-13) — #726 Sentry trace volume · #727 agency cohort landing + `ClaimRequest` + cohort claim links (+ `/claim` made public) · #728 listings on `/cleveland/assisted-living` · #729 suburb pages (base = #728's branch) · #730 `/concierge` · #731 JSON-LD + `/llms.txt` (base = #729's branch). #729/#731 retarget to `main` when their base branch is deleted on merge. Verify after #726: Sentry Explore `transaction:"middleware GET" is_transaction:true` over 1h is empty. After #727: `select count(*) from "ClaimRequest"` works on Render (migration applied).
@@ -16,11 +28,11 @@ _Sprint W2 batch — merge day 2026-10-10/11 (one at a time, production verified
 - **Path:** `src/lib/seo/jsonld.ts`, `src/app/homes/[id]/layout.tsx`
 
 ### OL-142: Concierge price + real intake (decisions for #730)
-- **Status:** 🔴 FOUNDER — `/concierge` ships with no price and a placeholder CTA into `/get-started`. Decide (a) the flat fee and where it renders (the `concierge-fee-model` block is ready; keep the screener gate), (b) the real intake: a dedicated concierge request form (new table, like `ClaimRequest`) or the DP concierge queue reused for families. No Stripe product/price exists; do not create one until (a).
+- **Status:** 🟢 BUILT in #733 (2026-10-13 evening) — fee model decided and rendered ($2,500 flat, facility-paid, private-pay only, families pay nothing; `CONCIERGE_FEE_MODEL`), CTA is a real form into the DP concierge queue (`source=concierge_page`). Residual decision: whether the fee is ever charged (no Stripe product/price; `PLACEMENT_FEE_ENABLED` still unset). Previously: `/concierge` shipped with no price and a placeholder CTA into `/get-started`. Decide (a) the flat fee and where it renders (the `concierge-fee-model` block is ready; keep the screener gate), (b) the real intake: a dedicated concierge request form (new table, like `ClaimRequest`) or the DP concierge queue reused for families. No Stripe product/price exists; do not create one until (a).
 - **Path:** `src/app/concierge/ConciergeScreener.tsx`, `src/lib/concierge/screener.ts` (`CONCIERGE_REQUEST_PATH`)
 
 ### OL-143: Claim-nudge links were dead for new operators until #727 (`/claim` behind the login wall)
-- **Status:** 🔴 FOUNDER — `/claim?token=` (used by `scripts/send-claim-nudges.ts`) redirected logged-out visitors to `/auth/login`; only operators who already had an account could use the link. Fixed in #727 (`/claim` in `PUBLIC_PAGE_PREFIXES`). Decide whether to re-send to nudge recipients who never registered (`ClaimLinkVisit` has no rows for them). claim-drip.yml stays disabled regardless.
+- **Status:** 🟡 LIST BUILT in #734 (2026-10-13 evening) — `/admin/claim-resend` + CSV lists every nudged-never-registered operator with a fresh 45-day cohort-preserving link, warm leads first; **nothing is sent** and claim-drip.yml stays disabled. Residual decision: hand-send the batch (count from the page after deploy). Previously: `/claim?token=` (used by `scripts/send-claim-nudges.ts`) redirected logged-out visitors to `/auth/login`; only operators who already had an account could use the link. Fixed in #727 (`/claim` in `PUBLIC_PAGE_PREFIXES`). Decide whether to re-send to nudge recipients who never registered (`ClaimLinkVisit` has no rows for them). claim-drip.yml stays disabled regardless.
 - **Path:** `src/lib/routing/public-routes.ts`, `scripts/send-claim-nudges.ts`
 
 ### OL-122: Committed `.env` contains live secrets (credential exposure) — **founder, first**
@@ -72,7 +84,7 @@ _Sprint W2 batch — merge day 2026-10-10/11 (one at a time, production verified
 ## 🟡 LATER (backlog, ordered roughly by leverage)
 
 ### OL-144: Next suburb pages + listings/ItemList on the other care-type pages
-- **Status:** 🟡 OPEN — Beachwood (6 roster homes) and Lakewood are one registry row each in `src/lib/directory/suburbs.ts` (page, metadata, sitemap, tests follow). `/cleveland/memory-care`, `/independent-living`, `/nursing-homes` still only link to search (no server-rendered listings, no ItemList JSON-LD) — same pattern as #728 with `careLevel` MEMORY_CARE / INDEPENDENT / SKILLED_NURSING. If a live suburb page shows the empty state, the roster seed lacks `careLevel: ASSISTED` or the `address.city` spelling differs (`cities` tweak).
+- **Status:** 🟡 HALF DONE — Beachwood + Lakewood shipped in #735 (five suburbs; empty-state guard logs a WARN with the live count + filter; `scripts/check-suburb-listings.ts` reports per suburb). Prod count for the two new pages unverified from the sandbox — run the script on Render after merge (OL-152). Remaining: listings/ItemList on the other care-type pages. `/cleveland/memory-care`, `/independent-living`, `/nursing-homes` still only link to search (no server-rendered listings, no ItemList JSON-LD) — same pattern as #728 with `careLevel` MEMORY_CARE / INDEPENDENT / SKILLED_NURSING. If a live suburb page shows the empty state, the roster seed lacks `careLevel: ASSISTED` or the `address.city` spelling differs (`cities` tweak).
 - **Path:** `src/lib/directory/suburbs.ts`, `src/app/cleveland/{memory-care,independent-living,nursing-homes}/page.tsx`
 
 ### OL-145: Public read API + MCP endpoint for listings (spec only — in #731's description)
@@ -80,12 +92,24 @@ _Sprint W2 batch — merge day 2026-10-10/11 (one at a time, production verified
 - **Path:** `src/lib/directory/public-listings.ts` (the view to expose)
 
 ### OL-146: CI flakes to fix at the root — `next/font` Google fetch + dev-server memory restart
-- **Status:** 🟡 OPEN — seen 2026-10-10/11 and twice on 2026-10-13 (#726 `e2e-operator-claim`, #729 `e2e-auth-signup-verify`): `npm run build` dies in `@next/font/google/loader.js` (`Cannot read properties of null (reading '1')`) on a cache-miss runner before any test runs. Options: self-host the two Google fonts (`next/font/local`) or set `NEXT_FONT_GOOGLE_MOCKED_RESPONSES` in CI. Separately the `e2e-concierge` dev server still restarts on memory mid-run (socket hang up / timeouts on `/search`) — raise `NODE_OPTIONS` for the webServer or run that job against `next start` once OL-121's static-asset caveat is solved. The third 10/13 failure (seeded homes crowding `search-demo-filter` off page 1) is fixed by the dev `DELETE` cleanup + `afterAll` in every `e2e/public/` spec.
+- **Status:** 🟡 OPEN — seen 2026-10-10/11, twice on 2026-10-13 (#726 `e2e-operator-claim`, #729 `e2e-auth-signup-verify`) and once more on #733 `e2e-concierge` (build step) the same evening — one re-run each: `npm run build` dies in `@next/font/google/loader.js` (`Cannot read properties of null (reading '1')`) on a cache-miss runner before any test runs. Options: self-host the two Google fonts (`next/font/local`) or set `NEXT_FONT_GOOGLE_MOCKED_RESPONSES` in CI. Separately the `e2e-concierge` dev server still restarts on memory mid-run (socket hang up / timeouts on `/search`) — raise `NODE_OPTIONS` for the webServer or run that job against `next start` once OL-121's static-asset caveat is solved. The third 10/13 failure (seeded homes crowding `search-demo-filter` off page 1) is fixed by the dev `DELETE` cleanup + `afterAll` in every `e2e/public/` spec.
 - **Path:** `src/app/layout.tsx` (fonts), `.github/workflows/e2e-family.yml`, `src/app/api/dev/upsert-operator/route.ts`
 
 ### OL-147: `ClaimRequest` has no admin view
 - **Status:** 🟡 OPEN — cohort claim requests land in the table with `status NEW`; read them on the Render shell (`select * from "ClaimRequest" where cohort='CLEVELAND_AGENCIES' order by "createdAt" desc;`) until an `/admin/claim-requests` list + status change exists.
 - **Path:** `prisma/schema.prisma` (`ClaimRequest`), `src/app/admin/`
+
+### OL-151: Facility accept/decline — contact source, reminders, admissions contact
+- **Status:** 🟡 OPEN (#737) — the facility email goes to `home.contactEmail` → claimed operator login → `outreachEmail`; once #736 merges, prefer the home's `AvailabilityContact` (admissions/availability person) first. No reminder for an unanswered link (30-day token, status stays SENT/OPENED); no admin "re-send link". `observedAcceptanceCriteria` is stored but not yet surfaced on the operator profile or used by matching.
+- **Path:** `src/lib/concierge/facility-response-engine.ts` (`pickFacilityContact`), `src/app/admin/concierge/[id]/page.tsx`
+
+### OL-152: Verify Beachwood/Lakewood have ≥1 live listing in production (#735)
+- **Status:** 🟡 FOUNDER/OPS — after #735 deploys run `npx tsx scripts/check-suburb-listings.ts` in the Render shell (or watch logs for `suburb-empty-state`). If a suburb is empty the WARN names the filter — likely a `careLevel`/status/`address.city` spelling on the two Lakewood roster rows (`HAVEN AT LAKEWOOD`, `LAKEWOOD HEALTH CARE CENTER`).
+- **Path:** `scripts/check-suburb-listings.ts`, `src/lib/directory/suburb-guard.ts`
+
+### OL-153: e2e specs that seed homes must clean up — `/search` page 1 crowding is now a recurring CI failure mode
+- **Status:** 🟡 OPEN — hit in W3 (#728/#729) and again in W4 (#734 first run): `search-demo-filter.spec.ts` expects its own home on page 1 of `/search` (10 per page) and the shared `e2e-concierge` job runs `e2e/public/*` alphabetically before it. Every W3/W4 spec now cleans up (`DELETE /api/dev/upsert-operator` on the W3 lineage, `DELETE /api/dev/nudge-seed` / `placement-search`, ping `cleanup`). Root fix: make `search-demo-filter` search by its own name (`?q=`) or run it first; consolidate the three dev cleanup handlers into one once W3 merges.
+- **Path:** `e2e/search-demo-filter.spec.ts`, `e2e/public/*.spec.ts`, `.github/workflows/e2e-family.yml`
 
 ### OL-120: Route the transactional (non-`email.ts`) Resend sends through suppression
 - **Status:** 🟡 OPEN — deliberate scope-out of #708 (founder decision 7/17).
