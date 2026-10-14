@@ -1,0 +1,24 @@
+# gitleaks configuration for the CI secret scan (.github/workflows/secret-scan.yml).
+#
+# Starts from gitleaks' default rule set. The allowlist below is deliberately
+# narrow: it only silences three known non-secrets that the generic rules match
+# on. Anything that looks like a real key — in .env files, templates, docs,
+# source — fails the build. Add to this list only with a comment saying why the
+# match is not a credential.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Known non-secrets matched by the generic rules"
+# Apply the regexes to the whole source line, so a placeholder, a hostname or
+# surrounding prose can identify a match as harmless.
+regexTarget = "line"
+regexes = [
+  # Documentation placeholders, e.g. `-H "Authorization: Bearer YOUR_CRON_SECRET"`.
+  '''YOUR_[A-Z0-9_]+''',
+  # Google Docs image URLs carry a public `key=` query param — not a credential.
+  '''lh\d+-rt\.googleusercontent\.com/''',
+  # Tailwind utility classes quoted in prose ("design tokens … `bg-primary-600`").
+  '''`(bg|text|ring|shadow|border)-[a-z0-9/-]+''',
+]
