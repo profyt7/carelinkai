@@ -16,8 +16,17 @@ import { captureError } from '@/lib/sentry';
 import { VIDEO_LINK_TEXT, VIDEO_LINK_TOKEN } from '@/lib/dp-outreach/copy';
 import { filterSuppressed } from '@/lib/email/suppression';
 
-// Initialize Resend with API key from environment
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Resend client, constructed lazily on first send. `new Resend(undefined)`
+// throws at construction, so building it at module scope made *importing* this
+// module crash wherever RESEND_API_KEY is unset — CI unit tests and `next build`
+// ("Collecting page data") only worked because the tracked .env happened to
+// carry a placeholder key. With .env untracked (OL-149) the key must come from
+// the real environment (Render) and its absence must only affect sending.
+let resendClient: Resend | null = null;
+function getResend(): Resend {
+  if (!resendClient) resendClient = new Resend(process.env.RESEND_API_KEY);
+  return resendClient;
+}
 
 /**
  * SINGLE suppression-enforcing choke point for every Resend send in this module
@@ -34,7 +43,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
  *
  * All send helpers below call this instead of `resend.emails.send` directly.
  */
-type ResendSendArgs = Parameters<typeof resend.emails.send>[0];
+type ResendSendArgs = Parameters<Resend['emails']['send']>[0];
 async function guardedResendSend(
   args: ResendSendArgs,
 ): Promise<{ data: { id: string } | null; error: { message?: string; name?: string } | null }> {
@@ -47,7 +56,7 @@ async function guardedResendSend(
     // Nothing deliverable — skip the send (no bounce, no reputation hit).
     return { data: null, error: null };
   }
-  return resend.emails.send({ ...args, to: allowed }) as Promise<{
+  return getResend().emails.send({ ...args, to: allowed }) as Promise<{
     data: { id: string } | null;
     error: { message?: string; name?: string } | null;
   }>;

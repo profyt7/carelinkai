@@ -26,7 +26,13 @@ import { Resend } from 'resend';
 import { addSuppressions } from '@/lib/email/suppression';
 import { captureError } from '@/lib/sentry';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Lazy: `new Resend(undefined)` throws, and this module is imported at build
+// time ("Collecting page data") where RESEND_API_KEY may be unset (OL-149).
+let resendClient: Resend | null = null;
+function getResend(): Resend {
+  if (!resendClient) resendClient = new Resend(process.env.RESEND_API_KEY);
+  return resendClient;
+}
 
 type ResendWebhookEvent = {
   type?: string;
@@ -60,7 +66,7 @@ export async function POST(request: NextRequest) {
   try {
     if (secret && svixSignature) {
       // Native Svix verification (throws on mismatch/expiry).
-      event = resend.webhooks.verify({
+      event = getResend().webhooks.verify({
         payload: rawBody,
         headers: { id: svixId, timestamp: svixTimestamp, signature: svixSignature },
         webhookSecret: secret,
