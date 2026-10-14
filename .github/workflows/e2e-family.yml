@@ -410,6 +410,11 @@ jobs:
       # Disable Sentry in e2e — see note in the residents/family jobs (OL-121).
       SENTRY_DSN: ""
       NEXT_PUBLIC_SENTRY_DSN: ""
+      # Sprint W4-1 one-tap availability ping: the cron is CRON_SECRET-gated
+      # (fail closed) and PING_ENABLED-gated; both are set here ONLY so the e2e
+      # can drive ping → reply → Verified. No RESEND_API_KEY → nothing is sent.
+      CRON_SECRET: e2e-cron-secret
+      PING_ENABLED: "1"
 
     steps:
       - name: Checkout

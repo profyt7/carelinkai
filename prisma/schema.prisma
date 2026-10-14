@@ -570,6 +570,8 @@ model AssistedLivingHome {
   availabilitySource      AvailabilitySource?
   contactMobile           String?   // best mobile for the SMS poll (collected with consent)
   availabilityOptIn       Boolean   @default(false) // TCPA consent to availability-update texts/calls
+  availabilityContact     AvailabilityContact?
+  availabilityPings       AvailabilityPing[]
   // PRICING capture (OL-111): honest "starting around $X" ranges from multiple
   // sources, always source-labeled + "contact for exact quote". Slow-changing +
   // commercially sensitive — NOT API-synced, never presented as an official quote.
@@ -2560,6 +2562,73 @@ enum AvailabilitySource {
   EMAIL     // email magic-link +/- counter
   VOICE     // AI-voice fallback call result
   CONCIERGE // Anita / care-team confirmed on demand
+  PING      // one-tap weekly availability ping reply (email; SMS stubbed) — sprint W4-1
+}
+
+/// Transport for the weekly one-tap availability ping (sprint W4-1). SMS is a
+/// stub behind SMS_PING_ENABLED — no provider is wired (TCPA review pending).
+enum AvailabilityPingChannel {
+  EMAIL
+  SMS
+}
+
+/// How a ping ended. Null = sent, still waiting for a reply.
+enum AvailabilityPingOutcome {
+  UPDATED      // bare integer / "none" / "full" → availability updated, source=PING
+  STOP         // contact opted out
+  ADMIN_REVIEW // anything else → admin queue (raw reply kept)
+  EXPIRED      // no reply within AVAILABILITY_FRESH_DAYS → Verified badge lapses, on the call list
+}
+
+/// Per-operator "availability contact" (sprint W4-1): the ONE person we ping
+/// weekly about open beds. Business contact only, never PHI. optedIn is the
+/// consent flag — nothing is ever sent to a contact that is not opted in, and
+/// an unclaimed listing is never pinged unless the opt-in was captured by a
+/// human on a call (optedInSource = 'admin_call').
+model AvailabilityContact {
+  id               String                  @id @default(cuid())
+  homeId           String                  @unique
+  name             String
+  email            String? // always lowercased
+  mobile           String? // E.164; SMS transport is stubbed, kept for the call list
+  preferredChannel AvailabilityPingChannel @default(EMAIL)
+  optedIn          Boolean                 @default(false)
+  optedInAt        DateTime?
+  optedInSource    String? // 'operator_portal' | 'admin_call' | 'reply'
+  optedOutAt       DateTime?
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+  home             AssistedLivingHome      @relation(fields: [homeId], references: [id], onDelete: Cascade)
+  pings            AvailabilityPing[]
+
+  @@index([optedIn])
+  @@index([email])
+}
+
+/// One weekly ping to one contact. The token is the whole authorization for
+/// the one-tap reply links (single home, single ping, expires with the ping).
+model AvailabilityPing {
+  id          String                   @id @default(cuid())
+  homeId      String
+  contactId   String
+  channel     AvailabilityPingChannel
+  token       String                   @unique
+  sentAt      DateTime                 @default(now())
+  expiresAt   DateTime
+  delivery    String? // 'sent' | 'skipped_no_resend' | 'skipped_sms_stub' | 'failed'
+  repliedAt   DateTime?
+  replyRaw    String?
+  replyVia    String? // 'link' | 'email_reply' | 'admin'
+  parsedCount Int?
+  outcome     AvailabilityPingOutcome?
+  home        AssistedLivingHome       @relation(fields: [homeId], references: [id], onDelete: Cascade)
+  contact     AvailabilityContact      @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([homeId])
+  @@index([contactId])
+  @@index([outcome])
+  @@index([sentAt])
+  @@index([expiresAt])
 }
 
 /// Where a home's "starting around $X" price came from (best-to-supplementary).

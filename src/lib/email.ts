@@ -1186,3 +1186,59 @@ export async function sendQuoteSurveyEmail(args: {
     return false;
   }
 }
+
+/**
+ * WEEKLY ONE-TAP AVAILABILITY PING (sprint W4-1). Email transport only.
+ *
+ * One line ("Open beds this week at {facility}? Reply with a number …") plus
+ * one-tap 0–5 links, an "another number" link and a STOP link. The caller
+ * (src/lib/availability/ping-engine.ts) has already checked consent, the
+ * PING_ENABLED flag and the claimed/admin-call rule — this function only
+ * renders + sends. CAN-SPAM: postal address + unsubscribe link in the body and
+ * List-Unsubscribe / RFC 8058 headers. Refuses to send without a postal
+ * address. Returns 'sent' | 'skipped_no_resend' | 'failed'.
+ */
+export async function sendAvailabilityPingEmail(args: {
+  toEmail: string;
+  contactName?: string | null;
+  facilityName: string;
+  token: string;
+  appUrl: string;
+  postalAddress: string;
+}): Promise<'sent' | 'skipped_no_resend' | 'failed'> {
+  try {
+    if (!args.postalAddress) return 'failed';
+    if (!process.env.RESEND_API_KEY) return 'skipped_no_resend';
+    const { renderPingEmail } = await import('@/lib/availability/ping');
+    const mail = renderPingEmail({
+      facilityName: args.facilityName,
+      contactName: args.contactName ?? null,
+      appUrl: args.appUrl,
+      token: args.token,
+      postalAddress: args.postalAddress,
+    });
+    const { error } = await guardedResendSend({
+      from: `${APP_NAME} <${FROM_EMAIL}>`,
+      to: [args.toEmail],
+      replyTo: OUTREACH_REPLY_TO,
+      subject: mail.subject,
+      text: mail.text,
+      html: mail.html,
+      headers: {
+        'List-Unsubscribe': `<${mail.unsubscribeUrl}>, <mailto:${FROM_EMAIL}?subject=unsubscribe>`,
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+      },
+    });
+    if (error) {
+      captureError(
+        error instanceof Error ? error : new Error(String((error as { message?: string })?.message ?? error)),
+        { tags: { feature: 'availability-ping' } },
+      );
+      return 'failed';
+    }
+    return 'sent';
+  } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), { tags: { feature: 'availability-ping' } });
+    return 'failed';
+  }
+}
