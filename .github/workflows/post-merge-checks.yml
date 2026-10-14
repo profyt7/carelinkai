@@ -1,0 +1,117 @@
+name: Post-merge checks (W3+W4, read-only)
+
+# On-demand, read-only production checks for the 2026-10-14 merge pass. Runs
+# from a GitHub runner because the dev sandbox has no egress to production.
+# Logged-out GETs only; never writes anything. Each check prints ✅/❌ and the
+# job fails if any check fails.
+
+on:
+  workflow_dispatch:
+    inputs:
+      base:
+        description: 'Base URL to verify'
+        required: false
+        default: 'https://getcarelinkai.com'
+      expect_sha:
+        description: 'Wait until /api/version commitSha starts with this (empty = do not wait)'
+        required: false
+        default: ''
+      wait_minutes:
+        description: 'Max minutes to wait for expect_sha'
+        required: false
+        default: '25'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify production (logged out)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Verify
+        shell: bash
+        env:
+          BASE: ${{ inputs.base }}
+          EXPECT_SHA: ${{ inputs.expect_sha }}
+          WAIT_MINUTES: ${{ inputs.wait_minutes }}
+        run: |
+          set +e +o pipefail
+          set -u
+          FAIL=0
+          fail() { echo "::error::$1"; echo "- ❌ $1" >> "$GITHUB_STEP_SUMMARY"; FAIL=1; }
+          pass() { echo "OK: $1"; echo "- ✅ $1" >> "$GITHUB_STEP_SUMMARY"; }
+          # fetch PATH -> CODE, LOC, body.txt
+          fetch() {
+            : > headers.txt; : > body.txt
+            CODE=$(curl -s -m 45 -o body.txt -D headers.txt -w '%{http_code}' \
+                     -A 'CareLinkAI-PostMergeChecks/1.0 (+github-actions)' "$BASE$1" || echo 000)
+            LOC=$( { grep -i '^location:' headers.txt || true; } | head -n1 | sed -E 's/^[Ll]ocation:[[:space:]]*//; s/\r$//')
+          }
+          echo "## Post-merge checks — $BASE" >> "$GITHUB_STEP_SUMMARY"
+
+          # ---- 0. deploy watch: wait for the expected commit --------------------
+          if [ -n "$EXPECT_SHA" ]; then
+            deadline=$(( $(date +%s) + WAIT_MINUTES*60 ))
+            while :; do
+              fetch /api/version
+              live=$( { grep -o '"commitSha":"[0-9a-f]*"' body.txt || true; } | cut -d'"' -f4)
+              echo "$(date -u +%H:%M:%S) /api/version HTTP $CODE commitSha=${live:-?}"
+              case "${live:-}" in
+                "$EXPECT_SHA"*) pass "live commit ${live} matches expected ${EXPECT_SHA}"; break ;;
+              esac
+              if [ "$(date +%s)" -ge "$deadline" ]; then
+                fail "expected commit $EXPECT_SHA not live after $WAIT_MINUTES min (live=${live:-?})"
+                break
+              fi
+              sleep 30
+            done
+          fi
+          fetch /api/version
+          echo "- ℹ️ /api/version: \`$(head -c 300 body.txt)\`" >> "$GITHUB_STEP_SUMMARY"
+
+          # ---- 1. /llms.txt + robots.txt ---------------------------------------
+          fetch /llms.txt
+          if [ "$CODE" = "200" ] && [ -z "$LOC" ]; then pass "GET /llms.txt → 200 logged-out ($(wc -c < body.txt) bytes)"; else fail "GET /llms.txt → $CODE (loc=$LOC)"; fi
+          fetch /robots.txt
+          if [ "$CODE" = "200" ] && grep -q 'llms.txt' body.txt; then pass "robots.txt lists /llms.txt"; else fail "robots.txt → $CODE, llms.txt listed: $(grep -c llms.txt body.txt)"; fi
+
+          # ---- 2. /cleveland/assisted-living + the five suburb pages -------------
+          for p in /cleveland/assisted-living \
+                   /cleveland/assisted-living/westlake \
+                   /cleveland/assisted-living/strongsville \
+                   /cleveland/assisted-living/parma \
+                   /cleveland/assisted-living/beachwood \
+                   /cleveland/assisted-living/lakewood; do
+            fetch "$p"
+            cards=$(grep -o 'data-testid="listing-card"' body.txt | wc -l)
+            empty=$(grep -c 'data-testid="listings-empty"' body.txt)
+            problems=""
+            [ "$CODE" = "200" ] || problems="$problems status=$CODE"
+            [ -z "$LOC" ] || problems="$problems redirect=$LOC"
+            [ "$cards" -ge 1 ] || problems="$problems listing-cards=0"
+            [ "$empty" -eq 0 ] || problems="$problems empty-state-rendered"
+            [ -z "$problems" ] && pass "GET $p → 200, $cards listing cards in server HTML, no empty state" || fail "GET $p →$problems (cards=$cards)"
+          done
+
+          # ---- 3. /concierge: 200, free-lane branch carries no price in server HTML
+          fetch /concierge
+          if [ "$CODE" = "200" ] && [ -z "$LOC" ]; then pass "GET /concierge → 200 logged-out"; else fail "GET /concierge → $CODE (loc=$LOC)"; fi
+          if grep -q '2,500' body.txt || grep -qE '\$[0-9]' body.txt; then
+            fail "/concierge server HTML contains price text ($(grep -oE '2,500|\$[0-9][0-9,]*' body.txt | sort -u | tr '\n' ' '))"
+          else
+            pass "/concierge server HTML has no price text (no '2,500', no '\$<digit>') — free-lane branch and screener are price-free"
+          fi
+
+          # ---- 4. /cleveland/home-care-agencies + sitemap -----------------------
+          fetch /cleveland/home-care-agencies
+          if [ "$CODE" = "200" ] && [ -z "$LOC" ]; then pass "GET /cleveland/home-care-agencies → 200"; else fail "GET /cleveland/home-care-agencies → $CODE (loc=$LOC)"; fi
+          fetch /sitemap.xml
+          if [ "$CODE" = "200" ] && grep -q '/cleveland/home-care-agencies' body.txt; then pass "sitemap.xml lists /cleveland/home-care-agencies"; else fail "sitemap.xml → $CODE, home-care-agencies listed: $(grep -c home-care-agencies body.txt)"; fi
+          for s in westlake strongsville parma beachwood lakewood; do
+            grep -q "/cleveland/assisted-living/$s" body.txt && pass "sitemap.xml lists /cleveland/assisted-living/$s" || fail "sitemap.xml missing /cleveland/assisted-living/$s"
+          done
+
+          if [ "$FAIL" -ne 0 ]; then echo "::error::Post-merge checks FAILED"; exit 1; fi
+          echo "All post-merge checks passed."
