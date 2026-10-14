@@ -1,6 +1,18 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { FiArrowRight, FiCheck } from 'react-icons/fi';
+import ListingCard from '@/components/directory/ListingCard';
+import { fetchPublicListings } from '@/lib/directory/public-listings';
+import { AVAILABILITY_FRESH_DAYS } from '@/lib/availability/availability';
+
+// Server-rendered listings (sprint W3 item 4): the top verified, non-demo
+// assisted-living homes are queried per request and emitted as plain HTML so a
+// logged-out fetch (Googlebot, an AI crawler, curl) sees the cards — not a
+// client-only fetch. Rendered dynamically so a build never needs the DB; the
+// query itself never throws (see fetchPublicListings).
+export const dynamic = 'force-dynamic';
+
+const LISTINGS_LIMIT = 12;
 
 export const metadata: Metadata = {
   title: 'Assisted Living in Cleveland, OH | CareLinkAI',
@@ -38,7 +50,9 @@ const structuredData = {
   },
 };
 
-export default function ClevelandAssistedLivingPage() {
+export default async function ClevelandAssistedLivingPage() {
+  const listings = await fetchPublicListings({ careLevel: 'ASSISTED', take: LISTINGS_LIMIT });
+
   return (
     <main className="min-h-screen bg-neutral-50">
       <script
@@ -65,15 +79,57 @@ export default function ClevelandAssistedLivingPage() {
             intensity of a nursing home. In Greater Cleveland, assisted living communities
             range from 12-bed family-style homes to 100+ bed campuses.
           </p>
-          <div className="mt-8">
-            <Link
-              href="/search?careLevel=ASSISTED"
+          <div className="mt-8 flex flex-wrap gap-3">
+            <a
+              href="#listings"
               className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700"
             >
-              Browse Cleveland assisted living homes
+              See assisted living homes
               <FiArrowRight />
+            </a>
+            <Link
+              href="/search?careLevel=ASSISTED"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-neutral-300 text-neutral-900 rounded-lg font-semibold hover:bg-neutral-50"
+            >
+              Search all homes
             </Link>
           </div>
+        </div>
+      </section>
+
+      {/* Listings — server-rendered (sprint W3 item 4) */}
+      <section id="listings" className="max-w-5xl mx-auto px-6 py-16 scroll-mt-16" data-testid="listings-section">
+        <h2 className="text-3xl font-bold text-neutral-900">Assisted living homes in Greater Cleveland</h2>
+        <p className="mt-3 text-neutral-700 max-w-3xl">
+          Real, licensed homes — no demo or placeholder listings. Homes whose availability
+          was confirmed with the operator in the last {AVAILABILITY_FRESH_DAYS} days carry a{' '}
+          <span className="font-semibold">Verified Availability</span> badge. Inspection
+          lines are facts from Ohio Department of Health survey records: the date of the
+          most recent survey and how many citations it listed — no grades.
+        </p>
+        {listings.length > 0 ? (
+          <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3" data-testid="listings-grid" data-count={listings.length}>
+            {listings.map((l, i) => (
+              <ListingCard key={l.id} listing={l} priority={i < 3} />
+            ))}
+          </div>
+        ) : (
+          <p className="mt-8 rounded-xl border border-neutral-200 bg-white p-6 text-neutral-700" data-testid="listings-empty">
+            Listings are loading from the directory — use{' '}
+            <Link href="/search?careLevel=ASSISTED" className="font-semibold text-primary-600 hover:underline">
+              search
+            </Link>{' '}
+            to browse every assisted living home in Greater Cleveland.
+          </p>
+        )}
+        <div className="mt-8">
+          <Link
+            href="/search?careLevel=ASSISTED"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-primary-600 hover:text-primary-700"
+          >
+            Browse all assisted living homes
+            <FiArrowRight />
+          </Link>
         </div>
       </section>
 
