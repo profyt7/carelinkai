@@ -5,6 +5,7 @@ import { FiArrowRight, FiCheck } from 'react-icons/fi';
 import ListingCard from '@/components/directory/ListingCard';
 import { fetchPublicListings } from '@/lib/directory/public-listings';
 import { SUBURBS, findSuburb, suburbPath } from '@/lib/directory/suburbs';
+import { suburbListingsQuery, warnSuburbEmptyState } from '@/lib/directory/suburb-guard';
 import { AVAILABILITY_FRESH_DAYS } from '@/lib/availability/availability';
 import { buildListingsItemListJsonLd } from '@/lib/seo/jsonld';
 
@@ -40,7 +41,10 @@ export default async function SuburbAssistedLivingPage({ params }: { params: Par
   const s = findSuburb(slug);
   if (!s) notFound();
 
-  const listings = await fetchPublicListings({ cities: s.cities, careLevel: 'ASSISTED', take: LISTINGS_LIMIT });
+  const listings = await fetchPublicListings(suburbListingsQuery(s, LISTINGS_LIMIT));
+  // Empty-state guard (W4 0c): a WARN with the live count + the exact filter,
+  // so a suburb that silently lost its homes shows up in the Render logs.
+  if (listings.length === 0) await warnSuburbEmptyState(s, 0);
   const url = `${SITE_URL}${suburbPath(s)}`;
   const others = SUBURBS.filter((x) => x.slug !== s.slug);
 
