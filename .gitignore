@@ -25,3 +25,7 @@ playwright-report/
 
 # Operator website scrape cache
 scripts/scraped-cache/
+
+# Local environment files — never commit (OL-149). .env.example stays tracked.
+.env
+.env.local
