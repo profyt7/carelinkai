@@ -3,7 +3,7 @@
 
 import * as Sentry from '@sentry/nextjs';
 import { scrubPhi } from './src/lib/phi-scrubber';
-import { makeTracesSampler } from './src/lib/sentry/trace-sampling';
+import { makeBeforeSendTransaction, makeTracesSampler } from './src/lib/sentry/trace-sampling';
 
 const SENTRY_DSN = process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN;
 
@@ -29,9 +29,14 @@ if (SENTRY_DSN) {
     enableMetrics: true,
 
     // Performance Monitoring - capture 10% of transactions in production, but
-    // NEVER trace health-check / uptime-poller / bot traffic or /api/ping +
-    // /api/health (the "GET /" flood — see src/lib/sentry/trace-sampling.ts).
+    // NEVER trace health-check / uptime-poller / bot traffic, /api/ping +
+    // /api/health, the middleware span, or scanner / non-route paths
+    // (/wp-admin/*, /.env.*, *.php …) — see src/lib/sentry/trace-sampling.ts.
     tracesSampler: makeTracesSampler(process.env.NODE_ENV === 'production' ? 0.1 : 1.0),
+
+    // Backstop once the response is known: drop every 404 transaction (and
+    // anything the sampler would have dropped had it seen the final URL).
+    beforeSendTransaction: makeBeforeSendTransaction(),
 
     // Profiling disabled - nodeProfilingIntegration was causing deployment errors
     // profilesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
