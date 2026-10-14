@@ -34,6 +34,12 @@ export const PUBLIC_PAGE_PREFIXES: readonly string[] = [
   '/founder',
   // SEO landing pages (sitemap.ts) — the Cleveland directory and its care-type children.
   '/cleveland',
+  // Claim-link landing (/claim?token=…). The page decides what to do from the
+  // signed token + session (register redirect for new operators, cohort
+  // landing page for cohort links, confirm step for the addressed operator) —
+  // withAuth bouncing it to /auth/login made the email links a dead end for
+  // anyone without an account (sprint W3 item 2).
+  '/claim',
   // Family concierge offer page (sprint W3 item 5) — public, screener in front.
   '/concierge',
 ];
