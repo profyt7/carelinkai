@@ -2340,6 +2340,9 @@ model PlacementSearch {
   conciergeNote        String?          // overall care-team message to the DP
   conciergeSubmittedAt DateTime?
   conciergeRespondedAt DateTime?
+  /// Where the request came from (sprint W4 0a): null/'dp_app' = a discharge
+  /// planner in the app; 'concierge_page' = a private-pay family via /concierge.
+  source             String?
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
   user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)

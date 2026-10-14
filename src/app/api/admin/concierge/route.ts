@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
         id: true,
         queryText: true,
         payerSource: true,
+        source: true,
         conciergeStatus: true,
         conciergeSubmittedAt: true,
         conciergeRespondedAt: true,
