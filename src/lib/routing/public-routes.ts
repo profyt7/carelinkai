@@ -70,6 +70,9 @@ export const KNOWN_APP_SEGMENTS: readonly string[] = [
   'facility',
   'family',
   'favorites',
+  // Asset-only folder (self-hosted woff2 + the next/font/local module, OL-146) —
+  // no page or route handler; listed so the fs guard passes, like 'llms.txt'.
+  'fonts',
   'founder',
   'get-started',
   'help',
