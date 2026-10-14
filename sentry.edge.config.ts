@@ -3,7 +3,7 @@
 
 import * as Sentry from '@sentry/nextjs';
 import { scrubPhi } from './src/lib/phi-scrubber';
-import { makeTracesSampler } from './src/lib/sentry/trace-sampling';
+import { makeBeforeSendTransaction, makeTracesSampler } from './src/lib/sentry/trace-sampling';
 
 const SENTRY_DSN = process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN;
 
@@ -25,10 +25,15 @@ if (SENTRY_DSN) {
     // Enable Metrics (automatically enabled in v10.25.0+, but explicit for clarity)
     enableMetrics: true,
 
-    // Performance Monitoring - 10% in production, but never for health-check /
-    // uptime-poller / bot traffic ("middleware GET" flood — see
-    // src/lib/sentry/trace-sampling.ts).
+    // Performance Monitoring - 10% in production for edge routes, but the
+    // middleware root span ("middleware GET") is sampled at 0: on this runtime
+    // the sampler sees only the span name (no URL / User-Agent), every page
+    // request already has a Node transaction, and it was 39.8K spans/day of
+    // Render health-check polls — see src/lib/sentry/trace-sampling.ts.
     tracesSampler: makeTracesSampler(process.env.NODE_ENV === 'production' ? 0.1 : 1.0),
+
+    // Backstop once the response is known: drop every 404 transaction.
+    beforeSendTransaction: makeBeforeSendTransaction(),
 
     // Environment tracking
     environment: process.env.NODE_ENV || 'development',

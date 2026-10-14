@@ -9,6 +9,8 @@ type Row = {
   id: string;
   queryText: string;
   payerSource?: string | null;
+  /** 'concierge_page' = a private-pay family via /concierge (W4 0a); null = DP in the app. */
+  source?: string | null;
   conciergeStatus: 'SUBMITTED' | 'MATCHING' | 'SHORTLIST_READY' | null;
   conciergeSubmittedAt: string | null;
   conciergeRespondedAt: string | null;
@@ -113,7 +115,12 @@ export default function AdminConciergeQueuePage() {
             >
               <div className="min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="font-semibold text-neutral-900 truncate">{dpName(r)}</span>
+                  <span className="font-semibold text-neutral-900 truncate">{r.source === 'concierge_page' ? 'Family · concierge page' : dpName(r)}</span>
+                  {r.source === 'concierge_page' && (
+                    <span data-testid="source-badge" className="text-[11px] font-semibold uppercase tracking-wide text-primary-700 bg-primary-50 border border-primary-200 rounded px-1.5 py-0.5">
+                      concierge_page
+                    </span>
+                  )}
                   {r.user?.dischargePlannerProfile?.organization && (
                     <span className="text-xs text-neutral-500 truncate">· {r.user.dischargePlannerProfile.organization}</span>
                   )}
