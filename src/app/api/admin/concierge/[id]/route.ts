@@ -5,6 +5,11 @@
  *   { action: 'matching' }                              → mark "Matching" (in progress)
  *   { action: 'respond', curatedHomes, conciergeNote }  → save curated shortlist
  *                                                          + mark "Shortlist ready"
+ *                                                          + one FacilityResponse per home
+ *                                                            (tokenized accept/decline link
+ *                                                            emailed to the facility — W4-2)
+ *   { action: 'admitted', homeId }                      → admin confirms the move-in
+ *                                                          (ACCEPTED → ADMITTED)
  *
  * curatedHomes in: [{ homeId, note?, confirmedAvailability? }] — the server
  * enriches each with the home's current name + address before storing, so the
@@ -20,6 +25,8 @@ import { requireRole } from '@/lib/auth-utils';
 import { UserRole } from '@prisma/client';
 import { createInAppNotification } from '@/lib/services/notifications';
 import { sendConciergeShortlistReadyEmail } from '@/lib/email';
+import { createFacilityResponsesForShortlist, markAdmitted, FACILITY_RESPONSE_SELECT } from '@/lib/concierge/facility-response-engine';
+import { captureError } from '@/lib/sentry';
 
 function authErr(error: any): NextResponse | null {
   if (error?.name === 'UnauthenticatedError') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -53,6 +60,8 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
             dischargePlannerProfile: { select: { organization: true, title: true } },
           },
         },
+        // W4-2: per-home accept / decline state + reasons (admin sees the contact email too).
+        facilityResponses: { select: FACILITY_RESPONSE_SELECT, orderBy: { createdAt: 'asc' } },
       },
     });
     if (!row || !row.isConcierge) {
@@ -74,6 +83,7 @@ const curatedSchema = z.object({
 });
 const patchSchema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('matching') }),
+  z.object({ action: z.literal('admitted'), homeId: z.string().min(1) }),
   z.object({
     action: z.literal('respond'),
     curatedHomes: z.array(curatedSchema).min(1, 'Add at least one home to the shortlist'),
@@ -101,6 +111,12 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
         data: { conciergeStatus: 'MATCHING' },
       });
       return NextResponse.json({ ok: true, status: 'MATCHING' });
+    }
+
+    if (parsed.action === 'admitted') {
+      const r = await markAdmitted({ searchId: params.id, homeId: parsed.homeId });
+      if (!r.ok) return NextResponse.json({ error: r.error }, { status: 409 });
+      return NextResponse.json({ ok: true, status: 'ADMITTED', homeId: parsed.homeId });
     }
 
     // action === 'respond' — enrich curated homes with current name/address.
@@ -155,7 +171,17 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       void sendConciergeShortlistReadyEmail({ toEmail: existing.user.email, count: curated.length });
     }
 
-    return NextResponse.json({ ok: true, status: 'SHORTLIST_READY', curatedCount: curated.length });
+    // W4-2: one FacilityResponse per shortlisted home + the tokenized accept /
+    // decline link to the facility's admissions contact (PHI-minimal email).
+    // Never blocks the DP send: a failure here is captured, the shortlist still goes.
+    let facilityResponses: Awaited<ReturnType<typeof createFacilityResponsesForShortlist>> = [];
+    try {
+      facilityResponses = await createFacilityResponsesForShortlist({ searchId: params.id, homeIds: curated.map((h) => h.homeId) });
+    } catch (e) {
+      captureError(e instanceof Error ? e : new Error(String(e)), { tags: { feature: 'facility-response' }, extra: { searchId: params.id } });
+    }
+
+    return NextResponse.json({ ok: true, status: 'SHORTLIST_READY', curatedCount: curated.length, facilityResponses });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues[0]?.message ?? 'Invalid request' }, { status: 400 });

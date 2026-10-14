@@ -17,11 +17,50 @@ type CuratedHome = {
   tourRequestedAt?: string;
 };
 
+type FacilityResponse = {
+  id: string;
+  homeId: string;
+  status: 'PENDING' | 'SENT' | 'OPENED' | 'ACCEPTED' | 'DECLINED' | 'ADMITTED';
+  sentAt: string | null;
+  openedAt: string | null;
+  respondedAt: string | null;
+  acceptedAt: string | null;
+  declinedAt: string | null;
+  admittedAt: string | null;
+  declineReason: string | null;
+  declineText: string | null;
+};
+
+// W4-2: what the DP sees per shortlisted home.
+const RESPONSE_LABEL: Record<FacilityResponse['status'], { text: string; cls: string }> = {
+  PENDING: { text: 'Awaiting facility', cls: 'bg-neutral-100 text-neutral-600' },
+  SENT: { text: 'Sent to facility', cls: 'bg-primary-50 text-primary-700' },
+  OPENED: { text: 'Facility viewing', cls: 'bg-primary-50 text-primary-700' },
+  ACCEPTED: { text: 'Accepted', cls: 'bg-success-100 text-success-800' },
+  DECLINED: { text: 'Declined', cls: 'bg-error-50 text-error-700' },
+  ADMITTED: { text: 'Admitted', cls: 'bg-success-600 text-white' },
+};
+const DECLINE_LABEL: Record<string, string> = {
+  NO_BED: 'no bed available',
+  ACUITY_TWO_PERSON_ASSIST: 'acuity — two-person assist',
+  ACUITY_WANDERING: 'acuity — wandering',
+  ACUITY_OXYGEN: 'acuity — oxygen',
+  ACUITY_INSULIN: 'acuity — insulin',
+  ACUITY_BARIATRIC: 'acuity — bariatric',
+  ACUITY_BEHAVIORAL: 'acuity — behavioral',
+  ACUITY_HOSPICE: 'acuity — hospice',
+  PAYER_NOT_ACCEPTED: 'payer not accepted',
+  MEDICAID_PENDING_NOT_ACCEPTED: 'Medicaid-pending not accepted',
+  OUTSIDE_AREA: 'outside their area',
+  OTHER: 'other',
+};
+
 type ConciergeRequest = {
   id: string;
   queryText: string;
   conciergeStatus: 'SUBMITTED' | 'MATCHING' | 'SHORTLIST_READY' | null;
   curatedHomes: CuratedHome[] | null;
+  facilityResponses?: FacilityResponse[];
   conciergeNote: string | null;
   conciergeSubmittedAt: string | null;
   conciergeRespondedAt: string | null;
@@ -160,6 +199,7 @@ export default function DischargePlannerConciergePage() {
             {requests.map((r) => {
               const ready = r.conciergeStatus === 'SHORTLIST_READY';
               const homes = Array.isArray(r.curatedHomes) ? r.curatedHomes : [];
+              const responses = new Map((r.facilityResponses ?? []).map((f) => [f.homeId, f]));
               return (
                 <div key={r.id} className="bg-white rounded-2xl shadow-lg overflow-hidden">
                   <div className="p-6">
@@ -191,11 +231,31 @@ export default function DischargePlannerConciergePage() {
                           <CheckCircle className="h-4 w-4 text-success-600" /> Your curated shortlist ({homes.length})
                         </h4>
                         <div className="space-y-3">
-                          {homes.map((h) => (
-                            <div key={h.homeId} className="border border-neutral-200 rounded-xl p-4">
+                          {homes.map((h) => {
+                            const fr = responses.get(h.homeId) ?? null;
+                            return (
+                            <div key={h.homeId} className="border border-neutral-200 rounded-xl p-4" data-testid="shortlist-home" data-home-id={h.homeId} data-response={fr?.status ?? 'none'}>
                               <div className="flex items-start justify-between gap-4 flex-wrap">
                                 <div className="min-w-0">
-                                  <p className="font-semibold text-neutral-900">{h.name}</p>
+                                  <p className="font-semibold text-neutral-900 flex items-center gap-2 flex-wrap">
+                                    {h.name}
+                                    {fr && (
+                                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${RESPONSE_LABEL[fr.status].cls}`} data-testid="facility-response-state">
+                                        {RESPONSE_LABEL[fr.status].text}
+                                      </span>
+                                    )}
+                                  </p>
+                                  {fr?.status === 'DECLINED' && (
+                                    <p className="text-sm text-error-700 mt-1" data-testid="facility-decline-reason">
+                                      Declined: {fr.declineReason ? DECLINE_LABEL[fr.declineReason] ?? fr.declineReason : 'no reason given'}{fr.declineText ? ` — “${fr.declineText}”` : ''}
+                                    </p>
+                                  )}
+                                  {fr?.status === 'ACCEPTED' && (
+                                    <p className="text-sm text-success-700 mt-1">Accepted {fr.acceptedAt ? new Date(fr.acceptedAt).toLocaleDateString() : ''} — CareLinkAI is confirming the move-in.</p>
+                                  )}
+                                  {fr?.status === 'ADMITTED' && (
+                                    <p className="text-sm text-success-700 mt-1">Admitted {fr.admittedAt ? new Date(fr.admittedAt).toLocaleDateString() : ''}.</p>
+                                  )}
                                   {h.address && (
                                     <p className="text-sm text-neutral-500 flex items-center gap-1 mt-0.5">
                                       <MapPin className="h-3.5 w-3.5" /> {h.address}
@@ -237,7 +297,8 @@ export default function DischargePlannerConciergePage() {
                                 </div>
                               </div>
                             </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </div>
                     )}

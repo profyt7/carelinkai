@@ -16,6 +16,10 @@ import { prisma } from '@/lib/prisma';
  * GET ?id=...: read raw concierge-relevant state for assertions, incl. a
  *   placementRequestCount so a test can prove the concierge path created NO
  *   per-home PlacementRequest rows (i.e. nothing was routed to an operator).
+ *
+ * DELETE { email }: remove a seeded operator's homes (and their facility
+ *   responses, via cascade) so later specs in the same job never lose their
+ *   own home off page 1 of /search.
  */
 export async function POST(req: NextRequest) {
   if (process.env['ALLOW_DEV_ENDPOINTS'] !== '1') {
@@ -62,6 +66,17 @@ export async function GET(req: NextRequest) {
         curatedHomes: true, conciergeNote: true,
         _count: { select: { placementRequests: true } },
         user: { select: { email: true } },
+        // W4-2: facility accept/decline rows incl. the link token (dev only) +
+        // the home's observed acceptance criteria roll-up.
+        facilityResponses: {
+          select: {
+            id: true, homeId: true, status: true, token: true, contactEmail: true, delivery: true, summary: true,
+            sentAt: true, openedAt: true, respondedAt: true, acceptedAt: true, declinedAt: true, admittedAt: true,
+            declineReason: true, declineText: true,
+            home: { select: { observedAcceptanceCriteria: true } },
+          },
+          orderBy: { createdAt: 'asc' },
+        },
       },
     });
     if (!s) return NextResponse.json({ error: 'not found' }, { status: 404 });
@@ -74,9 +89,36 @@ export async function GET(req: NextRequest) {
       conciergeNote: s.conciergeNote,
       placementRequestCount: s._count.placementRequests,
       userEmail: s.user?.email ?? null,
+      facilityResponses: s.facilityResponses,
     });
   } catch (e) {
     console.error('dev placement-search GET error', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  if (process.env['ALLOW_DEV_ENDPOINTS'] !== '1') {
+    return NextResponse.json({ error: 'Not Found' }, { status: 404 });
+  }
+  try {
+    const body = await req.json().catch(() => ({}));
+    const email = typeof body?.email === 'string' ? body.email : '';
+    if (!email) return NextResponse.json({ error: 'email required' }, { status: 400 });
+    const user = await prisma.user.findUnique({ where: { email }, select: { id: true } });
+    const op = user ? await prisma.operator.findUnique({ where: { userId: user.id }, select: { id: true } }) : null;
+    if (!op) return NextResponse.json({ ok: true, deleted: 0 });
+    const homes = await prisma.assistedLivingHome.findMany({ where: { operatorId: op.id }, select: { id: true } });
+    const ids = homes.map((h) => h.id);
+    if (ids.length) {
+      await prisma.facilityInspection.deleteMany({ where: { facilityId: { in: ids } } });
+      await prisma.homePhoto.deleteMany({ where: { homeId: { in: ids } } });
+      await prisma.address.deleteMany({ where: { homeId: { in: ids } } });
+      await prisma.assistedLivingHome.deleteMany({ where: { id: { in: ids } } });
+    }
+    return NextResponse.json({ ok: true, deleted: ids.length });
+  } catch (e) {
+    console.error('dev placement-search DELETE error', e);
+    return NextResponse.json({ ok: false, error: 'cleanup failed' }, { status: 200 });
   }
 }

@@ -1188,6 +1188,64 @@ export async function sendQuoteSurveyEmail(args: {
 }
 
 /**
+ * FACILITY ACCEPT / DECLINE request (sprint W4-2). Sent to a shortlisted
+ * facility's admissions contact when the care team sends a concierge
+ * shortlist to the DP. PHI-MINIMAL BY CONSTRUCTION: the body is rendered
+ * from the FacilitySummary (care level, payer lane, timeline) only — never
+ * from PlacementSearch.patientInfo. CAN-SPAM: postal address + unsubscribe
+ * (the outreach suppression token) + List-Unsubscribe headers. Refuses to
+ * send without a postal address. Returns 'sent' | 'skipped_no_resend' | 'failed'.
+ */
+export async function sendFacilityResponseRequestEmail(args: {
+  toEmail: string;
+  facilityName: string;
+  summary: { careLevel: string; payerLane: string; feeLane: string; timeline: string };
+  token: string;
+  appUrl: string;
+  postalAddress: string;
+  unsubscribeUrl: string;
+  dpOrganization?: string | null;
+}): Promise<'sent' | 'skipped_no_resend' | 'failed'> {
+  try {
+    if (!args.postalAddress) return 'failed';
+    if (!process.env.RESEND_API_KEY) return 'skipped_no_resend';
+    const { renderFacilityResponseEmail } = await import('@/lib/concierge/facility-response');
+    const mail = renderFacilityResponseEmail({
+      facilityName: args.facilityName,
+      summary: { ...args.summary, feeLane: args.summary.feeLane as 'FEE_ELIGIBLE' | 'FREE_LANE' | 'UNKNOWN' },
+      appUrl: args.appUrl,
+      token: args.token,
+      postalAddress: args.postalAddress,
+      unsubscribeUrl: args.unsubscribeUrl,
+      dpOrganization: args.dpOrganization ?? null,
+    });
+    const { error } = await guardedResendSend({
+      from: `${APP_NAME} <${FROM_EMAIL}>`,
+      to: [args.toEmail],
+      replyTo: DP_LEAD_REPLY_TO,
+      subject: mail.subject,
+      text: mail.text,
+      html: mail.html,
+      headers: {
+        'List-Unsubscribe': `<${args.unsubscribeUrl}>, <mailto:${FROM_EMAIL}?subject=unsubscribe>`,
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+      },
+    });
+    if (error) {
+      captureError(
+        error instanceof Error ? error : new Error(String((error as { message?: string })?.message ?? error)),
+        { tags: { feature: 'facility-response' } },
+      );
+      return 'failed';
+    }
+    return 'sent';
+  } catch (error) {
+    captureError(error instanceof Error ? error : new Error(String(error)), { tags: { feature: 'facility-response' } });
+    return 'failed';
+  }
+}
+
+/**
  * WEEKLY ONE-TAP AVAILABILITY PING (sprint W4-1). Email transport only.
  *
  * One line ("Open beds this week at {facility}? Reply with a number …") plus

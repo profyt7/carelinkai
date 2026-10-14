@@ -50,11 +50,53 @@ type Detail = {
   conciergeNote: string | null;
   conciergeSubmittedAt: string | null;
   conciergeRespondedAt: string | null;
+  facilityResponses?: FacilityResponse[];
   user: {
     firstName: string | null; lastName: string | null; email: string | null; phone: string | null;
     dischargePlannerProfile: { organization: string | null; title: string | null } | null;
   } | null;
 };
+
+type FacilityResponse = {
+  id: string;
+  homeId: string;
+  status: 'PENDING' | 'SENT' | 'OPENED' | 'ACCEPTED' | 'DECLINED' | 'ADMITTED';
+  contactEmail: string | null;
+  delivery: string | null;
+  summary: { careLevel?: string; payerLane?: string; timeline?: string } | null;
+  sentAt: string | null;
+  openedAt: string | null;
+  respondedAt: string | null;
+  acceptedAt: string | null;
+  declinedAt: string | null;
+  admittedAt: string | null;
+  declineReason: string | null;
+  declineText: string | null;
+};
+
+const RESPONSE_CLS: Record<FacilityResponse['status'], string> = {
+  PENDING: 'bg-neutral-100 text-neutral-600',
+  SENT: 'bg-primary-50 text-primary-700',
+  OPENED: 'bg-primary-50 text-primary-700',
+  ACCEPTED: 'bg-success-100 text-success-800',
+  DECLINED: 'bg-error-50 text-error-700',
+  ADMITTED: 'bg-success-600 text-white',
+};
+const DECLINE_LABEL: Record<string, string> = {
+  NO_BED: 'No bed available',
+  ACUITY_TWO_PERSON_ASSIST: 'Acuity — two-person assist',
+  ACUITY_WANDERING: 'Acuity — wandering',
+  ACUITY_OXYGEN: 'Acuity — oxygen',
+  ACUITY_INSULIN: 'Acuity — insulin',
+  ACUITY_BARIATRIC: 'Acuity — bariatric',
+  ACUITY_BEHAVIORAL: 'Acuity — behavioral',
+  ACUITY_HOSPICE: 'Acuity — hospice',
+  PAYER_NOT_ACCEPTED: 'Payer not accepted',
+  MEDICAID_PENDING_NOT_ACCEPTED: 'Medicaid-pending not accepted',
+  OUTSIDE_AREA: 'Outside service area',
+  OTHER: 'Other',
+};
+const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleString() : '—');
 
 type Selection = { included: boolean; note: string; confirmedAvailability: string };
 
@@ -112,6 +154,24 @@ export default function AdminConciergeCuratePage() {
       });
       if (!res.ok) throw new Error((await res.json())?.error || 'Failed');
       toast.success('Marked as Matching');
+      load();
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed');
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  // W4-2: admin confirms the move-in after a facility accepted.
+  const markAdmitted = async (homeId: string) => {
+    setSaving(`admitted:${homeId}`);
+    try {
+      const res = await fetch(`/api/admin/concierge/${id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'admitted', homeId }),
+      });
+      if (!res.ok) throw new Error((await res.json())?.error || 'Failed');
+      toast.success('Marked as admitted');
       load();
     } catch (e: any) {
       toast.error(e?.message || 'Failed');
@@ -205,6 +265,49 @@ export default function AdminConciergeCuratePage() {
         <h2 className="text-sm font-semibold text-neutral-700 mb-1">Original request</h2>
         <p className="text-sm text-neutral-700">{detail.queryText}</p>
       </div>
+
+      {/* W4-2: facility accept / decline per shortlisted home */}
+      {(detail.facilityResponses?.length ?? 0) > 0 && (
+        <div className="bg-white rounded-2xl shadow p-5" data-testid="facility-responses">
+          <h2 className="text-base font-semibold text-neutral-900 mb-1">Facility responses</h2>
+          <p className="text-xs text-neutral-500 mb-3">
+            Each shortlisted home got a one-tap accept / decline link (care level, payer lane and timeline only — no patient details). Decline reasons roll up to the home&apos;s observed acceptance criteria.
+          </p>
+          <ul className="divide-y divide-neutral-100">
+            {(detail.facilityResponses ?? []).map((fr) => {
+              const name = matches.find((m) => m.homeId === fr.homeId)?.homeName ?? fr.homeId;
+              return (
+                <li key={fr.id} className="py-3 flex flex-wrap items-start justify-between gap-3" data-testid="facility-response-row" data-home-id={fr.homeId} data-status={fr.status}>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium text-neutral-900">{name}</span>
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${RESPONSE_CLS[fr.status]}`}>{fr.status.toLowerCase()}</span>
+                    </div>
+                    <div className="text-xs text-neutral-500 mt-0.5">
+                      {fr.contactEmail ?? 'no contact'} · {fr.delivery ?? ''} · sent {fmt(fr.sentAt)} · opened {fmt(fr.openedAt)} · responded {fmt(fr.respondedAt)}{fr.admittedAt ? ` · admitted ${fmt(fr.admittedAt)}` : ''}
+                    </div>
+                    {fr.status === 'DECLINED' && (
+                      <div className="text-sm text-error-700 mt-1" data-testid="admin-decline-reason">
+                        {fr.declineReason ? DECLINE_LABEL[fr.declineReason] ?? fr.declineReason : 'No reason'}{fr.declineText ? ` — “${fr.declineText}”` : ''}
+                      </div>
+                    )}
+                  </div>
+                  {fr.status === 'ACCEPTED' && (
+                    <button
+                      onClick={() => markAdmitted(fr.homeId)}
+                      disabled={!!saving}
+                      className="px-3 py-1.5 bg-success-600 text-white rounded-lg text-sm font-medium hover:bg-success-700 disabled:opacity-50"
+                      data-testid="mark-admitted"
+                    >
+                      {saving === `admitted:${fr.homeId}` ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Confirm admitted'}
+                    </button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
 
       {/* Curate */}
       <div className="bg-white rounded-2xl shadow p-5">

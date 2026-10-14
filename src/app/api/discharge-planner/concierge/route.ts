@@ -22,6 +22,7 @@ import { UserRole } from '@prisma/client';
 import { sendConciergeRequestNotification } from '@/lib/email';
 import { captureError } from '@/lib/sentry';
 import { isPayerSource } from '@/lib/payer/payer-source';
+import { toDpFacilityResponse } from '@/lib/concierge/facility-response-engine';
 
 // Minimum-necessary intake. Kept in-app; never emailed out.
 const patientInfoSchema = z.object({
@@ -120,11 +121,20 @@ export async function GET() {
         conciergeRespondedAt: true,
         patientInfo: true,
         createdAt: true,
+        // W4-2: each shortlisted home's accept / decline state (no facility contact email).
+        facilityResponses: {
+          select: {
+            id: true, homeId: true, status: true, sentAt: true, openedAt: true, respondedAt: true,
+            acceptedAt: true, declinedAt: true, admittedAt: true, declineReason: true, declineText: true,
+          },
+          orderBy: { createdAt: 'asc' },
+        },
       },
       orderBy: { conciergeSubmittedAt: 'desc' },
       take: 100,
     });
-    return NextResponse.json({ requests: rows, total: rows.length });
+    const requests = rows.map((r) => ({ ...r, facilityResponses: r.facilityResponses.map(toDpFacilityResponse) }));
+    return NextResponse.json({ requests, total: requests.length });
   } catch (error: any) {
     if (error?.name === 'UnauthenticatedError') {
       return NextResponse.json({ error: 'Unauthorized', requests: [] }, { status: 401 });

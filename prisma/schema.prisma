@@ -587,6 +587,12 @@ model AssistedLivingHome {
   // seed data / ODH directory; set by the ingest pipeline on a confirmed match.
   odhLicenseNumber        String?
   facilityInspections     FacilityInspection[]
+  /// Sprint W4-2: decline reasons from concierge shortlists, rolled up as
+  /// "acceptance criteria (observed)" — {version, declines:{REASON:{count,lastAt}},
+  /// totalDeclines, totalAccepts, lastDeclinedAt, lastAcceptedAt}. Written ONLY
+  /// by the facility-response engine; never overwrites operator-entered fields
+  /// (acceptsMedicaid, careLevel, …).
+  observedAcceptanceCriteria Json?
   /// OL-112: demo/tutorial fixture marker. Demo rows are RETAINED (tutorials
   /// need them) but FILTERED from admin metrics + public directory. Backfilled
   /// by scripts/backfill-demo-flags.ts from the demo-account conventions.
@@ -607,6 +613,7 @@ model AssistedLivingHome {
   tourRequests           TourRequest[]
   tourSlots              TourSlot[]
   placementRequests      PlacementRequest[]
+  facilityResponses      FacilityResponse[]
   waitlistEntries        WaitlistEntry[]
   shiftNeeds             ShiftNeed[]
 
@@ -2349,6 +2356,7 @@ model PlacementSearch {
   updatedAt          DateTime           @updatedAt
   user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   placementRequests  PlacementRequest[]
+  facilityResponses  FacilityResponse[]
 
   @@index([userId])
   @@index([status])
@@ -2357,6 +2365,64 @@ model PlacementSearch {
 }
 
 /// Placement request sent to homes
+/// Facility accept / decline inside the DP concierge flow (sprint W4-2).
+enum FacilityResponseStatus {
+  PENDING  // row created with the shortlist; no deliverable contact yet
+  SENT     // tokenized link emailed to the facility contact
+  OPENED   // link opened
+  ACCEPTED
+  DECLINED
+  ADMITTED // admin confirmed the move-in after an accept
+}
+
+/// Fixed decline reasons — the acuity ones roll up to the home's observed
+/// acceptance criteria (never overwriting operator-entered fields).
+enum FacilityDeclineReason {
+  NO_BED
+  ACUITY_TWO_PERSON_ASSIST
+  ACUITY_WANDERING
+  ACUITY_OXYGEN
+  ACUITY_INSULIN
+  ACUITY_BARIATRIC
+  ACUITY_BEHAVIORAL
+  ACUITY_HOSPICE
+  PAYER_NOT_ACCEPTED
+  MEDICAID_PENDING_NOT_ACCEPTED
+  OUTSIDE_AREA
+  OTHER
+}
+
+/// One row per shortlisted home per concierge request (sprint W4-2). The
+/// email + the public response page only ever see `summary` (care level,
+/// payer lane, timeline) — never the PlacementSearch.patientInfo.
+model FacilityResponse {
+  id            String                 @id @default(cuid())
+  searchId      String
+  homeId        String
+  status        FacilityResponseStatus @default(PENDING)
+  token         String                 @unique
+  contactEmail  String?
+  delivery      String? // 'sent' | 'skipped_no_resend' | 'failed' | 'no_contact'
+  summary       Json // { careLevel, payerLane, feeLane, timeline } — PHI-minimal
+  sentAt        DateTime?
+  openedAt      DateTime?
+  respondedAt   DateTime?
+  acceptedAt    DateTime?
+  declinedAt    DateTime?
+  admittedAt    DateTime?
+  declineReason FacilityDeclineReason?
+  declineText   String?
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+  search        PlacementSearch        @relation(fields: [searchId], references: [id], onDelete: Cascade)
+  home          AssistedLivingHome     @relation(fields: [homeId], references: [id], onDelete: Cascade)
+
+  @@unique([searchId, homeId])
+  @@index([homeId])
+  @@index([status])
+  @@index([createdAt])
+}
+
 model PlacementRequest {
   id                  String             @id @default(cuid())
   searchId            String
