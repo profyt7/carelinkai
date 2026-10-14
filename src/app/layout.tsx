@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, DM_Serif_Display } from "next/font/google";
+// Fonts are served from this repo (src/app/fonts) — no build-time Google fetch (OL-146).
+import { inter, dmSerif } from "./fonts";
 import "./globals.css";
 import { Providers } from "./providers";
 // WebSocket provider for real-time messaging
@@ -29,22 +30,6 @@ import ErrorBoundary from "../components/ErrorBoundary";
 import OnboardingModal from "../components/onboarding/OnboardingModal";
 // Sentry error tracking
 import SentryProvider from "../components/SentryProvider";
-
-// Inter — primary UI font (body, labels, buttons, nav, headings)
-const inter = Inter({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-inter",
-  weight: ["300", "400", "500", "600", "700"],
-});
-
-// DM Serif Display — emotional accent font for hero moments and family-facing copy
-const dmSerif = DM_Serif_Display({
-  weight: ["400"],
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-dm-serif",
-});
 
 // App metadata for SEO and sharing
 export const metadata: Metadata = {
