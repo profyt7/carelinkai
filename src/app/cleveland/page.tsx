@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { FiArrowRight, FiCheck } from 'react-icons/fi';
+import { SUBURBS, suburbPath } from '@/lib/directory/suburbs';
+import { buildPagesItemListJsonLd } from '@/lib/seo/jsonld';
 
 export const metadata: Metadata = {
   title: 'Senior Care in Cleveland, OH — Assisted Living, Memory Care, & More | CareLinkAI',
@@ -83,6 +85,16 @@ const structuredData = {
   about: careTypes.map((c) => ({ '@type': 'Thing', name: c.title })),
 };
 
+// ItemList of the directory pages under this hub (sprint W3 item 6b).
+const directoryItemList = buildPagesItemListJsonLd({
+  url: 'https://getcarelinkai.com/cleveland',
+  name: 'Senior care directory pages — Greater Cleveland, OH',
+  pages: [
+    ...careTypes.map((c) => ({ url: `https://getcarelinkai.com${c.href}`, name: `${c.title} in Cleveland, OH` })),
+    ...SUBURBS.map((s) => ({ url: `https://getcarelinkai.com${suburbPath(s)}`, name: s.h1 })),
+  ],
+});
+
 export default function ClevelandLandingPage() {
   return (
     <main className="min-h-screen bg-neutral-50">
@@ -90,6 +102,7 @@ export default function ClevelandLandingPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(directoryItemList) }} />
 
       {/* Hero */}
       <section className="bg-white border-b border-neutral-200">
@@ -152,6 +165,25 @@ export default function ClevelandLandingPage() {
             </Link>
           ))}
         </div>
+      </section>
+
+      {/* Home care agencies (cohort landing, sprint W3 item 2) */}
+      <section className="max-w-5xl mx-auto px-6 pb-16">
+        <Link
+          href="/cleveland/home-care-agencies"
+          className="block p-6 bg-white border border-neutral-200 rounded-xl hover:border-primary-400 hover:shadow-md transition"
+        >
+          <p className="text-sm font-semibold text-primary-600 uppercase tracking-wide">Care at home</p>
+          <h3 className="mt-2 text-xl font-bold text-neutral-900">Home care agencies in Cleveland</h3>
+          <p className="mt-2 text-neutral-700">
+            Aides and nurses who come to you. Run a Cleveland home care agency? Claim your free
+            agency listing.
+          </p>
+          <p className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-primary-600">
+            Home care agencies
+            <FiArrowRight />
+          </p>
+        </Link>
       </section>
 
       {/* Counties served */}

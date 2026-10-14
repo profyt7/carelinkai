@@ -7,7 +7,9 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: '*',
-        allow: '/',
+        // /llms.txt listed explicitly: the plain-text overview for AI agents
+        // (sprint W3 item 6c) must be discoverable from robots.txt.
+        allow: ['/', '/llms.txt'],
         disallow: [
           '/admin/',
           '/api/',

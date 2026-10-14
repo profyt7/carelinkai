@@ -31,6 +31,11 @@ type PatientInfo = {
   additionalNotes?: string;
   preferredHomeId?: string;
   preferredHomeName?: string;
+  // Family concierge page (W4 0a)
+  contactName?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  location?: string;
 };
 
 type Detail = {
@@ -182,6 +187,9 @@ export default function AdminConciergeCuratePage() {
           <h2 className="text-sm font-semibold text-neutral-700 mb-2 flex items-center gap-2"><ClipboardList className="h-4 w-4 text-primary-600" /> Patient intake <span className="text-xs font-normal text-neutral-400">(in-app only)</span></h2>
           <dl className="text-sm text-neutral-700 space-y-1">
             {(p.patientName || p.patientAge) && <div><span className="font-medium">Patient:</span> {p.patientName || '—'}{p.patientAge ? `, age ${p.patientAge}` : ''}</div>}
+            {/* Family concierge page (W4 0a): the family's contact lives here, not on a user. */}
+            {p.contactName && <div><span className="font-medium">Family contact:</span> {p.contactName}{p.contactEmail ? ` · ${p.contactEmail}` : ''}{p.contactPhone ? ` · ${p.contactPhone}` : ''}</div>}
+            {p.location && <div><span className="font-medium">Search near:</span> {p.location}</div>}
             {p.timeline && <div><span className="font-medium">Timeline:</span> {p.timeline}</div>}
             {p.paymentType && <div><span className="font-medium">Payment:</span> {p.paymentType}</div>}
             {/* Payer-source screener (OL-114) — read-only tag + derived fee lane. */}

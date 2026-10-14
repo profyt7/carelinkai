@@ -1430,6 +1430,33 @@ model ClaimLinkVisit {
   @@index([visitedAt])
 }
 
+/// Sprint W3 item 2 — cohort claim requests (home-care agencies first).
+/// A business that "claims its listing" from a cohort landing page
+/// (/cleveland/home-care-agencies) or a cohort claim link (/claim?token=…
+/// with `cohort` in the token). Business contact + interest only — never PHI,
+/// never family data. Append-only; nothing here sends email.
+model ClaimRequest {
+  id           String   @id @default(cuid())
+  cohort       String // e.g. 'CLEVELAND_AGENCIES' — see src/lib/claim-engine/cohorts.ts
+  orgName      String
+  contactName  String?
+  contactEmail String
+  phone        String?
+  website      String?
+  city         String?
+  serviceTypes String[] @default([])
+  message      String?
+  source       String // 'landing_page' | 'claim_link'
+  /// operatorEmail from a verified claim token — set only when the request
+  /// came through a cohort claim link (proves the link was used).
+  tokenEmail   String?
+  status       String   @default("NEW")
+  createdAt    DateTime @default(now())
+
+  @@index([cohort, createdAt])
+  @@index([contactEmail])
+}
+
 /// DP lead-capture + automated follow-up (feat/dp-lead-capture).
 /// A discharge planner Anita spoke with who verbally agreed to be contacted.
 /// This is planner CONTACT + INTEREST only — NO PHI, no patient details ever
@@ -2313,6 +2340,9 @@ model PlacementSearch {
   conciergeNote        String?          // overall care-team message to the DP
   conciergeSubmittedAt DateTime?
   conciergeRespondedAt DateTime?
+  /// Where the request came from (sprint W4 0a): null/'dp_app' = a discharge
+  /// planner in the app; 'concierge_page' = a private-pay family via /concierge.
+  source             String?
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
   user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
