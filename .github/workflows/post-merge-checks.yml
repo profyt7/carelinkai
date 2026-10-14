@@ -6,6 +6,11 @@ name: Post-merge checks (W3+W4, read-only)
 # job fails if any check fails.
 
 on:
+  # A push to this throwaway branch runs the checks with the defaults below
+  # (workflow_dispatch for a file that only exists on a non-default branch is
+  # not resolvable by filename through the API).
+  push:
+    branches: [chore/post-merge-checks-w4]
   workflow_dispatch:
     inputs:
       base:
@@ -15,7 +20,7 @@ on:
       expect_sha:
         description: 'Wait until /api/version commitSha starts with this (empty = do not wait)'
         required: false
-        default: ''
+        default: 'adbbaecf55143c99a531bc821a9f798955576422'
       wait_minutes:
         description: 'Max minutes to wait for expect_sha'
         required: false
@@ -33,9 +38,9 @@ jobs:
       - name: Verify
         shell: bash
         env:
-          BASE: ${{ inputs.base }}
-          EXPECT_SHA: ${{ inputs.expect_sha }}
-          WAIT_MINUTES: ${{ inputs.wait_minutes }}
+          BASE: ${{ inputs.base || 'https://getcarelinkai.com' }}
+          EXPECT_SHA: ${{ inputs.expect_sha || 'adbbaecf55143c99a531bc821a9f798955576422' }}
+          WAIT_MINUTES: ${{ inputs.wait_minutes || '25' }}
         run: |
           set +e +o pipefail
           set -u
