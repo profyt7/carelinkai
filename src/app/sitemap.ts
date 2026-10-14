@@ -44,10 +44,24 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
       priority: 0.8,
     },
+    // Home-care agency cohort landing (sprint W3 item 2 / sprint 1.6, 2.2).
+    {
+      url: `${SITE_URL}/cleveland/home-care-agencies`,
+      lastModified,
+      changeFrequency: 'monthly',
+      priority: 0.7,
+    },
     {
       url: `${SITE_URL}/search`,
       lastModified,
       changeFrequency: 'daily',
+      priority: 0.7,
+    },
+    // Family concierge offer (sprint W3 item 5 / sprint 3.1).
+    {
+      url: `${SITE_URL}/concierge`,
+      lastModified,
+      changeFrequency: 'monthly',
       priority: 0.7,
     },
     // Education Hub landing — the SEO entry point for the Senior Care Guides.
