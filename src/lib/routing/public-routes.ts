@@ -73,6 +73,7 @@ export const KNOWN_APP_SEGMENTS: readonly string[] = [
   'homes',
   'lead',
   'learn',
+  'llms.txt', // route handler (GET /llms.txt) — excluded from the matcher, listed so the fs guard passes
   'marketplace',
   'messages',
   'operator',

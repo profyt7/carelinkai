@@ -6,6 +6,7 @@ import ListingCard from '@/components/directory/ListingCard';
 import { fetchPublicListings } from '@/lib/directory/public-listings';
 import { SUBURBS, findSuburb, suburbPath } from '@/lib/directory/suburbs';
 import { AVAILABILITY_FRESH_DAYS } from '@/lib/availability/availability';
+import { buildListingsItemListJsonLd } from '@/lib/seo/jsonld';
 
 /**
  * Suburb SEO page: /cleveland/assisted-living/<slug> (sprint W3 item 3).
@@ -59,9 +60,14 @@ export default async function SuburbAssistedLivingPage({ params }: { params: Par
     areaServed: { '@type': 'City', name: `${s.name}, Ohio` },
   };
 
+  const itemList = buildListingsItemListJsonLd({ url, name: `Assisted living homes in ${s.name}, OH`, listings });
+
   return (
     <main className="min-h-screen bg-neutral-50">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
+      {listings.length > 0 && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemList) }} />
+      )}
 
       {/* Hero */}
       <section className="bg-white border-b border-neutral-200">

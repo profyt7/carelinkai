@@ -38,8 +38,11 @@ describe('robots', () => {
   const r = robots();
   const rule = Array.isArray(r.rules) ? r.rules[0] : r.rules;
 
-  it('allows crawling and points at the sitemap', () => {
-    expect(rule?.allow).toBe('/');
+  it('allows crawling, lists /llms.txt and points at the sitemap', () => {
+    const allow = ([] as string[]).concat((rule?.allow as any) ?? []);
+    expect(allow).toContain('/');
+    // W3 item 6c: the AI-agent overview must be discoverable from robots.txt.
+    expect(allow).toContain('/llms.txt');
     expect(r.sitemap).toBe(`${SITE}/sitemap.xml`);
   });
 

@@ -32,6 +32,7 @@ const PUBLIC_PATHS = [
   '/offline.html',     // PWA offline page
   '/robots.txt',       // Crawler directives — MUST be publicly readable by search engines
   '/sitemap.xml',      // Sitemap — MUST be publicly readable by search engines
+  '/llms.txt',         // Plain-text overview for AI agents (W3 item 6) — public, never auth
   '/founder-intro.mp4',        // Self-hosted founder intro video (linked from DP emails)
   '/founder-intro-poster.jpg', // Poster frame for the above
   '/monitoring',       // Sentry browser tunnel (next.config.js tunnelRoute) — POSTed from logged-out pages too
@@ -290,7 +291,7 @@ export const config = {
      * 4. /auth/ (auth pages)
      * 5. Common assets (favicon, manifest, etc.)
      */
-    '/((?!_next/|api/|static/|public/|images/|uploads/|favicon\\.ico|robots\\.txt|sitemap.*\\.xml|auth/|sw\\.js|manifest\\.json|offline\\.html|founder-intro\\.mp4|founder-intro-poster\\.jpg).*)',
+    '/((?!_next/|api/|static/|public/|images/|uploads/|favicon\\.ico|robots\\.txt|sitemap.*\\.xml|llms\\.txt|auth/|sw\\.js|manifest\\.json|offline\\.html|founder-intro\\.mp4|founder-intro-poster\\.jpg).*)',
     // Rate-limited API surfaces (handled by the rate-limit branch above, not auth).
     // /api/auth is deliberately NOT here — it is rate-limited at its own route handler.
     '/api/webhooks/:path*',
