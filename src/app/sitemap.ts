@@ -56,6 +56,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'daily',
       priority: 0.7,
     },
+    // Family concierge offer (sprint W3 item 5 / sprint 3.1).
+    {
+      url: `${SITE_URL}/concierge`,
+      lastModified,
+      changeFrequency: 'monthly',
+      priority: 0.7,
+    },
     // Education Hub landing — the SEO entry point for the Senior Care Guides.
     {
       url: `${SITE_URL}/learn`,

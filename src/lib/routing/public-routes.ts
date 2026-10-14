@@ -40,6 +40,8 @@ export const PUBLIC_PAGE_PREFIXES: readonly string[] = [
   // withAuth bouncing it to /auth/login made the email links a dead end for
   // anyone without an account (sprint W3 item 2).
   '/claim',
+  // Family concierge offer page (sprint W3 item 5) — public, screener in front.
+  '/concierge',
 ];
 
 /**
@@ -58,6 +60,7 @@ export const KNOWN_APP_SEGMENTS: readonly string[] = [
   'caregiver',
   'claim',
   'cleveland',
+  'concierge',
   'dashboard',
   'demo',
   'design-preview',
