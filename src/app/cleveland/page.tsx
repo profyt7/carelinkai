@@ -167,6 +167,25 @@ export default function ClevelandLandingPage() {
         </div>
       </section>
 
+      {/* Home care agencies (cohort landing, sprint W3 item 2) */}
+      <section className="max-w-5xl mx-auto px-6 pb-16">
+        <Link
+          href="/cleveland/home-care-agencies"
+          className="block p-6 bg-white border border-neutral-200 rounded-xl hover:border-primary-400 hover:shadow-md transition"
+        >
+          <p className="text-sm font-semibold text-primary-600 uppercase tracking-wide">Care at home</p>
+          <h3 className="mt-2 text-xl font-bold text-neutral-900">Home care agencies in Cleveland</h3>
+          <p className="mt-2 text-neutral-700">
+            Aides and nurses who come to you. Run a Cleveland home care agency? Claim your free
+            agency listing.
+          </p>
+          <p className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-primary-600">
+            Home care agencies
+            <FiArrowRight />
+          </p>
+        </Link>
+      </section>
+
       {/* Counties served */}
       <section className="bg-white border-y border-neutral-200">
         <div className="max-w-5xl mx-auto px-6 py-12">
