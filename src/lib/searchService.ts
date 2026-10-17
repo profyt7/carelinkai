@@ -28,6 +28,7 @@ export interface SearchParams {
   sortBy?: 'relevance' | 'price_low' | 'price_high' | 'distance' | 'rating';
   minAvailability?: number;    // Minimum availability required
   verified?: boolean;          // Only show verified homes
+  medicaidWaiver?: boolean;    // Only homes ACCEPTING_NEW Medicaid waiver residents (sprint W5-2)
 
   /* ---- AI matching ---- */
   residentProfile?: any;       // Resident profile to personalize AI matching
@@ -200,6 +201,7 @@ function formatSearchParams(params: SearchParams): URLSearchParams {
   if (params.radius) searchParams.set('radius', params.radius.toString());
   if (params.sortBy) searchParams.set('sortBy', params.sortBy);
   if (params.verified !== undefined) searchParams.set('verified', params.verified.toString());
+  if (params.medicaidWaiver) searchParams.set('medicaidWaiver', 'true');
 
   // Add resident profile for AI matching (JSON string)
   if (params.residentProfile) {

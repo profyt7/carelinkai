@@ -593,6 +593,25 @@ model AssistedLivingHome {
   /// by the facility-response engine; never overwrites operator-entered fields
   /// (acceptsMedicaid, careLevel, …).
   observedAcceptanceCriteria Json?
+  /// Sprint W5-2 (G3 + G4): Ohio Medicaid Assisted Living Waiver participation
+  /// + acceptance facts collected on calls. Every write goes through recordEvent.
+  /// medicaidWaiverSource is a free string: a protected value (VA_CALL / OPERATOR /
+  /// ADMIN) is never overwritten by the WRAAA import, which writes the list name.
+  medicaidWaiverStatus              MedicaidWaiverStatus @default(UNKNOWN)
+  medicaidWaiverSource              String?
+  medicaidWaiverVerifiedAt          DateTime?
+  /// Accepts a resident while the Medicaid application is still pending.
+  medicaidPendingAccepted           Boolean?
+  medicaidPendingAcceptedSource     String?   // VA_CALL | OPERATOR | ADMIN | IMPORT
+  medicaidPendingAcceptedVerifiedAt DateTime?
+  /// {twoPersonAssist, wandering, oxygen, insulin, bariatric, behavioral, hospiceInPlace}: true/false/null
+  acuityCeiling                     Json?
+  acuityCeilingSource               String?
+  acuityCeilingVerifiedAt           DateTime?
+  /// Admissions CRM the home runs ('Eldermark', 'WelcomeHome', 'Yardi Senior', 'PointClickCare', 'spreadsheet', 'other').
+  admissionsCrm                     String?
+  admissionsCrmSource               String?
+  admissionsCrmVerifiedAt           DateTime?
   /// OL-112: demo/tutorial fixture marker. Demo rows are RETAINED (tutorials
   /// need them) but FILTERED from admin metrics + public directory. Backfilled
   /// by scripts/backfill-demo-flags.ts from the demo-account conventions.
@@ -625,6 +644,7 @@ model AssistedLivingHome {
   @@index([careLevel])
   @@index([claimDripNextAt])
   @@index([lastProfileGenerated])
+  @@index([medicaidWaiverStatus])
   @@index([isFeatured])
   @@index([availabilityVerifiedAt])
 }
@@ -2700,6 +2720,16 @@ model AvailabilityPing {
   @@index([outcome])
   @@index([sentAt])
   @@index([expiresAt])
+}
+
+/// Ohio Medicaid Assisted Living Waiver participation (sprint W5-2, G3).
+/// Baseline from the WRAAA facilities list; overridden by calls / operators.
+enum MedicaidWaiverStatus {
+  ACCEPTING_NEW            // on the list, taking new waiver residents
+  CURRENT_RESIDENTS_ONLY   // on the list, waiver slots for existing residents only
+  NOT_ACCEPTING_REFERRALS  // on the list, not taking waiver referrals
+  NOT_ON_LIST              // in a WRAAA county but not on the list
+  UNKNOWN                  // default; outside WRAAA's five counties or never checked
 }
 
 /// Where a home's "starting around $X" price came from (best-to-supplementary).

@@ -141,7 +141,15 @@ test.describe('@critical /concierge offer + payer screener', () => {
       expect(text).not.toMatch(PRICE);
       expect(text).not.toContain('2,500');
       expect(text).toMatch(/free/i);
-      await expect(page.getByRole('link', { name: 'Start the free search' })).toHaveAttribute('href', '/search');
+      // Medicaid lands on the directory with the waiver filter preset (W5-2); the others on the free search.
+      const cta = page.getByTestId('concierge-free-cta');
+      if (name === 'Medicaid / waiver') {
+        await expect(cta).toHaveText(/See homes accepting the Medicaid waiver/);
+        await expect(cta).toHaveAttribute('href', '/cleveland/assisted-living?waiver=1');
+      } else {
+        await expect(cta).toHaveText(/Start the free search/);
+        await expect(cta).toHaveAttribute('href', '/search');
+      }
     });
   }
 
@@ -151,7 +159,7 @@ test.describe('@critical /concierge offer + payer screener', () => {
       data: { payerSource: 'MEDICAID_WAIVER', contactName: 'X Y', contactEmail: `x-${ts}@test.carelinkai.com`, careNeeds: 'memory care please' },
     });
     expect(res.status()).toBe(400);
-    expect((await res.json()).freeHelp).toBe('/cleveland');
+    expect((await res.json()).freeHelp).toBe('/cleveland/assisted-living?waiver=1');
   });
 
   test('"Change my answer" returns to the screener', async ({ page }) => {

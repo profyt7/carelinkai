@@ -10,6 +10,7 @@ import { createAuditLogFromRequest } from '@/lib/audit';
 import { isUnclaimedHome } from '@/lib/claim-engine/inquiry-claim-notification';
 import { availabilityView } from '@/lib/availability/availability';
 import { pricingView, computeFamilyAvg } from '@/lib/pricing/pricing';
+import { medicaidWaiverPublicView } from '@/lib/medicaid/waiver';
 
 /**
  * City coordinates lookup for homes without geo data
@@ -266,6 +267,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       availabilityFreshness: availabilityView(home),
       // Honest source-labeled pricing (OL-111) incl. FAMILY_AVG when past threshold.
       pricing: pricingView(home, await computeFamilyAvg(home.id)),
+      // Medicaid Assisted Living Waiver line + "pending accepted" (sprint W5-2).
+      // Public facts only; line is null for NOT_ON_LIST / UNKNOWN.
+      medicaidWaiver: medicaidWaiverPublicView(home),
       gender: home.genderRestriction || 'ALL',
       amenities: home.amenities,
       // VA-collected (phone) price/amenities are approximate until the operator

@@ -32,6 +32,8 @@ type HomeSeed = {
   googleRating?: number;
   googleRatingCount?: number;
   odhLicenseNumber?: string;
+  /** Sprint W5-2: seed a Medicaid waiver status so the directory filter can be exercised. */
+  medicaidWaiverStatus?: 'ACCEPTING_NEW' | 'CURRENT_RESIDENTS_ONLY' | 'NOT_ACCEPTING_REFERRALS' | 'NOT_ON_LIST' | 'UNKNOWN';
   inspections?: Array<{ surveyDate: string; surveyType?: string; citationCount?: number }>;
 };
 
@@ -51,6 +53,11 @@ async function applyDirectorySeed(homeId: string, h: HomeSeed) {
   if (typeof h.googleRating === 'number') data['googleRating'] = h.googleRating;
   if (typeof h.googleRatingCount === 'number') data['googleRatingCount'] = h.googleRatingCount;
   if (typeof h.odhLicenseNumber === 'string') data['odhLicenseNumber'] = h.odhLicenseNumber;
+  if (typeof h.medicaidWaiverStatus === 'string') {
+    data['medicaidWaiverStatus'] = h.medicaidWaiverStatus;
+    data['medicaidWaiverSource'] = 'IMPORT';
+    data['medicaidWaiverVerifiedAt'] = new Date();
+  }
   if (Object.keys(data).length) {
     await prisma.assistedLivingHome.update({ where: { id: homeId }, data: data as any });
   }

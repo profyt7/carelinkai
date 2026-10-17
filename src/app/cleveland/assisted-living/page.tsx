@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { FiArrowRight, FiCheck } from 'react-icons/fi';
 import ListingCard from '@/components/directory/ListingCard';
-import { fetchPublicListings } from '@/lib/directory/public-listings';
+import { fetchPublicListings, waiverFilterFromSearchParams } from '@/lib/directory/public-listings';
 import { AVAILABILITY_FRESH_DAYS } from '@/lib/availability/availability';
 import { buildListingsItemListJsonLd } from '@/lib/seo/jsonld';
 
@@ -51,8 +51,12 @@ const structuredData = {
   },
 };
 
-export default async function ClevelandAssistedLivingPage() {
-  const listings = await fetchPublicListings({ careLevel: 'ASSISTED', take: LISTINGS_LIMIT });
+type PageSearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+export default async function ClevelandAssistedLivingPage({ searchParams }: { searchParams?: PageSearchParams }) {
+  // ?waiver=1 (sprint W5-2): only homes ACCEPTING_NEW Medicaid waiver residents.
+  const waiverOnly = waiverFilterFromSearchParams(searchParams ? await searchParams : undefined);
+  const listings = await fetchPublicListings({ careLevel: 'ASSISTED', medicaidWaiver: waiverOnly, take: LISTINGS_LIMIT });
   const itemList = buildListingsItemListJsonLd({
     url: 'https://getcarelinkai.com/cleveland/assisted-living',
     name: 'Assisted living homes in Greater Cleveland, OH',
@@ -107,8 +111,24 @@ export default async function ClevelandAssistedLivingPage() {
       </section>
 
       {/* Listings — server-rendered (sprint W3 item 4) */}
-      <section id="listings" className="max-w-5xl mx-auto px-6 py-16 scroll-mt-16" data-testid="listings-section">
-        <h2 className="text-3xl font-bold text-neutral-900">Assisted living homes in Greater Cleveland</h2>
+      <section id="listings" className="max-w-5xl mx-auto px-6 py-16 scroll-mt-16" data-testid="listings-section" data-waiver-filter={waiverOnly ? '1' : '0'}>
+        <h2 className="text-3xl font-bold text-neutral-900">
+          {waiverOnly ? 'Assisted living homes accepting new Medicaid waiver residents' : 'Assisted living homes in Greater Cleveland'}
+        </h2>
+        {waiverOnly && (
+          <div className="mt-4 flex flex-wrap items-center gap-3" data-testid="waiver-filter-banner">
+            <span className="inline-flex items-center rounded-full bg-success-50 px-3 py-1 text-sm font-medium text-success-800 ring-1 ring-inset ring-success-200">
+              Filter: Accepts Medicaid waiver
+            </span>
+            <Link href="/cleveland/assisted-living" className="text-sm font-medium text-primary-600 hover:underline">
+              Show all homes
+            </Link>
+            <p className="w-full text-sm text-neutral-600">
+              Homes listed by the Western Reserve Area Agency on Aging (Oct 2026) as taking new Ohio Medicaid Assisted
+              Living Waiver residents. Waiver slots change often — confirm with the home before you tour.
+            </p>
+          </div>
+        )}
         <p className="mt-3 text-neutral-700 max-w-3xl">
           Real, licensed homes — no demo or placeholder listings. Homes whose availability
           was confirmed with the operator in the last {AVAILABILITY_FRESH_DAYS} days carry a{' '}
@@ -124,7 +144,7 @@ export default async function ClevelandAssistedLivingPage() {
           </div>
         ) : (
           <p className="mt-8 rounded-xl border border-neutral-200 bg-white p-6 text-neutral-700" data-testid="listings-empty">
-            Listings are loading from the directory — use{' '}
+            {waiverOnly ? 'No home is currently marked as accepting new waiver residents — ' : 'Listings are loading from the directory — '}use{' '}
             <Link href="/search?careLevel=ASSISTED" className="font-semibold text-primary-600 hover:underline">
               search
             </Link>{' '}

@@ -102,7 +102,8 @@ describe('POST /api/concierge/request', () => {
   it('400 for a free-lane answer (points at free help), nothing stored', async () => {
     const res = await POST(req({ ...base, payerSource: 'MEDICAID_WAIVER' }));
     expect(res.status).toBe(400);
-    expect((await res.json()).freeHelp).toBe('/cleveland');
+    // Medicaid lands on the waiver-filtered directory (sprint W5-2).
+    expect((await res.json()).freeHelp).toBe('/cleveland/assisted-living?waiver=1');
     expect(psCreate).not.toHaveBeenCalled();
   });
 

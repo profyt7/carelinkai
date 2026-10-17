@@ -128,6 +128,7 @@ function SearchPageContent() {
     priceMax: searchParams.get("priceMax") || "",
     availability: searchParams.get("availability") === "true",
     verified: searchParams.get("verified") === "true",
+    medicaidWaiver: searchParams.get("medicaidWaiver") === "true",
     radius: searchParams.get("radius") ? parseInt(searchParams.get("radius") || "0") : undefined,
     sortBy: searchParams.get("sortBy") as "relevance" | "price_low" | "price_high" | "distance" | "rating" || "relevance",
     page: parseInt(searchParams.get("page") || "1"),
@@ -159,6 +160,7 @@ function SearchPageContent() {
         if (filters.gender) qp.set("gender", String(filters.gender));
         if (filters.availability) qp.set("availability", "true");
         if (filters.verified) qp.set("verified", "true");
+        if (filters.medicaidWaiver) qp.set("medicaidWaiver", "true");
         if (filters.radius) qp.set("radius", String(filters.radius));
         qp.set("markers", "1");
         const res = await fetch(`/api/search?${qp.toString()}`, { cache: "no-store" });
@@ -395,6 +397,7 @@ function SearchPageContent() {
     if (params.gender) queryParams.set("gender", params.gender);
     if (params.availability) queryParams.set("availability", "true");
     if (params.verified) queryParams.set("verified", "true");
+    if (params.medicaidWaiver) queryParams.set("medicaidWaiver", "true");
     if (params.radius) queryParams.set("radius", params.radius.toString());
     if (params.sortBy) queryParams.set("sortBy", params.sortBy);
     if (params.page && params.page > 1) queryParams.set("page", params.page.toString());
@@ -469,6 +472,7 @@ function SearchPageContent() {
       priceMax: "",
       availability: false,
       verified: false,
+      medicaidWaiver: false,
       radius: undefined,
       sortBy: "relevance",
       page: 1,
@@ -699,6 +703,7 @@ function SearchPageContent() {
           filters.gender !== "ALL" || 
           filters.availability ||
           filters.verified ||
+          filters.medicaidWaiver ||
           filters.radius) && (
           <div className="mb-4 flex flex-wrap items-center gap-2">
             <span className="text-xs font-medium text-neutral-500">Active filters:</span>
@@ -761,7 +766,7 @@ function SearchPageContent() {
             {filters.verified && (
               <span className="flex items-center rounded-full bg-primary-100 px-2 py-1 text-xs font-medium text-primary-700">
                 Verified Only
-                <button 
+                <button
                   onClick={() => handleFilterChange("verified", false)}
                   className="ml-1 rounded-full p-0.5 hover:bg-primary-200"
                 >
@@ -769,7 +774,20 @@ function SearchPageContent() {
                 </button>
               </span>
             )}
-            
+
+            {filters.medicaidWaiver && (
+              <span className="flex items-center rounded-full bg-success-100 px-2 py-1 text-xs font-medium text-success-800" data-testid="active-filter-medicaid-waiver">
+                Accepts Medicaid waiver
+                <button
+                  onClick={() => handleFilterChange("medicaidWaiver", false)}
+                  className="ml-1 rounded-full p-0.5 hover:bg-success-200"
+                  aria-label="Remove Medicaid waiver filter"
+                >
+                  <FiX className="h-3 w-3" />
+                </button>
+              </span>
+            )}
+
             {filters.radius && (
               <span className="flex items-center rounded-full bg-primary-100 px-2 py-1 text-xs font-medium text-primary-700">
                 Within {filters.radius} miles
