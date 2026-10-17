@@ -2,10 +2,13 @@
  * Family Concierge — the PAID offer (sprint W5-3, G1). Authoritative for code.
  *
  * $399 flat, one-time, per family search. Private-pay lane only: families
- * paying privately, through long-term-care insurance, or who are not sure yet
- * see the offer; Medicaid / Medicare / VA families get the free path and never
- * see a price. Pure module — no Prisma, no Stripe; the request / checkout APIs
- * and the UI read from here so copy and numbers never drift.
+ * paying privately or through long-term-care insurance see the offer first;
+ * families who are NOT SURE yet see the free help first (directory, waiver
+ * filter, guides — "if Medicaid may be involved, our help is free") with the
+ * concierge as a secondary option; Medicaid / Medicare / VA families get the
+ * free path only and never see a price. Pure module — no Prisma, no Stripe;
+ * the request / checkout APIs and the UI read from here so copy and numbers
+ * never drift.
  */
 
 import { deriveFeeLane, type PayerSource } from '@/lib/payer/payer-source';
@@ -33,6 +36,10 @@ export const CONCIERGE_OFFER = {
   honestyLine:
     'Homes never pay to be listed, ranked or recommended. If a home ever pays CareLinkAI a fee when a resident moves in, we tell you before you tour — it never changes your price or which homes we show you.',
   freeLaneLine: 'Paying with Medicaid, Medicare or the VA? Our help is always free.',
+  /** Leads the "not sure yet" lane: free help first, the concierge second. */
+  notSureLine: 'If Medicaid may be involved, our help is free.',
+  /** Header of the secondary offer shown under the free help for "not sure yet". */
+  secondaryLead: 'Prefer a person to do the legwork? Optional, for families who end up paying privately.',
 } as const;
 
 export const CONCIERGE_CHECKOUT_API = '/api/concierge/checkout';
@@ -40,13 +47,25 @@ export const CONCIERGE_OFFER_API = '/api/concierge/offer';
 export const CONCIERGE_THANKS_PATH = '/concierge/thanks';
 export const DEFAULT_MONTHLY_CAP = 4;
 
-/** Which help a payer answer gets: the paid offer or the free path. */
-export type ConciergeLaneRoute = 'offer' | 'free';
+/**
+ * Which help a payer answer gets: the paid offer, the free path, or both
+ * (free help first, the offer as a secondary option).
+ */
+export type ConciergeLaneRoute = 'offer' | 'free' | 'both';
 
 export function conciergeRouteForLane(payerSource: PayerSource | null | undefined): ConciergeLaneRoute {
-  // Medicaid / Medicare / VA → free, always. Private funds, LTC insurance and
-  // "not sure" (lane UNKNOWN) → the paid offer (the family pays, never the home).
-  return deriveFeeLane(payerSource) === 'FREE_LANE' ? 'free' : 'offer';
+  // Medicaid / Medicare / VA → free, always. Private funds / LTC insurance →
+  // the paid offer (the family pays, never the home). "Not sure" / unanswered
+  // (lane UNKNOWN) → free help FIRST, then the offer: a possibly-Medicaid
+  // family is never led with a price.
+  const lane = deriveFeeLane(payerSource);
+  if (lane === 'FREE_LANE') return 'free';
+  return lane === 'FEE_ELIGIBLE' ? 'offer' : 'both';
+}
+
+/** May this payer answer buy / request the concierge at all? (Free lane never can.) */
+export function mayBuyConcierge(payerSource: PayerSource | null | undefined): boolean {
+  return conciergeRouteForLane(payerSource) !== 'free';
 }
 
 export type ConciergeCtaMode = 'checkout' | 'request' | 'waitlist';
@@ -92,10 +111,16 @@ export const COMMITTED_ORDER_STATUSES = ['PAID', 'REQUESTED_UNPAID'] as const;
 /** Order statuses that mean "this family already has the concierge" (no upsell). */
 export const ACTIVE_ORDER_STATUSES = ['PAID', 'REQUESTED_UNPAID'] as const;
 
-/** Family dashboard card choice from the family's last payer-lane answer. */
-export type UpsellCard = 'paid' | 'free';
+/**
+ * Family dashboard card choice from the family's last payer-lane answer:
+ * 'paid' (private / LTC), 'free' (Medicaid / Medicare / VA), or 'both' (not
+ * sure / unanswered → the free-help card with the concierge as a secondary
+ * line; dismissible like the paid card).
+ */
+export type UpsellCard = 'paid' | 'free' | 'both';
 export function upsellCardForLane(lastPayerSource: PayerSource | null | undefined): UpsellCard {
-  return conciergeRouteForLane(lastPayerSource) === 'free' ? 'free' : 'paid';
+  const r = conciergeRouteForLane(lastPayerSource);
+  return r === 'offer' ? 'paid' : r;
 }
 
 export const UPSELL_DISMISS_DAYS = 30;

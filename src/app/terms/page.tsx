@@ -243,10 +243,10 @@ export default function TermsOfServicePage() {
                 Governing Law
               </h2>
               <p className="text-slate-600 leading-relaxed">
-                These Terms shall be governed by and construed in accordance with the laws of the State of 
-                California, United States, without regard to its conflict of law provisions. Any disputes 
-                arising from these Terms or the Service shall be resolved in the state or federal courts 
-                located in San Francisco County, California.
+                These Terms shall be governed by and construed in accordance with the laws of the State of
+                Ohio, United States, without regard to its conflict of law provisions. Any disputes
+                arising from these Terms or the Service shall be resolved in the state or federal courts
+                located in Cuyahoga County, Ohio.
               </p>
             </section>
 
