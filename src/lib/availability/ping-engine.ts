@@ -63,25 +63,61 @@ export type ContactInput = {
   source: string;
 };
 
+/** Contact-source string → History source + the optedInSource label stored in the event. */
+function contactEventSource(source: string | null | undefined): { source: 'OPERATOR' | 'ADMIN' | 'PING'; label: 'OPERATOR' | 'ADMIN' | 'PING' } {
+  if (source === 'admin_call') return { source: 'ADMIN', label: 'ADMIN' };
+  if (source === 'reply') return { source: 'PING', label: 'PING' };
+  return { source: 'OPERATOR', label: 'OPERATOR' };
+}
+
+/**
+ * Upsert the contact and record the consent change in History (sprint W5-5) in
+ * ONE transaction: contact.opted_in / contact.opted_out / contact.updated with
+ * optedInSource (OPERATOR | ADMIN | PING) + timestamp. No name / email / mobile
+ * in the event — ids, flags and timestamps only.
+ */
 export async function upsertAvailabilityContact(i: ContactInput, now: Date = new Date()) {
   const email = i.email ? i.email.trim().toLowerCase() : null;
   const mobile = i.mobile ? toE164(i.mobile) : null;
   const existing = await prisma.availabilityContact.findUnique({ where: { homeId: i.homeId } });
   const flippedOn = i.optedIn && !(existing?.optedIn ?? false);
   const flippedOff = !i.optedIn && (existing?.optedIn ?? false);
+  const preferredChannel = i.preferredChannel ?? existing?.preferredChannel ?? 'EMAIL';
   const data = {
     name: i.name.trim(),
     email,
     mobile,
-    preferredChannel: i.preferredChannel ?? existing?.preferredChannel ?? 'EMAIL',
+    preferredChannel,
     optedIn: i.optedIn,
     ...(flippedOn ? { optedInAt: now, optedInSource: i.source, optedOutAt: null } : {}),
     ...(flippedOff ? { optedOutAt: now } : {}),
   } satisfies Prisma.AvailabilityContactUncheckedUpdateInput;
-  return prisma.availabilityContact.upsert({
-    where: { homeId: i.homeId },
-    update: data,
-    create: { homeId: i.homeId, ...data, ...(i.optedIn ? { optedInAt: now, optedInSource: i.source } : {}) },
+  const evt = contactEventSource(i.source);
+  return prisma.$transaction(async (tx) => {
+    const contact = await tx.availabilityContact.upsert({
+      where: { homeId: i.homeId },
+      update: data,
+      create: { homeId: i.homeId, ...data, ...(i.optedIn ? { optedInAt: now, optedInSource: i.source } : {}) },
+    });
+    await recordEvent(tx, {
+      entityType: 'AVAILABILITY_PING',
+      entityId: i.homeId,
+      eventType: flippedOn ? 'contact.opted_in' : flippedOff ? 'contact.opted_out' : 'contact.updated',
+      field: 'optedIn',
+      oldValue: existing
+        ? { optedIn: existing.optedIn, optedInSource: existing.optedInSource ? contactEventSource(existing.optedInSource).label : null, preferredChannel: existing.preferredChannel }
+        : null,
+      newValue: {
+        optedIn: i.optedIn,
+        optedInSource: i.optedIn ? evt.label : null,
+        ...(flippedOn ? { optedInAt: now } : {}),
+        ...(flippedOff ? { optedOutAt: now } : {}),
+        preferredChannel,
+      },
+      source: evt.source,
+      occurredAt: now,
+    });
+    return contact;
   });
 }
 
@@ -358,6 +394,12 @@ export type AdminPingRow = {
   } | null;
   /** Expired ping and still not fresh → VA / AI-voice call list. */
   onCallList: boolean;
+  /**
+   * Static eligibility for the weekly ping (W5-5): opted in, email on file, and
+   * claimed (or opt-in captured on an admin call). The run adds the dynamic
+   * checks (outstanding ping, recently verified) — see findEligibleContacts.
+   */
+  eligible: boolean;
 };
 
 function pingState(o: AvailabilityPingOutcome | null): AdminPingRow['lastPing'] extends infer T ? (T extends { state: infer S } ? S : never) : never {
@@ -393,11 +435,13 @@ export async function adminPingRows(now: Date = new Date()): Promise<AdminPingRo
     const p = c.pings[0] ?? null;
     const view = availabilityView(c.home, now.getTime());
     const fresh = isAvailabilityFresh(c.home.availabilityVerifiedAt, now.getTime());
+    const claimed = isClaimedOperatorEmail(c.home.operator?.user?.email ?? null);
     return {
       homeId: c.homeId,
       facility: c.home.name,
       city: c.home.address?.city ?? null,
-      claimed: isClaimedOperatorEmail(c.home.operator?.user?.email ?? null),
+      claimed,
+      eligible: c.optedIn && !!c.email && c.preferredChannel === 'EMAIL' && (claimed || c.optedInSource === 'admin_call'),
       contact: {
         id: c.id, name: c.name, email: c.email, mobile: c.mobile, preferredChannel: c.preferredChannel,
         optedIn: c.optedIn, optedInAt: iso(c.optedInAt), optedInSource: c.optedInSource, optedOutAt: iso(c.optedOutAt),
