@@ -48,6 +48,12 @@ export default function ListingCard({ listing, priority = false }: { listing: Pu
           <p className="mt-2 text-sm text-neutral-700">{l.careLevelLabels.join(' · ')}</p>
         )}
         <p className="mt-2 text-sm font-medium text-neutral-800">{l.pricing.display}</p>
+        {l.medicaidWaiver.line && (
+          <p className="mt-2 text-xs text-neutral-700" data-testid="listing-waiver-line" data-waiver-status={l.medicaidWaiver.status}>
+            <span className="font-semibold">Medicaid Assisted Living Waiver:</span> {l.medicaidWaiver.line}
+            <span className="block text-neutral-500">{l.medicaidWaiver.note}</span>
+          </p>
+        )}
         <p className="mt-3 text-xs text-neutral-600" data-testid="listing-odh-facts">
           {l.inspections.line}
           {l.odhLicenseNumber ? ` · ODH license ${l.odhLicenseNumber}` : ''}

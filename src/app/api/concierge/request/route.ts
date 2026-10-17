@@ -14,8 +14,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { rateLimit } from '@/lib/rate-limit';
 import { captureError } from '@/lib/sentry';
-import { PAYER_SOURCE_VALUES } from '@/lib/payer/payer-source';
+import { PAYER_SOURCE_VALUES, type PayerSource } from '@/lib/payer/payer-source';
 import { createConciergePageRequest, FreeLaneRefused } from '@/lib/concierge/intake';
+import { freeHelpPathFor } from '@/lib/concierge/screener';
 
 const RATE_LIMIT_PER_10_MIN = 10;
 const limiter = rateLimit({ interval: 10 * 60 * 1000, limit: RATE_LIMIT_PER_10_MIN });
@@ -71,7 +72,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true, id: row.id, source: 'concierge_page', status: 'SUBMITTED' }, { status: 201 });
   } catch (error) {
     if (error instanceof FreeLaneRefused) {
-      return NextResponse.json({ error: error.message, freeHelp: '/cleveland' }, { status: 400 });
+      return NextResponse.json({ error: error.message, freeHelp: freeHelpPathFor(body.payerSource as PayerSource) }, { status: 400 });
     }
     captureError(error instanceof Error ? error : new Error(String(error)), {
       tags: { feature: 'concierge-page' },

@@ -29,6 +29,14 @@ export function routeForPayerSource(payerSource: PayerSource | null | undefined)
 /** "Request concierge help" posts here → the existing DP concierge queue (W4 0a). */
 export const CONCIERGE_REQUEST_API = '/api/concierge/request';
 
+/** Directory pre-filtered to homes ACCEPTING_NEW Medicaid waiver residents (sprint W5-2). */
+export const WAIVER_DIRECTORY_PATH = '/cleveland/assisted-living?waiver=1';
+
+/** Where the free lane lands: the Medicaid answer goes straight to the waiver-filtered directory. */
+export function freeHelpPathFor(payerSource: PayerSource | null | undefined): string {
+  return payerSource === 'MEDICAID_WAIVER' ? WAIVER_DIRECTORY_PATH : '/cleveland';
+}
+
 /**
  * The decided fee model (2026-10-14). Shown ONLY inside the private-pay offer,
  * which is mounted client-side after a FEE_ELIGIBLE screener answer — never in

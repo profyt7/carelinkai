@@ -1080,6 +1080,24 @@ export default function HomeDetailPage() {
                           <p className="text-sm text-neutral-600">24/7 care staff on-site</p>
                         </div>
                       </div>
+                      {/* Medicaid Assisted Living Waiver (sprint W5-2) — nothing renders for NOT_ON_LIST / UNKNOWN. */}
+                      {(realHome.medicaidWaiver?.line || realHome.medicaidWaiver?.pendingLine) && (
+                        <div className="flex items-start md:col-span-2" data-testid="medicaid-waiver-block">
+                          <div className="mr-3 rounded-full bg-primary-100 p-2 text-primary-600 flex-shrink-0"><FiShield className="h-5 w-5" /></div>
+                          <div>
+                            <p className="font-medium text-neutral-800">Medicaid Assisted Living Waiver</p>
+                            {realHome.medicaidWaiver?.line && (
+                              <>
+                                <p className="text-sm text-neutral-700" data-testid="medicaid-waiver-line" data-waiver-status={realHome.medicaidWaiver.status}>{realHome.medicaidWaiver.line}</p>
+                                <p className="text-xs text-neutral-500">{realHome.medicaidWaiver.note}</p>
+                              </>
+                            )}
+                            {realHome.medicaidWaiver?.pendingLine && (
+                              <p className="mt-1 text-sm text-neutral-700" data-testid="medicaid-pending-line">{realHome.medicaidWaiver.pendingLine}</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

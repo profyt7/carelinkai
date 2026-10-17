@@ -23,6 +23,7 @@ import { captureError } from '@/lib/sentry';
 import { availabilityView, type AvailabilityView } from '@/lib/availability/availability';
 import { pricingView, type PricingView } from '@/lib/pricing/pricing';
 import { placeholderImageFor } from '@/lib/placeholder-images';
+import { medicaidWaiverPublicView, type MedicaidWaiverPublicView } from '@/lib/medicaid/waiver';
 
 /** Sentinel operator that owns every unclaimed directory-seeded home. */
 export const DIRECTORY_UNCLAIMED_EMAIL = 'directory-unclaimed@carelinkai.system';
@@ -123,6 +124,9 @@ export type PublicListingRow = {
   priceMin?: unknown;
   priceMax?: unknown;
   odhLicenseNumber?: string | null;
+  medicaidWaiverStatus?: MedicaidWaiverPublicView['status'] | null;
+  medicaidPendingAccepted?: boolean | null;
+  medicaidPendingAcceptedVerifiedAt?: Date | string | null;
   address?: {
     street?: string | null;
     city: string;
@@ -162,6 +166,8 @@ export type PublicListing = {
   pricing: PricingView;
   odhLicenseNumber: string | null;
   inspections: InspectionSummary;
+  /** Medicaid Assisted Living Waiver line (sprint W5-2) — `line` null → render nothing. */
+  medicaidWaiver: MedicaidWaiverPublicView;
 };
 
 export function isUnclaimedOperatorEmail(email: string | null | undefined): boolean {
@@ -197,6 +203,7 @@ export function toPublicListing(row: PublicListingRow, now: number = Date.now())
     pricing: pricingView(row, undefined, now),
     odhLicenseNumber: row.odhLicenseNumber ?? null,
     inspections: inspectionSummary(row.facilityInspections ?? []),
+    medicaidWaiver: medicaidWaiverPublicView(row),
   };
 }
 
@@ -205,9 +212,19 @@ export type PublicListingsQuery = {
   cities?: readonly string[];
   /** Restrict to homes offering this care level. */
   careLevel?: CareLevel;
+  /** "Accepts Medicaid waiver" filter (sprint W5-2): ACCEPTING_NEW only. */
+  medicaidWaiver?: boolean;
   /** Max rows (default 12). */
   take?: number;
 };
+
+/** The query-string flag every directory page reads for the waiver filter. */
+export const WAIVER_FILTER_PARAM = 'waiver';
+export function waiverFilterFromSearchParams(sp: Record<string, string | string[] | undefined> | undefined | null): boolean {
+  const v = sp?.[WAIVER_FILTER_PARAM];
+  const s = Array.isArray(v) ? v[0] : v;
+  return s === '1' || s === 'true';
+}
 
 export const PUBLIC_LISTING_SELECT = {
   id: true,
@@ -231,6 +248,9 @@ export const PUBLIC_LISTING_SELECT = {
   priceMin: true,
   priceMax: true,
   odhLicenseNumber: true,
+  medicaidWaiverStatus: true,
+  medicaidPendingAccepted: true,
+  medicaidPendingAcceptedVerifiedAt: true,
   address: { select: { street: true, city: true, state: true, zipCode: true, latitude: true, longitude: true } },
   photos: {
     select: { url: true },
@@ -255,6 +275,7 @@ export function publicListingsWhere(q: PublicListingsQuery = {}): Prisma.Assiste
     status: 'ACTIVE',
     isDemo: false,
     ...(q.careLevel ? { careLevel: { has: q.careLevel } } : {}),
+    ...(q.medicaidWaiver ? { medicaidWaiverStatus: 'ACCEPTING_NEW' as const } : {}),
     ...(q.cities && q.cities.length
       ? { address: { is: { OR: q.cities.map((c) => ({ city: { equals: c, mode: 'insensitive' as const } })) } } }
       : {}),
@@ -287,7 +308,7 @@ export async function fetchPublicListings(q: PublicListingsQuery = {}): Promise<
   } catch (error) {
     captureError(error instanceof Error ? error : new Error(String(error)), {
       tags: { feature: 'public-listings' },
-      extra: { cities: q.cities ?? null, careLevel: q.careLevel ?? null },
+      extra: { cities: q.cities ?? null, careLevel: q.careLevel ?? null, medicaidWaiver: q.medicaidWaiver ?? false },
     });
     return [];
   }

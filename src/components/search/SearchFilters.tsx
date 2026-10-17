@@ -91,6 +91,7 @@ export default function SearchFilters({
     if (localFilters.radius) count++;
     if (localFilters.sortBy && localFilters.sortBy !== 'relevance') count++;
     if (localFilters.verified) count++;
+    if (localFilters.medicaidWaiver) count++;
     return count;
   };
 
@@ -376,6 +377,24 @@ export default function SearchFilters({
                 Verified Homes Only
               </span>
             </label>
+
+            {/* Medicaid waiver (sprint W5-2): ACCEPTING_NEW only */}
+            <label className="inline-flex items-center">
+              <input
+                type="checkbox"
+                className="form-checkbox h-5 w-5 text-primary-600 rounded focus:ring-primary-500"
+                checked={!!localFilters.medicaidWaiver}
+                onChange={(e) => handleFilterChange('medicaidWaiver', e.target.checked)}
+                disabled={loading}
+                aria-label="Accepts Medicaid waiver"
+                data-testid="filter-medicaid-waiver"
+              />
+              <span className="ml-2 text-sm text-neutral-700">Accepts Medicaid waiver</span>
+            </label>
+            <p className="-mt-2 text-xs text-neutral-500">
+              Homes the Western Reserve Area Agency on Aging lists as taking new Ohio Medicaid Assisted Living Waiver
+              residents (Oct 2026). Confirm with the home.
+            </p>
           </div>
         </div>
 
@@ -602,6 +621,23 @@ export default function SearchFilters({
                     disabled={loading}
                     className="ml-1 flex-shrink-0 inline-flex text-primary-500 hover:text-primary-700 focus:outline-none"
                     aria-label="Remove verified filter"
+                  >
+                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </span>
+              )}
+
+              {localFilters.medicaidWaiver && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-success-100 text-success-800">
+                  Accepts Medicaid waiver
+                  <button
+                    type="button"
+                    onClick={() => handleFilterChange('medicaidWaiver', false)}
+                    disabled={loading}
+                    className="ml-1 flex-shrink-0 inline-flex text-success-700 hover:text-success-900 focus:outline-none"
+                    aria-label="Remove Medicaid waiver filter"
                   >
                     <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

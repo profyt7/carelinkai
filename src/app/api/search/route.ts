@@ -561,7 +561,10 @@ export async function GET(request: NextRequest) {
       | 'distance'
       | 'rating';
     const verifiedOnly = searchParams.get('verified') === 'true';
-    
+    // "Accepts Medicaid waiver" (sprint W5-2): ACCEPTING_NEW only — never the
+    // softer statuses, so the filter means what the label says.
+    const medicaidWaiverOnly = searchParams.get('medicaidWaiver') === 'true';
+
     // Build database query
     const whereClause: any = {
       status: 'ACTIVE', // Only active homes
@@ -607,6 +610,10 @@ export async function GET(request: NextRequest) {
     
     // Note: availability filtering is done post-query since Prisma doesn't 
     // support field-to-field comparisons (capacity vs currentOccupancy)
+
+    if (medicaidWaiverOnly) {
+      whereClause.medicaidWaiverStatus = 'ACCEPTING_NEW';
+    }
 
     // Placeholder for verified filter (requires additional schema support)
     if (verifiedOnly) {

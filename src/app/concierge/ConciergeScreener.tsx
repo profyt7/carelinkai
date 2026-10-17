@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { FiArrowRight, FiCheck } from 'react-icons/fi';
 import { PAYER_SOURCE_OPTIONS, isPayerSource, type PayerSource } from '@/lib/payer/payer-source';
-import { CONCIERGE_FEE_MODEL, routeForPayerSource, type ConciergeRoute } from '@/lib/concierge/screener';
+import { CONCIERGE_FEE_MODEL, WAIVER_DIRECTORY_PATH, routeForPayerSource, type ConciergeRoute } from '@/lib/concierge/screener';
 import ConciergeRequestForm from './ConciergeRequestForm';
 
 /**
@@ -37,6 +37,23 @@ export default function ConciergeScreener() {
   }
 
   if (route === 'free_help') {
+    // Medicaid answer (sprint W5-2): land on the directory with "Accepts Medicaid waiver" preset.
+    const medicaid = answered === 'MEDICAID_WAIVER';
+    const freeLinks = medicaid
+      ? [
+          { href: WAIVER_DIRECTORY_PATH, label: 'Homes accepting new Medicaid Assisted Living Waiver residents (WRAAA list, Oct 2026)' },
+          { href: '/learn/guides/assisted-living-cost-guide', label: 'Ohio Medicaid waiver and the real cost of assisted living' },
+          { href: '/cleveland', label: 'Browse the full Cleveland directory — verified homes, ODH inspection facts, direct contact' },
+        ]
+      : [
+          { href: '/cleveland', label: 'Browse the Cleveland directory — verified homes, ODH inspection facts, direct contact' },
+          { href: '/learn/guides/what-medicare-covers', label: 'What Medicare does and doesn’t cover' },
+          { href: '/learn/guides/veterans-benefits-assisted-living', label: 'VA benefits for assisted living (Aid & Attendance)' },
+          { href: '/learn/guides/assisted-living-cost-guide', label: 'Ohio Medicaid waiver and the real cost of assisted living' },
+        ];
+    const cta = medicaid
+      ? { href: WAIVER_DIRECTORY_PATH, label: 'See homes accepting the Medicaid waiver' }
+      : { href: '/search', label: 'Start the free search' };
     return (
       <div data-testid="concierge-free-lane" className="rounded-2xl border border-success-200 bg-success-50 p-6 sm:p-8">
         <p className="text-sm font-semibold uppercase tracking-wide text-success-700">Free help — always</p>
@@ -51,12 +68,7 @@ export default function ConciergeScreener() {
             : 'When care is paid through Medicaid, Medicare or the VA, CareLinkAI never charges a fee to you or to the home for the placement. Everything below is free: the verified directory, inspection records, and direct contact with homes.'}
         </p>
         <ul className="mt-5 space-y-3">
-          {[
-            { href: '/cleveland', label: 'Browse the Cleveland directory — verified homes, ODH inspection facts, direct contact' },
-            { href: '/learn/guides/what-medicare-covers', label: 'What Medicare does and doesn’t cover' },
-            { href: '/learn/guides/veterans-benefits-assisted-living', label: 'VA benefits for assisted living (Aid & Attendance)' },
-            { href: '/learn/guides/assisted-living-cost-guide', label: 'Ohio Medicaid waiver and the real cost of assisted living' },
-          ].map((l) => (
+          {freeLinks.map((l) => (
             <li key={l.href} className="flex gap-3">
               <FiCheck className="mt-1 flex-shrink-0 text-success-600" />
               <Link href={l.href} className="text-primary-700 hover:underline">
@@ -67,10 +79,11 @@ export default function ConciergeScreener() {
         </ul>
         <div className="mt-6 flex flex-wrap gap-3">
           <Link
-            href="/search"
+            href={cta.href}
+            data-testid="concierge-free-cta"
             className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-6 py-3 font-semibold text-white hover:bg-primary-700"
           >
-            Start the free search
+            {cta.label}
             <FiArrowRight />
           </Link>
           <button type="button" onClick={reset} className="text-sm font-medium text-neutral-600 hover:text-neutral-900">

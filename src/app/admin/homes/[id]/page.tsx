@@ -24,6 +24,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AvailabilityPanel from '@/components/availability/AvailabilityPanel';
 import HomeHistoryPanel from '@/components/admin/HomeHistoryPanel';
+import AcceptancePanel from '@/components/admin/AcceptancePanel';
 import PricingPanel from '@/components/pricing/PricingPanel';
 
 // Safely unwrap params — handles both Promise and plain object
@@ -566,6 +567,8 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
                 <AvailabilityPanel homeId={resolvedParams.id} />
                 {/* Pricing capture — DP-estimate / public benchmark + family-report review (OL-111) */}
                 <PricingPanel homeId={resolvedParams.id} />
+                {/* Acceptance facts from calls — waiver override, Medicaid-pending, acuity ceiling, CRM (W5-2) */}
+                <AcceptancePanel homeId={resolvedParams.id} />
                 {/* Basic Info */}
                 <div>
                   <h3 className="text-lg font-semibold text-neutral-900 mb-4">Basic Information</h3>
