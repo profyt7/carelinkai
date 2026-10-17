@@ -117,7 +117,17 @@ test.describe('@critical structured data for AI agents', () => {
       const cards = (html.match(/data-testid="listing-card"/g) ?? []).length;
       expect(list.numberOfItems).toBe(cards);
       expect(list.itemListElement.length).toBe(cards);
-      const urls = list.itemListElement.map((i: any) => i.url);
+      // Carousel shape (W5-4 / G6): ListItem = position + item (LocalBusiness with @id/name/url/address);
+      // url/name never sit on the ListItem next to item.
+      for (const it of list.itemListElement) {
+        expect(it['@type']).toBe('ListItem');
+        expect('url' in it).toBe(false);
+        expect('name' in it).toBe(false);
+        expect(it.item['@type']).toBe('LocalBusiness');
+        expect(it.item.url).toBe(it.item['@id']);
+        expect(typeof it.item.name).toBe('string');
+      }
+      const urls = list.itemListElement.map((i: any) => i.item.url);
       expect(urls).toContain(`https://getcarelinkai.com/homes/${realId}`);
       expect(urls).not.toContain(`https://getcarelinkai.com/homes/${demoId}`);
       expect(list.itemListElement[0].position).toBe(1);

@@ -170,7 +170,40 @@ export function buildListingJsonLd(l: PublicListing, opts: { description?: strin
   });
 }
 
-/** ItemList of listing pages for a directory page (W3 item 6b). */
+/**
+ * The embedded LocalBusiness for one carousel entry (sprint W5-4, G6). Google's
+ * Carousel rich result wants EITHER a summary ListItem (url + name) OR an
+ * all-in-one ListItem whose `item` carries the full entity — never both, so the
+ * ListItem itself carries only `position` + `item`. `image`, `priceRange` and
+ * `telephone` are added only when the fact exists (placeholder photos, unclaimed
+ * phones and family-reported averages are not published).
+ */
+export function buildListItemBusiness(l: PublicListing): Json {
+  const url = `${SITE_URL}${l.href}`;
+  const startingPrice = l.pricing.hasPrice && l.pricing.source !== 'FAMILY_AVG' ? l.pricing.amount : null;
+  return compact({
+    '@type': 'LocalBusiness',
+    '@id': url,
+    name: l.name,
+    url,
+    image: l.photoIsPlaceholder ? undefined : l.photoUrl,
+    telephone: l.phone ?? undefined, // claimed listings only (view enforces it)
+    priceRange: startingPrice ? `From ${money(startingPrice)}/month` : undefined,
+    address:
+      l.street || l.city || l.state || l.zipCode
+        ? {
+            '@type': 'PostalAddress',
+            streetAddress: l.street ?? undefined,
+            addressLocality: l.city ?? undefined,
+            addressRegion: l.state ?? undefined,
+            postalCode: l.zipCode ?? undefined,
+            addressCountry: 'US',
+          }
+        : undefined,
+  });
+}
+
+/** ItemList (Carousel) of listing pages for a directory page (W3 item 6b, W5-4). */
 export function buildListingsItemListJsonLd(args: { url: string; name: string; listings: readonly PublicListing[] }): Json {
   return compact({
     '@context': 'https://schema.org',
@@ -180,18 +213,11 @@ export function buildListingsItemListJsonLd(args: { url: string; name: string; l
     name: args.name,
     numberOfItems: args.listings.length,
     itemListOrder: 'https://schema.org/ItemListOrderDescending',
+    // All-in-one ListItems: position + item ONLY (no url/name on the ListItem).
     itemListElement: args.listings.map((l, i) => ({
       '@type': 'ListItem',
       position: i + 1,
-      url: `${SITE_URL}${l.href}`,
-      name: l.name,
-      item: compact({
-        '@type': 'LocalBusiness',
-        '@id': `${SITE_URL}${l.href}`,
-        name: l.name,
-        url: `${SITE_URL}${l.href}`,
-        address: l.city ? { '@type': 'PostalAddress', addressLocality: l.city, addressRegion: l.state ?? undefined } : undefined,
-      }),
+      item: buildListItemBusiness(l),
     })),
   });
 }

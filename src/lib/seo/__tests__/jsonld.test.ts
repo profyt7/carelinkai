@@ -161,16 +161,50 @@ describe('buildListingJsonLd', () => {
 });
 
 describe('ItemList builders', () => {
-  it('lists listings in order with positions, URLs and a minimal LocalBusiness item', () => {
+  it('Carousel: each ListItem is position + item ONLY (never url/name beside item) — W5-4 / G6', () => {
     const a = toPublicListing(fullRow(), NOW);
-    const b = toPublicListing(fullRow({ id: 'home-2', name: 'Second Home', address: { city: 'Parma', state: 'OH' } }), NOW);
+    const b = toPublicListing(
+      fullRow({ id: 'home-2', name: 'Second Home', address: { city: 'Parma', state: 'OH' }, photos: [], startingPriceMonthly: null, priceRangeLow: null, priceMin: null, operator: { user: { email: DIRECTORY_UNCLAIMED_EMAIL } } }),
+      NOW,
+    );
     const ld = buildListingsItemListJsonLd({ url: 'https://getcarelinkai.com/cleveland/assisted-living', name: 'AL', listings: [a, b] });
     expect(ld).toMatchObject({ '@type': 'ItemList', numberOfItems: 2, url: 'https://getcarelinkai.com/cleveland/assisted-living' });
     const items = ld.itemListElement as any[];
     expect(items.map((i) => i.position)).toEqual([1, 2]);
-    expect(items[1]).toMatchObject({ '@type': 'ListItem', url: 'https://getcarelinkai.com/homes/home-2', name: 'Second Home' });
-    expect(items[1].item).toMatchObject({ '@type': 'LocalBusiness', address: { addressLocality: 'Parma', addressRegion: 'OH' } });
+    for (const it of items) {
+      expect(it['@type']).toBe('ListItem');
+      expect(Object.keys(it).sort()).toEqual(['@type', 'item', 'position']);
+      expect('url' in it).toBe(false);
+      expect('name' in it).toBe(false);
+      // The INVALID shape Google flagged: url/name on the ListItem together with item.
+      expect(('url' in it || 'name' in it) && 'item' in it).toBe(false);
+      expect(it.item).toMatchObject({ '@type': 'LocalBusiness' });
+      expect(it.item['@id']).toBe(it.item.url);
+      expect(typeof it.item.name).toBe('string');
+      expect(it.item.url).toMatch(/^https:\/\/getcarelinkai\.com\/homes\//);
+    }
+    // Full entity where the facts exist: image, telephone (claimed), priceRange (published price), full address.
+    expect(items[0].item).toMatchObject({
+      '@id': 'https://getcarelinkai.com/homes/home-1',
+      name: 'Maple Grove Assisted Living',
+      url: 'https://getcarelinkai.com/homes/home-1',
+      image: 'https://res.cloudinary.com/x/photo.jpg',
+      telephone: '+12165550100',
+      priceRange: 'From $4,800/month',
+      address: { '@type': 'PostalAddress', streetAddress: '1 Main St', addressLocality: 'Westlake', addressRegion: 'OH', postalCode: '44145', addressCountry: 'US' },
+    });
+    // …and OMITTED where they do not: placeholder photo, unclaimed phone, no published price.
+    expect(items[1].item).toMatchObject({ '@type': 'LocalBusiness', name: 'Second Home', address: { addressLocality: 'Parma', addressRegion: 'OH', addressCountry: 'US' } });
+    for (const k of ['image', 'telephone', 'priceRange']) expect({ key: k, present: k in items[1].item }).toEqual({ key: k, present: false });
     expect(JSON.stringify(ld)).not.toMatch(/@[a-z0-9.-]+\.[a-z]{2,}/i);
+    expect(JSON.stringify(ld)).not.toContain('placeholder');
+  });
+
+  it('a family-reported average price is never published as priceRange', () => {
+    const l = toPublicListing(fullRow({ startingPriceMonthly: null, priceRangeLow: null, priceMin: null }), NOW);
+    (l as any).pricing = { ...l.pricing, hasPrice: true, amount: 5000, source: 'FAMILY_AVG' };
+    const ld = buildListingsItemListJsonLd({ url: 'https://getcarelinkai.com/x', name: 'x', listings: [l] });
+    expect('priceRange' in (ld.itemListElement as any[])[0].item).toBe(false);
   });
 
   it('page lists carry positions and names', () => {
