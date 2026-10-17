@@ -1,7 +1,8 @@
 /**
  * Sprint W3 item 5 + W4 0a + W5-3 — /concierge screener routing + guards:
- *  - private funds / LTC insurance / not sure → private_pay (the paid, family-paid
- *    offer); Medicaid / Medicare / VA / unanswered → free_help (fail-closed);
+ *  - private funds / LTC insurance → private_pay (the paid, family-paid offer);
+ *    not sure → both (free help first, the offer as a secondary option);
+ *    Medicaid / Medicare / VA / unanswered → free_help (fail-closed);
  *  - the page is public + known to the middleware and in the sitemap;
  *  - the offer is the decided one ($399 flat, one-time, paid by the family) and
  *    lives ONLY in src/lib/concierge/offer.ts + the client-mounted offer card:
@@ -19,10 +20,13 @@ import { isKnownAppPath, isPublicPage } from '@/lib/routing/public-routes';
 import sitemap from '@/app/sitemap';
 
 describe('routeForPayerSource', () => {
-  it('private pay, LTC insurance and "not sure" may see the offer (the family pays)', () => {
+  it('private pay and LTC insurance see the offer (the family pays)', () => {
     expect(routeForPayerSource('PRIVATE_FUNDS')).toBe('private_pay');
     expect(routeForPayerSource('LTC_INSURANCE')).toBe('private_pay');
-    expect(routeForPayerSource('NOT_SURE')).toBe('private_pay');
+  });
+
+  it('"not sure" sees both — free help first, the offer second (never led with a price)', () => {
+    expect(routeForPayerSource('NOT_SURE')).toBe('both');
   });
 
   it('federal-program payers get free help (never the offer / price); unanswered fails closed', () => {
@@ -34,7 +38,7 @@ describe('routeForPayerSource', () => {
   });
 
   it('covers every PayerSource value', () => {
-    for (const v of PAYER_SOURCE_VALUES) expect(['private_pay', 'free_help']).toContain(routeForPayerSource(v));
+    for (const v of PAYER_SOURCE_VALUES) expect(['private_pay', 'free_help', 'both']).toContain(routeForPayerSource(v));
   });
 });
 

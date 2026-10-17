@@ -1,12 +1,15 @@
 /**
  * Family dashboard concierge card (sprint W5-3, G1 f). FAMILY-only.
  *
- * GET  → { card: 'paid' | 'free' | null, lane }
- *   - 'paid'  : last payer-lane answer is private funds / LTC / unknown AND the
- *               family has no PAID / REQUESTED_UNPAID order AND not dismissed
+ * GET  → { card: 'paid' | 'both' | 'free' | null, lane }
+ *   - 'paid'  : last payer-lane answer is private funds / LTC AND the family
+ *               has no PAID / REQUESTED_UNPAID order AND not dismissed
+ *   - 'both'  : last answer is "not sure" / none → the free-help card FIRST with
+ *               the concierge as a secondary line (same order / dismiss rules
+ *               as 'paid'; a possibly-Medicaid family is never led with a price)
  *   - 'free'  : last answer is Medicaid / Medicare / VA → free-help card (never the paid one)
  *   - null    : dismissed within 30 days, or already a concierge customer
- * POST { dismiss: true } → hides the paid card for 30 days (per user, server-side).
+ * POST { dismiss: true } → hides the paid / both card for 30 days (per user, server-side).
  *
  * The "last payer-lane answer" is the newest payerSource across the family's
  * inquiries, placement searches and concierge orders. No PHI leaves this route.
@@ -65,7 +68,7 @@ export async function GET() {
   });
   if (active > 0) return NextResponse.json({ card: null, lane, reason: 'active_order' });
   if (isDismissed(family?.conciergeUpsellDismissedAt)) return NextResponse.json({ card: null, lane, reason: 'dismissed' });
-  return NextResponse.json({ card: 'paid', lane });
+  return NextResponse.json({ card, lane });
 }
 
 export async function POST(request: NextRequest) {

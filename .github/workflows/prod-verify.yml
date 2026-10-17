@@ -31,6 +31,15 @@ on:
         type: boolean
         required: false
         default: false
+      expect_listing_cards:
+        description: 'Expected listing-card count on /cleveland/assisted-living (empty = skip)'
+        required: false
+        default: ''
+      check_concierge:
+        description: '/concierge → 200 with the screener; one /homes/<id> listing page → 200 (W5 merge gate)'
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -53,6 +62,8 @@ jobs:
           WAIT_MINUTES: ${{ inputs.wait_minutes }}
           CHECK_PUBLIC: ${{ inputs.check_public_routes }}
           CHECK_PING: ${{ inputs.check_ping }}
+          EXPECT_CARDS: ${{ inputs.expect_listing_cards }}
+          CHECK_CONCIERGE: ${{ inputs.check_concierge }}
         run: |
           # GitHub's default shell is `bash -e -o pipefail`; this script collects
           # failures itself, so turn errexit/pipefail OFF (a grep with no match
@@ -137,6 +148,35 @@ jobs:
               302|307) echo "$LOC" | grep -q '/auth/login' && pass "GET /operator (logged-out) → $CODE to login" || fail "GET /operator → $CODE to $LOC" ;;
               *) fail "GET /operator (logged-out) → $CODE, expected redirect to login" ;;
             esac
+          fi
+
+          # ---- 3. W5 merge gate: listing cards, one listing page, /concierge ----
+          if [ -n "$EXPECT_CARDS" ] || [ "$CHECK_CONCIERGE" = "true" ]; then
+            fetch GET /cleveland/assisted-living
+            cards=$(grep -o 'data-testid="listing-card"' body.txt | wc -l | tr -d ' ')
+            if [ -n "$EXPECT_CARDS" ]; then
+              if [ "$CODE" = "200" ] && [ "$cards" = "$EXPECT_CARDS" ]; then
+                pass "GET /cleveland/assisted-living → 200 with $cards listing cards"
+              else
+                fail "GET /cleveland/assisted-living → $CODE with $cards listing cards (expected $EXPECT_CARDS)"
+              fi
+            fi
+            if [ "$CHECK_CONCIERGE" = "true" ]; then
+              # First server-rendered listing link → that listing page must answer 200.
+              listing=$( { grep -oE 'href="/homes/[A-Za-z0-9_-]+"' body.txt || true; } | head -n1 | sed -E 's/^href="//; s/"$//')
+              if [ -n "$listing" ]; then
+                fetch GET "$listing"
+                [ "$CODE" = "200" ] && pass "GET $listing (listing page) → 200" || fail "GET $listing (listing page) → $CODE (loc=$LOC)"
+              else
+                fail "no /homes/<id> link found in /cleveland/assisted-living HTML"
+              fi
+              fetch GET /concierge
+              if [ "$CODE" = "200" ] && grep -q 'data-testid="concierge-screener"' body.txt; then
+                pass "GET /concierge → 200 with the payer screener"
+              else
+                fail "GET /concierge → $CODE (screener present: $(grep -c 'data-testid="concierge-screener"' body.txt))"
+              fi
+            fi
           fi
 
           if [ "$FAIL" -ne 0 ]; then

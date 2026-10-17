@@ -13,7 +13,7 @@
  * is asserted PHI-free in __tests__/facility-response.unit.test.ts.
  *
  * Runs with the ./e2e config:
- *   npx playwright test --config=playwright.e2e.config.ts e2e/public/facility-response.spec.ts
+ *   npx playwright test --config=playwright.e2e.config.ts e2e/public/concierge/facility-response.spec.ts
  */
 import { test, expect, type APIRequestContext, type Browser, type Page } from '@playwright/test';
 
