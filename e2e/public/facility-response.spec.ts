@@ -66,12 +66,79 @@ async function devState(request: APIRequestContext, id: string): Promise<any> {
   throw lastErr;
 }
 
+/**
+ * Drive the facility form to a terminal state waiting on REAL signals only —
+ * the committed select state (data-selected mirrors React state), the actual
+ * POST /api/facility/respond response, and the rendered result — never a
+ * sleep (OL-154). The shared e2e dev server can restart on its memory
+ * watchdog mid-step (OL-146): the whole step is then retried from navigation,
+ * and a response that already landed shows up as the closed link, which is
+ * accepted as the same outcome.
+ */
+async function respondViaForm(
+  page: Page,
+  token: string,
+  expected: 'ACCEPTED' | 'DECLINED',
+  decline?: { reason: string; text: string },
+): Promise<void> {
+  await expect(async () => {
+    await page.goto(`/facility/respond?token=${encodeURIComponent(token)}`, { waitUntil: 'domcontentloaded' });
+    const closed = page.getByTestId('facility-closed');
+    const form = page.getByTestId('facility-form');
+    await expect(closed.or(form)).toBeVisible({ timeout: 30000 });
+    if (await closed.isVisible()) {
+      // A previous attempt's POST landed before the page could show it.
+      await expect(closed).toHaveAttribute('data-status', expected);
+      return;
+    }
+    await expect(form).toHaveAttribute('data-hydrated', 'true', { timeout: 30000 });
+    if (decline) {
+      await page.getByTestId('facility-decline').click();
+      await expect(form).toHaveAttribute('data-mode', 'decline');
+      const reason = page.getByTestId('facility-decline-reason');
+      await reason.selectOption(decline.reason);
+      await expect(reason).toHaveValue(decline.reason);
+      await expect(reason).toHaveAttribute('data-selected', decline.reason);
+      await page.getByTestId('facility-decline-text').fill(decline.text);
+    }
+    const responded = page.waitForResponse(
+      (r) => r.url().includes('/api/facility/respond') && r.request().method() === 'POST',
+      { timeout: 45000 },
+    );
+    await page.getByTestId(decline ? 'facility-decline-submit' : 'facility-accept').click();
+    const res = await responded;
+    expect([200, 409], `POST /api/facility/respond → ${res.status()}`).toContain(res.status());
+    if (res.status() === 200) {
+      await expect(page.getByTestId('facility-result')).toHaveAttribute('data-status', expected, { timeout: 30000 });
+    } else {
+      // 409 = already answered by an earlier attempt → the closed state is the proof.
+      await page.goto(`/facility/respond?token=${encodeURIComponent(token)}`, { waitUntil: 'domcontentloaded' });
+      await expect(page.getByTestId('facility-closed')).toHaveAttribute('data-status', expected, { timeout: 30000 });
+    }
+  }).toPass({ timeout: 100_000, intervals: [1000, 3000, 5000] });
+}
+
 test.describe.configure({ mode: 'serial' });
 
 test.describe('@critical facility accept / decline in the concierge flow', () => {
   let homes: Array<{ id: string; name: string }> = [];
   let searchId = '';
   const tokens: Record<string, string> = {};
+
+  // The cookie-consent banner is a fixed bottom overlay that slides in ~1 s
+  // after load; in a fresh context it lands exactly over the form's buttons
+  // and intercepts the click (the ROOT CAUSE of the "Decline click timing"
+  // flake, OL-154). Pre-seed consent so it never renders — same approach as
+  // auth-signup-verify.spec.ts.
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      try {
+        localStorage.setItem('carelinkai_cookie_consent', JSON.stringify({ necessary: true, analytics: false, marketing: false }));
+      } catch {
+        /* ignore */
+      }
+    });
+  });
 
   test.beforeAll(async ({ request }) => {
     const op = await request.post('/api/dev/upsert-operator', { data: { email: OP, companyName: `FacResp Ops ${ts}`, homes: [{ name: HOME_A }, { name: HOME_B }] } });
@@ -140,14 +207,7 @@ test.describe('@critical facility accept / decline in the concierge flow', () =>
     const html = await page.content();
     for (const phi of ['Jane', 'Doe', 'Mary', 'insulin', 'dementia']) expect(html, `page must not carry ${phi}`).not.toContain(phi);
 
-    await page.getByTestId('facility-decline').click();
-    const reason = page.getByTestId('facility-decline-reason');
-    await expect(reason).toBeVisible();
-    await reason.selectOption('ACUITY_WANDERING');
-    await expect(reason).toHaveValue('ACUITY_WANDERING');
-    await page.getByTestId('facility-decline-text').fill('Our memory care unit is not secured.');
-    await page.getByTestId('facility-decline-submit').click();
-    await expect(page.getByTestId('facility-result')).toHaveAttribute('data-status', 'DECLINED', { timeout: 30000 });
+    await respondViaForm(page, tokens[homes[0].id], 'DECLINED', { reason: 'ACUITY_WANDERING', text: 'Our memory care unit is not secured.' });
 
     // Opened + responded + declined timestamps, reason + text stored; link now closed.
     const st = await devState(request, searchId);
@@ -193,10 +253,7 @@ test.describe('@critical facility accept / decline in the concierge flow', () =>
     const early = await api(admin, 'PATCH', `/api/admin/concierge/${searchId}`, { action: 'admitted', homeId: homes[1].id });
     expect(early.status).toBe(409);
 
-    await page.goto(`/facility/respond?token=${encodeURIComponent(tokens[homes[1].id])}`, { waitUntil: 'domcontentloaded' });
-    await expect(page.getByTestId('facility-form')).toHaveAttribute('data-hydrated', 'true', { timeout: 30000 });
-    await page.getByTestId('facility-accept').click();
-    await expect(page.getByTestId('facility-result')).toHaveAttribute('data-status', 'ACCEPTED', { timeout: 30000 });
+    await respondViaForm(page, tokens[homes[1].id], 'ACCEPTED');
 
     let st = await devState(request, searchId);
     let b = (st.facilityResponses as any[]).find((f) => f.homeId === homes[1].id);
