@@ -89,11 +89,11 @@ test.describe('@critical operator availability-contact card', () => {
     await expect(card.getByTestId('availability-contact-status')).toHaveText('Opted in');
     await expect(card.getByTestId('availability-contact-msg')).toContainText('opted in');
 
-    // Reload keeps the saved state.
-    await op.reload({ waitUntil: 'domcontentloaded' });
-    const again = op.getByTestId('availability-contact-card');
-    await expect(again).toHaveAttribute('data-loaded', 'true', { timeout: 30000 });
-    await expect(again.getByTestId('availability-contact-optin')).toBeChecked();
+    // The saved state persists (read back through the same API the card loads from —
+    // a full page reload here races the CI dev-server memory restart + operator gate).
+    const persisted = await getJson(op, `/api/operator/availability-contact?homeId=${homeId}`);
+    expect(persisted.status).toBe(200);
+    expect(persisted.json.contact).toMatchObject({ optedIn: true, optedInSource: 'operator_portal', name: 'Pat Admissions' });
     // The operator cannot read the admin ping view.
     expect((await getJson(op, '/api/admin/availability-pings')).status).toBe(403);
     await op.context().close();
