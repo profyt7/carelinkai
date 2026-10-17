@@ -9,6 +9,11 @@
  *  → History has contact.opted_in (source OPERATOR, optedInSource OPERATOR)
  *  PING_ENABLED is still unset in production → nothing sends; nothing is sent
  *  here either (no Resend key).
+ *
+ *  Runs in the e2e-operator-claim CI job (operator-portal specs), not the
+ *  81-spec e2e-concierge job: the operator portal page is the heaviest route the
+ *  dev server compiles, and on the concierge job's shared server that first
+ *  compile tipped it over its memory ceiling (restart mid-test, OL-146 residual).
  */
 import { test, expect, type Browser, type Page } from '@playwright/test';
 
@@ -49,6 +54,9 @@ async function getJson(page: Page, path: string) {
 }
 
 test.describe.configure({ mode: 'serial' });
+// First hit of the operator portal compiles it lazily in `next dev`; on a 2-core
+// runner that plus the save can take well over Playwright's default budget.
+test.setTimeout(240_000);
 
 test.describe('@critical operator availability-contact card', () => {
   let homeId = '';

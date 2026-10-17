@@ -280,8 +280,9 @@ jobs:
 
   e2e-operator-claim:
     # Cleveland founder claim-flow regression guard (run before founder outreach).
-    # Scoped to the single spec so it does not inherit any staleness from the
-    # other (not-yet-CI-wired) operator-*/auth-*/marketplace-* e2e specs.
+    # Scoped to the named operator-portal specs so it does not inherit any
+    # staleness from the other (not-yet-CI-wired) operator-*/auth-*/marketplace-*
+    # e2e specs.
     runs-on: ubuntu-latest
     timeout-minutes: 30
     services:
@@ -363,7 +364,9 @@ jobs:
           # discovered — the default config's testDir is ./tests, which silently
           # matches nothing under ./e2e. webServer runs `npm run dev` and inherits
           # the job env (ALLOW_DEV_ENDPOINTS / ALLOW_INSECURE_AUTH_COOKIE / DB).
-          npx playwright test --config=playwright.e2e.config.ts e2e/operator-claim-flow.spec.ts --workers=1 --reporter=line
+          # operator-availability-contact.spec.ts (W5-5): the operator portal's
+          # availability-contact card → admin pings page lists the home as eligible.
+          npx playwright test --config=playwright.e2e.config.ts e2e/operator-claim-flow.spec.ts e2e/operator-availability-contact.spec.ts --workers=1 --reporter=line
 
       - name: Upload Playwright test artifacts (Operator claim flow) (always)
         if: always()
