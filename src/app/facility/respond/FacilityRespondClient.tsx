@@ -63,7 +63,7 @@ export default function FacilityRespondClient({ token, facilityName, summary }: 
   }
 
   return (
-    <div data-testid="facility-form" data-hydrated={hydrated ? 'true' : 'false'}>
+    <div data-testid="facility-form" data-hydrated={hydrated ? 'true' : 'false'} data-mode={mode} data-busy={busy ? 'true' : 'false'}>
       <h2 className="text-lg font-semibold text-neutral-900">Can {facilityName} accept this placement?</h2>
       <dl className="mt-4 grid grid-cols-3 gap-2 text-sm">
         <div className="rounded-lg bg-neutral-50 p-3"><dt className="text-xs text-neutral-500">Care level</dt><dd className="font-semibold text-neutral-900" data-testid="summary-care-level">{summary.careLevel}</dd></div>
@@ -96,7 +96,7 @@ export default function FacilityRespondClient({ token, facilityName, summary }: 
           }}
         >
           <label className="block text-sm font-medium text-neutral-800">Why not? (helps us stop sending placements that do not fit)</label>
-          <select name="reason" value={reason} onChange={(e) => setReason(e.target.value)} onInput={(e) => setReason((e.target as HTMLSelectElement).value)} required className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm" data-testid="facility-decline-reason">
+          <select name="reason" value={reason} onChange={(e) => setReason(e.target.value)} onInput={(e) => setReason((e.target as HTMLSelectElement).value)} required className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm" data-testid="facility-decline-reason" data-selected={reason}>
             <option value="">Pick a reason…</option>
             {DECLINE_REASONS.map((r) => (
               <option key={r.value} value={r.value}>{r.label}</option>
