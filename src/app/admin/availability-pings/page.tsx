@@ -20,6 +20,8 @@ type Row = {
   availability: { fresh: boolean; count: number | null; verifiedAt: string | null; source: string | null; label: string };
   lastPing: { id: string; channel: string; sentAt: string; expiresAt: string; delivery: string | null; repliedAt: string | null; replyRaw: string | null; parsedCount: number | null; outcome: string | null; state: 'sent' | 'replied' | 'expired' | 'stop' | 'admin_review' } | null;
   onCallList: boolean;
+  /** Opted in + email + claimed (or admin-call opt-in) → will be pinged when PING_ENABLED is set (W5-5). */
+  eligible?: boolean;
 };
 type Data = { rows: Row[]; counts: Record<string, number>; generatedAt: string };
 
@@ -150,11 +152,12 @@ export default function AvailabilityPingsAdminPage() {
             </thead>
             <tbody className="divide-y divide-neutral-100">
               {data.rows.map((r) => (
-                <tr key={r.homeId} data-testid="ping-row" data-home-id={r.homeId} data-state={r.lastPing?.state ?? 'none'}>
+                <tr key={r.homeId} data-testid="ping-row" data-home-id={r.homeId} data-state={r.lastPing?.state ?? 'none'} data-eligible={r.eligible ? 'true' : 'false'}>
                   <td className="px-4 py-3">
                     <div className="font-medium text-neutral-900">
                       {r.facility}
                       {!r.claimed && <span className="ml-2 rounded bg-neutral-100 px-1.5 py-0.5 text-[11px] text-neutral-600">unclaimed</span>}
+                      {r.eligible && <span className="ml-2 rounded bg-success-50 px-1.5 py-0.5 text-[11px] font-semibold text-success-700 ring-1 ring-inset ring-success-200" data-testid="ping-eligible">eligible</span>}
                       {r.onCallList && <span className="ml-2 inline-flex items-center gap-1 rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-semibold text-amber-800"><PhoneCall className="h-3 w-3" /> call list</span>}
                     </div>
                     <div className="text-xs text-neutral-500">{r.city ?? ''}</div>

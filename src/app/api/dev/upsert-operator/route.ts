@@ -5,6 +5,7 @@ export const fetchCache = 'force-no-store';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
+import { BAA_CURRENT_VERSION, DPA_CURRENT_VERSION } from '@/lib/legal';
 
 // DEV-ONLY endpoint to create an operator, associated Operator record, and a Home.
 // Assumptions:
@@ -131,14 +132,19 @@ export async function POST(req: NextRequest) {
   }
   try {
     const body = await req.json().catch(() => ({}));
-    const { email, password, companyName, homes } = body || {} as {
+    const { email, password, companyName, homes, onboarded } = body || {} as {
       email?: string;
       password?: string;
       companyName?: string;
       // isDemo lets e2e specs seed a tutorial/demo fixture to prove the
       // public directory filters it (OL-112).
       homes?: HomeSeed[];
+      /** Sprint W5-5: mark onboarding complete + BAA/DPA accepted so portal pages render (no wizard / gate). */
+      onboarded?: boolean;
     };
+    const onboardedData = onboarded === true
+      ? { onboardingCompletedAt: new Date(), baaTemplateVersion: BAA_CURRENT_VERSION, baaAcceptedAt: new Date(), dpaTemplateVersion: DPA_CURRENT_VERSION, dpaAcceptedAt: new Date() }
+      : {};
     if (!email || !companyName) {
       return NextResponse.json({ error: 'email and companyName required' }, { status: 400 });
     }
@@ -162,8 +168,8 @@ export async function POST(req: NextRequest) {
     // Ensure Operator
     const op = await prisma.operator.upsert({
       where: { userId: user.id },
-      update: { companyName },
-      create: { userId: user.id, companyName },
+      update: { companyName, ...onboardedData },
+      create: { userId: user.id, companyName, ...onboardedData },
     });
 
     // Ensure homes for operator. If homes array provided, ensure each; else ensure a default one.

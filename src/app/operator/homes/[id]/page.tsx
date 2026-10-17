@@ -8,6 +8,7 @@ import { parseS3Url, createSignedGetUrl } from '@/lib/storage';
 import React from 'react';
 import HomePhotosManager from '@/components/operator/HomePhotosManager';
 import HomeAlerts from '@/components/operator/HomeAlerts';
+import AvailabilityContactCard from '@/components/operator/AvailabilityContactCard';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -135,6 +136,9 @@ export default async function OperatorHomeManagePage({ params, searchParams }: {
             </form>
           </div>
         </div>
+
+        {/* Availability contact + weekly-email opt-in (sprint W5-5). Nothing sends until PING_ENABLED is set. */}
+        <AvailabilityContactCard homeId={home.id} />
 
         {/* Alerts Component */}
         <HomeAlerts homeId={home.id} maxAlerts={5} />
