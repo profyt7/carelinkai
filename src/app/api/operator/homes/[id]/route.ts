@@ -7,9 +7,13 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { UserRole } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
+import { recordEvent, diffFields } from '@/lib/events/record-event';
 import { z } from 'zod';
 import { captureError } from '@/lib/sentry';
 
+
+/** Business fields whose edits are kept in history (sprint W5-1). */
+const TRACKED_HOME_FIELDS = ['name', 'description', 'capacity', 'currentOccupancy', 'careLevel', 'genderRestriction', 'amenities', 'priceMin', 'priceMax', 'startingPriceMonthly', 'status'] as const;
 
 const updateSchema = z.object({
   name: z.string().min(2).optional(),
@@ -94,7 +98,28 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       data.priceUpdatedAt = new Date();
     }
 
-    const updated = await prisma.assistedLivingHome.update({ where: { id: home.id }, data });
+    // History (sprint W5-1): one row per changed business field; free text
+    // (description) is recorded as a change marker only. Same transaction as the write.
+    const diffs = diffFields(home as unknown as Record<string, unknown>, parsed.data as Record<string, unknown>, TRACKED_HOME_FIELDS);
+    const updated = await prisma.$transaction(async (tx) => {
+      const u = await tx.assistedLivingHome.update({ where: { id: home.id }, data });
+      for (const d of diffs) {
+        const isText = d.field === 'description' || d.field === 'name';
+        await recordEvent(tx, {
+          entityType: 'OPERATOR_PROFILE', entityId: home.id, eventType: 'field.changed', field: d.field,
+          oldValue: isText ? { changed: true } : d.oldValue, newValue: isText ? { changed: true } : d.newValue,
+          source: user.role === UserRole.ADMIN ? 'ADMIN' : 'OPERATOR', actor: { userId: user.id, role: user.role },
+        });
+      }
+      if (address) {
+        await recordEvent(tx, {
+          entityType: 'OPERATOR_PROFILE', entityId: home.id, eventType: 'field.changed', field: 'address',
+          oldValue: { changed: true }, newValue: { city: address.city, state: address.state, zipCode: address.zipCode },
+          source: user.role === UserRole.ADMIN ? 'ADMIN' : 'OPERATOR', actor: { userId: user.id, role: user.role },
+        });
+      }
+      return u;
+    });
     return NextResponse.json({ id: updated.id });
   } catch (e) {
     captureError(e instanceof Error ? e : new Error(String(e)), {

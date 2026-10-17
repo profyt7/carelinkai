@@ -11,14 +11,18 @@
  *    no RESEND key → ping row created with delivery=skipped_no_resend (nothing sent).
  */
 
-jest.mock('@/lib/prisma', () => ({
-  prisma: {
+jest.mock('@/lib/prisma', () => {
+  // Sprint W5-1: writes now commit alongside an EntityEvent row inside
+  // prisma.$transaction(callback); the mock runs the callback against itself.
+  const p: any = {
     availabilityContact: { findMany: jest.fn(), findUnique: jest.fn(), upsert: jest.fn(), update: jest.fn() },
     availabilityPing: { updateMany: jest.fn(), create: jest.fn(), update: jest.fn(), findUnique: jest.fn(), findFirst: jest.fn() },
-    assistedLivingHome: { update: jest.fn() },
-    $transaction: jest.fn(),
-  },
-}));
+    assistedLivingHome: { update: jest.fn(), findUnique: jest.fn().mockResolvedValue({ availabilityCount: null, availabilityVerifiedAt: null, availabilitySource: null }) },
+    entityEvent: { create: jest.fn().mockResolvedValue({ id: 'evt' }), findMany: jest.fn().mockResolvedValue([]) },
+  };
+  p.$transaction = jest.fn(async (arg: unknown) => (typeof arg === 'function' ? (arg as (tx: unknown) => unknown)(p) : Promise.all(arg as Promise<unknown>[])));
+  return { prisma: p };
+});
 jest.mock('@/lib/sentry', () => ({ captureError: jest.fn() }));
 jest.mock('@/lib/email', () => ({ sendAvailabilityPingEmail: jest.fn() }));
 

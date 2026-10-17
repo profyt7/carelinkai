@@ -21,6 +21,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
+import { recordEvent } from '@/lib/events/record-event';
 import { requireRole } from '@/lib/auth-utils';
 import { UserRole } from '@prisma/client';
 import { createInAppNotification } from '@/lib/services/notifications';
@@ -93,28 +94,32 @@ const patchSchema = z.discriminatedUnion('action', [
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    await requireRole([UserRole.ADMIN]);
+    const admin = await requireRole([UserRole.ADMIN]);
     const body = await request.json().catch(() => ({}));
     const parsed = patchSchema.parse(body);
 
     const existing = await prisma.placementSearch.findUnique({
       where: { id: params.id },
-      select: { id: true, isConcierge: true, userId: true, user: { select: { email: true } } },
+      select: { id: true, isConcierge: true, userId: true, conciergeStatus: true, user: { select: { email: true } } },
     });
     if (!existing || !existing.isConcierge) {
       return NextResponse.json({ error: 'Concierge request not found' }, { status: 404 });
     }
 
     if (parsed.action === 'matching') {
-      await prisma.placementSearch.update({
-        where: { id: params.id },
-        data: { conciergeStatus: 'MATCHING' },
+      await prisma.$transaction(async (tx) => {
+        await tx.placementSearch.update({ where: { id: params.id }, data: { conciergeStatus: 'MATCHING' } });
+        await recordEvent(tx, {
+          entityType: 'PLACEMENT_SEARCH', entityId: params.id, eventType: 'status.changed', field: 'conciergeStatus',
+          oldValue: { status: existing.conciergeStatus }, newValue: { status: 'MATCHING' },
+          source: 'ADMIN', actor: { userId: admin.id, role: admin.role },
+        });
       });
       return NextResponse.json({ ok: true, status: 'MATCHING' });
     }
 
     if (parsed.action === 'admitted') {
-      const r = await markAdmitted({ searchId: params.id, homeId: parsed.homeId });
+      const r = await markAdmitted({ searchId: params.id, homeId: parsed.homeId, actor: { userId: admin.id, role: admin.role } });
       if (!r.ok) return NextResponse.json({ error: r.error }, { status: 409 });
       return NextResponse.json({ ok: true, status: 'ADMITTED', homeId: parsed.homeId });
     }
@@ -146,14 +151,21 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       return NextResponse.json({ error: 'None of the selected homes exist anymore.' }, { status: 400 });
     }
 
-    await prisma.placementSearch.update({
-      where: { id: params.id },
-      data: {
-        curatedHomes: curated,
-        conciergeNote: parsed.conciergeNote?.trim() || null,
-        conciergeStatus: 'SHORTLIST_READY',
-        conciergeRespondedAt: new Date(),
-      },
+    await prisma.$transaction(async (tx) => {
+      await tx.placementSearch.update({
+        where: { id: params.id },
+        data: {
+          curatedHomes: curated,
+          conciergeNote: parsed.conciergeNote?.trim() || null,
+          conciergeStatus: 'SHORTLIST_READY',
+          conciergeRespondedAt: new Date(),
+        },
+      });
+      await recordEvent(tx, {
+        entityType: 'PLACEMENT_SEARCH', entityId: params.id, eventType: 'status.changed', field: 'conciergeStatus',
+        oldValue: { status: existing.conciergeStatus }, newValue: { status: 'SHORTLIST_READY', count: curated.length },
+        source: 'ADMIN', actor: { userId: admin.id, role: admin.role },
+      });
     });
 
     // Tell the DP their shortlist is ready: in-app bell badge + PHI-free email.

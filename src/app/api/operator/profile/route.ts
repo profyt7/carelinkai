@@ -3,6 +3,7 @@ export const revalidate = 0;
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { recordEvent } from '@/lib/events/record-event';
 import { requireOperatorOrAdmin } from '@/lib/rbac';
 import { createAuditLogFromRequest } from '@/lib/audit';
 
@@ -109,9 +110,23 @@ export async function PATCH(req: NextRequest) {
         return NextResponse.json({ error: 'Operator profile not found' }, { status: 404 });
       }
 
-      operator = await prisma.operator.update({
-        where: { userId },
-        data: operatorUpdateData,
+      operator = await prisma.$transaction(async (tx) => {
+        const u = await tx.operator.update({
+          where: { userId },
+          data: operatorUpdateData,
+        });
+        // History (sprint W5-1): which fields changed; company name is a business
+        // fact, tax id / license / preferences are recorded as change markers only.
+        for (const field of Object.keys(operatorUpdateData)) {
+          const plain = field === 'companyName';
+          await recordEvent(tx, {
+            entityType: 'OPERATOR_PROFILE', entityId: existingOperator.id, eventType: 'field.changed', field,
+            oldValue: plain ? (existingOperator as Record<string, unknown>)[field] : { changed: true },
+            newValue: plain ? operatorUpdateData[field] : { changed: true },
+            source: 'OPERATOR', actor: { userId, role: 'OPERATOR' },
+          });
+        }
+        return u;
       });
     } else {
       operator = await prisma.operator.findUnique({

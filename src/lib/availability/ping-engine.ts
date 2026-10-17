@@ -19,6 +19,7 @@
 import crypto from 'crypto';
 import type { AvailabilityPingChannel, AvailabilityPingOutcome, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
+import { recordEvent } from '@/lib/events/record-event';
 import { captureError } from '@/lib/sentry';
 import { sendAvailabilityPingEmail } from '@/lib/email';
 import { availabilityView, isAvailabilityFresh, toE164, updateAvailability } from '@/lib/availability/availability';
@@ -280,10 +281,15 @@ export async function applyPingReply(args: { token: string; raw: string; via: 'l
     return { ok: true, kind: 'count', count: parsed.count, facilityName, verifiedAt: view?.verifiedAt ?? now.toISOString() };
   }
   if (parsed.kind === 'stop') {
-    await prisma.$transaction([
-      prisma.availabilityContact.update({ where: { id: ping.contactId }, data: { optedIn: false, optedOutAt: now } }),
-      prisma.availabilityPing.update({ where: { id: ping.id }, data: { ...replyBase, outcome: 'STOP' } }),
-    ]);
+    await prisma.$transaction(async (tx) => {
+      await tx.availabilityContact.update({ where: { id: ping.contactId }, data: { optedIn: false, optedOutAt: now } });
+      await tx.availabilityPing.update({ where: { id: ping.id }, data: { ...replyBase, outcome: 'STOP' } });
+      await recordEvent(tx, {
+        entityType: 'AVAILABILITY_PING', entityId: ping.homeId, eventType: 'contact.opted_out', field: 'optedIn',
+        oldValue: { optedIn: true, contactId: ping.contactId, pingId: ping.id }, newValue: { optedIn: false, contactId: ping.contactId, pingId: ping.id, outcome: 'STOP' },
+        source: 'PING', occurredAt: now,
+      });
+    });
     return { ok: true, kind: 'stop', facilityName };
   }
   await prisma.availabilityPing.update({ where: { id: ping.id }, data: { ...replyBase, outcome: 'ADMIN_REVIEW' } });

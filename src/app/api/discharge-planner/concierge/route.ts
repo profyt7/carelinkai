@@ -22,6 +22,8 @@ import { UserRole } from '@prisma/client';
 import { sendConciergeRequestNotification } from '@/lib/email';
 import { captureError } from '@/lib/sentry';
 import { isPayerSource } from '@/lib/payer/payer-source';
+import { recordEvent } from '@/lib/events/record-event';
+import { deriveIntakeFacts } from '@/lib/concierge/intake-facts';
 import { toDpFacilityResponse } from '@/lib/concierge/facility-response-engine';
 
 // Minimum-necessary intake. Kept in-app; never emailed out.
@@ -62,16 +64,37 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    await prisma.placementSearch.update({
+    const prev = await prisma.placementSearch.findUnique({
       where: { id: searchId },
-      data: {
-        isConcierge: true,
-        conciergeStatus: 'SUBMITTED',
-        patientInfo,
-        // Payer-source tag (OL-114) — invalid/blank normalizes to null. TAGS ONLY.
-        payerSource: isPayerSource(payerSource) ? payerSource : null,
-        conciergeSubmittedAt: new Date(),
-      },
+      select: { conciergeStatus: true, queryText: true, parsedCriteria: true },
+    });
+    const facts = deriveIntakeFacts({ payerSource, patientInfo, parsedCriteria: prev?.parsedCriteria, queryText: prev?.queryText });
+    await prisma.$transaction(async (tx) => {
+      await tx.placementSearch.update({
+        where: { id: searchId },
+        data: {
+          isConcierge: true,
+          conciergeStatus: 'SUBMITTED',
+          patientInfo,
+          // Payer-source tag (OL-114) — invalid/blank normalizes to null. TAGS ONLY.
+          payerSource: isPayerSource(payerSource) ? payerSource : null,
+          payerLane: facts.payerLane,
+          intakeZip: facts.intakeZip,
+          careLevel: facts.careLevel,
+          conciergeSubmittedAt: new Date(),
+        },
+      });
+      // History (sprint W5-1): status + the PHI-free intake facts only.
+      await recordEvent(tx, {
+        entityType: 'PLACEMENT_SEARCH',
+        entityId: searchId,
+        eventType: 'status.changed',
+        field: 'conciergeStatus',
+        oldValue: { status: prev?.conciergeStatus ?? null },
+        newValue: { status: 'SUBMITTED', payerLane: facts.payerLane, zip: facts.intakeZip, careLevel: facts.careLevel },
+        source: user.role === UserRole.ADMIN ? 'ADMIN' : 'DP',
+        actor: { userId: user.id, role: user.role },
+      });
     });
 
     // PHI-free admin alert (DP identity + link only). Fire-and-forget.

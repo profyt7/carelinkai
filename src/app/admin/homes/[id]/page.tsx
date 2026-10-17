@@ -23,6 +23,7 @@ import {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AvailabilityPanel from '@/components/availability/AvailabilityPanel';
+import HomeHistoryPanel from '@/components/admin/HomeHistoryPanel';
 import PricingPanel from '@/components/pricing/PricingPanel';
 
 // Safely unwrap params — handles both Promise and plain object
@@ -177,7 +178,7 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'residents' | 'licenses' | 'reviews' | 'inquiries'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'residents' | 'licenses' | 'reviews' | 'inquiries' | 'history'>('overview');
   
   // Edit form state
   const [editForm, setEditForm] = useState({
@@ -542,7 +543,7 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
         <div className="bg-white rounded-lg shadow mb-6">
           <div className="border-b border-neutral-200">
             <nav className="flex -mb-px">
-              {['overview', 'residents', 'licenses', 'reviews', 'inquiries'].map((tab) => (
+              {['overview', 'residents', 'licenses', 'reviews', 'inquiries', 'history'].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab as typeof activeTab)}
@@ -950,6 +951,7 @@ export default function AdminHomeDetailPage({ params }: { params: Promise<{ id: 
               </div>
             )}
 
+            {activeTab === 'history' && <HomeHistoryPanel homeId={resolvedParams.id} />}
             {activeTab === 'inquiries' && (
               <div>
                 <h3 className="text-lg font-semibold text-neutral-900 mb-4">
