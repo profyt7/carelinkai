@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { FiArrowRight, FiCheck } from 'react-icons/fi';
 import { PAYER_SOURCE_OPTIONS, isPayerSource, type PayerSource } from '@/lib/payer/payer-source';
-import { CONCIERGE_FEE_MODEL, WAIVER_DIRECTORY_PATH, routeForPayerSource, type ConciergeRoute } from '@/lib/concierge/screener';
+import { WAIVER_DIRECTORY_PATH, routeForPayerSource, type ConciergeRoute } from '@/lib/concierge/screener';
+import { CONCIERGE_OFFER } from '@/lib/concierge/offer';
 import ConciergeRequestForm from './ConciergeRequestForm';
 
 /**
@@ -97,32 +98,40 @@ export default function ConciergeScreener() {
   if (route === 'private_pay' && answered) {
     return (
       <div data-testid="concierge-offer" className="rounded-2xl border border-primary-200 bg-white p-6 sm:p-8 shadow-sm">
-        <p className="text-sm font-semibold uppercase tracking-wide text-primary-600">Private-pay concierge</p>
-        <h3 className="mt-2 text-2xl font-bold text-neutral-900">A Cleveland person does the legwork with you.</h3>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-wide text-primary-600">Family Concierge · private pay</p>
+            <h3 className="mt-2 text-2xl font-bold text-neutral-900">A Cleveland person does the legwork with you.</h3>
+          </div>
+          <div className="rounded-xl bg-primary-50 px-4 py-3 text-right" data-testid="concierge-price">
+            <p className="text-3xl font-bold text-primary-700">{CONCIERGE_OFFER.priceDisplay}</p>
+            <p className="text-xs text-neutral-600">flat · one-time · per family search</p>
+          </div>
+        </div>
         <p className="mt-3 text-neutral-700">
-          For families paying privately or through long-term care insurance, our concierge takes the search off
-          your plate: a verified shortlist, availability confirmed with each home, tours scheduled around you, and
-          the pricing breakdown in writing before you sign anything.
+          {answered === 'NOT_SURE'
+            ? 'Not sure how care will be paid? That is exactly what the intake call sorts out. If it turns out Medicaid, Medicare or the VA will pay, we tell you and point you to our free help instead — no charge.'
+            : 'For families paying privately or through long-term care insurance, our concierge takes the search off your plate: a verified shortlist, availability and prices confirmed with each home, tours scheduled around you, and the numbers in writing before you sign anything.'}
         </p>
-        <ul className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {[
-            'A shortlist of 3–5 verified homes matched to care needs, location and budget',
-            'Availability confirmed directly with each home before you visit',
-            'Tours scheduled and a tour checklist tailored to your situation',
-            'The full pricing breakdown — base rate and care add-ons — in writing',
-            'ODH inspection history explained in plain language, no grades',
-            'Help with the move-in paperwork and first-30-days check-in',
-          ].map((line) => (
+        <p className="mt-4 text-sm font-semibold text-neutral-900">What’s included</p>
+        <ul className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2" data-testid="concierge-inclusions">
+          {CONCIERGE_OFFER.inclusions.map((line) => (
             <li key={line} className="flex gap-3">
               <FiCheck className="mt-1 flex-shrink-0 text-success-600" />
               <span className="text-neutral-700">{line}</span>
             </li>
           ))}
         </ul>
-        <div className="mt-6 rounded-lg bg-neutral-50 p-4 text-sm text-neutral-700" data-testid="concierge-fee-model">
-          <strong className="text-neutral-900">How it’s priced:</strong> {CONCIERGE_FEE_MODEL.headline}{' '}
-          {CONCIERGE_FEE_MODEL.detail}
+        <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="rounded-lg border border-success-200 bg-success-50 p-4 text-sm text-neutral-800" data-testid="concierge-guarantee">
+            <strong className="text-success-800">Guarantee.</strong> {CONCIERGE_OFFER.guarantee}
+          </div>
+          <div className="rounded-lg bg-neutral-50 p-4 text-sm text-neutral-700" data-testid="concierge-not-included">
+            <strong className="text-neutral-900">Not included:</strong> {CONCIERGE_OFFER.notIncluded.join(' · ')}.
+            <span className="block mt-1 text-xs text-neutral-500">{CONCIERGE_OFFER.capacityNote}</span>
+          </div>
         </div>
+        <p className="mt-4 text-xs text-neutral-500">{CONCIERGE_OFFER.honestyLine}</p>
         <ConciergeRequestForm payerSource={answered} />
         <div className="mt-4">
           <button type="button" onClick={reset} className="text-sm font-medium text-neutral-600 hover:text-neutral-900">

@@ -63,6 +63,8 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
         },
         // W4-2: per-home accept / decline state + reasons (admin sees the contact email too).
         facilityResponses: { select: FACILITY_RESPONSE_SELECT, orderBy: { createdAt: 'asc' } },
+        // W5-3: paid concierge order(s) — status, cents, timestamps only.
+        conciergeOrders: { select: { id: true, status: true, amountCents: true, paidAt: true, refundedAt: true, createdAt: true }, orderBy: { createdAt: 'desc' } },
       },
     });
     if (!row || !row.isConcierge) {

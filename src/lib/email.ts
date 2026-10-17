@@ -327,6 +327,54 @@ export async function sendConciergeRequestNotification(args: {
 }
 
 /**
+ * Admin alert: a family PAID for the Family Concierge (sprint W5-3). ONE email to
+ * the admin address only (ADMIN_NOTIFY_EMAIL → CLAIM_NOTIFY_EMAIL → chris@). No
+ * family details — ids, amount and the admin deep link only. Fires only from the
+ * Stripe checkout.session.completed webhook; never from tests or deploys.
+ */
+export async function sendConciergePaidNotification(args: {
+  requestId: string | null;
+  orderId: string;
+  amountCents: number;
+}): Promise<boolean> {
+  const to = process.env.ADMIN_NOTIFY_EMAIL || process.env.CLAIM_NOTIFY_EMAIL || 'chris@getcarelinkai.com';
+  try {
+    if (!process.env.RESEND_API_KEY) {
+      console.error('[Resend] RESEND_API_KEY not configured — skipping concierge paid notification');
+      return false;
+    }
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'https://getcarelinkai.com').replace(/\/$/, '');
+    const adminLink = args.requestId ? `${appUrl}/admin/concierge/${args.requestId}` : `${appUrl}/admin/concierge`;
+    const amount = `$${(args.amountCents / 100).toFixed(0)}`;
+    const { data, error } = await guardedResendSend({
+      from: `${APP_NAME} <${FROM_EMAIL}>`,
+      to: [to],
+      replyTo: OUTREACH_REPLY_TO,
+      subject: `💳 Family Concierge paid — ${amount}`,
+      text:
+        `A family paid ${amount} for the Family Concierge (order ${args.orderId}).\n\n` +
+        `Start the intake call within one business day. Details are in-app (never emailed):\n${adminLink}\n`,
+      html:
+        `<p>A family paid <strong>${escapeHtml(amount)}</strong> for the <strong>Family Concierge</strong> (order ${escapeHtml(args.orderId)}).</p>` +
+        `<p style="color:#6b7280;font-size:13px">Start the intake call within one business day. Details are in-app (never emailed).</p>` +
+        `<p><a href="${escapeHtml(adminLink)}">Open the request →</a></p>`,
+    });
+    if (error) {
+      console.error('[Resend] Error sending concierge paid notification:', error);
+      captureError(error instanceof Error ? error : new Error(String((error as { message?: string })?.message ?? error)),
+        { tags: { feature: 'concierge-checkout' }, extra: { orderId: args.orderId } });
+      return false;
+    }
+    console.log('[Resend] ✅ Concierge paid notification sent. Email ID:', data?.id);
+    return true;
+  } catch (error) {
+    console.error('[Resend] Exception sending concierge paid notification:', error);
+    captureError(error instanceof Error ? error : new Error(String(error)), { tags: { feature: 'concierge-checkout' }, extra: { orderId: args.orderId } });
+    return false;
+  }
+}
+
+/**
  * Tell a discharge planner their concierge shortlist is ready (sent when an admin
  * curates + "Send to DP"). Goes to the DP's OWN account email.
  *

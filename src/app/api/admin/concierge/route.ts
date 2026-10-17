@@ -1,7 +1,10 @@
 /**
  * GET /api/admin/concierge
  * Admin concierge queue: discharge-planner placement requests routed to CareLinkAI.
- * Optional ?status=SUBMITTED|MATCHING|SHORTLIST_READY filter.
+ * Optional ?status=SUBMITTED|MATCHING|SHORTLIST_READY|WAITLIST|PENDING_PAYMENT filter.
+ * Without a filter, PENDING_PAYMENT rows (checkout started, not paid) are hidden —
+ * the paid webhook promotes them to SUBMITTED. Each row carries its latest
+ * ConciergeOrder (status / amount / paidAt) for the Paid chip (sprint W5-3).
  */
 
 export const dynamic = 'force-dynamic';
@@ -11,7 +14,7 @@ import { prisma } from '@/lib/prisma';
 import { requireRole } from '@/lib/auth-utils';
 import { UserRole } from '@prisma/client';
 
-const VALID = ['SUBMITTED', 'MATCHING', 'SHORTLIST_READY'];
+const VALID = ['SUBMITTED', 'MATCHING', 'SHORTLIST_READY', 'WAITLIST', 'PENDING_PAYMENT'];
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,6 +23,7 @@ export async function GET(request: NextRequest) {
 
     const where: any = { isConcierge: true };
     if (status && VALID.includes(status)) where.conciergeStatus = status;
+    else where.NOT = { conciergeStatus: 'PENDING_PAYMENT' };
 
     const rows = await prisma.placementSearch.findMany({
       where,
@@ -33,6 +37,7 @@ export async function GET(request: NextRequest) {
         conciergeRespondedAt: true,
         curatedHomes: true,
         createdAt: true,
+        conciergeOrders: { select: { id: true, status: true, amountCents: true, paidAt: true }, orderBy: { createdAt: 'desc' }, take: 1 },
         user: {
           select: {
             firstName: true,

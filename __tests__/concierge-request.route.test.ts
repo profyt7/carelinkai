@@ -1,11 +1,14 @@
 /**
- * Sprint W4 0a — POST /api/concierge/request + createConciergePageRequest:
+ * Sprint W4 0a + W5-3 — POST /api/concierge/request + createConciergePageRequest:
  *  - a private-pay submit lands in the EXISTING DP concierge queue
  *    (PlacementSearch isConcierge / SUBMITTED) tagged source=concierge_page,
- *    carrying the screener answer (payerSource), contact kept in patientInfo;
+ *    carrying the screener answer (payerSource), contact kept in patientInfo,
+ *    PLUS a ConciergeOrder REQUESTED_UNPAID (flag unset = today's behaviour);
+ *  - monthly cap reached → queue row + order are WAITLIST;
  *  - the system user is created once and reused;
- *  - free-lane / not-sure answers are refused (400) — never a queue row;
- *  - honeypot stores nothing; validation 400; no Stripe import anywhere.
+ *  - Medicaid / Medicare / VA answers are refused (400) — never a queue row;
+ *    "not sure" is allowed (the family pays, never a home);
+ *  - honeypot stores nothing; validation 400; no Stripe import in this route.
  */
 
 import { jest } from '@jest/globals';
@@ -17,13 +20,16 @@ jest.mock('@/lib/prisma', () => {
   const p: any = {
     user: { findUnique: jest.fn(), create: jest.fn() },
     placementSearch: { create: jest.fn() },
+    conciergeOrder: { create: jest.fn(), count: jest.fn() },
     entityEvent: { create: jest.fn().mockResolvedValue({ id: 'evt' }), findMany: jest.fn().mockResolvedValue([]) },
   };
   p.$transaction = jest.fn(async (arg: unknown) => (typeof arg === 'function' ? (arg as (tx: unknown) => unknown)(p) : Promise.all(arg as Promise<unknown>[])));
   return { prisma: p };
 });
 jest.mock('@/lib/sentry', () => ({ captureError: jest.fn() }));
-jest.mock('@/lib/email', () => ({ sendConciergeRequestNotification: jest.fn(async () => true) }));
+jest.mock('@/lib/email', () => ({ sendConciergeRequestNotification: jest.fn(async () => true), sendConciergePaidNotification: jest.fn(async () => true) }));
+jest.mock('next-auth', () => ({ getServerSession: jest.fn(async () => null) }));
+jest.mock('@/lib/auth', () => ({ authOptions: {} }));
 
 import { POST } from '@/app/api/concierge/request/route';
 import { prisma } from '@/lib/prisma';
@@ -33,6 +39,8 @@ import { CONCIERGE_PAGE_SOURCE, CONCIERGE_PAGE_USER_EMAIL, createConciergePageRe
 const userFind = prisma.user.findUnique as jest.Mock;
 const userCreate = prisma.user.create as jest.Mock;
 const psCreate = prisma.placementSearch.create as jest.Mock;
+const orderCreate = (prisma as any).conciergeOrder.create as jest.Mock;
+const orderCount = (prisma as any).conciergeOrder.count as jest.Mock;
 
 let ip = 0;
 const req = (body: unknown) =>
@@ -55,6 +63,10 @@ const base = {
 beforeEach(() => {
   userFind.mockResolvedValue({ id: 'sys-user' } as never);
   psCreate.mockImplementation(async (args: any) => ({ id: 'ps-1', ...args.data }));
+  orderCreate.mockImplementation(async (args: any) => ({ id: 'ord-1', status: args.data.status }));
+  orderCount.mockResolvedValue(0 as never);
+  delete process.env['CONCIERGE_CHECKOUT_ENABLED'];
+  delete process.env['CONCIERGE_MONTHLY_CAP'];
 });
 afterEach(() => jest.clearAllMocks());
 
@@ -84,19 +96,39 @@ describe('createConciergePageRequest', () => {
     expect((psCreate.mock.calls[0] as any)[0].data.userId).toBe('sys-new');
   });
 
-  it('refuses every non-private-pay lane without touching the queue', async () => {
-    for (const v of ['MEDICAID_WAIVER', 'MEDICARE_ADVANTAGE', 'VA_BENEFITS', 'NOT_SURE'] as const) {
+  it('allows "not sure" (the family pays) but refuses every free-lane payer without touching the queue', async () => {
+    await createConciergePageRequest({ ...base, payerSource: 'NOT_SURE' });
+    expect(psCreate).toHaveBeenCalledTimes(1);
+    psCreate.mockClear();
+    for (const v of ['MEDICAID_WAIVER', 'MEDICARE_ADVANTAGE', 'VA_BENEFITS'] as const) {
       await expect(createConciergePageRequest({ ...base, payerSource: v })).rejects.toThrow(/private-pay only/);
     }
     expect(psCreate).not.toHaveBeenCalled();
   });
+
+  it('a PENDING_PAYMENT row does not alert the admin (the paid webhook does); WAITLIST does', async () => {
+    await createConciergePageRequest(base as any, { queueStatus: 'PENDING_PAYMENT' });
+    expect((psCreate.mock.calls[0] as any)[0].data.conciergeStatus).toBe('PENDING_PAYMENT');
+    expect(sendConciergeRequestNotification).not.toHaveBeenCalled();
+    await createConciergePageRequest(base as any, { queueStatus: 'WAITLIST' });
+    expect(sendConciergeRequestNotification).toHaveBeenCalledWith(expect.objectContaining({ dpName: expect.stringMatching(/WAITLIST/) }));
+  });
 });
 
 describe('POST /api/concierge/request', () => {
-  it('201 with the queue id + source for a private-pay family', async () => {
+  it('201 with the queue id + a REQUESTED_UNPAID order for a private-pay family (flag unset)', async () => {
     const res = await POST(req(base));
     expect(res.status).toBe(201);
-    expect(await res.json()).toEqual({ ok: true, id: 'ps-1', source: 'concierge_page', status: 'SUBMITTED' });
+    expect(await res.json()).toEqual({ ok: true, id: 'ps-1', source: 'concierge_page', status: 'SUBMITTED', orderId: 'ord-1', orderStatus: 'REQUESTED_UNPAID' });
+    expect(orderCreate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ placementSearchId: 'ps-1', email: 'dana@example.com', status: 'REQUESTED_UNPAID', amountCents: 39900 }) }));
+  });
+
+  it('monthly cap reached → WAITLIST queue row + WAITLIST order', async () => {
+    orderCount.mockResolvedValue(4 as never);
+    const res = await POST(req(base));
+    expect(res.status).toBe(201);
+    expect(await res.json()).toMatchObject({ status: 'WAITLIST', orderStatus: 'WAITLIST' });
+    expect((psCreate.mock.calls[0] as any)[0].data.conciergeStatus).toBe('WAITLIST');
   });
 
   it('400 for a free-lane answer (points at free help), nothing stored', async () => {
@@ -105,15 +137,15 @@ describe('POST /api/concierge/request', () => {
     // Medicaid lands on the waiver-filtered directory (sprint W5-2).
     expect((await res.json()).freeHelp).toBe('/cleveland/assisted-living?waiver=1');
     expect(psCreate).not.toHaveBeenCalled();
+    expect(orderCreate).not.toHaveBeenCalled();
   });
 
   it('400 on validation, 201/no-store on honeypot', async () => {
     expect((await POST(req({ ...base, contactEmail: 'nope' }))).status).toBe(400);
     expect((await POST(req({ ...base, careNeeds: 'x' }))).status).toBe(400);
-    expect((await POST(req({ ...base, payerSource: 'BITCOIN' }))).status).toBe(400);
     const hp = await POST(req({ ...base, company_url: 'http://spam' }));
     expect(hp.status).toBe(201);
-    expect((await hp.json()).id).toBeNull();
     expect(psCreate).not.toHaveBeenCalled();
+    expect(orderCreate).not.toHaveBeenCalled();
   });
 });

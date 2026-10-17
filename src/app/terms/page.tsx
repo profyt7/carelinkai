@@ -264,9 +264,32 @@ export default function TermsOfServicePage() {
               </p>
             </section>
 
-            <section className="mb-10">
+            <section className="mb-10" id="family-concierge" data-testid="terms-family-concierge">
               <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
                 <span className="w-8 h-8 bg-[#3978FC] text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">15</span>
+                Family Concierge
+              </h2>
+              <p className="text-slate-600 leading-relaxed mb-4">
+                The Family Concierge is an optional, paid search service for families paying for care privately or through
+                long-term care insurance. It costs a flat $399, charged once per family search, and includes a 20-minute
+                intake call; a verified shortlist of three to five homes within two business days (availability and current
+                price confirmed with each home, with Ohio Department of Health inspection history explained in plain
+                English); scheduling of up to five tours and a tour checklist; a written side-by-side cost comparison; a
+                before-you-sign checklist; check-ins at 30, 60 and 90 days after move-in; and one free re-search within 90
+                days. Capacity is limited each month.
+              </p>
+              <ul className="list-disc list-inside text-slate-600 space-y-2 ml-4">
+                <li><strong>Guarantee.</strong> If we do not deliver a verified shortlist within two business days of the intake call, we refund the full fee.</li>
+                <li><strong>Not included.</strong> Medical, legal or financial advice; filing a Medicaid application; attending tours in person.</li>
+                <li><strong>Who pays.</strong> You do. Homes never pay to be listed, ranked or recommended. If a home ever pays CareLinkAI a fee when a resident moves in, we tell you before you tour; it never changes your price or which homes we show you.</li>
+                <li><strong>Free help.</strong> When care is paid through Medicaid, Medicare or the VA, the concierge is not offered and our directory, guides and direct home contact are free.</li>
+                <li><strong>Payments</strong> are processed by Stripe. Refunds are returned to the original payment method.</li>
+              </ul>
+            </section>
+
+            <section className="mb-10">
+              <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
+                <span className="w-8 h-8 bg-[#3978FC] text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">16</span>
                 Contact Us
               </h2>
               <p className="text-slate-600 leading-relaxed mb-4">

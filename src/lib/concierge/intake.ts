@@ -1,17 +1,21 @@
 /**
- * /concierge → the EXISTING DP concierge queue (sprint W4 0a).
+ * /concierge → the EXISTING DP concierge queue (sprint W4 0a, W5-3).
  *
- * A private-pay family's "Request concierge help" creates a PlacementSearch
- * exactly like a discharge planner's in-app submit (6/28 flow): isConcierge,
- * conciergeStatus SUBMITTED, patientInfo kept in-app, payerSource tagged — so
- * Chris curates it in /admin/concierge with no second queue. Rows are tagged
- * source='concierge_page' and owned by a system user (the family has no
- * account at this point; their contact details live in patientInfo).
+ * A family's concierge request creates a PlacementSearch exactly like a
+ * discharge planner's in-app submit (6/28 flow): isConcierge, conciergeStatus,
+ * patientInfo kept in-app, payerSource tagged — so Chris curates it in
+ * /admin/concierge with no second queue. Rows are tagged source='concierge_page'
+ * and owned by a system user (the family may have no account; their contact
+ * details live in patientInfo).
  *
- * Lane rule (AKS firewall, src/lib/payer/payer-source.ts): only FEE_ELIGIBLE
- * answers (private funds, LTC insurance) may create a page request — the
- * screener never shows the CTA to anyone else, and this module refuses the
- * rest defensively. Nothing here touches the placement fee path.
+ * Lane rule (AKS firewall, src/lib/payer/payer-source.ts): the paid concierge is
+ * paid by the FAMILY, so private funds, LTC insurance and "not sure" may create a
+ * request; Medicaid / Medicare / VA (FREE_LANE) are refused — the screener never
+ * shows them the CTA and this module refuses defensively. Nothing here touches
+ * the placement-fee path.
+ *
+ * Queue status (W5-3): SUBMITTED (request / paid), WAITLIST (cap reached),
+ * PENDING_PAYMENT (Stripe Checkout started; promoted to SUBMITTED by the webhook).
  */
 
 import { prisma } from '@/lib/prisma';
@@ -23,6 +27,8 @@ import { deriveFeeLane, PAYER_SOURCE_LABELS, type PayerSource } from '@/lib/paye
 
 export const CONCIERGE_PAGE_SOURCE = 'concierge_page';
 export const CONCIERGE_PAGE_USER_EMAIL = 'concierge-page@carelinkai.system';
+
+export type ConciergeQueueStatus = 'SUBMITTED' | 'WAITLIST' | 'PENDING_PAYMENT';
 
 export type ConciergePageIntake = {
   payerSource: PayerSource;
@@ -68,11 +74,22 @@ export class FreeLaneRefused extends Error {
   }
 }
 
+/** True for the lanes that may request / buy the concierge (everything but FREE_LANE). */
+export function mayRequestConcierge(payerSource: PayerSource | null | undefined): boolean {
+  return deriveFeeLane(payerSource) !== 'FREE_LANE';
+}
+
 /**
- * Create the queue row. Throws FreeLaneRefused for any non-FEE_ELIGIBLE lane.
+ * Create the queue row. Throws FreeLaneRefused for a FREE_LANE payer source.
+ * `queueStatus` defaults to SUBMITTED; PENDING_PAYMENT rows do not alert the
+ * admin (the paid webhook does), WAITLIST rows do.
  */
-export async function createConciergePageRequest(i: ConciergePageIntake): Promise<{ id: string }> {
-  if (deriveFeeLane(i.payerSource) !== 'FEE_ELIGIBLE') throw new FreeLaneRefused();
+export async function createConciergePageRequest(
+  i: ConciergePageIntake,
+  opts: { queueStatus?: ConciergeQueueStatus } = {},
+): Promise<{ id: string }> {
+  if (!mayRequestConcierge(i.payerSource)) throw new FreeLaneRefused();
+  const queueStatus: ConciergeQueueStatus = opts.queueStatus ?? 'SUBMITTED';
   const owner = await ensureConciergePageUser();
   const facts = deriveIntakeFacts({ payerSource: i.payerSource, location: i.location, queryText: conciergeQueryText(i), patientInfo: { medicalNeeds: i.careNeeds } });
   const row = await prisma.$transaction(async (tx) => {
@@ -84,7 +101,7 @@ export async function createConciergePageRequest(i: ConciergePageIntake): Promis
       searchResults: { matches: [] },
       status: 'SEARCHING',
       isConcierge: true,
-      conciergeStatus: 'SUBMITTED',
+      conciergeStatus: queueStatus,
       conciergeSubmittedAt: new Date(),
       payerSource: i.payerSource,
       payerLane: facts.payerLane,
@@ -112,15 +129,19 @@ export async function createConciergePageRequest(i: ConciergePageIntake): Promis
     eventType: 'status.changed',
     field: 'conciergeStatus',
     oldValue: null,
-    newValue: { status: 'SUBMITTED', payerLane: facts.payerLane, zip: facts.intakeZip, careLevel: facts.careLevel, source: CONCIERGE_PAGE_SOURCE },
+    newValue: { status: queueStatus, payerLane: facts.payerLane, zip: facts.intakeZip, careLevel: facts.careLevel, source: CONCIERGE_PAGE_SOURCE },
     source: 'FAMILY',
   });
   return created;
   });
 
-  // Same PHI-free admin alert the DP submit fires (request id + link only).
-  void sendConciergeRequestNotification({ requestId: row.id, dpName: 'A family (concierge page)' }).catch((e) =>
-    captureError(e instanceof Error ? e : new Error(String(e)), { tags: { feature: 'concierge-page' } })
-  );
+  // Same PHI-free admin alert the DP submit fires (request id + link only). A
+  // checkout-in-progress row waits for the paid webhook's own alert.
+  if (queueStatus !== 'PENDING_PAYMENT') {
+    const who = queueStatus === 'WAITLIST' ? 'A family (concierge page — WAITLIST, capacity reached)' : 'A family (concierge page)';
+    void sendConciergeRequestNotification({ requestId: row.id, dpName: who }).catch((e) =>
+      captureError(e instanceof Error ? e : new Error(String(e)), { tags: { feature: 'concierge-page' } })
+    );
+  }
   return row;
 }
