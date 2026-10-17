@@ -55,10 +55,13 @@ test.describe('@critical operator availability-contact card', () => {
 
   test.beforeAll(async ({ request }) => {
     // onboarded: true → onboarding complete + BAA/DPA accepted, so the portal renders the home page (no wizard / gate).
-    const op = await request.post('/api/dev/upsert-operator', { data: { email: OP, companyName: `Contact Ops ${ts}`, onboarded: true, homes: [{ name: HOME, city: 'Cleveland' }] } });
-    expect(op.status()).toBe(200);
-    homeId = (await op.json()).homes[0].id;
-    await request.post('/api/dev/upsert-admin', { data: { email: ADMIN } });
+    // The CI dev server restarts itself near its memory ceiling (OL-146 residual); seeding retries through that.
+    await expect(async () => {
+      const op = await request.post('/api/dev/upsert-operator', { data: { email: OP, companyName: `Contact Ops ${ts}`, onboarded: true, homes: [{ name: HOME, city: 'Cleveland' }] } });
+      expect(op.status()).toBe(200);
+      homeId = (await op.json()).homes[0].id;
+      expect((await request.post('/api/dev/upsert-admin', { data: { email: ADMIN } })).status()).toBe(200);
+    }).toPass({ timeout: 90_000, intervals: [2000, 5000, 10000] });
   });
 
   test.afterAll(async ({ request }) => {
@@ -67,22 +70,29 @@ test.describe('@critical operator availability-contact card', () => {
 
   test('operator saves contact + opt-in → admin pings page lists the home as eligible → History has contact.opted_in (OPERATOR)', async ({ browser }) => {
     const op = await login(browser, OP);
-    await op.goto(`/operator/homes/${homeId}`, { waitUntil: 'domcontentloaded' });
     const card = op.getByTestId('availability-contact-card');
-    await expect(card).toBeVisible({ timeout: 30000 });
-    await expect(card).toHaveAttribute('data-loaded', 'true');
+    // Open the portal page until the card has loaded its contact (a dev-server restart
+    // mid-navigation leaves data-loaded=false — reload and try again, no fixed sleeps).
+    await expect(async () => {
+      await op.goto(`/operator/homes/${homeId}`, { waitUntil: 'domcontentloaded' });
+      await expect(card).toBeVisible({ timeout: 20000 });
+      await expect(card).toHaveAttribute('data-loaded', 'true', { timeout: 15000 });
+    }).toPass({ timeout: 120_000, intervals: [1000, 3000, 5000] });
     await expect(card.getByTestId('availability-contact-status')).toHaveText('Not opted in');
     await expect(card.getByText(OPT_IN_LABEL)).toBeVisible();
 
     await card.getByLabel('Contact name').fill('Pat Admissions');
     await card.locator('input[name="email"]').fill(`pat-${ts}@test.carelinkai.com`);
     await card.getByTestId('availability-contact-optin').check();
-    const [res] = await Promise.all([
-      op.waitForResponse((r) => r.url().includes('/api/operator/availability-contact') && r.request().method() === 'PUT'),
-      card.getByTestId('availability-contact-save').click(),
-    ]);
-    expect(res.status()).toBe(200);
-    const saved = await res.json();
+    let saved: any = null;
+    await expect(async () => {
+      const [res] = await Promise.all([
+        op.waitForResponse((r) => r.url().includes('/api/operator/availability-contact') && r.request().method() === 'PUT', { timeout: 45_000 }),
+        card.getByTestId('availability-contact-save').click(),
+      ]);
+      expect(res.status()).toBe(200);
+      saved = await res.json();
+    }).toPass({ timeout: 120_000, intervals: [2000, 5000] });
     expect(saved.ok).toBe(true);
     expect(saved.contact).toMatchObject({ homeId, optedIn: true, optedInSource: 'operator_portal', preferredChannel: 'EMAIL', email: `pat-${ts}@test.carelinkai.com` });
     expect(saved.contact.optedInAt).toBeTruthy();
