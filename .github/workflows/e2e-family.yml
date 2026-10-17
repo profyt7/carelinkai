@@ -380,7 +380,9 @@ jobs:
     # the /founder self-hosted intro page (DP-lane, no auth, no DB).
     # Self-seeds via /api/dev/* (ALLOW_DEV_ENDPOINTS=1).
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # 81 specs after sprint W5 (public/ grew by 5 files); the job ran 29 min on
+    # #747 and was killed at test 71/81 on #748. Same ceiling as the other jobs.
+    timeout-minutes: 45
     services:
       postgres:
         image: postgres:15
